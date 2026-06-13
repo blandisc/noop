@@ -1,5 +1,50 @@
 import Foundation
 
+// MARK: - Civil-date arithmetic (no Calendar/DateFormatter)
+
+/// Branch-light, allocation-free conversions between a civil (proleptic Gregorian) date and a day
+/// number counting from 1970-01-01 = day 0 — Howard Hinnant's `days_from_civil` /
+/// `civil_from_days` algorithms. Used on the Apple Health import hot path so we never touch
+/// `Calendar`, `TimeZone`, `DateFormatter`, or `String(format:)` per record (each is orders of
+/// magnitude slower than the integer math here, and the parse runs over tens of millions of records).
+enum CivilDate {
+
+    /// (year, month, day) → days since 1970-01-01. Valid for the full proleptic Gregorian range.
+    static func daysFromCivil(_ y: Int, _ m: Int, _ d: Int) -> Int {
+        let yy = (m <= 2) ? y - 1 : y
+        let era = (yy >= 0 ? yy : yy - 399) / 400
+        let yoe = yy - era * 400                                       // [0, 399]
+        let doy = (153 * (m > 2 ? m - 3 : m + 9) + 2) / 5 + d - 1      // [0, 365]
+        let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy               // [0, 146096]
+        return era * 146097 + doe - 719468
+    }
+
+    /// days since 1970-01-01 → (year, month, day).
+    static func civilFromDays(_ days: Int) -> (year: Int, month: Int, day: Int) {
+        let z = days + 719468
+        let era = (z >= 0 ? z : z - 146096) / 146097
+        let doe = z - era * 146097                                     // [0, 146096]
+        let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365 // [0, 399]
+        let y = yoe + era * 400
+        let doy = doe - (365 * yoe + yoe / 4 - yoe / 100)             // [0, 365]
+        let mp = (5 * doy + 2) / 153                                   // [0, 11]
+        let d = doy - (153 * mp + 2) / 5 + 1                           // [1, 31]
+        let m = mp < 10 ? mp + 3 : mp - 9                             // [1, 12]
+        return (m <= 2 ? y + 1 : y, m, d)
+    }
+
+    /// `yyyy-MM-dd`, zero-padded by hand (avoids `String(format:)`'s varargs/locale cost).
+    static func format(year y: Int, month m: Int, day d: Int) -> String {
+        func p2(_ v: Int) -> String { v < 10 ? "0\(v)" : "\(v)" }
+        let ys: String
+        if y >= 1000 { ys = "\(y)" }
+        else if y >= 100 { ys = "0\(y)" }
+        else if y >= 10 { ys = "00\(y)" }
+        else { ys = "000\(max(0, y))" }
+        return "\(ys)-\(p2(m))-\(p2(d))"
+    }
+}
+
 // MARK: - Daily aggregate model
 
 /// One day's worth of Apple Health metrics, bucketed by the sample's own local
@@ -325,12 +370,19 @@ public enum AppleHealthAggregator {
     /// `yyyy-MM-dd` for a UTC `Date` shifted into its own local offset.
     /// We add the offset to the UTC instant and read the calendar fields in
     /// UTC, which yields the civil (wall-clock) date the sample was recorded on.
+    ///
+    /// HOT PATH: called once per record over the tens of millions of `<Record>` elements a
+    /// multi-year export holds. The old implementation allocated a fresh `Calendar` + `TimeZone`
+    /// and ran `String(format:)` on EVERY call — together by far the dominant cost of the parse.
+    /// This rewrite uses pure integer arithmetic (no Foundation date machinery, no allocation):
+    /// shift the instant, floor-divide to a civil day number, convert to (y,m,d) with Hinnant's
+    /// algorithm, and build the string by hand. Behaviour is identical to reading the UTC calendar
+    /// fields of the shifted instant.
     static func localDay(_ utc: Date, tzOffsetMin: Int) -> String {
-        let shifted = utc.addingTimeInterval(TimeInterval(tzOffsetMin * 60))
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(identifier: "UTC")!
-        let c = cal.dateComponents([.year, .month, .day], from: shifted)
-        return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
+        let shiftedSecs = utc.timeIntervalSince1970 + Double(tzOffsetMin) * 60.0
+        let dayNumber = Int((shiftedSecs / 86_400.0).rounded(.down))   // whole days since 1970-01-01 UTC
+        let c = CivilDate.civilFromDays(dayNumber)
+        return CivilDate.format(year: c.year, month: c.month, day: c.day)
     }
 
     // MARK: - Pure helpers (feed the streaming aggregator; used by tests)

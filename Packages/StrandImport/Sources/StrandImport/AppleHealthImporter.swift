@@ -546,11 +546,70 @@ final class HealthDateParser {
 
     /// Returns (utcDate, offsetMinutes).
     func parse(_ raw: String) -> (Date, Int)? {
+        // Fast path first: the canonical Apple shape is fixed-width, so a hand-rolled scan is
+        // ~10–20× cheaper than `DateFormatter.date(from:)` — and this runs twice per record
+        // (start + end) over tens of millions of records. Anything that doesn't match falls
+        // through to the formatter/ISO path below, so tolerance is unchanged.
+        if let fast = Self.fastParse(raw) { return fast }
         guard let date = formatter.date(from: raw) else {
             // Fallback: try a few alternative shapes (ISO-8601, no seconds).
             return parseFallback(raw)
         }
         return (date, Self.offsetMinutes(from: raw))
+    }
+
+    /// Allocation-free parse of Apple Health's canonical `yyyy-MM-dd HH:mm:ss Z` shape
+    /// (e.g. `2024-06-01 14:30:00 -0500`, also accepts `+01:00` and `Z`). Returns nil on ANY
+    /// deviation so `parse` can fall back to the slow `DateFormatter` path — correctness over the
+    /// odd malformed row is preserved while the overwhelmingly-common shape stays on the fast path.
+    static func fastParse(_ raw: String) -> (Date, Int)? {
+        let b = Array(raw.utf8)
+        guard b.count >= 19 else { return nil }
+
+        @inline(__always) func num(_ start: Int, _ len: Int) -> Int? {
+            var v = 0
+            for i in start..<(start + len) {
+                let c = b[i]
+                guard c >= 48, c <= 57 else { return nil }   // ASCII '0'..'9'
+                v = v * 10 + Int(c - 48)
+            }
+            return v
+        }
+
+        // Fixed separators: "----:--:-- " → '-' '-' ' ' ':' ':'
+        guard b[4] == 45, b[7] == 45, b[10] == 32, b[13] == 58, b[16] == 58 else { return nil }
+        guard let y = num(0, 4), let mo = num(5, 2), let d = num(8, 2),
+              let h = num(11, 2), let mi = num(14, 2), let s = num(17, 2),
+              mo >= 1, mo <= 12, d >= 1, d <= 31, h < 24, mi < 60, s < 62 else { return nil }
+
+        // Offset token after the time. Tolerate a single leading space then "+HHMM"/"-HHMM"/
+        // "+HH:MM"/"Z"; a bare time with no offset is treated as +0000 (Apple always emits one).
+        var i = 19
+        if i < b.count, b[i] == 32 { i += 1 }
+        var offsetMin = 0
+        if i < b.count {
+            let c = b[i]
+            if c == 90 || c == 122 {                          // 'Z' / 'z'
+                offsetMin = 0
+            } else if c == 43 || c == 45 {                    // '+' / '-'
+                let sign = (c == 45) ? -1 : 1
+                i += 1
+                guard let oh = num(i, 2) else { return nil }
+                i += 2
+                if i < b.count, b[i] == 58 { i += 1 }         // optional ':' in "+HH:MM"
+                let om = num(i, 2) ?? 0
+                offsetMin = sign * (oh * 60 + om)
+            } else {
+                return nil
+            }
+        }
+
+        let days = CivilDate.daysFromCivil(y, mo, d)
+        // UTC = local civil time − offset.
+        let utcSeconds = Double(days) * 86_400.0
+            + Double(h * 3600 + mi * 60 + s)
+            - Double(offsetMin * 60)
+        return (Date(timeIntervalSince1970: utcSeconds), offsetMin)
     }
 
     private func parseFallback(_ raw: String) -> (Date, Int)? {

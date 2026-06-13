@@ -93,15 +93,30 @@ extension WhoopStore {
     /// Upsert cached daily metrics. Natural key (deviceId, day). Returns rows changed.
     @discardableResult
     public func upsertDailyMetrics(_ days: [DailyMetric], deviceId: String) async throws -> Int {
+        // Batch into multi-row INSERTs rather than one statement per day: 18 bound vars/row,
+        // SQLite's limit is 999, so 50 rows/statement (900 vars) is a safe, large batch. Mirrors
+        // `upsertMetricSeries`. One-INSERT-per-row meant a statement round-trip per day inside the
+        // transaction — needless overhead on a multi-year import that spans thousands of days.
         try syncWrite { db in
             var n = 0
-            for d in days {
+            let perRow = "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"   // 18 cols
+            for chunk in stride(from: 0, to: days.count, by: 50).map({ Array(days[$0..<min($0 + 50, days.count)]) }) {
+                let values = Array(repeating: perRow, count: chunk.count).joined(separator: ", ")
+                var args: [DatabaseValueConvertible?] = []
+                args.reserveCapacity(chunk.count * 18)
+                for d in chunk {
+                    args.append(contentsOf: [deviceId, d.day, d.totalSleepMin, d.efficiency, d.deepMin,
+                                             d.remMin, d.lightMin, d.disturbances, d.restingHr, d.avgHrv,
+                                             d.recovery, d.strain, d.exerciseCount,
+                                             d.spo2Pct, d.skinTempDevC, d.respRateBpm,
+                                             d.steps, d.activeKcalEst] as [DatabaseValueConvertible?])
+                }
                 try db.execute(sql: """
                     INSERT INTO dailyMetric
                         (deviceId, day, totalSleepMin, efficiency, deepMin, remMin, lightMin,
                          disturbances, restingHr, avgHrv, recovery, strain, exerciseCount,
                          spo2Pct, skinTempDevC, respRateBpm, steps, activeKcalEst)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES \(values)
                     ON CONFLICT(deviceId, day) DO UPDATE SET
                         totalSleepMin = excluded.totalSleepMin,
                         efficiency = excluded.efficiency,
@@ -119,11 +134,7 @@ extension WhoopStore {
                         respRateBpm = excluded.respRateBpm,
                         steps = excluded.steps,
                         activeKcalEst = excluded.activeKcalEst
-                    """, arguments: [deviceId, d.day, d.totalSleepMin, d.efficiency, d.deepMin,
-                                     d.remMin, d.lightMin, d.disturbances, d.restingHr, d.avgHrv,
-                                     d.recovery, d.strain, d.exerciseCount,
-                                     d.spo2Pct, d.skinTempDevC, d.respRateBpm,
-                                     d.steps, d.activeKcalEst])
+                    """, arguments: StatementArguments(args))
                 n += db.changesCount
             }
             return n
