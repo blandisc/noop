@@ -87,6 +87,15 @@ _The items below are developer / docs — no user-facing change._
   load before you'd opened them, widening the launch gap. Each tab is now built the first time it's
   selected and kept alive afterward (so switching back is instant), leaving only the Today screen to
   build at launch. No visible change beyond a faster start.
+- **Integration tests for cross-source workouts + timezone day bucketing (FER-34).** Added
+  `swift test`-runnable coverage for two areas the workout/data pipeline had thin: the storage
+  contract behind the cross-source workout merge (the strap / Apple-Health / on-device-detected
+  buckets coexisting, source-scoped deletes, the trailing window — `WorkoutMergeStoreTests`), and
+  day bucketing across timezone offsets and a daylight-saving switch (`AppleHealthAggregator.localDay`
+  — travellers shouldn't see a day split or merged). The pure merge helpers (source classification,
+  dismissed-span filter, HR-zone roll-up, unit formatting) already have unit tests; the app-layer
+  union glue in `Repository.workoutRows` isn't reachable from CI (the app target has no headless test
+  host — only Xcode), so it's exercised here at the store contract it rests on.
 
 ---
 

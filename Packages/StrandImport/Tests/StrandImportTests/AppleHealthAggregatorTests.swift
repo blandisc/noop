@@ -501,6 +501,33 @@ final class AppleHealthAggregatorTests: XCTestCase {
         XCTAssertEqual(d, "2025-01-01")
     }
 
+    // MARK: - DST / timezone day bucketing (FER-34)
+    // The export carries a per-sample UTC offset; `localDay` attributes each sample to the civil
+    // (wall-clock) day it was recorded on. These pin the cases that matter for a traveller / a
+    // daylight-saving switch — a fixed-UTC-key store would otherwise split or merge days.
+
+    func testLocalDayNegativeOffsetCrossesMidnightBackward() {
+        // 04:30 UTC at -0500 (US Eastern, EST) -> 23:30 the previous day, local.
+        let d = AppleHealthAggregator.localDay(Fixtures.utc(2025, 1, 1, 4, 30, 0), tzOffsetMin: -300)
+        XCTAssertEqual(d, "2024-12-31")
+    }
+
+    func testLocalDayStableAcrossASpringForwardDSTSwitch() {
+        // US spring-forward is 2024-03-10 (EST -0500 → EDT -0400). Two samples the same civil day:
+        // one before the switch at EST, one after at EDT. Each carries its own offset, so both must
+        // bucket to 2024-03-10 — the DST change doesn't smear the day.
+        let beforeSwitch = AppleHealthAggregator.localDay(Fixtures.utc(2024, 3, 10, 6, 0, 0), tzOffsetMin: -300) // 01:00 EST
+        let afterSwitch  = AppleHealthAggregator.localDay(Fixtures.utc(2024, 3, 10, 18, 0, 0), tzOffsetMin: -240) // 14:00 EDT
+        XCTAssertEqual(beforeSwitch, "2024-03-10")
+        XCTAssertEqual(afterSwitch, "2024-03-10")
+    }
+
+    func testLocalDayLargePositiveOffsetCrossesMidnightForward() {
+        // 19:00 UTC at +0900 (JST) -> 04:00 the NEXT day, local.
+        let d = AppleHealthAggregator.localDay(Fixtures.utc(2024, 6, 30, 19, 0, 0), tzOffsetMin: 540)
+        XCTAssertEqual(d, "2024-07-01")
+    }
+
     /// Integer-math `localDay` (no Calendar) must bucket correctly across midnight-crossing offsets,
     /// a leap day, and a year boundary backwards.
     func testLocalDayEdgeCases() {
