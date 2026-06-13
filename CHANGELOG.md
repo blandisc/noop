@@ -17,6 +17,35 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ---
 
+## 1.65 — iOS: Spanish (es-MX) localization, Apple Health import hardening, Today greeting
+
+Work on the experimental iOS port. All on-device, no cloud — nothing here changes that.
+
+- **Spanish (es-MX) localization (new):** the whole app is translated to Mexican Spanish via the
+  String Catalog (`Strand/Resources/Localizable.xcstrings`), driven by a re-runnable
+  `Tools/translate-es.py`, with its own catalog for the widget. The catch was that many labels were
+  plain Swift `String`s SwiftUI never extracts (metric titles/categories, readiness/behaviour/stress
+  sentences, range pickers, strap-connection states, intelligence notes) — these now go through
+  `String(localized:)` at their literal sites, so they actually localize. Longer Spanish labels were
+  overflowing the Live/Breathe action buttons; those now scale to fit.
+- **Apple Health import — no more OOM crash (fix):** a multi-year Apple Health export is tens of
+  millions of `<Record>` elements; the importer used to accumulate every sample in memory (plus a
+  dedupe set) and iOS killed the app. Parsing now **aggregates per-day on the fly** (a streaming
+  `AppleHealthDayAggregator`), so peak memory is O(days), not O(samples) — measured 2,000,000 records
+  at ~104 MB. The reduction rules (mean, max, latest, sum) have a single implementation shared with
+  the unit-tested helpers.
+- **Import progress + speed (improve):** the import card shows a live record count instead of a
+  frozen-looking spinner; the `metricSeries` write is batched into multi-row inserts; and there's a
+  free-space guard before decompressing so a too-large export fails with a clear message instead of a
+  silent truncation.
+- **Localized export filenames (fix):** a non-English iPhone names the export `exportación.xml` (etc.),
+  not `export.xml` — the importer now accepts any non-CDA export XML, so imports work regardless of
+  device language.
+- **Today greeting (new):** the home header shows a time-of-day greeting (Buenos días / tardes /
+  noches) with the date beneath, in place of the static "Control Center" title.
+- **Build:** explicit shared Xcode schemes in `project.yml`, so `xcodebuild -scheme NOOPiOS` works in
+  a clean checkout / CI without opening Xcode first.
+
 ## 1.64 — Android: MTU 247, skin-temp, sync status, recovery UI, alarm groundwork (thanks iHateSubscriptions, #85)
 
 Reimplemented (NoopApp-authored, per our external-contribution policy) from PR #85, rebased on v1.62.
