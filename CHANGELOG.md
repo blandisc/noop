@@ -76,6 +76,11 @@ _The items below are developer / docs — no user-facing change._
   Apple Health XML parse polls for cancellation and aborts mid-file, and both importers bail before
   their database writes — so a cancelled import stops promptly and writes nothing further. A
   cancelled run reports "Import cancelled." rather than a failure.
+- **Tabs build on first visit, not at launch (FER-31).** The iPhone tab bar eagerly constructed all
+  of its screens at startup — Today, Trends, Live and Sleep each ran its body and its on-appear data
+  load before you'd opened them, widening the launch gap. Each tab is now built the first time it's
+  selected and kept alive afterward (so switching back is instant), leaving only the Today screen to
+  build at launch. No visible change beyond a faster start.
 
 ---
 
