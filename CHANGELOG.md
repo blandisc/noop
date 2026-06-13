@@ -51,6 +51,15 @@ Work on the experimental iOS port. All on-device, no cloud — nothing here chan
   and issued concurrently, and `Repository.ensureStore` memoizes store creation — closing a race
   where concurrent first-callers could open and migrate the database twice. (Wall-clock at launch is
   still gated by SwiftUI scene setup, unchanged here; this removes the redundant data work behind it.)
+- **Apple Health live sync is now reachable (fix):** the two-way HealthKit bridge (read your Health
+  HR/HRV/sleep/SpO₂/steps, write NOOP's strap-derived metrics back) was fully built but had **no UI
+  entry point** — `requestAuthorization()` was never called, so the feature was effectively dead. Data
+  Sources now has an **"Apple Health — Live Sync"** card with a "Connect Apple Health" button that
+  requests permission from an explicit tap (HIG: rationale shown first, never a cold launch prompt),
+  then syncs and shows last-synced / errors. Also: a failed read→store upsert during sync no longer
+  gets swallowed by `try?` while `lastSync` advances — it now surfaces the error and re-attempts the
+  window next time, instead of silently dropping that day's data; a successful sync refreshes the
+  dashboard so the imported days appear immediately.
 - **Build:** explicit shared Xcode schemes in `project.yml`, so `xcodebuild -scheme NOOPiOS` works in
   a clean checkout / CI without opening Xcode first.
 

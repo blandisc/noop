@@ -149,18 +149,19 @@ final class HealthKitBridge: ObservableObject {
                         recovery: nil, strain: nil, exerciseCount: nil,
                         spo2Pct: a.spo2, skinTempDevC: nil, respRateBpm: a.respRate)
         }
-        try? await store.upsertAppleDaily(appleRows, deviceId: appleDeviceId)
-        try? await store.upsertDailyMetrics(dmRows, deviceId: appleDeviceId)
-
-        // Only advance lastSync when the round-trip actually succeeded. A failed write-back used to
-        // be swallowed by `try?`, then lastSync moved forward — the next delta sync skipped the window
-        // and the data was never written back.
+        // The read→store upsert and the NOOP→Health write-back are one unit. If the store write
+        // fails, do NOT advance lastSync (the next delta sync must re-attempt this window) and surface
+        // the error instead of swallowing it with `try?` — a failed upsert used to be silent while
+        // lastSync still moved forward, skipping the window and losing the data permanently.
         do {
+            try await store.upsertAppleDaily(appleRows, deviceId: appleDeviceId)
+            try await store.upsertDailyMetrics(dmRows, deviceId: appleDeviceId)
             try await writeBack(whoopStore: store)
             lastSync = Date()
             lastError = nil
+            await repo.refresh()   // surface the freshly-synced Apple Health days in the dashboard
         } catch {
-            lastError = "Apple Health write-back failed: \(error.localizedDescription)"
+            lastError = "Apple Health sync failed: \(error.localizedDescription)"
         }
     }
 

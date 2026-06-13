@@ -8,12 +8,20 @@ struct DataSourcesView: View {
     @EnvironmentObject var live: LiveState
     @State private var showingImporter = false
     @State private var importTarget: ImportTarget = .whoop
+    #if os(iOS)
+    // Live two-way Apple Health (iOS only — macOS has no HealthKit). Injected by StrandiOSApp.
+    @EnvironmentObject private var health: HealthKitBridge
+    @State private var hkBusy = false
+    #endif
 
     var body: some View {
         ScreenScaffold(title: "Data Sources",
                        subtitle: "Everything stays on this Mac. Bring your history in once, then it's yours.") {
             whoopCard
             appleHealthCard
+            #if os(iOS)
+            appleHealthLiveCard
+            #endif
             liveCard
         }
         // A single target-aware importer avoids SwiftUI collapsing competing importers on the same screen.
@@ -76,6 +84,67 @@ struct DataSourcesView: View {
             }
         }
     }
+
+    #if os(iOS)
+    /// iOS-only: connect + drive the live two-way Apple Health sync. Authorization is requested HERE,
+    /// from an explicit user tap with rationale shown first (HIG: never prompt cold at launch) — until
+    /// this exists the `HealthKitBridge` was fully built but unreachable, so HealthKit sync was dead.
+    @ViewBuilder
+    private var appleHealthLiveCard: some View {
+        card(title: "Apple Health — Live Sync", icon: "heart.text.square.fill",
+             subtitle: "Sync the last few weeks two-way, on-device: NOOP reads your Apple Health HR, HRV, sleep, SpO₂ and steps, and writes its own strap-derived metrics back. Strictly opt-in — nothing leaves your iPhone. (For a one-time bulk history, use the export import above.)") {
+            switch health.auth {
+            case .unavailable:
+                Text(verbatim: "Apple Health isn’t available on this device.")
+                    .font(StrandFont.subhead).foregroundStyle(StrandPalette.textTertiary)
+            case .authorized:
+                HStack(spacing: 12) {
+                    Button {
+                        Task { await health.sync() }
+                    } label: {
+                        Label(health.syncing ? "Syncing…" : "Sync now",
+                              systemImage: "arrow.triangle.2.circlepath").padding(.horizontal, 6)
+                    }
+                    .buttonStyle(.borderedProminent).tint(StrandPalette.accent)
+                    .disabled(health.syncing)
+                    if health.syncing { ProgressView().controlSize(.small) }
+                }
+                if let at = health.lastSync {
+                    Text(verbatim: "Last synced \(at.formatted(.relative(presentation: .named)))")
+                        .font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
+                } else {
+                    Text(verbatim: "Connected.")
+                        .font(StrandFont.footnote).foregroundStyle(StrandPalette.statusPositive)
+                }
+            case .unknown, .denied:
+                HStack(spacing: 12) {
+                    Button {
+                        Task {
+                            hkBusy = true
+                            await health.requestAuthorization()
+                            if health.auth == .authorized { await health.sync() }
+                            hkBusy = false
+                        }
+                    } label: {
+                        Label(hkBusy ? "Connecting…" : "Connect Apple Health",
+                              systemImage: "heart.fill").padding(.horizontal, 6)
+                    }
+                    .buttonStyle(.borderedProminent).tint(StrandPalette.accent)
+                    .disabled(hkBusy)
+                    if hkBusy { ProgressView().controlSize(.small) }
+                }
+                if health.auth == .denied {
+                    Text(verbatim: "Apple Health access was declined. Enable it in Settings › Privacy & Security › Health › NOOP.")
+                        .font(StrandFont.footnote).foregroundStyle(StrandPalette.statusWarning)
+                }
+            }
+            if let err = health.lastError {
+                Text(verbatim: err)
+                    .font(StrandFont.footnote).foregroundStyle(StrandPalette.statusWarning)
+            }
+        }
+    }
+    #endif
 
     private func presentImporter(_ target: ImportTarget) {
         importTarget = target
