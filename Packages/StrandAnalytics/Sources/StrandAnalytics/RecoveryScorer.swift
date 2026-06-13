@@ -122,11 +122,15 @@ public enum RecoveryScorer {
     public struct DriverBaseline: Equatable, Sendable {
         public let mean: Double
         public let spread: Double
-        public init(mean: Double, spread: Double) {
-            self.mean = mean; self.spread = spread
+        /// Valid nights behind this baseline; drives confidence shrinkage (FER-13).
+        /// Defaults to `minNightsTrust` so callers that build a baseline directly
+        /// (e.g. fixed population priors) are treated as fully trusted (no shrinkage).
+        public let nValid: Int
+        public init(mean: Double, spread: Double, nValid: Int = Baselines.minNightsTrust) {
+            self.mean = mean; self.spread = spread; self.nValid = nValid
         }
         public init(_ state: BaselineState) {
-            self.mean = state.baseline; self.spread = state.spread
+            self.mean = state.baseline; self.spread = state.spread; self.nValid = state.nValid
         }
     }
 
@@ -169,30 +173,39 @@ public enum RecoveryScorer {
 
         var terms: [(z: Double, w: Double)] = []
 
+        // Each personal-baseline z is shrunk toward neutral by Baselines.confidence(nValid)
+        // so a thin baseline (few valid nights) can't swing the score (FER-13). A trusted
+        // baseline returns confidence 1.0, leaving established users' scores unchanged.
+
         // HRV term: higher is better.
         if let b = hrvBaseline {
-            terms.append((zScore(hrv, mean: b.mean, spread: b.spread), wHRV))
+            let z = zScore(hrv, mean: b.mean, spread: b.spread) * Baselines.confidence(nValid: b.nValid)
+            terms.append((z, wHRV))
         }
         // RHR term: lower is better → (μ − x) / σ.
         if let b = rhrBaseline {
-            terms.append((zScore(b.mean, mean: rhr, spread: b.spread), wRHR))
+            let z = zScore(b.mean, mean: rhr, spread: b.spread) * Baselines.confidence(nValid: b.nValid)
+            terms.append((z, wRHR))
         }
         // Resp term: lower is better, optional.
         if let r = resp, let b = respBaseline {
-            terms.append((zScore(b.mean, mean: r, spread: b.spread), wResp))
+            let z = zScore(b.mean, mean: r, spread: b.spread) * Baselines.confidence(nValid: b.nValid)
+            terms.append((z, wResp))
         }
         // Skin-temp term: lower is better (elevated temp = illness / overreaching), optional.
         if let t = skinTemp, let b = skinTempBaseline {
-            terms.append((zScore(b.mean, mean: t, spread: b.spread), wTemp))
+            let z = zScore(b.mean, mean: t, spread: b.spread) * Baselines.confidence(nValid: b.nValid)
+            terms.append((z, wTemp))
         }
         // Sleep-performance term. With a personal efficiency baseline, z is measured
         // against the user's OWN normal — consistent with every other driver — so a
-        // naturally low (or high) sleeper isn't perpetually penalized (or flattered).
-        // Without one (cold-start) it falls back to the fixed population center/scale.
+        // naturally low (or high) sleeper isn't perpetually penalized (or flattered),
+        // and the same confidence shrinkage applies. Without one (cold-start) it falls
+        // back to the fixed population center/scale (not a personal baseline, so unshrunk).
         if let sp = sleepPerf {
             let z: Double
             if let b = sleepPerfBaseline {
-                z = zScore(sp, mean: b.mean, spread: b.spread)   // higher efficiency = better
+                z = zScore(sp, mean: b.mean, spread: b.spread) * Baselines.confidence(nValid: b.nValid)
             } else {
                 z = (sp - sleepPerfCenter) / sleepPerfScale
             }

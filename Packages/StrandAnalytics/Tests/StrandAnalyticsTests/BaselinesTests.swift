@@ -103,4 +103,29 @@ final class BaselinesTests: XCTestCase {
         XCTAssertEqual(s.status, .calibrating)
         XCTAssertEqual(s.nValid, 0)
     }
+
+    // MARK: - Confidence shrinkage (FER-13)
+
+    func testConfidenceRampEndpoints() {
+        // Seed (and below) → floor; trust (and above) → 1.0.
+        XCTAssertEqual(Baselines.confidence(nValid: 0), Baselines.confidenceFloor, accuracy: 1e-12)
+        XCTAssertEqual(Baselines.confidence(nValid: Baselines.minNightsSeed),
+                       Baselines.confidenceFloor, accuracy: 1e-12)
+        XCTAssertEqual(Baselines.confidence(nValid: Baselines.minNightsTrust), 1.0, accuracy: 1e-12)
+        XCTAssertEqual(Baselines.confidence(nValid: 100), 1.0, accuracy: 1e-12)
+    }
+
+    func testConfidenceRampMidpointAndMonotonic() {
+        // Midpoint of [4, 14] = 9 → halfway between floor and 1.0.
+        let mid = Baselines.confidenceFloor + (1.0 - Baselines.confidenceFloor) * 0.5
+        XCTAssertEqual(Baselines.confidence(nValid: 9), mid, accuracy: 1e-12)
+        // Strictly increasing across the provisional window.
+        var prev = Baselines.confidence(nValid: Baselines.minNightsSeed)
+        for n in (Baselines.minNightsSeed + 1)...Baselines.minNightsTrust {
+            let c = Baselines.confidence(nValid: n)
+            XCTAssertGreaterThan(c, prev)
+            XCTAssertLessThanOrEqual(c, 1.0)
+            prev = c
+        }
+    }
 }
