@@ -145,22 +145,34 @@ struct InsightsView: View {
     // MARK: - Load
 
     private func load() async {
-        // Journal → behaviours map (only "yes" answers count as the behaviour occurring).
+        // Issue every independent read concurrently — was up to 7 serial awaits (the journal union,
+        // imported questions, the selected day's native answers, and one full-history series per
+        // outcome) that each round-tripped the main actor before the next. Full history is kept on
+        // purpose: Insights ranks behaviour→outcome relationships across all logged days, so this
+        // parallelizes the reads rather than windowing them (FER-27).
+        let selectedDayKey = Repository.localDayKey(
+            Calendar.current.date(byAdding: .day, value: -journalDayOffset, to: Date()) ?? Date())
+
+        async let entriesTask = repo.journalEntries()
+        async let importedTask = repo.importedJournalEntries()
+        async let nativeTask = repo.nativeJournalAnswers(day: selectedDayKey)
+        async let outcomeSeriesTask = loadOutcomeSeries()
+
         // journalEntries() is the imported ∪ native union (native wins per day+question).
-        let entries = await repo.journalEntries()
+        let entries = await entriesTask
+        let imported = await importedTask
+        let nativeAnswers = await nativeTask
+        let outcomeSeries = await outcomeSeriesTask
+
+        // Journal → behaviours map (only "yes" answers count as the behaviour occurring).
         var byBehaviour: [String: Set<String>] = [:]
         for e in entries where e.answeredYes {
             byBehaviour[e.question, default: []].insert(e.day)
         }
 
         // The logging card's inputs: the export's exact question strings (so logged days join
-        // imported history) and the selected day's native chip state — a targeted read, since the
-        // merged list carries no deviceId to filter on.
-        let imported = await repo.importedJournalEntries()
+        // imported history). A targeted read, since the merged list carries no deviceId to filter on.
         let importedQs = NSOrderedSet(array: imported.map(\.question)).array as? [String] ?? []
-        let selectedDayKey = Repository.localDayKey(
-            Calendar.current.date(byAdding: .day, value: -journalDayOffset, to: Date()) ?? Date())
-        let nativeAnswers = await repo.nativeJournalAnswers(day: selectedDayKey)
 
         // Daily metrics for the strap-only outcome fallback (merged, imported-wins). The view is
         // MainActor-isolated, so reading the published cache here is on the right actor.
@@ -173,7 +185,7 @@ struct InsightsView: View {
         var byKey: [String: [String: Double]] = [:]
         var seriesMap: [String: [(day: String, value: Double)]] = [:]
         for key in outcomeKeys {
-            let s = await repo.series(key: key, source: "my-whoop")
+            let s = outcomeSeries[key] ?? []
             var dict: [String: Double] = [:]
             for row in s { dict[row.day] = row.value }
             for d in mergedDays where dict[d.day] == nil {
@@ -193,6 +205,19 @@ struct InsightsView: View {
             // Seed the memoized derived state from the freshly loaded inputs.
             self.recomputeRanked()
             self.recomputeRelationships()
+        }
+    }
+
+    /// Fetch every outcome metric's full Whoop series concurrently, keyed by metric key, so the four
+    /// reads overlap instead of running back-to-back on the main actor (FER-27).
+    private func loadOutcomeSeries() async -> [String: [(day: String, value: Double)]] {
+        await withTaskGroup(of: (String, [(day: String, value: Double)]).self) { group in
+            for key in outcomeKeys {
+                group.addTask { (key, await repo.series(key: key, source: "my-whoop")) }
+            }
+            var out: [String: [(day: String, value: Double)]] = [:]
+            for await (k, s) in group { out[k] = s }
+            return out
         }
     }
 

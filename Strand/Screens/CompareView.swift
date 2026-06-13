@@ -241,11 +241,21 @@ struct CompareView: View {
     }
 
     /// Load (and cache) the full history for any selected metric not yet fetched.
+    ///
+    /// Fetches the (up to 4) uncached selections concurrently instead of serially. Full history is
+    /// kept on purpose: `slice`/`effectiveRange` auto-widen a sparse series past the selected range
+    /// to ALL, so the cache must hold every row — the window is applied in-view, not in SQL (FER-27).
     private func loadSelected() async {
-        for metric in selected where fullSeries[metric.id] == nil {
-            let s = await repo.series(key: metric.key, source: metric.source)
-            fullSeries[metric.id] = s
+        let missing = selected.filter { fullSeries[$0.id] == nil }
+        let fetched = await withTaskGroup(of: (String, [(day: String, value: Double)]).self) { group in
+            for metric in missing {
+                group.addTask { (metric.id, await repo.series(key: metric.key, source: metric.source)) }
+            }
+            var out: [(id: String, series: [(day: String, value: Double)])] = []
+            for await (id, s) in group { out.append((id, s)) }
+            return out
         }
+        for (id, s) in fetched { fullSeries[id] = s }
         loadedOnce = true
     }
 

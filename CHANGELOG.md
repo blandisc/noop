@@ -34,6 +34,12 @@ change — the goal is that a strap sync can't quietly corrupt or lose data. Sti
   close-together heart-rate ticks already reset correctly, but its reset now runs via `defer` so it
   can't be skipped by a future code change — keeping the lock-screen Live HR from getting wedged off
   after a failed start.
+- **Explore, Insights and Compare open faster on big histories.** Explore used to read every metric's
+  full history (thousands of days × ~30 metrics) on entry just to decide which rows get the faint
+  "no data" dot — now it asks the database which metrics have any data at all in one quick lookup per
+  source. Insights and Compare load their metrics in parallel instead of one after another. The
+  numbers shown are unchanged (relationships and overlays still use your full history); the screens
+  just stop doing redundant work, so they appear sooner for users with years of data.
 
 ## 1.82 — iOS: more accurate recovery & readiness
 

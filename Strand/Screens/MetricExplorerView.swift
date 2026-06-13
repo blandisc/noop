@@ -149,13 +149,18 @@ struct MetricExplorerView: View {
     }
 
     /// One lightweight pass to learn which metrics have no series, so rows can flag
-    /// them with the faint trailing dot. Failures default to "has data" (no dot).
+    /// them with the faint trailing dot.
+    ///
+    /// Was: a full-history `series()` fetch per metric (~32 sequential 4000-day scans on entry) only
+    /// to test `.isEmpty`. Now asks the store for the set of keys that actually have points, one
+    /// index-only `DISTINCT key` query per source — same "has any data ever" semantics, ~32 scans
+    /// collapse to one query per source (FER-27).
     private func probeEmptiness() async {
         guard emptyByID.isEmpty else { return }
+        let keysBySource = await repo.availableKeySets(sources: MetricCatalog.all.map(\.source))
         var map: [String: Bool] = [:]
         for metric in MetricCatalog.all {
-            let s = await repo.series(key: metric.key, source: metric.source)
-            map[metric.id] = s.isEmpty
+            map[metric.id] = !(keysBySource[metric.source]?.contains(metric.key) ?? false)
         }
         emptyByID = map
     }
@@ -347,13 +352,34 @@ struct MetricDetailView: View {
     }
 
     private func load() async {
-        series = await repo.series(key: metric.key, source: metric.source)
-        var loadedOthers: [(metric: MetricDescriptor, series: [(day: String, value: Double)])] = []
-        for other in MetricCatalog.all where other.id != metric.id {
-            let s = await repo.series(key: other.key, source: other.source)
-            if !s.isEmpty { loadedOthers.append((other, s)) }
+        // Issue the focal series and every candidate "other" concurrently instead of ~31 serial
+        // round-trips that each suspended back to the main actor before the next. Full history is
+        // kept on purpose: the in-view range auto-widens to ALL for sparse metrics and Pearson needs
+        // the full day overlap — so this windows on COUNT (skip metrics with no data at all), not on
+        // time (FER-27).
+        async let focal = repo.series(key: metric.key, source: metric.source)
+
+        // Skip metrics that have no data before fetching their series (one DISTINCT query per source).
+        let keysBySource = await repo.availableKeySets(sources: MetricCatalog.all.map(\.source))
+        let candidates = MetricCatalog.all.filter { other in
+            other.id != metric.id && (keysBySource[other.source]?.contains(other.key) ?? false)
         }
-        others = loadedOthers
+
+        let loadedOthers: [(metric: MetricDescriptor, series: [(day: String, value: Double)])] =
+            await withTaskGroup(of: (MetricDescriptor, [(day: String, value: Double)]).self) { group in
+                for other in candidates {
+                    group.addTask { (other, await repo.series(key: other.key, source: other.source)) }
+                }
+                var out: [(metric: MetricDescriptor, series: [(day: String, value: Double)])] = []
+                for await (m, s) in group where !s.isEmpty { out.append((m, s)) }
+                return out
+            }
+
+        series = await focal
+        // TaskGroup completion order is nondeterministic — restore catalog order so the correlation
+        // list is stable across loads (recomputeCorrelations re-sorts by |r| for display).
+        let catalogIndex = Dictionary(uniqueKeysWithValues: MetricCatalog.all.enumerated().map { ($1.id, $0) })
+        others = loadedOthers.sorted { (catalogIndex[$0.metric.id] ?? 0) < (catalogIndex[$1.metric.id] ?? 0) }
         loaded = true
         // First correlation build, now that `series`/`others` exist.
         recomputeCorrelations()
