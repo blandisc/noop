@@ -61,7 +61,14 @@ struct DataSourcesView: View {
                 }
                 .buttonStyle(.borderedProminent).tint(StrandPalette.accent)
                 .disabled(model.hasActiveImport)
-                if importingAppleHealth { ProgressView().controlSize(.small) }
+                if importingAppleHealth {
+                    ProgressView().controlSize(.small)
+                    if let n = model.appleHealthImportProgress {
+                        Text("\(n) records").font(StrandFont.footnote)
+                            .foregroundStyle(StrandPalette.textTertiary)
+                            .monospacedDigit()
+                    }
+                }
             }
             if let s = model.appleHealthImportSummary {
                 Text(s).font(StrandFont.subhead)

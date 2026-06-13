@@ -23,8 +23,12 @@ public struct ImportCoordinator {
     // MARK: - Explicit-kind entry points
 
     /// Parse an Apple Health export (`export.zip`, `export.xml`, or a folder).
-    public func importAppleHealth(from url: URL) throws -> AppleHealthImportResult {
-        try appleHealth.import(from: url)
+    /// `progress` fires periodically with the element count (off the main thread).
+    public func importAppleHealth(
+        from url: URL,
+        progress: AppleHealthImporter.ProgressHandler? = nil
+    ) throws -> AppleHealthImportResult {
+        try appleHealth.import(from: url, progress: progress)
     }
 
     /// Parse a Whoop CSV export (`.zip` or folder).
@@ -56,11 +60,12 @@ public struct ImportCoordinator {
 
     /// Inspect the input and route to the correct importer.
     ///
-    /// Detection heuristics:
+    /// Detection heuristics, in order:
     /// - A path/entry named `export.xml` → Apple Health.
     /// - A folder/zip containing `physiological_cycles.csv` (or any of the Whoop
     ///   CSVs) → Whoop export.
-    /// - A folder/zip containing `export.xml` → Apple Health.
+    /// - A folder/zip containing any other non-CDA `.xml` → Apple Health (the
+    ///   export's filename is localized by device language: `exportación.xml`, …).
     public func detectAndImport(from url: URL) throws -> DetectedImport {
         switch try detectKind(of: url) {
         case .appleHealth:
@@ -87,6 +92,10 @@ public struct ImportCoordinator {
             "physiological_cycles.csv", "sleeps.csv", "workouts.csv", "journal_entries.csv",
         ]
         if !names.isDisjoint(with: whoopNames) { return .whoopExport }
+        // Apple localizes the export's filename by device language
+        // ("exportación.xml", "Export.xml", …) — accept any non-CDA .xml as a
+        // fallback, after the exact-name and Whoop checks above.
+        if names.contains(where: AppleHealthImporter.isHealthExportXMLName) { return .appleHealth }
 
         throw ImportError.notAZipOrFolder(url.path)
     }

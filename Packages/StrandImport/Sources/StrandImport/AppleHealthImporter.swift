@@ -44,9 +44,28 @@ public struct AppleHealthImporter {
 
     // MARK: - Public entry points
 
+    /// Whether a filename plausibly names the Apple Health export XML.
+    ///
+    /// Apple localizes the filename by device language — `export.xml` (English),
+    /// `exportación.xml` (Spanish), `Export.xml` (German), `exportation.xml`
+    /// (French), … — so matching the English literal breaks every non-English
+    /// export. Accept any `.xml`, excluding the clinical-records twin, whose
+    /// `_cda` suffix is constant across languages (`export_cda.xml`,
+    /// `exportación_cda.xml`, …).
+    static func isHealthExportXMLName(_ name: String) -> Bool {
+        let n = name.lowercased()
+        return n.hasSuffix(".xml") && !n.hasSuffix("_cda.xml")
+    }
+
+    /// Periodic progress callback: total `<Record>`/`<Workout>` elements seen so
+    /// far. Fired off the main thread (the importer runs on a background executor)
+    /// roughly every 50k elements, so the UI can show live progress instead of a
+    /// frozen-looking spinner on a multi-minute import.
+    public typealias ProgressHandler = @Sendable (_ elementsParsed: Int) -> Void
+
     /// Import from `export.zip` or a path to `export.xml` (or a folder
     /// containing it).
-    public func `import`(from url: URL) throws -> AppleHealthImportResult {
+    public func `import`(from url: URL, progress: ProgressHandler? = nil) throws -> AppleHealthImportResult {
         let fm = FileManager.default
         var isDir: ObjCBool = false
         guard fm.fileExists(atPath: url.path, isDirectory: &isDir) else {
@@ -57,40 +76,40 @@ public struct AppleHealthImporter {
             guard let xmlURL = findExportXML(inFolder: url) else {
                 throw ImportError.missingEntry("export.xml")
             }
-            return try importXML(at: xmlURL)
+            return try importXML(at: xmlURL, progress: progress)
         }
 
         let ext = url.pathExtension.lowercased()
         if ext == "xml" {
-            return try importXML(at: url)
+            return try importXML(at: url, progress: progress)
         }
         if ext == "zip" {
-            return try importZip(at: url)
+            return try importZip(at: url, progress: progress)
         }
         // Unknown extension: try zip first, then raw XML.
-        if let z = try? importZip(at: url) { return z }
-        return try importXML(at: url)
+        if let z = try? importZip(at: url, progress: progress) { return z }
+        return try importXML(at: url, progress: progress)
     }
 
     /// Stream-parse a raw `export.xml` file.
-    public func importXML(at xmlURL: URL) throws -> AppleHealthImportResult {
+    public func importXML(at xmlURL: URL, progress: ProgressHandler? = nil) throws -> AppleHealthImportResult {
         // Stream from disk via an InputStream rather than XMLParser(contentsOf:), which would load
         // the entire (multi-hundred-MB) file into memory before parsing.
         guard let stream = InputStream(url: xmlURL) else {
             throw ImportError.fileNotFound(xmlURL.path)
         }
-        return try runParser(XMLParser(stream: stream))
+        return try runParser(XMLParser(stream: stream), progress: progress)
     }
 
     /// Parse a `Data` blob of XML (used for the zip-streaming path and tests).
-    public func importXML(data: Data) throws -> AppleHealthImportResult {
+    public func importXML(data: Data, progress: ProgressHandler? = nil) throws -> AppleHealthImportResult {
         let parser = XMLParser(data: data)
-        return try runParser(parser)
+        return try runParser(parser, progress: progress)
     }
 
     // MARK: - Zip handling
 
-    private func importZip(at zipURL: URL) throws -> AppleHealthImportResult {
+    private func importZip(at zipURL: URL, progress: ProgressHandler? = nil) throws -> AppleHealthImportResult {
         let archive: Archive
         do {
             archive = try Archive(url: zipURL, accessMode: .read)
@@ -98,22 +117,44 @@ public struct AppleHealthImporter {
             throw ImportError.notAZipOrFolder(zipURL.path)
         }
 
-        // Locate the export.xml entry by filename anywhere in the archive
-        // (Apple nests it under apple_health_export/).
+        // Locate the export XML entry by filename anywhere in the archive
+        // (Apple nests it under apple_health_export/). The name is localized
+        // by device language, so prefer an exact "export.xml" and otherwise
+        // take the largest non-CDA .xml (the main export dwarfs anything else).
         var target: Entry?
+        var fallback: (entry: Entry, size: UInt64)?
         for entry in archive where entry.type == .file {
-            if (entry.path as NSString).lastPathComponent.lowercased() == "export.xml" {
+            let name = (entry.path as NSString).lastPathComponent
+            if name.lowercased() == "export.xml" {
                 target = entry
                 break
             }
+            if Self.isHealthExportXMLName(name) {
+                let size = entry.uncompressedSize
+                if fallback == nil || size > fallback!.size { fallback = (entry, size) }
+            }
         }
-        guard let entry = target else { throw ImportError.missingEntry("export.xml") }
+        guard let entry = target ?? fallback?.entry else { throw ImportError.missingEntry("export.xml") }
+
+        // Guard the device's temp volume before decompressing: iOS sandboxes the
+        // temporary directory and a multi-hundred-MB export can exceed free space,
+        // which would otherwise fail mid-write with a truncated/partial XML (silent
+        // data loss). Require headroom for the decompressed size (a 4× ratio is
+        // typical for this XML) plus a margin; fail early with a clear error.
+        let tmpDir = FileManager.default.temporaryDirectory
+        if let free = try? tmpDir.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
+            .volumeAvailableCapacityForImportantUsage {
+            let estimated = Int64(entry.uncompressedSize) + (64 << 20)   // +64 MB margin
+            if free < estimated {
+                throw ImportError.xmlParseFailed(
+                    "Not enough free space to import this export (needs ~\(estimated >> 20) MB). Free up space and try again.")
+            }
+        }
 
         // Decompress export.xml to a temp file (chunks go straight to disk, so RAM stays bounded),
         // then stream-parse it from disk. This replaces a pipe-fed background parser that could
         // deadlock or crash with a broken-pipe exception on a malformed/malicious export.
-        let tmp = FileManager.default.temporaryDirectory
-            .appendingPathComponent("noop-health-\(UUID().uuidString).xml")
+        let tmp = tmpDir.appendingPathComponent("noop-health-\(UUID().uuidString).xml")
         FileManager.default.createFile(atPath: tmp.path, contents: nil)
         guard let handle = try? FileHandle(forWritingTo: tmp) else {
             throw ImportError.xmlParseFailed("could not open a temp file for import")
@@ -134,13 +175,13 @@ public struct AppleHealthImporter {
         }
         try? handle.close()
 
-        return try importXML(at: tmp)
+        return try importXML(at: tmp, progress: progress)
     }
 
     // MARK: - Core parse
 
-    private func runParser(_ parser: XMLParser) throws -> AppleHealthImportResult {
-        let delegate = HealthXMLDelegate()
+    private func runParser(_ parser: XMLParser, progress: ProgressHandler? = nil) throws -> AppleHealthImportResult {
+        let delegate = HealthXMLDelegate(progress: progress)
         parser.delegate = delegate
         parser.shouldProcessNamespaces = false
         let ok = parser.parse()
@@ -160,13 +201,19 @@ public struct AppleHealthImporter {
         if fm.fileExists(atPath: direct.path) { return direct }
         let nested = folder.appendingPathComponent("apple_health_export/export.xml")
         if fm.fileExists(atPath: nested.path) { return nested }
-        // Otherwise search.
-        if let e = fm.enumerator(at: folder, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]) {
-            for case let u as URL in e where u.lastPathComponent.lowercased() == "export.xml" {
-                return u
+        // Otherwise search, accepting localized names ("exportación.xml", …):
+        // an exact "export.xml" wins, else the largest non-CDA candidate.
+        var best: (url: URL, size: Int)?
+        if let e = fm.enumerator(at: folder, includingPropertiesForKeys: [.fileSizeKey], options: [.skipsHiddenFiles]) {
+            for case let u as URL in e {
+                let name = u.lastPathComponent
+                if name.lowercased() == "export.xml" { return u }
+                guard Self.isHealthExportXMLName(name) else { continue }
+                let size = (try? u.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+                if best == nil || size > best!.size { best = (u, size) }
             }
         }
-        return nil
+        return best?.url
     }
 }
 
@@ -174,23 +221,36 @@ public struct AppleHealthImporter {
 
 final class HealthXMLDelegate: NSObject, XMLParserDelegate {
 
-    // Outputs
-    private(set) var samples: [HealthSample] = []
-    private(set) var workouts: [HealthWorkout] = []
-    private(set) var sleepIntervals: [SleepStageInterval] = []
+    // Streaming sink: records fold into per-day aggregates as they parse, so we
+    // never retain the tens of millions of raw samples a multi-year export holds.
+    private let aggregator = AppleHealthDayAggregator()
+    private(set) var workouts: [HealthWorkout] = []   // bounded (hundreds)
     private(set) var countsByType: [String: Int] = [:]
     private(set) var parseError: Error?
+
+    // Running summary state (replaces deriving it from a retained samples array).
+    private var recordCount = 0
+    private var earliestStart: Date?
+    private var latestStart: Date?
 
     // Element nesting stack (just the element names).
     private var stack: [String] = []
     // Depth of the current Correlation, if inside one. Records nested inside a
-    // Correlation are skipped (they also appear top-level).
+    // Correlation are skipped (they also appear top-level) — this is what the
+    // old global dedupe set guarded, so dropping that set (an OOM source: one
+    // entry per record) is safe; the Correlation skip already covers it.
     private var correlationDepth = 0
 
-    // Dedupe set over HealthSample dedupeKeys.
-    private var seenSampleKeys: Set<String> = []
+    // Progress reporting: total Record/Workout elements seen, fired every `tick`.
+    private let progress: AppleHealthImporter.ProgressHandler?
+    private var elementsSeen = 0
+    private let progressTick = 50_000
 
     private let dateParser = HealthDateParser()
+
+    init(progress: AppleHealthImporter.ProgressHandler? = nil) {
+        self.progress = progress
+    }
 
     // MARK: XMLParserDelegate
 
@@ -217,9 +277,13 @@ final class HealthXMLDelegate: NSObject, XMLParserDelegate {
                 if parentIsCorrelation || correlationDepth > 0 {
                     return
                 }
+                elementsSeen += 1
+                if elementsSeen % progressTick == 0 { progress?(elementsSeen) }
                 handleRecord(attributeDict)
 
             case "Workout":
+                elementsSeen += 1
+                if elementsSeen % progressTick == 0 { progress?(elementsSeen) }
                 handleWorkout(attributeDict)
 
             default:
@@ -250,7 +314,7 @@ final class HealthXMLDelegate: NSObject, XMLParserDelegate {
             // Code 5 == NSXMLParserPrematureDocumentEndError can happen on empty
             // streams; treat truly empty as non-fatal only if we parsed nothing.
             if ns.code == XMLParser.ErrorCode.prematureDocumentEndError.rawValue,
-               samples.isEmpty, workouts.isEmpty, sleepIntervals.isEmpty {
+               recordCount == 0, workouts.isEmpty {
                 self.parseError = parseError
                 return
             }
@@ -277,30 +341,11 @@ final class HealthXMLDelegate: NSObject, XMLParserDelegate {
         let rawValue = attrs["value"]
 
         if type == "SleepAnalysis" {
-            // Sleep is a category record; its value is a stage enum string.
+            // Sleep is a category record; its value is a stage enum string. Fold
+            // straight into per-night stage totals.
             let stage = SleepStage.from(rawValue: rawValue ?? "")
-            let interval = SleepStageInterval(
-                stage: stage,
-                start: start,
-                end: end,
-                tzOffsetMin: endOffset,
-                sourceName: source
-            )
-            sleepIntervals.append(interval)
-            countsByType[type, default: 0] += 1
-
-            // Also record a generic sample so the row survives in the sink with
-            // its raw value string (dedupe-protected).
-            appendSample(
-                type: type,
-                value: nil,
-                valueString: rawValue,
-                unit: unit,
-                start: start,
-                end: end,
-                tzOffsetMin: endOffset,
-                sourceName: source
-            )
+            aggregator.addSleep(stage: stage, start: start, end: end, tzOffsetMin: endOffset)
+            note(type: type, start: start)
             return
         }
 
@@ -310,43 +355,19 @@ final class HealthXMLDelegate: NSObject, XMLParserDelegate {
             numeric = v * 100.0
         }
 
-        appendSample(
-            type: type,
-            value: numeric,
-            valueString: rawValue,
-            unit: unit,
-            start: start,
-            end: end,
-            tzOffsetMin: endOffset,
-            sourceName: source
-        )
-        countsByType[type, default: 0] += 1
+        // Fold this reading into its local day immediately; nothing is retained.
+        aggregator.addRecord(type: type, value: numeric, unit: unit,
+                             start: start, tzOffsetMin: endOffset, end: end)
+        note(type: type, start: start)
     }
 
-    private func appendSample(
-        type: String,
-        value: Double?,
-        valueString: String?,
-        unit: String?,
-        start: Date,
-        end: Date,
-        tzOffsetMin: Int,
-        sourceName: String?
-    ) {
-        let sample = HealthSample(
-            type: type,
-            value: value,
-            valueString: valueString,
-            unit: unit,
-            start: start,
-            end: end,
-            tzOffsetMin: tzOffsetMin,
-            sourceName: sourceName
-        )
-        // Dedupe on type+start+end+source+value.
-        if seenSampleKeys.insert(sample.dedupeKey).inserted {
-            samples.append(sample)
-        }
+    /// Tally a parsed record into the running summary (count, type histogram,
+    /// earliest/latest start) — replaces deriving these from a retained array.
+    private func note(type: String, start: Date) {
+        recordCount += 1
+        countsByType[type, default: 0] += 1
+        if earliestStart == nil || start < earliestStart! { earliestStart = start }
+        if latestStart == nil || start > latestStart! { latestStart = start }
     }
 
     // MARK: Workout handling
@@ -399,27 +420,23 @@ final class HealthXMLDelegate: NSObject, XMLParserDelegate {
         )
         workouts.append(workout)
         countsByType["Workout", default: 0] += 1
+        if earliestStart == nil || start < earliestStart! { earliestStart = start }
+        if latestStart == nil || start > latestStart! { latestStart = start }
     }
 
     // MARK: Result
 
     func makeResult() -> AppleHealthImportResult {
-        var dates: [Date] = []
-        dates.append(contentsOf: samples.map { $0.start })
-        dates.append(contentsOf: workouts.map { $0.start })
-        dates.append(contentsOf: sleepIntervals.map { $0.start })
-
         let summary = ImportSummary(
             sourceKind: .appleHealth,
-            recordCount: samples.count + workouts.count,
-            earliest: dates.min(),
-            latest: dates.max(),
+            recordCount: recordCount + workouts.count,
+            earliest: earliestStart,
+            latest: latestStart,
             countsByCategory: countsByType
         )
         return AppleHealthImportResult(
-            samples: samples,
+            daily: aggregator.merged(),
             workouts: workouts,
-            sleepIntervals: sleepIntervals,
             summary: summary
         )
     }

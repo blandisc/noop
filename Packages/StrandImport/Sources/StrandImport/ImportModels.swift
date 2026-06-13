@@ -325,21 +325,23 @@ public struct ImportSummary: Sendable, Equatable {
 }
 
 /// Normalized output of parsing an Apple Health export.
+///
+/// The export is aggregated to per-day rows **while parsing** (streaming), so
+/// the result holds only O(days) `daily` aggregates — never the tens of millions
+/// of raw `<Record>` samples a multi-year export contains (the old OOM path).
 public struct AppleHealthImportResult: Sendable, Equatable {
-    public var samples: [HealthSample]
+    /// Per-day aggregates, merged across quantity samples and sleep, sorted by day.
+    public var daily: [AppleDailyAggregate]
     public var workouts: [HealthWorkout]
-    public var sleepIntervals: [SleepStageInterval]
     public var summary: ImportSummary
 
     public init(
-        samples: [HealthSample],
+        daily: [AppleDailyAggregate],
         workouts: [HealthWorkout],
-        sleepIntervals: [SleepStageInterval],
         summary: ImportSummary
     ) {
-        self.samples = samples
+        self.daily = daily
         self.workouts = workouts
-        self.sleepIntervals = sleepIntervals
         self.summary = summary
     }
 }

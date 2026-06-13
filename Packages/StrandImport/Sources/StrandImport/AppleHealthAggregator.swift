@@ -92,9 +92,185 @@ public struct AppleDailyAggregate: Equatable, Sendable {
     }
 }
 
-// MARK: - Aggregator
+// MARK: - Streaming day aggregator
 
-/// Turns a parsed Apple Health export into per-day aggregates.
+/// Folds Apple Health records into per-day aggregates **incrementally** — one
+/// record at a time, retaining only O(days) running state — so a multi-year
+/// export (tens of millions of `<Record>` elements) never materializes a giant
+/// `[HealthSample]` array (the old OOM-on-iOS path). Every reduction the daily
+/// aggregate needs is running-computable: means are sum/count, `maxHr` is a
+/// running max, body metrics keep the latest-by-`end`, steps/energy are summed.
+///
+/// This is the single source of truth for the reduction rules: the pure
+/// `AppleHealthAggregator.daily(samples:)` / `sleepDaily(_:)` /
+/// `aggregate(samples:sleepIntervals:)` helpers (used by tests) all feed it, and
+/// so does the streaming SAX importer.
+public final class AppleHealthDayAggregator {
+
+    /// Running per-day accumulator — no per-sample arrays.
+    private struct DayAcc {
+        var restingSum = 0.0, restingCount = 0
+        var hrvSum = 0.0, hrvCount = 0
+        var spo2Sum = 0.0, spo2Count = 0
+        var respSum = 0.0, respCount = 0
+        var walkingSum = 0.0, walkingCount = 0
+        var hrSum = 0.0, hrCount = 0
+        var hrMax: Double?
+        var steps = 0.0, hasSteps = false
+        var active = 0.0, hasActive = false
+        var basal = 0.0, hasBasal = false
+        var vo2: Double?, vo2At: Date?
+        var weight: Double?, weightAt: Date?
+        var bodyFat: Double?, bodyFatAt: Date?
+        var lean: Double?, leanAt: Date?
+        var bmi: Double?, bmiAt: Date?
+    }
+
+    /// Running per-night sleep accumulator (minutes per stage).
+    private struct NightAcc {
+        var deep = 0.0, rem = 0.0, core = 0.0, unspecified = 0.0, awake = 0.0, inBed = 0.0
+    }
+
+    private var byDay: [String: DayAcc] = [:]
+    private var dayOrder: [String] = []
+    private var byNight: [String: NightAcc] = [:]
+
+    public init() {}
+
+    /// Fold one quantity record into its local day. `value` is the already
+    /// importer-normalized numeric (e.g. OxygenSaturation pre-scaled to percent);
+    /// `type` may be the stripped or full HK identifier.
+    public func addRecord(type rawType: String, value: Double?, unit: String?,
+                          start: Date, tzOffsetMin: Int, end: Date) {
+        guard let v = value else { return }
+        let type = AppleHealthAggregator.normalizedType(rawType)
+        let day = AppleHealthAggregator.localDay(start, tzOffsetMin: tzOffsetMin)
+        if byDay[day] == nil { byDay[day] = DayAcc(); dayOrder.append(day) }
+
+        switch type {
+        case AppleHealthAggregator.T.restingHR:  byDay[day]!.restingSum += v; byDay[day]!.restingCount += 1
+        case AppleHealthAggregator.T.hrvSDNN:    byDay[day]!.hrvSum += v; byDay[day]!.hrvCount += 1
+        case AppleHealthAggregator.T.spo2:
+            // Defend against raw fractional (0..1) values; importer already ×100.
+            let pct = (v > 0 && v <= 1.0) ? v * 100.0 : v
+            byDay[day]!.spo2Sum += pct; byDay[day]!.spo2Count += 1
+        case AppleHealthAggregator.T.respRate:   byDay[day]!.respSum += v; byDay[day]!.respCount += 1
+        case AppleHealthAggregator.T.walkingHR:  byDay[day]!.walkingSum += v; byDay[day]!.walkingCount += 1
+        case AppleHealthAggregator.T.heartRate:
+            byDay[day]!.hrSum += v; byDay[day]!.hrCount += 1
+            byDay[day]!.hrMax = max(byDay[day]!.hrMax ?? v, v)
+        case AppleHealthAggregator.T.stepCount:    byDay[day]!.steps += v; byDay[day]!.hasSteps = true
+        case AppleHealthAggregator.T.activeEnergy: byDay[day]!.active += v; byDay[day]!.hasActive = true
+        case AppleHealthAggregator.T.basalEnergy:  byDay[day]!.basal += v; byDay[day]!.hasBasal = true
+        case AppleHealthAggregator.T.vo2max:
+            if byDay[day]!.vo2 == nil || (byDay[day]!.vo2At ?? .distantPast) <= end {
+                byDay[day]!.vo2 = v; byDay[day]!.vo2At = end
+            }
+        case AppleHealthAggregator.T.bodyMass:
+            let kg = AppleHealthAggregator.unitLooksLikePounds(unit) ? v * 0.453592 : v
+            if byDay[day]!.weight == nil || (byDay[day]!.weightAt ?? .distantPast) <= end {
+                byDay[day]!.weight = kg; byDay[day]!.weightAt = end
+            }
+        case AppleHealthAggregator.T.bodyFat:
+            let pct = (v > 0 && v <= 1.0) ? v * 100.0 : v
+            if byDay[day]!.bodyFat == nil || (byDay[day]!.bodyFatAt ?? .distantPast) <= end {
+                byDay[day]!.bodyFat = pct; byDay[day]!.bodyFatAt = end
+            }
+        case AppleHealthAggregator.T.leanMass:
+            let kg = AppleHealthAggregator.unitLooksLikePounds(unit) ? v * 0.453592 : v
+            if byDay[day]!.lean == nil || (byDay[day]!.leanAt ?? .distantPast) <= end {
+                byDay[day]!.lean = kg; byDay[day]!.leanAt = end
+            }
+        case AppleHealthAggregator.T.bodyMassIndex:
+            if byDay[day]!.bmi == nil || (byDay[day]!.bmiAt ?? .distantPast) <= end {
+                byDay[day]!.bmi = v; byDay[day]!.bmiAt = end
+            }
+        default:
+            break
+        }
+    }
+
+    /// Fold one sleep-stage interval into its wake night (the local day of `end`).
+    public func addSleep(stage: SleepStage, start: Date, end: Date, tzOffsetMin: Int) {
+        let minutes = max(0, end.timeIntervalSince(start)) / 60.0
+        let day = AppleHealthAggregator.localDay(end, tzOffsetMin: tzOffsetMin)
+        var n = byNight[day] ?? NightAcc()
+        switch stage {
+        case .asleepDeep:        n.deep += minutes
+        case .asleepREM:         n.rem += minutes
+        case .asleepCore:        n.core += minutes
+        case .asleepUnspecified: n.unspecified += minutes
+        case .awake:             n.awake += minutes
+        case .inBed:             n.inBed += minutes
+        case .unknown:           break
+        }
+        byNight[day] = n
+    }
+
+    // MARK: Outputs
+
+    /// Per-night stage totals keyed by wake day. `asleep = core+deep+rem+unspecified`.
+    public func sleepByDay() -> [String: (asleep: Double, deep: Double, rem: Double, core: Double, awake: Double, inBed: Double)] {
+        var out: [String: (asleep: Double, deep: Double, rem: Double, core: Double, awake: Double, inBed: Double)] = [:]
+        for (day, n) in byNight {
+            let asleep = n.core + n.deep + n.rem + n.unspecified
+            out[day] = (asleep: asleep, deep: n.deep, rem: n.rem, core: n.core, awake: n.awake, inBed: n.inBed)
+        }
+        return out
+    }
+
+    /// Sample-only daily aggregates (sleep fields nil), first-seen day order then sorted.
+    public func sampleDaily() -> [AppleDailyAggregate] {
+        dayOrder.map { day in row(day: day, acc: byDay[day]!, sleep: nil) }
+            .sorted { $0.day < $1.day }
+    }
+
+    /// Full merge of sample-days ∪ sleep-days into one sorted list.
+    public func merged() -> [AppleDailyAggregate] {
+        var days = Set(byDay.keys)
+        days.formUnion(byNight.keys)
+        let sleep = sleepByDay()
+        return days.map { day in
+            row(day: day, acc: byDay[day], sleep: sleep[day])
+        }.sorted { $0.day < $1.day }
+    }
+
+    private func row(
+        day: String,
+        acc a: DayAcc?,
+        sleep s: (asleep: Double, deep: Double, rem: Double, core: Double, awake: Double, inBed: Double)?
+    ) -> AppleDailyAggregate {
+        func mean(_ sum: Double, _ count: Int) -> Double? { count > 0 ? sum / Double(count) : nil }
+        return AppleDailyAggregate(
+            day: day,
+            restingHr: a.flatMap { mean($0.restingSum, $0.restingCount) },
+            hrvSDNN: a.flatMap { mean($0.hrvSum, $0.hrvCount) },
+            spo2Pct: a.flatMap { mean($0.spo2Sum, $0.spo2Count) },
+            respRate: a.flatMap { mean($0.respSum, $0.respCount) },
+            avgHr: a.flatMap { mean($0.hrSum, $0.hrCount) },
+            maxHr: a?.hrMax,
+            walkingHr: a.flatMap { mean($0.walkingSum, $0.walkingCount) },
+            steps: (a?.hasSteps ?? false) ? a!.steps : nil,
+            activeKcal: (a?.hasActive ?? false) ? a!.active : nil,
+            basalKcal: (a?.hasBasal ?? false) ? a!.basal : nil,
+            vo2max: a?.vo2,
+            weightKg: a?.weight,
+            bodyFatPct: a?.bodyFat,
+            leanMassKg: a?.lean,
+            bmi: a?.bmi,
+            asleepMin: s?.asleep,
+            deepMin: s?.deep,
+            remMin: s?.rem,
+            coreMin: s?.core,
+            awakeMin: s?.awake,
+            inBedMin: s?.inBed
+        )
+    }
+}
+
+// MARK: - Aggregator (pure helpers over the streaming engine)
+
+/// Turns parsed Apple Health records into per-day aggregates.
 public enum AppleHealthAggregator {
 
     // MARK: Type identifiers
@@ -104,25 +280,27 @@ public enum AppleHealthAggregator {
     // `AppleHealthImporter.stripPrefix`). We still accept the full identifier
     // form so callers feeding raw HK strings get the same mapping.
 
-    private static let restingHR = "RestingHeartRate"
-    private static let hrvSDNN = "HeartRateVariabilitySDNN"
-    private static let spo2 = "OxygenSaturation"
-    private static let respRate = "RespiratoryRate"
-    private static let walkingHR = "WalkingHeartRateAverage"
-    private static let heartRate = "HeartRate"
-    private static let stepCount = "StepCount"
-    private static let activeEnergy = "ActiveEnergyBurned"
-    private static let basalEnergy = "BasalEnergyBurned"
-    private static let vo2max = "VO2Max"
-    private static let bodyMass = "BodyMass"
-    private static let bodyFat = "BodyFatPercentage"
-    private static let leanMass = "LeanBodyMass"
-    private static let bodyMassIndex = "BodyMassIndex"
+    enum T {
+        static let restingHR = "RestingHeartRate"
+        static let hrvSDNN = "HeartRateVariabilitySDNN"
+        static let spo2 = "OxygenSaturation"
+        static let respRate = "RespiratoryRate"
+        static let walkingHR = "WalkingHeartRateAverage"
+        static let heartRate = "HeartRate"
+        static let stepCount = "StepCount"
+        static let activeEnergy = "ActiveEnergyBurned"
+        static let basalEnergy = "BasalEnergyBurned"
+        static let vo2max = "VO2Max"
+        static let bodyMass = "BodyMass"
+        static let bodyFat = "BodyFatPercentage"
+        static let leanMass = "LeanBodyMass"
+        static let bodyMassIndex = "BodyMassIndex"
+    }
 
     /// Normalize a sample's `type` to the stripped HK identifier so matching
     /// works whether the caller passed `HeartRate` or
     /// `HKQuantityTypeIdentifierHeartRate`.
-    private static func normalizedType(_ raw: String) -> String {
+    static func normalizedType(_ raw: String) -> String {
         let prefixes = [
             "HKQuantityTypeIdentifier",
             "HKCategoryTypeIdentifier",
@@ -137,7 +315,7 @@ public enum AppleHealthAggregator {
     /// Whether a HealthKit mass unit string denotes pounds (`lb`, `lbs`).
     /// HealthKit normally exports BodyMass/LeanBodyMass in kg, but guard against
     /// pound-denominated exports.
-    private static func unitLooksLikePounds(_ unit: String?) -> Bool {
+    static func unitLooksLikePounds(_ unit: String?) -> Bool {
         guard let u = unit?.lowercased() else { return false }
         return u == "lb" || u == "lbs" || u.contains("pound")
     }
@@ -155,239 +333,46 @@ public enum AppleHealthAggregator {
         return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
     }
 
-    // MARK: - Sample daily aggregation
+    // MARK: - Pure helpers (feed the streaming aggregator; used by tests)
 
     /// Group `HealthSamples` by local day and apply the per-type reduction rules.
+    /// Sample-only (no sleep) — sleep fields are nil.
     public static func daily(samples: [HealthSample]) -> [AppleDailyAggregate] {
-        // Per-day accumulators.
-        struct Acc {
-            var resting: [Double] = []
-            var hrv: [Double] = []
-            var spo2: [Double] = []
-            var resp: [Double] = []
-            var walking: [Double] = []
-            var hr: [Double] = []
-            var steps = 0.0
-            var hasSteps = false
-            var active = 0.0
-            var hasActive = false
-            var basal = 0.0
-            var hasBasal = false
-            // VO2Max: keep the latest by sample end time.
-            var vo2: Double?
-            var vo2At: Date?
-            // Body composition: keep the latest by sample end time.
-            var weight: Double?
-            var weightAt: Date?
-            var bodyFat: Double?
-            var bodyFatAt: Date?
-            var lean: Double?
-            var leanAt: Date?
-            var bmi: Double?
-            var bmiAt: Date?
-        }
-
-        var byDay: [String: Acc] = [:]
-        // Preserve first-seen day order for deterministic output before sort.
-        var order: [String] = []
-
+        let agg = AppleHealthDayAggregator()
         for s in samples {
-            let type = normalizedType(s.type)
-            let day = localDay(s.start, tzOffsetMin: s.tzOffsetMin)
-            if byDay[day] == nil {
-                byDay[day] = Acc()
-                order.append(day)
-            }
-
-            switch type {
-            case restingHR:
-                if let v = s.value { byDay[day]!.resting.append(v) }
-            case hrvSDNN:
-                if let v = s.value { byDay[day]!.hrv.append(v) }
-            case spo2:
-                if let v = s.value {
-                    // Detect fraction (0..1) → percent. The importer already
-                    // scales OxygenSaturation by 100, but defend against raw
-                    // fractional values here too.
-                    let pct = (v > 0 && v <= 1.0) ? v * 100.0 : v
-                    byDay[day]!.spo2.append(pct)
-                }
-            case respRate:
-                if let v = s.value { byDay[day]!.resp.append(v) }
-            case walkingHR:
-                if let v = s.value { byDay[day]!.walking.append(v) }
-            case heartRate:
-                if let v = s.value { byDay[day]!.hr.append(v) }
-            case stepCount:
-                if let v = s.value { byDay[day]!.steps += v; byDay[day]!.hasSteps = true }
-            case activeEnergy:
-                if let v = s.value { byDay[day]!.active += v; byDay[day]!.hasActive = true }
-            case basalEnergy:
-                if let v = s.value { byDay[day]!.basal += v; byDay[day]!.hasBasal = true }
-            case vo2max:
-                if let v = s.value {
-                    let acc = byDay[day]!
-                    if acc.vo2 == nil || (acc.vo2At ?? .distantPast) <= s.end {
-                        byDay[day]!.vo2 = v
-                        byDay[day]!.vo2At = s.end
-                    }
-                }
-            case bodyMass:
-                if let v = s.value {
-                    // HealthKit stores BodyMass in kg by default. If the unit
-                    // looks like pounds, convert to kg; otherwise assume kg.
-                    let kg = Self.unitLooksLikePounds(s.unit) ? v * 0.453592 : v
-                    let acc = byDay[day]!
-                    if acc.weight == nil || (acc.weightAt ?? .distantPast) <= s.end {
-                        byDay[day]!.weight = kg
-                        byDay[day]!.weightAt = s.end
-                    }
-                }
-            case bodyFat:
-                if let v = s.value {
-                    // HealthKit stores a 0..1 fraction → percent. Defend against
-                    // already-percent values the same way SpO2 does.
-                    let pct = (v > 0 && v <= 1.0) ? v * 100.0 : v
-                    let acc = byDay[day]!
-                    if acc.bodyFat == nil || (acc.bodyFatAt ?? .distantPast) <= s.end {
-                        byDay[day]!.bodyFat = pct
-                        byDay[day]!.bodyFatAt = s.end
-                    }
-                }
-            case leanMass:
-                if let v = s.value {
-                    let kg = Self.unitLooksLikePounds(s.unit) ? v * 0.453592 : v
-                    let acc = byDay[day]!
-                    if acc.lean == nil || (acc.leanAt ?? .distantPast) <= s.end {
-                        byDay[day]!.lean = kg
-                        byDay[day]!.leanAt = s.end
-                    }
-                }
-            case bodyMassIndex:
-                if let v = s.value {
-                    let acc = byDay[day]!
-                    if acc.bmi == nil || (acc.bmiAt ?? .distantPast) <= s.end {
-                        byDay[day]!.bmi = v
-                        byDay[day]!.bmiAt = s.end
-                    }
-                }
-            default:
-                break
-            }
+            agg.addRecord(type: s.type, value: s.value, unit: s.unit,
+                          start: s.start, tzOffsetMin: s.tzOffsetMin, end: s.end)
         }
-
-        func mean(_ xs: [Double]) -> Double? {
-            xs.isEmpty ? nil : xs.reduce(0, +) / Double(xs.count)
-        }
-        func mx(_ xs: [Double]) -> Double? { xs.max() }
-
-        let result: [AppleDailyAggregate] = order.map { day in
-            let a = byDay[day]!
-            return AppleDailyAggregate(
-                day: day,
-                restingHr: mean(a.resting),
-                hrvSDNN: mean(a.hrv),
-                spo2Pct: mean(a.spo2),
-                respRate: mean(a.resp),
-                avgHr: mean(a.hr),
-                maxHr: mx(a.hr),
-                walkingHr: mean(a.walking),
-                steps: a.hasSteps ? a.steps : nil,
-                activeKcal: a.hasActive ? a.active : nil,
-                basalKcal: a.hasBasal ? a.basal : nil,
-                vo2max: a.vo2,
-                weightKg: a.weight,
-                bodyFatPct: a.bodyFat,
-                leanMassKg: a.lean,
-                bmi: a.bmi
-            )
-        }
-        return result.sorted { $0.day < $1.day }
+        return agg.sampleDaily()
     }
 
-    // MARK: - Sleep daily aggregation
-
     /// Collapse sleep-stage intervals into per-night totals keyed by the **wake
-    /// day** — the local civil day of each interval's `end`. Minutes are summed
-    /// per stage; `asleep = core + deep + rem` (+ any legacy "asleep
-    /// unspecified" intervals, which Apple emitted before staged sleep).
+    /// day** — the local civil day of each interval's `end`.
     public static func sleepDaily(
         _ intervals: [SleepStageInterval]
     ) -> [String: (asleep: Double, deep: Double, rem: Double, core: Double, awake: Double, inBed: Double)] {
-        struct Night {
-            var deep = 0.0, rem = 0.0, core = 0.0, unspecified = 0.0, awake = 0.0, inBed = 0.0
-        }
-        var byDay: [String: Night] = [:]
-
+        let agg = AppleHealthDayAggregator()
         for iv in intervals {
-            let minutes = max(0, iv.end.timeIntervalSince(iv.start)) / 60.0
-            // Wake day = local day of the interval end.
-            let day = localDay(iv.end, tzOffsetMin: iv.tzOffsetMin)
-            var n = byDay[day] ?? Night()
-            switch iv.stage {
-            case .asleepDeep:        n.deep += minutes
-            case .asleepREM:         n.rem += minutes
-            case .asleepCore:        n.core += minutes
-            case .asleepUnspecified: n.unspecified += minutes
-            case .awake:             n.awake += minutes
-            case .inBed:             n.inBed += minutes
-            case .unknown:           break
-            }
-            byDay[day] = n
+            agg.addSleep(stage: iv.stage, start: iv.start, end: iv.end, tzOffsetMin: iv.tzOffsetMin)
         }
-
-        var out: [String: (asleep: Double, deep: Double, rem: Double, core: Double, awake: Double, inBed: Double)] = [:]
-        for (day, n) in byDay {
-            let asleep = n.core + n.deep + n.rem + n.unspecified
-            out[day] = (asleep: asleep, deep: n.deep, rem: n.rem, core: n.core, awake: n.awake, inBed: n.inBed)
-        }
-        return out
+        return agg.sleepByDay()
     }
-
-    // MARK: - Full merge
 
     /// Full merge of sample-daily + sleep-daily into `[AppleDailyAggregate]`,
     /// one row per day present in either source, sorted ascending by day.
-    public static func aggregate(_ result: AppleHealthImportResult) -> [AppleDailyAggregate] {
-        let sampleDaily = daily(samples: result.samples)
-        let sleep = sleepDaily(result.sleepIntervals)
-
-        var byDay: [String: AppleDailyAggregate] = [:]
-        for d in sampleDaily { byDay[d.day] = d }
-
-        // Union of days from both sources.
-        var days = Set(byDay.keys)
-        days.formUnion(sleep.keys)
-
-        let merged: [AppleDailyAggregate] = days.map { day in
-            let base = byDay[day]
-            let s = sleep[day]
-            return AppleDailyAggregate(
-                day: day,
-                restingHr: base?.restingHr,
-                hrvSDNN: base?.hrvSDNN,
-                spo2Pct: base?.spo2Pct,
-                respRate: base?.respRate,
-                avgHr: base?.avgHr,
-                maxHr: base?.maxHr,
-                walkingHr: base?.walkingHr,
-                steps: base?.steps,
-                activeKcal: base?.activeKcal,
-                basalKcal: base?.basalKcal,
-                vo2max: base?.vo2max,
-                weightKg: base?.weightKg,
-                bodyFatPct: base?.bodyFatPct,
-                leanMassKg: base?.leanMassKg,
-                bmi: base?.bmi,
-                asleepMin: s?.asleep,
-                deepMin: s?.deep,
-                remMin: s?.rem,
-                coreMin: s?.core,
-                awakeMin: s?.awake,
-                inBedMin: s?.inBed
-            )
+    public static func aggregate(
+        samples: [HealthSample],
+        sleepIntervals: [SleepStageInterval]
+    ) -> [AppleDailyAggregate] {
+        let agg = AppleHealthDayAggregator()
+        for s in samples {
+            agg.addRecord(type: s.type, value: s.value, unit: s.unit,
+                          start: s.start, tzOffsetMin: s.tzOffsetMin, end: s.end)
         }
-        return merged.sorted { $0.day < $1.day }
+        for iv in sleepIntervals {
+            agg.addSleep(stage: iv.stage, start: iv.start, end: iv.end, tzOffsetMin: iv.tzOffsetMin)
+        }
+        return agg.merged()
     }
 
     // MARK: - Metric point flattening

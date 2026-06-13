@@ -285,14 +285,7 @@ final class AppleHealthAggregatorTests: XCTestCase {
         let sEnd = Fixtures.utc(2024, 3, 20, 3, 0, 0) // 60 min deep
         let intervals = [sleep(.asleepDeep, from: sStart, to: sEnd)]
 
-        let summary = ImportSummary(
-            sourceKind: .appleHealth, recordCount: samples.count,
-            earliest: day, latest: day, countsByCategory: [:]
-        )
-        let result = AppleHealthImportResult(
-            samples: samples, workouts: [], sleepIntervals: intervals, summary: summary
-        )
-        let merged = AppleHealthAggregator.aggregate(result)
+        let merged = AppleHealthAggregator.aggregate(samples: samples, sleepIntervals: intervals)
         let a = try! XCTUnwrap(agg(merged, "2024-03-20"))
         XCTAssertEqual(a.restingHr!, 52, accuracy: 1e-9)
         XCTAssertEqual(a.steps!, 8000, accuracy: 1e-9)
@@ -305,14 +298,7 @@ final class AppleHealthAggregatorTests: XCTestCase {
         let sStart = Fixtures.utc(2024, 3, 21, 2, 0, 0)
         let sEnd = Fixtures.utc(2024, 3, 21, 3, 0, 0)
         let intervals = [sleep(.asleepREM, from: sStart, to: sEnd)]
-        let summary = ImportSummary(
-            sourceKind: .appleHealth, recordCount: 0,
-            earliest: sStart, latest: sEnd, countsByCategory: [:]
-        )
-        let result = AppleHealthImportResult(
-            samples: [], workouts: [], sleepIntervals: intervals, summary: summary
-        )
-        let merged = AppleHealthAggregator.aggregate(result)
+        let merged = AppleHealthAggregator.aggregate(samples: [], sleepIntervals: intervals)
         let a = try! XCTUnwrap(agg(merged, "2024-03-21"))
         XCTAssertNil(a.restingHr)
         XCTAssertNil(a.steps)
@@ -343,14 +329,7 @@ final class AppleHealthAggregatorTests: XCTestCase {
             sleep(.asleepDeep, from: Fixtures.utc(2024, 3, 25, 3, 0, 0), to: Fixtures.utc(2024, 3, 25, 3, 30, 0)), // 30 deep
             sleep(.asleepREM, from: Fixtures.utc(2024, 3, 25, 3, 30, 0), to: Fixtures.utc(2024, 3, 25, 4, 0, 0)),  // 30 rem
         ]
-        let summary = ImportSummary(
-            sourceKind: .appleHealth, recordCount: samples.count,
-            earliest: day, latest: day, countsByCategory: [:]
-        )
-        let result = AppleHealthImportResult(
-            samples: samples, workouts: [], sleepIntervals: intervals, summary: summary
-        )
-        let daily = AppleHealthAggregator.aggregate(result)
+        let daily = AppleHealthAggregator.aggregate(samples: samples, sleepIntervals: intervals)
         let points = AppleHealthAggregator.metricPoints(daily)
 
         // Build a lookup for the single day.
@@ -476,14 +455,7 @@ final class AppleHealthAggregatorTests: XCTestCase {
         // surfaces a merged row.
         let day = Fixtures.utc(2024, 4, 8, 9, 0, 0)
         let samples = [sample("BodyMass", 77.0, at: day)]
-        let summary = ImportSummary(
-            sourceKind: .appleHealth, recordCount: samples.count,
-            earliest: day, latest: day, countsByCategory: [:]
-        )
-        let result = AppleHealthImportResult(
-            samples: samples, workouts: [], sleepIntervals: [], summary: summary
-        )
-        let merged = AppleHealthAggregator.aggregate(result)
+        let merged = AppleHealthAggregator.aggregate(samples: samples, sleepIntervals: [])
         let a = try! XCTUnwrap(agg(merged, "2024-04-08"))
         XCTAssertEqual(a.weightKg!, 77.0, accuracy: 1e-9)
         XCTAssertNil(a.restingHr)

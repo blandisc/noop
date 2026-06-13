@@ -11,47 +11,45 @@ final class AppleHealthImporterTests: XCTestCase {
         return try AppleHealthImporter().importXML(data: data)
     }
 
-    // MARK: - Type filtering
-
-    func testOnlyRelevantTypesIngested() throws {
+    /// The fixture's records all fall on the local civil day 2024-01-02 (+0100).
+    private func fixtureDay() throws -> AppleDailyAggregate {
         let r = try parsed()
-        let types = Set(r.samples.map { $0.type })
-        // BodyMass is now a relevant (body-composition) type -> included.
-        XCTAssertTrue(types.contains("BodyMass"))
-        XCTAssertTrue(types.contains("HeartRate"))
-        XCTAssertTrue(types.contains("RestingHeartRate"))
-        XCTAssertTrue(types.contains("OxygenSaturation"))
-        XCTAssertTrue(types.contains("RespiratoryRate"))
-        XCTAssertTrue(types.contains("StepCount"))
-        XCTAssertTrue(types.contains("SleepAnalysis"))
-        // An irrelevant type stays excluded.
-        XCTAssertFalse(types.contains("DietaryWater"))
+        return try XCTUnwrap(r.daily.first { $0.day == "2024-01-02" }, "expected a 2024-01-02 aggregate")
+    }
+
+    // MARK: - Type filtering / aggregation
+
+    func testRelevantTypesAggregated() throws {
+        let d = try fixtureDay()
+        // BodyMass is a relevant (body-composition) type -> weight present.
+        XCTAssertEqual(try XCTUnwrap(d.weightKg), 72.5, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(d.avgHr), 61, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(d.restingHr), 58, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(d.respRate), 15.8, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(d.steps), 1200, accuracy: 1e-9)
+    }
+
+    func testIrrelevantTypeExcluded() throws {
+        // DietaryWater (250 mL) is not a relevant type — it must not surface in any
+        // metric point (it has no mapping and was never ingested).
+        let points = AppleHealthAggregator.metricPoints(try parsed().daily)
+        XCTAssertFalse(points.contains { $0.value == 250 })
     }
 
     // MARK: - OxygenSaturation ×100
 
     func testOxygenSaturationFractionScaledToPercent() throws {
-        let r = try parsed()
-        let spo2 = r.samples.first { $0.type == "OxygenSaturation" }
-        XCTAssertNotNil(spo2)
-        // Raw value 0.97 -> 97.0
-        XCTAssertEqual(try XCTUnwrap(spo2?.value), 97.0, accuracy: 1e-9)
-        XCTAssertEqual(spo2?.valueString, "0.97")
+        // Raw value 0.97 -> 97.0 as the day's mean SpO₂.
+        XCTAssertEqual(try XCTUnwrap(fixtureDay().spo2Pct), 97.0, accuracy: 1e-9)
     }
 
-    // MARK: - Dates -> UTC
+    // MARK: - Dates -> local civil day
 
-    func testDatesNormalizedToUTC() throws {
+    func testRecordsBucketToLocalDay() throws {
+        // Every +0100 record lands on 2024-01-02 (the wall-clock day), so the
+        // export collapses to exactly one daily aggregate.
         let r = try parsed()
-        let hr = r.samples.first { $0.type == "HeartRate" }
-        XCTAssertNotNil(hr)
-        // 2024-01-02 08:00:00 +0100 -> 07:00:00 UTC.
-        XCTAssertEqual(hr?.start, Fixtures.utc(2024, 1, 2, 7, 0, 0))
-        XCTAssertEqual(hr?.end, Fixtures.utc(2024, 1, 2, 7, 0, 0))
-        XCTAssertEqual(hr?.tzOffsetMin, 60)
-        XCTAssertEqual(hr?.value, 61)
-        XCTAssertEqual(hr?.unit, "count/min")
-        XCTAssertEqual(hr?.sourceName, "Apple Watch")
+        XCTAssertEqual(r.daily.map { $0.day }, ["2024-01-02"])
     }
 
     func testNegativeOffsetDateParsing() {
@@ -62,17 +60,15 @@ final class AppleHealthImporterTests: XCTestCase {
         XCTAssertEqual(result?.1, -300)
     }
 
-    // MARK: - Sleep enums
+    // MARK: - Sleep
 
-    func testSleepAnalysisStagesMapped() throws {
-        let r = try parsed()
-        XCTAssertEqual(r.sleepIntervals.count, 3)
-        let stages = r.sleepIntervals.map { $0.stage }
-        XCTAssertEqual(stages, [.asleepCore, .asleepDeep, .awake])
-
-        let core = r.sleepIntervals[0]
-        XCTAssertEqual(core.start, Fixtures.utc(2024, 1, 1, 22, 15, 0)) // 23:15 +0100
-        XCTAssertEqual(core.end, Fixtures.utc(2024, 1, 1, 23, 15, 0))
+    func testSleepStagesAggregatedToNight() throws {
+        // core 60m + deep 60m + awake 15m, all waking on 2024-01-02.
+        let d = try fixtureDay()
+        XCTAssertEqual(try XCTUnwrap(d.coreMin), 60, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(d.deepMin), 60, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(d.awakeMin), 15, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(d.asleepMin), 120, accuracy: 1e-9) // core+deep+rem+unspecified
     }
 
     func testSleepStageMappingTable() {
@@ -87,16 +83,18 @@ final class AppleHealthImporterTests: XCTestCase {
 
     // MARK: - Correlation dedupe
 
-    func testCorrelationChildNotDoubleCounted() throws {
+    func testCorrelationChildNotCounted() throws {
+        // HeartRate 61 appears top-level AND nested in a Correlation; only the
+        // top-level one is ingested (correlationDepth skip). Records = 6 quantity
+        // + 3 sleep = 9, plus 1 workout = 10.
         let r = try parsed()
-        // The HeartRate value 61 appears once top-level AND once inside the
-        // Correlation; only one should survive.
-        let hrCount = r.samples.filter { $0.type == "HeartRate" && $0.value == 61 }.count
-        XCTAssertEqual(hrCount, 1, "Correlation-nested record was double-counted")
+        XCTAssertEqual(r.summary.recordCount, 10)
+        XCTAssertEqual(try XCTUnwrap(fixtureDay().maxHr), 61, accuracy: 1e-9)
     }
 
-    func testDedupeOnIdenticalKey() throws {
-        // Two identical records at top level should collapse to one.
+    func testIdenticalAveragedReadingsMeanIsStable() throws {
+        // Two identical top-level readings: with the global dedupe set removed,
+        // both now count — but for an averaged metric the mean is unchanged.
         let xml = """
         <?xml version="1.0" encoding="UTF-8"?>
         <HealthData>
@@ -105,7 +103,8 @@ final class AppleHealthImporterTests: XCTestCase {
         </HealthData>
         """
         let r = try AppleHealthImporter().importXML(data: Data(xml.utf8))
-        XCTAssertEqual(r.samples.filter { $0.type == "HeartRate" }.count, 1)
+        let d = try XCTUnwrap(r.daily.first)
+        XCTAssertEqual(try XCTUnwrap(d.avgHr), 70, accuracy: 1e-9)
     }
 
     // MARK: - Workouts
@@ -136,8 +135,7 @@ final class AppleHealthImporterTests: XCTestCase {
     func testSummary() throws {
         let r = try parsed()
         XCTAssertEqual(r.summary.sourceKind, .appleHealth)
-        XCTAssertGreaterThan(r.summary.recordCount, 0)
-        XCTAssertEqual(r.summary.recordCount, r.samples.count + r.workouts.count)
+        XCTAssertEqual(r.summary.recordCount, 10)         // 9 records + 1 workout
         XCTAssertNotNil(r.summary.earliest)
         XCTAssertNotNil(r.summary.latest)
         XCTAssertLessThanOrEqual(r.summary.earliest!, r.summary.latest!)
@@ -157,7 +155,7 @@ final class AppleHealthImporterTests: XCTestCase {
         </HealthData>
         """
         let r = try AppleHealthImporter().importXML(data: Data(xml.utf8))
-        XCTAssertEqual(r.samples.count, 1)
-        XCTAssertEqual(r.samples[0].value, 80)
+        let d = try XCTUnwrap(r.daily.first)
+        XCTAssertEqual(try XCTUnwrap(d.avgHr), 80, accuracy: 1e-9)
     }
 }

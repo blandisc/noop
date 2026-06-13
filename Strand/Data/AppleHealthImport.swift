@@ -8,9 +8,16 @@ import StrandImport
 enum AppleHealthImport {
 
     @discardableResult
-    static func importExport(url: URL, into store: WhoopStore, deviceId: String) async throws -> ImportSummary {
-        let result = try ImportCoordinator().importAppleHealth(from: url)
-        let daily = AppleHealthAggregator.aggregate(result)
+    static func importExport(
+        url: URL,
+        into store: WhoopStore,
+        deviceId: String,
+        progress: AppleHealthImporter.ProgressHandler? = nil
+    ) async throws -> ImportSummary {
+        // Parsing aggregates per-day on the fly (streaming) — `result.daily` is
+        // already the merged per-day list, so no second aggregation pass.
+        let result = try ImportCoordinator().importAppleHealth(from: url, progress: progress)
+        let daily = result.daily
 
         // Apple-specific daily aggregates (steps/energy/vo2/hr/weight).
         let appleRows = daily.map { d in

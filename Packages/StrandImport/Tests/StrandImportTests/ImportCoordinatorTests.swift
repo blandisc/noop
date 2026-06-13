@@ -62,12 +62,48 @@ final class ImportCoordinatorTests: XCTestCase {
             ("apple_health_export/export.xml", appleHealthFixture),
         ])
         let result = try ImportCoordinator().importAppleHealth(from: zip)
-        XCTAssertGreaterThan(result.samples.count, 0)
+        XCTAssertGreaterThan(result.daily.count, 0)
         XCTAssertEqual(result.workouts.count, 1)
-        XCTAssertEqual(result.sleepIntervals.count, 3)
+        let d = try XCTUnwrap(result.daily.first { $0.day == "2024-01-02" })
+        XCTAssertEqual(try XCTUnwrap(d.deepMin), 60, accuracy: 1e-9)   // sleep aggregated to the night
         // OxygenSaturation still scaled when coming via the zip stream.
-        let spo2 = result.samples.first { $0.type == "OxygenSaturation" }
-        XCTAssertEqual(try XCTUnwrap(spo2?.value), 97.0, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(d.spo2Pct), 97.0, accuracy: 1e-9)
+    }
+
+    // MARK: - Apple Health zip, localized filename (Spanish device)
+
+    /// Apple names the export file by device language — a Spanish iPhone
+    /// produces `exportación.xml`, not `export.xml`.
+    func testAppleHealthFromZipSpanishLocalizedName() throws {
+        let zip = try makeZip(named: "exportación.zip", entries: [
+            ("apple_health_export/exportación.xml", appleHealthFixture),
+        ])
+        let result = try ImportCoordinator().importAppleHealth(from: zip)
+        XCTAssertGreaterThan(result.daily.count, 0)
+        XCTAssertEqual(result.workouts.count, 1)
+    }
+
+    /// The clinical-records twin (`exportación_cda.xml`) must be skipped even
+    /// when it is the larger entry — only the main export is HealthData XML.
+    func testAppleHealthFromZipSkipsLocalizedCDATwin() throws {
+        let zip = try makeZip(named: "exportación.zip", entries: [
+            // Bogus non-HealthData content standing in for the CDA document.
+            ("apple_health_export/exportación_cda.xml", "physiological_cycles.csv"),
+            ("apple_health_export/exportación.xml", appleHealthFixture),
+        ])
+        let result = try ImportCoordinator().importAppleHealth(from: zip)
+        XCTAssertGreaterThan(result.daily.count, 0)
+    }
+
+    func testAppleHealthFromFolderSpanishLocalizedName() throws {
+        let folder = makeTempDir()
+        let nested = folder.appendingPathComponent("apple_health_export")
+        try FileManager.default.createDirectory(at: nested, withIntermediateDirectories: true)
+        try FileManager.default.copyItem(
+            at: Fixtures.url(appleHealthFixture),
+            to: nested.appendingPathComponent("exportación.xml"))
+        let result = try ImportCoordinator().importAppleHealth(from: folder)
+        XCTAssertGreaterThan(result.daily.count, 0)
     }
 
     // MARK: - Auto detection
@@ -76,7 +112,7 @@ final class ImportCoordinatorTests: XCTestCase {
         let result = try ImportCoordinator().detectAndImport(from: Fixtures.url(appleHealthFixture))
         XCTAssertEqual(result.kind, .appleHealth)
         if case .appleHealth(let r) = result {
-            XCTAssertGreaterThan(r.samples.count, 0)
+            XCTAssertGreaterThan(r.daily.count, 0)
         } else {
             XCTFail("expected appleHealth")
         }
@@ -99,6 +135,14 @@ final class ImportCoordinatorTests: XCTestCase {
     func testDetectKindAppleHealthByZipEntry() throws {
         let zip = try makeZip(named: "export.zip", entries: [
             ("apple_health_export/export.xml", appleHealthFixture),
+        ])
+        let result = try ImportCoordinator().detectAndImport(from: zip)
+        XCTAssertEqual(result.kind, .appleHealth)
+    }
+
+    func testDetectKindAppleHealthBySpanishZipEntry() throws {
+        let zip = try makeZip(named: "exportación.zip", entries: [
+            ("apple_health_export/exportación.xml", appleHealthFixture),
         ])
         let result = try ImportCoordinator().detectAndImport(from: zip)
         XCTAssertEqual(result.kind, .appleHealth)

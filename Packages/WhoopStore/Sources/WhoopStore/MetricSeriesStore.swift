@@ -29,16 +29,31 @@ extension WhoopStore {
     /// creating a duplicate.
     @discardableResult
     public func upsertMetricSeries(_ rows: [MetricPoint], deviceId: String) async throws -> Int {
+        // An Apple Health import flattens to tens of thousands of points (≈ days ×
+        // metric keys). One INSERT-per-row meant tens of thousands of statement
+        // round-trips inside the transaction — minutes on a phone. Batch into
+        // multi-row INSERTs instead: 4 bound vars/row, SQLite's limit is 999, so
+        // 200 rows/statement (800 vars) is a safe, large batch.
         try syncWrite { db in
             var n = 0
-            for r in rows {
+            let perRow = "(?, ?, ?, ?)"
+            for chunk in stride(from: 0, to: rows.count, by: 200).map({ Array(rows[$0..<min($0 + 200, rows.count)]) }) {
+                let values = Array(repeating: perRow, count: chunk.count).joined(separator: ", ")
+                var args: [DatabaseValueConvertible?] = []
+                args.reserveCapacity(chunk.count * 4)
+                for r in chunk {
+                    args.append(deviceId)
+                    args.append(r.day)
+                    args.append(r.key)
+                    args.append(r.value)
+                }
                 try db.execute(sql: """
                     INSERT INTO metricSeries
                         (deviceId, day, key, value)
-                    VALUES (?, ?, ?, ?)
+                    VALUES \(values)
                     ON CONFLICT(deviceId, day, key) DO UPDATE SET
                         value = excluded.value
-                    """, arguments: [deviceId, r.day, r.key, r.value])
+                    """, arguments: StatementArguments(args))
                 n += db.changesCount
             }
             return n

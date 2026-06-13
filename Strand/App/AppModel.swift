@@ -2,6 +2,7 @@ import SwiftUI
 import Combine
 import WhoopProtocol
 import WhoopStore
+import StrandImport
 
 /// Data source currently running an import from the Data Sources screen.
 enum DataSourceImportKind {
@@ -60,6 +61,9 @@ final class AppModel: ObservableObject {
     /// the local store."). Surfaced on both the Data Sources cards and the onboarding import step.
     @Published var whoopImportFailed = false
     @Published var appleHealthImportFailed = false
+    /// Live element count during an Apple Health import, so the card shows real
+    /// progress instead of a frozen-looking spinner on a multi-minute parse.
+    @Published var appleHealthImportProgress: Int?
 
     /// True while any data-source import is writing to the local store.
     var hasActiveImport: Bool { activeImportSource != nil }
@@ -323,19 +327,19 @@ final class AppModel: ObservableObject {
 
         var flags: [String] = []
         if let r = rm({ $0.restingHr.map(Double.init) }), let b = bm({ $0.restingHr.map(Double.init) }), r >= b + 5 {
-            flags.append("resting HR +\(Int((r - b).rounded())) bpm")
+            flags.append(String(localized: "resting HR +\(Int((r - b).rounded())) bpm"))
         }
         if let r = rm({ $0.avgHrv }), let b = bm({ $0.avgHrv }), b > 0, r <= b * 0.80 {
-            flags.append("HRV −\(Int(((1 - r / b) * 100).rounded()))%")
+            flags.append(String(localized: "HRV −\(Int(((1 - r / b) * 100).rounded()))%"))
         }
         if let r = rm({ $0.skinTempDevC }), r >= 0.6 {
-            flags.append("skin temp +\(String(format: "%.1f", r))°C")
+            flags.append(String(localized: "skin temp +\(String(format: "%.1f", r))°C"))
         }
         if let r = rm({ $0.respRateBpm }), let b = bm({ $0.respRateBpm }), r >= b + 1.5 {
-            flags.append("respiration up")
+            flags.append(String(localized: "respiration up"))
         }
         healthAlert = flags.count >= 2
-            ? "Your body looks strained — " + flags.joined(separator: ", ") + ". Consider taking it easy."
+            ? String(localized: "Your body looks strained — \(flags.joined(separator: ", ")). Consider taking it easy.")
             : nil
     }
 
@@ -376,7 +380,13 @@ final class AppModel: ObservableObject {
                     finishImport(.appleHealth, summary: "Couldn't open the local store.", failed: true)
                     return
                 }
-                let summary = try await AppleHealthImport.importExport(url: url, into: store, deviceId: appleDeviceId)
+                // The parser fires `progress` off the main thread; hop back to
+                // update the @Published count the card observes.
+                let progress: AppleHealthImporter.ProgressHandler = { count in
+                    Task { @MainActor [weak self] in self?.appleHealthImportProgress = count }
+                }
+                let summary = try await AppleHealthImport.importExport(
+                    url: url, into: store, deviceId: appleDeviceId, progress: progress)
                 await repo.refresh()
                 finishImport(.appleHealth, summary: "Imported \(summary.recordCount) records")
             } catch {
@@ -395,6 +405,7 @@ final class AppModel: ObservableObject {
         case .appleHealth:
             appleHealthImportSummary = nil
             appleHealthImportFailed = false
+            appleHealthImportProgress = nil
         }
     }
 
@@ -407,6 +418,7 @@ final class AppModel: ObservableObject {
         case .appleHealth:
             appleHealthImportSummary = summary
             appleHealthImportFailed = failed
+            appleHealthImportProgress = nil
         }
         activeImportSource = nil
     }
