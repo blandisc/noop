@@ -19,6 +19,15 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Redesigned Today screen (iPhone).** The Today tab is now a tighter, verdict-first "instrument"
+  read. It opens with an honesty line ("Synced 2 min ago · strap 87%" / "Last sync — never") and the
+  brand ECG strip with your live heart rate, then a single committed verdict — "You're Primed",
+  "Ease off today", or "No reading yet" on a fresh install — with a 0–100 readiness gauge that fills
+  to today's score. After a short night the verdict honestly flags itself "confidence low" (and HRV
+  carries a small "Low conf" tag) instead of pretending to be sure. Below, a borderless
+  Recovery · HRV · Sleep synthesis and a dense Key Metrics list (label · sparkline · value) replace
+  the old tile grid, and a true first-launch empty state shows skeletons + a "Scan for strap" action
+  rather than a wall of dashes. macOS Today is unchanged. Fully localized (English + Spanish).
 - **Importing your history is much faster (FER-52).** Importing a multi-year Apple Health export
   used to grind through tens of millions of records doing slow date math on every single one. The
   per-record work is now done with plain integer arithmetic instead of the heavyweight calendar and

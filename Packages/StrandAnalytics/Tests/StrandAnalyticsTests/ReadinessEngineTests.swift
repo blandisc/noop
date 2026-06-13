@@ -86,6 +86,38 @@ final class ReadinessEngineTests: XCTestCase {
         XCTAssertEqual(r.level, .strained)
     }
 
+    // MARK: - Confidence (short-night) flag
+
+    /// Replace the last day of a baseline with one carrying `sleepMin` of sleep (everything else neutral).
+    private func baselineWithSleep(_ sleepMin: Double?) -> [DailyMetric] {
+        var days = baseline(todayHrv: 60, todayRhr: 52, todayStrain: 10)
+        days[days.count - 1] = DailyMetric(day: "2024-03-29", totalSleepMin: sleepMin, efficiency: nil,
+            deepMin: nil, remMin: nil, lightMin: nil, disturbances: nil, restingHr: 52,
+            avgHrv: 60, recovery: nil, strain: 10, exerciseCount: nil,
+            spo2Pct: nil, skinTempDevC: nil, respRateBpm: nil)
+        return days
+    }
+
+    func testShortNightFlagsLowConfidence() {
+        // 5h12m last night (< 6h) → the morning read is honestly flagged low-confidence.
+        let r = ReadinessEngine.evaluate(days: baselineWithSleep(312))
+        XCTAssertTrue(r.confidenceLow)
+        XCTAssertNotNil(r.confidenceNote)
+    }
+
+    func testFullNightIsHighConfidence() {
+        // 7h24m → normal confidence, no caveat.
+        let r = ReadinessEngine.evaluate(days: baselineWithSleep(444))
+        XCTAssertFalse(r.confidenceLow)
+        XCTAssertNil(r.confidenceNote)
+    }
+
+    func testMissingSleepIsNotLowConfidence() {
+        // No sleep duration recorded (strap-only / HR-only day) → we don't claim low confidence.
+        let r = ReadinessEngine.evaluate(days: baselineWithSleep(nil))
+        XCTAssertFalse(r.confidenceLow)
+    }
+
     func testStatsHelpers() {
         XCTAssertEqual(ReadinessEngine.mean([2, 4, 6]), 4)
         XCTAssertEqual(ReadinessEngine.sampleSD([2, 4, 6])!, 2.0, accuracy: 0.0001)

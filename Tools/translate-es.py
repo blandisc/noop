@@ -880,6 +880,24 @@ ES: dict[str, str] = {
     "Yes": "Sí",
     "No": "No",
     "Yesterday": "Ayer",
+
+    # Today redesign — verdict-first iOS hero, honesty line, dense metrics, empty/first-launch state.
+    "Today's verdict": "Veredicto de hoy",
+    "No reading yet": "Aún no hay lectura",
+    "Connect your WHOOP strap to see this morning's readiness, recovery and heart rate.": "Conecta tu banda WHOOP para ver tu disposición, recuperación y frecuencia cardiaca de esta mañana.",
+    "Scan for strap": "Buscar banda",
+    "Plan a hard session": "Planea una sesión dura",
+    "Low conf": "Conf. baja",
+    "Since midnight": "Desde medianoche",
+    "No readings yet": "Aún no hay lecturas",
+    "Last sync — never": "Última sincronización — nunca",
+    "Synced %@": "Sincronizado %@",
+    "Synced %@ · strap %lld%%": "Sincronizado %@ · banda %lld%%",
+    "14-day": "14 días",
+    "Live heart rate": "Frecuencia cardiaca en vivo",
+    "Heart rate": "Frecuencia cardiaca",
+    # ReadinessEngine (StrandAnalytics package — key created here, no .stringsdata extraction).
+    "Based on a short night — confidence low.": "Basado en una noche corta — confianza baja.",
 }
 
 

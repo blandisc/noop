@@ -26,6 +26,13 @@ struct TodayView: View {
     @EnvironmentObject var repo: Repository
     @EnvironmentObject var live: LiveState
 
+    #if os(iOS)
+    // iOS-only: the root app state, so the first-launch empty state's "Scan for strap" CTA can kick
+    // off a real BLE scan (`AppModel.scan()`). macOS never renders the iOS body, so it never reads this.
+    @EnvironmentObject var model: AppModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    #endif
+
     // Imperial/Metric display preference (D#103). Only the Weight tile carries a convertible unit here.
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
@@ -128,28 +135,29 @@ struct TodayView: View {
     // (the desktop `.adaptive(minimum:168)` grid collapses to one column on a phone).
 
     #if os(iOS)
-    private var iosGrid: [GridItem] {
-        [GridItem(.flexible(), spacing: NoopMetrics.gap),
-         GridItem(.flexible(), spacing: NoopMetrics.gap)]
-    }
-
     private var iosBody: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
-                utilityRow
+                headerBlock
                 HealthAlertBanner()
-                if repo.today?.recovery == nil {
-                    if live.backfilling { SyncingHistoryNote(chunks: live.syncChunksThisSession) }
-                    DataPendingNote(
-                        title: "Live now. Your scores are building.",
-                        message: "Your live heart rate is working from the strap, and recovery, strain and sleep build from it over your next few nights of wear, sharpening as it learns your baseline. Want your full history instantly? Import your WHOOP export in Data Sources and it backfills in about a minute."
-                    )
+                if isFirstLaunch {
+                    // No device ever synced and nothing live: the honest "first launch" state — one
+                    // clear action, no fabricated scores. Deliberately sparse vs. the data-rich days.
+                    emptyHero
+                } else {
+                    if repo.today?.recovery == nil {
+                        if live.backfilling { SyncingHistoryNote(chunks: live.syncChunksThisSession) }
+                        DataPendingNote(
+                            title: "Live now. Your scores are building.",
+                            message: "Your live heart rate is working from the strap, and recovery, strain and sleep build from it over your next few nights of wear, sharpening as it learns your baseline. Want your full history instantly? Import your WHOOP export in Data Sources and it backfills in about a minute."
+                        )
+                    }
+                    verdictSection
                 }
-                verdictSection
                 whySection
                 iosMetricsSection
                 workoutsSection
-                heartRateTrendSection
+                iosHeartRateSection
                 sourcesSection
             }
             .padding(NoopMetrics.screenPadding)
@@ -158,18 +166,138 @@ struct TodayView: View {
         .background(StrandPalette.surfaceBase)
     }
 
+    /// HR for the phone: the real 24h trend when there's data, an honest "No readings yet" well on
+    /// first launch (the design's empty-state HR slot), nothing in between (a strap-only day with no
+    /// wear shouldn't render an empty axis).
+    @ViewBuilder private var iosHeartRateSection: some View {
+        if hrPoints.count > 1 {
+            heartRateTrendSection
+        } else if isFirstLaunch {
+            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+                SectionHeader("Heart Rate", overline: "Since midnight")
+                NoopCard {
+                    Text("No readings yet")
+                        .font(StrandFont.subhead)
+                        .foregroundStyle(StrandPalette.textTertiary)
+                        .frame(maxWidth: .infinity, minHeight: 52)
+                }
+            }
+        }
+    }
+
+    /// True only on a genuine first launch — no synced history, no stored days, no live reading. The
+    /// "calibrating" case (worn a few nights, recovery still seeding) is NOT empty: it keeps the
+    /// data-pending note + verdict path so an honest "scores are building" story shows instead.
+    private var isFirstLaunch: Bool {
+        repo.today?.recovery == nil
+            && repo.days.isEmpty
+            && live.lastSyncedAt == nil
+            && liveBpm == nil
+    }
+
+    /// Recovery score driving the readiness gauge (the 0–100 the bar fills to). nil while calibrating.
+    private var recoveryScore: Int? { repo.today?.recovery.map { Int($0.rounded()) } }
+
+    /// Date + honesty line, then the brand ECG strip with the live bpm — the screen's calm header.
+    private var headerBlock: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            utilityRow
+            liveStrip
+        }
+    }
+
+    /// The live-HR strip: the brand ECG waveform (tinted to the verdict, flatline when there's no
+    /// reading) with the current bpm pinned to the right. Static — the waveform is a brand mark, not
+    /// an animation (per the handoff).
+    @ViewBuilder private var liveStrip: some View {
+        HStack(alignment: .center, spacing: 12) {
+            ECGWave(color: ecgColor, flat: liveBpm == nil)
+                .frame(width: 152)
+            Spacer(minLength: 0)
+            HStack(alignment: .firstTextBaseline, spacing: 5) {
+                Circle()
+                    .fill(isLiveHR ? StrandPalette.metricRose : StrandPalette.textTertiary)
+                    .frame(width: 6, height: 6)
+                    .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 1 }
+                Text(liveBpm.map { "\($0)" } ?? "--")
+                    .font(StrandFont.number(15, weight: .semibold))
+                    .foregroundStyle(liveBpm == nil ? StrandPalette.textTertiary : StrandPalette.textPrimary)
+                Text("bpm").font(.system(size: 10)).foregroundStyle(StrandPalette.textTertiary)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(isLiveHR ? "Live heart rate" : "Heart rate"))
+            .accessibilityValue(Text(liveBpm.map { "\($0) bpm" } ?? "no reading"))
+        }
+    }
+
+    /// ECG tint: warm when streaming live, the verdict color when we have a read, muted otherwise.
+    private var ecgColor: Color {
+        if liveBpm == nil { return StrandPalette.textTertiary }
+        let r = readiness
+        return r.level != .insufficient ? readinessColor(r.level) : StrandPalette.metricRose
+    }
+
+    /// First-launch hero: a committed "no reading yet" headline and a single clear CTA. No gauge,
+    /// no fabricated numbers — the rest of the screen renders its honest empty/skeleton states.
+    private var emptyHero: some View {
+        NoopCard(padding: 18) {
+            VStack(alignment: .leading, spacing: 9) {
+                Text("Today's verdict").strandOverline()
+                Text("No reading yet")
+                    .font(StrandFont.title1)
+                    .foregroundStyle(StrandPalette.textSecondary)
+                Text("Connect your WHOOP strap to see this morning's readiness, recovery and heart rate.")
+                    .font(StrandFont.subhead)
+                    .foregroundStyle(StrandPalette.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button { model.scan() } label: {
+                    Text("Scan for strap")
+                        .font(StrandFont.headline)
+                        .foregroundStyle(StrandPalette.surfaceBase)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 11)
+                        .background(StrandPalette.accent, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 5)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
     /// Top utility row: a compact date (the greeting is gone — the verdict greets with substance)
     /// and the live heart-rate pill.
     @ViewBuilder private var utilityRow: some View {
-        HStack(alignment: .center) {
+        HStack(alignment: .firstTextBaseline) {
             Text(shortDate)
                 .font(StrandFont.overline)
                 .tracking(StrandFont.overlineTracking)
                 .foregroundStyle(StrandPalette.textTertiary)
-            Spacer()
-            if let bpm = liveBpm {
-                LiveHRPill(bpm: bpm, isLive: isLiveHR)
+            Spacer(minLength: 8)
+            syncMeta
+        }
+    }
+
+    /// Honesty line — "Synced 2 min ago · strap 87%" / "Last sync — never". Mono + tertiary so it
+    /// reads as quiet provenance, the trust signal the design leads with. A `TimelineView` re-renders
+    /// it each minute so the "min ago" can't go stale while the screen sits open.
+    @ViewBuilder private var syncMeta: some View {
+        TimelineView(.periodic(from: .now, by: 60)) { context in
+            Group {
+                if let at = live.lastSyncedAt {
+                    let rel = relativeAgo(at, now: context.date.timeIntervalSince1970)
+                    if let pct = live.batteryPct {
+                        Text("Synced \(rel) · strap \(Int(pct.rounded()))%")
+                    } else {
+                        Text("Synced \(rel)")
+                    }
+                } else {
+                    Text("Last sync — never")
+                }
             }
+            .font(StrandFont.mono(10))
+            .foregroundStyle(StrandPalette.textTertiary)
+            .lineLimit(1)
         }
     }
 
@@ -184,9 +312,9 @@ struct TodayView: View {
                 // Overline + load share one row — the load no longer claims its own line at the
                 // bottom, so the card loses the dead band beneath it.
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("Should you push today?")
+                    Text("Today's verdict")
                         .font(StrandFont.overline).tracking(StrandFont.overlineTracking)
-                        .foregroundStyle(lc)
+                        .foregroundStyle(StrandPalette.textTertiary)
                         .lineLimit(1)
                     Spacer(minLength: 8)
                     // Training load as a glanceable, flag-colored word — not a raw "load 1.05" the
@@ -194,21 +322,53 @@ struct TodayView: View {
                     // ratio still reaches VoiceOver via the accessibility label.
                     if let acwr = r.acwr {
                         let band = ReadinessEngine.loadBand(forACWR: acwr)
-                        Text(band.shortLabel)
-                            .font(StrandFont.captionNumber)
-                            .foregroundStyle(flagColor(band.flag))
-                            .lineLimit(1)
-                            .accessibilityLabel(Text("Training load: \(band.shortLabel) (acute:chronic \(String(format: "%.2f", acwr)))"))
+                        HStack(spacing: 5) {
+                            Text("Load").font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
+                            Text(band.shortLabel)
+                                .font(StrandFont.captionNumber)
+                                .foregroundStyle(flagColor(band.flag))
+                        }
+                        .lineLimit(1)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(Text("Training load: \(band.shortLabel) (acute:chronic \(String(format: "%.2f", acwr)))"))
                     }
                 }
+                // Committed verdict — the headline takes the level's color so the day's tone is
+                // legible at a glance (mint Primed → amber Strained → rose Run down).
                 Text(r.headline)
                     .font(StrandFont.title1)
-                    .foregroundStyle(StrandPalette.textPrimary)
+                    .foregroundStyle(lc)
                     .fixedSize(horizontal: false, vertical: true)
                 Text(r.summary)
                     .font(StrandFont.subhead)
                     .foregroundStyle(StrandPalette.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
+                // Readiness as a 0–100 gauge filled to today's recovery score (hidden while the
+                // baseline is still seeding and recovery is nil).
+                if let score = recoveryScore {
+                    ReadinessGaugeBar(score: score, accent: lc)
+                        .padding(.top, 10)
+                }
+                // Honesty beats a fake CTA: a short night flags the read low-confidence; otherwise a
+                // well-backed day earns a single committed nudge.
+                if r.confidenceLow, let note = r.confidenceNote {
+                    HStack(spacing: 7) {
+                        Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 10))
+                        Text(note).font(StrandFont.caption)
+                    }
+                    .foregroundStyle(StrandPalette.statusWarning)
+                    .padding(.top, 11)
+                } else if r.level == .primed || r.level == .balanced {
+                    HStack(spacing: 5) {
+                        Text("Plan a hard session").font(StrandFont.captionNumber)
+                        Image(systemName: "arrow.right").font(.system(size: 10, weight: .semibold))
+                    }
+                    .foregroundStyle(lc)
+                    .padding(.horizontal, 12).padding(.vertical, 6)
+                    .background(lc.opacity(0.13), in: Capsule())
+                    .overlay(Capsule().strokeBorder(lc.opacity(0.30), lineWidth: 1))
+                    .padding(.top, 12)
+                }
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -220,103 +380,110 @@ struct TodayView: View {
         }
     }
 
-    /// "Why" evidence strip behind the verdict — recovery + HRV + sleep as THREE UNIFORM flat-stat
-    /// tiles (the Whoop/Apple pattern). No ring in the row: mixing a circular gauge with flat numbers
-    /// is what made the trio read at three different sizes. Recovery keeps its identity through its
-    /// state COLOR + a status dot, not a ring — the ring's signature moment is the verdict hero above.
-    /// All three values share one font size and clamp to a single line.
+    /// Synthesis strip behind the verdict — recovery · HRV · sleep as three borderless stats split by
+    /// thin vertical hairlines (the Whoop/Apple pattern). No boxes: grouping by whitespace + a single
+    /// elevated hero (the verdict) is the design's whole premise. Recovery keeps its identity through
+    /// its state COLOR; all three values share one mono size and clamp to a single line.
     @ViewBuilder private var whySection: some View {
         let d = repo.today
-        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-            SectionHeader("Today’s Synthesis", overline: "At a glance")
-            HStack(spacing: NoopMetrics.gap) {
-                synthTile(label: "Recovery",
-                          value: d?.recovery.map { "\(Int($0.rounded()))" } ?? "—",
-                          unit: "",
-                          color: d?.recovery.map { StrandPalette.recoveryColor($0) } ?? StrandPalette.textTertiary)
-                synthTile(label: "HRV",
-                          value: d?.avgHrv.map { "\(Int($0.rounded()))" } ?? "—",
-                          unit: "ms",
-                          color: StrandPalette.metricPurple)
-                synthTile(label: "Sleep",
-                          value: sleepValue(d),
-                          unit: "",
-                          color: StrandPalette.metricPurple)
-            }
+        HStack(spacing: 0) {
+            synthCell(label: "Recovery",
+                      value: d?.recovery.map { "\(Int($0.rounded()))" } ?? "—",
+                      unit: nil,
+                      color: d?.recovery.map { StrandPalette.recoveryColor($0) } ?? StrandPalette.textTertiary,
+                      first: true)
+            synthDivider
+            synthCell(label: "HRV",
+                      value: d?.avgHrv.map { "\(Int($0.rounded()))" } ?? "—",
+                      unit: "ms",
+                      color: StrandPalette.textPrimary)
+            synthDivider
+            synthCell(label: "Sleep",
+                      value: sleepValue(d),
+                      unit: nil,
+                      color: StrandPalette.textPrimary)
         }
     }
 
-    /// One uniform flat-stat tile: label + status dot on top, then one big value (+ optional unit).
-    /// Same structure and number size for all three; a snug fixed height keeps them perfectly aligned.
-    private func synthTile(label: LocalizedStringKey, value: String, unit: String, color: Color) -> some View {
-        NoopCard {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 4) {
-                    Text(label)
-                        .font(StrandFont.caption)
-                        .foregroundStyle(StrandPalette.textTertiary)
-                        .lineLimit(1)
-                        // Long localized labels (e.g. ES "Recuperación") must shrink to fit
-                        // the narrow 1/3-width tile rather than truncate to "Recupera…".
-                        // The label claims all width left by the fixed status dot; without an
-                        // explicit width constraint here, minimumScaleFactor never engages and
-                        // the text clips instead of scaling (the bug behind FER-40).
-                        .minimumScaleFactor(0.6)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Circle().fill(color).frame(width: 7, height: 7)
-                }
-                HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Text(value)
-                        .font(StrandFont.number(20, weight: .bold))
-                        .foregroundStyle(color)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                    if !unit.isEmpty {
-                        Text(unit).font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .frame(height: 54, alignment: .top)
-            .frame(maxWidth: .infinity)
-        }
+    private var synthDivider: some View {
+        Rectangle().fill(StrandPalette.hairline).frame(width: 1, height: 34)
     }
 
-    /// "Key Metrics" — six tiles pinned to a true two-column grid for the phone.
+    /// One borderless synthesis stat: small label over one big mono value (+ optional unit).
+    private func synthCell(label: LocalizedStringKey, value: String, unit: String?, color: Color, first: Bool = false) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label)
+                .font(StrandFont.caption)
+                .foregroundStyle(StrandPalette.textSecondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(value)
+                    .font(StrandFont.number(24))
+                    .foregroundStyle(color)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                if let unit {
+                    Text(unit).font(.system(size: 11)).foregroundStyle(StrandPalette.textTertiary)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.leading, first ? 0 : 14)
+        .padding(.trailing, 14)
+    }
+
+    /// "Key Metrics" — a dense borderless list (label · sparkline · value) instead of a tile grid,
+    /// so six metrics read as one calm column. HRV carries a "Low conf" flag after a short night;
+    /// the first-launch state shows skeleton sparklines and "—" values.
     @ViewBuilder private var iosMetricsSection: some View {
         let d = repo.today
         let aLatest = appleDays.last
+        let empty = isFirstLaunch
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-            SectionHeader("Key Metrics", overline: "Today", trailing: String(localized: "14-day trend"))
-            LazyVGrid(columns: iosGrid, alignment: .leading, spacing: NoopMetrics.gap) {
-                StatTile(label: "Day Strain",
-                         value: d?.strain.map { String(format: "%.1f", $0) } ?? "—",
-                         caption: String(localized: "of 21"),
-                         accent: d?.strain.map { StrandPalette.strainColor($0) } ?? StrandPalette.textPrimary,
-                         sparkline: sparks["strain"], sparkColor: StrandPalette.strain066)
-                StatTile(label: "Sleep",
-                         value: sleepValue(d),
-                         caption: d?.efficiency.map { String(format: String(localized: "%.0f%% eff"), $0) },
-                         accent: StrandPalette.textPrimary,
-                         sparkline: sparks["sleep_total_min"], sparkColor: StrandPalette.metricPurple)
-                StatTile(label: "HRV",
-                         value: d?.avgHrv.map { "\(Int($0.rounded()))" } ?? "—",
-                         caption: "ms", accent: StrandPalette.metricPurple,
-                         sparkline: sparks["hrv"], sparkColor: StrandPalette.metricPurple)
-                StatTile(label: "Resting HR",
-                         value: d?.restingHr.map { "\($0)" } ?? "—",
-                         caption: "bpm", accent: StrandPalette.metricRose,
-                         sparkline: sparks["rhr"], sparkColor: StrandPalette.metricRose)
-                StatTile(label: "Blood Oxygen",
-                         value: d?.spo2Pct.map { String(format: "%.0f%%", $0) } ?? "—",
-                         caption: "SpO₂", accent: StrandPalette.metricCyan,
-                         sparkline: sparks["spo2"], sparkColor: StrandPalette.metricCyan)
-                StatTile(label: "Steps",
-                         value: aLatest?.steps.map { intString(Double($0)) } ?? latestString("steps", decimals: 0),
-                         caption: String(localized: "today"), accent: StrandPalette.metricCyan,
-                         sparkline: sparks["steps"], sparkColor: StrandPalette.metricCyan)
+            SectionHeader("Key Metrics", overline: "Today", trailing: String(localized: "14-day"))
+            VStack(spacing: 0) {
+                MetricRow(label: "Day Strain",
+                          value: d?.strain.map { String(format: "%.1f", $0) } ?? "—",
+                          valueColor: d?.strain.map { StrandPalette.strainColor($0) } ?? StrandPalette.textPrimary,
+                          sparkline: sparks["strain"], sparkColor: StrandPalette.strain066,
+                          isPlaceholder: empty)
+                metricSeparator
+                MetricRow(label: "Sleep",
+                          value: sleepValue(d),
+                          sparkline: sparks["sleep_total_min"], sparkColor: StrandPalette.metricPurple,
+                          isPlaceholder: empty)
+                metricSeparator
+                MetricRow(label: "HRV",
+                          value: d?.avgHrv.map { "\(Int($0.rounded()))" } ?? "—",
+                          unit: "ms", valueColor: StrandPalette.metricPurple,
+                          flag: (d?.avgHrv != nil && readiness.confidenceLow) ? "Low conf" : nil,
+                          sparkline: sparks["hrv"], sparkColor: StrandPalette.metricPurple,
+                          isPlaceholder: empty)
+                metricSeparator
+                MetricRow(label: "Resting HR",
+                          value: d?.restingHr.map { "\($0)" } ?? "—",
+                          unit: "bpm", valueColor: StrandPalette.metricRose,
+                          sparkline: sparks["rhr"], sparkColor: StrandPalette.metricRose,
+                          isPlaceholder: empty)
+                metricSeparator
+                MetricRow(label: "Blood Oxygen",
+                          value: d?.spo2Pct.map { String(format: "%.0f", $0) } ?? "—",
+                          unit: "%", valueColor: StrandPalette.metricCyan,
+                          sparkline: sparks["spo2"], sparkColor: StrandPalette.metricCyan,
+                          isPlaceholder: empty)
+                metricSeparator
+                MetricRow(label: "Steps",
+                          value: aLatest?.steps.map { intString(Double($0)) } ?? latestString("steps", decimals: 0),
+                          sparkline: sparks["steps"], sparkColor: StrandPalette.metricCyan,
+                          isPlaceholder: empty)
             }
         }
+    }
+
+    /// Hairline between metric rows (not above the first — the section header already caps the list).
+    private var metricSeparator: some View {
+        Divider().overlay(StrandPalette.hairline)
     }
 
     /// On-device readiness for the verdict hero (same engine the macOS `readinessSection` uses).
@@ -911,51 +1078,6 @@ struct TodayView: View {
     }()
 }
 
-// MARK: - Live heart-rate pill (iOS)
-
-#if os(iOS)
-/// A compact live heart-rate pill for the Today utility row. The heart beats in time with the
-/// real rate (period 60/bpm — a 74 bpm pulse beats every 0.81 s) ONLY when the strap is actively
-/// streaming (`isLive`), and honors Reduce Motion. When the value is a last-known reading rather
-/// than a live stream it renders static — the animation is reserved for genuinely live data.
-private struct LiveHRPill: View {
-    let bpm: Int
-    let isLive: Bool
-    @State private var beat = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    private var animate: Bool { isLive && !reduceMotion }
-
-    var body: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "heart.fill")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(StrandPalette.metricRose)
-                .scaleEffect(beat ? 1.18 : 1.0)
-                .animation(animate ? .easeInOut(duration: 30.0 / Double(max(bpm, 30)))
-                            .repeatForever(autoreverses: true) : nil,
-                           value: beat)
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text("\(bpm)")
-                    .font(StrandFont.number(15, weight: .bold))
-                    .foregroundStyle(StrandPalette.textPrimary)
-                Text("bpm")
-                    .font(StrandFont.caption)
-                    .foregroundStyle(StrandPalette.textSecondary)
-            }
-        }
-        .padding(.vertical, 6)
-        .padding(.horizontal, 12)
-        .background(StrandPalette.metricRose.opacity(0.10), in: Capsule())
-        .overlay(Capsule().strokeBorder(StrandPalette.metricRose.opacity(0.30), lineWidth: 1))
-        .onAppear { if animate { beat = true } }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(isLive ? "Live heart rate" : "Heart rate"))
-        .accessibilityValue(Text("\(bpm) bpm"))
-    }
-}
-#endif
-
 // MARK: - Preview
 
 #if DEBUG
@@ -983,6 +1105,11 @@ private struct LiveHRPill: View {
 
     return TodayView()
         .environmentObject(repo)
+        #if os(iOS)
+        // iOS TodayView reads AppModel (for the first-launch "Scan for strap" CTA); inject one so the
+        // iOS canvas renders instead of trapping on a missing environment object.
+        .environmentObject(AppModel())
+        #endif
         .frame(width: 920, height: 940)
         .preferredColorScheme(.dark)
 }
