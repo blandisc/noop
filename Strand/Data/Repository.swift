@@ -23,6 +23,10 @@ final class Repository: ObservableObject {
     /// real WHOOP import always wins and the strap-only user still gets a populated dashboard.
     private var computedDeviceId: String { deviceId + "-noop" }
     private var store: WhoopStore?
+    /// In-flight store creation, memoized so concurrent first-callers (the launch refresh and
+    /// TodayView's parallel queries) share ONE open+migrate instead of racing `ensureStore`'s
+    /// await window and opening the DB several times. @MainActor makes the set-before-await safe.
+    private var storeInit: Task<WhoopStore?, Never>?
 
     /// Daily metrics (recovery/strain/sleep/HRV/RHR…) over the recent window, oldest→newest.
     @Published var days: [DailyMetric] = []
@@ -60,10 +64,17 @@ final class Repository: ObservableObject {
 
     private func ensureStore() async -> WhoopStore? {
         if let store { return store }
-        guard let path = try? StorePaths.defaultDatabasePath() else { return nil }
-        let s = try? await WhoopStore(path: path)
-        if let s { try? await s.upsertDevice(id: deviceId, mac: nil, name: "WHOOP") }
+        if let storeInit { return await storeInit.value }   // a creation is already in flight — join it
+        let task = Task { () -> WhoopStore? in
+            guard let path = try? StorePaths.defaultDatabasePath() else { return nil }
+            let s = try? await WhoopStore(path: path)
+            if let s { try? await s.upsertDevice(id: deviceId, mac: nil, name: "WHOOP") }
+            return s
+        }
+        storeInit = task              // published synchronously (still on @MainActor) before the await below
+        let s = await task.value
         store = s
+        storeInit = nil
         return s
     }
 

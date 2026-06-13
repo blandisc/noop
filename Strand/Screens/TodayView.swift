@@ -471,27 +471,41 @@ struct TodayView: View {
     // MARK: - Loading
 
     private func loadAll() async {
-        // 14-day sparklines — Whoop.
-        sparks["recovery"]        = await sparkValues("recovery", source: "my-whoop", window: 14)
-        sparks["strain"]          = await sparkValues("strain", source: "my-whoop", window: 14)
-        sparks["sleep_total_min"] = await sparkValues("sleep_total_min", source: "my-whoop", window: 14)
-        sparks["hrv"]             = await sparkValues("hrv", source: "my-whoop", window: 14)
-        sparks["rhr"]             = await sparkValues("rhr", source: "my-whoop", window: 14)
-        sparks["spo2"]            = await sparkValues("spo2", source: "my-whoop", window: 14)
-
-        // 14-day sparklines — Apple Health.
-        sparks["resp_rate"]   = await sparkValues("resp_rate", source: "apple-health", window: 14)
-        sparks["steps"]       = await sparkValues("steps", source: "apple-health", window: 14)
-        sparks["weight"]      = await sparkValues("weight", source: "apple-health", window: 90)
-        sparks["active_kcal"] = await sparkValues("active_kcal", source: "apple-health", window: 14)
-
-        workouts = await repo.workoutRows()
-        appleDays = await repo.appleDailyRows()
+        // Issue every query concurrently, then collect — instead of 14 serial awaits that each
+        // suspended back to the main actor before issuing the next. The store is a serial
+        // DatabaseQueue so I/O still serializes, but the memoized ensureStore() makes the parallel
+        // first-callers share ONE open, and the queries run back-to-back with no main-actor ping-pong.
+        async let recovery   = sparkValues("recovery", source: "my-whoop", window: 14)
+        async let strain     = sparkValues("strain", source: "my-whoop", window: 14)
+        async let sleepTotal = sparkValues("sleep_total_min", source: "my-whoop", window: 14)
+        async let hrv        = sparkValues("hrv", source: "my-whoop", window: 14)
+        async let rhr        = sparkValues("rhr", source: "my-whoop", window: 14)
+        async let spo2       = sparkValues("spo2", source: "my-whoop", window: 14)
+        async let respRate   = sparkValues("resp_rate", source: "apple-health", window: 14)
+        async let steps      = sparkValues("steps", source: "apple-health", window: 14)
+        async let weight     = sparkValues("weight", source: "apple-health", window: 90)
+        async let activeKcal = sparkValues("active_kcal", source: "apple-health", window: 14)
+        async let wkRows     = repo.workoutRows()
+        async let adRows     = repo.appleDailyRows()
 
         // Today's HR trend — 5-minute bucket means from local midnight → now.
         let startOfToday = Int(Calendar.current.startOfDay(for: Date()).timeIntervalSince1970)
         let nowTs = Int(Date().timeIntervalSince1970)
-        hrPoints = await repo.hrBuckets(from: startOfToday, to: nowTs, bucketSeconds: 300)
+        async let hrBucketRows = repo.hrBuckets(from: startOfToday, to: nowTs, bucketSeconds: 300)
+
+        sparks["recovery"]        = await recovery
+        sparks["strain"]          = await strain
+        sparks["sleep_total_min"] = await sleepTotal
+        sparks["hrv"]             = await hrv
+        sparks["rhr"]             = await rhr
+        sparks["spo2"]            = await spo2
+        sparks["resp_rate"]       = await respRate
+        sparks["steps"]           = await steps
+        sparks["weight"]          = await weight
+        sparks["active_kcal"]     = await activeKcal
+        workouts  = await wkRows
+        appleDays = await adRows
+        hrPoints  = await hrBucketRows
             .map { TrendPoint(date: Date(timeIntervalSince1970: TimeInterval($0.ts)), value: $0.bpm) }
     }
 
@@ -503,7 +517,10 @@ struct TodayView: View {
     /// `latestString` reads `.last` of this windowed series, so a value older than the window shows
     /// "—" rather than a stale number under a Today tile (#49).
     private func sparkValues(_ key: String, source: String, window: Int) async -> [Double] {
-        let all = await repo.series(key: key, source: source)   // full history, asc
+        // Scope the SQL to the window we actually render (+a small margin so trailingWindow's
+        // calendar-day cutoff has headroom). Was fetching the FULL history (days: 4000) only to
+        // drop all but the last 14/90 in memory — wasted rows scanned per metric, ×10 on every load.
+        let all = await repo.series(key: key, source: source, days: window + 2)
         guard !all.isEmpty else { return [] }
         return trailingWindow(all, days: window).map { $0.value }
     }

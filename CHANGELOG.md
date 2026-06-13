@@ -43,6 +43,14 @@ Work on the experimental iOS port. All on-device, no cloud — nothing here chan
   device language.
 - **Today greeting (new):** the home header shows a time-of-day greeting (Buenos días / tardes /
   noches) with the date beneath, in place of the static "Control Center" title.
+- **Leaner Today launch + a latent DB double-open fixed (perf/fix):** profiling the launch path
+  showed the dashboard loading its data two-to-three times over — a duplicate `repo.refresh()` (one
+  in `AppModel.init`, one in the iOS tab shell) ran a concurrent full-history load and re-fired the
+  Today screen's query fan-out, and each sparkline query fetched the full history only to keep the
+  last 14/90 days. The launch refresh now has a single owner, the Today queries are windowed in SQL
+  and issued concurrently, and `Repository.ensureStore` memoizes store creation — closing a race
+  where concurrent first-callers could open and migrate the database twice. (Wall-clock at launch is
+  still gated by SwiftUI scene setup, unchanged here; this removes the redundant data work behind it.)
 - **Build:** explicit shared Xcode schemes in `project.yml`, so `xcodebuild -scheme NOOPiOS` works in
   a clean checkout / CI without opening Xcode first.
 

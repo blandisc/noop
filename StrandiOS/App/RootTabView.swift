@@ -6,8 +6,6 @@ import StrandDesign
 /// natural analogue is a `TabView` with the most-used screens as tabs and everything else under a
 /// "More" list. Every screen is the same `StrandDesign`-built view the macOS app uses.
 struct RootTabView: View {
-    @EnvironmentObject private var repo: Repository
-
     var body: some View {
         TabView {
             tab(TodayView(), "Today", "circle.hexagongrid.fill")
@@ -18,7 +16,9 @@ struct RootTabView: View {
         }
         .tint(StrandPalette.accent)
         .preferredColorScheme(.dark)
-        .task { await repo.refresh() }
+        // NOTE: the launch refresh is owned by AppModel.init (one source of truth). A second
+        // `.task { repo.refresh() }` here ran a full-history load concurrently with that one at
+        // launch — double DB work + an extra refreshSeq bump that re-fired TodayView.loadAll.
     }
 
     private func tab<V: View>(_ view: V, _ title: LocalizedStringKey, _ icon: String) -> some View {
