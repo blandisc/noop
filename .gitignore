@@ -3,6 +3,10 @@
 .AppleDouble
 .localized
 Icon?
+# iCloud Drive / Finder duplicate copies of synced files (e.g. "Units 2.kt").
+# A dupe source file silently breaks the build with redeclared symbols.
+* [0-9].kt
+* [0-9].swift
 
 # ── Swift / Xcode ───────────────────────────────────────────────
 # Xcode project is generated from project.yml by XcodeGen — do not commit it.
