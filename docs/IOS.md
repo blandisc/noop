@@ -472,6 +472,35 @@ targets:
 
 ---
 
+## Localization (this fork)
+
+NOOP's UI is localized to **Spanish (es-MX)** and **German (de)** on top of the English (US)
+base, shared across macOS and iOS. The iOS app reuses the same `Strand/` views, so localizing
+once covers both platforms.
+
+- **String Catalog.** All UI strings live in `Strand/Resources/Localizable.xcstrings`. The iOS
+  widget extension is a separate bundle with its own `StrandiOSWidgets/Localizable.xcstrings`.
+  Xcode auto-extracts every `LocalizedStringKey` / `String(localized:)` into the base catalog on
+  build (`SWIFT_EMIT_LOC_STRINGS`).
+- **Plain `String`s must be wrapped.** SwiftUI only extracts `LocalizedStringKey` literals. Labels
+  passed as plain `String` — `StatTile` / `SectionHeader` captions and trailing text, computed
+  sentences (readiness, synthesis, illness banner), recovery state words, metric categories — are
+  routed through `String(localized:)` at their literal sites so they actually localize. Package code
+  (`StrandDesign`, `StrandAnalytics`) uses `String(localized:, bundle: .main)` to resolve against the
+  host app's catalog.
+- **Dates and units follow the locale.** Date headers use `.autoupdatingCurrent` +
+  `setLocalizedDateFormatFromTemplate`, not a hard-coded `en_US_POSIX` format; values respect the
+  Settings units toggle.
+- **Translation tooling.** Each language has a re-runnable injection script —
+  `Tools/translate-es.py`, `Tools/translate-de.py` — holding the full key→translation dict. Running
+  one reads the `en` base values, (over)writes that language's units, and reports any keys still
+  missing a translation. es-MX uses the generic `es` locale (es-419 / es-ES devices fall back to it)
+  with Mexican phrasing ("banda" for the strap, "exportación de WHOOP", tuteo).
+- **After merging upstream**, re-run the translate scripts to fill any new strings, then
+  `xcodegen generate` if Swift files were added, before building.
+
+---
+
 ## Port checklist
 
 - [ ] Add `StrandiOS` app target depending on the five existing packages (no package changes).
@@ -482,6 +511,7 @@ targets:
 - [ ] Swap `NSPasteboard` → `UIPasteboard` behind an `#if os` helper.
 - [ ] Add a `HealthKitBridge` doing two-way Apple Health (read live + write NOOP metrics), mapping `HKSample`s onto the existing `StrandImport` models and `WhoopStore` ingest path. Add the HealthKit capability and the two Health usage strings.
 - [ ] Verify BLE on a **physical iPhone** with a real strap (no Simulator BLE).
+- [x] Localize the UI to Spanish (es-MX) and German (de) via the String Catalog; wrap plain-`String` labels in `String(localized:)`, and keep new strings translated with `Tools/translate-*.py`.
 
 ---
 
