@@ -73,6 +73,19 @@ final class ReadinessEngineTests: XCTestCase {
         XCTAssertNotEqual(ReadinessEngine.evaluate(days: days).level, .insufficient)
     }
 
+    func testSkinTempRiseFlagsIllness() {
+        // Today's skin temp well above the personal baseline (≥0.8 °C) → a "bad" illness
+        // signal, which (now counted as a recovery-down driver) pushes readiness to strained.
+        var days = baseline(todayHrv: 60, todayRhr: 52, todayStrain: 10)
+        days[days.count - 1] = DailyMetric(day: "2024-03-29", totalSleepMin: nil, efficiency: nil,
+            deepMin: nil, remMin: nil, lightMin: nil, disturbances: nil, restingHr: 52,
+            avgHrv: 60, recovery: nil, strain: 10, exerciseCount: nil,
+            spo2Pct: nil, skinTempDevC: 1.0, respRateBpm: nil)
+        let r = ReadinessEngine.evaluate(days: days)
+        XCTAssertEqual(r.signals.first { $0.key == "skinTemp" }?.flag, .bad)
+        XCTAssertEqual(r.level, .strained)
+    }
+
     func testStatsHelpers() {
         XCTAssertEqual(ReadinessEngine.mean([2, 4, 6]), 4)
         XCTAssertEqual(ReadinessEngine.sampleSD([2, 4, 6])!, 2.0, accuracy: 0.0001)

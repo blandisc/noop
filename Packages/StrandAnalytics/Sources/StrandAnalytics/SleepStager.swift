@@ -356,7 +356,7 @@ public enum SleepStager {
             let stages = stageSession(start: p.start, end: p.end, grav: grav,
                                       hr: hrS, rr: rrS, resp: respS)
             let eff = efficiency(start: p.start, end: p.end, stages: stages)
-            let avgHrv = sessionAvgHRV(start: p.start, end: p.end, rr: rrS)
+            let avgHrv = sessionAvgHRV(start: p.start, end: p.end, rr: rrS, stages: stages)
             sessions.append(SleepSession(start: p.start, end: p.end, efficiency: eff,
                                          stages: stages, restingHR: resting, avgHRV: avgHrv))
         }
@@ -974,22 +974,41 @@ public enum SleepStager {
         return Int(all.rounded())
     }
 
-    /// Mean RMSSD over 5-min tumbling windows across the session (ms), or nil.
-    /// Uses the same range-filter + ≥2-valid-interval rule as hrv.rmssd().
-    static func sessionAvgHRV(start: Int, end: Int, rr: [RRInterval]) -> Double? {
+    /// Median RMSSD over 5-min tumbling windows across the session (ms), or nil.
+    /// Each window is range-filtered AND ectopic-rejected (Malik) before RMSSD —
+    /// the same cleaning hrv.analyze() applies — so a stray ectopic beat can't
+    /// inflate the night's headline HRV (the 60%-weight recovery driver). Windows
+    /// are aggregated with the median (robust to the odd corrupted window), the
+    /// same central-tendency choice the nightly respiratory rate already uses.
+    ///
+    /// When a hypnogram is supplied, windows whose midpoint falls in a "wake" span
+    /// are dropped: HRV measured across awakenings is noisier and sympathetically
+    /// skewed, so excluding wake tracks WHOOP/Oura, which sample HRV during sleep
+    /// only — a more reproducible parasympathetic read night to night. With no
+    /// hypnogram (pure-function callers / tests) every window counts, as before.
+    static func sessionAvgHRV(start: Int, end: Int, rr: [RRInterval],
+                              stages: [StageSegment] = []) -> Double? {
         let seg = rr.filter { $0.ts >= start && $0.ts <= end }
         guard !seg.isEmpty else { return nil }
         let windowS = 5 * 60
         var vals: [Double] = []
         var t = start
         while t < end {
+            // Skip windows centered in a scored wake span (only when a hypnogram is given).
+            if !stages.isEmpty, stageAt(t + windowS / 2, stages) == "wake" { t += windowS; continue }
             let bucket = seg.filter { $0.ts >= t && $0.ts < t + windowS }.map { Double($0.rrMs) }
-            let filtered = HRVAnalyzer.rangeFilter(bucket)
+            let filtered = HRVAnalyzer.cleanRR(bucket)
             if filtered.count >= 2, let r = HRVAnalyzer.rmssdRaw(filtered) { vals.append(r) }
             t += windowS
         }
         guard !vals.isEmpty else { return nil }
-        return vals.reduce(0, +) / Double(vals.count)
+        return HRVAnalyzer.median(vals)
+    }
+
+    /// Stage label of the segment whose [start, end) contains `ts`, or "" if none.
+    static func stageAt(_ ts: Int, _ stages: [StageSegment]) -> String {
+        for s in stages where ts >= s.start && ts < s.end { return s.stage }
+        return ""
     }
 
     // MARK: - AASM hypnogram metrics

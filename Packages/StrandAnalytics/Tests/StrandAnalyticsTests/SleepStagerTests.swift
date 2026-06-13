@@ -286,4 +286,33 @@ final class SleepStagerTests: XCTestCase {
         XCTAssertTrue(rate.isNaN)
         XCTAssertTrue(rrv.isNaN)
     }
+
+    // MARK: - Stage-gated nightly HRV
+
+    func testSessionAvgHRVExcludesWakeWindows() {
+        // 5 tumbling 5-min windows: the outer two are light sleep (RMSSD ~5 ms), the
+        // inner three are wake (RMSSD ~40 ms). Without a hypnogram the median is dragged
+        // up by the three wake windows; gating on the hypnogram drops them and the night's
+        // HRV reflects only the sleep windows — a more reproducible parasympathetic read.
+        var rr: [RRInterval] = []
+        func fill(start: Int, lo: Int, hi: Int) {
+            for i in 0..<30 { rr.append(RRInterval(ts: start + i, rrMs: i % 2 == 0 ? lo : hi)) }
+        }
+        fill(start: 0,    lo: 800, hi: 805)   // window 0 — sleep
+        fill(start: 300,  lo: 800, hi: 840)   // window 1 — wake
+        fill(start: 600,  lo: 800, hi: 840)   // window 2 — wake
+        fill(start: 900,  lo: 800, hi: 840)   // window 3 — wake
+        fill(start: 1200, lo: 800, hi: 805)   // window 4 — sleep
+        let stages = [
+            StageSegment(start: 0, end: 300, stage: "light"),
+            StageSegment(start: 300, end: 1200, stage: "wake"),
+            StageSegment(start: 1200, end: 1500, stage: "light"),
+        ]
+        let withoutStages = SleepStager.sessionAvgHRV(start: 0, end: 1500, rr: rr)!
+        let withStages = SleepStager.sessionAvgHRV(start: 0, end: 1500, rr: rr, stages: stages)!
+        XCTAssertEqual(withoutStages, 40, accuracy: 1.0, "all-windows median is dominated by the 3 wake windows")
+        XCTAssertEqual(withStages, 5, accuracy: 1.0, "excluding wake leaves only the sleep windows")
+        XCTAssertEqual(SleepStager.stageAt(450, stages), "wake")
+        XCTAssertEqual(SleepStager.stageAt(150, stages), "light")
+    }
 }

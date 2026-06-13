@@ -96,7 +96,7 @@ public enum ReadinessEngine {
         // HRV readiness ------------------------------------------------------
         let hrvSignal = zSignal(
             value: latest.avgHrv,
-            baseline: history.suffix(baselineWindow).compactMap { $0.avgHrv },
+            history: history.map { $0.avgHrv }, cfg: Baselines.hrvCfg,
             key: "hrv", label: String(localized: "HRV", bundle: .main),
             higherIsBetter: true,
             goodText: String(localized: "above your baseline — well recovered", bundle: .main),
@@ -108,7 +108,7 @@ public enum ReadinessEngine {
         // Resting-HR drift ---------------------------------------------------
         let rhrSignal = zSignal(
             value: latest.restingHr.map(Double.init),
-            baseline: history.suffix(baselineWindow).compactMap { $0.restingHr.map(Double.init) },
+            history: history.map { $0.restingHr.map(Double.init) }, cfg: Baselines.restingHRCfg,
             key: "rhr", label: String(localized: "Resting HR", bundle: .main),
             higherIsBetter: false,
             goodText: String(localized: "at or below baseline", bundle: .main),
@@ -132,8 +132,25 @@ public enum ReadinessEngine {
             }
         }
 
+        // Skin-temperature rise (illness / overreaching early signal) --------
+        // skinTempDevC is already baseline-normalized (°C above the personal mean);
+        // a sustained rise is a classic early illness marker (Oura uses ~+0.5 °C).
+        if let dev = latest.skinTempDevC {
+            if dev >= 0.8 {
+                signals.append(Signal(key: "skinTemp", label: String(localized: "Skin temperature", bundle: .main),
+                    detail: String(localized: "well above baseline — often an early sign of illness", bundle: .main), flag: .bad))
+            } else if dev >= 0.4 {
+                signals.append(Signal(key: "skinTemp", label: String(localized: "Skin temperature", bundle: .main),
+                    detail: String(localized: "running warm vs baseline", bundle: .main), flag: .watch))
+            }
+        }
+
         // Training Stress Balance (ACWR) + monotony --------------------------
-        let strainSeries = sorted.compactMap { $0.strain }
+        // Computed on TRIMP-like LINEAR load, not the 0–21 log-compressed strain:
+        // the log map flattens hard days, which understates the acute:chronic ramp
+        // (and inflates monotony) that these signals exist to catch. strainToLoad
+        // inverts StrainScorer's log map so a spike reads as a spike.
+        let strainSeries = sorted.compactMap { $0.strain }.map(strainToLoad)
         var acwr: Double? = nil
         var monotony: Double? = nil
         if strainSeries.count >= minChronic {
@@ -164,15 +181,22 @@ public enum ReadinessEngine {
 
     // MARK: Signal builders
 
-    /// Build a z-score signal for a metric where the baseline is the trailing window.
-    private static func zSignal(value: Double?, baseline: [Double],
+    /// Build a z-score signal for a metric, scored against the SAME robust EWMA
+    /// baseline (winsorized center + abs-dev spread) that RecoveryScorer consumes —
+    /// so the readiness read and the recovery score never tell two different stories
+    /// about the same HRV / resting-HR night. `history` is the ordered nightly series
+    /// before today (oldest → newest), with nils for missing nights (skip-and-hold).
+    private static func zSignal(value: Double?, history: [Double?], cfg: MetricCfg,
                                 key: String, label: String, higherIsBetter: Bool,
                                 goodText: String, neutralText: String,
                                 watchText: String, badText: String) -> Signal? {
-        guard let v = value, baseline.count >= minBaseline,
-              let m = mean(baseline), let sd = sampleSD(baseline), sd > 0 else { return nil }
-        // Orient z so positive always means "better".
-        let z = (higherIsBetter ? (v - m) : (m - v)) / sd
+        guard let v = value else { return nil }
+        let state = Baselines.foldHistory(history, cfg: cfg)
+        guard state.nValid >= minBaseline, state.spread > 0 else { return nil }
+        // deviation.z = (value − baseline) / (1.253 × spread); orient so positive
+        // always means "better" (invert for lower-is-better metrics like resting HR).
+        let dev = Baselines.deviation(v, state: state)
+        let z = higherIsBetter ? dev.z : -dev.z
         let flag: Flag
         let text: String
         switch z {
@@ -213,7 +237,7 @@ public enum ReadinessEngine {
         let bad = signals.filter { $0.flag == .bad }
         let watch = signals.filter { $0.flag == .watch }
         let good = signals.filter { $0.flag == .good }
-        let recoveryDown = signals.contains { ["hrv", "rhr", "respRate"].contains($0.key) && ($0.flag == .bad) }
+        let recoveryDown = signals.contains { ["hrv", "rhr", "respRate", "skinTemp"].contains($0.key) && ($0.flag == .bad) }
         let loadHigh = signals.contains { $0.key == "acwr" && $0.flag == .bad }
 
         if bad.count >= 2 || (recoveryDown && loadHigh) {
@@ -243,5 +267,15 @@ public enum ReadinessEngine {
         guard xs.count >= 2, let m = mean(xs) else { return nil }
         let ss = xs.reduce(0) { $0 + ($1 - m) * ($1 - m) }
         return (ss / Double(xs.count - 1)).squareRoot()
+    }
+
+    /// Linearize a 0–21 logarithmic strain back to a TRIMP-like load (the inverse
+    /// of StrainScorer's `21·ln(TRIMP+1)/ln(D)` map) so ACWR and monotony run on a
+    /// dose linear in physiological load. For imported strains on a comparable 0–21
+    /// log scale this is a consistent linearization, not an exact TRIMP recovery.
+    static func strainToLoad(_ strain: Double) -> Double {
+        guard strain > 0 else { return 0 }
+        let lnD = log(StrainScorer.strainDenominator)
+        return max(0, exp(strain * lnD / StrainScorer.maxStrain) - 1.0)
     }
 }

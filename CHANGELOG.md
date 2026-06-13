@@ -17,6 +17,28 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ---
 
+## 1.82 — iOS: more accurate recovery & readiness
+
+Work on the experimental iOS port. Still fully on-device, no cloud. Imported WHOOP scores are left
+untouched; the on-device scores re-derive a little more accurately as the engine re-scores recent
+nights.
+
+- **Cleaner nightly HRV.** The heart-rate variability that drives most of your recovery is now
+  cleaned of stray (ectopic) beats and summarized with the median across the night, and it's
+  measured only while you're actually asleep — wake stretches are excluded. The result is a steadier
+  number that reflects your body, not the occasional noisy beat.
+- **Smarter overtraining alert.** The training-load balance (acute vs chronic) is now computed on a
+  linear load instead of the compressed 0–21 strain scale, so a genuinely hard block reads as the
+  spike it is — the injury-risk warning fires when it should.
+- **Recovery and Readiness agree.** Both now read your HRV and resting heart rate off the same
+  personal baseline, so the two cards no longer tell different stories about the same night.
+- **Temperature now counts.** An elevated nightly skin temperature — a classic early sign of illness
+  or overreaching — now nudges recovery down and raises a readiness flag, using a signal the strap
+  already captured but the score ignored.
+- **Sleep judged against your own normal.** The sleep part of recovery is measured against your
+  personal efficiency baseline instead of a fixed target, so a naturally lighter sleeper isn't
+  penalized every night. All five changes fall back gracefully until your baseline has enough nights.
+
 ## 1.81 — iOS: Spanish (es-MX) localization, Apple Health import hardening, Today greeting
 
 Work on the experimental iOS port. All on-device, no cloud — nothing here changes that.
