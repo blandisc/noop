@@ -415,8 +415,7 @@ private func previewRepo() -> Repository {
             strain: gap ? nil : max(0, min(21, strain)), exerciseCount: 1
         ))
     }
-    repo.days = seeded
-    repo.loaded = true
+    repo.setDashboard(days: seeded)
     return repo
 }
 

@@ -815,7 +815,7 @@ private struct MultiTooltip: View {
 @MainActor
 private func comparePreviewRepo() -> Repository {
     let repo = Repository(deviceId: "preview")
-    repo.loaded = true
+    repo.setDashboard()
     return repo
 }
 

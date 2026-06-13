@@ -23,9 +23,22 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
   tiles (Recovery / HRV / Sleep) sit in a tight three-column row. In languages with longer words —
   e.g. Spanish "Recuperación" — the label was clipped to "Recupera…". The label now scales down to
   fit its tile instead of truncating, so the full word always shows.
+- **Steadier scores in your first couple of weeks (FER-13).** While NOOP is still learning your
+  baseline (roughly your first 4–14 nights), recovery and readiness now lean toward neutral instead
+  of swinging hard on a single reading measured against just a few nights of data. Each night your
+  baseline firms up, the scores trust your signals a little more, reaching full sensitivity by ~14
+  nights. Once your baseline is established, nothing changes — this only tempers the noisy early
+  window.
 
 _The items below are developer / docs — no user-facing change._
 
+- **Confidence shrinkage on thin baselines (FER-13).** Added `Baselines.confidence(nValid:)` — a
+  weight that ramps linearly from `confidenceFloor` (0.5) at `minNightsSeed` to 1.0 at
+  `minNightsTrust`. `RecoveryScorer` multiplies each personal-baseline driver z by it, and
+  `ReadinessEngine.zSignal` shrinks its z before flag thresholding, so a barely-seeded baseline
+  can't over-react. Trusted baselines (≥ `minNightsTrust`) get weight 1.0 — established scores are
+  byte-for-byte unchanged. `DriverBaseline` now carries `nValid` (defaults to trusted for directly
+  built priors). 186 StrandAnalytics tests green.
 - **Analytics robustness: divide-by-zero guards (FER-36).** Hardened degenerate-input paths in the
   on-device recovery/readiness engine so impossible data can't produce `NaN`/`inf` scores:
   `StrainScorer.pctHRR`/`zoneWeight` now return 0 when the HR reserve is non-positive (restingHR ≥
@@ -37,6 +50,18 @@ _The items below are developer / docs — no user-facing change._
   `DESIGN.md` (color, typography, spacing, motion, full component catalog), W3C design tokens
   (`tokens/design-tokens.json`), and a collected `assets/` folder (app icons + brand marks). The
   Swift package stays canonical; these are derived for handoff and cross-platform reuse.
+- **Verified the hot database reads are index-covered.** Added `EXPLAIN QUERY PLAN` tests over every
+  hot read (metric series, journal, workouts, Apple-daily, daily metrics, sleep sessions, HR samples
+  and the HR-bucket aggregate). All reach their rows through the composite primary key or the
+  `metricSeries` secondary index — no full-table scans — so no new indexes were needed. The tests
+  stay as a regression guard against a future query that silently drops the index.
+- **One UI refresh per data refresh, not four.** The dashboard's five separately-published fields
+  (days, sleeps, imported sleep, loaded, refresh counter) were folded into a single published value,
+  so a data refresh now triggers one SwiftUI invalidation instead of up to four — every screen
+  observing the store re-rendered that many times per refresh before. Read sites are unchanged
+  (`repo.days` etc. still work); only the internal publishing changed. The deeper
+  dashboard-window-vs-full-history split is tracked separately (the cleaner per-property observation
+  via the Observation framework is blocked by the macOS 13 deployment target).
 
 ---
 

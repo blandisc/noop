@@ -636,7 +636,7 @@ struct MetricDetailView: View {
 @MainActor
 private func explorerPreviewRepo() -> Repository {
     let repo = Repository(deviceId: "preview")
-    repo.loaded = true
+    repo.setDashboard()
     return repo
 }
 

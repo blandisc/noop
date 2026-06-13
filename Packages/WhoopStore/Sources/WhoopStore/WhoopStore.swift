@@ -105,4 +105,14 @@ public actor WhoopStore {
             try Set(db.indexes(on: table).map(\.name))
         }
     }
+
+    /// The `EXPLAIN QUERY PLAN` detail lines for a statement. Tests use this to assert the hot reads
+    /// hit an index (a `SEARCH … USING …` step) rather than a bare full-table `SCAN` (FER-29). The
+    /// bound argument *values* don't affect the chosen plan, but the placeholder count must match.
+    public func queryPlanForTest(_ sql: String, arguments: StatementArguments = StatementArguments()) async throws -> [String] {
+        try syncRead { db in
+            try Row.fetchAll(db, sql: "EXPLAIN QUERY PLAN \(sql)", arguments: arguments)
+                .map { ($0["detail"] as String?) ?? "" }
+        }
+    }
 }

@@ -352,8 +352,7 @@ private func previewEnv(
     metric: DailyMetric?
 ) -> (Repository, LiveState, AppModel) {
     let repo = Repository(deviceId: "preview")
-    if let metric { repo.days = [metric] }
-    repo.loaded = true
+    repo.setDashboard(days: metric.map { [$0] } ?? [])
     let model = AppModel()
     let live = model.live
     live.connected = connected
