@@ -229,7 +229,9 @@ public enum ReadinessEngine {
         // deviation.z = (value − baseline) / (1.253 × spread); orient so positive
         // always means "better" (invert for lower-is-better metrics like resting HR).
         let dev = Baselines.deviation(v, state: state)
-        let z = higherIsBetter ? dev.z : -dev.z
+        // Shrink toward neutral when the baseline is thin (FER-13), so a flag isn't
+        // raised on weak evidence; a trusted baseline (≥ minNightsTrust) is unshrunk.
+        let z = (higherIsBetter ? dev.z : -dev.z) * Baselines.confidence(nValid: state.nValid)
         let flag: Flag
         let text: String
         switch z {

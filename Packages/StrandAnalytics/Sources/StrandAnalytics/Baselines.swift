@@ -132,6 +132,26 @@ public enum Baselines {
         return .trusted
     }
 
+    /// Confidence weight at `nValid` valid nights (FER-13). The lowest weight a
+    /// usable baseline ever earns: a freshly-seeded baseline (nValid == minNightsSeed)
+    /// counts for this fraction of its z-score; from there it ramps linearly to 1.0.
+    public static let confidenceFloor: Double = 0.5
+
+    /// Shrinkage weight in [confidenceFloor, 1] for a baseline with `nValid` nights.
+    ///
+    /// Multiply a z-score by this to pull thin-evidence signals toward neutral so the
+    /// recovery/readiness engine doesn't over-react to a value measured against a
+    /// barely-seeded baseline. Ramps linearly from `confidenceFloor` at `minNightsSeed`
+    /// (the first night a score appears) to 1.0 at `minNightsTrust`. A fully trusted
+    /// baseline (nValid ≥ minNightsTrust) returns 1.0 — no shrinkage, so established
+    /// users are unaffected.
+    public static func confidence(nValid: Int) -> Double {
+        if nValid >= minNightsTrust { return 1.0 }
+        if nValid <= minNightsSeed { return confidenceFloor }
+        let frac = Double(nValid - minNightsSeed) / Double(minNightsTrust - minNightsSeed)
+        return confidenceFloor + (1.0 - confidenceFloor) * frac
+    }
+
     // MARK: - Winsorized EWMA update (production model)
 
     /// Incorporate one new nightly value into the baseline state.

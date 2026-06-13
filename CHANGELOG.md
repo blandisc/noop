@@ -19,8 +19,22 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Steadier scores in your first couple of weeks (FER-13).** While NOOP is still learning your
+  baseline (roughly your first 4–14 nights), recovery and readiness now lean toward neutral instead
+  of swinging hard on a single reading measured against just a few nights of data. Each night your
+  baseline firms up, the scores trust your signals a little more, reaching full sensitivity by ~14
+  nights. Once your baseline is established, nothing changes — this only tempers the noisy early
+  window.
+
 _Developer / docs — no user-facing change._
 
+- **Confidence shrinkage on thin baselines (FER-13).** Added `Baselines.confidence(nValid:)` — a
+  weight that ramps linearly from `confidenceFloor` (0.5) at `minNightsSeed` to 1.0 at
+  `minNightsTrust`. `RecoveryScorer` multiplies each personal-baseline driver z by it, and
+  `ReadinessEngine.zSignal` shrinks its z before flag thresholding, so a barely-seeded baseline
+  can't over-react. Trusted baselines (≥ `minNightsTrust`) get weight 1.0 — established scores are
+  byte-for-byte unchanged. `DriverBaseline` now carries `nValid` (defaults to trusted for directly
+  built priors). 186 StrandAnalytics tests green.
 - **Analytics robustness: divide-by-zero guards (FER-36).** Hardened degenerate-input paths in the
   on-device recovery/readiness engine so impossible data can't produce `NaN`/`inf` scores:
   `StrainScorer.pctHRR`/`zoneWeight` now return 0 when the HR reserve is non-positive (restingHR ≥

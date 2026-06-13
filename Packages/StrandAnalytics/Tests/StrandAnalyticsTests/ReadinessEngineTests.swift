@@ -92,4 +92,42 @@ final class ReadinessEngineTests: XCTestCase {
         XCTAssertNil(ReadinessEngine.sampleSD([5]))
         XCTAssertNil(ReadinessEngine.mean([]))
     }
+
+    // MARK: - Confidence shrinkage (FER-13)
+
+    /// `n` baseline days with the same gentle ±2 HRV variation (mean ≈ 60), then `today`.
+    private func hrvHistory(days n: Int, todayHrv: Double) -> [DailyMetric] {
+        var days: [DailyMetric] = []
+        for i in 1...n { days.append(d(i, hrv: i % 2 == 0 ? 62 : 58, rhr: 52, strain: 10)) }
+        days.append(d(n + 1, hrv: todayHrv, rhr: 52, strain: 10))
+        return days
+    }
+
+    private func severity(_ flag: ReadinessEngine.Flag?) -> Int {
+        switch flag {
+        case .good, .neutral, .none: return 0
+        case .watch: return 1
+        case .bad:   return 2
+        }
+    }
+
+    private func hrvFlag(days n: Int, todayHrv: Double) -> ReadinessEngine.Flag? {
+        ReadinessEngine.evaluate(days: hrvHistory(days: n, todayHrv: todayHrv))
+            .signals.first { $0.key == "hrv" }?.flag
+    }
+
+    /// Across a sweep of suppressed-HRV nights, a thin (provisional) baseline never
+    /// flags MORE severely than a long (trusted) one, and for at least one night it
+    /// flags strictly LESS severely — the z is shrunk toward neutral on weak evidence
+    /// so the engine doesn't sound the alarm prematurely (FER-13).
+    func testThinBaselineNeverMoreSevereAndSometimesLess() {
+        var sawDowngrade = false
+        for today in stride(from: 58.0, through: 50.0, by: -1.0) {
+            let thin = severity(hrvFlag(days: 9, todayHrv: today))      // provisional → shrunk
+            let trusted = severity(hrvFlag(days: 28, todayHrv: today))  // trusted → unshrunk
+            XCTAssertLessThanOrEqual(thin, trusted, "thin baseline more severe at hrv=\(today)")
+            if thin < trusted { sawDowngrade = true }
+        }
+        XCTAssertTrue(sawDowngrade, "shrinkage never downgraded a flag across the sweep")
+    }
 }

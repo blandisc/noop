@@ -161,6 +161,49 @@ final class RecoveryScorerTests: XCTestCase {
         XCTAssertNil(RecoveryScorer.restingHR([], start: 0, end: 1000))
     }
 
+    // MARK: - Confidence shrinkage (FER-13)
+
+    /// Same night, identical baseline mean/σ — only the number of valid nights differs.
+    /// A thin (provisional) baseline shrinks the z toward neutral, so both a bad day
+    /// and a great day land closer to 50 than when scored against a trusted baseline.
+    func testThinBaselinePullsScoreTowardNeutral() {
+        func score(nValid: Int, hrv: Double, rhr: Double, sleep: Double) -> Double {
+            RecoveryScorer.recovery(
+                hrv: hrv, rhr: rhr, resp: nil,
+                hrvBaseline: baseline(mean: 50, sigma: 6, nValid: nValid),
+                rhrBaseline: baseline(mean: 55, sigma: 3, nValid: nValid),
+                respBaseline: nil, sleepPerf: sleep)!
+        }
+        // Bad day: suppressed HRV, elevated RHR, poor sleep.
+        let badThin = score(nValid: Baselines.minNightsSeed, hrv: 38, rhr: 63, sleep: 0.70)
+        let badTrusted = score(nValid: Baselines.minNightsTrust, hrv: 38, rhr: 63, sleep: 0.70)
+        XCTAssertGreaterThan(badThin, badTrusted)                       // less punishing on thin evidence
+        XCTAssertLessThan(abs(badThin - 50), abs(badTrusted - 50))      // closer to neutral
+
+        // Great day: high HRV, low RHR, good sleep.
+        let goodThin = score(nValid: Baselines.minNightsSeed, hrv: 66, rhr: 48, sleep: 0.95)
+        let goodTrusted = score(nValid: Baselines.minNightsTrust, hrv: 66, rhr: 48, sleep: 0.95)
+        XCTAssertLessThan(goodThin, goodTrusted)                        // less flattering on thin evidence
+        XCTAssertLessThan(abs(goodThin - 50), abs(goodTrusted - 50))    // closer to neutral
+    }
+
+    /// A trusted baseline (nValid ≥ minNightsTrust) gets confidence 1.0 → no shrinkage,
+    /// so established users' scores are byte-for-byte unchanged by FER-13.
+    func testTrustedBaselineUnchanged() {
+        let viaState = RecoveryScorer.recovery(
+            hrv: 65, rhr: 50, resp: nil,
+            hrvBaseline: baseline(mean: 50, sigma: 6.265, nValid: 20),
+            rhrBaseline: baseline(mean: 55, sigma: 2.506, nValid: 20),
+            respBaseline: nil, sleepPerf: 0.90)!
+        // DriverBaseline built directly (no nValid) defaults to trusted → identical score.
+        let viaDriver = RecoveryScorer.recovery(
+            hrv: 65, rhr: 50, resp: nil,
+            hrvBaseline: RecoveryScorer.DriverBaseline(mean: 50, spread: 6.265 / 1.253),
+            rhrBaseline: RecoveryScorer.DriverBaseline(mean: 55, spread: 2.506 / 1.253),
+            respBaseline: nil, sleepPerf: 0.90)!
+        XCTAssertEqual(viaState, viaDriver, accuracy: 1e-9)
+    }
+
     // MARK: - Degenerate logistic guard (FER-36)
 
     /// A non-finite driver (NaN/±inf) yields a non-finite composite z; the engine
