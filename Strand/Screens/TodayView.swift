@@ -256,6 +256,8 @@ struct TodayView: View {
                         .font(StrandFont.caption)
                         .foregroundStyle(StrandPalette.textTertiary)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                        .layoutPriority(1)
                     Spacer(minLength: 4)
                     Circle().fill(color).frame(width: 7, height: 7)
                 }
