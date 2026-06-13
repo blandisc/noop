@@ -66,6 +66,38 @@ struct TodayView: View {
     }
 
     var body: some View {
+        platformBody
+            .task(id: repo.refreshSeq) { await loadAll() }
+            .toolbar {
+                ToolbarItem {
+                    Button { showingSupport = true } label: {
+                        Image(systemName: "heart.fill")
+                            .foregroundStyle(StrandPalette.metricRose)
+                            .attentionWiggle(period: 4)
+                    }
+                    .help("Support NOOP — donate or get in touch")
+                    .accessibilityLabel("Support NOOP — donate or get in touch")
+                }
+            }
+            .overlay {
+                if showingSupport {
+                    SupportModalOverlay(isPresented: $showingSupport)
+                }
+            }
+            .animation(.easeOut(duration: 0.18), value: showingSupport)
+    }
+
+    @ViewBuilder private var platformBody: some View {
+        #if os(iOS)
+        iosBody
+        #else
+        macBody
+        #endif
+    }
+
+    /// macOS / fallback: the original "gapless" dashboard grid (one column of uniform sections,
+    /// preview-sized for a wide window). iPhone uses `iosBody` below.
+    private var macBody: some View {
         ScreenScaffold(title: greetingKey, subtitle: "\(dateLine)") {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                 HealthAlertBanner()
@@ -85,25 +117,225 @@ struct TodayView: View {
                 sourcesSection
             }
         }
-        .task(id: repo.refreshSeq) { await loadAll() }
-        .toolbar {
-            ToolbarItem {
-                Button { showingSupport = true } label: {
-                    Image(systemName: "heart.fill")
-                        .foregroundStyle(StrandPalette.metricRose)
-                        .attentionWiggle(period: 4)
-                }
-                .help("Support NOOP — donate or get in touch")
-                .accessibilityLabel("Support NOOP — donate or get in touch")
-            }
-        }
-        .overlay {
-            if showingSupport {
-                SupportModalOverlay(isPresented: $showingSupport)
-            }
-        }
-        .animation(.easeOut(duration: 0.18), value: showingSupport)
     }
+
+    // MARK: - iOS Today (verdict-first · live HR pill · 2-up glance grid)
+    //
+    // iPhone-only layout (gated `#if os(iOS)`; macOS keeps `macBody`'s grid). It leads with
+    // the on-device READINESS verdict — the answer NOOP can give that the strap maker can't —
+    // instead of a score to interpret, carries a LIVE heart-rate pill in the top utility row
+    // (real `LiveState.heartRate`, never faked), and pins the metric grid to two columns
+    // (the desktop `.adaptive(minimum:168)` grid collapses to one column on a phone).
+
+    #if os(iOS)
+    private var iosGrid: [GridItem] {
+        [GridItem(.flexible(), spacing: NoopMetrics.gap),
+         GridItem(.flexible(), spacing: NoopMetrics.gap)]
+    }
+
+    private var iosBody: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+                utilityRow
+                HealthAlertBanner()
+                if repo.today?.recovery == nil {
+                    if live.backfilling { SyncingHistoryNote(chunks: live.syncChunksThisSession) }
+                    DataPendingNote(
+                        title: "Live now. Your scores are building.",
+                        message: "Your live heart rate is working from the strap, and recovery, strain and sleep build from it over your next few nights of wear, sharpening as it learns your baseline. Want your full history instantly? Import your WHOOP export in Data Sources and it backfills in about a minute."
+                    )
+                }
+                verdictSection
+                whySection
+                iosMetricsSection
+                workoutsSection
+                heartRateTrendSection
+                sourcesSection
+            }
+            .padding(NoopMetrics.screenPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(StrandPalette.surfaceBase)
+    }
+
+    /// Top utility row: a compact date (the greeting is gone — the verdict greets with substance)
+    /// and the live heart-rate pill.
+    @ViewBuilder private var utilityRow: some View {
+        HStack(alignment: .center) {
+            Text(shortDate)
+                .font(StrandFont.overline)
+                .tracking(StrandFont.overlineTracking)
+                .foregroundStyle(StrandPalette.textTertiary)
+            Spacer()
+            if let bpm = liveBpm {
+                LiveHRPill(bpm: bpm, isLive: isLiveHR)
+            }
+        }
+    }
+
+    /// Readiness promoted to the hero: NOOP's reason to exist over the strap maker is on-device
+    /// synthesis, so the home answers "should you push today?" instead of posing a number. The
+    /// card tints to the readiness level. Falls back to the recovery ring while the baseline seeds.
+    @ViewBuilder private var verdictSection: some View {
+        let r = readiness
+        if r.level != .insufficient {
+            let lc = readinessColor(r.level)
+            VStack(alignment: .leading, spacing: 6) {
+                // Overline + load share one row — the load no longer claims its own line at the
+                // bottom, so the card loses the dead band beneath it.
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("Should you push today?")
+                        .font(StrandFont.overline).tracking(StrandFont.overlineTracking)
+                        .foregroundStyle(lc)
+                        .lineLimit(1)
+                    Spacer(minLength: 8)
+                    if let acwr = r.acwr {
+                        Text("load \(String(format: "%.2f", acwr))")
+                            .font(StrandFont.captionNumber)
+                            .foregroundStyle(StrandPalette.textTertiary)
+                            .help("Acute (7-day) vs chronic (28-day) training load. 0.8–1.3 is the sweet spot.")
+                    }
+                }
+                Text(r.headline)
+                    .font(StrandFont.title1)
+                    .foregroundStyle(StrandPalette.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(r.summary)
+                    .font(StrandFont.subhead)
+                    .foregroundStyle(StrandPalette.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(lc.opacity(0.08), in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                .strokeBorder(lc.opacity(0.30), lineWidth: 1))
+        } else {
+            heroSection
+        }
+    }
+
+    /// "Why" evidence strip behind the verdict — recovery + HRV + sleep as THREE UNIFORM flat-stat
+    /// tiles (the Whoop/Apple pattern). No ring in the row: mixing a circular gauge with flat numbers
+    /// is what made the trio read at three different sizes. Recovery keeps its identity through its
+    /// state COLOR + a status dot, not a ring — the ring's signature moment is the verdict hero above.
+    /// All three values share one font size and clamp to a single line.
+    @ViewBuilder private var whySection: some View {
+        let d = repo.today
+        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            SectionHeader("Today’s Synthesis", overline: "At a glance")
+            HStack(spacing: NoopMetrics.gap) {
+                synthTile(label: "Recovery",
+                          value: d?.recovery.map { "\(Int($0.rounded()))" } ?? "—",
+                          unit: "",
+                          color: d?.recovery.map { StrandPalette.recoveryColor($0) } ?? StrandPalette.textTertiary)
+                synthTile(label: "HRV",
+                          value: d?.avgHrv.map { "\(Int($0.rounded()))" } ?? "—",
+                          unit: "ms",
+                          color: StrandPalette.metricPurple)
+                synthTile(label: "Sleep",
+                          value: sleepValue(d),
+                          unit: "",
+                          color: StrandPalette.metricPurple)
+            }
+        }
+    }
+
+    /// One uniform flat-stat tile: label + status dot on top, then one big value (+ optional unit).
+    /// Same structure and number size for all three; a snug fixed height keeps them perfectly aligned.
+    private func synthTile(label: LocalizedStringKey, value: String, unit: String, color: Color) -> some View {
+        NoopCard {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 4) {
+                    Text(label)
+                        .font(StrandFont.caption)
+                        .foregroundStyle(StrandPalette.textTertiary)
+                        .lineLimit(1)
+                    Spacer(minLength: 4)
+                    Circle().fill(color).frame(width: 7, height: 7)
+                }
+                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                    Text(value)
+                        .font(StrandFont.number(20, weight: .bold))
+                        .foregroundStyle(color)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                    if !unit.isEmpty {
+                        Text(unit).font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(height: 54, alignment: .top)
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    /// "Key Metrics" — six tiles pinned to a true two-column grid for the phone.
+    @ViewBuilder private var iosMetricsSection: some View {
+        let d = repo.today
+        let aLatest = appleDays.last
+        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            SectionHeader("Key Metrics", overline: "Today", trailing: String(localized: "14-day trend"))
+            LazyVGrid(columns: iosGrid, alignment: .leading, spacing: NoopMetrics.gap) {
+                StatTile(label: "Day Strain",
+                         value: d?.strain.map { String(format: "%.1f", $0) } ?? "—",
+                         caption: String(localized: "of 21"),
+                         accent: d?.strain.map { StrandPalette.strainColor($0) } ?? StrandPalette.textPrimary,
+                         sparkline: sparks["strain"], sparkColor: StrandPalette.strain066)
+                StatTile(label: "Sleep",
+                         value: sleepValue(d),
+                         caption: d?.efficiency.map { String(format: String(localized: "%.0f%% eff"), $0) },
+                         accent: StrandPalette.textPrimary,
+                         sparkline: sparks["sleep_total_min"], sparkColor: StrandPalette.metricPurple)
+                StatTile(label: "HRV",
+                         value: d?.avgHrv.map { "\(Int($0.rounded()))" } ?? "—",
+                         caption: "ms", accent: StrandPalette.metricPurple,
+                         sparkline: sparks["hrv"], sparkColor: StrandPalette.metricPurple)
+                StatTile(label: "Resting HR",
+                         value: d?.restingHr.map { "\($0)" } ?? "—",
+                         caption: "bpm", accent: StrandPalette.metricRose,
+                         sparkline: sparks["rhr"], sparkColor: StrandPalette.metricRose)
+                StatTile(label: "Blood Oxygen",
+                         value: d?.spo2Pct.map { String(format: "%.0f%%", $0) } ?? "—",
+                         caption: "SpO₂", accent: StrandPalette.metricCyan,
+                         sparkline: sparks["spo2"], sparkColor: StrandPalette.metricCyan)
+                StatTile(label: "Steps",
+                         value: aLatest?.steps.map { intString(Double($0)) } ?? latestString("steps", decimals: 0),
+                         caption: String(localized: "today"), accent: StrandPalette.metricCyan,
+                         sparkline: sparks["steps"], sparkColor: StrandPalette.metricCyan)
+            }
+        }
+    }
+
+    /// On-device readiness for the verdict hero (same engine the macOS `readinessSection` uses).
+    private var readiness: ReadinessEngine.Readiness {
+        ReadinessEngine.evaluate(days: repo.days, today: Repository.localDayKey(Date()))
+    }
+
+    /// True only when the strap is worn AND streaming live HR — gates the beating animation so a
+    /// last-known reading never pretends to be a live pulse.
+    private var isLiveHR: Bool { live.heartRate != nil && live.worn }
+
+    /// bpm for the pill: the live strap value when worn, else today's last 5-minute HR bucket.
+    /// Returns nil when there is no recent HR at all, so the pill hides rather than show a zero.
+    private var liveBpm: Int? {
+        if isLiveHR, let hr = live.heartRate { return hr }
+        if let last = hrPoints.last?.value { return Int(last.rounded()) }
+        return nil
+    }
+
+    /// Compact localized date for the utility row, e.g. "THU 12 JUN" — context without the greeting.
+    private var shortDate: String {
+        let f = DateFormatter()
+        f.locale = .autoupdatingCurrent
+        f.setLocalizedDateFormatFromTemplate("EEEdMMM")
+        let date: Date
+        if let day = repo.today?.day, let parsed = Self.dayParser.date(from: day) { date = parsed }
+        else { date = Date() }
+        return f.string(from: date).uppercased()
+    }
+    #endif
 
     // MARK: Readiness — on-device training-readiness synthesis (HRV / resting-HR / load).
 
@@ -667,6 +899,51 @@ struct TodayView: View {
         return f
     }()
 }
+
+// MARK: - Live heart-rate pill (iOS)
+
+#if os(iOS)
+/// A compact live heart-rate pill for the Today utility row. The heart beats in time with the
+/// real rate (period 60/bpm — a 74 bpm pulse beats every 0.81 s) ONLY when the strap is actively
+/// streaming (`isLive`), and honors Reduce Motion. When the value is a last-known reading rather
+/// than a live stream it renders static — the animation is reserved for genuinely live data.
+private struct LiveHRPill: View {
+    let bpm: Int
+    let isLive: Bool
+    @State private var beat = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var animate: Bool { isLive && !reduceMotion }
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "heart.fill")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(StrandPalette.metricRose)
+                .scaleEffect(beat ? 1.18 : 1.0)
+                .animation(animate ? .easeInOut(duration: 30.0 / Double(max(bpm, 30)))
+                            .repeatForever(autoreverses: true) : nil,
+                           value: beat)
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text("\(bpm)")
+                    .font(StrandFont.number(15, weight: .bold))
+                    .foregroundStyle(StrandPalette.textPrimary)
+                Text("bpm")
+                    .font(StrandFont.caption)
+                    .foregroundStyle(StrandPalette.textSecondary)
+            }
+        }
+        .padding(.vertical, 6)
+        .padding(.horizontal, 12)
+        .background(StrandPalette.metricRose.opacity(0.10), in: Capsule())
+        .overlay(Capsule().strokeBorder(StrandPalette.metricRose.opacity(0.30), lineWidth: 1))
+        .onAppear { if animate { beat = true } }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(isLive ? "Live heart rate" : "Heart rate"))
+        .accessibilityValue(Text("\(bpm) bpm"))
+    }
+}
+#endif
 
 // MARK: - Preview
 
