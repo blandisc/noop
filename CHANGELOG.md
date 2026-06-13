@@ -17,6 +17,17 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ---
 
+## 1.83 — iOS: Today synthesis label no longer clips in Spanish
+
+Work on the experimental iOS port. On-device only, no cloud.
+
+- **"Recuperación" fits its tile again.** On the redesigned Today screen, the "Today's Synthesis"
+  tiles show a short label next to a colored status dot. In Spanish (and German) the longer
+  "Recuperación" label was being clipped to "Recuper…" because it had to share the tile's width with
+  the dot. The label now claims the width it needs before the dot, and gently scales down as a
+  fallback on narrower screens, so it reads in full in every language without touching any
+  translations.
+
 ## 1.82 — iOS: more accurate recovery & readiness
 
 Work on the experimental iOS port. Still fully on-device, no cloud. Imported WHOOP scores are left
