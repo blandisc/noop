@@ -19,6 +19,10 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **"Today's Synthesis" labels no longer truncate.** On the Today screen, the three at-a-glance
+  tiles (Recovery / HRV / Sleep) sit in a tight three-column row. In languages with longer words —
+  e.g. Spanish "Recuperación" — the label was clipped to "Recupera…". The label now scales down to
+  fit its tile instead of truncating, so the full word always shows.
 - **Steadier scores in your first couple of weeks (FER-13).** While NOOP is still learning your
   baseline (roughly your first 4–14 nights), recovery and readiness now lean toward neutral instead
   of swinging hard on a single reading measured against just a few nights of data. Each night your
@@ -26,7 +30,7 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
   nights. Once your baseline is established, nothing changes — this only tempers the noisy early
   window.
 
-_Developer / docs — no user-facing change._
+_The items below are developer / docs — no user-facing change._
 
 - **Confidence shrinkage on thin baselines (FER-13).** Added `Baselines.confidence(nValid:)` — a
   weight that ramps linearly from `confidenceFloor` (0.5) at `minNightsSeed` to 1.0 at
