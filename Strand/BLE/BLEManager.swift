@@ -3,6 +3,65 @@ import CoreBluetooth
 import WhoopProtocol
 import WhoopStore
 
+/// Detects a marginal Bluetooth radio that can't sustain the WHOOP 4 R10/R11 raw realtime stream
+/// (#80). On a flaky radio (2016 Mac / OpenCore) the link dies the *instant* NOOP arms that
+/// high-bandwidth burst, then the auto-rescan reconnects, re-arms, and dies again — an endless loop.
+///
+/// The tell is a CONNECTION TIMEOUT that lands shortly after we armed realtime: arm → die → rescan →
+/// arm → die. We don't trip on a single drop (links die for benign reasons), but on >= `tripThreshold`
+/// CONSECUTIVE arm-then-quick-timeout cycles. Once tripped, the caller skips arming R10/R11 on the next
+/// connect and relies on the independent low-bandwidth 0x2A37 standard HR profile, which NOOP already
+/// subscribes — live HR survives on a radio that otherwise couldn't, and even if 0x2A37 stays silent the
+/// arm/die loop stops. Pure + value-typed so the decision is unit-testable without a CoreBluetooth seam.
+struct MarginalRadioDetector {
+    /// How many consecutive arm-then-quick-timeout cycles before we fall back to standard-HR-only.
+    /// 2 (not 1): one drop is noise; two in a row right after arming is the radio buckling under the burst.
+    let tripThreshold: Int
+    /// A timeout only counts as "right after arming" if it lands within this window. A drop minutes into a
+    /// healthy session is unrelated to the arm burst and must NOT be blamed on it (that would mis-trip a
+    /// good radio whose link merely flaps later).
+    let quickTimeoutWindow: TimeInterval
+
+    private(set) var consecutiveArmTimeouts = 0
+    /// True once we've tripped: the next connect should skip the R10/R11 arm and run standard-HR-only.
+    private(set) var tripped = false
+
+    init(tripThreshold: Int = 2, quickTimeoutWindow: TimeInterval = 20) {
+        self.tripThreshold = tripThreshold
+        self.quickTimeoutWindow = quickTimeoutWindow
+    }
+
+    /// A connection ended. `wasArmed` = we had armed R10/R11 this connection; `secondsSinceArm` = how long
+    /// after arming the link ended (nil if we never armed); `timedOut` = the drop looks like a connection
+    /// timeout (vs. an intentional disconnect, a bond reset, etc.). Returns true if THIS event tripped the
+    /// fallback (a freshly-crossed threshold), so the caller can log/surface it exactly once.
+    mutating func connectionEnded(wasArmed: Bool, secondsSinceArm: TimeInterval?, timedOut: Bool) -> Bool {
+        // Only a timeout that lands within the window after we actually armed the burst is evidence the
+        // radio choked on the arm. Anything else (clean session that later flapped, non-timeout error,
+        // never armed) breaks the streak — a single healthy spell should clear prior suspicion.
+        let armCausedTimeout = wasArmed && timedOut
+            && (secondsSinceArm.map { $0 <= quickTimeoutWindow } ?? false)
+        guard armCausedTimeout else {
+            consecutiveArmTimeouts = 0
+            return false
+        }
+        consecutiveArmTimeouts += 1
+        if !tripped && consecutiveArmTimeouts >= tripThreshold {
+            tripped = true
+            return true        // freshly tripped — caller logs/surfaces once
+        }
+        return false
+    }
+
+    /// Clear all suspicion: a clean session is flowing, or the user explicitly re-requested the full
+    /// stream (Live re-open / manual Start HR). Lets a transient radio hiccup recover instead of
+    /// permanently pinning the user to standard-HR mode.
+    mutating func reset() {
+        consecutiveArmTimeouts = 0
+        tripped = false
+    }
+}
+
 /// CoreBluetooth engine for the WHOOP 4.0: scan-by-service → connect → discover →
 /// BOND (one confirmed write) → subscribe → reassemble char-05 frames → FrameRouter.
 /// Cannot run in the simulator; verified manually on-device (Task C6).
@@ -75,6 +134,17 @@ public final class BLEManager: NSObject, ObservableObject {
     private var lastDataAt = Date()
     /// True while the Live screen wants the (heavy) realtime stream; keep-alive re-arms it.
     private var wantsRealtime = false
+    /// #80 marginal-radio fallback: tracks consecutive arm-then-quick-timeout cycles. When it trips,
+    /// `standardHRFallback` goes true and the next connect skips arming R10/R11 (relies on 0x2A37).
+    private var marginalRadio = MarginalRadioDetector()
+    /// When true, SKIP arming the R10/R11 raw realtime stream on connect — the radio couldn't sustain
+    /// it (see MarginalRadioDetector). Live HR then comes only from the already-subscribed low-bandwidth
+    /// 0x2A37 standard-HR profile. Per-session: set by the detector, cleared on a clean reconnect (a
+    /// connection that actually carried data) or when the user re-opens Live / taps Start HR.
+    private var standardHRFallback = false
+    /// Wall time we last armed the R10/R11 realtime burst this connection, to measure how soon a drop
+    /// follows the arm (the marginal-radio tell). nil until armed; cleared on disconnect.
+    private var realtimeArmedAt: Date?
     /// Last-offload-attempt time (unix seconds), persisted so the rate limiter survives relaunch
     /// (matches WHOOP's DATA_SYNC_WORKER_LAST_WORK_TIME watermark).
     static let backfillLastAtKey = "backfillLastAt"
@@ -168,21 +238,33 @@ public final class BLEManager: NSObject, ObservableObject {
         self.collector = nil
         super.init()
         state.lastSyncedAt = UserDefaults.standard.object(forKey: "lastSyncedAt") as? Double
-        // Restore identifier + background-capable central (foundation for M3 state restoration).
+        central = BLEManager.makeCentral(delegate: self)
+        // Strap-as-clock: an incoming EVENT packet kicks a rate-limited catch-up sync.
+        router.onSyncTrigger = { [weak self] in self?.requestSync(.strap) }
+    }
+
+    /// Single source of truth for `CBCentralManager` construction. iOS passes the state-restoration
+    /// identifier so the system can relaunch us into the background for BLE events and call
+    /// `willRestoreState` with the previously-connected peripheral; macOS does not have that
+    /// background-launch path so the option is omitted.
+    ///
+    /// IMPORTANT (iOS): `CoreBluetooth` only honours state restoration when the `CBCentralManager`
+    /// is constructed eagerly during `application(_:didFinishLaunchingWithOptions:)` — equivalently,
+    /// synchronously from the app's `init` on a SwiftUI lifecycle. If `BLEManager` is built lazily
+    /// inside a `.task`, iOS drops the restored state and `willRestoreState` never fires on a cold
+    /// background relaunch. `StrandiOSApp.init` constructs `AppModel` (which owns `BLEManager`)
+    /// synchronously to satisfy this.
+    private static func makeCentral(delegate: CBCentralManagerDelegate) -> CBCentralManager {
         #if os(iOS)
-        // iOS: pass the restoration identifier so the system can relaunch us into the background
-        // for BLE events and call `willRestoreState` with the previously-connected peripheral.
-        central = CBCentralManager(
-            delegate: self,
+        return CBCentralManager(
+            delegate: delegate,
             queue: .main,
             options: [CBCentralManagerOptionRestoreIdentifierKey: BLEManager.restoreID]
         )
         #else
         // Strand (macOS desktop): no state-restoration identifier (iOS background feature).
-        central = CBCentralManager(delegate: self, queue: .main)
+        return CBCentralManager(delegate: delegate, queue: .main)
         #endif
-        // Strap-as-clock: an incoming EVENT packet kicks a rate-limited catch-up sync.
-        router.onSyncTrigger = { [weak self] in self?.requestSync(.strap) }
     }
 
     /// Build the WhoopStore + Collector + Backfiller asynchronously. Safe to call multiple
@@ -214,16 +296,7 @@ public final class BLEManager: NSObject, ObservableObject {
         self.collector = collector
         super.init()
         state.lastSyncedAt = UserDefaults.standard.object(forKey: "lastSyncedAt") as? Double
-        #if os(iOS)
-        central = CBCentralManager(
-            delegate: self,
-            queue: .main,
-            options: [CBCentralManagerOptionRestoreIdentifierKey: BLEManager.restoreID]
-        )
-        #else
-        // Strand (macOS desktop): no state-restoration identifier (iOS background feature).
-        central = CBCentralManager(delegate: self, queue: .main)
-        #endif
+        central = BLEManager.makeCentral(delegate: self)
         // Strap-as-clock: an incoming EVENT packet kicks a rate-limited catch-up sync.
         router.onSyncTrigger = { [weak self] in self?.requestSync(.strap) }
     }
@@ -269,6 +342,11 @@ public final class BLEManager: NSObject, ObservableObject {
 
     public func disconnect() {
         intentionalDisconnect = true
+        // A user-initiated teardown is a clean slate: clear any #80 marginal-radio fallback so the next
+        // (manual) reconnect attempts the full R10/R11 stream again rather than inheriting old suspicion.
+        marginalRadio.reset()
+        standardHRFallback = false
+        state.standardHRMode = nil
         if let p = peripheral {
             central.cancelPeripheralConnection(p)
         }
@@ -343,18 +421,22 @@ public final class BLEManager: NSObject, ObservableObject {
         }
         // WHOOP 5.0/MG uses puffin (CRC16) command framing, not the WHOOP4 frame. The realtime-HR toggle
         // is hardware-confirmed (issue #17 — a 5/MG owner saw live HR over a public build), which proves
-        // the strap does act on puffin-framed commands. We now also send haptics (buzz) on that same
-        // proven transport — experimental: the strap may or may not honor that specific command, but it's
-        // no longer a blind guess. Everything else stays dropped (the offload commands need the held
-        // historical-offload work). WHOOP 4.0 is unaffected.
+        // the strap does act on puffin-framed commands. We now also send haptics (buzz) and the
+        // firmware-alarm family on that same proven transport. Everything else stays dropped.
+        // WHOOP 4.0 is unaffected.
         if selectedModel.deviceFamily == .whoop5 {
-            // Allowlist: live (toggle HR, buzz), the two historical-offload commands, and the clock
-            // pair. SEND_HISTORICAL_DATA triggers the offload; HISTORICAL_DATA_RESULT acks each
-            // HISTORY_END to walk the trim cursor. SET_CLOCK/GET_CLOCK are MANDATORY before history:
-            // an un-clocked WHOOP 5 doesn't save sensor data to flash at all ("RTC timestamp … is
-            // invalid; not saving data to flash"), so offloads complete with zero body frames —
-            // hardware-validated, same 8-byte WHOOP4 payload over puffin framing. (#78 fork)
+            // Allowlist: live (toggle HR, buzz), the firmware-alarm family (set/get/run/disable —
+            // same command numbers as WHOOP4 over puffin framing; the 5/MG REVISION_4/REVISION_2
+            // bodies are built at the call sites and pad4 covers their 20-/2-byte bodies), the two
+            // historical-offload commands, and the clock pair. SEND_HISTORICAL_DATA triggers the
+            // offload; HISTORICAL_DATA_RESULT acks each HISTORY_END to walk the trim cursor.
+            // SET_CLOCK/GET_CLOCK are MANDATORY before history: an un-clocked WHOOP 5 doesn't save
+            // sensor data to flash at all ("RTC timestamp … is invalid; not saving data to flash"),
+            // so offloads complete with zero body frames — hardware-validated, same 8-byte WHOOP4
+            // payload over puffin framing. (#78 fork)
             guard command == .toggleRealtimeHR || command == .runHapticsPattern
+                || command == .setAlarmTime || command == .getAlarmTime
+                || command == .runAlarm || command == .disableAlarm
                 || command == .sendHistoricalData || command == .historicalDataResult
                 || command == .setClock || command == .getClock else {
                 log("send(\(command.label)) skipped — no WHOOP 5/MG framing for this command yet")
@@ -554,9 +636,16 @@ public final class BLEManager: NSObject, ObservableObject {
         backfillTimeout = nil
         backfillFrameQueue.removeAll()
         log("Backfill: session ended — reason=\(reason)")
+        // Honest sync outcome for a cloud-free user (mirrors Android exitBackfilling, ed6a31d):
+        // HISTORY_COMPLETE stamps lastSyncedAt + clears any error; the idle-watchdog timeout surfaces
+        // a non-silent error. A disconnect mid-sync bypasses this path (didDisconnectPeripheral resets
+        // the flags directly) — that's not a sync failure, and the next connect re-offloads.
         if reason == "HISTORY_COMPLETE" {
             state.lastSyncedAt = Date().timeIntervalSince1970
+            state.lastSyncError = nil
             UserDefaults.standard.set(state.lastSyncedAt, forKey: "lastSyncedAt")
+        } else if reason == "timeout" {
+            state.lastSyncError = "Sync interrupted — the strap went quiet. It will retry on the next sync."
         }
         checkStrapLiveness()         // safety-net: strap ahead of us AND our frontier frozen ⇒ stuck?
     }
@@ -601,9 +690,16 @@ public final class BLEManager: NSObject, ObservableObject {
     /// on disappear so it does not permanently compete with historical offload.
     public func startRealtime() {
         wantsRealtime = true
+        // The user explicitly (re-)asked for the full stream by opening Live / tapping Start HR — give the
+        // heavy R10/R11 burst another chance even if a prior marginal-radio fallback had tripped. If the
+        // radio still can't take it, the detector will simply trip again. (#80)
+        marginalRadio.reset()
+        standardHRFallback = false
+        state.standardHRMode = nil
         enableLiveNotifications(reason: "start realtime")
         send(.sendR10R11Realtime, payload: [0x01])
         send(.toggleRealtimeHR, payload: [0x01])
+        realtimeArmedAt = Date()       // start the arm→drop stopwatch for the marginal-radio detector
     }
     /// Stop the Live-tab realtime streams. The lightweight 0x2A37 HR keeps recording if firmware emits it.
     public func stopRealtime() {
@@ -637,7 +733,9 @@ public final class BLEManager: NSObject, ObservableObject {
         // skip them for 5/MG (it keeps the experimental strap log clean — re-subscribe + the 120s
         // bounce above are what keep a 5/MG link healthy).
         guard selectedModel.deviceFamily == .whoop4 else { return }
-        if wantsRealtime {
+        // Never re-arm the heavy R10/R11 burst once the marginal-radio fallback has tripped (#80) — that
+        // would just re-trigger the drop the keep-alive is meant to prevent. 0x2A37 keeps the HR flowing.
+        if wantsRealtime && !standardHRFallback {
             send(.sendR10R11Realtime, payload: [0x01])
             send(.toggleRealtimeHR, payload: [0x01])
         }   // re-arm so it can't lapse
@@ -745,30 +843,48 @@ public final class BLEManager: NSObject, ObservableObject {
 
     /// Arm the strap's firmware alarm for `date` (UTC).
     ///
-    /// Sequence: SET_CLOCK first to ensure the strap RTC is UTC-correct, then SET_ALARM_TIME.
-    /// The strap will buzz at `date` even if the app is backgrounded or force-quit
-    /// (event STRAP_DRIVEN_ALARM_EXECUTED=57). This is the guaranteed fixed-time fallback path —
-    /// the smart-wake layer (`SmartAlarmController`) fires on top of this if conditions are met,
-    /// but this firmware alarm always fires as the safety net.
+    /// WHOOP 4.0 sequence: SET_CLOCK first to ensure the strap RTC is UTC-correct, then the
+    /// rev-1 SET_ALARM_TIME. WHOOP 5/MG sends the REVISION_4 body alone — the strap maintains
+    /// its RTC (set during the connect handshake / history sync) and the official app's alarm
+    /// path doesn't re-set it (wire observation; mirrors Android WhoopBleClient.armStrapAlarm).
+    /// Either way the strap will buzz at `date` even if the app is backgrounded or force-quit
+    /// (event STRAP_DRIVEN_ALARM_EXECUTED=57). This is the only alarm path: the strap fires at
+    /// the fixed time — NOOP has no light-sleep early-wake layer.
     ///
-    /// On-device verification needed: confirm the strap ACKs SET_ALARM_TIME and that the
-    /// alarm persists across BLE disconnect (cannot be verified in the simulator).
+    /// EXPERIMENTAL / UNCONFIRMED on 5/MG (same posture as the Android client): the byte-identical
+    /// Android rev-4 frame has been ACKed by a real 5/MG when arming, but a strap-driven wake fire
+    /// has NOT been captured on our side (no STRAP_DRIVEN_ALARM_EXECUTED event observed yet) — do
+    /// not present the 5/MG alarm as guaranteed until one is.
     func armStrapAlarm(at date: Date) {
-        // Clamp rather than trap: an out-of-range alarm date (pre-1970 / post-2106) must not crash.
-        let epochSec = UInt32(clamping: Int64(date.timeIntervalSince1970))
-        send(.setClock, payload: BLEManager.setClockPayload())
-        send(.setAlarmTime, payload: WhoopCommand.setAlarmPayload(epochSec: epochSec))
         // Log the wake time in the user's LOCAL zone. `Date` prints in UTC by default, so an alarm
         // for (say) 07:00 in New York logged as "11:00:00 +0000" reads like a timezone bug — but it
         // isn't: SET_ALARM_TIME carries the absolute instant of the chosen local time, and the strap
         // fires at that instant regardless of how its UTC RTC is labelled.
         let localFmt = DateFormatter()
         localFmt.dateFormat = "EEE HH:mm zzz"
+        if selectedModel.deviceFamily == .whoop5 {
+            // 5/MG SET_ALARM_TIME is REVISION_4: [04][id][u32 sec][u16 subsec][12-byte 47/152
+            // pattern, overallLoop 7, 30 s]. No SET_CLOCK preamble (see doc comment above).
+            let wakeMs = Int64((date.timeIntervalSince1970 * 1000).rounded())
+            send(.setAlarmTime, payload: AlarmPayload.setAlarmRev4(wakeEpochMs: wakeMs))
+            log("Alarm: armed 5/MG rev4 for \(localFmt.string(from: date)) — your local wake time")
+            return
+        }
+        // Clamp rather than trap: an out-of-range alarm date (pre-1970 / post-2106) must not crash.
+        let epochSec = UInt32(clamping: Int64(date.timeIntervalSince1970))
+        send(.setClock, payload: BLEManager.setClockPayload())
+        send(.setAlarmTime, payload: WhoopCommand.setAlarmPayload(epochSec: epochSec))
         log("Alarm: armed for \(localFmt.string(from: date)) — your local wake time (sent as UTC epoch \(epochSec))")
     }
 
     /// Disarm the currently-armed firmware alarm.
     func disableStrapAlarm() {
+        if selectedModel.deviceFamily == .whoop5 {
+            // 5/MG DISABLE_ALARM is REVISION_2 [0x02, 0xFF]; the rev-1 [0x01] form below is WHOOP4.
+            send(.disableAlarm, payload: AlarmPayload.disableRev2())
+            log("Alarm: disarmed (5/MG rev2)")
+            return
+        }
         send(.disableAlarm, payload: [0x01])
         log("Alarm: disarmed")
     }
@@ -792,7 +908,12 @@ public final class BLEManager: NSObject, ObservableObject {
     ///
     /// Haptic firing cannot be verified in the simulator (no strap motor). Test on-device only.
     func testAlarmBuzz() {
-        send(.runHapticsPattern, payload: [2, 3, 0, 0, 0])  // patternId=2, 3 loops
+        send(.runHapticsPattern, payload: [2, 3, 0, 0, 0])  // patternId=2, 3 loops (5/MG: send() remaps to the maverick notify buzz)
+        if selectedModel.deviceFamily == .whoop5 {
+            send(.runAlarm, payload: AlarmPayload.runAlarmRev2())   // REVISION_2 [0x02, alarmId]
+            log("Alarm: test buzz fired (5/MG maverick buzz + runAlarm rev2)")
+            return
+        }
         send(.runAlarm, payload: [0x01])
         log("Alarm: test buzz fired (patternId=2, runAlarm)")
     }
@@ -856,6 +977,7 @@ extension BLEManager: CBCentralManagerDelegate {
         preparePeripheral(peripheral)
         state.connected = true
         state.encryptedBond = false   // re-proved per connection at the genuine-bond site (#69)
+        state.reconnectGuide = nil    // a connect succeeded — the stale-bond guide (if shown) is resolved
         lastDataAt = Date()
         log("Connected — discovering services")
         discoverPrimaryServices(on: peripheral)
@@ -865,13 +987,27 @@ extension BLEManager: CBCentralManagerDelegate {
                                didDisconnectPeripheral peripheral: CBPeripheral,
                                error: Error?) {
         Task { @MainActor in await collector?.flush() }
+        // #80 marginal-radio detection: judge this drop BEFORE the state resets below clobber the
+        // arm timestamp. A drop that is unintentional, error-bearing, and lands shortly after we armed
+        // the R10/R11 burst is the marginal-radio tell. Feed the detector; if it trips, the NEXT connect
+        // skips the heavy arm (the flag is intentionally NOT reset on disconnect so it survives rescan).
+        let timedOut = !intentionalDisconnect && error != nil
+        let sinceArm = realtimeArmedAt.map { Date().timeIntervalSince($0) }
+        if marginalRadio.connectionEnded(wasArmed: realtimeArmedAt != nil,
+                                         secondsSinceArm: sinceArm,
+                                         timedOut: timedOut) {
+            standardHRFallback = true
+            log("Marginal radio (#80): \(marginalRadio.consecutiveArmTimeouts) arm-then-timeout cycles — next connect uses standard-HR mode (0x2A37 only)")
+        }
         state.connected = false
         state.encryptedBond = false   // cleared with didBond; next session must re-prove the bond (#69)
+        state.charging = nil          // a stale charging flag must not outlive the link
         didBond = false
         whoop5RealtimeArmed = false
         whoop5SessionStarted = false
         clockRequested = false
         connectHandshakeDone = false
+        realtimeArmedAt = nil   // cleared after the marginal-radio detector above read it (#80)
         // Reset backfill state so the next connect starts a fresh offload (incl. the syncing pill —
         // a dropped link mid-offload must not leave "Syncing strap history…" stuck on, #77).
         backfillStarted = false
@@ -906,6 +1042,20 @@ extension BLEManager: CBCentralManagerDelegate {
                                didFailToConnect peripheral: CBPeripheral,
                                error: Error?) {
         log("Failed to connect\(error.map { " — \($0.localizedDescription)" } ?? "")")
+        // The strap wiped its bond (a firmware update, or the official WHOOP app re-bonding it). macOS keeps
+        // re-presenting the now-stale pairing key, so every reconnect loops on this same error with no
+        // recovery and no user guidance. Surface an actionable re-pair guide instead of failing silently —
+        // NOOP itself works fine on the new firmware once the stale bond is cleared. (5/MG firmware reset, 2026-06)
+        if let cbErr = error as? CBError, cbErr.code == .peerRemovedPairingInformation {
+            state.reconnectGuide = """
+            Your strap's Bluetooth pairing was reset — usually by a WHOOP firmware update, or the official WHOOP app reconnecting. NOOP works fine on the new firmware; you just need to re-pair:
+
+            1. Quit the official WHOOP app (or turn off Bluetooth on that phone).
+            2. Open System Settings → Bluetooth and Forget “WHOOP MG” if it's listed.
+            3. Tap the strap repeatedly until its LEDs flash blue (pairing mode).
+            4. Come back here and reconnect.
+            """
+        }
     }
 
     /// State restoration entry point (M3 background collection).
@@ -1160,11 +1310,22 @@ extension BLEManager: CBPeripheralDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in self?.requestSync(.connect) }
         startBackfillTimer()   // re-offload the type-47 store every backfillIntervalSeconds
         startKeepAlive()       // always-ping: re-arm realtime, poll battery, watchdog the link
-        enableLiveNotifications(reason: "post-bond")
+        enableLiveNotifications(reason: "post-bond")   // includes 0x2A37 standard HR — the fallback path
         if wantsRealtime {
-            log("Realtime HR: arming after bond")
-            send(.sendR10R11Realtime, payload: [0x01])
-            send(.toggleRealtimeHR, payload: [0x01])
+            if standardHRFallback {
+                // #80: this radio repeatedly dropped the link the instant we armed the R10/R11 burst.
+                // Skip the heavy stream entirely; live HR rides the already-subscribed low-bandwidth
+                // 0x2A37 standard profile (subscribed by enableLiveNotifications above). SAFE either way:
+                // if 0x2A37 emits the user gets live HR on a radio that otherwise died; if it doesn't, at
+                // least the arm→die loop stops.
+                log("Realtime HR: standard-HR mode (low bandwidth) — skipping R10/R11 arm (#80)")
+                state.standardHRMode = "Standard HR mode (low bandwidth) — your Bluetooth radio couldn't sustain the full stream; live heart rate via the standard profile."
+            } else {
+                log("Realtime HR: arming after bond")
+                send(.sendR10R11Realtime, payload: [0x01])
+                send(.toggleRealtimeHR, payload: [0x01])
+                realtimeArmedAt = Date()   // start the arm→drop stopwatch for the marginal-radio detector
+            }
         }
     }
 

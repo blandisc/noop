@@ -24,6 +24,11 @@ public final class LiveState: ObservableObject {
     @Published public var heartRate: Int? = nil
     @Published public var rr: [Int] = []
     @Published public var batteryPct: Double? = nil
+    /// Charging flag from the strap's BATTERY_LEVEL events — wire observation: u8 bit0 in the
+    /// event payload (4.0 @26 / 5.0 @30), pushed ~every 8 min on captured links. nil until the
+    /// first event of a session; cleared on disconnect so a stale flag can't outlive the link.
+    /// Flag ONLY — the battery % keeps its family-specific source (#77).
+    @Published public var charging: Bool? = nil
     @Published public var lastFrameType: String? = nil
     @Published public var lastEvent: String? = nil
     /// Wrist-wear state from WRIST_ON/WRIST_OFF events. Defaults true so wear-gated features work
@@ -45,6 +50,12 @@ public final class LiveState: ObservableObject {
     /// Wall time (unix seconds) of the last successfully-completed offload (a sync, even if nothing new
     /// came — i.e. caught up). Drives the sync tile + the staleness nudge.
     @Published public var lastSyncedAt: TimeInterval?
+
+    /// Set when an offload ended abnormally (the idle watchdog fired — the strap went quiet mid-sync),
+    /// so a stalled history download isn't silent. Cleared by the next successful HISTORY_COMPLETE.
+    /// Process-local on purpose (mirrors Android, ed6a31d): the next connect / 15-min tick re-offloads
+    /// anyway, so persisting a stale error across launches would outlive its relevance.
+    @Published public var lastSyncError: String? = nil
 
     /// True while a historical offload session is running, so screens can say "Syncing strap
     /// history…" instead of presenting half-loaded data as final (#77).
@@ -68,6 +79,19 @@ public final class LiveState: ObservableObject {
     /// is insufficient") — CoreBluetooth won't start a fresh just-works bond against a strap still bonded to
     /// the official WHOOP app. Surfaced as actionable pairing-mode guidance; cleared once the link bonds.
     @Published public var pairingHint: String? = nil
+
+    /// Set when a connect attempt fails because the strap wiped its bond ("Peer removed pairing
+    /// information") — a firmware update, or the official WHOOP app re-bonding it. macOS keeps re-presenting
+    /// the now-stale pairing key, so reconnects loop on the same error with no recovery. Carries an
+    /// actionable forget-and-re-pair guide; cleared on the next successful connect. (5/MG firmware reset, 2026-06)
+    @Published public var reconnectGuide: String? = nil
+
+    /// Set when NOOP detects a marginal Bluetooth radio that can't sustain the WHOOP 4 R10/R11 raw realtime
+    /// stream (#80 — a 2016 Mac / OpenCore drops the link the instant that high-bandwidth burst is armed).
+    /// After repeated arm-then-timeout cycles NOOP stops arming the heavy stream and falls back to the
+    /// low-bandwidth 0x2A37 standard Heart Rate profile, so live HR can still flow on a radio that otherwise
+    /// looped forever. Informational note for the Live screen; cleared on a clean reconnect or Live re-open.
+    @Published public var standardHRMode: String? = nil
 
     public init() {}
 

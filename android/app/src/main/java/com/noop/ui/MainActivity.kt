@@ -112,6 +112,9 @@ object NoopPrefs {
     const val NAME = "noop_prefs"
     const val KEY_ONBOARDED = "noop.onboarded"
     const val KEY_LAST_SEEN_CHANGELOG = "noop.lastSeenChangelogVersion"
+    /** Terms-of-use version the user last accepted. Empty until the first-run gate is accepted; a
+     *  material terms change bumps [Terms.CURRENT_VERSION] and re-prompts. Mirrors macOS @AppStorage. */
+    const val KEY_ACCEPTED_TERMS_VERSION = "noop.acceptedTermsVersion"
 
     /** "Keep connected in the background" — drives [com.noop.ble.WhoopConnectionService]. Default on. */
     const val KEY_BACKGROUND_CONNECTION = "noop.backgroundConnection"
@@ -138,6 +141,23 @@ object NoopPrefs {
 
     fun setDebugLogging(context: Context, enabled: Boolean) {
         of(context).edit().putBoolean(KEY_DEBUG_LOGGING, enabled).apply()
+    }
+
+    /** Imperial/Metric display preference (D#103). Display-only — stored data stays SI. The length/mass
+     *  system is read by [UnitPrefs.system]; the temperature override (empty = "match the system") by
+     *  [UnitPrefs.temperature]. Mirrors macOS @AppStorage("units.system" / "units.temperature"). */
+    const val KEY_UNIT_SYSTEM = "units.system"
+    const val KEY_TEMPERATURE_UNIT = "units.temperature"
+
+    fun setUnitSystem(context: Context, system: UnitSystem) {
+        of(context).edit().putString(KEY_UNIT_SYSTEM, system.raw).apply()
+    }
+
+    /** Persist the temperature override, or pass null to clear it back to "match the system". */
+    fun setTemperatureUnit(context: Context, unit: TemperatureUnit?) {
+        of(context).edit().apply {
+            if (unit == null) remove(KEY_TEMPERATURE_UNIT) else putString(KEY_TEMPERATURE_UNIT, unit.raw)
+        }.apply()
     }
 
     /** Health Connect periodic auto-sync (Samsung Health → Health Connect → NOOP). Default OFF.
@@ -196,6 +216,28 @@ object NoopPrefs {
         of(context).edit().putInt(KEY_SMART_ALARM_MINUTES, minutes).apply()
     }
 
+    /** Illness early-warning (banner + notification). Default ON — the watch has always run on
+     *  Android, so this is an opt-OUT; macOS is opt-in (behavior.illnessWatch, default off). */
+    const val KEY_ILLNESS_WATCH = "noop.illnessWatch"
+
+    fun illnessWatch(context: Context): Boolean =
+        of(context).getBoolean(KEY_ILLNESS_WATCH, true)
+
+    fun setIllnessWatch(context: Context, enabled: Boolean) {
+        of(context).edit().putBoolean(KEY_ILLNESS_WATCH, enabled).apply()
+    }
+
+    /** Last local day (ISO yyyy-MM-dd) an illness notification was posted — the once-a-day gate,
+     *  persisted so the app-open and background-service call sites can't double-post. */
+    const val KEY_ILLNESS_LAST_NOTIFIED_DAY = "noop.illnessLastNotifiedDay"
+
+    fun illnessLastNotifiedDay(context: Context): String? =
+        of(context).getString(KEY_ILLNESS_LAST_NOTIFIED_DAY, null)
+
+    fun setIllnessLastNotifiedDay(context: Context, day: String) {
+        of(context).edit().putString(KEY_ILLNESS_LAST_NOTIFIED_DAY, day).apply()
+    }
+
     /** The last strap we bonded to (address + model), persisted so NOOP can reconnect to it directly on
      *  the next launch — e.g. after an APK update restarts the process (#67). On-device only; never sent. */
     const val KEY_LAST_DEVICE_ADDR = "noop.lastDeviceAddress"
@@ -238,6 +280,19 @@ fun NoopRoot() {
     }
     var lastSeenChangelog by remember {
         mutableStateOf(prefs.getString(NoopPrefs.KEY_LAST_SEEN_CHANGELOG, "") ?: "")
+    }
+
+    // Terms acknowledgment gate — over EVERYTHING (before onboarding/pairing/Bluetooth) until the
+    // current terms version is accepted; re-appears if the terms materially change. (clickwrap)
+    var acceptedTerms by remember {
+        mutableStateOf(prefs.getString(NoopPrefs.KEY_ACCEPTED_TERMS_VERSION, "") ?: "")
+    }
+    if (acceptedTerms != Terms.CURRENT_VERSION) {
+        TermsGateScreen(onAccept = {
+            prefs.edit().putString(NoopPrefs.KEY_ACCEPTED_TERMS_VERSION, Terms.CURRENT_VERSION).apply()
+            acceptedTerms = Terms.CURRENT_VERSION
+        })
+        return
     }
 
     if (!onboarded) {

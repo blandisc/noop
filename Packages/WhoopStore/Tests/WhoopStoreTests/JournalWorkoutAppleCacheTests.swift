@@ -52,6 +52,25 @@ final class JournalWorkoutAppleCacheTests: XCTestCase {
         XCTAssertNil(rows[0].notes)
     }
 
+    func testDeleteJournalTouchesOnlyTheNamedSource() async throws {
+        // The native logging card clears under "noop-journal" only — an identical
+        // (day, question) imported under "my-whoop" must survive the clear.
+        let store = try await WhoopStore.inMemory()
+        let e = JournalEntry(day: "2026-06-09", question: "Any alcohol?", answeredYes: true, notes: nil)
+        try await store.upsertJournal([e], deviceId: "my-whoop")
+        try await store.upsertJournal([e], deviceId: "noop-journal")
+
+        let n = try await store.deleteJournal(deviceId: "noop-journal", day: "2026-06-09",
+                                              question: "Any alcohol?")
+        XCTAssertEqual(n, 1)
+        let imported = try await store.journalEntries(deviceId: "my-whoop",
+                                                      from: "2026-06-01", to: "2026-06-30")
+        XCTAssertEqual(imported.count, 1, "imported row must be untouched")
+        let native = try await store.journalEntries(deviceId: "noop-journal",
+                                                    from: "2026-06-01", to: "2026-06-30")
+        XCTAssertEqual(native.count, 0)
+    }
+
     func testJournalDistinctQuestionsCoexist() async throws {
         let store = try await WhoopStore.inMemory()
         try await store.upsertJournal([
@@ -156,6 +175,29 @@ final class JournalWorkoutAppleCacheTests: XCTestCase {
         XCTAssertEqual(ranged.map { $0.startTs }, [500, 900])
         let limited = try await store.workouts(deviceId: "devA", from: 0, to: 100_000, limit: 1)
         XCTAssertEqual(limited.map { $0.startTs }, [100], "limit honoured, oldest first")
+    }
+
+    func testDeleteWorkoutsBySportAndRange() async throws {
+        // Pins deleteWorkouts (detected-workout idempotency, port of WhoopDao.deleteWorkoutsBySport):
+        // deletes only the matching (deviceId, sport, startTs-range) rows, leaving other sports,
+        // other devices and out-of-range rows untouched.
+        let store = try await WhoopStore.inMemory()
+        func row(_ ts: Int, _ sport: String) -> WorkoutRow {
+            WorkoutRow(startTs: ts, endTs: ts + 600, sport: sport, source: "devA-noop",
+                       durationS: 600, energyKcal: nil, avgHr: nil, maxHr: nil, strain: nil,
+                       distanceM: nil, zonesJSON: nil, notes: nil)
+        }
+        try await store.upsertWorkouts([row(1_000, "detected"), row(2_000, "detected"),
+                                        row(1_500, "run")], deviceId: "devA-noop")
+        try await store.upsertWorkouts([row(1_200, "detected")], deviceId: "devA")
+
+        let n = try await store.deleteWorkouts(deviceId: "devA-noop", sport: "detected",
+                                               from: 0, to: 1_800)
+        XCTAssertEqual(n, 1, "only the in-range detected row of the computed source")
+        let left = try await store.workouts(deviceId: "devA-noop", from: 0, to: 10_000, limit: 100)
+        XCTAssertEqual(left.map { $0.startTs }.sorted(), [1_500, 2_000])
+        let other = try await store.workouts(deviceId: "devA", from: 0, to: 10_000, limit: 100)
+        XCTAssertEqual(other.count, 1, "other device untouched")
     }
 
     // MARK: - appleDaily

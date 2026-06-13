@@ -9,35 +9,11 @@ permissions:
   contents: write # Erlaubt das Hochladen der Dateien in die Releases
 
 jobs:
-  # --- JOB 1: Android App bauen ---
-  build-android:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: 'gradle'
-
-      - name: Build Unsigned Android APK
-        run: |
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleRelease
-
-      - name: Upload Android Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-unsigned-apk
-          path: android/app/build/outputs/apk/
-
-  # --- JOB 2: iOS App bauen (Unsignierte .ipa) ---
   build-ios:
-    runs-on: macos-15
+    # macos-26 runner ships Xcode 26+, which carries the iOS 26 SDK this code is
+    # tested against. macos-15 only has Xcode 16 (iOS 18 SDK), so any iOS 26-only
+    # symbol used in the app fails to compile there.
+    runs-on: macos-26
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -45,7 +21,7 @@ jobs:
       - name: Set up Xcode version
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '16.0'
+          xcode-version: 'latest-stable'
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -53,13 +29,20 @@ jobs:
       - name: Generate Xcode Project
         run: xcodegen generate
 
-      # Baut exakt das NOOPiOS-Target, welches die Mac-Dateien korrekt ausschließt
-      # Baut exakt das NOOPiOS-Target und ignoriert kaputte App-Icons
+      # Baut über das NOOPiOS-SCHEME (nicht -target), damit die Widget- und
+      # Live-Activity-Extension korrekt mitgebaut und embedded werden — `-target`
+      # umgeht die Scheme-Pre-Actions und den Dependency-Graph, sodass eine kaputte
+      # Extension nie CI-rot werden würde.
+      #
+      # CODE_SIGN_ENTITLEMENTS="" entfernt App-Group und HealthKit aus dem
+      # ungesignten Build: das ist absichtlich (Compile-Only-Check), aber damit
+      # validiert CI keine Cross-Process-Pfade (WidgetSnapshot, PendingIntents,
+      # Live Activity). Ein grünes CI heißt: kompiliert sauber.
       - name: Build Unsigned iOS App
         run: |
           xcodebuild build \
             -project Strand.xcodeproj \
-            -target NOOPiOS \
+            -scheme NOOPiOS \
             -sdk iphoneos \
             -configuration Release \
             CONFIGURATION_BUILD_DIR="$(pwd)/build/ios_output" \
@@ -85,17 +68,11 @@ jobs:
 
   # --- JOB 3: GitHub Release erstellen ---
   create-release:
-    needs: [build-android, build-ios]
+    needs: [build-ios]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-
-      - name: Download Android Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: android-unsigned-apk
-          path: artifacts/
 
       - name: Download iOS Artifact
         uses: actions/download-artifact@v4
@@ -107,7 +84,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            artifacts/**/*.apk
             artifacts/*.ipa
           name: Release ${{ github.ref_name }}
           body: |
@@ -116,7 +92,6 @@ jobs:
             These files were generated automatically and are **not digitally signed**.
                         
             ### Installation Instructions:
-            * **Android (`.apk`):** Can be installed directly on your smartphone (you may need to enable "Install from unknown sources" in your Android settings).
             * **iOS (`.ipa`):** Since this file is unsigned, it cannot be installed directly. Use tools like **Sideloadly**, **AltServer/AltStore**, or **TrollStore** on your PC/Mac to sign the app with your own Apple ID and transfer it to your iPhone.
           draft: false
           prerelease: false

@@ -17,6 +17,9 @@ final class HealthKitBridge: ObservableObject {
     @Published private(set) var auth: AuthState = .unknown
     @Published private(set) var lastSync: Date?
     @Published private(set) var syncing = false
+    /// The most recent failure surfaced by `sync` / `writeBack`. Cleared on a successful run. UI binds
+    /// here so an Apple Health auth revoke, quota hit, or invalid sample is visible instead of silent.
+    @Published private(set) var lastError: String?
 
     private let store = HKHealthStore()
     private let repo: Repository
@@ -49,10 +52,13 @@ final class HealthKitBridge: ObservableObject {
         return s
     }
 
+    // Every id here ends up in the HealthKit permission dialog. Only request what `sync` actually
+    // aggregates into `DayAgg`; adding read scopes the app never consumes makes the consent prompt
+    // noisier and surfaces a privacy ask we don't honour.
     private static let quantityReadIds: [HKQuantityTypeIdentifier] = [
         .heartRate, .restingHeartRate, .heartRateVariabilitySDNN, .oxygenSaturation,
         .respiratoryRate, .bodyTemperature, .stepCount, .activeEnergyBurned,
-        .basalEnergyBurned, .vo2Max, .bodyMass
+        .basalEnergyBurned, .vo2Max
     ]
     private static let quantityWriteIds: [HKQuantityTypeIdentifier] = [
         .restingHeartRate, .heartRateVariabilitySDNN, .oxygenSaturation, .respiratoryRate
@@ -146,16 +152,31 @@ final class HealthKitBridge: ObservableObject {
         try? await store.upsertAppleDaily(appleRows, deviceId: appleDeviceId)
         try? await store.upsertDailyMetrics(dmRows, deviceId: appleDeviceId)
 
-        await writeBack(whoopStore: store)
-        lastSync = Date()
+        // Only advance lastSync when the round-trip actually succeeded. A failed write-back used to
+        // be swallowed by `try?`, then lastSync moved forward — the next delta sync skipped the window
+        // and the data was never written back.
+        do {
+            try await writeBack(whoopStore: store)
+            lastSync = Date()
+            lastError = nil
+        } catch {
+            lastError = "Apple Health write-back failed: \(error.localizedDescription)"
+        }
     }
 
     // MARK: - Write back (NOOP → Health)
 
     /// Write NOOP's strap-derived daily metrics (resting HR, HRV, SpO₂, respiratory rate) into Apple
-    /// Health so they appear across the user's Health ecosystem. Idempotency is left to HealthKit's
-    /// own de-duplication by sample time; we only write the most recent `days` of NOOP metrics.
-    private func writeBack(whoopStore: WhoopStore, days: Int = 14) async {
+    /// Health so they appear across the user's Health ecosystem.
+    ///
+    /// Dedup model: each emitted sample carries a deterministic `HKMetadataKeyExternalUUID` derived
+    /// from `noopDeviceId + metric + day`. Before saving, we delete any of *our* prior samples that
+    /// carry the same key (scoped to `HKSource.default()` so we never touch another app's data) and
+    /// then save the fresh batch. HealthKit assigns a new UUID per save, so the previous strategy
+    /// (no metadata, no delete) flooded Health with duplicates on every `sync()`.
+    ///
+    /// Throws on save failure so the caller can decide whether to advance `lastSync`.
+    private func writeBack(whoopStore: WhoopStore, days: Int = 14) async throws {
         guard auth == .authorized else { return }
         let cal = Calendar.current
         let to = HealthKitBridge.dayString(Date())
@@ -163,25 +184,52 @@ final class HealthKitBridge: ObservableObject {
         let from = HealthKitBridge.dayString(fromDate)
         guard let rows = try? await whoopStore.dailyMetrics(deviceId: noopDeviceId, from: from, to: to) else { return }
 
-        var samples: [HKObject] = []
+        struct Candidate { let type: HKQuantityType; let key: String; let sample: HKQuantitySample }
+        var candidates: [Candidate] = []
+        func add(_ id: HKQuantityTypeIdentifier, _ unit: HKUnit, _ value: Double, _ day: String, _ at: Date) {
+            guard let type = HKQuantityType.quantityType(forIdentifier: id) else { return }
+            let key = "noop:\(noopDeviceId):\(id.rawValue):\(day)"
+            let sample = HKQuantitySample(
+                type: type,
+                quantity: .init(unit: unit, doubleValue: value),
+                start: at, end: at,
+                metadata: [HKMetadataKeyExternalUUID: key]
+            )
+            candidates.append(Candidate(type: type, key: key, sample: sample))
+        }
+
         for row in rows {
             guard let date = HealthKitBridge.date(from: row.day) else { continue }
             let noon = cal.date(bySettingHour: 12, minute: 0, second: 0, of: date) ?? date
-            if let rhr = row.restingHr, let t = HKQuantityType.quantityType(forIdentifier: .restingHeartRate) {
-                samples.append(HKQuantitySample(type: t, quantity: .init(unit: HKUnit.count().unitDivided(by: .minute()), doubleValue: Double(rhr)), start: noon, end: noon))
+            if let rhr = row.restingHr {
+                add(.restingHeartRate, HKUnit.count().unitDivided(by: .minute()), Double(rhr), row.day, noon)
             }
-            if let hrv = row.avgHrv, let t = HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN) {
-                samples.append(HKQuantitySample(type: t, quantity: .init(unit: .secondUnit(with: .milli), doubleValue: hrv), start: noon, end: noon))
+            if let hrv = row.avgHrv {
+                add(.heartRateVariabilitySDNN, .secondUnit(with: .milli), hrv, row.day, noon)
             }
-            if let spo2 = row.spo2Pct, let t = HKQuantityType.quantityType(forIdentifier: .oxygenSaturation) {
-                samples.append(HKQuantitySample(type: t, quantity: .init(unit: .percent(), doubleValue: spo2 / 100), start: noon, end: noon))
+            if let spo2 = row.spo2Pct {
+                add(.oxygenSaturation, .percent(), spo2 / 100, row.day, noon)
             }
-            if let rr = row.respRateBpm, let t = HKQuantityType.quantityType(forIdentifier: .respiratoryRate) {
-                samples.append(HKQuantitySample(type: t, quantity: .init(unit: HKUnit.count().unitDivided(by: .minute()), doubleValue: rr), start: noon, end: noon))
+            if let rr = row.respRateBpm {
+                add(.respiratoryRate, HKUnit.count().unitDivided(by: .minute()), rr, row.day, noon)
             }
         }
-        guard !samples.isEmpty else { return }
-        try? await store.save(samples)
+        guard !candidates.isEmpty else { return }
+
+        // Delete any of OUR prior samples that carry the same metadata keys, then write the fresh
+        // batch. Scoped to HKSource.default() so we never touch a sample written by another app
+        // that happens to use the same external UUID. Delete failures are non-fatal (e.g., nothing
+        // to delete on first run) — only the save throws.
+        let bySource = HKQuery.predicateForObjects(from: HKSource.default())
+        let grouped = Dictionary(grouping: candidates, by: { $0.type })
+        for (type, items) in grouped {
+            let keys = Array(Set(items.map { $0.key }))
+            let byKey = HKQuery.predicateForObjects(withMetadataKey: HKMetadataKeyExternalUUID,
+                                                    allowedValues: keys)
+            let pred = NSCompoundPredicate(andPredicateWithSubpredicates: [bySource, byKey])
+            _ = try? await self.store.deleteObjects(of: type, predicate: pred)
+        }
+        try await self.store.save(candidates.map { $0.sample })
     }
 
     private struct DayAgg {
@@ -251,9 +299,12 @@ final class HealthKitBridge: ObservableObject {
 
     // MARK: - Date helpers
 
+    // UTC: the rest of the store keys days by UTC (Repository's compareDayParser, the
+    // dailyMetric primary key). Using .current here would split the same physical day across
+    // two `yyyy-MM-dd` keys when the user crosses a time zone, causing duplicate daily rows.
     private static let dayFormatter: DateFormatter = {
         let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX")
-        f.dateFormat = "yyyy-MM-dd"; f.timeZone = .current; return f
+        f.dateFormat = "yyyy-MM-dd"; f.timeZone = TimeZone(identifier: "UTC")!; return f
     }()
     private static func dayString(_ date: Date) -> String { dayFormatter.string(from: date) }
     private static func date(from day: String) -> Date? { dayFormatter.date(from: day) }

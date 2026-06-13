@@ -87,6 +87,19 @@ extension WhoopStore {
         }
     }
 
+    /// Delete one journal answer by natural key (the native logging card's "clear"). Source-scoped
+    /// by deviceId, so clearing a native ("noop-journal") answer never removes an identical imported
+    /// row. Returns rows deleted.
+    @discardableResult
+    public func deleteJournal(deviceId: String, day: String, question: String) async throws -> Int {
+        try syncWrite { db in
+            try db.execute(sql: """
+                DELETE FROM journal WHERE deviceId = ? AND day = ? AND question = ?
+                """, arguments: [deviceId, day, question])
+            return db.changesCount
+        }
+    }
+
     /// Upsert workouts. Natural key (deviceId, startTs, sport). Returns rows changed.
     @discardableResult
     public func upsertWorkouts(_ rows: [WorkoutRow], deviceId: String) async throws -> Int {
@@ -115,6 +128,20 @@ extension WhoopStore {
                 n += db.changesCount
             }
             return n
+        }
+    }
+
+    /// Delete one source's workouts of a given sport whose startTs is in [from, to]
+    /// (makes detected-workout re-derivation idempotent). Returns rows deleted.
+    /// Port of Android WhoopDao.deleteWorkoutsBySport (#78).
+    @discardableResult
+    public func deleteWorkouts(deviceId: String, sport: String, from: Int, to: Int) async throws -> Int {
+        try syncWrite { db in
+            try db.execute(sql: """
+                DELETE FROM workout
+                WHERE deviceId = ? AND sport = ? AND startTs >= ? AND startTs <= ?
+                """, arguments: [deviceId, sport, from, to])
+            return db.changesCount
         }
     }
 
