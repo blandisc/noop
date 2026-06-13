@@ -60,6 +60,38 @@ final class AppleHealthImporterTests: XCTestCase {
         XCTAssertEqual(result?.1, -300)
     }
 
+    // MARK: - Fast date parser (hand-rolled path that replaced DateFormatter)
+
+    /// The fast path must agree EXACTLY with the canonical Apple shape across offsets, including the
+    /// leap day, the `Z` form, and the colon offset form. Anchored against `Fixtures.utc` (built via
+    /// Calendar) so a regression in the integer math is caught.
+    func testFastParseMatchesAcrossOffsets() {
+        let cases: [(String, Date, Int)] = [
+            ("2024-01-02 03:04:05 +0000", Fixtures.utc(2024, 1, 2, 3, 4, 5), 0),
+            ("2024-06-01 14:30:00 -0500", Fixtures.utc(2024, 6, 1, 19, 30, 0), -300),
+            ("2024-12-31 23:30:00 +0100", Fixtures.utc(2024, 12, 31, 22, 30, 0), 60),
+            ("2024-02-29 12:00:00 +0530", Fixtures.utc(2024, 2, 29, 6, 30, 0), 330),  // leap day
+            ("2024-06-01 14:30:00 Z",     Fixtures.utc(2024, 6, 1, 14, 30, 0), 0),
+            ("2024-06-01 14:30:00 +01:30", Fixtures.utc(2024, 6, 1, 13, 0, 0), 90),   // colon offset
+        ]
+        for (raw, expectedUTC, expectedOffset) in cases {
+            let fast = HealthDateParser.fastParse(raw)
+            XCTAssertEqual(fast?.0, expectedUTC, "UTC mismatch for \(raw)")
+            XCTAssertEqual(fast?.1, expectedOffset, "offset mismatch for \(raw)")
+        }
+    }
+
+    /// Malformed shapes must NOT be handled by the fast path — they return nil so `parse` can fall
+    /// back to the tolerant DateFormatter/ISO path.
+    func testFastParseRejectsMalformed() {
+        XCTAssertNil(HealthDateParser.fastParse("2024/06/01 14:30:00 +0000")) // wrong separators
+        XCTAssertNil(HealthDateParser.fastParse("not a date"))
+        XCTAssertNil(HealthDateParser.fastParse("2024-13-01 14:30:00 +0000")) // month 13
+        XCTAssertNil(HealthDateParser.fastParse("2024-06-01T14:30:00Z"))      // ISO -> fallback's job
+        // ...but `parse` still recovers the ISO form via its fallback.
+        XCTAssertNotNil(HealthDateParser().parse("2024-06-01T14:30:00Z"))
+    }
+
     // MARK: - Sleep
 
     func testSleepStagesAggregatedToNight() throws {
