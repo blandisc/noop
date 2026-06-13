@@ -17,7 +17,19 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ---
 
-## 1.83 — iOS: safer strap sync (reliability hardening)
+## Unreleased
+
+_Developer / docs — no user-facing change._
+
+- **Design system extracted to docs.** The `StrandDesign` Swift package is now mirrored as a
+  portable, human- and machine-readable design system under `docs/design-system/`: a documented
+  `DESIGN.md` (color, typography, spacing, motion, full component catalog), W3C design tokens
+  (`tokens/design-tokens.json`), and a collected `assets/` folder (app icons + brand marks). The
+  Swift package stays canonical; these are derived for handoff and cross-platform reuse.
+
+---
+
+## 1.84 — iOS: safer strap sync (reliability hardening)
 
 Behind-the-scenes robustness work on the experimental iOS port. No new features and no visible UI
 change — the goal is that a strap sync can't quietly corrupt or lose data. Still fully on-device.
@@ -45,6 +57,17 @@ change — the goal is that a strap sync can't quietly corrupt or lose data. Sti
   separate writes inside a single transaction, which could stall the app mid-import. These now write
   in batches (the same way metric series already did), so a large import lands in a fraction of the
   database round-trips.
+
+## 1.83 — iOS: Today synthesis label no longer clips in Spanish
+
+Work on the experimental iOS port. On-device only, no cloud.
+
+- **"Recuperación" fits its tile again.** On the redesigned Today screen, the "Today's Synthesis"
+  tiles show a short label next to a colored status dot. In Spanish (and German) the longer
+  "Recuperación" label was being clipped to "Recuper…" because it had to share the tile's width with
+  the dot. The label now claims the width it needs before the dot, and gently scales down as a
+  fallback on narrower screens, so it reads in full in every language without touching any
+  translations.
 
 ## 1.82 — iOS: more accurate recovery & readiness
 

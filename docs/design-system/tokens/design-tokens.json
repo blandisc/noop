@@ -1,0 +1,146 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "$description": "Strand / NOOP design tokens — dark-only, instrument-grade. Extracted from the StrandDesign Swift package (v0.1.0). Hex values are exact per design spec §9.1; do not substitute.",
+  "color": {
+    "$type": "color",
+    "surface": {
+      "base":          { "$value": "#060A08", "$description": "near-black, faint green — app background" },
+      "raised":        { "$value": "#0D1512", "$description": "dark green-black cards" },
+      "overlay":       { "$value": "#121D18", "$description": "raised / popovers / sheets" },
+      "inset":         { "$value": "#0A100D", "$description": "wells / chart insets" },
+      "hairline":      { "$value": "#1B2620", "$description": "soft green-grey 1px border" },
+      "hairlineStrong":{ "$value": "#27362E", "$description": "hover / emphasis border" }
+    },
+    "text": {
+      "primary":   { "$value": "#F4F7F5" },
+      "secondary": { "$value": "#8B9690" },
+      "tertiary":  { "$value": "#6F7A74" }
+    },
+    "glow": {
+      "ambient": { "$value": "#1B2A3A" }
+    },
+    "accent": {
+      "default":   { "$value": "#18C98B", "$description": "health green — chrome, not data" },
+      "hover":     { "$value": "#2FE0A0" },
+      "muted":     { "$value": "#10271F", "$description": "dark-green tint (selected rows)" },
+      "focusRing": { "$value": "#18C98B" }
+    },
+    "status": {
+      "positive": { "$value": "#18C98B" },
+      "warning":  { "$value": "#F5A623" },
+      "critical": { "$value": "#FF4F73", "$description": "never reused as a recovery color" }
+    },
+    "metric": {
+      "cyan":   { "$value": "#2FC7FF", "$description": "Apple Health bars" },
+      "purple": { "$value": "#A879FF", "$description": "HRV / strain-style data" },
+      "amber":  { "$value": "#F5A623", "$description": "calories / moderate" },
+      "rose":   { "$value": "#FF4F73", "$description": "risk / high strain / low recovery" }
+    },
+    "sleep": {
+      "awake": { "$value": "#E0476B", "$description": "rose" },
+      "light": { "$value": "#5C6FB1", "$description": "periwinkle" },
+      "deep":  { "$value": "#2C3A7A", "$description": "deep indigo" },
+      "rem":   { "$value": "#5BE0C7", "$description": "mint (glows)" }
+    },
+    "hrZone": {
+      "z1": { "$value": "#4FA9C9" },
+      "z2": { "$value": "#5BD3A0" },
+      "z3": { "$value": "#E8C24B" },
+      "z4": { "$value": "#E8743B" },
+      "z5": { "$value": "#E0476B" }
+    },
+    "recovery": {
+      "$description": "Traffic-light recovery scale, sampled by recoveryColor(score 0...100).",
+      "s000": { "$value": "#FF4F73", "$description": "0.00 — depleted, pink-red" },
+      "s030": { "$value": "#F5A623", "$description": "0.30 — low, amber" },
+      "s055": { "$value": "#E8C24B", "$description": "0.55 — moderate, gold" },
+      "s078": { "$value": "#18C98B", "$description": "0.78 — primed, health green" },
+      "s100": { "$value": "#2FE6A8", "$description": "1.00 — peak, bright green" }
+    },
+    "strain": {
+      "$description": "Strain ramp (output / heat), sampled by strainColor(strain 0...21).",
+      "s000": { "$value": "#E8B04B", "$description": "0.00 — ember / warm gold" },
+      "s033": { "$value": "#E8743B", "$description": "0.33 — orange" },
+      "s066": { "$value": "#E0476B", "$description": "0.66 — rose-red" },
+      "s100": { "$value": "#C13AC1", "$description": "1.00 — magenta" }
+    }
+  },
+  "gradient": {
+    "$type": "gradient",
+    "recovery": {
+      "$value": [
+        { "color": "#FF4F73", "position": 0.00 },
+        { "color": "#F5A623", "position": 0.30 },
+        { "color": "#E8C24B", "position": 0.55 },
+        { "color": "#18C98B", "position": 0.78 },
+        { "color": "#2FE6A8", "position": 1.00 }
+      ]
+    },
+    "strain": {
+      "$value": [
+        { "color": "#E8B04B", "position": 0.00 },
+        { "color": "#E8743B", "position": 0.33 },
+        { "color": "#E0476B", "position": 0.66 },
+        { "color": "#C13AC1", "position": 1.00 }
+      ]
+    }
+  },
+  "opacity": {
+    "$type": "number",
+    "disabled": { "$value": 0.45, "$description": "dimmed/disabled sections" }
+  },
+  "dimension": {
+    "$type": "dimension",
+    "spacing": {
+      "gap":          { "$value": "12px", "$description": "gap between cards" },
+      "section":      { "$value": "28px", "$description": "gap between sections" },
+      "screenPadding":{ "$value": "24px" },
+      "cardPadding":  { "$value": "16px" }
+    },
+    "radius": {
+      "card": { "$value": "16px" }
+    },
+    "size": {
+      "tileHeight":  { "$value": "104px", "$description": "every metric tile is this tall" },
+      "chartHeight": { "$value": "220px" },
+      "recoveryRingDiameter": { "$value": "240px" },
+      "ringLineWidth":        { "$value": "16px" }
+    }
+  },
+  "typography": {
+    "$type": "typography",
+    "$description": "SF Pro (Display ≥20pt, Text <20pt). Numeric styles use tabular/monospaced digits so live values don't reflow. SF Mono for raw/log views.",
+    "display": {
+      "$value": { "fontFamily": "SF Pro Display", "fontSize": "72px", "fontWeight": 600, "fontFeatures": ["tnum"] },
+      "$description": "Recovery ring number. Size range 64–80." },
+    "title1":   { "$value": { "fontFamily": "SF Pro Display", "fontSize": "28px", "fontWeight": 700 } },
+    "title2":   { "$value": { "fontFamily": "SF Pro Display", "fontSize": "22px", "fontWeight": 600 } },
+    "headline": { "$value": { "fontFamily": "SF Pro Text", "fontSize": "17px", "fontWeight": 600 } },
+    "body":     { "$value": { "fontFamily": "SF Pro Text", "fontSize": "15px", "fontWeight": 400 } },
+    "subhead":  { "$value": { "fontFamily": "SF Pro Text", "fontSize": "13px", "fontWeight": 400 } },
+    "caption":  { "$value": { "fontFamily": "SF Pro Text", "fontSize": "12px", "fontWeight": 400 } },
+    "footnote": { "$value": { "fontFamily": "SF Pro Text", "fontSize": "11px", "fontWeight": 400 } },
+    "overline": {
+      "$value": { "fontFamily": "SF Pro Text", "fontSize": "11px", "fontWeight": 600, "letterSpacing": "0.8px", "textCase": "uppercase" },
+      "$description": "Sparing ALL-CAPS labels with tracking." },
+    "mono":        { "$value": { "fontFamily": "SF Mono", "fontSize": "13px", "fontWeight": 400 }, "$description": "raw / log views" },
+    "bodyNumber":  { "$value": { "fontFamily": "SF Pro Text", "fontSize": "15px", "fontWeight": 400, "fontFeatures": ["tnum"] } },
+    "captionNumber":{ "$value": { "fontFamily": "SF Pro Text", "fontSize": "12px", "fontWeight": 500, "fontFeatures": ["tnum"] } }
+  },
+  "motion": {
+    "duration": {
+      "$type": "duration",
+      "fast":     { "$value": "180ms", "$description": "hover lift, chip state" },
+      "standard": { "$value": "300ms", "$description": "card appear, fades" },
+      "slow":     { "$value": "900ms", "$description": "ring arc, waveform ignite" },
+      "breath":   { "$value": "3200ms", "$description": "one ambient breath cycle" }
+    },
+    "spring": {
+      "$type": "cubicBezier",
+      "$description": "SwiftUI spring presets — documented as parameters, not beziers.",
+      "interactive": { "$value": [0.82, 0.28, 0.0, 0.1], "$description": "response 0.28, damping 0.82, blend 0.1 — direct manipulation" },
+      "gentle":      { "$value": [0.8, 0.5, 0.0, 0.0],  "$description": "response 0.5, damping 0.8 — house style for value changes" },
+      "hero":        { "$value": [0.85, 0.85, 0.0, 0.0], "$description": "response 0.85, damping 0.85 — hero transitions" }
+    }
+  }
+}
