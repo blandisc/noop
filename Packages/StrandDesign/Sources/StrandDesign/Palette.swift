@@ -136,13 +136,15 @@ public enum StrandPalette {
 
     /// The state word for a recovery score, per spec §9.3.
     /// DEPLETED · LOW · MODERATE · PRIMED · PEAK
+    /// Localized against the host app's catalog (`Bundle.main`) — the package
+    /// carries no string catalog of its own, so the keys live in the app.
     public static func recoveryState(_ score: Double) -> String {
         switch score {
-        case ..<25:  return "DEPLETED"
-        case ..<50:  return "LOW"
-        case ..<70:  return "MODERATE"
-        case ..<88:  return "PRIMED"
-        default:     return "PEAK"
+        case ..<25:  return String(localized: "DEPLETED", bundle: .main)
+        case ..<50:  return String(localized: "LOW", bundle: .main)
+        case ..<70:  return String(localized: "MODERATE", bundle: .main)
+        case ..<88:  return String(localized: "PRIMED", bundle: .main)
+        default:     return String(localized: "PEAK", bundle: .main)
         }
     }
 

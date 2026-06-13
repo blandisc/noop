@@ -195,10 +195,10 @@ struct SettingsView: View {
     }
 
     private var strapStatusTitle: String {
-        if live.bonded && live.connected { return "Bonded · streaming" }
-        if live.connected { return "Connected" }
-        if live.bonded { return "Bonded · idle" }
-        return "Disconnected"
+        if live.bonded && live.connected { return String(localized: "Bonded · streaming") }
+        if live.connected { return String(localized: "Connected") }
+        if live.bonded { return String(localized: "Bonded · idle") }
+        return String(localized: "Disconnected")
     }
 
     private var strapTone: StrandTone {
@@ -209,12 +209,12 @@ struct SettingsView: View {
 
     private var strapStatusDetail: String {
         if live.bonded && live.connected {
-            return "Your strap is paired and sending data. Open Live for a real-time heart rate."
+            return String(localized: "Your strap is paired and sending data. Open Live for a real-time heart rate.")
         }
         if live.connected, let hint = live.pairingHint { return hint }
-        if live.connected { return "Connected. Finishing the secure pairing handshake…" }
-        if live.bonded { return "Previously paired but not currently connected. Re-scan to reconnect." }
-        return "No strap connected. Put your WHOOP nearby and tap Re-scan to pair."
+        if live.connected { return String(localized: "Connected. Finishing the secure pairing handshake…") }
+        if live.bonded { return String(localized: "Previously paired but not currently connected. Re-scan to reconnect.") }
+        return String(localized: "No strap connected. Put your WHOOP nearby and tap Re-scan to pair.")
     }
 
     private func batteryTone(_ pct: Double) -> StrandTone {

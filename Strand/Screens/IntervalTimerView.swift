@@ -24,9 +24,9 @@ struct IntervalTimerView: View {
     private enum Phase { case work, rest, done
         var label: String {
             switch self {
-            case .work: return "WORK"
-            case .rest: return "REST"
-            case .done: return "DONE"
+            case .work: return String(localized: "WORK")
+            case .rest: return String(localized: "REST")
+            case .done: return String(localized: "DONE")
             }
         }
     }

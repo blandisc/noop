@@ -148,14 +148,16 @@ public enum BehaviorInsights {
     /// "On days you logged ‘Alcohol’, Recovery was 12% lower (avg 61 vs 69, n=140 vs 498)."
     /// Falls back to absolute units when pctChange is unavailable.
     public static func sentence(_ e: BehaviorEffect) -> String {
+        // bundle: .main — the String Catalog lives in the app, not this package
+        // (same convention as ReadinessEngine).
         let directionWord: String
-        if e.delta > 0 { directionWord = "higher" }
-        else if e.delta < 0 { directionWord = "lower" }
-        else { directionWord = "unchanged" }
+        if e.delta > 0 { directionWord = String(localized: "higher", bundle: .main) }
+        else if e.delta < 0 { directionWord = String(localized: "lower", bundle: .main) }
+        else { directionWord = String(localized: "unchanged", bundle: .main) }
 
         let magnitude: String
         if e.delta == 0 {
-            magnitude = "no different"
+            magnitude = String(localized: "no different", bundle: .main)
         } else if let pct = e.pctChange {
             magnitude = "\(roundedInt(abs(pct)))% \(directionWord)"
         } else {
@@ -165,8 +167,7 @@ public enum BehaviorInsights {
         let avgWith = roundedInt(e.meanWith)
         let avgWithout = roundedInt(e.meanWithout)
 
-        return "On days you logged ‘\(e.behavior)’, \(e.outcome) was \(magnitude) "
-            + "(avg \(avgWith) vs \(avgWithout), n=\(e.nWith) vs \(e.nWithout))."
+        return String(localized: "On days you logged ‘\(e.behavior)’, \(e.outcome) was \(magnitude) (avg \(avgWith) vs \(avgWithout), n=\(e.nWith) vs \(e.nWithout)).", bundle: .main)
     }
 
     // MARK: - Statistics helpers

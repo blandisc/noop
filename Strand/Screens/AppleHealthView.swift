@@ -99,12 +99,12 @@ struct AppleHealthView: View {
         var id: String { rawValue }
         var label: String {
             switch self {
-            case .week:    return "W"
-            case .month:   return "M"
-            case .quarter: return "3M"
-            case .half:    return "6M"
-            case .year:    return "1Y"
-            case .all:     return "ALL"
+            case .week:    return String(localized: "W")
+            case .month:   return String(localized: "M")
+            case .quarter: return String(localized: "3M")
+            case .half:    return String(localized: "6M")
+            case .year:    return String(localized: "1Y")
+            case .all:     return String(localized: "ALL")
             }
         }
         /// Number of trailing days; nil = everything.
@@ -120,22 +120,22 @@ struct AppleHealthView: View {
         }
         var caption: String {
             switch self {
-            case .week:    return "7 DAYS"
-            case .month:   return "30 DAYS"
-            case .quarter: return "90 DAYS"
-            case .half:    return "180 DAYS"
-            case .year:    return "365 DAYS"
-            case .all:     return "ALL TIME"
+            case .week:    return String(localized: "7 DAYS")
+            case .month:   return String(localized: "30 DAYS")
+            case .quarter: return String(localized: "90 DAYS")
+            case .half:    return String(localized: "180 DAYS")
+            case .year:    return String(localized: "365 DAYS")
+            case .all:     return String(localized: "ALL TIME")
             }
         }
         var name: String {
             switch self {
-            case .week:    return "week"
-            case .month:   return "month"
-            case .quarter: return "3 months"
-            case .half:    return "6 months"
-            case .year:    return "year"
-            case .all:     return "all history"
+            case .week:    return String(localized: "week")
+            case .month:   return String(localized: "month")
+            case .quarter: return String(localized: "3 months")
+            case .half:    return String(localized: "6 months")
+            case .year:    return String(localized: "year")
+            case .all:     return String(localized: "all history")
             }
         }
         /// This range plus every LARGER range, ascending — the auto-expand search

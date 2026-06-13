@@ -38,7 +38,7 @@ final class IntelligenceEngine: ObservableObject {
     /// live night can be scored against your norm.
     func analyzeRecent(maxDays: Int = 21) async {
         guard !computing else { return }
-        guard let store = await repo.storeHandle() else { note = "No on-device store yet."; return }
+        guard let store = await repo.storeHandle() else { note = String(localized: "No on-device store yet."); return }
         guard let hrvCfg = Baselines.metricCfg["hrv"],
               let rhrCfg = Baselines.metricCfg["resting_hr"] else { return }
 
@@ -134,7 +134,7 @@ final class IntelligenceEngine: ObservableObject {
 
         results = out
         note = out.isEmpty
-            ? "No scored nights yet. Wear the strap with NOOP connected overnight and the engine will score your recovery, strain and sleep itself, no WHOOP cloud required."
+            ? String(localized: "No scored nights yet. Wear the strap with NOOP connected overnight and the engine will score your recovery, strain and sleep itself, no WHOOP cloud required.")
             : nil
 
         // Reload the dashboard caches so the freshly computed scores show up immediately.

@@ -28,10 +28,10 @@ struct CoachView: View {
     private let customModelTag = "__custom__"
 
     private let suggestions = [
-        "How's my recovery trending?",
-        "What should today's training look like?",
-        "Analyse my sleep",
-        "Why am I run down?",
+        String(localized: "How's my recovery trending?"),
+        String(localized: "What should today's training look like?"),
+        String(localized: "Analyse my sleep"),
+        String(localized: "Why am I run down?"),
     ]
 
     var body: some View {

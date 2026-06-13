@@ -23,9 +23,9 @@ struct BreathingView: View {
 
         var label: String {
             switch self {
-            case .relax:     return "Relax 4-6"
-            case .coherence: return "Coherence 5.5"
-            case .box:       return "Box 4-4"
+            case .relax:     return String(localized: "Relax 4-6")
+            case .coherence: return String(localized: "Coherence 5.5")
+            case .box:       return String(localized: "Box 4-4")
             }
         }
 
@@ -52,9 +52,9 @@ struct BreathingView: View {
 
         var tagline: String {
             switch self {
-            case .relax:     return "Long exhale · downshift to rest"
-            case .coherence: return "Equal breath · ~5.5 br/min coherence"
-            case .box:       return "Square breath · steady focus"
+            case .relax:     return String(localized: "Long exhale · downshift to rest")
+            case .coherence: return String(localized: "Equal breath · ~5.5 br/min coherence")
+            case .box:       return String(localized: "Square breath · steady focus")
             }
         }
     }
@@ -178,8 +178,8 @@ struct BreathingView: View {
 
     private var phaseWord: String {
         switch phase {
-        case .inhale: return "Breathe in…"
-        case .exhale: return "Breathe out…"
+        case .inhale: return String(localized: "Breathe in…")
+        case .exhale: return String(localized: "Breathe out…")
         }
     }
 
@@ -256,6 +256,7 @@ struct BreathingView: View {
                 Label(running ? "Stop session" : "Start session",
                       systemImage: running ? "stop.fill" : "play.fill")
                     .font(StrandFont.headline)
+                    .lineLimit(1).minimumScaleFactor(0.7)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
             }
@@ -371,12 +372,12 @@ struct BreathingView: View {
     }
 
     private var coherenceLabel: String {
-        guard let r = rmssd else { return "No data" }
+        guard let r = rmssd else { return String(localized: "No data") }
         switch r {
-        case ..<20:  return "Building"
-        case ..<45:  return "Settling"
-        case ..<80:  return "Coherent"
-        default:     return "Deep calm"
+        case ..<20:  return String(localized: "Building")
+        case ..<45:  return String(localized: "Settling")
+        case ..<80:  return String(localized: "Coherent")
+        default:     return String(localized: "Deep calm")
         }
     }
 

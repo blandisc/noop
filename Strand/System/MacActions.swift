@@ -28,15 +28,15 @@ enum MacActionKind: String, Codable, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .none:        return "Nothing"
+        case .none:        return String(localized: "Nothing")
         #if os(iOS)
-        case .lockScreen:  return "Lock the device"
+        case .lockScreen:  return String(localized: "Lock the device")
         #else
-        case .lockScreen:  return "Lock the Mac"
+        case .lockScreen:  return String(localized: "Lock the Mac")
         #endif
-        case .buzzBack:    return "Buzz back (confirm)"
-        case .markMoment:  return "Mark a moment"
-        case .runShortcut: return "Run a Shortcut…"
+        case .buzzBack:    return String(localized: "Buzz back (confirm)")
+        case .markMoment:  return String(localized: "Mark a moment")
+        case .runShortcut: return String(localized: "Run a Shortcut…")
         }
     }
     var symbol: String {

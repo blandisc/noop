@@ -30,12 +30,13 @@ private let strandDayParser: DateFormatter = {
 
 private func parseDay(_ day: String) -> Date? { strandDayParser.date(from: day) }
 
-/// "9 Jun 2026" — long, locale-stable date for the hero "as of" line.
+/// "9 Jun 2026" — long date for the hero "as of" line, in the user's language
+/// (days are UTC-keyed, so the zone stays pinned).
 private func longDate(_ d: Date) -> String {
     let f = DateFormatter()
-    f.locale = Locale(identifier: "en_US_POSIX")
+    f.locale = Locale.current
     f.timeZone = TimeZone(identifier: "UTC")
-    f.dateFormat = "d MMM yyyy"
+    f.setLocalizedDateFormatFromTemplate("d MMM y")
     return f.string(from: d)
 }
 
@@ -78,14 +79,16 @@ enum ExploreRange: Int, CaseIterable, Identifiable, Hashable {
     var id: Int { rawValue }
     var label: String {
         switch self {
-        case .week: return "W"; case .month: return "M"; case .quarter: return "3M"
-        case .half: return "6M"; case .year: return "1Y"; case .all: return "ALL"
+        case .week: return String(localized: "W"); case .month: return String(localized: "M")
+        case .quarter: return String(localized: "3M"); case .half: return String(localized: "6M")
+        case .year: return String(localized: "1Y"); case .all: return String(localized: "ALL")
         }
     }
     var name: String {
         switch self {
-        case .week: return "week"; case .month: return "month"; case .quarter: return "quarter"
-        case .half: return "6 months"; case .year: return "year"; case .all: return "all time"
+        case .week: return String(localized: "week"); case .month: return String(localized: "month")
+        case .quarter: return String(localized: "quarter"); case .half: return String(localized: "6 months")
+        case .year: return String(localized: "year"); case .all: return String(localized: "all time")
         }
     }
     /// Trailing days the window spans (nil = everything).
@@ -116,7 +119,7 @@ struct MetricExplorerView: View {
                     let metrics = MetricCatalog.inCategory(category)
                     if !metrics.isEmpty {
                         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-                            SectionHeader("\(category)", overline: "Category",
+                            SectionHeader("\(MetricCatalog.localizedCategory(category))", overline: "Category",
                                           trailing: "\(metrics.count)")
                             NoopCard(padding: 0) {
                                 VStack(spacing: 0) {
@@ -206,7 +209,7 @@ private struct MetricRow: View {
         .padding(.vertical, 11)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(metric.title), \(metric.unit.isEmpty ? metric.category : metric.unit)\(isEmpty ? ", no data" : "")")
+        .accessibilityLabel("\(metric.title), \(metric.unit.isEmpty ? metric.localizedCategory : metric.unit)\(isEmpty ? ", no data" : "")")
         .accessibilityAddTraits(.isButton)
     }
 }
@@ -348,7 +351,7 @@ struct MetricDetailView: View {
         return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(metric.category.uppercased()).strandOverline()
+                    Text(metric.localizedCategory.uppercased()).strandOverline()
                     Text(metric.title)
                         .font(StrandFont.title2)
                         .foregroundStyle(StrandPalette.textPrimary)
@@ -369,11 +372,11 @@ struct MetricDetailView: View {
                               windowFellBack: Bool) -> String {
         guard loaded, !series.isEmpty else { return "—" }
         let n = windowed.count
-        let unit = n == 1 ? "reading" : "readings"
+        let unit = n == 1 ? String(localized: "reading") : String(localized: "readings")
         if windowFellBack {
-            return "\(n) \(unit) · sparse — widened to \(effectiveRange.name)"
+            return String(localized: "\(n) \(unit) · sparse — widened to \(effectiveRange.name)")
         }
-        return "\(n) \(unit) · \(range.name)"
+        return String(localized: "\(n) \(unit) · \(range.name)")
     }
 
     // MARK: Hero chart
@@ -383,12 +386,12 @@ struct MetricDetailView: View {
                            windowFellBack: Bool) -> some View {
         let asOf: String = {
             guard let day = latest?.day, let d = parseDay(day) else { return "—" }
-            return "as of \(longDate(d))"
+            return String(localized: "as of \(longDate(d))")
         }()
         let heroValue = latest.map { metric.format($0.value) } ?? "—"
         let subtitle = windowFellBack
-            ? "Sparse — widened to \(effectiveRange.name) · \(windowed.count) readings"
-            : "\(windowed.count) readings · \(range.name)"
+            ? String(localized: "Sparse — widened to \(effectiveRange.name) · \(windowed.count) readings")
+            : String(localized: "\(windowed.count) readings · \(range.name)")
         return ChartCard(
             title: "\(metric.title)",
             subtitle: subtitle,
@@ -432,8 +435,9 @@ struct MetricDetailView: View {
             return ((cmp.direction > 0) == better)
                 ? StrandPalette.statusPositive : StrandPalette.statusCritical
         }()
-        let deltaCaption = hasDelta ? "vs prev \(effectiveRange.name)"
-            : (effectiveRange == .all ? "all history" : "no prior \(effectiveRange.name)")
+        let deltaCaption = hasDelta ? String(localized: "vs prev \(effectiveRange.name)")
+            : (effectiveRange == .all ? String(localized: "all history")
+                                      : String(localized: "no prior \(effectiveRange.name)"))
 
         return LazyVGrid(
             columns: [GridItem(.adaptive(minimum: 168), spacing: NoopMetrics.gap)],
@@ -441,7 +445,7 @@ struct MetricDetailView: View {
             spacing: NoopMetrics.gap
         ) {
             StatTile(label: "Average", value: metric.format(s.mean),
-                     caption: "\(s.n) days", accent: accent,
+                     caption: String(localized: "\(s.n) days"), accent: accent,
                      sparkline: windowValues.count > 1 ? windowValues : nil,
                      sparkColor: accent)
             StatTile(label: "Min", value: metric.format(s.min),
@@ -542,7 +546,7 @@ struct MetricDetailView: View {
                 Text(row.metric.title)
                     .font(StrandFont.body)
                     .foregroundStyle(StrandPalette.textPrimary)
-                Text("\(row.metric.category) · n = \(row.n)")
+                Text("\(row.metric.localizedCategory) · n = \(row.n)")
                     .font(StrandFont.footnote)
                     .foregroundStyle(StrandPalette.textTertiary)
             }

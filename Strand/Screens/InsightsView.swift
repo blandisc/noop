@@ -39,10 +39,10 @@ struct InsightsView: View {
         /// Short segment label.
         var label: String {
             switch self {
-            case .recovery: return "Recovery"
-            case .hrv:      return "HRV"
-            case .sleep:    return "Sleep"
-            case .rhr:      return "RHR"
+            case .recovery: return String(localized: "Recovery")
+            case .hrv:      return String(localized: "HRV")
+            case .sleep:    return String(localized: "Sleep")
+            case .rhr:      return String(localized: "RHR")
             }
         }
         /// The metricSeries key (source is always "my-whoop" for these).
@@ -57,10 +57,10 @@ struct InsightsView: View {
         /// The human outcome name used by BehaviorInsights.sentence.
         var outcomeName: String {
             switch self {
-            case .recovery: return "Recovery"
-            case .hrv:      return "HRV"
-            case .sleep:    return "Sleep performance"
-            case .rhr:      return "Resting HR"
+            case .recovery: return String(localized: "Recovery")
+            case .hrv:      return String(localized: "HRV")
+            case .sleep:    return String(localized: "Sleep performance")
+            case .rhr:      return String(localized: "Resting HR")
             }
         }
         /// Whether a higher value is the "good" direction (drives tint).
@@ -454,21 +454,21 @@ struct InsightsView: View {
     /// Cohen's d → conventional magnitude word.
     private func effectMagnitudeWord(_ d: Double) -> String {
         switch abs(d) {
-        case ..<0.2:  return "negligible"
-        case ..<0.5:  return "small"
-        case ..<0.8:  return "moderate"
-        default:      return "large"
+        case ..<0.2:  return String(localized: "negligible")
+        case ..<0.5:  return String(localized: "small")
+        case ..<0.8:  return String(localized: "moderate")
+        default:      return String(localized: "large")
         }
     }
 
     /// |r| → strength word.
     private func strengthWord(_ r: Double) -> String {
         switch abs(r) {
-        case ..<0.1:  return "no"
-        case ..<0.3:  return "a weak"
-        case ..<0.5:  return "a moderate"
-        case ..<0.7:  return "a strong"
-        default:      return "a very strong"
+        case ..<0.1:  return String(localized: "no")
+        case ..<0.3:  return String(localized: "a weak")
+        case ..<0.5:  return String(localized: "a moderate")
+        case ..<0.7:  return String(localized: "a strong")
+        default:      return String(localized: "a very strong")
         }
     }
 
@@ -481,10 +481,9 @@ struct InsightsView: View {
 
     private func relationshipSentence(_ rel: Relationship) -> String {
         let r = rel.corr.r
-        let dir = r > 0 ? "positive" : (r < 0 ? "negative" : "flat")
+        let dir = r > 0 ? String(localized: "positive") : (r < 0 ? String(localized: "negative") : String(localized: "flat"))
         let strength = strengthWord(r)
-        return "\(strength.capitalizedFirst) \(dir) relationship "
-            + "(r = \(String(format: "%.2f", r)), n = \(rel.corr.n))."
+        return String(localized: "\(strength.capitalizedFirst) \(dir) relationship (r = \(String(format: "%.2f", r)), n = \(rel.corr.n)).")
     }
 }
 

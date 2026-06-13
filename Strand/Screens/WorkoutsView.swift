@@ -370,20 +370,20 @@ struct WorkoutsView: View {
         case week, month, quarter, year, all
         var label: String {
             switch self {
-            case .week:    return "7D"
-            case .month:   return "30D"
-            case .quarter: return "90D"
-            case .year:    return "1Y"
-            case .all:     return "All"
+            case .week:    return String(localized: "7D")
+            case .month:   return String(localized: "30D")
+            case .quarter: return String(localized: "90D")
+            case .year:    return String(localized: "1Y")
+            case .all:     return String(localized: "All")
             }
         }
         var caption: String {
             switch self {
-            case .week:    return "last 7 days"
-            case .month:   return "last 30 days"
-            case .quarter: return "last 90 days"
-            case .year:    return "last year"
-            case .all:     return "all time"
+            case .week:    return String(localized: "last 7 days")
+            case .month:   return String(localized: "last 30 days")
+            case .quarter: return String(localized: "last 90 days")
+            case .year:    return String(localized: "last year")
+            case .all:     return String(localized: "all time")
             }
         }
         /// Trailing-window length in days, or nil for "all".

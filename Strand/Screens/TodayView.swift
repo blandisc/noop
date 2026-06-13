@@ -41,7 +41,7 @@ struct TodayView: View {
     private let grid = [GridItem(.adaptive(minimum: 168), spacing: NoopMetrics.gap)]
 
     var body: some View {
-        ScreenScaffold(title: "Control Center", subtitle: "\(dateLine)") {
+        ScreenScaffold(title: greetingKey, subtitle: "\(dateLine)") {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                 HealthAlertBanner()
                 if repo.today?.recovery == nil {
@@ -154,8 +154,7 @@ struct TodayView: View {
         let d = repo.today
         let score = d?.recovery
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-            SectionHeader("Today’s Synthesis", overline: "At a glance",
-                          trailing: greetingWord)
+            SectionHeader("Today’s Synthesis", overline: "At a glance")
             HStack(alignment: .top, spacing: NoopMetrics.gap) {
                 // Left: the signature ring in a card.
                 NoopCard {
@@ -194,7 +193,7 @@ struct TodayView: View {
                 SectionHeader("Heart Rate", overline: "Today")
                 ChartCard(
                     title: "Beats per minute",
-                    subtitle: "5-minute average · since midnight",
+                    subtitle: String(localized: "5-minute average · since midnight"),
                     trailing: v.last.map { "\(Int($0.rounded())) bpm" }
                 ) {
                     TrendChart(
@@ -232,7 +231,7 @@ struct TodayView: View {
         let d = repo.today
         let aLatest = appleDays.last
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-            SectionHeader("Key Metrics", overline: "Today", trailing: "14-day trend")
+            SectionHeader("Key Metrics", overline: "Today", trailing: String(localized: "14-day trend"))
             LazyVGrid(columns: grid, alignment: .leading, spacing: NoopMetrics.gap) {
                 StatTile(
                     label: "Recovery",
@@ -245,7 +244,7 @@ struct TodayView: View {
                 StatTile(
                     label: "Day Strain",
                     value: d?.strain.map { String(format: "%.1f", $0) } ?? "—",
-                    caption: "of 21",
+                    caption: String(localized: "of 21"),
                     accent: d?.strain.map { StrandPalette.strainColor($0) } ?? StrandPalette.textPrimary,
                     sparkline: sparks["strain"],
                     sparkColor: StrandPalette.strain066
@@ -253,7 +252,7 @@ struct TodayView: View {
                 StatTile(
                     label: "Sleep",
                     value: sleepValue(d),
-                    caption: d?.efficiency.map { String(format: "%.0f%% eff", $0) },
+                    caption: d?.efficiency.map { String(format: String(localized: "%.0f%% eff"), $0) },
                     accent: StrandPalette.textPrimary,
                     sparkline: sparks["sleep_total_min"],
                     sparkColor: StrandPalette.metricPurple
@@ -293,7 +292,7 @@ struct TodayView: View {
                 StatTile(
                     label: "Steps",
                     value: aLatest?.steps.map { intString(Double($0)) } ?? latestString("steps", decimals: 0),
-                    caption: "today",
+                    caption: String(localized: "today"),
                     accent: StrandPalette.metricCyan,
                     sparkline: sparks["steps"],
                     sparkColor: StrandPalette.metricCyan
@@ -301,7 +300,7 @@ struct TodayView: View {
                 StatTile(
                     label: "Weight",
                     value: aLatest?.weightKg.map { String(format: "%.1f kg", $0) } ?? latestString("weight", decimals: 1, unit: "kg"),
-                    caption: "latest",
+                    caption: String(localized: "latest"),
                     accent: StrandPalette.accent,
                     sparkline: sparks["weight"],
                     sparkColor: StrandPalette.accent
@@ -309,7 +308,7 @@ struct TodayView: View {
                 StatTile(
                     label: "Calories",
                     value: caloriesValue(aLatest),
-                    caption: "active",
+                    caption: String(localized: "active"),
                     accent: StrandPalette.metricAmber,
                     sparkline: sparks["active_kcal"],
                     sparkColor: StrandPalette.metricAmber
@@ -325,7 +324,7 @@ struct TodayView: View {
         if !workouts.isEmpty {
             VStack(alignment: .leading, spacing: NoopMetrics.gap) {
                 SectionHeader("Last Workouts", overline: "Activity",
-                              trailing: "\(workouts.count) total")
+                              trailing: String(localized: "\(workouts.count) total"))
                 LazyVGrid(columns: grid, alignment: .leading, spacing: NoopMetrics.gap) {
                     ForEach(Array(workouts.prefix(6).enumerated()), id: \.offset) { _, w in
                         StatTile(
@@ -354,14 +353,14 @@ struct TodayView: View {
                         badge: "Whoop",
                         tint: StrandPalette.accent,
                         present: !repo.days.isEmpty,
-                        detail: "\(repo.days.count) days · \(repo.sleeps.count) sleeps"
+                        detail: String(localized: "\(repo.days.count) days · \(repo.sleeps.count) sleeps")
                     )
                     Divider().overlay(StrandPalette.hairline)
                     sourceRow(
                         badge: "Apple Health",
                         tint: StrandPalette.metricCyan,
                         present: !appleDays.isEmpty,
-                        detail: "\(appleDays.count) days · \(workouts.filter { $0.source == "apple-health" }.count) workouts"
+                        detail: String(localized: "\(appleDays.count) days · \(workouts.filter { $0.source == "apple-health" }.count) workouts")
                     )
                 }
             }
@@ -373,7 +372,7 @@ struct TodayView: View {
         HStack(spacing: 10) {
             SourceBadge("\(badge)", tint: present ? tint : StrandPalette.textTertiary)
             Spacer()
-            Text(present ? detail : "Not connected")
+            Text(present ? detail : String(localized: "Not connected"))
                 .font(StrandFont.captionNumber)
                 .foregroundStyle(present ? StrandPalette.textSecondary : StrandPalette.textTertiary)
         }
@@ -437,8 +436,8 @@ struct TodayView: View {
 
     // MARK: - Derived text
 
-    /// Greeting word used as the section's trailing label (no lone text block).
-    private var greetingWord: String {
+    /// Time-of-day greeting shown as the screen title (localized by SwiftUI).
+    private var greetingKey: LocalizedStringKey {
         let h = Calendar.current.component(.hour, from: Date())
         switch h {
         case ..<12:   return "Good morning"
@@ -449,8 +448,8 @@ struct TodayView: View {
 
     private var dateLine: String {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.dateFormat = "EEEE, d MMMM"
+        f.locale = .autoupdatingCurrent
+        f.setLocalizedDateFormatFromTemplate("EEEEdMMMM")
         if let day = repo.today?.day, let date = Self.dayParser.date(from: day) {
             return f.string(from: date)
         }
@@ -459,31 +458,33 @@ struct TodayView: View {
 
     /// A short recovery state word for the synthesis hero.
     private func synthesisWord(_ score: Double?) -> String {
-        guard let s = score else { return "No Data" }
+        guard let s = score else { return String(localized: "No Data") }
         switch s {
-        case ..<25:  return "Depleted"
-        case ..<50:  return "Low"
-        case ..<70:  return "Steady"
-        case ..<88:  return "Primed"
-        default:     return "Peak"
+        case ..<25:  return String(localized: "Depleted")
+        case ..<50:  return String(localized: "Low")
+        case ..<70:  return String(localized: "Steady")
+        case ..<88:  return String(localized: "Primed")
+        default:     return String(localized: "Peak")
         }
     }
 
     /// Plain-English synthesis of recovery + sleep.
     private func synthesisDetail(_ d: DailyMetric?) -> String {
         guard let d, let rec = d.recovery else {
-            return "No metrics yet. Import your Whoop export or wear the strap to begin."
+            return String(localized: "No metrics yet. Import your Whoop export or wear the strap to begin.")
         }
         let recPart: String
         switch rec {
-        case ..<50:  recPart = "Recovery is low"
-        case ..<70:  recPart = "Recovery is steady"
-        default:     recPart = "Recovery is strong"
+        case ..<50:  recPart = String(localized: "Recovery is low")
+        case ..<70:  recPart = String(localized: "Recovery is steady")
+        default:     recPart = String(localized: "Recovery is strong")
         }
         let sleepPart: String
         if let mins = d.totalSleepMin {
             let h = mins / 60.0
-            sleepPart = h >= 7 ? " and sleep was consistent" : " but sleep ran short"
+            sleepPart = h >= 7
+                ? String(localized: " and sleep was consistent")
+                : String(localized: " but sleep ran short")
         } else {
             sleepPart = ""
         }
@@ -517,8 +518,8 @@ struct TodayView: View {
 
     private func workoutCaption(_ w: WorkoutRow) -> String {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.dateFormat = "d MMM"
+        f.locale = .autoupdatingCurrent
+        f.setLocalizedDateFormatFromTemplate("dMMM")
         let date = f.string(from: Date(timeIntervalSince1970: TimeInterval(w.startTs)))
         if let hr = w.avgHr { return "\(date) · \(hr) bpm" }
         return date

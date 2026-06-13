@@ -1059,7 +1059,7 @@ extension BLEManager: CBPeripheralDelegate {
             if selectedModel.deviceFamily == .whoop5, !didBond {
                 let d = error.localizedDescription.lowercased()
                 if d.contains("encryption") || d.contains("authentication") {
-                    state.pairingHint = "Close the official WHOOP app (or turn its phone's Bluetooth off), put the strap in pairing mode (on a 5.0/MG, tap the band repeatedly until the LEDs flash blue), then reconnect."
+                    state.pairingHint = String(localized: "Close the official WHOOP app (or turn its phone's Bluetooth off), put the strap in pairing mode (on a 5.0/MG, tap the band repeatedly until the LEDs flash blue), then reconnect.")
                     log("WHOOP 5/MG: bond refused — the strap is likely still paired to the WHOOP app. Put it in pairing mode (blue LEDs) with the WHOOP app closed, then reconnect.")
                 }
             }

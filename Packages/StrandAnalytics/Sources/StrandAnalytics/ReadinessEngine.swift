@@ -85,8 +85,8 @@ public enum ReadinessEngine {
         if let today { latestRow = sorted.first { $0.day == today } } else { latestRow = sorted.last }
         guard let latest = latestRow else {
             return Readiness(level: .insufficient,
-                             headline: "Readiness",
-                             summary: "Wear the strap for a few nights and your readiness read will appear here.",
+                             headline: String(localized: "Readiness", bundle: .main),
+                             summary: String(localized: "Wear the strap for a few nights and your readiness read will appear here.", bundle: .main),
                              signals: [], acwr: nil, monotony: nil)
         }
         let history = sorted.filter { $0.day < latest.day }   // everything before today
@@ -97,24 +97,24 @@ public enum ReadinessEngine {
         let hrvSignal = zSignal(
             value: latest.avgHrv,
             baseline: history.suffix(baselineWindow).compactMap { $0.avgHrv },
-            key: "hrv", label: "HRV",
+            key: "hrv", label: String(localized: "HRV", bundle: .main),
             higherIsBetter: true,
-            goodText: "above your baseline — well recovered",
-            neutralText: "in your normal range",
-            watchText: "a touch below baseline",
-            badText: "suppressed — a sign of autonomic fatigue")
+            goodText: String(localized: "above your baseline — well recovered", bundle: .main),
+            neutralText: String(localized: "in your normal range", bundle: .main),
+            watchText: String(localized: "a touch below baseline", bundle: .main),
+            badText: String(localized: "suppressed — a sign of autonomic fatigue", bundle: .main))
         if let s = hrvSignal { signals.append(s) }
 
         // Resting-HR drift ---------------------------------------------------
         let rhrSignal = zSignal(
             value: latest.restingHr.map(Double.init),
             baseline: history.suffix(baselineWindow).compactMap { $0.restingHr.map(Double.init) },
-            key: "rhr", label: "Resting HR",
+            key: "rhr", label: String(localized: "Resting HR", bundle: .main),
             higherIsBetter: false,
-            goodText: "at or below baseline",
-            neutralText: "in your normal range",
-            watchText: "running a little high",
-            badText: "elevated — overtraining or illness can do this")
+            goodText: String(localized: "at or below baseline", bundle: .main),
+            neutralText: String(localized: "in your normal range", bundle: .main),
+            watchText: String(localized: "running a little high", bundle: .main),
+            badText: String(localized: "elevated — overtraining or illness can do this", bundle: .main))
         if let s = rhrSignal { signals.append(s) }
 
         // Respiratory-rate drift (illness early signal) ----------------------
@@ -123,11 +123,11 @@ public enum ReadinessEngine {
             if base.count >= minBaseline, let sd = sampleSD(base), sd > 0 {
                 let z = (rr - mean(base)!) / sd
                 if z >= 1.5 {
-                    signals.append(Signal(key: "respRate", label: "Respiratory rate",
-                        detail: "up vs baseline — sometimes an early sign of getting sick", flag: .bad))
+                    signals.append(Signal(key: "respRate", label: String(localized: "Respiratory rate", bundle: .main),
+                        detail: String(localized: "up vs baseline — sometimes an early sign of getting sick", bundle: .main), flag: .bad))
                 } else if z >= 1.0 {
-                    signals.append(Signal(key: "respRate", label: "Respiratory rate",
-                        detail: "slightly raised vs baseline", flag: .watch))
+                    signals.append(Signal(key: "respRate", label: String(localized: "Respiratory rate", bundle: .main),
+                        detail: String(localized: "slightly raised vs baseline", bundle: .main), flag: .watch))
                 }
             }
         }
@@ -150,8 +150,8 @@ public enum ReadinessEngine {
                 let mono = m / sd
                 monotony = mono
                 if mono >= 2.0 {
-                    signals.append(Signal(key: "monotony", label: "Training variety",
-                        detail: "low — similar strain every day raises strain/illness risk", flag: .watch))
+                    signals.append(Signal(key: "monotony", label: String(localized: "Training variety", bundle: .main),
+                        detail: String(localized: "low — similar strain every day raises strain/illness risk", bundle: .main), flag: .watch))
                 }
             }
         }
@@ -186,19 +186,20 @@ public enum ReadinessEngine {
 
     private static func acwrSignal(_ ratio: Double) -> Signal {
         let pct = String(format: "%.2f", ratio)
+        let label = String(localized: "Training load", bundle: .main)
         switch ratio {
         case ..<0.8:
-            return Signal(key: "acwr", label: "Training load",
-                detail: "ramping down (acute:chronic \(pct)) — room to build", flag: .watch)
+            return Signal(key: "acwr", label: label,
+                detail: String(localized: "ramping down (acute:chronic \(pct)) — room to build", bundle: .main), flag: .watch)
         case 0.8..<1.3:
-            return Signal(key: "acwr", label: "Training load",
-                detail: "in the sweet spot (acute:chronic \(pct))", flag: .good)
+            return Signal(key: "acwr", label: label,
+                detail: String(localized: "in the sweet spot (acute:chronic \(pct))", bundle: .main), flag: .good)
         case 1.3..<1.5:
-            return Signal(key: "acwr", label: "Training load",
-                detail: "building fast (acute:chronic \(pct)) — watch fatigue", flag: .watch)
+            return Signal(key: "acwr", label: label,
+                detail: String(localized: "building fast (acute:chronic \(pct)) — watch fatigue", bundle: .main), flag: .watch)
         default:
-            return Signal(key: "acwr", label: "Training load",
-                detail: "spiking (acute:chronic \(pct)) — higher injury risk", flag: .bad)
+            return Signal(key: "acwr", label: label,
+                detail: String(localized: "spiking (acute:chronic \(pct)) — higher injury risk", bundle: .main), flag: .bad)
         }
     }
 
@@ -206,8 +207,8 @@ public enum ReadinessEngine {
 
     private static func synthesize(signals: [Signal], hasHistory: Bool) -> (Level, String, String) {
         guard hasHistory, !signals.isEmpty else {
-            return (.insufficient, "Readiness",
-                    "A few more nights of data and your readiness read will sharpen.")
+            return (.insufficient, String(localized: "Readiness", bundle: .main),
+                    String(localized: "A few more nights of data and your readiness read will sharpen.", bundle: .main))
         }
         let bad = signals.filter { $0.flag == .bad }
         let watch = signals.filter { $0.flag == .watch }
@@ -216,19 +217,19 @@ public enum ReadinessEngine {
         let loadHigh = signals.contains { $0.key == "acwr" && $0.flag == .bad }
 
         if bad.count >= 2 || (recoveryDown && loadHigh) {
-            return (.rundown, "Run down",
-                    "Several signals are down at once. Treat today as recovery — easy movement, real sleep tonight.")
+            return (.rundown, String(localized: "Run down", bundle: .main),
+                    String(localized: "Several signals are down at once. Treat today as recovery — easy movement, real sleep tonight.", bundle: .main))
         }
         if recoveryDown || loadHigh || bad.count >= 1 {
-            return (.strained, "Strained",
-                    "One of your signals is flagging. You can train, but keep it controlled and bank the recovery.")
+            return (.strained, String(localized: "Strained", bundle: .main),
+                    String(localized: "One of your signals is flagging. You can train, but keep it controlled and bank the recovery.", bundle: .main))
         }
         if good.count >= 2 && watch.isEmpty {
-            return (.primed, "Primed",
-                    "Your signals are aligned and your load is supported. A harder session is well backed today.")
+            return (.primed, String(localized: "Primed", bundle: .main),
+                    String(localized: "Your signals are aligned and your load is supported. A harder session is well backed today.", bundle: .main))
         }
-        return (.balanced, "Balanced",
-                "Nothing's flagging. Train to feel — your body's holding steady.")
+        return (.balanced, String(localized: "Balanced", bundle: .main),
+                String(localized: "Nothing's flagging. Train to feel — your body's holding steady.", bundle: .main))
     }
 
     // MARK: Stats helpers

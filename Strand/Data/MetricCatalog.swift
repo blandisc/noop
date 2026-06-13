@@ -13,6 +13,10 @@ struct MetricDescriptor: Identifiable, Hashable {
     let higherIsBetter: Bool?
     var id: String { source + ":" + key }
 
+    /// `category` is identity (grouping, comparisons like `category == "Strain"`)
+    /// and stays English — surface it through this for anything user-visible.
+    var localizedCategory: String { MetricCatalog.localizedCategory(category) }
+
     func format(_ v: Double) -> String {
         let n = decimals == 0 ? String(Int(v.rounded())) : String(format: "%.\(decimals)f", v)
         return unit.isEmpty ? n : "\(n) \(unit)"
@@ -26,52 +30,67 @@ enum MetricCatalog {
 
     static let all: [MetricDescriptor] = [
         // ── Heart
-        d("avg_hr", "Average Heart Rate", "Heart", "bpm", "my-whoop", "heart", 0, nil),
-        d("max_hr", "Max Heart Rate", "Heart", "bpm", "my-whoop", "bolt.heart", 0, nil),
-        d("energy_kcal", "Calories", "Heart", "kcal", "my-whoop", "flame", 0, nil),
-        d("vo2max", "VO₂ Max", "Heart", "", "apple-health", "lungs.fill", 1, true),
+        // Titles are wrapped in String(localized:) AT the literal so Xcode's
+        // string extraction sees them; a plain String field never localizes.
+        d("avg_hr", String(localized: "Average Heart Rate"), "Heart", "bpm", "my-whoop", "heart", 0, nil),
+        d("max_hr", String(localized: "Max Heart Rate"), "Heart", "bpm", "my-whoop", "bolt.heart", 0, nil),
+        d("energy_kcal", String(localized: "Calories"), "Heart", "kcal", "my-whoop", "flame", 0, nil),
+        d("vo2max", String(localized: "VO₂ Max"), "Heart", "", "apple-health", "lungs.fill", 1, true),
 
         // ── Recovery
-        d("recovery", "Recovery", "Recovery", "%", "my-whoop", "heart.circle", 0, true),
-        d("hrv", "Heart Rate Variability", "Recovery", "ms", "my-whoop", "waveform.path.ecg", 0, true),
-        d("rhr", "Resting Heart Rate", "Recovery", "bpm", "my-whoop", "heart", 0, false),
-        d("resp_rate", "Respiratory Rate", "Recovery", "rpm", "my-whoop", "lungs", 1, nil),
-        d("spo2", "Blood Oxygen", "Recovery", "%", "my-whoop", "drop", 0, true),
-        d("skin_temp", "Skin Temperature", "Recovery", "°C", "my-whoop", "thermometer", 1, nil),
+        d("recovery", String(localized: "Recovery"), "Recovery", "%", "my-whoop", "heart.circle", 0, true),
+        d("hrv", String(localized: "Heart Rate Variability"), "Recovery", "ms", "my-whoop", "waveform.path.ecg", 0, true),
+        d("rhr", String(localized: "Resting Heart Rate"), "Recovery", "bpm", "my-whoop", "heart", 0, false),
+        d("resp_rate", String(localized: "Respiratory Rate"), "Recovery", "rpm", "my-whoop", "lungs", 1, nil),
+        d("spo2", String(localized: "Blood Oxygen"), "Recovery", "%", "my-whoop", "drop", 0, true),
+        d("skin_temp", String(localized: "Skin Temperature"), "Recovery", "°C", "my-whoop", "thermometer", 1, nil),
 
         // ── Sleep
-        d("sleep_performance", "Sleep Performance", "Sleep", "%", "my-whoop", "moon.stars", 0, true),
-        d("in_bed_min", "Time in Bed", "Sleep", "min", "my-whoop", "bed.double", 0, nil),
-        d("sleep_total_min", "Asleep Time", "Sleep", "min", "my-whoop", "moon.zzz", 0, true),
-        d("hours_vs_needed_pct", "Hours vs Needed", "Sleep", "%", "my-whoop", "gauge.medium", 0, true),
-        d("sleep_consistency", "Sleep Consistency", "Sleep", "%", "my-whoop", "calendar", 0, true),
-        d("restorative_pct", "Restorative Sleep", "Sleep", "%", "my-whoop", "sparkles", 0, true),
-        d("restorative_min", "Restorative Sleep", "Sleep", "min", "my-whoop", "sparkles", 0, true),
-        d("sleep_efficiency", "Sleep Efficiency", "Sleep", "%", "my-whoop", "bed.double.fill", 0, true),
-        d("sleep_deep_min", "Deep (SWS) Sleep", "Sleep", "min", "my-whoop", "moon.fill", 0, true),
-        d("sleep_rem_min", "REM Sleep", "Sleep", "min", "my-whoop", "moon.haze", 0, true),
-        d("sleep_light_min", "Light Sleep", "Sleep", "min", "my-whoop", "moon", 0, nil),
-        d("sleep_need_min", "Sleep Need", "Sleep", "min", "my-whoop", "gauge", 0, nil),
-        d("sleep_debt_min", "Sleep Debt", "Sleep", "min", "my-whoop", "exclamationmark.circle", 0, false),
+        d("sleep_performance", String(localized: "Sleep Performance"), "Sleep", "%", "my-whoop", "moon.stars", 0, true),
+        d("in_bed_min", String(localized: "Time in Bed"), "Sleep", "min", "my-whoop", "bed.double", 0, nil),
+        d("sleep_total_min", String(localized: "Asleep Time"), "Sleep", "min", "my-whoop", "moon.zzz", 0, true),
+        d("hours_vs_needed_pct", String(localized: "Hours vs Needed"), "Sleep", "%", "my-whoop", "gauge.medium", 0, true),
+        d("sleep_consistency", String(localized: "Sleep Consistency"), "Sleep", "%", "my-whoop", "calendar", 0, true),
+        d("restorative_pct", String(localized: "Restorative Sleep"), "Sleep", "%", "my-whoop", "sparkles", 0, true),
+        d("restorative_min", String(localized: "Restorative Sleep"), "Sleep", "min", "my-whoop", "sparkles", 0, true),
+        d("sleep_efficiency", String(localized: "Sleep Efficiency"), "Sleep", "%", "my-whoop", "bed.double.fill", 0, true),
+        d("sleep_deep_min", String(localized: "Deep (SWS) Sleep"), "Sleep", "min", "my-whoop", "moon.fill", 0, true),
+        d("sleep_rem_min", String(localized: "REM Sleep"), "Sleep", "min", "my-whoop", "moon.haze", 0, true),
+        d("sleep_light_min", String(localized: "Light Sleep"), "Sleep", "min", "my-whoop", "moon", 0, nil),
+        d("sleep_need_min", String(localized: "Sleep Need"), "Sleep", "min", "my-whoop", "gauge", 0, nil),
+        d("sleep_debt_min", String(localized: "Sleep Debt"), "Sleep", "min", "my-whoop", "exclamationmark.circle", 0, false),
 
         // ── Strain
-        d("strain", "Day Strain", "Strain", "/21", "my-whoop", "flame", 1, nil),
-        d("steps", "Steps", "Strain", "", "apple-health", "figure.walk", 0, true),
-        d("hr_zones13_min", "HR Zones 1–3", "Strain", "min", "my-whoop", "heart", 0, nil),
-        d("hr_zones45_min", "HR Zones 4–5", "Strain", "min", "my-whoop", "heart.fill", 0, nil),
-        d("hr_zones_all_min", "HR Zones (All)", "Strain", "min", "my-whoop", "heart.text.square", 0, nil),
-        d("strength_min", "Strength Activity Time", "Strain", "min", "my-whoop", "dumbbell", 0, nil),
-        d("active_kcal", "Active Energy", "Strain", "kcal", "apple-health", "flame.fill", 0, nil),
+        d("strain", String(localized: "Day Strain"), "Strain", "/21", "my-whoop", "flame", 1, nil),
+        d("steps", String(localized: "Steps"), "Strain", "", "apple-health", "figure.walk", 0, true),
+        d("hr_zones13_min", String(localized: "HR Zones 1–3"), "Strain", "min", "my-whoop", "heart", 0, nil),
+        d("hr_zones45_min", String(localized: "HR Zones 4–5"), "Strain", "min", "my-whoop", "heart.fill", 0, nil),
+        d("hr_zones_all_min", String(localized: "HR Zones (All)"), "Strain", "min", "my-whoop", "heart.text.square", 0, nil),
+        d("strength_min", String(localized: "Strength Activity Time"), "Strain", "min", "my-whoop", "dumbbell", 0, nil),
+        d("active_kcal", String(localized: "Active Energy"), "Strain", "kcal", "apple-health", "flame.fill", 0, nil),
 
         // ── Health / Body
-        d("weight", "Weight", "Health", "kg", "apple-health", "scalemass", 1, nil),
-        d("body_fat", "Body Fat", "Health", "%", "apple-health", "percent", 1, false),
-        d("lean_mass", "Lean Body Mass", "Health", "kg", "apple-health", "figure.arms.open", 1, true),
-        d("bmi", "BMI", "Health", "", "apple-health", "figure", 1, nil),
-        d("stress", "Day Stress", "Health", "/3", "my-whoop", "gauge.with.dots.needle.50percent", 1, false),
+        d("weight", String(localized: "Weight"), "Health", "kg", "apple-health", "scalemass", 1, nil),
+        d("body_fat", String(localized: "Body Fat"), "Health", "%", "apple-health", "percent", 1, false),
+        d("lean_mass", String(localized: "Lean Body Mass"), "Health", "kg", "apple-health", "figure.arms.open", 1, true),
+        d("bmi", String(localized: "BMI"), "Health", "", "apple-health", "figure", 1, nil),
+        d("stress", String(localized: "Day Stress"), "Health", "/3", "my-whoop", "gauge.with.dots.needle.50percent", 1, false),
     ]
 
     static func inCategory(_ c: String) -> [MetricDescriptor] { all.filter { $0.category == c } }
+
+    /// Display name for a category key (`categories` stays English internally —
+    /// it's identity for grouping and checks like `category == "Strain"`).
+    static func localizedCategory(_ c: String) -> String {
+        switch c {
+        case "Heart":    return String(localized: "Heart")
+        case "Recovery": return String(localized: "Recovery")
+        case "Sleep":    return String(localized: "Sleep")
+        case "Strain":   return String(localized: "Strain")
+        case "Health":   return String(localized: "Health")
+        default:         return c
+        }
+    }
 
     private static func d(_ key: String, _ title: String, _ category: String, _ unit: String,
                           _ source: String, _ icon: String, _ decimals: Int,

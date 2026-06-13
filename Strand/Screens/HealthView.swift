@@ -166,8 +166,8 @@ private struct HeartRateSection: View {
     }
 
     private func zoneLabel(hasLiveHR: Bool, zone: Int, fraction: Double) -> String {
-        guard hasLiveHR else { return "Idle" }
-        return "Zone \(zone) · \(Int((fraction * 100).rounded()))%"
+        guard hasLiveHR else { return String(localized: "Idle") }
+        return String(localized: "Zone \(zone) · \(Int((fraction * 100).rounded()))%")
     }
 }
 
@@ -258,8 +258,8 @@ private struct Vital: Identifiable {
     /// The textual in-range caption that stands in for a StatePill inside the
     /// fixed-height tile (keeps the row pixel-uniform).
     var stateCaption: String {
-        guard value != nil else { return "No data" }
-        return isInRange ? "In range" : "Out of range"
+        guard value != nil else { return String(localized: "No data") }
+        return isInRange ? String(localized: "In range") : String(localized: "Out of range")
     }
 
     var accessibilityText: String {

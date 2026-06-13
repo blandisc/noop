@@ -57,11 +57,11 @@ struct LiveView: View {
         // over the unbonded standard profile (#69): green "Bonded · streaming" only when encryptedBond,
         // amber "Live HR (not fully paired)" otherwise. The pairingHintBanner below gives the how-to.
         let (label, color): (String, Color) =
-            (activeConnection && live.encryptedBond) ? ("Bonded · streaming", StrandPalette.accent)
-            : activeConnection ? ("Live HR (not fully paired)", StrandPalette.statusWarning)
-            : live.connected ? ("Connected", StrandPalette.statusWarning)
-            : live.encryptedBond ? ("Paired · idle", StrandPalette.statusWarning)
-            : ("Disconnected", StrandPalette.metricRose)
+            (activeConnection && live.encryptedBond) ? (String(localized: "Bonded · streaming"), StrandPalette.accent)
+            : activeConnection ? (String(localized: "Live HR (not fully paired)"), StrandPalette.statusWarning)
+            : live.connected ? (String(localized: "Connected"), StrandPalette.statusWarning)
+            : live.encryptedBond ? (String(localized: "Paired · idle"), StrandPalette.statusWarning)
+            : (String(localized: "Disconnected"), StrandPalette.metricRose)
         return HStack(spacing: 8) {
             Circle().fill(color).frame(width: 9, height: 9)
             Text(label).font(StrandFont.subhead).foregroundStyle(StrandPalette.textPrimary)
@@ -96,9 +96,9 @@ struct LiveView: View {
 
     private var statusGrid: some View {
         HStack(spacing: NoopMetrics.gap) {
-            stat("Battery", live.batteryPct.map { "\(Int($0))%" } ?? "—")
-            stat("Last frame", live.lastFrameType ?? "—")
-            stat("Last event", live.lastEvent ?? "—")
+            stat(String(localized: "Battery"), live.batteryPct.map { "\(Int($0))%" } ?? "—")
+            stat(String(localized: "Last frame"), live.lastFrameType ?? "—")
+            stat(String(localized: "Last event"), live.lastEvent ?? "—")
         }
     }
 
@@ -169,12 +169,14 @@ struct LiveView: View {
             Button { model.scan(model: selectedModel) } label: {
                 Label(live.connected ? "Re-scan" : "Scan & Connect",
                       systemImage: "antenna.radiowaves.left.and.right")
+                    .lineLimit(1).minimumScaleFactor(0.7)
                     .frame(maxWidth: .infinity).padding(.vertical, 8)
             }
             .buttonStyle(.borderedProminent).tint(StrandPalette.accent)
 
             Button { model.buzz() } label: {
                 Label("Buzz strap", systemImage: "waveform.path")
+                    .lineLimit(1).minimumScaleFactor(0.7)
                     .frame(maxWidth: .infinity).padding(.vertical, 8)
             }
             .buttonStyle(.bordered).tint(StrandPalette.accent)
@@ -183,6 +185,7 @@ struct LiveView: View {
 
             Button(role: .destructive) { model.disconnect() } label: {
                 Label("Disconnect", systemImage: "xmark.circle")
+                    .lineLimit(1).minimumScaleFactor(0.7)
                     .frame(maxWidth: .infinity).padding(.vertical, 8)
             }
             .buttonStyle(.bordered)

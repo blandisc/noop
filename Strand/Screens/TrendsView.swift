@@ -121,11 +121,11 @@ struct TrendsView: View {
     /// Caption text from an already-resolved count + effective range. Mirrors
     /// `caption(_:)` exactly but takes precomputed inputs to avoid re-filtering.
     private func caption(count n: Int, eff: Range) -> String {
-        let unit = n == 1 ? "reading" : "readings"
+        let unit = n == 1 ? String(localized: "reading") : String(localized: "readings")
         if eff != range {
-            return "\(n) \(unit) · sparse — widened to \(name(for: eff))"
+            return String(localized: "\(n) \(unit) · sparse — widened to \(name(for: eff))")
         }
-        return "\(n) \(unit) · \(name(for: range))"
+        return String(localized: "\(n) \(unit) · \(name(for: range))")
     }
 
     /// A padded value range for a series so the line isn't flat against the axis.
@@ -144,18 +144,18 @@ struct TrendsView: View {
 
     /// "Trailing 90 days" / "All history" — used as a card subtitle.
     private var rangeSubtitle: String {
-        guard let n = range.days else { return "All history" }
-        return "Trailing \(n) days"
+        guard let n = range.days else { return String(localized: "All history") }
+        return String(localized: "Trailing \(n) days")
     }
 
     private func name(for r: Range) -> String {
         switch r {
-        case .week:    return "week"
-        case .month:   return "month"
-        case .quarter: return "3 months"
-        case .half:    return "6 months"
-        case .year:    return "year"
-        case .all:     return "all history"
+        case .week:    return String(localized: "week")
+        case .month:   return String(localized: "month")
+        case .quarter: return String(localized: "3 months")
+        case .half:    return String(localized: "6 months")
+        case .year:    return String(localized: "year")
+        case .all:     return String(localized: "all history")
         }
     }
 

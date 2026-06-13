@@ -83,9 +83,9 @@ struct NotificationSettingsView: View {
     /// Strap status — mirrors SettingsView's three-state mapping so the pill, its tone and its
     /// pulse always agree (and never reads "connected" while the strap is offline).
     private var strapPillTitle: String {
-        if live.connected { return "Strap connected" }
-        if live.bonded { return "Strap idle" }          // paired but offline — won't deliver
-        return "Strap not connected"
+        if live.connected { return String(localized: "Strap connected") }
+        if live.bonded { return String(localized: "Strap idle") }          // paired but offline — won't deliver
+        return String(localized: "Strap not connected")
     }
     private var strapPillTone: StrandTone {
         if live.connected { return .positive }
