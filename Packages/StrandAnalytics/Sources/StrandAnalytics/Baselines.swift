@@ -111,6 +111,8 @@ public enum Baselines {
                           halfLifeB: 14.0, halfLifeS: 21.0),
         "skin_temp": MetricCfg(minVal: 20.0, maxVal: 42.0, floorSpread: 0.3,
                                halfLifeB: 14.0, halfLifeS: 21.0),
+        "efficiency": MetricCfg(minVal: 0.2, maxVal: 1.0, floorSpread: 0.03,
+                                halfLifeB: 14.0, halfLifeS: 21.0),
     ]
 
     /// Convenience accessors for the standard configs.

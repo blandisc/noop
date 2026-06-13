@@ -80,6 +80,7 @@ final class IntelligenceEngine: ObservableObject {
         // seed resp/skin-temp baselines the same way avgHrv seeds the HRV baseline.
         var nightlyRespByDay: [String: Double?] = [:]
         var nightlySkinByDay: [String: Double?] = [:]
+        var nightlyEffByDay: [String: Double?] = [:]
 
         for offset in 0..<maxDays {
             let dayStart = now - offset * 86_400
@@ -118,6 +119,7 @@ final class IntelligenceEngine: ObservableObject {
             nightlyRhrByDay[res.daily.day] = res.daily.restingHr.map(Double.init)
             nightlyRespByDay[res.daily.day] = res.daily.respRateBpm
             nightlySkinByDay[res.daily.day] = res.nightlySkinTempC
+            nightlyEffByDay[res.daily.day] = res.daily.efficiency
             scoredNights.append((daily: res.daily, strain: res.strain, cachedSleep: res.cachedSleep,
                                  workouts: res.workouts, nightlySkin: res.nightlySkinTempC))
             await Task.yield()
@@ -132,17 +134,21 @@ final class IntelligenceEngine: ObservableObject {
         var histHrvByDay: [String: Double?] = [:]
         var histRhrByDay: [String: Double?] = [:]
         var histRespByDay: [String: Double?] = [:]
+        var histEffByDay: [String: Double?] = [:]
         for d in hist {
             histHrvByDay[d.day] = d.avgHrv
             histRhrByDay[d.day] = d.restingHr.map(Double.init)
             histRespByDay[d.day] = d.respRateBpm
+            histEffByDay[d.day] = d.efficiency
         }
         for (day, v) in nightlyHrvByDay where histHrvByDay[day] == nil { histHrvByDay[day] = v }
         for (day, v) in nightlyRhrByDay where histRhrByDay[day] == nil { histRhrByDay[day] = v }
         for (day, v) in nightlyRespByDay where histRespByDay[day] == nil { histRespByDay[day] = v }
+        for (day, v) in nightlyEffByDay where histEffByDay[day] == nil { histEffByDay[day] = v }
         let hrvSeq = histHrvByDay.keys.sorted().map { histHrvByDay[$0]! }   // chronological [Double?]
         let rhrSeq = histRhrByDay.keys.sorted().map { histRhrByDay[$0]! }
         let respSeq = histRespByDay.keys.sorted().map { histRespByDay[$0]! }
+        let effSeq = histEffByDay.keys.sorted().map { histEffByDay[$0]! }
         // Skin-temp baseline is on-device-only (imported rows carry skinTempDevC, not the raw mean),
         // so fold purely over the pass-1 nightly means in chronological order.
         let skinSeq = nightlySkinByDay.keys.sorted().map { nightlySkinByDay[$0]! }
@@ -150,6 +156,11 @@ final class IntelligenceEngine: ObservableObject {
         // baseline object is present — a CALIBRATING (<4-night) baseline would let one noisy
         // RSA night move recovery (mirrors the skin-temp use-site gate; honest cold-start).
         let respFold = Baselines.foldHistory(respSeq, cfg: respCfg)
+        // Personal sleep-efficiency baseline (gated on `usable` at the recovery call site, like
+        // resp/skin-temp): the recovery sleep term is measured against the user's own normal once
+        // enough nights exist, else falls back to the fixed population center (honest cold-start).
+        let effCfg = Baselines.metricCfg["efficiency"]!
+        let effFold = Baselines.foldHistory(effSeq, cfg: effCfg)
         let baselines2 = AnalyticsEngine.ProfileBaselines(
             hrv: Baselines.foldHistory(hrvSeq, cfg: hrvCfg),
             restingHR: Baselines.foldHistory(rhrSeq, cfg: rhrCfg),
@@ -177,7 +188,7 @@ final class IntelligenceEngine: ObservableObject {
         var cachedSleep: [CachedSleepSession] = []
         var workoutRows: [WorkoutRow] = []
         for night in scoredNights {
-            let recovery = recomputeRecovery(night.daily, baselines2)
+            let recovery = recomputeRecovery(night.daily, baselines2, skinTemp: night.nightlySkin, sleepBaseline: effFold)
             let skinDev = recomputeSkinTempDev(night.nightlySkin, baselines2.skinTemp)
             out.append(Computed(day: night.daily.day, recovery: recovery, strain: night.strain,
                                 sleepMin: night.daily.totalSleepMin, hrv: night.daily.avgHrv,
@@ -225,11 +236,20 @@ final class IntelligenceEngine: ObservableObject {
     /// baseline is usable (RecoveryScorer gates on `hrvBaseline.usable`, i.e. ≥ minNightsSeed valid
     /// nights) — so the honest null-until-4-nights cold-start is free. Mirrors AnalyticsEngine's own
     /// recovery call + Android IntelligenceEngine.recomputeRecovery. (#78)
-    private func recomputeRecovery(_ daily: DailyMetric, _ baselines: AnalyticsEngine.ProfileBaselines) -> Double? {
+    private func recomputeRecovery(_ daily: DailyMetric, _ baselines: AnalyticsEngine.ProfileBaselines,
+                                   skinTemp: Double?, sleepBaseline: BaselineState?) -> Double? {
         guard let hrvVal = daily.avgHrv, let rhrVal = daily.restingHr, let hrvBase = baselines.hrv else { return nil }
+        // Skin-temp + sleep-efficiency terms only once their baselines are usable (≥ seed nights) —
+        // a calibrating baseline would let one noisy night move recovery (same honest cold-start as
+        // resp). The sleep term falls back to the fixed population center until its baseline is ready.
+        let tempBase = (baselines.skinTemp?.usable ?? false) ? baselines.skinTemp : nil
+        let sleepBase = (sleepBaseline?.usable ?? false) ? sleepBaseline : nil
         return RecoveryScorer.recovery(hrv: hrvVal, rhr: Double(rhrVal), resp: daily.respRateBpm,
                                        hrvBaseline: hrvBase, rhrBaseline: baselines.restingHR,
-                                       respBaseline: baselines.resp, sleepPerf: daily.efficiency)
+                                       respBaseline: baselines.resp, sleepPerf: daily.efficiency,
+                                       sleepPerfBaseline: sleepBase,
+                                       skinTemp: tempBase != nil ? skinTemp : nil,
+                                       skinTempBaseline: tempBase)
     }
 
     /// Re-derive the skin-temperature deviation (°C) for a night against the freshly-seeded personal

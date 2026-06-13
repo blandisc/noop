@@ -14,6 +14,7 @@ import WhoopProtocol
 //   lower resting HR vs baseline → higher recovery  (W_RHR   = 0.20)
 //   lower resp vs baseline       → higher recovery  (W_RESP  = 0.05)
 //   higher sleep performance     → higher recovery  (W_SLEEP = 0.15)
+//   lower skin temp vs baseline  → higher recovery  (W_TEMP  = 0.10, optional)
 //
 // Each metric is standardized to a robust z-score against the personal baseline
 // (mean + EWMA-abs-dev spread). Missing terms are dropped and the weights
@@ -32,6 +33,11 @@ public enum RecoveryScorer {
     public static let wRHR: Double = 0.20
     public static let wResp: Double = 0.05
     public static let wSleep: Double = 0.15
+    /// Skin-temperature term: an elevated nightly skin temp vs personal baseline
+    /// (illness, overreaching, alcohol) lowers recovery. Optional — the term drops
+    /// and the weights renormalize when no temp value or baseline is available, so
+    /// callers that don't supply temperature score exactly as before.
+    public static let wTemp: Double = 0.10
 
     /// Logistic spread: ±2 z-units ≈ full Red–Green band (15%–95%).
     public static let logisticK: Double = 1.6
@@ -153,6 +159,9 @@ public enum RecoveryScorer {
                                 rhrBaseline: DriverBaseline?,
                                 respBaseline: DriverBaseline?,
                                 sleepPerf: Double?,
+                                sleepPerfBaseline: DriverBaseline? = nil,
+                                skinTemp: Double? = nil,
+                                skinTempBaseline: DriverBaseline? = nil,
                                 hrvBaselineUsable: Bool = true) -> Double? {
         // Cold-start gate: HRV is the dominant driver; if its baseline isn't
         // usable, refuse to score (more honest than a fabricated value).
@@ -172,9 +181,22 @@ public enum RecoveryScorer {
         if let r = resp, let b = respBaseline {
             terms.append((zScore(b.mean, mean: r, spread: b.spread), wResp))
         }
-        // Sleep-performance term: no baseline needed; centered at SLEEP_PERF_CENTER.
+        // Skin-temp term: lower is better (elevated temp = illness / overreaching), optional.
+        if let t = skinTemp, let b = skinTempBaseline {
+            terms.append((zScore(b.mean, mean: t, spread: b.spread), wTemp))
+        }
+        // Sleep-performance term. With a personal efficiency baseline, z is measured
+        // against the user's OWN normal — consistent with every other driver — so a
+        // naturally low (or high) sleeper isn't perpetually penalized (or flattered).
+        // Without one (cold-start) it falls back to the fixed population center/scale.
         if let sp = sleepPerf {
-            terms.append(((sp - sleepPerfCenter) / sleepPerfScale, wSleep))
+            let z: Double
+            if let b = sleepPerfBaseline {
+                z = zScore(sp, mean: b.mean, spread: b.spread)   // higher efficiency = better
+            } else {
+                z = (sp - sleepPerfCenter) / sleepPerfScale
+            }
+            terms.append((z, wSleep))
         }
 
         guard !terms.isEmpty else { return nil }
@@ -194,7 +216,10 @@ public enum RecoveryScorer {
                                 hrvBaseline: BaselineState,
                                 rhrBaseline: BaselineState?,
                                 respBaseline: BaselineState?,
-                                sleepPerf: Double?) -> Double? {
+                                sleepPerf: Double?,
+                                sleepPerfBaseline: BaselineState? = nil,
+                                skinTemp: Double? = nil,
+                                skinTempBaseline: BaselineState? = nil) -> Double? {
         recovery(hrv: hrv,
                  rhr: rhr,
                  resp: resp,
@@ -202,6 +227,9 @@ public enum RecoveryScorer {
                  rhrBaseline: rhrBaseline.map(DriverBaseline.init),
                  respBaseline: respBaseline.map(DriverBaseline.init),
                  sleepPerf: sleepPerf,
+                 sleepPerfBaseline: sleepPerfBaseline.map(DriverBaseline.init),
+                 skinTemp: skinTemp,
+                 skinTempBaseline: skinTempBaseline.map(DriverBaseline.init),
                  hrvBaselineUsable: hrvBaseline.usable)
     }
 }

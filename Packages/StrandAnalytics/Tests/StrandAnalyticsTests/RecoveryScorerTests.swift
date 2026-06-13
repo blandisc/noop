@@ -99,6 +99,44 @@ final class RecoveryScorerTests: XCTestCase {
         XCTAssertGreaterThan(lowered, neutral, "resp below baseline must raise recovery")
     }
 
+    func testSkinTempAboveBaselineLowersRecovery() {
+        // Pins the skin-temp-into-recovery wiring: with HRV/RHR/sleep at baseline, a nightly
+        // skin temp at baseline must not move the score off the no-temp value, and an elevated
+        // temp (illness / overreaching) must LOWER recovery.
+        func score(temp: Double?, base: Bool) -> Double {
+            RecoveryScorer.recovery(
+                hrv: 50, rhr: 55, resp: nil,
+                hrvBaseline: baseline(mean: 50, sigma: 6),
+                rhrBaseline: baseline(mean: 55, sigma: 3),
+                respBaseline: nil,
+                sleepPerf: RecoveryScorer.sleepPerfCenter,
+                skinTemp: temp,
+                skinTempBaseline: base ? baseline(mean: 33.5, sigma: 0.3) : nil)!
+        }
+        let neutralNoTemp = score(temp: nil, base: false)
+        let atBaseline = score(temp: 33.5, base: true)
+        let elevated = score(temp: 34.3, base: true)
+        XCTAssertEqual(atBaseline, neutralNoTemp, accuracy: 1e-6, "temp at baseline must not move the score")
+        XCTAssertLessThan(elevated, neutralNoTemp, "elevated skin temp must lower recovery")
+    }
+
+    func testSleepEfficiencyPersonalizedVsFixedCenter() {
+        // A habitual low sleeper (personal efficiency ~0.78). Against the fixed population
+        // center (0.85) that night reads "below center" and drags recovery DOWN; against the
+        // user's OWN baseline (mean 0.78) the same night is neutral and isn't penalized.
+        func score(personal: Bool) -> Double {
+            RecoveryScorer.recovery(
+                hrv: 50, rhr: 55, resp: nil,
+                hrvBaseline: baseline(mean: 50, sigma: 6),
+                rhrBaseline: baseline(mean: 55, sigma: 3),
+                respBaseline: nil,
+                sleepPerf: 0.78,
+                sleepPerfBaseline: personal ? baseline(mean: 0.78, sigma: 0.05) : nil)!
+        }
+        XCTAssertGreaterThan(score(personal: true), score(personal: false),
+                             "own-baseline sleep must not penalize a habitual low sleeper")
+    }
+
     func testBandThresholds() {
         XCTAssertEqual(RecoveryScorer.band(20), "red")
         XCTAssertEqual(RecoveryScorer.band(33.9), "red")

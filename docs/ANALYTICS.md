@@ -157,6 +157,7 @@ Source: `RecoveryScorer.swift`. A **z-score + logistic** composite. It is explic
 | Resting HR vs baseline | lower → better | `wRHR = 0.20` |
 | Respiration vs baseline | lower → better | `wResp = 0.05` |
 | Sleep performance | higher → better | `wSleep = 0.15` |
+| Skin temperature vs baseline | lower → better | `wTemp = 0.10` (optional) |
 
 Each metric is standardized to a **robust z-score** against the personal baseline (EWMA spread):
 
@@ -164,7 +165,7 @@ Each metric is standardized to a **robust z-score** against the personal baselin
 z = (value − mean) / (1.253 · spread)
 ```
 
-The `1.253` converts an EWMA mean-absolute-deviation into an approximate Gaussian σ (`E[|X−μ|] = σ·√(2/π) ≈ σ/1.253`). For "lower is better" drivers (RHR, resp) the z is inverted by swapping value and mean. The sleep term is centered directly: `(sleepPerf − 0.85) / 0.12`.
+The `1.253` converts an EWMA mean-absolute-deviation into an approximate Gaussian σ (`E[|X−μ|] = σ·√(2/π) ≈ σ/1.253`). For "lower is better" drivers (RHR, resp, skin temp) the z is inverted by swapping value and mean. The **skin-temperature term is optional** — it joins once its personal baseline is usable, and an elevated nightly temp (illness / overreaching) lowers recovery. The **sleep term is personalized** against the user's own efficiency baseline when available; until then it falls back to the fixed population center `(sleepPerf − 0.85) / 0.12`.
 
 Missing terms are dropped and weights renormalized. The weighted-mean z is squashed:
 
@@ -277,7 +278,7 @@ Consecutive same-stage epochs are merged into `StageSegment`s tiling `[start, en
 
 ### Outputs
 
-- `SleepSession` — `start`, `end`, `efficiency` (AASM `asleep / in-bed`, where `asleep = in-bed − wake`), `stages`, per-session `restingHR` (lowest 5-min rolling-mean HR) and `avgHRV` (mean RMSSD over 5-min tumbling windows).
+- `SleepSession` — `start`, `end`, `efficiency` (AASM `asleep / in-bed`, where `asleep = in-bed − wake`), `stages`, per-session `restingHR` (lowest 5-min rolling-mean HR) and `avgHRV` (**median** RMSSD over 5-min tumbling windows, each window ectopic-rejected, and **wake windows excluded** via the hypnogram — a steadier, sleep-only parasympathetic read).
 - `hypnogramMetrics(_:)` — AASM-style roll-up: TIB / TST / SPT / SOL / REM latency / WASO / efficiency / disturbances, plus deep/REM/light minutes and percentages.
 
 ---
@@ -400,7 +401,7 @@ Source: `AnalyticsEngine.swift`. A pure function that ties the recompute engines
 1. `SleepStager.detectSleep` → keep sessions whose `end` falls on `day` (UTC) — a night ending that morning.
 2. Daily sleep aggregates (in-bed-weighted efficiency; deep/REM/light minutes; disturbances) via `hypnogramMetrics`.
 3. Daily resting HR = lowest per-session resting HR; daily avg HRV = in-bed-weighted mean of per-session HRV.
-4. `RecoveryScorer.recovery(...)` with the personal HRV/RHR/resp baselines and the efficiency-based sleep-performance proxy.
+4. `RecoveryScorer.recovery(...)` with the personal HRV/RHR/resp/skin-temp baselines and a personal (own-baseline) sleep-efficiency term.
 5. `StrainScorer.strain(...)` over the full day's HR window (Tanaka HRmax from age unless overridden).
 6. `WorkoutDetector.detect(...)`.
 
