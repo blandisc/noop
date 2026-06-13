@@ -32,6 +32,18 @@ _Developer / docs — no user-facing change._
   `DESIGN.md` (color, typography, spacing, motion, full component catalog), W3C design tokens
   (`tokens/design-tokens.json`), and a collected `assets/` folder (app icons + brand marks). The
   Swift package stays canonical; these are derived for handoff and cross-platform reuse.
+- **Verified the hot database reads are index-covered.** Added `EXPLAIN QUERY PLAN` tests over every
+  hot read (metric series, journal, workouts, Apple-daily, daily metrics, sleep sessions, HR samples
+  and the HR-bucket aggregate). All reach their rows through the composite primary key or the
+  `metricSeries` secondary index — no full-table scans — so no new indexes were needed. The tests
+  stay as a regression guard against a future query that silently drops the index.
+- **One UI refresh per data refresh, not four.** The dashboard's five separately-published fields
+  (days, sleeps, imported sleep, loaded, refresh counter) were folded into a single published value,
+  so a data refresh now triggers one SwiftUI invalidation instead of up to four — every screen
+  observing the store re-rendered that many times per refresh before. Read sites are unchanged
+  (`repo.days` etc. still work); only the internal publishing changed. The deeper
+  dashboard-window-vs-full-history split is tracked separately (the cleaner per-property observation
+  via the Observation framework is blocked by the macOS 13 deployment target).
 
 ---
 

@@ -632,7 +632,7 @@ private extension String {
 @MainActor
 private func insightsPreviewRepo() -> Repository {
     let repo = Repository(deviceId: "preview")
-    repo.loaded = true
+    repo.setDashboard()
     return repo
 }
 
