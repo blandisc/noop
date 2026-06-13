@@ -30,6 +30,10 @@ change — the goal is that a strap sync can't quietly corrupt or lose data. Sti
   mid-sync, the queue that feeds historical frames into the database could be left able to spawn a
   second, parallel drain — risking out-of-order or duplicated frames, i.e. corrupted history. There
   is now a single owner for that drain; a disconnect cleanly cancels it instead of racing it.
+- **Live HR widget start is regression-proofed.** The guard that prevents two Live Activity starts on
+  close-together heart-rate ticks already reset correctly, but its reset now runs via `defer` so it
+  can't be skipped by a future code change — keeping the lock-screen Live HR from getting wedged off
+  after a failed start.
 
 ## 1.82 — iOS: more accurate recovery & readiness
 
