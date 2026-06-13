@@ -17,6 +17,20 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ---
 
+## 1.83 — iOS: safer strap sync (reliability hardening)
+
+Behind-the-scenes robustness work on the experimental iOS port. No new features and no visible UI
+change — the goal is that a strap sync can't quietly corrupt or lose data. Still fully on-device.
+
+- **No more double database setup.** If the app tried to prepare its on-device store twice at once
+  (e.g. Bluetooth reporting "powered on" more than once at launch), it could build the store and run
+  the database migration twice in parallel. Concurrent callers now join a single setup, so the store
+  is created exactly once.
+- **History frames can't be reordered or duplicated on a dropped link.** When the strap disconnected
+  mid-sync, the queue that feeds historical frames into the database could be left able to spawn a
+  second, parallel drain — risking out-of-order or duplicated frames, i.e. corrupted history. There
+  is now a single owner for that drain; a disconnect cleanly cancels it instead of racing it.
+
 ## 1.82 — iOS: more accurate recovery & readiness
 
 Work on the experimental iOS port. Still fully on-device, no cloud. Imported WHOOP scores are left

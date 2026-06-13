@@ -95,6 +95,11 @@ public final class BLEManager: NSObject, ObservableObject {
     public let state: LiveState
     private let router: FrameRouter
     private var collector: Collector?
+    /// The single in-flight `bootstrapStore()` task, or nil when idle/done. Memoizes store creation so
+    /// two concurrent callers (e.g. `centralManagerDidUpdateState` firing twice, or a state restore
+    /// racing a poweredOn) join the same task instead of each building a `WhoopStore` and running the
+    /// DB migration twice. Mirrors the `Repository.ensureStore()` guard (FER-25).
+    private var bootstrapTask: Task<Void, Never>?
 
     // MARK: Upload / server sync — REMOVED for Strand (standalone, fully on-device).
 
@@ -160,8 +165,12 @@ public final class BLEManager: NSObject, ObservableObject {
     private var rawCaptureInFlight = false
     /// Ordered queue of frames awaiting drain through the serial Backfiller task.
     private var backfillFrameQueue: [[UInt8]] = []
-    /// True while the drain task is running (prevents a second drain task from launching).
-    private var backfillDraining = false
+    /// The single in-flight drain task, or nil when idle. Acts as the re-entrancy guard: while it is
+    /// non-nil no second drain is launched, so frames are only ever consumed by ONE drain loop — even
+    /// if the queue/flags are reset mid-flight on a disconnect. Replaces a bare Bool flag that could be
+    /// cleared externally (didDisconnect) while the loop was still suspended at an `await`, letting a
+    /// new frame spawn a concurrent drain that reordered/duplicated frames (FER-25).
+    private var backfillDrainTask: Task<Void, Never>?
     /// Keep each main-actor drain slice small enough that SwiftUI can process input/paint between slices.
     private static let backfillDrainBatchSize = 12
 
@@ -267,25 +276,34 @@ public final class BLEManager: NSObject, ObservableObject {
         #endif
     }
 
-    /// Build the WhoopStore + Collector + Backfiller asynchronously. Safe to call multiple
-    /// times — bails out early if the collector is already initialised.
+    /// Build the WhoopStore + Collector + Backfiller asynchronously. Safe to call multiple times —
+    /// and safe to call CONCURRENTLY: a second caller that arrives while creation is in flight joins
+    /// the same task instead of building a second store and re-running the DB migration. The guard
+    /// mirrors `Repository.ensureStore()` — the `@MainActor` isolation makes the
+    /// check-then-publish of `bootstrapTask` atomic across the first `await` (FER-25).
     func bootstrapStore() async {
-        guard collector == nil else { return }
-        guard let path = try? StorePaths.defaultDatabasePath() else { return }
-        guard let store = try? await WhoopStore(path: path) else { return }
-        try? await store.upsertDevice(id: deviceId, mac: nil, name: "WHOOP 4.0")
-        // Research toggle — OFF by default. When disabled the app is decoded-only and never
-        // persists raw frames. Flip "enableRawCapture" in UserDefaults to capture raw again.
-        let enableRawCapture = UserDefaults.standard.bool(forKey: "enableRawCapture")
-        collector = Collector(store: store, deviceId: deviceId,
-                              enableRawCapture: enableRawCapture)
-        backfiller = Backfiller(store: store, deviceId: deviceId,
-                                ackTrim: { [weak self] trim, endData in
-                                    self?.ackHistoricalChunk(trim: trim, endData: endData)
-                                },
-                                enableRawCapture: enableRawCapture,
-                                log: { [weak self] s in self?.log(s) })
-        // Strand: no server uploader/sync — all data stays on-device.
+        if collector != nil { return }
+        if let bootstrapTask { return await bootstrapTask.value }   // creation already in flight — join it
+        let task = Task { @MainActor in
+            guard let path = try? StorePaths.defaultDatabasePath() else { return }
+            guard let store = try? await WhoopStore(path: path) else { return }
+            try? await store.upsertDevice(id: deviceId, mac: nil, name: "WHOOP 4.0")
+            // Research toggle — OFF by default. When disabled the app is decoded-only and never
+            // persists raw frames. Flip "enableRawCapture" in UserDefaults to capture raw again.
+            let enableRawCapture = UserDefaults.standard.bool(forKey: "enableRawCapture")
+            collector = Collector(store: store, deviceId: deviceId,
+                                  enableRawCapture: enableRawCapture)
+            backfiller = Backfiller(store: store, deviceId: deviceId,
+                                    ackTrim: { [weak self] trim, endData in
+                                        self?.ackHistoricalChunk(trim: trim, endData: endData)
+                                    },
+                                    enableRawCapture: enableRawCapture,
+                                    log: { [weak self] s in self?.log(s) })
+            // Strand: no server uploader/sync — all data stays on-device.
+        }
+        bootstrapTask = task          // published synchronously (still on @MainActor) before the await below
+        await task.value
+        bootstrapTask = nil           // cleared so a failed bootstrap (nil collector) can be retried later
     }
 
     /// Designated initializer for testing and preview use: accepts a pre-built Collector.
@@ -555,13 +573,16 @@ public final class BLEManager: NSObject, ObservableObject {
     /// data / END chunk assembly is never reordered while the UI still gets time to paint.
     private func routeBackfillFrame(_ frame: [UInt8]) {
         backfillFrameQueue.append(frame)
-        guard !backfillDraining else { return }
-        backfillDraining = true
-        Task { @MainActor in await drainBackfillFrames() }
+        if backfillDrainTask != nil { return }   // a drain is already running — it will pick up this frame
+        backfillDrainTask = Task { @MainActor in
+            await drainBackfillFrames()
+            backfillDrainTask = nil
+        }
     }
 
     private func drainBackfillFrames() async {
         while !backfillFrameQueue.isEmpty {
+            if Task.isCancelled { break }   // disconnect tore down the session — stop ingesting at once
             let count = min(Self.backfillDrainBatchSize, backfillFrameQueue.count)
             let batch = Array(backfillFrameQueue.prefix(count))
             backfillFrameQueue.removeFirst(count)
@@ -579,7 +600,6 @@ public final class BLEManager: NSObject, ObservableObject {
                 await Task.yield()
             }
         }
-        backfillDraining = false
     }
 
     /// Called after every Backfiller.ingest completes. If the Backfiller has consumed all
@@ -1017,7 +1037,11 @@ extension BLEManager: CBCentralManagerDelegate {
         backfillTimeout?.cancel()
         backfillTimeout = nil
         backfillFrameQueue.removeAll()
-        backfillDraining = false
+        // Cancel — don't nil — the in-flight drain: it owns `backfillDrainTask` and clears the handle
+        // itself when it returns. Nil-ing it here would let the next frame spawn a SECOND drain that
+        // runs concurrently with the one still suspended at an `await`, reordering/duplicating frames
+        // mid-sync (FER-25). With the queue emptied above, the cancelled drain exits on its next resume.
+        backfillDrainTask?.cancel()
         uploadTimer?.cancel()
         uploadTimer = nil
         backfillTimer?.cancel()
