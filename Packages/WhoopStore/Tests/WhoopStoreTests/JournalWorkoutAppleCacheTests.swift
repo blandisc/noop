@@ -245,4 +245,91 @@ final class JournalWorkoutAppleCacheTests: XCTestCase {
         let rows = try await store.appleDaily(deviceId: "devA", from: "2026-05-10", to: "2026-05-31")
         XCTAssertEqual(rows.map { $0.day }, ["2026-05-20"])
     }
+
+    // MARK: - batched multi-row upserts (FER-28)
+    // The three upserts batch into multi-row INSERTs. These pin two things the per-row version got
+    // for free: (1) a batch larger than one chunk still lands every row, and (2) the same natural key
+    // appearing twice in ONE call keeps the LAST value — a single multi-row INSERT…ON CONFLICT can't
+    // upsert the same key twice, so the upserts dedup their input first.
+
+    func testJournalBatchAcrossChunkBoundaryInsertsEveryRow() async throws {
+        let store = try await WhoopStore.inMemory()
+        // 350 distinct questions on one day crosses the 150-row journal chunk size (3 statements).
+        let rows = (0..<350).map {
+            JournalEntry(day: "2026-05-23", question: "q\($0)", answeredYes: $0 % 2 == 0, notes: nil)
+        }
+        let n = try await store.upsertJournal(rows, deviceId: "devA")
+        XCTAssertEqual(n, 350)
+        let read = try await store.journalEntries(deviceId: "devA", from: "2026-05-23", to: "2026-05-23")
+        XCTAssertEqual(read.count, 350)
+    }
+
+    func testJournalIntraBatchDuplicateKeepsLast() async throws {
+        let store = try await WhoopStore.inMemory()
+        try await store.upsertJournal([
+            JournalEntry(day: "2026-05-23", question: "Alcohol?", answeredYes: true, notes: "first"),
+            JournalEntry(day: "2026-05-23", question: "Alcohol?", answeredYes: false, notes: "last"),
+        ], deviceId: "devA")
+        let rows = try await store.journalEntries(deviceId: "devA", from: "2026-05-23", to: "2026-05-23")
+        XCTAssertEqual(rows.count, 1, "duplicate natural key in one batch must not error or duplicate")
+        XCTAssertEqual(rows[0].answeredYes, false)
+        XCTAssertEqual(rows[0].notes, "last")
+    }
+
+    func testWorkoutBatchAcrossChunkBoundaryInsertsEveryRow() async throws {
+        let store = try await WhoopStore.inMemory()
+        // 200 distinct startTs crosses the 70-row workout chunk size (3 statements).
+        let rows = (1...200).map {
+            WorkoutRow(startTs: $0, endTs: $0 + 10, sport: "run", source: "apple", durationS: nil,
+                       energyKcal: nil, avgHr: nil, maxHr: nil, strain: nil, distanceM: nil,
+                       zonesJSON: nil, notes: nil)
+        }
+        let n = try await store.upsertWorkouts(rows, deviceId: "devA")
+        XCTAssertEqual(n, 200)
+        let read = try await store.workouts(deviceId: "devA", from: 0, to: 100_000, limit: 1_000)
+        XCTAssertEqual(read.count, 200)
+    }
+
+    func testWorkoutIntraBatchDuplicateKeepsLast() async throws {
+        let store = try await WhoopStore.inMemory()
+        try await store.upsertWorkouts([
+            WorkoutRow(startTs: 1_000, endTs: 2_000, sport: "run", source: "a", durationS: nil,
+                       energyKcal: nil, avgHr: nil, maxHr: nil, strain: nil, distanceM: nil,
+                       zonesJSON: nil, notes: "first"),
+            WorkoutRow(startTs: 1_000, endTs: 9_999, sport: "run", source: "b", durationS: nil,
+                       energyKcal: nil, avgHr: nil, maxHr: nil, strain: nil, distanceM: nil,
+                       zonesJSON: nil, notes: "last"),
+        ], deviceId: "devA")
+        let rows = try await store.workouts(deviceId: "devA", from: 0, to: 100_000, limit: 100)
+        XCTAssertEqual(rows.count, 1, "duplicate natural key in one batch must not error or duplicate")
+        XCTAssertEqual(rows[0].endTs, 9_999)
+        XCTAssertEqual(rows[0].notes, "last")
+    }
+
+    func testAppleDailyBatchAcrossChunkBoundaryInsertsEveryRow() async throws {
+        let store = try await WhoopStore.inMemory()
+        // 200 distinct days crosses the 90-row appleDaily chunk size (3 statements). Day strings are
+        // stored as TEXT and only need to be distinct + sortable, so a zero-padded synthetic key works.
+        let rows = (0..<200).map {
+            AppleDaily(day: String(format: "2030-%03d", $0), steps: $0, activeKcal: nil, basalKcal: nil,
+                       vo2max: nil, avgHr: nil, maxHr: nil, walkingHr: nil, weightKg: nil)
+        }
+        let n = try await store.upsertAppleDaily(rows, deviceId: "devA")
+        XCTAssertEqual(n, 200)
+        let read = try await store.appleDaily(deviceId: "devA", from: "2030-000", to: "2030-999")
+        XCTAssertEqual(read.count, 200)
+    }
+
+    func testAppleDailyIntraBatchDuplicateKeepsLast() async throws {
+        let store = try await WhoopStore.inMemory()
+        try await store.upsertAppleDaily([
+            AppleDaily(day: "2026-05-23", steps: 1, activeKcal: nil, basalKcal: nil, vo2max: nil,
+                       avgHr: nil, maxHr: nil, walkingHr: nil, weightKg: nil),
+            AppleDaily(day: "2026-05-23", steps: 9_999, activeKcal: nil, basalKcal: nil, vo2max: nil,
+                       avgHr: nil, maxHr: nil, walkingHr: nil, weightKg: nil),
+        ], deviceId: "devA")
+        let rows = try await store.appleDaily(deviceId: "devA", from: "2026-05-01", to: "2026-05-31")
+        XCTAssertEqual(rows.count, 1, "duplicate natural key in one batch must not error or duplicate")
+        XCTAssertEqual(rows[0].steps, 9_999)
+    }
 }

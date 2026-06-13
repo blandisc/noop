@@ -40,6 +40,11 @@ change — the goal is that a strap sync can't quietly corrupt or lose data. Sti
   source. Insights and Compare load their metrics in parallel instead of one after another. The
   numbers shown are unchanged (relationships and overlays still use your full history); the screens
   just stop doing redundant work, so they appear sooner for users with years of data.
+- **Large imports write much faster.** Journal answers, workouts and Apple-Health daily rows were
+  saved one database row at a time — a big WHOOP export or Health backfill meant tens of thousands of
+  separate writes inside a single transaction, which could stall the app mid-import. These now write
+  in batches (the same way metric series already did), so a large import lands in a fraction of the
+  database round-trips.
 
 ## 1.82 — iOS: more accurate recovery & readiness
 
