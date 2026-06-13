@@ -565,6 +565,12 @@ ES: dict[str, str] = {
     "in the sweet spot (acute:chronic %@)": "en el punto ideal (aguda:crónica %@)",
     "building fast (acute:chronic %@) — watch fatigue": "subiendo rápido (aguda:crónica %@) — cuida la fatiga",
     "spiking (acute:chronic %@) — higher injury risk": "disparada (aguda:crónica %@) — mayor riesgo de lesión",
+    # Short load-band words for the verdict hero (LoadBand.shortLabel) + its VoiceOver label.
+    "Light load": "Carga ligera",
+    "Ideal load": "Carga ideal",
+    "Rising load": "Carga al alza",
+    "High load": "Carga alta",
+    "Training load: %@ (acute:chronic %@)": "Carga de entrenamiento: %@ (aguda:crónica %@)",
     "A few more nights of data and your readiness read will sharpen.": "Unas cuantas noches más de datos y tu lectura de preparación se afinará.",
     "Run down": "Desgastado",
     "Several signals are down at once. Treat today as recovery — easy movement, real sleep tonight.": "Varias señales están bajas a la vez. Toma hoy como recuperación — movimiento ligero y buen sueño esta noche.",

@@ -100,6 +100,12 @@ DE: dict[str, str] = {
     "Activity & Energy": "Aktivität & Energie",
     "Activity Breakdown": "Aktivitätsaufschlüsselung",
     "Acute (7-day) vs chronic (28-day) training load. 0.8–1.3 is the sweet spot.": "Akute (7 Tage) vs. chronische (28 Tage) Trainingslast. 0,8–1,3 ist der ideale Bereich.",
+    # Short load-band words for the verdict hero (LoadBand.shortLabel) + its VoiceOver label.
+    "Light load": "Leichte Last",
+    "Ideal load": "Ideale Last",
+    "Rising load": "Steigende Last",
+    "High load": "Hohe Last",
+    "Training load: %@ (acute:chronic %@)": "Trainingslast: %@ (akut:chronisch %@)",
     "Add a metric to compare": "Eine Metrik zum Vergleich hinzufügen",
     "Add metric": "Metrik hinzufügen",
     "Age": "Alter",
