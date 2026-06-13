@@ -17,6 +17,18 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ---
 
+## Unreleased
+
+_Developer / docs — no user-facing change._
+
+- **Design system extracted to docs.** The `StrandDesign` Swift package is now mirrored as a
+  portable, human- and machine-readable design system under `docs/design-system/`: a documented
+  `DESIGN.md` (color, typography, spacing, motion, full component catalog), W3C design tokens
+  (`tokens/design-tokens.json`), and a collected `assets/` folder (app icons + brand marks). The
+  Swift package stays canonical; these are derived for handoff and cross-platform reuse.
+
+---
+
 ## 1.83 — iOS: Today synthesis label no longer clips in Spanish
 
 Work on the experimental iOS port. On-device only, no cloud.
