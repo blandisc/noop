@@ -26,9 +26,10 @@ public struct ImportCoordinator {
     /// `progress` fires periodically with the element count (off the main thread).
     public func importAppleHealth(
         from url: URL,
-        progress: AppleHealthImporter.ProgressHandler? = nil
+        progress: AppleHealthImporter.ProgressHandler? = nil,
+        isCancelled: (@Sendable () -> Bool)? = nil
     ) throws -> AppleHealthImportResult {
-        try appleHealth.import(from: url, progress: progress)
+        try appleHealth.import(from: url, progress: progress, isCancelled: isCancelled)
     }
 
     /// Parse a Whoop CSV export (`.zip` or folder).

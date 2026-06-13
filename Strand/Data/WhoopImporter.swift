@@ -9,6 +9,9 @@ enum WhoopImporter {
     @discardableResult
     static func importExport(url: URL, into store: WhoopStore, deviceId: String) async throws -> ImportSummary {
         let result = try ImportCoordinator().importWhoopExport(from: url)
+        // The CSV parse is synchronous; bail before the store writes if the import was cancelled
+        // (e.g. the user left mid-import) so a cancelled run doesn't still write rows (FER-33).
+        try Task.checkCancellation()
 
         // physiological_cycles → DailyMetric (one row per sleep-to-sleep day)
         var metrics: [DailyMetric] = []

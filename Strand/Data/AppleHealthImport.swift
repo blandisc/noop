@@ -12,12 +12,16 @@ enum AppleHealthImport {
         url: URL,
         into store: WhoopStore,
         deviceId: String,
-        progress: AppleHealthImporter.ProgressHandler? = nil
+        progress: AppleHealthImporter.ProgressHandler? = nil,
+        isCancelled: (@Sendable () -> Bool)? = nil
     ) async throws -> ImportSummary {
         // Parsing aggregates per-day on the fly (streaming) — `result.daily` is
-        // already the merged per-day list, so no second aggregation pass.
-        let result = try ImportCoordinator().importAppleHealth(from: url, progress: progress)
+        // already the merged per-day list, so no second aggregation pass. The parse polls
+        // `isCancelled` and throws `CancellationError` if the user left mid-import (FER-33).
+        let result = try ImportCoordinator().importAppleHealth(from: url, progress: progress, isCancelled: isCancelled)
         let daily = result.daily
+        // Don't start the multi-table write if a cancel landed between parse end and here.
+        try Task.checkCancellation()
 
         // Apple-specific daily aggregates (steps/energy/vo2/hr/weight).
         let appleRows = daily.map { d in

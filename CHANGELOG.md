@@ -69,6 +69,13 @@ _The items below are developer / docs — no user-facing change._
   defaults (keeping within-process reads/writes working), so the misprovisioning is visible in
   Release logs instead of invisible. (The HealthKit-day-in-UTC and sync-error-to-UI halves of FER-32
   were already fixed earlier in `b5c0e3b` / `c96df55`.)
+- **Imports are cancellable instead of leaking (FER-33).** A WHOOP or Apple Health import ran as a
+  fire-and-forget task: if you left the screen or started another import, the old one kept parsing
+  and writing in the background with no way to stop it. The in-flight import is now retained and
+  cancelled when a new one starts (or via `cancelImport()`), and the importers cooperate — the
+  Apple Health XML parse polls for cancellation and aborts mid-file, and both importers bail before
+  their database writes — so a cancelled import stops promptly and writes nothing further. A
+  cancelled run reports "Import cancelled." rather than a failure.
 
 ---
 
