@@ -128,7 +128,7 @@ public struct ChartCard<ChartBody: View, Footer: View>: View {
                     Spacer()
                     if let trailing { Text(trailing).font(StrandFont.bodyNumber).foregroundStyle(StrandPalette.textPrimary) }
                 }
-                chart().frame(height: height)
+                chart().frame(height: height).clipped()  // contain any mark overshoot to the plot frame so it never bleeds onto the footer
                 let f = footer()
                 if !(f is EmptyView) {
                     Divider().overlay(StrandPalette.hairline)

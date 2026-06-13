@@ -102,7 +102,12 @@ public struct TrendChart: View {
                         x: .value("Date", p.date),
                         y: .value("Value", p.value)
                     )
-                    .interpolationMethod(.catmullRom)
+                    // monotone, NOT catmullRom: Catmull-Rom overshoots past the data on
+                    // tightly-oscillating daily signals (resting HR 50↔55, strain), dipping the
+                    // curve below the value domain so the area/line bled out the bottom of the
+                    // plot and dripped over the footer (#trends-bleed). Monotone cubic stays
+                    // within each segment's endpoints — same smooth look, no overshoot.
+                    .interpolationMethod(.monotone)
                     .foregroundStyle(
                         LinearGradient(
                             colors: [
@@ -119,7 +124,7 @@ public struct TrendChart: View {
                     x: .value("Date", p.date),
                     y: .value("Value", p.value)
                 )
-                .interpolationMethod(.catmullRom)
+                .interpolationMethod(.monotone)
                 .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
                 .foregroundStyle(valueGradient)
             }

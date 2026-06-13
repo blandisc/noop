@@ -128,13 +128,33 @@ struct TrendsView: View {
         return String(localized: "\(n) \(unit) · \(name(for: range))")
     }
 
-    /// A padded value range for a series so the line isn't flat against the axis.
+    /// A padded value range for a series, snapped to "nice" bounds so the LOWEST gridline
+    /// sits exactly at the plot floor. Without snapping, the 12% bottom pad pushes the floor
+    /// below the lowest labelled gridline (e.g. strain floor ≈6.16 under a "8" gridline), so
+    /// the area fill spills below the axis and reads as bleeding. Snapping to the same 1/2/5
+    /// steps Swift Charts' `.automatic` axis uses makes the area sit on a labelled floor — the
+    /// way the hero recovery chart sits cleanly on its "0" (#trends-bleed).
     private func valueRange(_ pts: [TrendPoint], fallback: ClosedRange<Double>, pad: Double = 0.12) -> ClosedRange<Double> {
         let vals = pts.map(\.value)
         guard let lo = vals.min(), let hi = vals.max() else { return fallback }
         if hi <= lo { return (lo - 1)...(hi + 1) }
         let span = hi - lo
-        return (lo - span * pad)...(hi + span * pad)
+        let rawLo = lo - span * pad
+        let rawHi = hi + span * pad
+        let step = Self.niceStep((rawHi - rawLo) / 4)   // ~4 gridlines across the range
+        let niceLo = (rawLo / step).rounded(.down) * step
+        let niceHi = (rawHi / step).rounded(.up) * step
+        return niceLo...niceHi
+    }
+
+    /// Round a rough axis step to the nearest "nice" 1/2/5 × 10ⁿ, matching the gridline
+    /// steps `.automatic` axis marks pick — so our snapped bounds land on real gridlines.
+    private static func niceStep(_ rough: Double) -> Double {
+        guard rough > 0, rough.isFinite else { return 1 }
+        let mag = pow(10, (log10(rough)).rounded(.down))
+        let norm = rough / mag
+        let nice: Double = norm < 1.5 ? 1 : norm < 3 ? 2 : norm < 7 ? 5 : 10
+        return nice * mag
     }
 
     private func mean(_ pts: [TrendPoint]) -> Double? {
