@@ -203,3 +203,20 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
     dependencies:
       - package: StrandDesign
+
+# Explicit shared schemes so `xcodebuild -scheme …` works straight after
+# `xcodegen generate` — without these, schemes only exist after Xcode's GUI
+# auto-creates them, which a CLI/CI build can't rely on.
+schemes:
+  Strand:
+    build:
+      targets:
+        Strand: all
+    run:
+      config: Debug
+  NOOPiOS:
+    build:
+      targets:
+        NOOPiOS: all
+    run:
+      config: Debug
