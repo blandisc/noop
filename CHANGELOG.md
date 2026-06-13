@@ -44,6 +44,13 @@ _Developer / docs — no user-facing change._
   (`repo.days` etc. still work); only the internal publishing changed. The deeper
   dashboard-window-vs-full-history split is tracked separately (the cleaner per-property observation
   via the Observation framework is blocked by the macOS 13 deployment target).
+- **App Group misprovisioning is no longer a silent no-op (FER-32).** If the App Group entitlement is
+  missing, the widget snapshot and the App-Intent pending-action queue previously failed silently —
+  the widget/Live Activity just showed nothing with no diagnostic. They now route through one
+  `WidgetSnapshot.sharedDefaults()` helper that logs a one-time fault and falls back to standard
+  defaults (keeping within-process reads/writes working), so the misprovisioning is visible in
+  Release logs instead of invisible. (The HealthKit-day-in-UTC and sync-error-to-UI halves of FER-32
+  were already fixed earlier in `b5c0e3b` / `c96df55`.)
 
 ---
 
