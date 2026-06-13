@@ -65,7 +65,11 @@ public struct AppleHealthImporter {
 
     /// Import from `export.zip` or a path to `export.xml` (or a folder
     /// containing it).
-    public func `import`(from url: URL, progress: ProgressHandler? = nil) throws -> AppleHealthImportResult {
+    /// `isCancelled`, when supplied, is polled on each progress tick during the (multi-minute) XML
+    /// parse; returning `true` aborts the parse and throws `CancellationError` so a user who leaves
+    /// mid-import stops the work promptly instead of letting it run to completion (FER-33).
+    public func `import`(from url: URL, progress: ProgressHandler? = nil,
+                         isCancelled: (@Sendable () -> Bool)? = nil) throws -> AppleHealthImportResult {
         let fm = FileManager.default
         var isDir: ObjCBool = false
         guard fm.fileExists(atPath: url.path, isDirectory: &isDir) else {
@@ -76,23 +80,24 @@ public struct AppleHealthImporter {
             guard let xmlURL = findExportXML(inFolder: url) else {
                 throw ImportError.missingEntry("export.xml")
             }
-            return try importXML(at: xmlURL, progress: progress)
+            return try importXML(at: xmlURL, progress: progress, isCancelled: isCancelled)
         }
 
         let ext = url.pathExtension.lowercased()
         if ext == "xml" {
-            return try importXML(at: url, progress: progress)
+            return try importXML(at: url, progress: progress, isCancelled: isCancelled)
         }
         if ext == "zip" {
-            return try importZip(at: url, progress: progress)
+            return try importZip(at: url, progress: progress, isCancelled: isCancelled)
         }
         // Unknown extension: try zip first, then raw XML.
-        if let z = try? importZip(at: url, progress: progress) { return z }
-        return try importXML(at: url, progress: progress)
+        if let z = try? importZip(at: url, progress: progress, isCancelled: isCancelled) { return z }
+        return try importXML(at: url, progress: progress, isCancelled: isCancelled)
     }
 
     /// Stream-parse a raw `export.xml` file.
-    public func importXML(at xmlURL: URL, progress: ProgressHandler? = nil) throws -> AppleHealthImportResult {
+    public func importXML(at xmlURL: URL, progress: ProgressHandler? = nil,
+                          isCancelled: (@Sendable () -> Bool)? = nil) throws -> AppleHealthImportResult {
         // Stream from disk via an InputStream rather than XMLParser(contentsOf:), which would load
         // the entire (multi-hundred-MB) file into memory before parsing.
         guard let raw = InputStream(url: xmlURL) else {
@@ -104,20 +109,22 @@ public struct AppleHealthImporter {
         // whole multi-year import. The sanitizer is itself an InputStream, so streaming/memory bounds
         // are preserved — nothing is buffered to RAM or disk.
         let sanitizer = SanitizingInputStream(source: raw)
-        return try runParser(XMLParser(stream: sanitizer), sanitizer: sanitizer, progress: progress)
+        return try runParser(XMLParser(stream: sanitizer), sanitizer: sanitizer, progress: progress, isCancelled: isCancelled)
     }
 
     /// Parse a `Data` blob of XML (used for the zip-streaming path and tests).
-    public func importXML(data: Data, progress: ProgressHandler? = nil) throws -> AppleHealthImportResult {
+    public func importXML(data: Data, progress: ProgressHandler? = nil,
+                          isCancelled: (@Sendable () -> Bool)? = nil) throws -> AppleHealthImportResult {
         // Route the in-memory path through the same sanitizing stream so tests and the (rare) data
         // path get identical tolerance to illegal bytes / broken UTF-8 as the disk path.
         let sanitizer = SanitizingInputStream(source: InputStream(data: data))
-        return try runParser(XMLParser(stream: sanitizer), sanitizer: sanitizer, progress: progress)
+        return try runParser(XMLParser(stream: sanitizer), sanitizer: sanitizer, progress: progress, isCancelled: isCancelled)
     }
 
     // MARK: - Zip handling
 
-    private func importZip(at zipURL: URL, progress: ProgressHandler? = nil) throws -> AppleHealthImportResult {
+    private func importZip(at zipURL: URL, progress: ProgressHandler? = nil,
+                           isCancelled: (@Sendable () -> Bool)? = nil) throws -> AppleHealthImportResult {
         let archive: Archive
         do {
             archive = try Archive(url: zipURL, accessMode: .read)
@@ -183,7 +190,7 @@ public struct AppleHealthImporter {
         }
         try? handle.close()
 
-        return try importXML(at: tmp, progress: progress)
+        return try importXML(at: tmp, progress: progress, isCancelled: isCancelled)
     }
 
     // MARK: - Core parse
@@ -191,12 +198,17 @@ public struct AppleHealthImporter {
     private func runParser(
         _ parser: XMLParser,
         sanitizer: SanitizingInputStream? = nil,
-        progress: ProgressHandler? = nil
+        progress: ProgressHandler? = nil,
+        isCancelled: (@Sendable () -> Bool)? = nil
     ) throws -> AppleHealthImportResult {
-        let delegate = HealthXMLDelegate(progress: progress)
+        let delegate = HealthXMLDelegate(progress: progress, isCancelled: isCancelled)
         parser.delegate = delegate
         parser.shouldProcessNamespaces = false
         let ok = parser.parse()
+
+        // A user-requested cancel aborts the parse; surface it as cancellation rather than letting
+        // the tolerant-partial path below treat the abort as a successful partial import (FER-33).
+        if delegate.wasCancelled { throw CancellationError() }
 
         // How many illegal-byte runs the sanitizer scrubbed before the parser ran. Always surfaced.
         let scrubbedRuns = sanitizer?.scrubbedRunCount ?? 0
@@ -269,6 +281,11 @@ final class HealthXMLDelegate: NSObject, XMLParserDelegate {
     private var elementsSeen = 0
     private let progressTick = 50_000
 
+    // Cooperative cancellation: polled at each progress tick. On a cancel we abort the parse and set
+    // `wasCancelled` so `runParser` can throw `CancellationError` (FER-33).
+    private let isCancelled: (@Sendable () -> Bool)?
+    private(set) var wasCancelled = false
+
     /// True once at least one usable record/workout/sleep row was parsed. Drives the tolerant-parse
     /// decision: a hard error AFTER real data was seen keeps the partial result instead of failing.
     var hasAnyRecord: Bool {
@@ -279,8 +296,22 @@ final class HealthXMLDelegate: NSObject, XMLParserDelegate {
 
     private let dateParser = HealthDateParser()
 
-    init(progress: AppleHealthImporter.ProgressHandler? = nil) {
+    init(progress: AppleHealthImporter.ProgressHandler? = nil,
+         isCancelled: (@Sendable () -> Bool)? = nil) {
         self.progress = progress
+        self.isCancelled = isCancelled
+    }
+
+    /// Fire the periodic progress callback and poll for cancellation. Returns true if the caller
+    /// should stop (the parse was aborted) — checked at each `progressTick`.
+    private func reportProgressAndCheckCancel(_ parser: XMLParser) -> Bool {
+        progress?(elementsSeen)
+        if isCancelled?() == true {
+            wasCancelled = true
+            parser.abortParsing()
+            return true
+        }
+        return false
     }
 
     // MARK: XMLParserDelegate
@@ -309,12 +340,12 @@ final class HealthXMLDelegate: NSObject, XMLParserDelegate {
                     return
                 }
                 elementsSeen += 1
-                if elementsSeen % progressTick == 0 { progress?(elementsSeen) }
+                if elementsSeen % progressTick == 0, reportProgressAndCheckCancel(parser) { return }
                 handleRecord(attributeDict)
 
             case "Workout":
                 elementsSeen += 1
-                if elementsSeen % progressTick == 0 { progress?(elementsSeen) }
+                if elementsSeen % progressTick == 0, reportProgressAndCheckCancel(parser) { return }
                 handleWorkout(attributeDict)
 
             default:

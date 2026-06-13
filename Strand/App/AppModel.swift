@@ -86,8 +86,18 @@ final class AppModel: ObservableObject {
     /// progress instead of a frozen-looking spinner on a multi-minute parse.
     @Published var appleHealthImportProgress: Int?
 
+    /// The in-flight import, retained so it can be cancelled. A fire-and-forget `Task` leaked:
+    /// it kept parsing + writing after the user left the screen or started another import, and
+    /// nothing could stop it. Now a new import (or `cancelImport()`) cancels the previous one, and
+    /// the importers poll cancellation cooperatively so the work actually stops (FER-33).
+    private var importTask: Task<Void, Never>?
+
     /// True while any data-source import is writing to the local store.
     var hasActiveImport: Bool { activeImportSource != nil }
+
+    /// Cancel the in-flight import, if any. The importer stops at its next cooperative check and the
+    /// matching card returns to its idle state.
+    func cancelImport() { importTask?.cancel() }
 
     /// Returns true only for the source currently importing.
     func isImporting(_ source: DataSourceImportKind) -> Bool {
@@ -434,7 +444,12 @@ final class AppModel: ObservableObject {
     /// Import a Whoop CSV export (.zip or folder) → on-device store, then refresh the dashboard.
     func importWhoop(url: URL) {
         beginImport(.whoop)
-        Task {
+        importTask?.cancel()
+        // Not nil'd on completion: a finished `Task<Void, Never>` is harmless to retain, and nil'ing
+        // it in a `defer` would race a newer import that already replaced the handle. `cancelImport()`
+        // cancelling an already-finished task is a no-op. `hasActiveImport` keys off `activeImportSource`.
+        importTask = Task { [weak self] in
+            guard let self else { return }
             let scoped = url.startAccessingSecurityScopedResource()
             defer { if scoped { url.stopAccessingSecurityScopedResource() } }
             do {
@@ -450,6 +465,8 @@ final class AppModel: ObservableObject {
                     span = " · \(f.string(from: a))–\(f.string(from: b))"
                 } else { span = "" }
                 finishImport(.whoop, summary: "Imported \(summary.recordCount) records\(span)")
+            } catch is CancellationError {
+                finishImport(.whoop, summary: "Import cancelled.")
             } catch {
                 finishImport(.whoop, summary: "Import failed: \(error)", failed: true)
             }
@@ -460,7 +477,9 @@ final class AppModel: ObservableObject {
     /// under the `apple-health` source, then refreshes. Large exports take ~1–2 minutes.
     func importAppleHealth(url: URL) {
         beginImport(.appleHealth)
-        Task {
+        importTask?.cancel()
+        importTask = Task { [weak self] in
+            guard let self else { return }
             let scoped = url.startAccessingSecurityScopedResource()
             defer { if scoped { url.stopAccessingSecurityScopedResource() } }
             do {
@@ -474,9 +493,12 @@ final class AppModel: ObservableObject {
                     Task { @MainActor [weak self] in self?.appleHealthImportProgress = count }
                 }
                 let summary = try await AppleHealthImport.importExport(
-                    url: url, into: store, deviceId: appleDeviceId, progress: progress)
+                    url: url, into: store, deviceId: appleDeviceId, progress: progress,
+                    isCancelled: { Task.isCancelled })
                 await repo.refresh()
                 finishImport(.appleHealth, summary: "Imported \(summary.recordCount) records")
+            } catch is CancellationError {
+                finishImport(.appleHealth, summary: "Import cancelled.")
             } catch {
                 finishImport(.appleHealth, summary: "Import failed: \(error)", failed: true)
             }
