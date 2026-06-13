@@ -189,11 +189,16 @@ struct TodayView: View {
                         .foregroundStyle(lc)
                         .lineLimit(1)
                     Spacer(minLength: 8)
+                    // Training load as a glanceable, flag-colored word — not a raw "load 1.05" the
+                    // user can't read, and not a `.help()` tooltip (dead on iOS touch). The exact
+                    // ratio still reaches VoiceOver via the accessibility label.
                     if let acwr = r.acwr {
-                        Text("load \(String(format: "%.2f", acwr))")
+                        let band = ReadinessEngine.loadBand(forACWR: acwr)
+                        Text(band.shortLabel)
                             .font(StrandFont.captionNumber)
-                            .foregroundStyle(StrandPalette.textTertiary)
-                            .help("Acute (7-day) vs chronic (28-day) training load. 0.8–1.3 is the sweet spot.")
+                            .foregroundStyle(flagColor(band.flag))
+                            .lineLimit(1)
+                            .accessibilityLabel(Text("Training load: \(band.shortLabel) (acute:chronic \(String(format: "%.2f", acwr)))"))
                     }
                 }
                 Text(r.headline)

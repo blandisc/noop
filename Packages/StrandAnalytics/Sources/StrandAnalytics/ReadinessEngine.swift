@@ -36,6 +36,35 @@ public enum ReadinessEngine {
         case good, neutral, watch, bad
     }
 
+    /// The acute:chronic workload band, as a small named scale shared by every surface so the
+    /// thresholds (0.8 / 1.3 / 1.5) live in exactly one place. The verdict hero shows `shortLabel`
+    /// colored by `flag`; the signals list keeps the longer per-band sentence in `acwrSignal`.
+    public enum LoadBand: String, Sendable, Equatable {
+        case rampingDown   // < 0.8  — backing off, room to build
+        case sweetSpot     // 0.8–1.3 — the productive band
+        case buildingFast  // 1.3–1.5 — ramping hard, watch fatigue
+        case spiking       // ≥ 1.5  — higher injury risk
+
+        /// Short, glanceable label for the verdict row. Localized against the host app catalog.
+        public var shortLabel: String {
+            switch self {
+            case .rampingDown:  return String(localized: "Light load", bundle: .main)
+            case .sweetSpot:    return String(localized: "Ideal load", bundle: .main)
+            case .buildingFast: return String(localized: "Rising load", bundle: .main)
+            case .spiking:      return String(localized: "High load", bundle: .main)
+            }
+        }
+
+        /// The flag color this band maps to — same mapping the `acwr` Signal uses.
+        public var flag: Flag {
+            switch self {
+            case .sweetSpot:                  return .good
+            case .rampingDown, .buildingFast: return .watch
+            case .spiking:                    return .bad
+            }
+        }
+    }
+
     public struct Signal: Sendable, Equatable {
         public let key: String      // "hrv" | "rhr" | "respRate" | "acwr" | "monotony"
         public let label: String    // short human label
@@ -60,6 +89,10 @@ public enum ReadinessEngine {
             self.level = level; self.headline = headline; self.summary = summary
             self.signals = signals; self.acwr = acwr; self.monotony = monotony
         }
+
+        /// The training-load band for this read, derived from `acwr` (nil when there's no load yet).
+        /// Surfaces show `loadBand?.shortLabel` instead of a raw ratio the user can't interpret.
+        public var loadBand: LoadBand? { acwr.map(ReadinessEngine.loadBand(forACWR:)) }
     }
 
     // MARK: Tunables (named so the thresholds are auditable)
@@ -208,22 +241,34 @@ public enum ReadinessEngine {
         return Signal(key: key, label: label, detail: text, flag: flag)
     }
 
+    /// The one place the acute:chronic thresholds live. `acwrSignal` and `Readiness.loadBand`
+    /// both route through this, so the verdict word and the signal sentence can never disagree.
+    public static func loadBand(forACWR ratio: Double) -> LoadBand {
+        switch ratio {
+        case ..<0.8:    return .rampingDown
+        case 0.8..<1.3: return .sweetSpot
+        case 1.3..<1.5: return .buildingFast
+        default:        return .spiking
+        }
+    }
+
     private static func acwrSignal(_ ratio: Double) -> Signal {
         let pct = String(format: "%.2f", ratio)
         let label = String(localized: "Training load", bundle: .main)
-        switch ratio {
-        case ..<0.8:
+        let band = loadBand(forACWR: ratio)
+        switch band {
+        case .rampingDown:
             return Signal(key: "acwr", label: label,
-                detail: String(localized: "ramping down (acute:chronic \(pct)) — room to build", bundle: .main), flag: .watch)
-        case 0.8..<1.3:
+                detail: String(localized: "ramping down (acute:chronic \(pct)) — room to build", bundle: .main), flag: band.flag)
+        case .sweetSpot:
             return Signal(key: "acwr", label: label,
-                detail: String(localized: "in the sweet spot (acute:chronic \(pct))", bundle: .main), flag: .good)
-        case 1.3..<1.5:
+                detail: String(localized: "in the sweet spot (acute:chronic \(pct))", bundle: .main), flag: band.flag)
+        case .buildingFast:
             return Signal(key: "acwr", label: label,
-                detail: String(localized: "building fast (acute:chronic \(pct)) — watch fatigue", bundle: .main), flag: .watch)
-        default:
+                detail: String(localized: "building fast (acute:chronic \(pct)) — watch fatigue", bundle: .main), flag: band.flag)
+        case .spiking:
             return Signal(key: "acwr", label: label,
-                detail: String(localized: "spiking (acute:chronic \(pct)) — higher injury risk", bundle: .main), flag: .bad)
+                detail: String(localized: "spiking (acute:chronic \(pct)) — higher injury risk", bundle: .main), flag: band.flag)
         }
     }
 
