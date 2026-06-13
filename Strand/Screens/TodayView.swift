@@ -256,9 +256,13 @@ struct TodayView: View {
                         .font(StrandFont.caption)
                         .foregroundStyle(StrandPalette.textTertiary)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.85)
-                        .layoutPriority(1)
-                    Spacer(minLength: 4)
+                        // Long localized labels (e.g. ES "Recuperación") must shrink to fit
+                        // the narrow 1/3-width tile rather than truncate to "Recupera…".
+                        // The label claims all width left by the fixed status dot; without an
+                        // explicit width constraint here, minimumScaleFactor never engages and
+                        // the text clips instead of scaling (the bug behind FER-40).
+                        .minimumScaleFactor(0.6)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     Circle().fill(color).frame(width: 7, height: 7)
                 }
                 HStack(alignment: .firstTextBaseline, spacing: 2) {

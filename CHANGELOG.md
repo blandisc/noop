@@ -19,7 +19,12 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
-_Developer / docs — no user-facing change._
+- **"Today's Synthesis" labels no longer truncate.** On the Today screen, the three at-a-glance
+  tiles (Recovery / HRV / Sleep) sit in a tight three-column row. In languages with longer words —
+  e.g. Spanish "Recuperación" — the label was clipped to "Recupera…". The label now scales down to
+  fit its tile instead of truncating, so the full word always shows.
+
+_The items below are developer / docs — no user-facing change._
 
 - **Analytics robustness: divide-by-zero guards (FER-36).** Hardened degenerate-input paths in the
   on-device recovery/readiness engine so impossible data can't produce `NaN`/`inf` scores:
