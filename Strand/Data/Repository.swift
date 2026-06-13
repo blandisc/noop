@@ -28,17 +28,32 @@ final class Repository: ObservableObject {
     /// await window and opening the DB several times. @MainActor makes the set-before-await safe.
     private var storeInit: Task<WhoopStore?, Never>?
 
-    /// Daily metrics (recovery/strain/sleep/HRV/RHR…) over the recent window, oldest→newest.
-    @Published var days: [DailyMetric] = []
-    /// Cached sleep sessions over the recent window, oldest→newest.
-    @Published var sleeps: [CachedSleepSession] = []
+    /// The whole dashboard, republished as ONE value. Previously `days`/`sleeps`/`importedSleep`/
+    /// `loaded`/`refreshSeq` were five separate `@Published`s, so a single `refresh()` fired up to
+    /// four `objectWillChange`s — and every one of the ~22 views observing the Repository re-evaluated
+    /// its body that many times per refresh. Folding them into one published value means a refresh is
+    /// a single publish, hence a single re-render pass (FER-30). The per-field reads below forward to
+    /// it, so every existing `repo.days` / `repo.sleeps` / … call site is unchanged.
+    struct DashboardData {
+        var days: [DailyMetric] = []
+        var sleeps: [CachedSleepSession] = []
+        var importedSleep: [String: ImportedSleepFigures] = [:]
+        var loaded = false
+        var seq = 0
+    }
+    @Published private(set) var dashboard = DashboardData()
+
+    /// Daily metrics (recovery/strain/sleep/HRV/RHR…), oldest→newest.
+    var days: [DailyMetric] { dashboard.days }
+    /// Cached sleep sessions, oldest→newest.
+    var sleeps: [CachedSleepSession] { dashboard.sleeps }
     /// Imported (export-verbatim) sleep figures by day. Empty until a WHOOP import lands.
-    @Published var importedSleep: [String: ImportedSleepFigures] = [:]
-    @Published var loaded = false
+    var importedSleep: [String: ImportedSleepFigures] { dashboard.importedSleep }
+    var loaded: Bool { dashboard.loaded }
     /// Monotonic counter bumped on every successful `refresh()`. Intraday-updating views key their
     /// data load on this so they reload when fresh strap data lands — `today?.day` alone is a stable
     /// date string within a day and would freeze e.g. the Today HR trend until the date rolls over.
-    @Published private(set) var refreshSeq = 0
+    var refreshSeq: Int { dashboard.seq }
 
     init(deviceId: String) { self.deviceId = deviceId }
 
@@ -116,11 +131,24 @@ final class Repository: ObservableObject {
         for p in need { fig[p.day, default: ImportedSleepFigures()].needMin = p.value }
         for p in debt { fig[p.day, default: ImportedSleepFigures()].debtMin = p.value }
 
-        self.importedSleep = fig   // assigned BEFORE days/sleeps: one consistent publish per refresh
-        self.days = Self.mergeDaily(imported: imported, computed: computed)
-        self.sleeps = Self.mergeSleep(imported: impSleep, computed: compSleep)
-        self.loaded = true
-        self.refreshSeq += 1
+        // One assignment → one objectWillChange for the whole refresh (was four).
+        self.dashboard = DashboardData(
+            days: Self.mergeDaily(imported: imported, computed: computed),
+            sleeps: Self.mergeSleep(imported: impSleep, computed: compSleep),
+            importedSleep: fig,
+            loaded: true,
+            seq: dashboard.seq + 1
+        )
+    }
+
+    /// Seed the dashboard with pre-built rows in a single publish — for SwiftUI previews, which have
+    /// no store to `refresh()` from. `refresh()` is the production path.
+    func setDashboard(days: [DailyMetric] = [],
+                      sleeps: [CachedSleepSession] = [],
+                      importedSleep: [String: ImportedSleepFigures] = [:],
+                      loaded: Bool = true) {
+        dashboard = DashboardData(days: days, sleeps: sleeps, importedSleep: importedSleep,
+                                  loaded: loaded, seq: dashboard.seq + 1)
     }
 
     /// Imported daily rows win per day; computed rows fill the days the import doesn't cover.

@@ -975,8 +975,7 @@ private struct LiveHRPill: View {
             spo2Pct: 96, skinTempDevC: 33.4, respRateBpm: 14.6
         ))
     }
-    repo.days = sample
-    repo.loaded = true
+    repo.setDashboard(days: sample)
 
     return TodayView()
         .environmentObject(repo)

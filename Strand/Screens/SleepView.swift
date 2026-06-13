@@ -870,9 +870,7 @@ private extension Repository {
                 stagesJSON: stagesJSON))
         }
 
-        repo.days = days
-        repo.sleeps = sleeps
-        repo.loaded = true
+        repo.setDashboard(days: days, sleeps: sleeps)
         return repo
     }
 }

@@ -360,7 +360,7 @@ private struct Vital: Identifiable {
 #if DEBUG
 #Preview("Health Monitor") {
     let repo = Repository(deviceId: "preview")
-    repo.days = [
+    repo.setDashboard(days: [
         DailyMetric(
             day: "2026-06-06",
             totalSleepMin: 462, efficiency: 92,
@@ -369,8 +369,7 @@ private struct Vital: Identifiable {
             exerciseCount: 1,
             spo2Pct: 97, skinTempDevC: 34.2, respRateBpm: 14.6
         )
-    ]
-    repo.loaded = true
+    ])
 
     let live = LiveState()
     live.connected = true
