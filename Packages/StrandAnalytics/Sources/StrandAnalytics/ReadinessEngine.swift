@@ -84,10 +84,18 @@ public enum ReadinessEngine {
         public let acwr: Double?
         /// Foster training monotony over the last week (nil if not enough strain history).
         public let monotony: Double?
+        /// True when last night's sleep ran short enough to undermine the morning's HRV/recovery read
+        /// — the verdict still stands, but surfaces should flag it (caveat line + "Low conf" on HRV)
+        /// rather than present it as high-confidence. Additive; defaults to false for existing callers.
+        public let confidenceLow: Bool
+        /// A localized one-liner explaining `confidenceLow` (nil when confidence is normal).
+        public let confidenceNote: String?
         public init(level: Level, headline: String, summary: String,
-                    signals: [Signal], acwr: Double?, monotony: Double?) {
+                    signals: [Signal], acwr: Double?, monotony: Double?,
+                    confidenceLow: Bool = false, confidenceNote: String? = nil) {
             self.level = level; self.headline = headline; self.summary = summary
             self.signals = signals; self.acwr = acwr; self.monotony = monotony
+            self.confidenceLow = confidenceLow; self.confidenceNote = confidenceNote
         }
 
         /// The training-load band for this read, derived from `acwr` (nil when there's no load yet).
@@ -102,6 +110,9 @@ public enum ReadinessEngine {
     private static let acuteWindow    = 7
     private static let chronicWindow  = 28
     private static let minChronic     = 14   // need at least this much strain history for ACWR
+    /// Below this much sleep last night the morning read is flagged low-confidence (a short night
+    /// suppresses HRV and inflates resting HR independent of true recovery). 6 hours.
+    private static let shortNightMinutes: Double = 360
 
     // MARK: Entry point
 
@@ -206,10 +217,19 @@ public enum ReadinessEngine {
             }
         }
 
+        // Confidence: a short night suppresses HRV / lifts resting HR regardless of true recovery,
+        // so the morning read is honestly flagged low-confidence (drives the verdict caveat + the
+        // "Low conf" chip on HRV). Only claimed when we actually have last night's sleep duration.
+        let confidenceLow = (latest.totalSleepMin ?? .greatestFiniteMagnitude) < Self.shortNightMinutes
+        let confidenceNote = confidenceLow
+            ? String(localized: "Based on a short night — confidence low.", bundle: .main)
+            : nil
+
         let (level, headline, summary) = synthesize(signals: signals,
                                                     hasHistory: !history.isEmpty || acwr != nil)
         return Readiness(level: level, headline: headline, summary: summary,
-                         signals: signals, acwr: acwr, monotony: monotony)
+                         signals: signals, acwr: acwr, monotony: monotony,
+                         confidenceLow: confidenceLow, confidenceNote: confidenceNote)
     }
 
     // MARK: Signal builders
