@@ -72,3 +72,6 @@ export.zip
 # Python bytecode
 __pycache__/
 *.pyc
+
+# Lazyweb design-tool scratch/cache (screenshots, references)
+.lazyweb/
