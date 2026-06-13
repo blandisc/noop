@@ -79,3 +79,11 @@ __pycache__/
 
 # Lazyweb design-tool scratch/cache (screenshots, references)
 .lazyweb/
+
+# ── Agent / tooling scratch (local only, never publish) ──
+.claude/
+.stitch/
+.tmp-capture/
+
+# Design exports rescued from worktrees (local reference, not source of truth)
+design-export/
