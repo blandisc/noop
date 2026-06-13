@@ -500,4 +500,21 @@ final class AppleHealthAggregatorTests: XCTestCase {
         let d = AppleHealthAggregator.localDay(Fixtures.utc(2024, 12, 31, 23, 30, 0), tzOffsetMin: 60)
         XCTAssertEqual(d, "2025-01-01")
     }
+
+    /// Integer-math `localDay` (no Calendar) must bucket correctly across midnight-crossing offsets,
+    /// a leap day, and a year boundary backwards.
+    func testLocalDayEdgeCases() {
+        // 00:30 UTC at -0100 -> previous day 23:30 local.
+        XCTAssertEqual(
+            AppleHealthAggregator.localDay(Fixtures.utc(2024, 1, 1, 0, 30, 0), tzOffsetMin: -60),
+            "2023-12-31")
+        // Leap day stays Feb 29.
+        XCTAssertEqual(
+            AppleHealthAggregator.localDay(Fixtures.utc(2024, 2, 29, 12, 0, 0), tzOffsetMin: 0),
+            "2024-02-29")
+        // Offset pushes 23:00 UTC on Feb 28 (non-leap) forward into Mar 1.
+        XCTAssertEqual(
+            AppleHealthAggregator.localDay(Fixtures.utc(2025, 2, 28, 23, 0, 0), tzOffsetMin: 120),
+            "2025-03-01")
+    }
 }

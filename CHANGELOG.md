@@ -19,6 +19,12 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Importing your history is much faster (FER-52).** Importing a multi-year Apple Health export
+  used to grind through tens of millions of records doing slow date math on every single one. The
+  per-record work is now done with plain integer arithmetic instead of the heavyweight calendar and
+  date-formatting machinery, and the daily metrics it writes go in big batches. The result is
+  identical — just far less time staring at the import spinner. (FER-8 earlier fixed the memory side
+  of this; this one is about speed.)
 - **"Today's Synthesis" labels no longer truncate.** On the Today screen, the three at-a-glance
   tiles (Recovery / HRV / Sleep) sit in a tight three-column row. In languages with longer words —
   e.g. Spanish "Recuperación" — the label was clipped to "Recupera…". The label now scales down to
