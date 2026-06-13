@@ -160,4 +160,20 @@ final class RecoveryScorerTests: XCTestCase {
     func testRestingHRNilWhenNoSamples() {
         XCTAssertNil(RecoveryScorer.restingHR([], start: 0, end: 1000))
     }
+
+    // MARK: - Degenerate logistic guard (FER-36)
+
+    /// A non-finite driver (NaN/±inf) yields a non-finite composite z; the engine
+    /// must return nil rather than pushing NaN through the logistic.
+    func testRecoveryNonFiniteDriverReturnsNil() {
+        let b = baseline(mean: 50, sigma: 6)
+        XCTAssertNil(RecoveryScorer.recovery(
+            hrv: .nan, rhr: 55, resp: nil,
+            hrvBaseline: b, rhrBaseline: baseline(mean: 55, sigma: 3),
+            respBaseline: nil, sleepPerf: 0.85))
+        XCTAssertNil(RecoveryScorer.recovery(
+            hrv: .infinity, rhr: 55, resp: nil,
+            hrvBaseline: b, rhrBaseline: baseline(mean: 55, sigma: 3),
+            respBaseline: nil, sleepPerf: 0.85))
+    }
 }

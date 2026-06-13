@@ -100,4 +100,15 @@ final class StrainScorerTests: XCTestCase {
     func testFitStrainDenominatorThrowsTooFew() {
         XCTAssertThrowsError(try StrainScorer.fitStrainDenominator([(100, 10)]))
     }
+
+    // MARK: - Degenerate HRR guards (FER-36)
+
+    /// A non-positive HR reserve (restingHR ≥ HRmax) must not divide by zero;
+    /// %HRR and the Edwards zone weight both collapse to 0.
+    func testPctHRRZeroOrNegativeReserveReturnsZero() {
+        XCTAssertEqual(StrainScorer.pctHRR(150, restingHR: 60, hrReserve: 0), 0)
+        XCTAssertEqual(StrainScorer.pctHRR(150, restingHR: 60, hrReserve: -10), 0)
+        XCTAssertEqual(StrainScorer.zoneWeight(150, restingHR: 60, hrReserve: 0), 0)
+        XCTAssertEqual(StrainScorer.zoneWeight(150, restingHR: 60, hrReserve: -10), 0)
+    }
 }

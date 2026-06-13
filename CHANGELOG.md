@@ -21,6 +21,12 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 _Developer / docs — no user-facing change._
 
+- **Analytics robustness: divide-by-zero guards (FER-36).** Hardened degenerate-input paths in the
+  on-device recovery/readiness engine so impossible data can't produce `NaN`/`inf` scores:
+  `StrainScorer.pctHRR`/`zoneWeight` now return 0 when the HR reserve is non-positive (restingHR ≥
+  HRmax) instead of dividing by zero; the pNN50 divisor (`clean.count − 1`) is guarded explicitly;
+  and `RecoveryScorer.recovery` bails to `nil` on a non-finite composite z rather than pushing it
+  through the logistic. Added degenerate-case unit tests for each (181 StrandAnalytics tests green).
 - **Design system extracted to docs.** The `StrandDesign` Swift package is now mirrored as a
   portable, human- and machine-readable design system under `docs/design-system/`: a documented
   `DESIGN.md` (color, typography, spacing, motion, full component catalog), W3C design tokens
