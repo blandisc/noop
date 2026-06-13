@@ -183,6 +183,18 @@ final class Repository: ObservableObject {
         return (try? await store.metricKeys(deviceId: source)) ?? []
     }
 
+    /// The set of metric keys that have at least one stored point, keyed by source. Each source is
+    /// one index-only `DISTINCT key` query — the cheap way to answer "does this metric have any data?"
+    /// for the whole catalog without fetching each metric's full series just to test `.isEmpty`
+    /// (FER-27). Used by Explore to flag empty rows and to skip empty metrics before correlating.
+    func availableKeySets(sources: [String]) async -> [String: Set<String>] {
+        var out: [String: Set<String>] = [:]
+        for src in Set(sources) {
+            out[src] = Set(await availableKeys(source: src))
+        }
+        return out
+    }
+
     /// Native journal answers live under this dedicated source id. The journal table has no
     /// `source` column (PK is (deviceId, day, question)), so writing native answers under the
     /// imported `deviceId` would let a CSV re-import silently overwrite them — and clears could

@@ -42,6 +42,10 @@ final class LiveActivityController {
             // second request. The 2-second throttle above only guards the update path.
             guard !isStarting else { return }
             isStarting = true
+            // Clear the gate on EVERY exit path via defer — including a throwing `Activity.request`
+            // or any early return added later — so a failed start can never wedge the gate and leave
+            // the Live Activity stuck off until the next reconnect (FER-26).
+            defer { isStarting = false }
             do {
                 activity = try Activity.request(
                     attributes: NOOPActivityAttributes(title: "Live HR"),
@@ -52,7 +56,6 @@ final class LiveActivityController {
             } catch {
                 activity = nil
             }
-            isStarting = false
         }
     }
 

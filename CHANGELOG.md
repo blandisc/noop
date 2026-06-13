@@ -29,6 +29,35 @@ _Developer / docs — no user-facing change._
 
 ---
 
+## 1.84 — iOS: safer strap sync (reliability hardening)
+
+Behind-the-scenes robustness work on the experimental iOS port. No new features and no visible UI
+change — the goal is that a strap sync can't quietly corrupt or lose data. Still fully on-device.
+
+- **No more double database setup.** If the app tried to prepare its on-device store twice at once
+  (e.g. Bluetooth reporting "powered on" more than once at launch), it could build the store and run
+  the database migration twice in parallel. Concurrent callers now join a single setup, so the store
+  is created exactly once.
+- **History frames can't be reordered or duplicated on a dropped link.** When the strap disconnected
+  mid-sync, the queue that feeds historical frames into the database could be left able to spawn a
+  second, parallel drain — risking out-of-order or duplicated frames, i.e. corrupted history. There
+  is now a single owner for that drain; a disconnect cleanly cancels it instead of racing it.
+- **Live HR widget start is regression-proofed.** The guard that prevents two Live Activity starts on
+  close-together heart-rate ticks already reset correctly, but its reset now runs via `defer` so it
+  can't be skipped by a future code change — keeping the lock-screen Live HR from getting wedged off
+  after a failed start.
+- **Explore, Insights and Compare open faster on big histories.** Explore used to read every metric's
+  full history (thousands of days × ~30 metrics) on entry just to decide which rows get the faint
+  "no data" dot — now it asks the database which metrics have any data at all in one quick lookup per
+  source. Insights and Compare load their metrics in parallel instead of one after another. The
+  numbers shown are unchanged (relationships and overlays still use your full history); the screens
+  just stop doing redundant work, so they appear sooner for users with years of data.
+- **Large imports write much faster.** Journal answers, workouts and Apple-Health daily rows were
+  saved one database row at a time — a big WHOOP export or Health backfill meant tens of thousands of
+  separate writes inside a single transaction, which could stall the app mid-import. These now write
+  in batches (the same way metric series already did), so a large import lands in a fraction of the
+  database round-trips.
+
 ## 1.83 — iOS: Today synthesis label no longer clips in Spanish
 
 Work on the experimental iOS port. On-device only, no cloud.
