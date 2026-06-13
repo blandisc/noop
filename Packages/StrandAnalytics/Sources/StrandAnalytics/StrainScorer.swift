@@ -97,7 +97,10 @@ public enum StrainScorer {
     // MARK: - Karvonen %HRR and Edwards zone weight
 
     /// Karvonen %HRR, clamped [0, 100].
+    /// A non-positive `hrReserve` (restingHR ≥ HRmax, i.e. invalid HRR) has no
+    /// meaningful %HRR; return 0 rather than dividing by zero.
     static func pctHRR(_ bpm: Double, restingHR: Double, hrReserve: Double) -> Double {
+        guard hrReserve > 0 else { return 0 }
         let pct = (bpm - restingHR) / hrReserve * 100.0
         if pct < 0 { return 0 }
         if pct > 100 { return 100 }
@@ -105,8 +108,10 @@ public enum StrainScorer {
     }
 
     /// Edwards 5-zone weight (0–5) from %HRR (unclamped; extremes agree with
-    /// the clamped path at both ends).
+    /// the clamped path at both ends). A non-positive `hrReserve` (invalid HRR)
+    /// yields zone 0 instead of a divide-by-zero.
     static func zoneWeight(_ bpm: Double, restingHR: Double, hrReserve: Double) -> Int {
+        guard hrReserve > 0 else { return 0 }
         let pct = (bpm - restingHR) / hrReserve * 100.0
         for (threshold, weight) in edwardsZones where pct >= threshold { return weight }
         return 0

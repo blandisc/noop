@@ -166,10 +166,13 @@ public enum HRVAnalyzer {
         let sdnn = sdnnRaw(clean)
         let mean = clean.reduce(0, +) / Double(clean.count)
 
-        // pNN50 over the clean NN series.
+        // pNN50 over the clean NN series. There are clean.count − 1 successive
+        // pairs; the `minBeats` gate above keeps that ≥ 1, but guard the divisor
+        // explicitly so the formula is safe regardless of `minBeats`.
         var nn50 = 0
         for i in 1..<clean.count where abs(clean[i] - clean[i - 1]) > 50.0 { nn50 += 1 }
-        let pnn50 = Double(nn50) / Double(clean.count - 1) * 100.0
+        let nnPairs = clean.count - 1
+        let pnn50 = nnPairs > 0 ? Double(nn50) / Double(nnPairs) * 100.0 : 0.0
 
         return HRVResult(rmssd: rmssd, sdnn: sdnn, meanNN: mean, pnn50: pnn50,
                          nInput: nInput, nClean: clean.count)

@@ -204,6 +204,9 @@ public enum RecoveryScorer {
         guard totalWeight > 0 else { return nil }
 
         let z = terms.reduce(0) { $0 + $1.z * $1.w } / totalWeight
+        // A non-finite z (NaN/±inf from a degenerate term) would propagate through
+        // the logistic; bail rather than emit a bogus score.
+        guard z.isFinite else { return nil }
         let score = 100.0 / (1.0 + exp(-logisticK * (z - logisticZ0)))
         return max(0.0, min(100.0, score))
     }

@@ -21,6 +21,25 @@ final class HRVAnalyzerTests: XCTestCase {
         XCTAssertNil(HRVAnalyzer.sdnnRaw([]))
     }
 
+    // MARK: - Degenerate stat guards (FER-36)
+
+    /// Sample SD (ddof=1) of a single value has no n−1 denominator → nil, never
+    /// a divide-by-zero. Symmetric to the rmssd case above.
+    func testSDNNRawSingleValueReturnsNil() {
+        XCTAssertNil(HRVAnalyzer.sdnnRaw([800]))
+        XCTAssertNil(HRVAnalyzer.rmssdRaw([]))
+    }
+
+    /// pNN50 divides by (clean.count − 1). The minBeats(20) gate keeps that ≥ 19,
+    /// so on a valid series pNN50 is a finite percentage in [0, 100].
+    func testPnn50FiniteOnValidSeries() {
+        let nn = Array(repeating: 800.0, count: 22)
+        let result = HRVAnalyzer.analyze(rawRR: nn)
+        XCTAssertNotNil(result.pnn50)
+        XCTAssertTrue(result.pnn50!.isFinite)
+        XCTAssertEqual(result.pnn50!, 0.0, accuracy: 1e-9)  // constant series → no >50ms jumps
+    }
+
     func testRangeFilterDropsOutOfRange() {
         let rr = [250.0, 300, 800, 2000, 2100, 1500]
         // 250 (<300) and 2100 (>2000) dropped; 300 and 2000 kept (inclusive).
