@@ -9,17 +9,19 @@ enum PendingIntents {
     enum Action: String { case markMoment, buzz }
 
     private static let key = "noop.pendingIntents"
-    private static var defaults: UserDefaults? { UserDefaults(suiteName: WidgetSnapshot.suiteName) }
+    /// Shared App-Group store, with the same logged `.standard` fallback as the widget snapshot
+    /// (FER-32) instead of a silent no-op when the entitlement is missing.
+    private static var defaults: UserDefaults { WidgetSnapshot.sharedDefaults() }
 
     static func append(_ action: Action) {
-        guard let d = defaults else { return }
+        let d = defaults
         var list = d.stringArray(forKey: key) ?? []
         list.append(action.rawValue)
         d.set(list, forKey: key)
     }
 
     static func drain() -> [Action] {
-        guard let d = defaults else { return [] }
+        let d = defaults
         let raw = d.stringArray(forKey: key) ?? []
         d.removeObject(forKey: key)
         return raw.compactMap(Action.init)
