@@ -167,6 +167,22 @@ extension WhoopStore {
         try syncRead { db in try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM stepSample") ?? 0 }
     }
 
+    /// Stored raw-sample counts per stream — the on-device "data receipt" (proof the strap's data
+    /// landed and persisted). Same COUNT(*)s as the test helper, exposed as a stable public shape;
+    /// counts bound to their own `let` first to keep Swift's type-checker fast (see the helper above).
+    public func sampleCounts() async throws
+        -> (hr: Int, rr: Int, spo2: Int, skinTemp: Int, resp: Int, gravity: Int) {
+        try syncRead { db in
+            let hr   = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM hrSample") ?? 0
+            let rr   = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM rrInterval") ?? 0
+            let spo2 = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM spo2Sample") ?? 0
+            let skin = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM skinTempSample") ?? 0
+            let resp = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM respSample") ?? 0
+            let grav = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM gravitySample") ?? 0
+            return (hr, rr, spo2, skin, resp, grav)
+        }
+    }
+
     public func deviceRowForTest(id: String) async throws -> (mac: String?, name: String?)? {
         try syncRead { db in
             guard let row = try Row.fetchOne(db,

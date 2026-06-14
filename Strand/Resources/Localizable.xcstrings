@@ -15812,6 +15812,74 @@
           }
         }
       }
+    },
+    "Check your sync": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check your sync"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revisa tu sincronización"
+          }
+        }
+      }
+    },
+    "last reading %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "last reading %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "última lectura %@"
+          }
+        }
+      }
+    },
+    "saved on this device": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "saved on this device"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "guardado en este dispositivo"
+          }
+        }
+      }
+    },
+    "%lld nights stored · on your iPhone, system-encrypted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld nights stored · on your iPhone, system-encrypted"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld noches guardadas · en tu iPhone, cifrado del sistema"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
