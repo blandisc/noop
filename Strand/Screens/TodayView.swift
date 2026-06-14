@@ -210,7 +210,7 @@ struct TodayView: View {
     /// reading) with the current bpm pinned to the right. Scrolls when the strap is transmitting live HR.
     @ViewBuilder private var liveStrip: some View {
         HStack(alignment: .center, spacing: 12) {
-            ECGWave(color: ecgColor, flat: liveBpm == nil, animate: isLiveHR)
+            ECGWave(color: ecgColor, flat: liveBpm == nil, animate: isLiveHR, bpm: liveBpm)
                 .frame(width: 152)
             Spacer(minLength: 0)
             HStack(alignment: .firstTextBaseline, spacing: 5) {
