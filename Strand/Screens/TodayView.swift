@@ -560,58 +560,82 @@ struct TodayView: View {
     /// the first-launch state shows skeleton sparklines and "—" values.
     @ViewBuilder private var iosMetricsSection: some View {
         let d = repo.today
-        let aLatest = appleDays.last
-        // Skeleton placeholders show whenever there's no readiness yet — with or without a strap
-        // connected — so the no-data screen reads the same whether it's first launch or calibrating.
-        let empty = repo.today?.recovery == nil
+        // Measured signals resolve from today's row first, then fall back to the most recent value
+        // within the freshness window (today/yesterday) so Apple-Health data reads on the Today tiles
+        // when the strap hasn't covered the day yet — badged "Apple Health" so a fallback value is
+        // never passed off as a live strap reading. Day Strain stays strap-only (a computed score Apple
+        // doesn't provide), so it placeholders until the strap scores the day. (FER-62 follow-up)
+        let hrvR   = resolveMeasured { $0.avgHrv }
+        let rhrR   = resolveMeasured { $0.restingHr.map(Double.init) }
+        let sleepR = resolveMeasured { $0.totalSleepMin }
+        let spo2R  = resolveMeasured { $0.spo2Pct }
+        let hrvFlag: LocalizedStringKey? = hrvR?.fromApple == true ? "Apple Health"
+            : ((hrvR != nil && readiness.confidenceLow) ? "Low conf" : nil)
+        let hrvFlagColor = hrvR?.fromApple == true ? StrandPalette.metricCyan : StrandPalette.statusWarning
+        // Steps come only from Apple Health; guard the most-recent row to the 14-day window so a stale
+        // import can't render months-old steps under a Today tile (the secondary path was already
+        // windowed — this closes the hole in the primary `appleDays.last`, which scanned all history).
+        let stepsCutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -13, to: Date()) ?? Date())
+        let stepsFresh = appleDays.last(where: { $0.day >= stepsCutoff })?.steps
+        let stepsStr = stepsFresh.map { intString(Double($0)) } ?? latestString("steps", decimals: 0)
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-            SectionHeader("Key Metrics", overline: "Today", trailing: String(localized: "14-day"))
+            SectionHeader("Key Metrics", overline: "Today", trailing: String(localized: "14-day trend"))
             VStack(spacing: 0) {
                 Button { metricDetail = .strain(d?.strain) } label: {
                     MetricRow(label: "Day Strain",
                               value: d?.strain.map { String(format: "%.1f", $0) } ?? "—",
                               valueColor: d?.strain.map { StrandPalette.strainColor($0) } ?? StrandPalette.textPrimary,
                               sparkline: sparks["strain"], sparkColor: StrandPalette.strain066,
-                              isPlaceholder: empty)
+                              isPlaceholder: d?.strain == nil)
                 }.buttonStyle(.plain)
                 metricSeparator
-                Button { metricDetail = .sleep(d?.totalSleepMin.map { Int($0.rounded()) }) } label: {
+                Button { metricDetail = .sleep(sleepR.map { Int($0.value.rounded()) }) } label: {
                     MetricRow(label: "Sleep",
-                              value: sleepValue(d),
-                              sparkline: sparks["sleep_total_min"], sparkColor: StrandPalette.metricPurple,
-                              isPlaceholder: empty)
+                              value: sleepR.map { sleepText($0.value) } ?? "—",
+                              flag: sleepR?.fromApple == true ? "Apple Health" : nil,
+                              flagColor: StrandPalette.metricCyan,
+                              sparkline: measuredSpark("sleep_total_min") { $0.totalSleepMin },
+                              sparkColor: StrandPalette.metricPurple,
+                              isPlaceholder: sleepR == nil)
                 }.buttonStyle(.plain)
                 metricSeparator
-                Button { metricDetail = .hrv(d?.avgHrv) } label: {
+                Button { metricDetail = .hrv(hrvR?.value) } label: {
                     MetricRow(label: "HRV",
-                              value: d?.avgHrv.map { "\(Int($0.rounded()))" } ?? "—",
+                              value: hrvR.map { "\(Int($0.value.rounded()))" } ?? "—",
                               unit: "ms", valueColor: StrandPalette.metricPurple,
-                              flag: (d?.avgHrv != nil && readiness.confidenceLow) ? "Low conf" : nil,
-                              sparkline: sparks["hrv"], sparkColor: StrandPalette.metricPurple,
-                              isPlaceholder: empty)
+                              flag: hrvFlag, flagColor: hrvFlagColor,
+                              sparkline: measuredSpark("hrv") { $0.avgHrv },
+                              sparkColor: StrandPalette.metricPurple,
+                              isPlaceholder: hrvR == nil)
                 }.buttonStyle(.plain)
                 metricSeparator
-                Button { metricDetail = .restingHR(d?.restingHr) } label: {
+                Button { metricDetail = .restingHR(rhrR.map { Int($0.value.rounded()) }) } label: {
                     MetricRow(label: "Resting HR",
-                              value: d?.restingHr.map { "\($0)" } ?? "—",
+                              value: rhrR.map { "\(Int($0.value.rounded()))" } ?? "—",
                               unit: "bpm", valueColor: StrandPalette.metricRose,
-                              sparkline: sparks["rhr"], sparkColor: StrandPalette.metricRose,
-                              isPlaceholder: empty)
+                              flag: rhrR?.fromApple == true ? "Apple Health" : nil,
+                              flagColor: StrandPalette.metricCyan,
+                              sparkline: measuredSpark("rhr") { $0.restingHr.map(Double.init) },
+                              sparkColor: StrandPalette.metricRose,
+                              isPlaceholder: rhrR == nil)
                 }.buttonStyle(.plain)
                 metricSeparator
-                Button { metricDetail = .spo2(d?.spo2Pct) } label: {
+                Button { metricDetail = .spo2(spo2R?.value) } label: {
                     MetricRow(label: "Blood Oxygen",
-                              value: d?.spo2Pct.map { String(format: "%.0f", $0) } ?? "—",
+                              value: spo2R.map { String(format: "%.0f", $0.value) } ?? "—",
                               unit: "%", valueColor: StrandPalette.metricCyan,
-                              sparkline: sparks["spo2"], sparkColor: StrandPalette.metricCyan,
-                              isPlaceholder: empty)
+                              flag: spo2R?.fromApple == true ? "Apple Health" : nil,
+                              flagColor: StrandPalette.metricCyan,
+                              sparkline: measuredSpark("spo2") { $0.spo2Pct },
+                              sparkColor: StrandPalette.metricCyan,
+                              isPlaceholder: spo2R == nil)
                 }.buttonStyle(.plain)
                 metricSeparator
-                Button { metricDetail = .steps(aLatest?.steps) } label: {
+                Button { metricDetail = .steps(stepsFresh) } label: {
                     MetricRow(label: "Steps",
-                              value: aLatest?.steps.map { intString(Double($0)) } ?? latestString("steps", decimals: 0),
+                              value: stepsStr,
                               sparkline: sparks["steps"], sparkColor: StrandPalette.metricCyan,
-                              isPlaceholder: empty)
+                              isPlaceholder: stepsStr == "—")
                 }.buttonStyle(.plain)
             }
         }
@@ -927,7 +951,7 @@ struct TodayView: View {
                 LazyVGrid(columns: grid, alignment: .leading, spacing: NoopMetrics.gap) {
                     ForEach(Array(workouts.prefix(6).enumerated()), id: \.offset) { _, w in
                         StatTile(
-                            label: "\(w.sport)",
+                            label: "\(WorkoutSource.displaySport(w.sport))",
                             value: workoutDuration(w),
                             caption: workoutCaption(w),
                             accent: StrandPalette.strainColor(w.strain ?? 0),
@@ -1160,8 +1184,38 @@ struct TodayView: View {
 
     private func sleepValue(_ d: DailyMetric?) -> String {
         guard let m = d?.totalSleepMin else { return "—" }
-        let h = Int(m) / 60, mm = Int(m) % 60
-        return "\(h)h \(mm)m"
+        return sleepText(m)
+    }
+
+    /// Sleep minutes → "Xh Ym".
+    private func sleepText(_ mins: Double) -> String {
+        "\(Int(mins) / 60)h \(Int(mins) % 60)m"
+    }
+
+    /// Resolve a measured signal (HRV / sleep / resting HR / SpO₂) for the Today tiles. Today's row
+    /// wins; otherwise the most recent value within the freshness window (today/yesterday) so a fresh
+    /// Apple-Health import or sync still reads on the tile — but never older, since a stale value under
+    /// a "Today" header would misrepresent it (same spirit as the #23/#49 trailing-window fixes).
+    /// `fromApple` flags Apple-sourced values so the row badges them instead of passing them off as a
+    /// live strap reading. Returns nil when nothing fresh exists → the row placeholders. (FER-62 follow-up)
+    private func resolveMeasured(_ pick: (DailyMetric) -> Double?) -> (value: Double, fromApple: Bool)? {
+        let todayKey = Repository.localDayKey(Date())
+        if let d = repo.today, let v = pick(d) { return (v, repo.appleHealthDays.contains(todayKey)) }
+        let cutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date())
+        for day in repo.days.reversed() {
+            guard day.day >= cutoff else { return nil }
+            if let v = pick(day) { return (v, repo.appleHealthDays.contains(day.day)) }
+        }
+        return nil
+    }
+
+    /// Inline sparkline for a measured tile: the strap series when present (unchanged behaviour),
+    /// otherwise a 14-day series rebuilt from the merged daily rows so Apple-only history still draws.
+    private func measuredSpark(_ key: String, _ pick: (DailyMetric) -> Double?) -> [Double]? {
+        if let s = sparks[key], s.count > 1 { return s }
+        let cutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -13, to: Date()) ?? Date())
+        let apple = repo.days.filter { $0.day >= cutoff }.compactMap(pick)
+        return apple.count > 1 ? apple : sparks[key]
     }
 
     /// Active calories (Apple) for the latest day, falling back to the sparkline tail.

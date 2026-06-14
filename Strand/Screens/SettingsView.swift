@@ -12,6 +12,9 @@ struct SettingsView: View {
     @EnvironmentObject var model: AppModel
     @EnvironmentObject var live: LiveState
     @EnvironmentObject var profile: ProfileStore
+    #if os(iOS)
+    @EnvironmentObject private var autoBackup: AutoBackup
+    #endif
 
     /// Backup & restore UI state.
     @State private var backupBusy = false
@@ -50,6 +53,9 @@ struct SettingsView: View {
             strapCard
             experimentalCard
             backupCard
+            #if os(iOS)
+            autoBackupCard
+            #endif
             aboutCard
         }
         .alert(backupAlertTitle, isPresented: $showBackupAlert) {
@@ -469,6 +475,106 @@ struct SettingsView: View {
             }
         }
     }
+
+    #if os(iOS)
+    /// iOS-only: automatic backup of the whole database to a folder in the user's iCloud Drive, so the
+    /// strap history (which lives only inside the app) survives a reinstall or a new phone — even on a
+    /// free Apple ID. Restore reuses the manual `runImport` below. See [AutoBackup].
+    private var autoBackupCard: some View {
+        SettingsSection(
+            icon: "icloud.and.arrow.up.fill",
+            title: "Automatic iCloud backup",
+            blurb: "Pick a folder in iCloud Drive and NOOP keeps a fresh copy of all your data there. Your strap history lives only inside the app, so this is what protects it if you reinstall NOOP or switch phones. It uses your own iCloud Drive — a free Apple ID is enough."
+        ) {
+            VStack(alignment: .leading, spacing: 14) {
+                if let name = autoBackup.destinationName {
+                    Label("Backing up to \(name)", systemImage: "checkmark.icloud.fill")
+                        .font(StrandFont.subhead)
+                        .foregroundStyle(StrandPalette.textPrimary)
+                    Text(lastBackupText)
+                        .font(StrandFont.footnote)
+                        .foregroundStyle(StrandPalette.textSecondary)
+
+                    HStack(spacing: 12) {
+                        Button {
+                            Task { await autoBackup.backupNow(checkpoint: { await model.repo.checkpointForBackup() }) }
+                        } label: {
+                            Label("Back up now", systemImage: "arrow.clockwise.icloud")
+                                .padding(.horizontal, 6)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(StrandPalette.accent)
+                        .disabled(autoBackup.busy)
+
+                        Button {
+                            runImport()
+                        } label: {
+                            Label("Restore…", systemImage: "square.and.arrow.down")
+                                .padding(.horizontal, 6)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(StrandPalette.accent)
+                        .disabled(backupBusy)
+
+                        if autoBackup.busy { ProgressView().controlSize(.small) }
+                        Spacer(minLength: 0)
+                    }
+
+                    Button(role: .destructive) {
+                        autoBackup.disable()
+                    } label: {
+                        Label("Turn off automatic backup", systemImage: "xmark.circle")
+                    }
+                    .buttonStyle(.bordered)
+                } else {
+                    HStack(spacing: 12) {
+                        Button {
+                            Task { await autoBackup.chooseFolder() }
+                        } label: {
+                            Label("Choose iCloud Drive folder…", systemImage: "folder.badge.plus")
+                                .padding(.horizontal, 6)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(StrandPalette.accent)
+
+                        Button {
+                            runImport()
+                        } label: {
+                            Label("Restore…", systemImage: "square.and.arrow.down")
+                                .padding(.horizontal, 6)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(StrandPalette.accent)
+                        .disabled(backupBusy)
+
+                        Spacer(minLength: 0)
+                    }
+                }
+
+                if let err = autoBackup.lastError {
+                    HStack(alignment: .top, spacing: 10) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                            .font(.system(size: 13))
+                            .accessibilityHidden(true)
+                        Text(err)
+                            .font(StrandFont.footnote)
+                            .foregroundStyle(StrandPalette.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+        }
+    }
+
+    /// "Last backup 2 hours ago" / "No backup yet." for the auto-backup status line.
+    private var lastBackupText: String {
+        guard let d = autoBackup.lastBackup else { return String(localized: "No backup yet.") }
+        let rel = RelativeDateTimeFormatter()
+        rel.unitsStyle = .full
+        return String(localized: "Last backup \(rel.localizedString(for: d, relativeTo: Date()))")
+    }
+    #endif
 
     private func runExport() {
         backupBusy = true

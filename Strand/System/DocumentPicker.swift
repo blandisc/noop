@@ -30,6 +30,21 @@ enum DocumentPicker {
         }
     }
 
+    /// Present the picker to choose a *folder* — e.g. one inside iCloud Drive — as the destination for
+    /// automatic backups. Unlike import/export this returns the real **security-scoped** folder URL
+    /// (`asCopy: false`), so the caller can persist a bookmark and keep writing into it on later runs
+    /// without re-prompting. This works on a free Apple ID: it touches the user's own iCloud Drive
+    /// through the Files system, which needs no iCloud-container entitlement. Returns `nil` if cancelled.
+    @MainActor
+    static func pickFolder() async -> URL? {
+        await present { coordinator in
+            let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder], asCopy: false)
+            picker.delegate = coordinator
+            picker.allowsMultipleSelection = false
+            return picker
+        }
+    }
+
     // MARK: - Presentation plumbing
 
     @MainActor

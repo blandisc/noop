@@ -29,6 +29,39 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
   temperature, respiration and movement are marked "completes on sync" — and a footer confirms when
   everything is saved (or warns when you're streaming live HR without having finished the secure
   pairing the rest of the data needs). Fully localized (English + Spanish).
+- **"Resting HR" help text no longer assumes the WHOOP strap (iPhone, FER-77).** Tapping Resting HR in
+  Key Metrics described it as "your lowest heart rate during sleep" — true for the strap, but since
+  Apple Health now fills the value when the strap hasn't (FER-62), that wording was wrong for the
+  Apple-sourced reading (Apple computes resting heart rate its own way, across the day). The help text
+  now describes the metric without assuming a source, and a footnote names both: measured overnight by
+  the strap, or read from Apple Health's resting heart rate when the strap isn't worn. Copy-only; no
+  calculation change.
+
+- **Apple Health strength workouts read as words again, not one run-on label (iPhone, FER-76).** On
+  Today, the "Last Workouts" tiles took the workout type straight from Apple Health, so a *Traditional
+  Strength Training* session showed up as a single glued, all-caps word (`TRADITIONALSTRENGTHTRAINING`)
+  that wrapped mid-word and overlapped the duration beneath it. The name is now split back into words
+  ("Traditional Strength Training"), and every metric/workout tile caps its label at two lines so a
+  long name can no longer collide with its value. Also clears the same run-on name in the Workouts
+  list and the per-sport breakdown.
+- **Your data backs itself up to iCloud Drive, so a reinstall can't lose it (iPhone, FER-74).** Your
+  strap's history lives only inside NOOP — once the band hands a night over it deletes its own copy —
+  so deleting or reinstalling the app used to lose it for good. Now you can pick a folder in your own
+  iCloud Drive (a free Apple ID is enough — this isn't a paid developer-iCloud feature) and NOOP keeps
+  a fresh copy of everything there, refreshed automatically after each sync (about once a day, while
+  the app is open). If you ever open NOOP to an empty screen — a fresh install, a new phone — it
+  offers to restore from that backup in one tap; you can also back up or restore any time from
+  Settings. Apple Health and an imported WHOOP export re-fill on their own, so this protects the one
+  thing that can't: the strap's own history. Honest limits: iCloud uploads when iOS decides (usually
+  minutes), and after deleting the app you re-pick the folder once. Fully localized (English +
+  Spanish).
+- **The "14-day" header on Key Metrics now reads "14-day trend" (iPhone).** The header above the Key
+  Metrics list paired "Today" with a bare "14-day", which read as if the values themselves spanned 14
+  days rather than being today's reading (steps, for example, are today's total; blood oxygen is a
+  daily average). It now says "14-day trend", so the period clearly labels the sparkline beside each
+  row — the trend — not the number. This also brings iPhone in line with macOS, which already showed
+  "14-day trend". Fully localized (English + Spanish + German).
+
 - **Trends and Sleep fill in from Apple Health before the strap does (FER-62).** If you've connected
   Apple Health but the strap hasn't covered a day yet, Trends now plots your HRV and resting heart
   rate from Apple Health, and Sleep shows last night's stage breakdown from it — each tagged with an
@@ -36,7 +69,16 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
   covers shows the strap's reading, and Apple Health only fills the gaps. Apple's sleep is shown as a
   proportional deep / light / REM bar (no minute-by-minute hypnogram — that's strap-only). Fully
   localized (English + Spanish + German).
-- **The live heart-rate ECG reads like a real monitor now (iPhone, FER-58).** When your strap is streaming, the brand ECG strip on Today no longer just scrolls one fixed wave faster or slower. The line sits flat and a sweep head moves across it, drawing each heartbeat the instant it reaches that beat — with the complexes spaced by your live BPM, so a faster heart packs them closer together. On each pass the head wipes the trace back to a flat baseline, exactly like a hospital vital-signs monitor. With no strap connected it rests on a calm flatline.
+- **"Key Metrics" on Today fills in from Apple Health too (FER-62 follow-up).** Until now only Steps
+  read from Apple Health on the Today screen — HRV, resting heart rate, sleep and blood oxygen stayed
+  blank whenever the strap hadn't scored the day, even though Apple Health had the data. They now show
+  your Apple Health reading, each tagged "Apple Health" so it's never mistaken for a live strap value
+  — the same treatment Trends and Sleep already got. To keep the "Today" label honest, a value only
+  fills in if it's from today or yesterday; anything older reads "—" (the full history still shows in
+  Trends). Day Strain stays strap-only — it's a computed score Apple doesn't provide. Also closed a
+  gap where a stale import could show a months-old Steps count under Today; it's now bounded to recent
+  days. No new copy — reuses the existing "Apple Health" tag, so it's localized everywhere already.
+- **The live heart-rate ECG reads like a real monitor now (iPhone, FER-58).** When your strap is streaming, the brand ECG strip on Today no longer just scrolls one fixed wave faster or slower. A sweep head moves across the strip drawing each heartbeat the instant it reaches that beat — complexes spaced by your live BPM, so a faster heart packs them closer together. The trace now stays continuous like a hospital monitor: the head wipes last pass forward into this one behind a small erase gap instead of blanking to a flat line, so the beats no longer jump sideways between passes. And the beat breathes — subtle beat-to-beat variation in spacing and height plus a slow respiratory drift — so it reads like a living heart rather than one frame looping. With no strap connected it rests on a calm flatline.
 - **Apple Health import is no longer a black box (FER-70).** Connecting or syncing Apple Health used
   to run silently — you couldn't tell whether it was working, how many days came in, or which metrics
   never arrived. The "Apple Health — Live Sync" card on Data Sources now shows live per-stage progress

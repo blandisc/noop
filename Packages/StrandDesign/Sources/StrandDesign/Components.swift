@@ -81,7 +81,12 @@ public struct StatTile: View {
     public var body: some View {
         NoopCard(padding: 14) {
             VStack(alignment: .leading, spacing: 0) {
+                // Cap at two lines and let a long name shrink rather than overflow the fixed
+                // tile height — a run-on label (e.g. a workout sport) used to push the value
+                // out of the 104pt frame and collide with it. (FER-76)
                 Text(label).strandOverline()
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.8)
                 Spacer(minLength: 4)
                 Text(value).font(StrandFont.number(26)).foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.6)
                 if let sparkline, sparkline.count > 1 {
