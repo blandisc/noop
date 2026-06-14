@@ -147,10 +147,14 @@ struct TodayView: View {
                 } else {
                     if repo.today?.recovery == nil {
                         if live.backfilling { SyncingHistoryNote(chunks: live.syncChunksThisSession) }
-                        DataPendingNote(
-                            title: "Live now. Your scores are building.",
-                            message: "Your live heart rate is working from the strap, and recovery, strain and sleep build from it over your next few nights of wear, sharpening as it learns your baseline. Want your full history instantly? Import your WHOOP export in Data Sources and it backfills in about a minute."
-                        )
+                        if let n = recoveryCalibration {
+                            CalibrationProgressCard(nights: n, total: Baselines.minNightsSeed)
+                        } else {
+                            DataPendingNote(
+                                title: "Live now. Your scores are building.",
+                                message: "Your live heart rate is working from the strap, and recovery, strain and sleep build from it over your next few nights of wear, sharpening as it learns your baseline. Want your full history instantly? Import your WHOOP export in Data Sources and it backfills in about a minute."
+                            )
+                        }
                     }
                     verdictSection
                 }
@@ -262,6 +266,47 @@ struct TodayView: View {
                 .padding(.top, 5)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    /// Progress card shown while the recovery baseline calibrates (1 to seed−1 valid nights).
+    /// Replaces the generic DataPendingNote so the user sees exactly how many nights are banked.
+    private struct CalibrationProgressCard: View {
+        let nights: Int
+        let total: Int
+
+        var body: some View {
+            StrandCard(padding: 20) {
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "sparkles")
+                        .font(StrandFont.headline)
+                        .foregroundStyle(StrandPalette.accent)
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Your scores are building")
+                            .font(StrandFont.headline)
+                            .foregroundStyle(StrandPalette.textPrimary)
+                        HStack(spacing: 8) {
+                            ForEach(0..<total, id: \.self) { i in
+                                Circle()
+                                    .fill(i < nights ? StrandPalette.accent : StrandPalette.hairline)
+                                    .frame(width: 10, height: 10)
+                                    .shadow(color: i < nights ? StrandPalette.accent.opacity(0.5) : .clear,
+                                            radius: 3)
+                            }
+                            Text("\(nights) of \(total) nights")
+                                .font(StrandFont.captionNumber)
+                                .foregroundStyle(StrandPalette.accent)
+                        }
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(Text("\(nights) of \(total) nights calibrated"))
+                        Text("The engine gets sharper every night — you already have \(nights).")
+                            .font(StrandFont.subhead)
+                            .foregroundStyle(StrandPalette.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
         }
     }
 
