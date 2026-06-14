@@ -162,6 +162,20 @@ final class AppModel: ObservableObject {
 
         AppModel.shared = self   // publish for App Intents (Shortcuts) — see the static above (#42)
 
+        #if DEBUG
+        // Screenshot fixtures (UI test): seed a synthetic readiness state and skip the production
+        // refresh/analyze loop entirely, so the seeded dashboard isn't immediately overwritten by a
+        // real (empty) store load. Gated on the `-noop.fixture primed|strained` launch argument; an
+        // absent/`empty` argument falls through to the normal launch path below.
+        if let fixtureState = ScreenshotFixtures.activeState() {
+            Task { [weak self] in
+                guard let self else { return }
+                await ScreenshotFixtures.seed(self, state: fixtureState)
+            }
+            return
+        }
+        #endif
+
         // Turn the strap's offloaded raw data into dashboard scores on launch and every 15
         // minutes, so recovery / strain / sleep populate from the strap itself with no import.
         // IntelligenceEngine computes, persists under "my-whoop-noop", and refreshes the dashboard.
