@@ -188,18 +188,22 @@ struct TodayView: View {
         }
         .background(StrandPalette.surfaceBase)
         .fullScreenCover(isPresented: $showLiveMonitor) {
-            NavigationStack {
-                LiveView(monitorOnly: true)
-                    .environmentObject(model)
-                    .environmentObject(live)
-                    .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
-                            Button("Done") { showLiveMonitor = false }
-                        }
+            // No NavigationStack: its nav-bar scroll-edge background painted a bar over the monitor on
+            // the slightest scroll. A floating "Done" pill overlays the content and never blocks it.
+            LiveView(monitorOnly: true)
+                .environmentObject(model)
+                .environmentObject(live)
+                .overlay(alignment: .topTrailing) {
+                    Button { showLiveMonitor = false } label: {
+                        Text("Done")
+                            .font(StrandFont.subhead).fontWeight(.semibold)
+                            .foregroundStyle(StrandPalette.accent)
+                            .padding(.horizontal, 14).padding(.vertical, 7)
+                            .background(StrandPalette.surfaceRaised, in: Capsule())
                     }
-                    .toolbarBackground(StrandPalette.surfaceBase, for: .navigationBar)
-            }
-            .preferredColorScheme(.dark)
+                    .padding(.trailing, 16).padding(.top, 8)
+                }
+                .preferredColorScheme(.dark)
         }
     }
 
