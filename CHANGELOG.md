@@ -19,6 +19,16 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Fix: trend charts no longer tint the hour labels or clip the last one.** The area fill under the
+  curve used to reach the floor of the plot and sit behind the X-axis labels (e.g. the heart-rate
+  chart on Today), tinting "2:25 p.m. / 2:40 p.m. …" a faint red, and the rightmost label was cut off
+  ("3:25 p..." instead of "3:25 p.m."). The chart's plot area now carries a small bottom/trailing
+  inset (`NoopMetrics.chartPlotInset`), lifting the fill off the label band and giving the last label
+  room to render in full before `ChartCard`'s frame clip. Applies everywhere `TrendChart` is used —
+  Today (heart rate), Trends and Explore — since it's one shared component. The `.monotone` fill (so
+  it never bleeds below the axis onto the footer) and the hover/crosshair logic are untouched.
+  ([Packages/StrandDesign/Sources/StrandDesign/TrendChart.swift](Packages/StrandDesign/Sources/StrandDesign/TrendChart.swift)) (FER-82)
+
 - **Today is shorter on iPhone: the "Last Workouts" strip is gone.** Today should read at a glance,
   and your workouts already have their own Workouts tab — repeating them on the home screen only added
   scroll. Today now flows verdict → Key Metrics → Heart Rate → Data Sources. Nothing else changed:
