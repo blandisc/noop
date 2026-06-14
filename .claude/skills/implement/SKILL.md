@@ -65,9 +65,11 @@ tienes permiso de entregar; si no, te detienes.
      PNG aprobado**.
    - Si algo falla, corrígelo. Si no puedes corregirlo o no puedes verificar, ve a
      "Cuándo PARAR".
-8. **Entrega (solo si TODO el QA pasó).** Commit descriptivo + CHANGELOG si aplica
-   → push → PR hacia `iOS` (`Closes FER-NN`, criterios verificados en "How it was
-   tested") → **squash-merge a `iOS`** → **borra la rama** (`--delete-branch`).
+8. **Entrega (solo si TODO el QA pasó).** Commit descriptivo + **entrada en la
+   bitácora de producto** (`CHANGELOG.md` — obligatoria si el cambio es visible
+   para el usuario; ver "La bitácora de producto" abajo) → push → PR hacia `iOS`
+   (`Closes FER-NN`, criterios verificados en "How it was tested") →
+   **squash-merge a `iOS`** → **borra la rama** (`--delete-branch`).
 9. **Actualiza el checkout de build.** Tras el merge, sincroniza el checkout
    canónico (`~/code/noop`, de donde sale el build del iPhone) para que el próximo
    build NO sea viejo: `git -C ~/code/noop fetch origin` y luego
@@ -81,6 +83,29 @@ tienes permiso de entregar; si no, te detienes.
     qué criterios quedaron verificados, y que ya está en `iOS` **y en su checkout
     principal**. El único paso manual que le queda: abrir Xcode y compilar/instalar
     en su iPhone.
+
+## La bitácora de producto (`CHANGELOG.md`) — qué cambió, en cristiano
+
+`CHANGELOG.md` (en la raíz) es la bitácora que **el usuario lee para entender cómo
+evoluciona la app**, sin jerga. **No es opcional:** todo cambio que el usuario
+pueda ver o usar —una pantalla, una métrica, un copy, un comportamiento, un fix
+visible— **agrega una entrada bajo `## Unreleased` antes de mergear** (paso 8). Los
+cambios que el usuario nunca percibe (refactor, chore, tooling, los propios skills)
+**no** van aquí: ensucian la bitácora.
+
+Voz de la entrada — producto, no commit:
+- **Título en negritas:** qué cambió, en una frase que se entienda sola
+  ("Sincroniza tu strap con una sola tecla", no "add sync diagnostic to
+  DataSourcesView").
+- **Una o dos líneas:** qué puede hacer ahora el usuario / por qué le importa.
+- Al final, entre paréntesis, el archivo tocado como referencia técnica (se ignora
+  al leer).
+- **Bilingüe — español e inglés, siempre.** La app está localizada es/en; su
+  bitácora también. Cada entrada lleva las dos versiones del mismo contenido,
+  **español primero, luego inglés**. Si editas una, edita la otra — nunca dejes un
+  idioma a medias. Formato: un punto **`### ES`** y un punto **`### EN`** dentro de
+  la misma entrada (o dos párrafos etiquetados), bajo un único título bilingüe
+  `Título en español / English title`.
 
 ## Cuándo PARAR y preguntar (no entregues a ciegas)
 
