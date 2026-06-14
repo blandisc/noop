@@ -799,6 +799,8 @@ ES: dict[str, str] = {
 
     # ── Night-zero calibration card + live beat-to-beat monitor (FER-61 revival + live capture) ──
     "Your first night counts": "Tu primera noche cuenta",
+    "No reading for today yet": "Aún no hay lectura de hoy",
+    "Your baseline is set. Wear your strap overnight and this morning's recovery, strain and sleep land once it syncs.": "Tu línea base ya está lista. Usa la banda durante la noche y la recuperación, el esfuerzo y el sueño de esta mañana aparecen en cuanto sincronice.",
     "Almost there": "Casi listo",
     "Wear the strap tonight — the first of %lld nights your verdict needs.": "Ponte la banda esta noche — la primera de %lld noches que tu veredicto necesita.",
     "All %lld nights are in — computing your first verdict.": "Ya tienes las %lld noches — calculando tu primer veredicto.",
