@@ -19,6 +19,13 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **The "14-day" header on Key Metrics now reads "14-day trend" (iPhone).** The header above the Key
+  Metrics list paired "Today" with a bare "14-day", which read as if the values themselves spanned 14
+  days rather than being today's reading (steps, for example, are today's total; blood oxygen is a
+  daily average). It now says "14-day trend", so the period clearly labels the sparkline beside each
+  row — the trend — not the number. This also brings iPhone in line with macOS, which already showed
+  "14-day trend". Fully localized (English + Spanish + German).
+
 - **Trends and Sleep fill in from Apple Health before the strap does (FER-62).** If you've connected
   Apple Health but the strap hasn't covered a day yet, Trends now plots your HRV and resting heart
   rate from Apple Health, and Sleep shows last night's stage breakdown from it — each tagged with an

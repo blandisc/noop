@@ -1394,6 +1394,12 @@
             "state": "translated",
             "value": "Tendencia de 14 días"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "14-Tage-Trend"
+          }
         }
       }
     },

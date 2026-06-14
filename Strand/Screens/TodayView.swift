@@ -492,7 +492,7 @@ struct TodayView: View {
         // connected — so the no-data screen reads the same whether it's first launch or calibrating.
         let empty = repo.today?.recovery == nil
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-            SectionHeader("Key Metrics", overline: "Today", trailing: String(localized: "14-day"))
+            SectionHeader("Key Metrics", overline: "Today", trailing: String(localized: "14-day trend"))
             VStack(spacing: 0) {
                 Button { metricDetail = .strain(d?.strain) } label: {
                     MetricRow(label: "Day Strain",
