@@ -19,6 +19,12 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Today is shorter on iPhone: the "Last Workouts" strip is gone.** Today should read at a glance,
+  and your workouts already have their own Workouts tab — repeating them on the home screen only added
+  scroll. Today now flows verdict → Key Metrics → Heart Rate → Data Sources. Nothing else changed:
+  the Workouts tab still lists every session, the Apple Health workout count in Data Sources is
+  unaffected, and macOS keeps its "Last Workouts" section. ([Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift))
+
 - **Debug screenshot automation (developers only).** iOS debug builds now register a Darwin notification listener (`noop.nav.<screen>`) so every screen can be navigated programmatically — `xcrun simctl spawn booted notifyutil -p noop.nav.trends` — without triggering system permission dialogs. The "More" tab was refactored to use `NavigationLink(value:)` with a typed `MoreScreen` enum and a programmatic `NavigationPath`, enabling deep-link navigation into any sub-screen from the command line. A `noopdev://` URL scheme (backup transport) is also registered. All debug code is `#if DEBUG`-gated; it has no effect on release builds. ([StrandiOS/App/ScreenshotNav.swift](StrandiOS/App/ScreenshotNav.swift))
 
 - **Fix: `MetricInfoSheet` now compiles on macOS 13.0.** `.presentationBackground(_:)` requires macOS 13.3 but the sheet was calling it unconditionally. Wrapped in a `PresentationBackgroundModifier` with an `@available(macOS 13.3, iOS 16.4, *)` guard.
