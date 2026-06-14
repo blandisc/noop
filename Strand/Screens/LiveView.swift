@@ -12,6 +12,7 @@ import WhoopStore
 struct LiveView: View {
     @EnvironmentObject private var model: AppModel
     @EnvironmentObject private var live: LiveState
+    @EnvironmentObject private var repo: Repository
 
     /// When true, render only the live monitor (through the saved-data footer) and omit the strap-
     /// management chrome — workout, model picker, controls, and the frame log. The Today calibration
@@ -30,6 +31,10 @@ struct LiveView: View {
     private var isLiveHR: Bool { live.heartRate != nil && live.worn }
     /// Rolling beat-to-beat buffer (last ~40 R-R intervals) so the tachogram builds as beats arrive.
     @State private var rrHistory: [Int] = []
+    /// Stored raw-sample counts (on-disk proof), shown at the very bottom of the monitor. Re-queried
+    /// as new data flushes (live.hrFlushSeq) so the user watches the numbers climb.
+    private typealias Receipt = (counts: (hr: Int, rr: Int, spo2: Int, skinTemp: Int, resp: Int, gravity: Int), latestHRTs: Int?)
+    @State private var receipt: Receipt? = nil
 
     var body: some View {
         ScreenScaffold(title: "Live",
@@ -52,6 +57,12 @@ struct LiveView: View {
                 liveSignals
                 syncSignals
                 savedFooter
+                // The data receipt — the strap's raw streams as stored counts you can watch climb,
+                // right under the "saved" footer as its proof. Only once something has actually landed.
+                if let r = receipt,
+                   r.counts.hr + r.counts.rr + r.counts.spo2 + r.counts.skinTemp + r.counts.resp + r.counts.gravity > 0 {
+                    receiptSection(r)
+                }
                 // Strap-management chrome lives only on the Live tab — the Today "see it beat by beat"
                 // monitor cover ends at the saved-data footer (monitorOnly).
                 if !monitorOnly {
@@ -74,6 +85,11 @@ struct LiveView: View {
             // tachogram builds up beat by beat as the user watches.
             rrHistory.append(contentsOf: newRR)
             if rrHistory.count > 40 { rrHistory.removeFirst(rrHistory.count - 40) }
+        }
+        .task { receipt = await repo.dataReceipt() }
+        .onChange(of: live.hrFlushSeq) { _ in
+            // A standard-HR flush just committed to SQLite → re-query so the stored counts climb live.
+            Task { receipt = await repo.dataReceipt() }
         }
     }
 
@@ -292,6 +308,44 @@ struct LiveView: View {
         }
         .padding(12)
         .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    // MARK: - Data receipt (stored-sample counts as on-disk proof, under the saved footer)
+
+    @ViewBuilder
+    private func receiptSection(_ r: Receipt) -> some View {
+        let c = r.counts
+        VStack(alignment: .leading, spacing: 10) {
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+                receiptCount("Heart rate", c.hr)
+                receiptCount("Variability (R-R)", c.rr)
+                receiptCount("Blood oxygen (SpO₂)", c.spo2)
+                receiptCount("Skin temperature", c.skinTemp)
+                receiptCount("Respiration", c.resp)
+                receiptCount("Movement", c.gravity)
+            }
+            HStack(spacing: 8) {
+                Image(systemName: "internaldrive.fill")
+                    .font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
+                Text("\(repo.days.count) nights stored · on your iPhone, system-encrypted")
+                    .font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
+            }
+        }
+    }
+
+    private func receiptCount(_ label: LocalizedStringKey, _ n: Int) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label)
+                .font(StrandFont.caption).foregroundStyle(StrandPalette.textSecondary)
+                .lineLimit(1).minimumScaleFactor(0.8)
+            Text(n, format: .number)
+                .font(StrandFont.number(19, weight: .semibold)).monospacedDigit()
+                .foregroundStyle(StrandPalette.textPrimary)
+                .contentTransition(.numericText()).animation(.snappy, value: n)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(11)
+        .background(StrandPalette.surfaceRaised, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
     // MARK: - Manual workout

@@ -48,11 +48,6 @@ struct TodayView: View {
     // Today's heart rate as 5-minute bucket means (midnight → now), for the 24h trend chart.
     @State private var hrPoints: [TrendPoint] = []
 
-    // Data-receipt snapshot (stored raw-sample counts + latest stored HR time) for the assurance
-    // card under the calibration dots — loaded in loadAll(), shown only while filling with own data.
-    private typealias Receipt = (counts: (hr: Int, rr: Int, spo2: Int, skinTemp: Int, resp: Int, gravity: Int), latestHRTs: Int?)
-    @State private var receipt: Receipt? = nil
-
     // Support sheet (donate + contact) — always reachable from the home toolbar.
     @State private var showingSupport = false
 
@@ -188,12 +183,6 @@ struct TodayView: View {
                         CalibrationProgressCard(nights: ownNights,
                                                 total: Baselines.minNightsSeed,
                                                 onTapLive: { showLiveMonitor = true })
-                        // Right below the dots, the assurance: the strap's raw streams landing on disk
-                        // as counts you can watch climb. Only once something has actually been stored.
-                        if let r = receipt,
-                           r.counts.hr + r.counts.rr + r.counts.spo2 + r.counts.skinTemp + r.counts.resp + r.counts.gravity > 0 {
-                            dataReceiptCard(r)
-                        }
                     } else {
                         // No strap ever (→ Scan CTA), OR a seeded baseline (≥seed valid nights, e.g. from
                         // a full account sync) that simply has no reading for TODAY yet — not calibration.
@@ -219,6 +208,7 @@ struct TodayView: View {
             LiveView(monitorOnly: true)
                 .environmentObject(model)
                 .environmentObject(live)
+                .environmentObject(repo)
                 .overlay(alignment: .topTrailing) {
                     Button { showLiveMonitor = false } label: {
                         Text("Done")
@@ -337,72 +327,6 @@ struct TodayView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-    }
-
-    /// Assurance card under the calibration dots while filling with your own data: the strap's raw
-    /// streams landing on disk as concrete counts you can watch climb — proof the data is being
-    /// captured and saved, not an abstract "synced". All values are real (sampleCounts / latest HR
-    /// sample / lastSyncedAt); the header turns amber honestly on a sync error.
-    @ViewBuilder
-    private func dataReceiptCard(_ r: Receipt) -> some View {
-        let c = r.counts
-        let ok = live.lastSyncError == nil
-        StrandCard(padding: 18) {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(alignment: .top, spacing: 11) {
-                    Image(systemName: ok ? "checkmark.shield.fill" : "exclamationmark.triangle.fill")
-                        .font(StrandFont.headline)
-                        .foregroundStyle(ok ? StrandPalette.accent : StrandPalette.statusWarning)
-                        .accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(ok ? "Everything saved on your iPhone" : "Check your sync")
-                            .font(StrandFont.subhead).fontWeight(.medium)
-                            .foregroundStyle(StrandPalette.textPrimary)
-                        Text(receiptStatusLine(r))
-                            .font(StrandFont.caption)
-                            .foregroundStyle(StrandPalette.textSecondary)
-                    }
-                    Spacer(minLength: 0)
-                }
-                LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
-                    receiptCount("Heart rate", c.hr)
-                    receiptCount("Variability (R-R)", c.rr)
-                    receiptCount("Blood oxygen (SpO₂)", c.spo2)
-                    receiptCount("Skin temperature", c.skinTemp)
-                    receiptCount("Respiration", c.resp)
-                    receiptCount("Movement", c.gravity)
-                }
-                HStack(spacing: 8) {
-                    Image(systemName: "internaldrive.fill")
-                        .font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
-                    Text("\(repo.days.count) nights stored · on your iPhone, system-encrypted")
-                        .font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
-                }
-            }
-        }
-    }
-
-    /// "last reading 5 min ago · synced 12 min ago" from the latest stored HR sample + last offload.
-    private func receiptStatusLine(_ r: Receipt) -> String {
-        var parts: [String] = []
-        if let ts = r.latestHRTs { parts.append(String(localized: "last reading \(relativeAgo(TimeInterval(ts)))")) }
-        if let sync = live.lastSyncedAt { parts.append(String(localized: "synced \(relativeAgo(sync))")) }
-        return parts.isEmpty ? String(localized: "saved on this device") : parts.joined(separator: " · ")
-    }
-
-    private func receiptCount(_ label: LocalizedStringKey, _ n: Int) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(label)
-                .font(StrandFont.caption).foregroundStyle(StrandPalette.textSecondary)
-                .lineLimit(1).minimumScaleFactor(0.8)
-            Text(n, format: .number)
-                .font(StrandFont.number(19, weight: .semibold)).monospacedDigit()
-                .foregroundStyle(StrandPalette.textPrimary)
-                .contentTransition(.numericText()).animation(.snappy, value: n)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(11)
-        .background(StrandPalette.surfaceRaised, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
     /// Progress card — the single waiting screen until the first verdict. Shows the night-dots from
@@ -1159,7 +1083,6 @@ struct TodayView: View {
         let startOfToday = Int(Calendar.current.startOfDay(for: Date()).timeIntervalSince1970)
         let nowTs = Int(Date().timeIntervalSince1970)
         async let hrBucketRows = repo.hrBuckets(from: startOfToday, to: nowTs, bucketSeconds: 300)
-        async let receiptData  = repo.dataReceipt()
 
         sparks["recovery"]        = await recovery
         sparks["strain"]          = await strain
@@ -1175,7 +1098,6 @@ struct TodayView: View {
         appleDays = await adRows
         hrPoints  = await hrBucketRows
             .map { TrendPoint(date: Date(timeIntervalSince1970: TimeInterval($0.ts)), value: $0.bpm) }
-        receipt   = await receiptData
     }
 
     /// Trailing-window values for a metric — NO fall back to all history. The section is labelled a
