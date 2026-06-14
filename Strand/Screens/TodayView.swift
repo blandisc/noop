@@ -31,6 +31,9 @@ struct TodayView: View {
     // off a real BLE scan (`AppModel.scan()`). macOS never renders the iOS body, so it never reads this.
     @EnvironmentObject var model: AppModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Presents the live beat-to-beat monitor (LiveView) over Today when the calibration card's
+    /// "See it beat by beat" affordance is tapped.
+    @State private var showLiveMonitor = false
     #endif
 
     // Imperial/Metric display preference (D#103). Only the Weight tile carries a convertible unit here.
@@ -63,6 +66,18 @@ struct TodayView: View {
     private var recoveryCalibration: Int? {
         RecoveryScorer.calibrationNights(nightlyHrv: repo.days.map(\.avgHrv),
                                          hasRecovery: repo.today?.recovery != nil)
+    }
+
+    /// Nights of the user's OWN strap data with usable HRV, 0… (drives the night-dots progress).
+    /// Apple-Health days are deliberately EXCLUDED: Apple Health fills Trends/Sleep preliminarily but
+    /// it's borrowed data — its rows carry `recovery: nil` and never seed the recovery baseline — so
+    /// the dots keep counting toward the 4 nights of YOUR data the verdict actually needs. Reuses the
+    /// same in-range HRV filter via a high seed; once this reaches the seed the baseline is genuinely
+    /// yours and the verdict path takes over.
+    private var ownNights: Int {
+        let appleDays = repo.appleHealthDays
+        let strapHrv = repo.days.filter { !appleDays.contains($0.day) }.map(\.avgHrv)
+        return RecoveryScorer.calibrationNights(nightlyHrv: strapHrv, hasRecovery: false, seed: .max) ?? 0
     }
 
     /// Synthesis-card copy while the recovery baseline calibrates; nil otherwise. Built as
@@ -159,7 +174,21 @@ struct TodayView: View {
                     // seen; the old data-pending gauge ("Sin datos") is gone so the empty state never
                     // looks half-built — even right after the strap connects in onboarding.
                     if live.backfilling { SyncingHistoryNote(chunks: live.syncChunksThisSession) }
-                    emptyHero
+                    if (live.lastSyncedAt != nil || liveBpm != nil) && ownNights < Baselines.minNightsSeed {
+                        // Still gathering the first `seed` nights of the user's OWN strap data → the
+                        // night-dots card from night zero. Apple-Health days don't count (borrowed,
+                        // preliminary), so a full Apple Health sync keeps the dots honest at "N of 4"
+                        // instead of faking 4/4; a real WHOOP-own history (import/wear) fills them and
+                        // hands off to the verdict once today's reading lands.
+                        CalibrationProgressCard(nights: ownNights,
+                                                total: Baselines.minNightsSeed,
+                                                onTapLive: { showLiveMonitor = true })
+                    } else {
+                        // No strap ever (→ Scan CTA), OR a seeded baseline (≥seed valid nights, e.g. from
+                        // a full account sync) that simply has no reading for TODAY yet — not calibration.
+                        // emptyHero tells the honest story for both, never a fabricated calibration count.
+                        emptyHero
+                    }
                 } else {
                     verdictSection
                 }
@@ -173,6 +202,24 @@ struct TodayView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(StrandPalette.surfaceBase)
+        .fullScreenCover(isPresented: $showLiveMonitor) {
+            // No NavigationStack: its nav-bar scroll-edge background painted a bar over the monitor on
+            // the slightest scroll. A floating "Done" pill overlays the content and never blocks it.
+            LiveView(monitorOnly: true)
+                .environmentObject(model)
+                .environmentObject(live)
+                .overlay(alignment: .topTrailing) {
+                    Button { showLiveMonitor = false } label: {
+                        Text("Done")
+                            .font(StrandFont.subhead).fontWeight(.semibold)
+                            .foregroundStyle(StrandPalette.accent)
+                            .padding(.horizontal, 14).padding(.vertical, 7)
+                            .background(StrandPalette.surfaceRaised, in: Capsule())
+                    }
+                    .padding(.trailing, 16).padding(.top, 8)
+                }
+                .preferredColorScheme(.dark)
+        }
     }
 
     /// HR for the phone: the real 24h trend when there's data, an honest "No readings yet" well on
@@ -245,20 +292,21 @@ struct TodayView: View {
         return r.level != .insufficient ? readinessColor(r.level) : StrandPalette.metricRose
     }
 
-    /// Verdict hero for the no-data state — one calm screen from first launch through calibration.
-    /// Copy adapts to whether a strap has ever been seen: before, a committed "no reading yet" + a
-    /// single "scan" CTA; after the strap connects (live HR or any past sync), an honest "scores are
-    /// building" note with the import hint and no button. No gauge, no fabricated numbers either way.
+    /// Verdict hero for the no-data state. Two honest cases, by whether a strap has ever been seen:
+    /// before — a committed "no reading yet" + a single "scan" CTA. After — the baseline is already
+    /// seeded (by wear OR a full import) but today's reading hasn't landed, so a calm "no reading for
+    /// today yet". The 1…seed−1 calibration window is owned by CalibrationProgressCard, not here, so
+    /// this never claims "scores are building" once an account's history is in. No fabricated numbers.
     private var emptyHero: some View {
         let strapSeen = live.lastSyncedAt != nil || liveBpm != nil
         return NoopCard(padding: 18) {
             VStack(alignment: .leading, spacing: 9) {
                 Text("Today's verdict").strandOverline()
-                Text(strapSeen ? "Your scores are building" : "No reading yet")
+                Text(strapSeen ? "No reading for today yet" : "No reading yet")
                     .font(StrandFont.title1)
                     .foregroundStyle(StrandPalette.textSecondary)
                 Text(strapSeen
-                     ? "Your strap is connected. Recovery, strain and sleep build over your next few nights of wear. Import your WHOOP export in Data Sources to backfill instantly."
+                     ? "Your baseline is set. Wear your strap overnight and this morning's recovery, strain and sleep land once it syncs."
                      : "Connect your WHOOP strap to see this morning's readiness, recovery and heart rate.")
                     .font(StrandFont.subhead)
                     .foregroundStyle(StrandPalette.textSecondary)
@@ -280,41 +328,79 @@ struct TodayView: View {
         }
     }
 
-    /// Progress card shown while the recovery baseline calibrates (1 to seed−1 valid nights).
-    /// Replaces the generic DataPendingNote so the user sees exactly how many nights are banked.
+    /// Progress card — the single waiting screen until the first verdict. Shows the night-dots from
+    /// night zero (0 of seed) through calibration, so the user always sees how many nights remain.
+    /// Copy adapts to three moments: night zero, mid-calibration, and "all nights in, computing".
     private struct CalibrationProgressCard: View {
         let nights: Int
         let total: Int
+        /// Tap target for the live monitor; nil hides the "See it beat by beat" row.
+        var onTapLive: (() -> Void)? = nil
+
+        private var headline: LocalizedStringKey {
+            if nights == 0 { return "Your first night counts" }
+            if nights >= total { return "Almost there" }
+            return "Your scores are building"
+        }
+        private var detail: LocalizedStringKey {
+            if nights == 0 { return "Wear the strap tonight — the first of \(total) nights your verdict needs." }
+            if nights >= total { return "All \(total) nights are in — computing your first verdict." }
+            return "The engine gets sharper every night — you already have \(nights)."
+        }
 
         var body: some View {
             StrandCard(padding: 20) {
-                HStack(alignment: .top, spacing: 12) {
-                    Image(systemName: "sparkles")
-                        .font(StrandFont.headline)
-                        .foregroundStyle(StrandPalette.accent)
-                        .accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Your scores are building")
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: "sparkles")
                             .font(StrandFont.headline)
-                            .foregroundStyle(StrandPalette.textPrimary)
-                        HStack(spacing: 8) {
-                            ForEach(0..<total, id: \.self) { i in
-                                Circle()
-                                    .fill(i < nights ? StrandPalette.accent : StrandPalette.hairline)
-                                    .frame(width: 10, height: 10)
-                                    .shadow(color: i < nights ? StrandPalette.accent.opacity(0.5) : .clear,
-                                            radius: 3)
+                            .foregroundStyle(StrandPalette.accent)
+                            .accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(headline)
+                                .font(StrandFont.headline)
+                                .foregroundStyle(StrandPalette.textPrimary)
+                            HStack(spacing: 8) {
+                                ForEach(0..<total, id: \.self) { i in
+                                    Circle()
+                                        .fill(i < nights ? StrandPalette.accent : StrandPalette.hairline)
+                                        .frame(width: 10, height: 10)
+                                        .shadow(color: i < nights ? StrandPalette.accent.opacity(0.5) : .clear,
+                                                radius: 3)
+                                }
+                                Text("\(nights) of \(total) nights")
+                                    .font(StrandFont.captionNumber)
+                                    .foregroundStyle(StrandPalette.accent)
                             }
-                            Text("\(nights) of \(total) nights")
-                                .font(StrandFont.captionNumber)
-                                .foregroundStyle(StrandPalette.accent)
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel(Text("\(nights) of \(total) nights calibrated"))
+                            Text(detail)
+                                .font(StrandFont.subhead)
+                                .foregroundStyle(StrandPalette.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(Text("\(nights) of \(total) nights calibrated"))
-                        Text("The engine gets sharper every night — you already have \(nights).")
-                            .font(StrandFont.subhead)
-                            .foregroundStyle(StrandPalette.textSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    if let onTapLive {
+                        Rectangle().fill(StrandPalette.hairline).frame(height: 0.5)
+                            .padding(.top, 16).padding(.bottom, 12)
+                        Button(action: onTapLive) {
+                            HStack(spacing: 9) {
+                                Image(systemName: "waveform.path.ecg")
+                                    .font(StrandFont.subhead)
+                                    .foregroundStyle(StrandPalette.accent)
+                                Text("See it beat by beat")
+                                    .font(StrandFont.subhead).fontWeight(.medium)
+                                    .foregroundStyle(StrandPalette.textPrimary)
+                                Spacer(minLength: 0)
+                                Text("live").font(StrandFont.caption)
+                                    .foregroundStyle(StrandPalette.textTertiary)
+                                Image(systemName: "chevron.right")
+                                    .font(StrandFont.caption)
+                                    .foregroundStyle(StrandPalette.textTertiary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(Text("See your heart rate live, beat by beat"))
                     }
                 }
             }

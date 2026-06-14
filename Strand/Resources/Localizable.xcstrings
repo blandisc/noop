@@ -13196,7 +13196,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "El motor mejora cada noche — ya tienes %lld."
+            "value": "El motor se afina cada noche — ya llevas %lld."
           }
         }
       }
@@ -15401,6 +15401,414 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tus datos se restauraron. Vuelve a abrir NOOP para que surta efecto."
+          }
+        }
+      }
+    },
+    "Your first night counts": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your first night counts"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu primera noche cuenta"
+          }
+        }
+      }
+    },
+    "Almost there": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Almost there"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Casi listo"
+          }
+        }
+      }
+    },
+    "Wear the strap tonight — the first of %lld nights your verdict needs.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wear the strap tonight — the first of %lld nights your verdict needs."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ponte la banda esta noche — la primera de %lld noches que tu veredicto necesita."
+          }
+        }
+      }
+    },
+    "All %lld nights are in — computing your first verdict.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All %lld nights are in — computing your first verdict."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ya tienes las %lld noches — calculando tu primer veredicto."
+          }
+        }
+      }
+    },
+    "See it beat by beat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See it beat by beat"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Míralo latido a latido"
+          }
+        }
+      }
+    },
+    "See your heart rate live, beat by beat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See your heart rate live, beat by beat"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mira tu frecuencia cardíaca en vivo, latido a latido"
+          }
+        }
+      }
+    },
+    "Beats this session": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beats this session"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Latidos esta sesión"
+          }
+        }
+      }
+    },
+    "Beat to beat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beat to beat"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Latido a latido"
+          }
+        }
+      }
+    },
+    "Waiting for beats…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for beats…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esperando latidos…"
+          }
+        }
+      }
+    },
+    "Capturing live": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capturing live"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capturando en vivo"
+          }
+        }
+      }
+    },
+    "Variability (R-R)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variability (R-R)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variabilidad (R-R)"
+          }
+        }
+      }
+    },
+    "Completes on sync": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Completes on sync"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se completa al sincronizar"
+          }
+        }
+      }
+    },
+    "Blood oxygen (SpO₂)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blood oxygen (SpO₂)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oxígeno en sangre (SpO₂)"
+          }
+        }
+      }
+    },
+    "Skin temperature": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skin temperature"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temperatura de piel"
+          }
+        }
+      }
+    },
+    "synced %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "synced %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sincronizado %@"
+          }
+        }
+      }
+    },
+    "not yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "not yet"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "aún no"
+          }
+        }
+      }
+    },
+    "Everything saved on your iPhone · synced %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Everything saved on your iPhone · synced %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todo guardado en tu iPhone · sincronizado %@"
+          }
+        }
+      }
+    },
+    "Everything saved on your iPhone": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Everything saved on your iPhone"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todo guardado en tu iPhone"
+          }
+        }
+      }
+    },
+    "Live heart rate only — finish secure pairing to save the rest": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live heart rate only — finish secure pairing to save the rest"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo frecuencia en vivo — completa el emparejamiento seguro para guardar lo demás"
+          }
+        }
+      }
+    },
+    "Last synced %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last synced %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Última sincronización %@"
+          }
+        }
+      }
+    },
+    "live": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "live"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "en vivo"
+          }
+        }
+      }
+    },
+    "Done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Listo"
+          }
+        }
+      }
+    },
+    "No reading for today yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No reading for today yet"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no hay lectura de hoy"
+          }
+        }
+      }
+    },
+    "Your baseline is set. Wear your strap overnight and this morning's recovery, strain and sleep land once it syncs.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your baseline is set. Wear your strap overnight and this morning's recovery, strain and sleep land once it syncs."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu línea base ya está lista. Usa la banda durante la noche y la recuperación, el esfuerzo y el sueño de esta mañana aparecen en cuanto sincronice."
           }
         }
       }

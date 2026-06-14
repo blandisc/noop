@@ -25,6 +25,31 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
   strap's realtime channel was shown but never saved, so the chart had nothing to draw. It's now
   recorded as it streams (deduplicated so a strap sending both channels isn't double-counted), and the
   chart appears on its own after a few minutes of wear — no import or app restart needed.
+- **Apple Health workouts now appear in Today and Workouts (iPhone).** The live Apple Health sync asked
+  for workout permission but never actually fetched them — only the manual XML export brought them in.
+  The sync now queries HealthKit workouts in the same window as the rest of your health data, so
+  "Last Workouts" on Today and the Workouts tab fill in automatically on every sync without needing
+  to export anything. Activity names come through correctly (e.g. "Traditional Strength Training",
+  "Running") and the progress bar shows "Workouts (12/13)" while they load.
+
+- **The wait for your first verdict is alive now (iPhone, FER-61).** Before NOOP has banked enough
+  nights to compute a verdict, Today shows a night-by-night progress card from night zero — four dots
+  that fill in as each valid night lands (0 of 4 → 4 of 4), so you always see how many nights are left
+  instead of a blank screen. Tap "See it beat by beat" to open a live monitor: your heart rate on a
+  hospital-style ECG sweep, a "beats this session" counter that climbs in real time, and a
+  beat-to-beat variability tachogram that draws itself as each beat arrives. It stays honest about
+  what is live versus not — heart rate and variability stream beat to beat, while SpO₂, skin
+  temperature, respiration and movement are marked "completes on sync" — and a footer confirms when
+  everything is saved (or warns when you're streaming live HR without having finished the secure
+  pairing the rest of the data needs). Fully localized (English + Spanish).
+- **"Resting HR" help text no longer assumes the WHOOP strap (iPhone, FER-77).** Tapping Resting HR in
+  Key Metrics described it as "your lowest heart rate during sleep" — true for the strap, but since
+  Apple Health now fills the value when the strap hasn't (FER-62), that wording was wrong for the
+  Apple-sourced reading (Apple computes resting heart rate its own way, across the day). The help text
+  now describes the metric without assuming a source, and a footnote names both: measured overnight by
+  the strap, or read from Apple Health's resting heart rate when the strap isn't worn. Copy-only; no
+  calculation change.
+
 - **Apple Health strength workouts read as words again, not one run-on label (iPhone, FER-76).** On
   Today, the "Last Workouts" tiles took the workout type straight from Apple Health, so a *Traditional
   Strength Training* session showed up as a single glued, all-caps word (`TRADITIONALSTRENGTHTRAINING`)
