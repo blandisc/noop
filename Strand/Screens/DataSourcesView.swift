@@ -1,6 +1,11 @@
 import SwiftUI
 import UniformTypeIdentifiers
 import StrandDesign
+import WhoopStore
+#if os(iOS)
+import HealthKit   // HKAuthorizationStatus, for the write-back permission tally
+import UIKit       // UIApplication.openSettingsURLString
+#endif
 
 struct DataSourcesView: View {
     @EnvironmentObject var model: AppModel
@@ -86,9 +91,10 @@ struct DataSourcesView: View {
     }
 
     #if os(iOS)
-    /// iOS-only: connect + drive the live two-way Apple Health sync. Authorization is requested HERE,
-    /// from an explicit user tap with rationale shown first (HIG: never prompt cold at launch) — until
-    /// this exists the `HealthKitBridge` was fully built but unreachable, so HealthKit sync was dead.
+    /// iOS-only: connect + drive the live two-way Apple Health sync, and surface what it did. Beyond
+    /// the connect/sync control it now shows live per-stage progress, a coverage summary (days +
+    /// span), a per-metric "what landed" list, and a Settings deep-link — so the import stops being a
+    /// silent background task the user can't reason about. (FER-70)
     @ViewBuilder
     private var appleHealthLiveCard: some View {
         card(title: "Apple Health — Live Sync", icon: "heart.text.square.fill",
@@ -98,51 +104,210 @@ struct DataSourcesView: View {
                 Text(verbatim: "Apple Health isn’t available on this device.")
                     .font(StrandFont.subhead).foregroundStyle(StrandPalette.textTertiary)
             case .authorized:
-                HStack(spacing: 12) {
-                    Button {
-                        Task { await health.sync() }
-                    } label: {
-                        Label(health.syncing ? "Syncing…" : "Sync now",
-                              systemImage: "arrow.triangle.2.circlepath").padding(.horizontal, 6)
-                    }
-                    .buttonStyle(.borderedProminent).tint(StrandPalette.accent)
-                    .disabled(health.syncing)
-                    if health.syncing { ProgressView().controlSize(.small) }
-                }
-                if let at = health.lastSync {
-                    Text(verbatim: "Last synced \(at.formatted(.relative(presentation: .named)))")
-                        .font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
-                } else {
-                    Text(verbatim: "Connected.")
-                        .font(StrandFont.footnote).foregroundStyle(StrandPalette.statusPositive)
-                }
+                appleHealthAuthorizedBody
             case .unknown, .denied:
-                HStack(spacing: 12) {
-                    Button {
-                        Task {
-                            hkBusy = true
-                            await health.requestAuthorization()
-                            if health.auth == .authorized { await health.sync() }
-                            hkBusy = false
-                        }
-                    } label: {
-                        Label(hkBusy ? "Connecting…" : "Connect Apple Health",
-                              systemImage: "heart.fill").padding(.horizontal, 6)
-                    }
-                    .buttonStyle(.borderedProminent).tint(StrandPalette.accent)
-                    .disabled(hkBusy)
-                    if hkBusy { ProgressView().controlSize(.small) }
-                }
-                if health.auth == .denied {
-                    Text(verbatim: "Apple Health access was declined. Enable it in Settings › Privacy & Security › Health › NOOP.")
-                        .font(StrandFont.footnote).foregroundStyle(StrandPalette.statusWarning)
-                }
+                appleHealthConnectBody
             }
             if let err = health.lastError {
                 Text(verbatim: err)
                     .font(StrandFont.footnote).foregroundStyle(StrandPalette.statusWarning)
             }
         }
+        // Load coverage + write permissions on appear so opening the screen shows "X days imported"
+        // and the per-metric list without forcing a re-import first.
+        .task { await health.refreshStatus() }
+    }
+
+    /// Authorized: the sync/reimport control, then either live progress (mid-sync) or the coverage
+    /// summary + per-metric status of what has been imported.
+    @ViewBuilder
+    private var appleHealthAuthorizedBody: some View {
+        Button {
+            Task { await health.sync() }
+        } label: {
+            Label(health.syncing ? "Syncing…" : "Sync now",
+                  systemImage: "arrow.triangle.2.circlepath").padding(.horizontal, 6)
+        }
+        .buttonStyle(.borderedProminent).tint(StrandPalette.accent)
+        .disabled(health.syncing)
+
+        if health.syncing {
+            appleHealthSyncProgress
+        } else {
+            appleHealthCoverageSection
+            appleHealthMetricList
+            if let at = health.lastSync {
+                Text(verbatim: "Last synced \(at.formatted(.relative(presentation: .named)))")
+                    .font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
+            }
+        }
+        appleHealthPermissionsFooter
+    }
+
+    /// Not connected yet (or declined): the connect button, plus a Settings path when declined.
+    @ViewBuilder
+    private var appleHealthConnectBody: some View {
+        HStack(spacing: 12) {
+            Button {
+                Task {
+                    hkBusy = true
+                    await health.requestAuthorization()
+                    if health.auth == .authorized { await health.sync() }
+                    hkBusy = false
+                }
+            } label: {
+                Label(hkBusy ? "Connecting…" : "Connect Apple Health",
+                      systemImage: "heart.fill").padding(.horizontal, 6)
+            }
+            .buttonStyle(.borderedProminent).tint(StrandPalette.accent)
+            .disabled(hkBusy)
+            if hkBusy { ProgressView().controlSize(.small) }
+        }
+        if health.auth == .denied {
+            Text(verbatim: "Apple Health access was declined. Enable it in Settings › Privacy & Security › Health › NOOP.")
+                .font(StrandFont.footnote).foregroundStyle(StrandPalette.statusWarning)
+            settingsButton
+        }
+    }
+
+    /// Live, per-stage progress while `sync` runs: a pulsing pill plus "Importing HRV… · 4/12", so a
+    /// long pull reads as in-progress rather than frozen.
+    @ViewBuilder
+    private var appleHealthSyncProgress: some View {
+        HStack(spacing: 10) {
+            StatePill("Importing Apple Health…", tone: .accent, pulsing: true)
+            if let p = health.syncProgress {
+                Text(verbatim: "\(Self.stageLabel(p.stageKey)) · \(p.done)/\(p.total)")
+                    .font(StrandFont.footnote)
+                    .foregroundStyle(StrandPalette.textSecondary)
+                    .monospacedDigit()
+            }
+        }
+    }
+
+    /// "Imported history" coverage summary (days + date span), or a nudge when nothing has landed.
+    @ViewBuilder
+    private var appleHealthCoverageSection: some View {
+        if let cov = health.coverage, cov.totalDays > 0 {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Imported history").strandOverline()
+                    .foregroundStyle(StrandPalette.textTertiary)
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.seal.fill")
+                        .font(.system(size: 13)).foregroundStyle(StrandPalette.statusPositive)
+                    Text(verbatim: Self.coverageSummaryText(cov))
+                        .font(StrandFont.subhead).foregroundStyle(StrandPalette.textSecondary)
+                }
+            }
+        } else {
+            Text("No Apple Health data imported yet — tap Sync now to pull your recent history.")
+                .font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
+        }
+    }
+
+    /// Per-metric "what landed" list: ✓ + day count for metrics that imported, a dimmed — for those
+    /// that didn't (no data, or a read scope the user didn't grant — HealthKit hides which, so we show
+    /// the honest observable: whether days arrived).
+    @ViewBuilder
+    private var appleHealthMetricList: some View {
+        let cov = health.coverage
+        VStack(spacing: 0) {
+            ForEach(Self.metricRows, id: \.key) { row in
+                let days = cov?.daysByMetric[row.key]
+                let has = days != nil
+                HStack(spacing: 8) {
+                    Image(systemName: has ? "checkmark.circle.fill" : "minus.circle")
+                        .font(.system(size: 13))
+                        .foregroundStyle(has ? StrandPalette.statusPositive : StrandPalette.textTertiary)
+                    Text(row.label)
+                        .font(StrandFont.subhead)
+                        .foregroundStyle(has ? StrandPalette.textSecondary : StrandPalette.textTertiary)
+                    Spacer()
+                    Text(verbatim: has ? "\(days!) d" : "—")
+                        .font(StrandFont.footnote).monospacedDigit()
+                        .foregroundStyle(has ? StrandPalette.textSecondary : StrandPalette.textTertiary)
+                }
+                .padding(.vertical, 5)
+            }
+        }
+    }
+
+    /// Permissions affordance: a one-line write-back tally (the status HealthKit *does* expose
+    /// reliably) plus a deep link to Settings to grant any missing scope, then Sync again.
+    @ViewBuilder
+    private var appleHealthPermissionsFooter: some View {
+        let writes = health.writePermissions
+        VStack(alignment: .leading, spacing: 6) {
+            if !writes.isEmpty {
+                let granted = writes.filter { $0.status == .sharingAuthorized }.count
+                Text("Write-back to Apple Health: \(granted)/\(writes.count) enabled")
+            }
+            settingsButton
+        }
+        .font(StrandFont.footnote)
+        .foregroundStyle(StrandPalette.textTertiary)
+    }
+
+    private var settingsButton: some View {
+        Button { openSystemSettings() } label: {
+            Label("Manage Apple Health permissions", systemImage: "gearshape")
+                .font(StrandFont.footnote)
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(StrandPalette.accent)
+    }
+
+    private func openSystemSettings() {
+        if let url = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(url)
+        }
+    }
+
+    /// Stage key → localized label for the live progress line. Keys come from `HealthKitBridge`.
+    private static func stageLabel(_ key: String) -> String {
+        switch key {
+        case "resting_hr":                return String(localized: "Resting heart rate")
+        case "avg_hr", "max_hr":          return String(localized: "Heart rate")
+        case "hrv":                       return String(localized: "HRV")
+        case "spo2":                      return String(localized: "Blood oxygen")
+        case "resp_rate":                 return String(localized: "Respiration")
+        case "steps":                     return String(localized: "Steps")
+        case "active_kcal", "basal_kcal": return String(localized: "Energy")
+        case "vo2max":                    return String(localized: "VO₂ max")
+        case "sleep":                     return String(localized: "Sleep")
+        case "saving":                    return String(localized: "Saving…")
+        default:                          return String(localized: "Apple Health")
+        }
+    }
+
+    /// Metrics shown in the per-metric status list, in display order. Keys match
+    /// `AppleHealthCoverage.daysByMetric`.
+    private static let metricRows: [(key: String, label: LocalizedStringKey)] = [
+        ("hrv", "HRV"),
+        ("asleep_min", "Sleep"),
+        ("resting_hr", "Resting HR"),
+        ("spo2", "Blood Oxygen"),
+        ("resp_rate", "Respiration"),
+        ("steps", "Steps"),
+        ("active_kcal", "Active Energy"),
+        ("vo2max", "VO₂ Max"),
+    ]
+
+    // Coverage span is stored as "yyyy-MM-dd" (UTC); parse with a fixed parser, display in the user's
+    // locale ("12 May" / "12 may").
+    private static let dayParser: DateFormatter = {
+        let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(identifier: "UTC"); f.dateFormat = "yyyy-MM-dd"; return f
+    }()
+    private static let shortDate: DateFormatter = {
+        let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("dMMM"); return f
+    }()
+    private static func coverageSummaryText(_ cov: AppleHealthCoverage) -> String {
+        guard let fs = cov.firstDay, let ls = cov.lastDay,
+              let f = dayParser.date(from: fs), let l = dayParser.date(from: ls) else {
+            return "\(cov.totalDays) d"
+        }
+        return "\(shortDate.string(from: f)) → \(shortDate.string(from: l)) · \(cov.totalDays) d"
     }
     #endif
 

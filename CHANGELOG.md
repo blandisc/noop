@@ -20,6 +20,14 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 ## Unreleased
 
 - **The live heart-rate ECG reads like a real monitor now (iPhone, FER-58).** When your strap is streaming, the brand ECG strip on Today no longer just scrolls one fixed wave faster or slower. A sweep head now traces the line in real time — drawing each heartbeat as it happens, with the complexes spaced by your live BPM, so a faster heart packs them closer together. When the head reaches the right edge it wraps around and overwrites the previous pass behind a small moving erase gap, exactly like a patient monitor. With no strap connected it rests on a calm flatline.
+- **Apple Health import is no longer a black box (FER-70).** Connecting or syncing Apple Health used
+  to run silently — you couldn't tell whether it was working, how many days came in, or which metrics
+  never arrived. The "Apple Health — Live Sync" card on Data Sources now shows live per-stage progress
+  while it runs ("Importing HRV… · 4/12"), then a coverage summary ("12 May → 9 Jun · 28 d") and a
+  per-metric checklist of exactly what landed (HRV ✓ 28 d · Sleep ✓ 25 d · SpO₂ —). It links straight
+  to Settings to grant any missing permission, and the onboarding import step now shows a live record
+  counter so a long export reads as progressing rather than frozen. NOOP also stops asking for the
+  Body Temperature permission it never actually imported. Fully localized (English + Spanish).
 - **Tap any metric to learn what it means (iPhone).** Every row in "Key Metrics" is now tappable. A bottom sheet opens showing what the metric measures, how it is calculated, and a colour-coded range table (e.g. Rest · Moderate · Hard · Extreme for strain) with your current value highlighted in its band. Covers Day Strain, Sleep, HRV, Resting HR, Blood Oxygen, and Steps.
 - **No-data screen stays honest when the strap connects mid-onboarding.** Previously the Today screen would flip from the clean "No reading yet" hero to the older "Scores are building" state the moment a strap was seen, even before any recovery data arrived. Now a single adaptive hero covers both states: it shows "No reading yet / Scan for strap" until a strap is ever seen, then "Your scores are building" once one is — always without fabricated gauges or dashes.
 - **Redesigned Today screen (iPhone).** The Today tab is now a tighter, verdict-first "instrument"
@@ -47,8 +55,25 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
   baseline firms up, the scores trust your signals a little more, reaching full sensitivity by ~14
   nights. Once your baseline is established, nothing changes — this only tempers the noisy early
   window.
+- **A recovery score from your first night with the strap (FER-60).** NOOP used to need about four
+  nights before it could show a calibrated recovery score, so a fresh install sat in "calibrating"
+  for days. If you've connected Apple Health, NOOP now seeds your personal baseline from your recent
+  Apple Health history (overnight HRV, resting heart rate, respiration) so a score can appear on
+  night one. The strap always wins: the Apple Health seed is capped to about a week and treated as
+  provisional, so your own strap nights take over as they accumulate and the early score stays
+  honestly tempered. Apple Watch and the strap measure HRV a little differently, so the first couple
+  of days may read slightly off until your strap baseline settles.
 
 _The items below are developer / docs — no user-facing change._
+- **Apple Health baseline prior (FER-60).** `IntelligenceEngine.analyzeRecent` now folds an Apple
+  Health prior (`deviceId: "apple-health"`) UNDER the imported + on-device strap layers when seeding
+  the HRV / resting-HR / respiration baselines — filling only days neither strap source covers (the
+  existing `== nil` precedence idiom, so the strap always wins). The prior is capped to
+  `applePriorMaxNights` (7) so the seeded baseline lands `.provisional`, letting FER-13 confidence
+  shrinkage temper the SDNN(Apple)↔RMSSD(strap) HRV scale gap; the 14-night EWMA converges to the
+  strap as real nights arrive. Pure helpers `applePriorDays` / `foldApplePrior` are unit-tested
+  (`IntelligenceBaselinePriorTests`), and the cold-start contract they rely on is pinned in
+  `ColdStartPriorTests`. Efficiency / skin-temp are not seeded (Apple has no comparable signal here).
 
 - **Confidence shrinkage on thin baselines (FER-13).** Added `Baselines.confidence(nValid:)` — a
   weight that ramps linearly from `confidenceFloor` (0.5) at `minNightsSeed` to 1.0 at

@@ -63,6 +63,28 @@ public struct AppleDaily: Equatable, Codable {
     }
 }
 
+/// Per-metric import coverage for an Apple-Health source. For each metric: how many days carry a
+/// value; plus the first/last day and the distinct-day count across both daily tables. Powers the
+/// FER-70 live-sync status panel so a silent import becomes legible ("28 days of HRV, none of SpO₂")
+/// instead of the user guessing whether anything landed. Metric keys mirror `AppleHealthView`'s
+/// series keys so the status panel and the charts speak the same vocabulary.
+public struct AppleHealthCoverage: Sendable, Equatable {
+    /// MIN(day) across appleDaily ∪ dailyMetric for this source — nil when nothing has imported.
+    public let firstDay: String?
+    /// MAX(day) across the same union.
+    public let lastDay: String?
+    /// Distinct days carrying any Apple-Health row (deduped across both tables).
+    public let totalDays: Int
+    /// Days-with-data per metric key; only keys with ≥1 day are present, so a missing metric is a
+    /// missing key (not a zero).
+    public let daysByMetric: [String: Int]
+    public init(firstDay: String? = nil, lastDay: String? = nil,
+                totalDays: Int = 0, daysByMetric: [String: Int] = [:]) {
+        self.firstDay = firstDay; self.lastDay = lastDay
+        self.totalDays = totalDays; self.daysByMetric = daysByMetric
+    }
+}
+
 extension WhoopStore {
 
     // MARK: - Upserts (idempotent by natural key; latest value wins on conflict)
@@ -295,6 +317,55 @@ extension WhoopStore {
                                basalKcal: $0["basalKcal"], vo2max: $0["vo2max"], avgHr: $0["avgHr"],
                                maxHr: $0["maxHr"], walkingHr: $0["walkingHr"], weightKg: $0["weightKg"])
                 }
+        }
+    }
+
+    /// Per-metric coverage for the Apple-Health source under `deviceId`: the non-NULL day count of
+    /// each metric in `appleDaily` (steps, active energy, VO₂max, avg HR) and `dailyMetric` (sleep,
+    /// HRV, resting HR, SpO₂, respiration), plus the distinct-day span across both tables. Cheap
+    /// enough to call on view-appear — three aggregate scans over the small per-day tables. Metric
+    /// keys match `AppleHealthView.seriesKeys` (e.g. "hrv", "asleep_min", "resting_hr").
+    public func appleHealthCoverage(deviceId: String) async throws -> AppleHealthCoverage {
+        try syncRead { db in
+            var byMetric: [String: Int] = [:]
+            // COUNT(col) counts non-NULL values — one aggregate row per table. Keep only metrics that
+            // actually landed (>0) so the UI renders "missing" purely by key absence.
+            func tally(_ row: Row?, _ keys: [String]) {
+                guard let row else { return }
+                for k in keys {
+                    let n: Int = row[k] ?? 0
+                    if n > 0 { byMetric[k] = n }
+                }
+            }
+            tally(try Row.fetchOne(db, sql: """
+                SELECT COUNT(steps) AS steps, COUNT(activeKcal) AS active_kcal,
+                       COUNT(vo2max) AS vo2max, COUNT(avgHr) AS avg_hr
+                FROM appleDaily WHERE deviceId = ?
+                """, arguments: [deviceId]),
+                ["steps", "active_kcal", "vo2max", "avg_hr"])
+            tally(try Row.fetchOne(db, sql: """
+                SELECT COUNT(totalSleepMin) AS asleep_min, COUNT(avgHrv) AS hrv,
+                       COUNT(restingHr) AS resting_hr, COUNT(spo2Pct) AS spo2,
+                       COUNT(respRateBpm) AS resp_rate
+                FROM dailyMetric WHERE deviceId = ?
+                """, arguments: [deviceId]),
+                ["asleep_min", "hrv", "resting_hr", "spo2", "resp_rate"])
+
+            var firstDay: String?, lastDay: String?, totalDays = 0
+            // UNION (not UNION ALL) dedups the day across both tables, so COUNT(*) is distinct days.
+            if let span = try Row.fetchOne(db, sql: """
+                SELECT MIN(day) AS firstDay, MAX(day) AS lastDay, COUNT(*) AS totalDays FROM (
+                    SELECT day FROM appleDaily WHERE deviceId = ?
+                    UNION
+                    SELECT day FROM dailyMetric WHERE deviceId = ?
+                )
+                """, arguments: [deviceId, deviceId]) {
+                firstDay = span["firstDay"]
+                lastDay = span["lastDay"]
+                totalDays = span["totalDays"] ?? 0
+            }
+            return AppleHealthCoverage(firstDay: firstDay, lastDay: lastDay,
+                                       totalDays: totalDays, daysByMetric: byMetric)
         }
     }
 }

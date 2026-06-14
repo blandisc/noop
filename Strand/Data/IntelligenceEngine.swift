@@ -145,6 +145,33 @@ final class IntelligenceEngine: ObservableObject {
         for (day, v) in nightlyRhrByDay where histRhrByDay[day] == nil { histRhrByDay[day] = v }
         for (day, v) in nightlyRespByDay where histRespByDay[day] == nil { histRespByDay[day] = v }
         for (day, v) in nightlyEffByDay where histEffByDay[day] == nil { histEffByDay[day] = v }
+
+        // ── FER-60: Apple Health prior — the LOWEST-precedence seed. A brand-new strap user has no
+        // imported history and a handful of on-device nightlies isn't enough to clear
+        // Baselines.minNightsSeed, so recovery stays null for the first nights. Folding Apple Health's
+        // HRV / resting-HR / respiration UNDER both strap layers (same `== nil` idiom: fill only days
+        // NEITHER strap source covered) seeds the baseline so recovery lights up from night 1. Capped
+        // to applePriorMaxNights so the seed lands PROVISIONAL, not trusted — FER-13's confidence
+        // shrinkage then damps the SDNN(Apple)-vs-RMSSD(WHOOP) scale gap, which the 14-night EWMA
+        // finishes correcting as real strap nights arrive. Strap (imported + on-device) ALWAYS wins.
+        // (efficiency/skin-temp are NOT seeded: Apple writes efficiency = nil and carries no skin temp,
+        // so those terms keep their honest population-center cold-start.)
+        let appleRows = (try? await store.dailyMetrics(deviceId: "apple-health",
+                                                       from: AnalyticsEngine.dayString(now - 90 * 86_400),
+                                                       to: AnalyticsEngine.dayString(now))) ?? []
+        let priorDays = Self.applePriorDays(appleRows, maxNights: Self.applePriorMaxNights)
+        var appleHrvByDay: [String: Double?] = [:]
+        var appleRhrByDay: [String: Double?] = [:]
+        var appleRespByDay: [String: Double?] = [:]
+        for r in appleRows {
+            appleHrvByDay[r.day]  = r.avgHrv
+            appleRhrByDay[r.day]  = r.restingHr.map(Double.init)
+            appleRespByDay[r.day] = r.respRateBpm
+        }
+        histHrvByDay  = Self.foldApplePrior(into: histHrvByDay,  apple: appleHrvByDay,  priorDays: priorDays)
+        histRhrByDay  = Self.foldApplePrior(into: histRhrByDay,  apple: appleRhrByDay,  priorDays: priorDays)
+        histRespByDay = Self.foldApplePrior(into: histRespByDay, apple: appleRespByDay, priorDays: priorDays)
+
         let hrvSeq = histHrvByDay.keys.sorted().map { histHrvByDay[$0]! }   // chronological [Double?]
         let rhrSeq = histRhrByDay.keys.sorted().map { histRhrByDay[$0]! }
         let respSeq = histRespByDay.keys.sorted().map { histRespByDay[$0]! }
@@ -259,6 +286,33 @@ final class IntelligenceEngine: ObservableObject {
     private func recomputeSkinTempDev(_ nightly: Double?, _ base: BaselineState?) -> Double? {
         guard let v = nightly, let b = base, b.usable else { return nil }
         return (Baselines.deviation(v, state: b).delta * 100.0).rounded() / 100.0
+    }
+
+    // MARK: - Apple Health baseline prior (FER-60)
+
+    /// How many of the most-recent Apple Health nights seed the baseline as a prior. Chosen to clear
+    /// `Baselines.minNightsSeed` (4) with headroom yet stay under `minNightsTrust` (14), so the seeded
+    /// baseline lands PROVISIONAL — confidence-shrunk — not fully trusted. This is the lever for "how
+    /// much to trust Apple Health before the strap has accrued its own nights".
+    static let applePriorMaxNights = 7
+
+    /// The capped set of most-recent Apple Health nights usable as a baseline prior: the nights that
+    /// carry a usable HRV, newest `maxNights`. `store.dailyMetrics(...)` returns rows day-ascending, so
+    /// the `suffix` is the most recent. Robust to gaps (counts nights-with-HRV, not calendar days).
+    nonisolated static func applePriorDays(_ rows: [DailyMetric], maxNights: Int) -> Set<String> {
+        Set(rows.filter { $0.avgHrv != nil }.suffix(maxNights).map { $0.day })
+    }
+
+    /// Fold an Apple Health prior UNDER the strap layers for one metric. `strap` already holds the
+    /// imported + on-device values; a PRESENT key wins even when its value is nil (the same `== nil`
+    /// idiom the pass-1/pass-2 merge uses — a key is "absent" only when truly unset). The prior fills
+    /// ONLY days the strap never covered, and only those in `priorDays`. So the strap always wins and
+    /// the prior just seeds the cold-start gap. Pure (no store/actor state) for testing.
+    nonisolated static func foldApplePrior(into strap: [String: Double?], apple: [String: Double?],
+                                           priorDays: Set<String>) -> [String: Double?] {
+        var out = strap
+        for (day, v) in apple where priorDays.contains(day) && out[day] == nil { out[day] = v }
+        return out
     }
 }
 
