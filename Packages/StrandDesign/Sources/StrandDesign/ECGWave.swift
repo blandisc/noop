@@ -3,21 +3,26 @@ import SwiftUI
 // MARK: - ECG waveform (brand motif)
 //
 // The NOOP signature: a single heartbeat trace derived from the app's logo mark.
-// Pass `flat` for the no-data flatline. Pass `animate: true` + `bpm:` when the strap is streaming
-// live HR to enable a scrolling-ECG whose speed matches the heartbeat rate (60/bpm seconds per
-// tile — so 72 BPM → 0.83 s/cycle, 100 BPM → 0.60 s/cycle). Edge-faded on both sides.
 //
-// Cross-platform, tokens-only — the first of the redesign primitives the rest of the app will reuse.
+// Two render modes:
+//  • Static  — the brand polyline (default), or a centered flatline when `flat` (no data).
+//  • Monitor — when `animate: true` + a live `bpm:` is supplied, a real patient-monitor sweep:
+//    a head travels left→right *drawing* the trace in real time, each QRS complex landing as the
+//    beat happens. Spacing between complexes is set by the live BPM (a faster heart packs the
+//    beats closer), NOT by playback speed. On reaching the right edge the head wraps to the left
+//    and overwrites the previous sweep, with a short transparent erase gap just ahead of it —
+//    exactly like an ECG monitor. (This replaces the earlier "scroll one fixed wave faster or
+//    slower" approach, which only changed speed and never drew beats individually.)
+//
+// Cross-platform, tokens-only — a redesign primitive reused across the app.
 
 public struct ECGWave: View {
     public var color: Color
     public var flat: Bool
     public var lineWidth: CGFloat
     public var animate: Bool
-    /// Live BPM from the strap. When provided, the scroll speed matches the heart rate.
+    /// Live BPM from the strap. Drives how far apart successive beats are drawn along the sweep.
     public var bpm: Int?
-
-    @State private var phase: CGFloat = 0
 
     public init(
         color: Color = StrandPalette.accent,
@@ -33,22 +38,29 @@ public struct ECGWave: View {
         self.bpm = bpm
     }
 
-    private var isScrolling: Bool { animate && !flat }
+    /// Run the live monitor sweep only when we're animating a real, non-flat reading.
+    private var isMonitoring: Bool { animate && !flat }
 
-    // One tile scroll = one heartbeat. Clamped to [0.3, 3.0] s for safety.
-    private var beatDuration: Double {
+    // Seconds between beats, clamped for safety. Sets the QRS spacing along the sweep.
+    private var beatPeriod: Double {
         guard let bpm, bpm > 0 else { return 1.0 }
         return max(0.3, min(3.0, 60.0 / Double(bpm)))
     }
 
+    // Sweep speed in points/second — constant, like a monitor's paper feed. The head crosses the
+    // strip in width / sweepSpeed seconds; a faster heart simply packs more complexes per crossing.
+    private let sweepSpeed: CGFloat = 38
+    // Transparent erase window just ahead of the head — the monitor's tell-tale moving gap.
+    private let eraseGap: CGFloat = 9
+
     public var body: some View {
-        GeometryReader { geo in
-            let w = geo.size.width
-            HStack(spacing: 0) {
-                trace(width: w)
-                if isScrolling { trace(width: w) }
+        Group {
+            if isMonitoring {
+                monitor
+            } else {
+                ECGShape(flat: flat)
+                    .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round))
             }
-            .offset(x: isScrolling ? -w * phase : 0)
         }
         .frame(height: ECGShape.designHeight)
         .clipped()
@@ -56,38 +68,75 @@ public struct ECGWave: View {
         .mask(
             LinearGradient(stops: [
                 .init(color: .clear, location: 0),
-                .init(color: .black, location: 0.14),
-                .init(color: .black, location: 0.86),
+                .init(color: .black, location: 0.10),
+                .init(color: .black, location: 0.90),
                 .init(color: .clear, location: 1),
             ], startPoint: .leading, endPoint: .trailing)
         )
-        .onAppear { startScrolling() }
-        .onChange(of: isScrolling) { scrolling in
-            if scrolling {
-                phase = 0
-                startScrolling()
-            }
-        }
-        .onChange(of: bpm) { _ in
-            guard isScrolling else { return }
-            // Tiled loop is seamless at any phase, so resetting to 0 is invisible.
-            phase = 0
-            startScrolling()
-        }
         .accessibilityHidden(true)
     }
 
-    private func trace(width: CGFloat) -> some View {
-        ECGShape(flat: flat)
-            .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round))
-            .frame(width: width, height: ECGShape.designHeight)
+    /// Real-time patient-monitor sweep, redrawn each frame straight from the wall clock.
+    private var monitor: some View {
+        TimelineView(.animation) { timeline in
+            Canvas { context, size in
+                drawSweep(into: &context, size: size,
+                          now: timeline.date.timeIntervalSinceReferenceDate)
+            }
+        }
     }
 
-    private func startScrolling() {
-        guard isScrolling else { return }
-        withAnimation(.linear(duration: beatDuration).repeatForever(autoreverses: false)) {
-            phase = 1
+    private func drawSweep(into ctx: inout GraphicsContext, size: CGSize, now: TimeInterval) {
+        let w = size.width
+        guard w > 0 else { return }
+        let mid = size.height / 2
+        let ampScale = size.height / ECGShape.designHeight  // design amps live in a 26-pt space
+
+        // Head position within the current sweep, plus how many whole sweeps have elapsed so far.
+        let travelled = CGFloat(now) * sweepSpeed
+        let headX = travelled.truncatingRemainder(dividingBy: w)
+        let sweepIndex = (travelled / w).rounded(.down)
+
+        // Build the visible trace column by column. For each x, find the wall-clock instant the head
+        // last crossed it (this sweep if x ≤ head, else the previous one) and sample the beat there.
+        var path = Path()
+        var penDown = false
+        let step: CGFloat = 0.5
+        var x: CGFloat = 0
+        while x <= w {
+            // Leave the erase gap blank — it sits just ahead of the head and wraps past the edge.
+            let aheadDist = (x - headX + w).truncatingRemainder(dividingBy: w)
+            if aheadDist > 0, aheadDist <= eraseGap {
+                penDown = false
+                x += step
+                continue
+            }
+            let crossSweep = x <= headX ? sweepIndex : sweepIndex - 1
+            let tCross = (crossSweep * w + x) / sweepSpeed          // seconds (reference-date based)
+            let y = mid - beatAmplitude(at: Double(tCross)) * ampScale
+            let pt = CGPoint(x: x, y: y)
+            if penDown { path.addLine(to: pt) } else { path.move(to: pt); penDown = true }
+            x += step
         }
+        ctx.stroke(path, with: .color(color),
+                   style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round))
+
+        // Glow + bright dot riding the live edge of the trace.
+        let headAmp = beatAmplitude(at: Double((sweepIndex * w + headX) / sweepSpeed))
+        let head = CGPoint(x: headX, y: mid - headAmp * ampScale)
+        ctx.fill(Path(ellipseIn: CGRect(x: head.x - 4, y: head.y - 4, width: 8, height: 8)),
+                 with: .color(color.opacity(0.25)))
+        ctx.fill(Path(ellipseIn: CGRect(x: head.x - 1.8, y: head.y - 1.8, width: 3.6, height: 3.6)),
+                 with: .color(color))
+    }
+
+    /// Amplitude (design y-units, + = up from baseline) of the brand QRS complex at wall-clock time
+    /// `t`, repeating every `beatPeriod`. Outside the complex window the trace rests on the baseline.
+    private func beatAmplitude(at t: Double) -> CGFloat {
+        let phase = t.truncatingRemainder(dividingBy: beatPeriod)
+        let complexDur = min(0.42, beatPeriod * 0.85)   // compacts the complex at very high BPM
+        guard phase >= 0, phase < complexDur else { return 0 }
+        return ECGShape.complexAmplitude(at: CGFloat(phase / complexDur))
     }
 }
 
@@ -117,18 +166,40 @@ struct ECGShape: Shape {
         }
         return path
     }
+
+    // The brand QRS complex (the active x∈[40,100] slice of the canonical vector) expressed as
+    // control points over a normalized progress u∈[0,1], with amplitude = (13 − y) in design units
+    // (+ = up). The monitor sweep samples this to draw each beat in real time.
+    private static let complexPoints: [(u: CGFloat, amp: CGFloat)] = [
+        (0.000, 0), (0.100, 3), (0.200, 0), (0.433, 0), (0.533, 0),
+        (0.600, -8), (0.667, 11), (0.733, -11), (0.800, 0), (0.900, 2), (1.000, 0),
+    ]
+
+    /// Linearly-interpolated amplitude of the brand complex at progress `u` (clamped to 0…1).
+    static func complexAmplitude(at u: CGFloat) -> CGFloat {
+        let u = max(0, min(1, u))
+        for i in 0 ..< (complexPoints.count - 1) {
+            let a = complexPoints[i], b = complexPoints[i + 1]
+            if u >= a.u, u <= b.u {
+                let span = b.u - a.u
+                guard span > 0 else { return a.amp }
+                return a.amp + (b.amp - a.amp) * (u - a.u) / span
+            }
+        }
+        return 0
+    }
 }
 
 #if DEBUG
 #Preview("ECGWave") {
     VStack(alignment: .leading, spacing: 16) {
-        Text("60 BPM (1.0 s/ciclo)").font(.caption).foregroundStyle(StrandPalette.textTertiary)
+        Text("60 BPM (monitor en vivo)").font(.caption).foregroundStyle(StrandPalette.textTertiary)
         ECGWave(color: StrandPalette.accent, animate: true, bpm: 60).frame(width: 152)
-        Text("90 BPM (0.67 s/ciclo)").font(.caption).foregroundStyle(StrandPalette.textTertiary)
-        ECGWave(color: StrandPalette.recovery100, animate: true, bpm: 90).frame(width: 152)
+        Text("120 BPM (latidos más juntos)").font(.caption).foregroundStyle(StrandPalette.textTertiary)
+        ECGWave(color: StrandPalette.recovery100, animate: true, bpm: 120).frame(width: 152)
         Text("Sin BPM (estático)").font(.caption).foregroundStyle(StrandPalette.textTertiary)
         ECGWave(color: StrandPalette.statusWarning).frame(width: 152)
-        Text("Flatline").font(.caption).foregroundStyle(StrandPalette.textTertiary)
+        Text("Flatline (sin datos)").font(.caption).foregroundStyle(StrandPalette.textTertiary)
         ECGWave(color: StrandPalette.textTertiary, flat: true).frame(width: 152)
     }
     .padding(24)
