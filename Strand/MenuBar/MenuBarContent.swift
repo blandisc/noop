@@ -89,7 +89,7 @@ public struct MenuBarContent: View {
         live.bonded ? .positive : live.connected ? .accent : .critical
     }
 
-    private var connectionTitle: String {
+    private var connectionTitle: LocalizedStringKey {
         live.bonded ? "STREAMING" : live.connected ? "CONNECTED" : "OFFLINE"
     }
 
@@ -143,7 +143,7 @@ public struct MenuBarContent: View {
                     .foregroundStyle(StrandPalette.textTertiary)
             }
             Spacer(minLength: 8)
-            StatePill("\(connectionTitle)", tone: connectionTone, pulsing: live.bonded)
+            StatePill(connectionTitle, tone: connectionTone, pulsing: live.bonded)
         }
     }
 
