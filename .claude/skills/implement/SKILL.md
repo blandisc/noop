@@ -57,11 +57,19 @@ tienes permiso de entregar; si no, te detienes.
 7. **Entrega (solo si TODO el QA pasó).** Commit descriptivo + CHANGELOG si aplica
    → push → PR hacia `iOS` (`Closes FER-NN`, criterios verificados en "How it was
    tested") → **squash-merge a `iOS`** → **borra la rama** (`--delete-branch`).
-8. **Cierra y limpia.** Mueve el issue a `Done` con un comentario y el link del PR.
+8. **Actualiza el checkout de build.** Tras el merge, sincroniza el checkout
+   canónico (`~/code/noop`, de donde sale el build del iPhone) para que el próximo
+   build NO sea viejo: `git -C ~/code/noop fetch origin` y luego
+   `git -C ~/code/noop merge --ff-only origin/iOS`. Usa `--ff-only`: preserva
+   cualquier trabajo sin commitear que haya ahí y NUNCA lo pisa. Si falla (el
+   checkout tiene cambios que chocan o divergió), NO fuerces: avísale al usuario en
+   lenguaje claro que actualice su checkout antes de compilar.
+9. **Cierra y limpia.** Mueve el issue a `Done` con un comentario y el link del PR.
    Deja el worktree limpio (de vuelta en `iOS` actualizado, sin ramas colgando).
-9. **Reporta en lenguaje claro** (el usuario NO es técnico): qué cambió en la app,
-   qué criterios quedaron verificados, y que ya está en `iOS`. Recuérdale el único
-   paso manual: instalar la versión nueva en su iPhone desde Xcode.
+10. **Reporta en lenguaje claro** (el usuario NO es técnico): qué cambió en la app,
+    qué criterios quedaron verificados, y que ya está en `iOS` **y en su checkout
+    principal**. El único paso manual que le queda: abrir Xcode y compilar/instalar
+    en su iPhone.
 
 ## Cuándo PARAR y preguntar (no entregues a ciegas)
 
