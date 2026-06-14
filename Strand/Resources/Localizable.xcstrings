@@ -15982,6 +15982,176 @@
           }
         }
       }
+    },
+    "Sync diagnostic": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sync diagnostic"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diagnóstico de sincronización"
+          }
+        }
+      }
+    },
+    "Connect your strap to run the sync diagnostic.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect your strap to run the sync diagnostic."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conecta tu banda para ejecutar el diagnóstico de sincronización."
+          }
+        }
+      }
+    },
+    "Complete secure pairing first — the strap won’t offload its history until the encrypted bond is set.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Complete secure pairing first — the strap won’t offload its history until the encrypted bond is set."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Primero completa el emparejamiento seguro — la banda no descargará su historial hasta que se establezca el vínculo cifrado."
+          }
+        }
+      }
+    },
+    "On the band:": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On the band:"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En la banda:"
+          }
+        }
+      }
+    },
+    "%lld pieces": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld pieces"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld piezas"
+          }
+        }
+      }
+    },
+    "Received this sync": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Received this sync"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recibido en este sync"
+          }
+        }
+      }
+    },
+    "R-R": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "R-R"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "R-R"
+          }
+        }
+      }
+    },
+    "The band has nothing new.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The band has nothing new."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La banda no tiene nada nuevo."
+          }
+        }
+      }
+    },
+    "Data arrives but doesn’t decode — please report.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data arrives but doesn’t decode — please report."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Llegan datos pero no se decodifican — repórtalo."
+          }
+        }
+      }
+    },
+    "Receiving and storing everything.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Receiving and storing everything."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recibiendo y guardando todo."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

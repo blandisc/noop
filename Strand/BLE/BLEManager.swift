@@ -307,7 +307,8 @@ public final class BLEManager: NSObject, ObservableObject {
                                         self?.ackHistoricalChunk(trim: trim, endData: endData)
                                     },
                                     enableRawCapture: enableRawCapture,
-                                    log: { [weak self] s in self?.log(s) })
+                                    log: { [weak self] s in self?.log(s) },
+                                    onReceipt: { [weak self] r in self?.accumulateSyncReceipt(r) })
             // Strand: no server uploader/sync — all data stays on-device.
         }
         bootstrapTask = task          // published synchronously (still on @MainActor) before the await below
@@ -566,6 +567,8 @@ public final class BLEManager: NSObject, ObservableObject {
         backfilling = true
         state.backfilling = true
         state.syncChunksThisSession = 0
+        state.syncReceipt = LiveState.SyncReceipt()   // fresh "received this sync" tally (FER-83)
+        state.syncCompletedThisSession = false
         historicalAckLogCounter = 0
         // Payload MUST be [0x00], NOT empty: verified on-device that this strap serves type-47 only with
         // [0x00] (empty → 0 frames on a clean stable link with ~2k records pending); the Mac ground-truth
@@ -672,6 +675,7 @@ public final class BLEManager: NSObject, ObservableObject {
         if reason == "HISTORY_COMPLETE" {
             state.lastSyncedAt = Date().timeIntervalSince1970
             state.lastSyncError = nil
+            state.syncCompletedThisSession = true   // unlocks the receipt + verdict (FER-83)
             UserDefaults.standard.set(state.lastSyncedAt, forKey: "lastSyncedAt")
         } else if reason == "timeout" {
             state.lastSyncError = "Sync interrupted — the strap went quiet. It will retry on the next sync."
@@ -802,6 +806,26 @@ public final class BLEManager: NSObject, ObservableObject {
     /// Periodic-timer callback: routes through the rate-limited requestSync entry point.
     private func triggerPeriodicBackfill() {
         requestSync(.periodic)
+    }
+
+    /// User-initiated "Sync now" (FER-83). Forces a manual historical offload through the same gated,
+    /// rate-limited path as every other kick — a single safe, reversible offload (never reboot/DFU/
+    /// wipe). The Data Sources sync diagnostic observes progress + the resulting receipt via LiveState.
+    public func syncNow() {
+        requestSync(.manual)
+    }
+
+    /// Fold one offload chunk's receipt into the session tally LiveState publishes (FER-83). Same
+    /// @MainActor isolation as the other state mutations; the per-session reset happens in beginBackfill.
+    private func accumulateSyncReceipt(_ r: Backfiller.ChunkReceipt) {
+        state.syncReceipt.hr += r.hr
+        state.syncReceipt.rr += r.rr
+        state.syncReceipt.spo2 += r.spo2
+        state.syncReceipt.skinTemp += r.skinTemp
+        state.syncReceipt.resp += r.resp
+        state.syncReceipt.gravity += r.gravity
+        state.syncReceipt.framesReceived += r.framesReceived
+        state.syncReceipt.rowsDecoded += r.rowsDecoded
     }
 
     // MARK: Helpers
@@ -1385,6 +1409,20 @@ extension BLEManager: CBPeripheralDelegate {
         return newest
     }
 
+    /// Oldest plausible-unix marker in a GET_DATA_RANGE COMMAND_RESPONSE = the strap's oldest stored
+    /// record. Mirror of `dataRangeNewestUnix` (same body scan, same unix window) but the min — together
+    /// they bound the band's retained-history window for the Data Sources sync diagnostic (FER-83).
+    static func dataRangeOldestUnix(from frame: [UInt8]) -> Int? {
+        guard frame.count > 7 else { return nil }
+        let body = Array(frame[7...]); var oldest: Int? = nil; var i = 0
+        while i + 4 <= body.count {
+            let w = Int(body[i]) | Int(body[i+1]) << 8 | Int(body[i+2]) << 16 | Int(body[i+3]) << 24
+            if w >= 1_700_000_000 && w <= 1_900_000_000 { oldest = min(oldest ?? Int.max, w) }
+            i += 4
+        }
+        return oldest
+    }
+
     public func peripheral(_ peripheral: CBPeripheral,
                            didUpdateValueFor characteristic: CBCharacteristic,
                            error: Error?) {
@@ -1433,6 +1471,12 @@ extension BLEManager: CBPeripheralDelegate {
                 if frame.count > 6, frame[6] == WhoopCommand.getDataRange.rawValue,
                    let newest = BLEManager.dataRangeNewestUnix(from: frame) {
                     strapNewestTs = newest                        // feeds the liveness watchdog
+                    // Surface the band's retained-history window for the sync diagnostic (FER-83):
+                    // proof the sensor captured data and the band still holds it.
+                    state.strapHistoryNewest = TimeInterval(newest)
+                    if let oldest = BLEManager.dataRangeOldestUnix(from: frame) {
+                        state.strapHistoryOldest = TimeInterval(oldest)
+                    }
                 }
                 // Clock correlation runs in both live and backfill modes. Once established it
                 // unblocks both the Collector (live path) and the Backfiller (chunk decoding).
