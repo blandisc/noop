@@ -133,7 +133,6 @@ targets:
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         LSApplicationCategoryType: public.app-category.healthcare-fitness
         UILaunchScreen: {}
-        NSSupportsLiveActivities: true
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         UISupportedInterfaceOrientations~ipad:
@@ -173,9 +172,9 @@ targets:
       - target: NOOPiOSWidgets
 
   # ---------------------------------------------------------------------------
-  # WidgetKit + Live Activity extension. Renders the glanceable widget (the iOS
-  # analogue of the macOS menu-bar extra) and the live-HR Live Activity. Reads a
-  # tiny snapshot the app publishes into the shared App Group — never the DB.
+  # WidgetKit extension. Renders the glanceable widget (the iOS analogue of the
+  # macOS menu-bar extra). Reads a tiny snapshot the app publishes into the
+  # shared App Group — never the DB.
   NOOPiOSWidgets:
     type: app-extension
     platform: iOS
