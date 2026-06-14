@@ -9,6 +9,11 @@ public final class FrameRouter {
     /// Called when the strap pushes an EVENT packet (WHOOP's strap-as-clock catch-up signal). The
     /// BLEManager wires this to a rate-limited requestSync(.strap). nil in pure/unit contexts.
     var onSyncTrigger: (() -> Void)?
+    /// Called with each in-range live BPM decoded off the custom REALTIME stream. BLEManager wires
+    /// this to the Collector so live HR is PERSISTED, not just shown: on firmware that streams HR
+    /// only over REALTIME_DATA (Live tab armed), the 0x2A37 standard profile is silent, so this is
+    /// the sole path that fills hrSample / the Today trend. nil in pure/unit contexts.
+    var onLiveHR: ((Int) -> Void)?
     /// Which family's framing to decode with. Set per connection by BLEManager. WHOOP 5.0/MG frames
     /// use the CRC16/offset-8 envelope; the biometric field decode for puffin is still a stub, so
     /// WHOOP 5 custom frames currently surface only their envelope (live HR/battery come from the
@@ -35,6 +40,7 @@ public final class FrameRouter {
             // BLE_REALTIME_HR_ON, so the UI can consume it even though persistence still ignores raw43.
             if let hr = parsed.parsed["heart_rate"]?.intValue, hr >= 30, hr <= 220 {
                 state.heartRate = hr
+                onLiveHR?(hr)   // persist too — 0x2A37 may emit nothing on this firmware (#HR-trend)
             }
             // The realtime stream usually reports rr_count=0; only update R-R when this frame
             // actually carries intervals, so we don't wipe R-R sourced from the 0x2A37 profile.

@@ -61,6 +61,9 @@ final class Collector {
     /// (independent of the custom realtime stream or which screen is open).
     private var stdHR: [HRSample] = []
     private var stdRR: [RRInterval] = []
+    /// Wall-clock second of the last HR sample buffered — dedupes HR arriving on both the 0x2A37
+    /// profile and the custom realtime stream in the same second.
+    private var lastStdHRTs: Int?
     private var batchStartedAt: TimeInterval
     var bufferedCount: Int { buffer.count }
     /// Called after each successful standard-HR flush so callers can signal the UI.
@@ -156,7 +159,14 @@ final class Collector {
     /// Buffer one standard Heart-Rate-Measurement reading. No clock correlation needed —
     /// these carry a wall-clock `ts` directly. Auto-flushes ~every 30 readings (~30s).
     func ingestStandardHR(hr: Int, rr: [Int], at ts: Int) {
-        if hr >= 30, hr <= 220 { stdHR.append(HRSample(ts: ts, bpm: hr)) }
+        // Dedupe by second: HR can arrive on BOTH the 0x2A37 profile and the custom realtime stream
+        // (now routed here too). One sample per wall-clock second keeps a dual-emitting strap from
+        // doubling rows; the 0x2A37 profile itself is ~1 Hz so this never drops genuine detail. RR is
+        // appended separately (below), so the 0x2A37 R-R intervals survive even on a deduped second.
+        if hr >= 30, hr <= 220, ts != lastStdHRTs {
+            stdHR.append(HRSample(ts: ts, bpm: hr))
+            lastStdHRTs = ts
+        }
         for r in rr where r >= 250 && r <= 3000 { stdRR.append(RRInterval(ts: ts, rrMs: r)) }
         if stdHR.count + stdRR.count >= 30 {
             Task { @MainActor in await self.flushStandardHR() }

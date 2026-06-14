@@ -19,6 +19,12 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **The Heart Rate graph on Today now fills from a live-only session (iPhone).** If you wore the strap
+  with NOOP connected but never imported a WHOOP export, today's Heart Rate chart stayed empty even
+  though your live pulse showed at the top of the screen. The live heart rate streaming over the
+  strap's realtime channel was shown but never saved, so the chart had nothing to draw. It's now
+  recorded as it streams (deduplicated so a strap sending both channels isn't double-counted), and the
+  chart appears on its own after a few minutes of wear — no import or app restart needed.
 - **Apple Health strength workouts read as words again, not one run-on label (iPhone, FER-76).** On
   Today, the "Last Workouts" tiles took the workout type straight from Apple Health, so a *Traditional
   Strength Training* session showed up as a single glued, all-caps word (`TRADITIONALSTRENGTHTRAINING`)
