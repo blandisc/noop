@@ -19,6 +19,17 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Your data backs itself up to iCloud Drive, so a reinstall can't lose it (iPhone, FER-74).** Your
+  strap's history lives only inside NOOP — once the band hands a night over it deletes its own copy —
+  so deleting or reinstalling the app used to lose it for good. Now you can pick a folder in your own
+  iCloud Drive (a free Apple ID is enough — this isn't a paid developer-iCloud feature) and NOOP keeps
+  a fresh copy of everything there, refreshed automatically after each sync (about once a day, while
+  the app is open). If you ever open NOOP to an empty screen — a fresh install, a new phone — it
+  offers to restore from that backup in one tap; you can also back up or restore any time from
+  Settings. Apple Health and an imported WHOOP export re-fill on their own, so this protects the one
+  thing that can't: the strap's own history. Honest limits: iCloud uploads when iOS decides (usually
+  minutes), and after deleting the app you re-pick the folder once. Fully localized (English +
+  Spanish).
 - **The "14-day" header on Key Metrics now reads "14-day trend" (iPhone).** The header above the Key
   Metrics list paired "Today" with a bare "14-day", which read as if the values themselves spanned 14
   days rather than being today's reading (steps, for example, are today's total; blood oxygen is a

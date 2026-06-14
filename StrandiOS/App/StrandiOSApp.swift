@@ -7,6 +7,7 @@ import SwiftUI
 struct StrandiOSApp: App {
     @StateObject private var model: AppModel
     @StateObject private var health: HealthKitBridge
+    @StateObject private var autoBackup = AutoBackup()
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
@@ -34,6 +35,7 @@ struct StrandiOSApp: App {
                 .environmentObject(model.intelligence)
                 .environmentObject(model.coach)
                 .environmentObject(health)
+                .environmentObject(autoBackup)
                 .preferredColorScheme(.dark)
         }
         // HealthKit authorization is intentionally NOT requested on launch. The system permission
@@ -47,6 +49,9 @@ struct StrandiOSApp: App {
                 model.drainPendingIntents()
                 Task {
                     await health.sync()
+                    // Snapshot the (possibly just-offloaded) strap history to iCloud Drive. Throttled
+                    // to ~once a day and a no-op until the user picks a folder, so it's safe here.
+                    await autoBackup.backupIfDue(checkpoint: { await model.repo.checkpointForBackup() })
                     WidgetSnapshot.publish(from: model)
                 }
             }
