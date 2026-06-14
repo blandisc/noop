@@ -58,10 +58,25 @@ CI runs `swift build`/`swift test` only on `Packages/**` changes, and the Androi
 - **Migrations are append-only.** Never edit a shipped GRDB migration; add `vN+1` plus a `MigrationTests` case.
 - **Don't commit generated/local files** (`Strand.xcodeproj/`, build output, secrets/keystores). One concern per PR.
 
+## Working principles (how to make changes)
+
+Bias toward caution over speed; for trivial changes, use judgment.
+
+- **Think before coding.** State your assumptions. If a requirement has multiple readings or something is unclear, stop and surface it rather than picking silently — for product work, that means bouncing it back to `/pm`. Don't hide confusion.
+- **Simplicity first.** Write the minimum that solves the stated problem. No speculative features, no abstractions for single-use code, no configurability nobody asked for, no error handling for impossible cases. If 200 lines could be 50, rewrite it.
+- **Surgical changes.** Touch only what the task requires. Don't "improve" adjacent code, reformat, or refactor what isn't broken; match the existing style even if you'd do it differently. Remove only the orphans *your* change created; if you spot unrelated dead code, mention it — don't delete it. Every changed line should trace to the request.
+- **Goal-driven execution.** Turn the task into verifiable checks — the issue's acceptance criteria — and loop until they pass before delivering. Weak success criteria ("make it work") are a signal to go back to `/pm`, not to guess.
+
 ## How we work here (process)
 
-- **Start product work with `/pm`.** It turns a raw idea into a clear requirement (with acceptance criteria) and files it as a Linear issue — *before* any code. Implement against those acceptance criteria and verify each one before opening the PR.
-- **Linear:** team **Fer**, project **NOOP iOS**. Label every issue by type (`UI/Today`, `Analytics`, `Bug`, `Import`, `Performance`, `i18n`, `Diseño`, `Feature`, …). When you take an issue move it to **In Progress**, comment progress, and close it at **Done**. Reference it in the PR (`Closes FER-NN` where it applies).
-- **PRs:** branch → PR **into `iOS`** → squash-merge. Descriptive commits + CHANGELOG entry; document the change (project convention: always document).
-- **Worktrees:** sessions run in a per-branch git worktree. **Read/edit/build under the worktree path**, never the main checkout. Build/run the real app from the canonical `~/code/noop` checkout (a worktree copy installs a stale bundle).
+The flow is **requirement → screen → code → QA**, with acceptance criteria as the through-line. Two skills cover it:
+
+- **`/pm`** turns a raw idea into a clear requirement (acceptance criteria + Definition of Done) and files it as a Linear issue — *before* any code. Start product work here.
+- **`/implement FER-NN`** takes that issue to production: implements against the criteria, verifies each one (QA), and — if all pass and the build is green — merges to `iOS` and closes the issue. It stops to ask only if QA fails, it cannot verify, or the change is high-risk.
+
+- **Linear:** team **Fer**, project **NOOP iOS**. Label every issue by type (`UI/Today`, `Analytics`, `Bug`, `Import`, `Performance`, `i18n`, `Diseño`, `Feature`, …). Issue lifecycle: **Todo → In Progress → In Review → Done**. Reference the issue in the PR (`Closes FER-NN`).
+- **Branch hygiene — one branch per issue, never collide.** Use the issue's Linear-generated `gitBranchName` (e.g. `blandisc/fer-81-…`), branched from an up-to-date `origin/iOS` (`git fetch` first). Never work on `iOS`, never reuse another issue's branch, and if the branch already exists, another session owns it — stop, don't overwrite. PRs target `iOS`, squash-merge, then delete the branch.
+- **Finish the job, then clean up.** When QA passes, take the work all the way: merge, close the issue at Done, delete the branch, leave the tree clean — no half-done branches or stray open PRs. The one manual step left to the user: installing the new build on the iPhone from Xcode.
+- **Always document.** Descriptive commits + a CHANGELOG entry for user-facing changes.
+- **Worktrees:** sessions run in a per-branch git worktree. Read/edit/build under the worktree path, never the main checkout. Build/run the real app from the canonical `~/code/noop` checkout (a worktree copy installs a stale bundle).
 - **`.claude/` is gitignored** (line 84): local settings stay out of git; to version a skill, `git add -f` just that file — don't edit `.gitignore` (it tracks upstream).
