@@ -19,6 +19,16 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **The wait for your first verdict is alive now (iPhone, FER-61).** Before NOOP has banked enough
+  nights to compute a verdict, Today shows a night-by-night progress card from night zero — four dots
+  that fill in as each valid night lands (0 of 4 → 4 of 4), so you always see how many nights are left
+  instead of a blank screen. Tap "See it beat by beat" to open a live monitor: your heart rate on a
+  hospital-style ECG sweep, a "beats this session" counter that climbs in real time, and a
+  beat-to-beat variability tachogram that draws itself as each beat arrives. It stays honest about
+  what is live versus not — heart rate and variability stream beat to beat, while SpO₂, skin
+  temperature, respiration and movement are marked "completes on sync" — and a footer confirms when
+  everything is saved (or warns when you're streaming live HR without having finished the secure
+  pairing the rest of the data needs). Fully localized (English + Spanish).
 - **Trends and Sleep fill in from Apple Health before the strap does (FER-62).** If you've connected
   Apple Health but the strap hasn't covered a day yet, Trends now plots your HRV and resting heart
   rate from Apple Health, and Sleep shows last night's stage breakdown from it — each tagged with an
