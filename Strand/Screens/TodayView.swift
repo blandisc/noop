@@ -194,7 +194,6 @@ struct TodayView: View {
                 }
                 whySection
                 iosMetricsSection
-                workoutsSection
                 iosHeartRateSection
                 sourcesSection
             }
