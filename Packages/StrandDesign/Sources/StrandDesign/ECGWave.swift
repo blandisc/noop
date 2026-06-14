@@ -6,13 +6,13 @@ import SwiftUI
 //
 // Two render modes:
 //  • Static  — the brand polyline (default), or a centered flatline when `flat` (no data).
-//  • Monitor — when `animate: true` + a live `bpm:` is supplied, a real patient-monitor sweep:
-//    a head travels left→right *drawing* the trace in real time, each QRS complex landing as the
-//    beat happens. Spacing between complexes is set by the live BPM (a faster heart packs the
-//    beats closer), NOT by playback speed. On reaching the right edge the head wraps to the left
-//    and overwrites the previous sweep, with a short transparent erase gap just ahead of it —
-//    exactly like an ECG monitor. (This replaces the earlier "scroll one fixed wave faster or
-//    slower" approach, which only changed speed and never drew beats individually.)
+//  • Monitor — when `animate: true` + a live `bpm:` is supplied, a hospital-monitor sweep:
+//    the line sits flat and a head travels left→right, *drawing* each QRS complex the instant the
+//    sweep reaches that beat. Spacing between complexes is set by the live BPM (a faster heart packs
+//    the beats closer), NOT by playback speed. Ahead of the head the line is a flat baseline waiting;
+//    on the next pass the head wipes the trace back to flat, behind a short erase gap — exactly like
+//    a vital-signs monitor. (Replaces the earlier "scroll one fixed wave faster or slower" approach,
+//    and a first cut that kept the previous sweep visible instead of wiping to a flat baseline.)
 //
 // Cross-platform, tokens-only — a redesign primitive reused across the app.
 
@@ -97,8 +97,8 @@ public struct ECGWave: View {
         let headX = travelled.truncatingRemainder(dividingBy: w)
         let sweepIndex = (travelled / w).rounded(.down)
 
-        // Build the visible trace column by column. For each x, find the wall-clock instant the head
-        // last crossed it (this sweep if x ≤ head, else the previous one) and sample the beat there.
+        // Build the visible trace column by column: behind the head, the beat sampled at the instant
+        // the head crossed that column this sweep; ahead of the head, a flat baseline.
         var path = Path()
         var penDown = false
         let step: CGFloat = 0.5
@@ -111,9 +111,16 @@ public struct ECGWave: View {
                 x += step
                 continue
             }
-            let crossSweep = x <= headX ? sweepIndex : sweepIndex - 1
-            let tCross = (crossSweep * w + x) / sweepSpeed          // seconds (reference-date based)
-            let y = mid - beatAmplitude(at: Double(tCross)) * ampScale
+            // Behind the head (this sweep): the beat as it was traced. Ahead of the head: a flat
+            // baseline waiting — so the strip reads as a calm line that draws each QRS only the
+            // instant the sweep reaches it, then wipes back to flat on the next pass.
+            let y: CGFloat
+            if x <= headX {
+                let tCross = (sweepIndex * w + x) / sweepSpeed       // seconds (reference-date based)
+                y = mid - beatAmplitude(at: Double(tCross)) * ampScale
+            } else {
+                y = mid
+            }
             let pt = CGPoint(x: x, y: y)
             if penDown { path.addLine(to: pt) } else { path.move(to: pt); penDown = true }
             x += step
