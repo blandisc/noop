@@ -8,6 +8,18 @@ struct ContentView: View {
     @AppStorage("noop.acceptedTermsVersion") private var acceptedTerms = ""
     @State private var showWhatsNew = false
 
+    #if os(iOS)
+    // One-time restore nudge: if NOOP launches with no data (a fresh install or a reinstall after a
+    // delete), point the user at the iCloud Drive backup so the strap history comes back in a tap.
+    // Reuses the manual import path. The flag lives in UserDefaults (wiped on delete), so it re-arms
+    // for exactly the reinstall case it's meant to catch. See [AutoBackup].
+    @EnvironmentObject private var repo: Repository
+    @AppStorage("noop.didOfferRestore") private var didOfferRestore = false
+    @State private var showRestoreOffer = false
+    @State private var restoreMessage = ""
+    @State private var showRestoreResult = false
+    #endif
+
     var body: some View {
         ZStack {
             #if os(macOS)
@@ -47,5 +59,45 @@ struct ContentView: View {
                 showWhatsNew = true
             }
         }
+        #if os(iOS)
+        // Check at launch (covers updated users) and again the moment onboarding completes (covers a
+        // fresh install / reinstall, where `onboarded` flips false→true after this view appears).
+        .task { await maybeOfferRestore() }
+        .onChange(of: onboarded) { _, done in if done { Task { await maybeOfferRestore() } } }
+        .alert("Restore your data?", isPresented: $showRestoreOffer) {
+            Button("Restore from backup…") { Task { await runRestore() } }
+            Button("Not now", role: .cancel) { }
+        } message: {
+            Text("It looks like there's no data on this device. If you've used NOOP before — on this phone or another — restore your strap history and settings from an iCloud Drive backup.")
+        }
+        .alert("Restore", isPresented: $showRestoreResult) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(restoreMessage)
+        }
+        #endif
     }
+
+    #if os(iOS)
+    @MainActor private func maybeOfferRestore() async {
+        guard onboarded, !didOfferRestore else { return }
+        try? await Task.sleep(nanoseconds: 2_500_000_000)   // let the launch refresh populate first
+        guard !didOfferRestore, repo.days.isEmpty else { return }   // re-check after the await
+        didOfferRestore = true
+        showRestoreOffer = true
+    }
+
+    @MainActor private func runRestore() async {
+        switch await DataBackup.runImport() {
+        case .imported:
+            restoreMessage = String(localized: "Your data has been restored. Reopen NOOP for it to take effect.")
+            showRestoreResult = true
+        case .failure(let message):
+            restoreMessage = message
+            showRestoreResult = true
+        case .cancelled, .exported:
+            break
+        }
+    }
+    #endif
 }

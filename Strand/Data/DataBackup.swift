@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 #if canImport(AppKit)
 import AppKit
 #elseif canImport(UIKit)
@@ -228,3 +229,169 @@ enum DataBackup {
         }
     }
 }
+
+#if os(iOS)
+
+/// Near-automatic backup of the single NOOP database to a folder in the user's own iCloud Drive.
+///
+/// Why this is its own thing (vs the manual `DataBackup` export): the strap's offloaded raw streams
+/// live ONLY in `whoop.sqlite` — the strap trims its copy the moment NOOP acks the offload (see
+/// `Backfiller`). Apple Health re-syncs from the system vault and imported CSVs are re-importable, so
+/// the strap history is the one irreplaceable thing. Losing the app's container (a delete, a fresh
+/// install, a lost phone) loses it for good.
+///
+/// On a free Apple ID we can't use an iCloud *container* entitlement, but the user can point us at a
+/// folder in their own iCloud Drive once; the resulting security-scoped **bookmark** lets us drop a
+/// fresh copy there on later launches with no further prompts and no entitlement. iCloud syncs the
+/// file off-device, so it survives a delete or a new phone. Restore reuses `DataBackup.runImport`.
+///
+/// Honest ceiling: iCloud uploads when the OS decides (usually minutes), and we can only write while
+/// the app is awake — which it is right after a strap sync, exactly when new data exists. The
+/// bookmark itself lives in `UserDefaults` (wiped on delete), so after a reinstall the user re-picks
+/// the folder once; the backup file in iCloud Drive is what carries the data across.
+@MainActor
+final class AutoBackup: ObservableObject {
+    /// Display name of the chosen iCloud Drive folder, or nil if auto-backup isn't set up.
+    @Published private(set) var destinationName: String?
+    /// When the last successful backup landed. Drives the "Last backup … ago" status line.
+    @Published private(set) var lastBackup: Date?
+    /// Most recent failure (lost folder access, write error). Cleared on a successful backup.
+    @Published private(set) var lastError: String?
+    /// True while a copy is in flight — disables the buttons so a double-tap can't race.
+    @Published private(set) var busy = false
+
+    private let defaults = UserDefaults.standard
+    private let bookmarkKey = "noop.autoBackup.folderBookmark"
+    private let nameKey = "noop.autoBackup.folderName"
+    private let lastKey = "noop.autoBackup.lastDate"
+    /// At most one automatic backup per ~day; the manual "Back up now" ignores this.
+    private let minInterval: TimeInterval = 23 * 3_600
+    private let fileName = "NOOP-backup.sqlite"
+
+    init() {
+        destinationName = defaults.string(forKey: nameKey)
+        if let t = defaults.object(forKey: lastKey) as? Double { lastBackup = Date(timeIntervalSince1970: t) }
+    }
+
+    /// Whether a destination folder has been chosen (auto-backup is armed).
+    var isConfigured: Bool { defaults.data(forKey: bookmarkKey) != nil }
+
+    // MARK: - Setup
+
+    /// Present the folder picker and persist a security-scoped bookmark to the chosen folder.
+    /// Guide the user toward an iCloud Drive folder so the backup leaves the device.
+    func chooseFolder() async {
+        guard let url = await DocumentPicker.pickFolder() else { return }
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        do {
+            let bm = try url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
+            defaults.set(bm, forKey: bookmarkKey)
+            defaults.set(url.lastPathComponent, forKey: nameKey)
+            destinationName = url.lastPathComponent
+            lastError = nil
+        } catch {
+            lastError = String(localized: "Couldn't remember that folder. Try a folder in iCloud Drive.")
+        }
+    }
+
+    /// Forget the destination (stops automatic backups). The backup file already in iCloud Drive is
+    /// left untouched, so a later "Restore" still finds it.
+    func disable() {
+        defaults.removeObject(forKey: bookmarkKey)
+        defaults.removeObject(forKey: nameKey)
+        destinationName = nil
+    }
+
+    // MARK: - Backup
+
+    /// Throttled automatic backup — no-op without a destination or if the last one is recent.
+    func backupIfDue(checkpoint: () async -> Bool) async {
+        guard isConfigured else { return }
+        if let last = lastBackup, Date().timeIntervalSince(last) < minInterval { return }
+        await backupNow(checkpoint: checkpoint)
+    }
+
+    /// Copy the live database into the chosen iCloud Drive folder now. Safe to call repeatedly.
+    func backupNow(checkpoint: () async -> Bool) async {
+        guard !busy, isConfigured else { return }
+        busy = true
+        defer { busy = false }
+
+        guard let folder = resolveFolder() else {
+            lastError = String(localized: "Lost access to the backup folder — choose it again.")
+            return
+        }
+        let scoped = folder.startAccessingSecurityScopedResource()   // process-wide; held across the await below
+        defer { if scoped { folder.stopAccessingSecurityScopedResource() } }
+
+        // Fold the WAL into the main file so a plain copy is whole. The store is open during normal
+        // use, so this succeeds; if it doesn't, skip this round rather than ship a half file.
+        guard await checkpoint() else {
+            lastError = String(localized: "Couldn't snapshot the database just now — will retry.")
+            return
+        }
+
+        let dbPath: String
+        do { dbPath = try StorePaths.defaultDatabasePath() }
+        catch { lastError = String(localized: "Couldn't locate the NOOP database."); return }
+        let dbURL = URL(fileURLWithPath: dbPath)
+        guard FileManager.default.fileExists(atPath: dbPath) else {
+            lastError = String(localized: "No database to back up yet.")
+            return
+        }
+
+        let dest = folder.appendingPathComponent(fileName)
+        let prev = folder.appendingPathComponent(fileName + ".prev")
+        // Offload the blocking file IO so a multi-MB copy doesn't hitch the UI.
+        let error = await Task.detached { AutoBackup.writeCopy(db: dbURL, to: dest, keepingPrev: prev) }.value
+        if let error {
+            lastError = String(localized: "Backup couldn't be saved: \(error.localizedDescription)")
+            return
+        }
+        let now = Date()
+        lastBackup = now
+        defaults.set(now.timeIntervalSince1970, forKey: lastKey)
+        lastError = nil
+    }
+
+    // MARK: - Helpers
+
+    /// Resolve the stored bookmark back to a usable folder URL, refreshing it if iOS marks it stale.
+    private func resolveFolder() -> URL? {
+        guard let bm = defaults.data(forKey: bookmarkKey) else { return nil }
+        var stale = false
+        guard let url = try? URL(resolvingBookmarkData: bm, options: [], relativeTo: nil,
+                                 bookmarkDataIsStale: &stale) else { return nil }
+        if stale, url.startAccessingSecurityScopedResource() {
+            defer { url.stopAccessingSecurityScopedResource() }
+            if let fresh = try? url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil) {
+                defaults.set(fresh, forKey: bookmarkKey)
+            }
+        }
+        return url
+    }
+
+    /// Coordinated copy of the DB into `dest`, rotating the prior backup to `keepingPrev` first as
+    /// cheap insurance against a corrupt write. Runs off the main actor. Returns nil on success.
+    private nonisolated static func writeCopy(db: URL, to dest: URL, keepingPrev prev: URL) -> Error? {
+        let coordinator = NSFileCoordinator()
+        var coordError: NSError?
+        var writeError: Error?
+        coordinator.coordinate(writingItemAt: dest, options: .forReplacing, error: &coordError) { target in
+            let fm = FileManager.default
+            do {
+                if fm.fileExists(atPath: target.path) {
+                    try? fm.removeItem(at: prev)
+                    do { try fm.moveItem(at: target, to: prev) }
+                    catch { try? fm.removeItem(at: target) }   // ensure the path is clear for the copy
+                }
+                try fm.copyItem(at: db, to: target)
+            } catch {
+                writeError = error
+            }
+        }
+        return writeError ?? coordError
+    }
+}
+#endif

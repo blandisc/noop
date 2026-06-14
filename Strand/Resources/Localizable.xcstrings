@@ -15047,6 +15047,363 @@
           }
         }
       }
+    },
+    "Automatic iCloud backup": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic iCloud backup"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Respaldo automático en iCloud"
+          }
+        }
+      }
+    },
+    "Pick a folder in iCloud Drive and NOOP keeps a fresh copy of all your data there. Your strap history lives only inside the app, so this is what protects it if you reinstall NOOP or switch phones. It uses your own iCloud Drive — a free Apple ID is enough.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick a folder in iCloud Drive and NOOP keeps a fresh copy of all your data there. Your strap history lives only inside the app, so this is what protects it if you reinstall NOOP or switch phones. It uses your own iCloud Drive — a free Apple ID is enough."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elige una carpeta en iCloud Drive y NOOP guarda ahí una copia fresca de todos tus datos. El historial de tu banda vive solo dentro de la app, así que esto es lo que lo protege si reinstalas NOOP o cambias de teléfono. Usa tu propio iCloud Drive — basta con un Apple ID gratis."
+          }
+        }
+      }
+    },
+    "Backing up to %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backing up to %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Respaldando en %@"
+          }
+        }
+      }
+    },
+    "Back up now": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back up now"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Respaldar ahora"
+          }
+        }
+      }
+    },
+    "Restore…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restaurar…"
+          }
+        }
+      }
+    },
+    "Turn off automatic backup": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn off automatic backup"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desactivar respaldo automático"
+          }
+        }
+      }
+    },
+    "Choose iCloud Drive folder…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose iCloud Drive folder…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elegir carpeta de iCloud Drive…"
+          }
+        }
+      }
+    },
+    "No backup yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No backup yet."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no hay respaldo."
+          }
+        }
+      }
+    },
+    "Last backup %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last backup %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Último respaldo %@"
+          }
+        }
+      }
+    },
+    "Couldn't remember that folder. Try a folder in iCloud Drive.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't remember that folder. Try a folder in iCloud Drive."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo recordar esa carpeta. Prueba con una carpeta en iCloud Drive."
+          }
+        }
+      }
+    },
+    "Lost access to the backup folder — choose it again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lost access to the backup folder — choose it again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se perdió el acceso a la carpeta de respaldo: elígela de nuevo."
+          }
+        }
+      }
+    },
+    "Couldn't snapshot the database just now — will retry.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't snapshot the database just now — will retry."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo copiar la base en este momento: se reintentará."
+          }
+        }
+      }
+    },
+    "Couldn't locate the NOOP database.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't locate the NOOP database."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo encontrar la base de datos de NOOP."
+          }
+        }
+      }
+    },
+    "No database to back up yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No database to back up yet."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no hay base de datos que respaldar."
+          }
+        }
+      }
+    },
+    "Backup couldn't be saved: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup couldn't be saved: %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo guardar el respaldo: %@"
+          }
+        }
+      }
+    },
+    "Restore your data?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore your data?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Restaurar tus datos?"
+          }
+        }
+      }
+    },
+    "Restore from backup…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore from backup…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restaurar desde un respaldo…"
+          }
+        }
+      }
+    },
+    "Not now": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not now"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ahora no"
+          }
+        }
+      }
+    },
+    "It looks like there's no data on this device. If you've used NOOP before — on this phone or another — restore your strap history and settings from an iCloud Drive backup.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It looks like there's no data on this device. If you've used NOOP before — on this phone or another — restore your strap history and settings from an iCloud Drive backup."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parece que no hay datos en este dispositivo. Si ya usaste NOOP antes — en este teléfono u otro — restaura el historial de tu banda y tus ajustes desde un respaldo en iCloud Drive."
+          }
+        }
+      }
+    },
+    "Restore": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restaurar"
+          }
+        }
+      }
+    },
+    "Your data has been restored. Reopen NOOP for it to take effect.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your data has been restored. Reopen NOOP for it to take effect."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus datos se restauraron. Vuelve a abrir NOOP para que surta efecto."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

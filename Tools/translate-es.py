@@ -900,6 +900,29 @@ ES: dict[str, str] = {
     "Heart rate": "Frecuencia cardiaca",
     # ReadinessEngine (StrandAnalytics package — key created here, no .stringsdata extraction).
     "Based on a short night — confidence low.": "Basado en una noche corta — confianza baja.",
+
+    # FER-74 — automatic iCloud Drive backup + one-tap restore (iOS, #if-gated branch).
+    "Automatic iCloud backup": "Respaldo automático en iCloud",
+    "Pick a folder in iCloud Drive and NOOP keeps a fresh copy of all your data there. Your strap history lives only inside the app, so this is what protects it if you reinstall NOOP or switch phones. It uses your own iCloud Drive — a free Apple ID is enough.": "Elige una carpeta en iCloud Drive y NOOP guarda ahí una copia fresca de todos tus datos. El historial de tu banda vive solo dentro de la app, así que esto es lo que lo protege si reinstalas NOOP o cambias de teléfono. Usa tu propio iCloud Drive — basta con un Apple ID gratis.",
+    "Backing up to %@": "Respaldando en %@",
+    "Back up now": "Respaldar ahora",
+    "Restore…": "Restaurar…",
+    "Turn off automatic backup": "Desactivar respaldo automático",
+    "Choose iCloud Drive folder…": "Elegir carpeta de iCloud Drive…",
+    "No backup yet.": "Aún no hay respaldo.",
+    "Last backup %@": "Último respaldo %@",
+    "Couldn't remember that folder. Try a folder in iCloud Drive.": "No se pudo recordar esa carpeta. Prueba con una carpeta en iCloud Drive.",
+    "Lost access to the backup folder — choose it again.": "Se perdió el acceso a la carpeta de respaldo: elígela de nuevo.",
+    "Couldn't snapshot the database just now — will retry.": "No se pudo copiar la base en este momento: se reintentará.",
+    "Couldn't locate the NOOP database.": "No se pudo encontrar la base de datos de NOOP.",
+    "No database to back up yet.": "Aún no hay base de datos que respaldar.",
+    "Backup couldn't be saved: %@": "No se pudo guardar el respaldo: %@",
+    "Restore your data?": "¿Restaurar tus datos?",
+    "Restore from backup…": "Restaurar desde un respaldo…",
+    "Not now": "Ahora no",
+    "It looks like there's no data on this device. If you've used NOOP before — on this phone or another — restore your strap history and settings from an iCloud Drive backup.": "Parece que no hay datos en este dispositivo. Si ya usaste NOOP antes — en este teléfono u otro — restaura el historial de tu banda y tus ajustes desde un respaldo en iCloud Drive.",
+    "Restore": "Restaurar",
+    "Your data has been restored. Reopen NOOP for it to take effect.": "Tus datos se restauraron. Vuelve a abrir NOOP para que surta efecto.",
 }
 
 
