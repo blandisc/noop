@@ -19,6 +19,13 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Apple Health strength workouts read as words again, not one run-on label (iPhone, FER-76).** On
+  Today, the "Last Workouts" tiles took the workout type straight from Apple Health, so a *Traditional
+  Strength Training* session showed up as a single glued, all-caps word (`TRADITIONALSTRENGTHTRAINING`)
+  that wrapped mid-word and overlapped the duration beneath it. The name is now split back into words
+  ("Traditional Strength Training"), and every metric/workout tile caps its label at two lines so a
+  long name can no longer collide with its value. Also clears the same run-on name in the Workouts
+  list and the per-sport breakdown.
 - **Your data backs itself up to iCloud Drive, so a reinstall can't lose it (iPhone, FER-74).** Your
   strap's history lives only inside NOOP — once the band hands a night over it deletes its own copy —
   so deleting or reinstalling the app used to lose it for good. Now you can pick a folder in your own
