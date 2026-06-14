@@ -19,6 +19,13 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Trends and Sleep fill in from Apple Health before the strap does (FER-62).** If you've connected
+  Apple Health but the strap hasn't covered a day yet, Trends now plots your HRV and resting heart
+  rate from Apple Health, and Sleep shows last night's stage breakdown from it — each tagged with an
+  "Apple Health" badge so the source is clear. The strap always wins: any day or night the strap
+  covers shows the strap's reading, and Apple Health only fills the gaps. Apple's sleep is shown as a
+  proportional deep / light / REM bar (no minute-by-minute hypnogram — that's strap-only). Fully
+  localized (English + Spanish + German).
 - **The live heart-rate ECG reads like a real monitor now (iPhone, FER-58).** When your strap is streaming, the brand ECG strip on Today no longer just scrolls one fixed wave faster or slower. A sweep head now traces the line in real time — drawing each heartbeat as it happens, with the complexes spaced by your live BPM, so a faster heart packs them closer together. When the head reaches the right edge it wraps around and overwrites the previous pass behind a small moving erase gap, exactly like a patient monitor. With no strap connected it rests on a calm flatline.
 - **Apple Health import is no longer a black box (FER-70).** Connecting or syncing Apple Health used
   to run silently — you couldn't tell whether it was working, how many days came in, or which metrics
@@ -65,6 +72,13 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
   of days may read slightly off until your strap baseline settles.
 
 _The items below are developer / docs — no user-facing change._
+- **Apple Health fallback for Trends & Sleep (FER-62).** `Repository.refresh` reads the `apple-health`
+  source as a third, lowest-precedence layer in `mergeDaily` (apple < on-device < imported) and tracks
+  the surfaced-from-Apple days in `DashboardData.appleHealthDays` — no `source` column needed on
+  `DailyMetric`. Trends badges the HRV / resting-HR cards whose latest point is Apple-sourced; Sleep
+  synthesizes a fallback `Night` from Apple's stage minutes (proportional bar, no hypnogram,
+  onset–wake hidden) when there's no strap session. `ChartCard` gained an optional `badge` slot.
+  `Repository.mergeDaily` is unit-tested (`RepositoryMergeTests`).
 - **Apple Health baseline prior (FER-60).** `IntelligenceEngine.analyzeRecent` now folds an Apple
   Health prior (`deviceId: "apple-health"`) UNDER the imported + on-device strap layers when seeding
   the HRV / resting-HR / respiration baselines — filling only days neither strap source covers (the

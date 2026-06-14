@@ -162,6 +162,13 @@ struct TrendsView: View {
         return pts.map(\.value).reduce(0, +) / Double(pts.count)
     }
 
+    /// Whether the most recent day carrying this metric was surfaced from Apple Health (no strap
+    /// coverage) — drives the per-card "Apple Health" source badge. (FER-62)
+    private func latestDayIsApple(_ value: (DailyMetric) -> Double?) -> Bool {
+        guard let d = repo.days.last(where: { value($0) != nil }) else { return false }
+        return repo.appleHealthDays.contains(d.day)
+    }
+
     /// "Trailing 90 days" / "All history" — used as a card subtitle.
     private var rangeSubtitle: String {
         guard let n = range.days else { return String(localized: "All history") }
@@ -183,7 +190,7 @@ struct TrendsView: View {
         ScreenScaffold(title: "Trends", subtitle: "The thread of you over time.") {
             if repo.days.isEmpty {
                 ComingSoon(what: repo.loaded
-                    ? "Trends need history to draw. Import your WHOOP export in Data Sources to see weeks, months and years instantly."
+                    ? "Trends need history to draw. Import your WHOOP export — or connect Apple Health — in Data Sources to see weeks, months and years."
                     : "Loading your history…")
             } else {
                 // Resolve each metric's window ONCE per body and pass the results
@@ -271,6 +278,7 @@ struct TrendsView: View {
                     subtitle: hrv.caption,
                     gradient: gradient(StrandPalette.metricPurple),
                     range: valueRange(hrvPts, fallback: 20...120),
+                    appleSourced: latestDayIsApple { $0.avgHrv },
                     fmt: { "\(Int($0.rounded()))" }
                 )
                 metricChart(
@@ -279,6 +287,7 @@ struct TrendsView: View {
                     subtitle: rhr.caption,
                     gradient: gradient(StrandPalette.metricRose),
                     range: valueRange(rhrPts, fallback: 40...80),
+                    appleSourced: latestDayIsApple { $0.restingHr.map(Double.init) },
                     fmt: { "\(Int($0.rounded()))" }
                 )
                 metricChart(
@@ -300,6 +309,7 @@ struct TrendsView: View {
         subtitle: String,
         gradient: Gradient,
         range: ClosedRange<Double>,
+        appleSourced: Bool = false,
         fmt: @escaping (Double) -> String
     ) -> some View {
         let avg = mean(pts)
@@ -307,6 +317,7 @@ struct TrendsView: View {
             title: title,
             subtitle: subtitle,
             trailing: avg.map(fmt),
+            badge: appleSourced ? SourceBadge("Apple Health", tint: StrandPalette.metricCyan) : nil,
             height: NoopMetrics.chartHeight,
             chart: {
                 if pts.count >= 2 {

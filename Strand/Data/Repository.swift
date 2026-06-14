@@ -38,6 +38,9 @@ final class Repository: ObservableObject {
         var days: [DailyMetric] = []
         var sleeps: [CachedSleepSession] = []
         var importedSleep: [String: ImportedSleepFigures] = [:]
+        /// Days whose surfaced daily row came from Apple Health (no strap coverage), so Trends/Sleep
+        /// can badge the source without `DailyMetric` carrying a source column. (FER-62)
+        var appleHealthDays: Set<String> = []
         var loaded = false
         var seq = 0
     }
@@ -54,6 +57,8 @@ final class Repository: ObservableObject {
     /// data load on this so they reload when fresh strap data lands — `today?.day` alone is a stable
     /// date string within a day and would freeze e.g. the Today HR trend until the date rolls over.
     var refreshSeq: Int { dashboard.seq }
+    /// Days surfaced from Apple Health (strap-uncovered) — Trends/Sleep badge these as "Apple Health". (FER-62)
+    var appleHealthDays: Set<String> { dashboard.appleHealthDays }
 
     init(deviceId: String) { self.deviceId = deviceId }
 
@@ -116,6 +121,9 @@ final class Repository: ObservableObject {
 
         let imported = (try? await store.dailyMetrics(deviceId: deviceId, from: fromDay, to: toDay)) ?? []
         let computed = (try? await store.dailyMetrics(deviceId: computedDeviceId, from: fromDay, to: toDay)) ?? []
+        // FER-62: Apple Health daily rows — the lowest-precedence fallback layer for the dashboard,
+        // so a strap-uncovered user still sees HRV / resting HR / sleep-stage trends.
+        let apple = (try? await store.dailyMetrics(deviceId: "apple-health", from: fromDay, to: toDay)) ?? []
         let impSleep = (try? await store.sleepSessions(deviceId: deviceId, from: lo, to: hi, limit: 4000)) ?? []
         let compSleep = (try? await store.sleepSessions(deviceId: computedDeviceId, from: lo, to: hi, limit: 4000)) ?? []
 
@@ -132,10 +140,12 @@ final class Repository: ObservableObject {
         for p in debt { fig[p.day, default: ImportedSleepFigures()].debtMin = p.value }
 
         // One assignment → one objectWillChange for the whole refresh (was four).
+        let merged = Self.mergeDaily(imported: imported, computed: computed, apple: apple)
         self.dashboard = DashboardData(
-            days: Self.mergeDaily(imported: imported, computed: computed),
+            days: merged.days,
             sleeps: Self.mergeSleep(imported: impSleep, computed: compSleep),
             importedSleep: fig,
+            appleHealthDays: merged.appleDays,
             loaded: true,
             seq: dashboard.seq + 1
         )
@@ -146,17 +156,24 @@ final class Repository: ObservableObject {
     func setDashboard(days: [DailyMetric] = [],
                       sleeps: [CachedSleepSession] = [],
                       importedSleep: [String: ImportedSleepFigures] = [:],
+                      appleHealthDays: Set<String> = [],
                       loaded: Bool = true) {
         dashboard = DashboardData(days: days, sleeps: sleeps, importedSleep: importedSleep,
-                                  loaded: loaded, seq: dashboard.seq + 1)
+                                  appleHealthDays: appleHealthDays, loaded: loaded, seq: dashboard.seq + 1)
     }
 
-    /// Imported daily rows win per day; computed rows fill the days the import doesn't cover.
-    private static func mergeDaily(imported: [DailyMetric], computed: [DailyMetric]) -> [DailyMetric] {
+    /// Layered precedence (FER-62): Apple Health rows are the base, on-device computed rows fill the
+    /// days they don't cover, and imported strap rows win over everything — so the strap always beats
+    /// Apple Health. Also returns the days whose surfaced row stayed Apple Health (strap-uncovered),
+    /// for source badging.
+    static func mergeDaily(imported: [DailyMetric], computed: [DailyMetric],
+                           apple: [DailyMetric]) -> (days: [DailyMetric], appleDays: Set<String>) {
         var byDay: [String: DailyMetric] = [:]
-        for d in computed { byDay[d.day] = d }   // computed first…
-        for d in imported { byDay[d.day] = d }   // …import overwrites, so a real WHOOP import always wins
-        return byDay.values.sorted { $0.day < $1.day }
+        var appleDays = Set<String>()
+        for d in apple    { byDay[d.day] = d; appleDays.insert(d.day) }   // base layer (lowest precedence)
+        for d in computed { byDay[d.day] = d; appleDays.remove(d.day) }   // on-device strap overwrites Apple
+        for d in imported { byDay[d.day] = d; appleDays.remove(d.day) }   // imported strap wins over all
+        return (byDay.values.sorted { $0.day < $1.day }, appleDays)
     }
 
     /// Same precedence for sleep sessions, keyed by the day the night ends on.

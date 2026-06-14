@@ -8533,28 +8533,6 @@
         }
       }
     },
-    "No nights here yet. Import your WHOOP export in Data Sources to see every night, your sleep stages and trends straight away. Or open Intelligence to see last night computed from the strap after you wear it to bed.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Noch keine Nächte hier. Importiere deinen WHOOP-Export unter Datenquellen, um sofort jede Nacht, deine Schlafphasen und Trends zu sehen. Oder öffne Intelligenz, um die letzte Nacht aus dem Strap berechnet zu sehen, nachdem du ihn nachts getragen hast."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No nights here yet. Import your WHOOP export in Data Sources to see every night, your sleep stages and trends straight away. Or open Intelligence to see last night computed from the strap after you wear it to bed."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aún no hay noches aquí. Importa tu exportación de WHOOP en Fuentes de datos para ver de inmediato cada noche, tus etapas de sueño y tendencias. O abre Inteligencia para ver la noche anterior calculada desde la banda después de dormir con ella."
-          }
-        }
-      }
-    },
     "No on-device store yet.": {
       "localizations": {
         "en": {
@@ -13751,28 +13729,6 @@
         }
       }
     },
-    "Trends need history to draw. Import your WHOOP export in Data Sources to see weeks, months and years instantly.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Trends benötigen Verlauf zur Darstellung. Importiere deinen WHOOP-Export unter Datenquellen, um Wochen, Monate und Jahre sofort zu sehen."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Trends need history to draw. Import your WHOOP export in Data Sources to see weeks, months and years instantly."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Las tendencias necesitan historial para dibujarse. Importa tu exportación de WHOOP en Fuentes de datos para ver semanas, meses y años al instante."
-          }
-        }
-      }
-    },
     "Try again": {
       "localizations": {
         "de": {
@@ -15036,6 +14992,52 @@
           "stringUnit": {
             "state": "translated",
             "value": "DESCONECTADO"
+          }
+        }
+      }
+    },
+    "Trends need history to draw. Import your WHOOP export — or connect Apple Health — in Data Sources to see weeks, months and years.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trends need history to draw. Import your WHOOP export — or connect Apple Health — in Data Sources to see weeks, months and years."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las tendencias necesitan historial para dibujarse. Importa tu exportación de WHOOP — o conecta Apple Health — en Fuentes de datos para ver semanas, meses y años."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trends benötigen Verlauf zur Darstellung. Importiere deinen WHOOP-Export — oder verbinde Apple Health — unter Datenquellen, um Wochen, Monate und Jahre zu sehen."
+          }
+        }
+      }
+    },
+    "No nights here yet. Import your WHOOP export — or connect Apple Health — in Data Sources to see your sleep stages and trends. Or open Intelligence to see last night computed from the strap after you wear it to bed.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No nights here yet. Import your WHOOP export — or connect Apple Health — in Data Sources to see your sleep stages and trends. Or open Intelligence to see last night computed from the strap after you wear it to bed."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no hay noches aquí. Importa tu exportación de WHOOP — o conecta Apple Health — en Fuentes de datos para ver tus etapas de sueño y tendencias. O abre Inteligencia para ver la noche anterior calculada desde la banda después de dormir con ella."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Nächte hier. Importiere deinen WHOOP-Export — oder verbinde Apple Health — unter Datenquellen, um deine Schlafphasen und Trends zu sehen. Oder öffne Intelligenz, um die letzte Nacht aus dem Strap berechnet zu sehen, nachdem du ihn nachts getragen hast."
           }
         }
       }
