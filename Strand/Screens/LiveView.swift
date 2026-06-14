@@ -33,8 +33,11 @@ struct LiveView: View {
 
     var body: some View {
         ScreenScaffold(title: "Live",
-                       subtitle: "Your strap in real time — heart rate and frames as they arrive.") {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+                       subtitle: monitorOnly ? nil
+                                             : "Your strap in real time — heart rate and frames as they arrive.") {
+            // Tighter section rhythm in the monitor cover so the whole instrument fits one screen;
+            // the Live tab keeps the standard sectionGap.
+            VStack(alignment: .leading, spacing: monitorOnly ? 16 : NoopMetrics.sectionGap) {
                 connectionRow
                 // Can't-connect-at-all guidance: the strap wiped its bond (firmware update / WHOOP app
                 // re-bond), so connects loop on "Peer removed pairing information". Show the re-pair steps
