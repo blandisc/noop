@@ -101,6 +101,15 @@ final class Repository: ObservableObject {
     /// Expose the shared store handle (used by the importer to persist mapped rows).
     func storeHandle() async -> WhoopStore? { await ensureStore() }
 
+    /// One-shot snapshot for the Today "data receipt": stored raw-sample counts + the latest stored
+    /// HR sample time (proof the strap's streams are landing and current). nil if no store yet.
+    func dataReceipt() async -> (counts: (hr: Int, rr: Int, spo2: Int, skinTemp: Int, resp: Int, gravity: Int), latestHRTs: Int?)? {
+        guard let store = await ensureStore() else { return nil }
+        guard let counts = try? await store.sampleCounts() else { return nil }
+        let latest = (try? await store.latestHRSampleTs(deviceId: deviceId)) ?? nil
+        return (counts, latest)
+    }
+
     /// Checkpoint the WAL into the main DB file if the store is already open, so a file-level
     /// backup captures everything. No-op (returns false) if no handle exists yet — the caller
     /// then copies the on-disk files as-is, which still includes the -wal sidecar.
