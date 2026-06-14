@@ -48,6 +48,9 @@ struct TodayView: View {
     // Support sheet (donate + contact) — always reachable from the home toolbar.
     @State private var showingSupport = false
 
+    // Metric-info sheet — tapping any Key Metrics row presents this.
+    @State private var metricDetail: MetricInfo? = nil
+
     // THE single grid definition — every tile group reuses it so margins line up.
     private let grid = [GridItem(.adaptive(minimum: 168), spacing: NoopMetrics.gap)]
 
@@ -92,6 +95,9 @@ struct TodayView: View {
                 }
             }
             .animation(.easeOut(duration: 0.18), value: showingSupport)
+            .sheet(item: $metricDetail) { info in
+                MetricInfoSheet(info: info)
+            }
     }
 
     @ViewBuilder private var platformBody: some View {
@@ -140,22 +146,14 @@ struct TodayView: View {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                 headerBlock
                 HealthAlertBanner()
-                if isFirstLaunch {
-                    // No device ever synced and nothing live: the honest "first launch" state — one
-                    // clear action, no fabricated scores. Deliberately sparse vs. the data-rich days.
+                if repo.today?.recovery == nil {
+                    // No readiness yet → one calm, intentional screen from first launch through
+                    // calibration. The clean verdict hero adapts its copy to whether a strap has been
+                    // seen; the old data-pending gauge ("Sin datos") is gone so the empty state never
+                    // looks half-built — even right after the strap connects in onboarding.
+                    if live.backfilling { SyncingHistoryNote(chunks: live.syncChunksThisSession) }
                     emptyHero
                 } else {
-                    if repo.today?.recovery == nil {
-                        if live.backfilling { SyncingHistoryNote(chunks: live.syncChunksThisSession) }
-                        if let n = recoveryCalibration {
-                            CalibrationProgressCard(nights: n, total: Baselines.minNightsSeed)
-                        } else {
-                            DataPendingNote(
-                                title: "Live now. Your scores are building.",
-                                message: "Your live heart rate is working from the strap, and recovery, strain and sleep build from it over your next few nights of wear, sharpening as it learns your baseline. Want your full history instantly? Import your WHOOP export in Data Sources and it backfills in about a minute."
-                            )
-                        }
-                    }
                     verdictSection
                 }
                 whySection
@@ -240,29 +238,36 @@ struct TodayView: View {
         return r.level != .insufficient ? readinessColor(r.level) : StrandPalette.metricRose
     }
 
-    /// First-launch hero: a committed "no reading yet" headline and a single clear CTA. No gauge,
-    /// no fabricated numbers — the rest of the screen renders its honest empty/skeleton states.
+    /// Verdict hero for the no-data state — one calm screen from first launch through calibration.
+    /// Copy adapts to whether a strap has ever been seen: before, a committed "no reading yet" + a
+    /// single "scan" CTA; after the strap connects (live HR or any past sync), an honest "scores are
+    /// building" note with the import hint and no button. No gauge, no fabricated numbers either way.
     private var emptyHero: some View {
-        NoopCard(padding: 18) {
+        let strapSeen = live.lastSyncedAt != nil || liveBpm != nil
+        return NoopCard(padding: 18) {
             VStack(alignment: .leading, spacing: 9) {
                 Text("Today's verdict").strandOverline()
-                Text("No reading yet")
+                Text(strapSeen ? "Your scores are building" : "No reading yet")
                     .font(StrandFont.title1)
                     .foregroundStyle(StrandPalette.textSecondary)
-                Text("Connect your WHOOP strap to see this morning's readiness, recovery and heart rate.")
+                Text(strapSeen
+                     ? "Your strap is connected. Recovery, strain and sleep build over your next few nights of wear. Import your WHOOP export in Data Sources to backfill instantly."
+                     : "Connect your WHOOP strap to see this morning's readiness, recovery and heart rate.")
                     .font(StrandFont.subhead)
                     .foregroundStyle(StrandPalette.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
-                Button { model.scan() } label: {
-                    Text("Scan for strap")
-                        .font(StrandFont.headline)
-                        .foregroundStyle(StrandPalette.surfaceBase)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 11)
-                        .background(StrandPalette.accent, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                if !strapSeen {
+                    Button { model.scan() } label: {
+                        Text("Scan for strap")
+                            .font(StrandFont.headline)
+                            .foregroundStyle(StrandPalette.surfaceBase)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 11)
+                            .background(StrandPalette.accent, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 5)
                 }
-                .buttonStyle(.plain)
-                .padding(.top, 5)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -483,44 +488,58 @@ struct TodayView: View {
     @ViewBuilder private var iosMetricsSection: some View {
         let d = repo.today
         let aLatest = appleDays.last
-        let empty = isFirstLaunch
+        // Skeleton placeholders show whenever there's no readiness yet — with or without a strap
+        // connected — so the no-data screen reads the same whether it's first launch or calibrating.
+        let empty = repo.today?.recovery == nil
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
             SectionHeader("Key Metrics", overline: "Today", trailing: String(localized: "14-day"))
             VStack(spacing: 0) {
-                MetricRow(label: "Day Strain",
-                          value: d?.strain.map { String(format: "%.1f", $0) } ?? "—",
-                          valueColor: d?.strain.map { StrandPalette.strainColor($0) } ?? StrandPalette.textPrimary,
-                          sparkline: sparks["strain"], sparkColor: StrandPalette.strain066,
-                          isPlaceholder: empty)
+                Button { metricDetail = .strain(d?.strain) } label: {
+                    MetricRow(label: "Day Strain",
+                              value: d?.strain.map { String(format: "%.1f", $0) } ?? "—",
+                              valueColor: d?.strain.map { StrandPalette.strainColor($0) } ?? StrandPalette.textPrimary,
+                              sparkline: sparks["strain"], sparkColor: StrandPalette.strain066,
+                              isPlaceholder: empty)
+                }.buttonStyle(.plain)
                 metricSeparator
-                MetricRow(label: "Sleep",
-                          value: sleepValue(d),
-                          sparkline: sparks["sleep_total_min"], sparkColor: StrandPalette.metricPurple,
-                          isPlaceholder: empty)
+                Button { metricDetail = .sleep(d?.totalSleepMin.map { Int($0.rounded()) }) } label: {
+                    MetricRow(label: "Sleep",
+                              value: sleepValue(d),
+                              sparkline: sparks["sleep_total_min"], sparkColor: StrandPalette.metricPurple,
+                              isPlaceholder: empty)
+                }.buttonStyle(.plain)
                 metricSeparator
-                MetricRow(label: "HRV",
-                          value: d?.avgHrv.map { "\(Int($0.rounded()))" } ?? "—",
-                          unit: "ms", valueColor: StrandPalette.metricPurple,
-                          flag: (d?.avgHrv != nil && readiness.confidenceLow) ? "Low conf" : nil,
-                          sparkline: sparks["hrv"], sparkColor: StrandPalette.metricPurple,
-                          isPlaceholder: empty)
+                Button { metricDetail = .hrv(d?.avgHrv) } label: {
+                    MetricRow(label: "HRV",
+                              value: d?.avgHrv.map { "\(Int($0.rounded()))" } ?? "—",
+                              unit: "ms", valueColor: StrandPalette.metricPurple,
+                              flag: (d?.avgHrv != nil && readiness.confidenceLow) ? "Low conf" : nil,
+                              sparkline: sparks["hrv"], sparkColor: StrandPalette.metricPurple,
+                              isPlaceholder: empty)
+                }.buttonStyle(.plain)
                 metricSeparator
-                MetricRow(label: "Resting HR",
-                          value: d?.restingHr.map { "\($0)" } ?? "—",
-                          unit: "bpm", valueColor: StrandPalette.metricRose,
-                          sparkline: sparks["rhr"], sparkColor: StrandPalette.metricRose,
-                          isPlaceholder: empty)
+                Button { metricDetail = .restingHR(d?.restingHr) } label: {
+                    MetricRow(label: "Resting HR",
+                              value: d?.restingHr.map { "\($0)" } ?? "—",
+                              unit: "bpm", valueColor: StrandPalette.metricRose,
+                              sparkline: sparks["rhr"], sparkColor: StrandPalette.metricRose,
+                              isPlaceholder: empty)
+                }.buttonStyle(.plain)
                 metricSeparator
-                MetricRow(label: "Blood Oxygen",
-                          value: d?.spo2Pct.map { String(format: "%.0f", $0) } ?? "—",
-                          unit: "%", valueColor: StrandPalette.metricCyan,
-                          sparkline: sparks["spo2"], sparkColor: StrandPalette.metricCyan,
-                          isPlaceholder: empty)
+                Button { metricDetail = .spo2(d?.spo2Pct) } label: {
+                    MetricRow(label: "Blood Oxygen",
+                              value: d?.spo2Pct.map { String(format: "%.0f", $0) } ?? "—",
+                              unit: "%", valueColor: StrandPalette.metricCyan,
+                              sparkline: sparks["spo2"], sparkColor: StrandPalette.metricCyan,
+                              isPlaceholder: empty)
+                }.buttonStyle(.plain)
                 metricSeparator
-                MetricRow(label: "Steps",
-                          value: aLatest?.steps.map { intString(Double($0)) } ?? latestString("steps", decimals: 0),
-                          sparkline: sparks["steps"], sparkColor: StrandPalette.metricCyan,
-                          isPlaceholder: empty)
+                Button { metricDetail = .steps(aLatest?.steps) } label: {
+                    MetricRow(label: "Steps",
+                              value: aLatest?.steps.map { intString(Double($0)) } ?? latestString("steps", decimals: 0),
+                              sparkline: sparks["steps"], sparkColor: StrandPalette.metricCyan,
+                              isPlaceholder: empty)
+                }.buttonStyle(.plain)
             }
         }
     }

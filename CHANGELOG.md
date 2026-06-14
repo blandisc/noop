@@ -19,6 +19,8 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Tap any metric to learn what it means (iPhone).** Every row in "Key Metrics" is now tappable. A bottom sheet opens showing what the metric measures, how it is calculated, and a colour-coded range table (e.g. Rest · Moderate · Hard · Extreme for strain) with your current value highlighted in its band. Covers Day Strain, Sleep, HRV, Resting HR, Blood Oxygen, and Steps.
+- **No-data screen stays honest when the strap connects mid-onboarding.** Previously the Today screen would flip from the clean "No reading yet" hero to the older "Scores are building" state the moment a strap was seen, even before any recovery data arrived. Now a single adaptive hero covers both states: it shows "No reading yet / Scan for strap" until a strap is ever seen, then "Your scores are building" once one is — always without fabricated gauges or dashes.
 - **Redesigned Today screen (iPhone).** The Today tab is now a tighter, verdict-first "instrument"
   read. It opens with an honesty line ("Synced 2 min ago · strap 87%" / "Last sync — never") and the
   brand ECG strip with your live heart rate, then a single committed verdict — "You're Primed",
