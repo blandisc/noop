@@ -63,6 +63,8 @@ final class Collector {
     private var stdRR: [RRInterval] = []
     private var batchStartedAt: TimeInterval
     var bufferedCount: Int { buffer.count }
+    /// Called after each successful standard-HR flush so callers can signal the UI.
+    var onHRFlushed: (() -> Void)?
 
     init(store: StoreWriting, deviceId: String,
          policy: CollectorPolicy = .default,
@@ -169,6 +171,7 @@ final class Collector {
         stdRR.removeAll(keepingCapacity: true)
         do {
             try await store.insert(Streams(hr: hr, rr: rr), deviceId: deviceId)
+            onHRFlushed?()
         } catch {
             stdHR.insert(contentsOf: hr, at: 0)
             stdRR.insert(contentsOf: rr, at: 0)

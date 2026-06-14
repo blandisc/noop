@@ -293,6 +293,7 @@ public final class BLEManager: NSObject, ObservableObject {
             let enableRawCapture = UserDefaults.standard.bool(forKey: "enableRawCapture")
             collector = Collector(store: store, deviceId: deviceId,
                                   enableRawCapture: enableRawCapture)
+            collector?.onHRFlushed = { [weak self] in self?.state.hrFlushSeq += 1 }
             backfiller = Backfiller(store: store, deviceId: deviceId,
                                     ackTrim: { [weak self] trim, endData in
                                         self?.ackHistoricalChunk(trim: trim, endData: endData)

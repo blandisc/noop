@@ -93,6 +93,13 @@ struct TodayView: View {
     var body: some View {
         platformBody
             .task(id: repo.refreshSeq) { await loadAll() }
+            .task(id: live.hrFlushSeq) {
+                guard live.hrFlushSeq > 0 else { return }
+                let start = Int(Calendar.current.startOfDay(for: Date()).timeIntervalSince1970)
+                let now   = Int(Date().timeIntervalSince1970)
+                let rows  = await repo.hrBuckets(from: start, to: now, bucketSeconds: 300)
+                hrPoints  = rows.map { TrendPoint(date: Date(timeIntervalSince1970: TimeInterval($0.ts)), value: $0.bpm) }
+            }
             .toolbar {
                 ToolbarItem {
                     Button { showingSupport = true } label: {
