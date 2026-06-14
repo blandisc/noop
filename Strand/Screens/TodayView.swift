@@ -189,7 +189,7 @@ struct TodayView: View {
         .background(StrandPalette.surfaceBase)
         .fullScreenCover(isPresented: $showLiveMonitor) {
             NavigationStack {
-                LiveView()
+                LiveView(monitorOnly: true)
                     .environmentObject(model)
                     .environmentObject(live)
                     .toolbar {

@@ -13,6 +13,11 @@ struct LiveView: View {
     @EnvironmentObject private var model: AppModel
     @EnvironmentObject private var live: LiveState
 
+    /// When true, render only the live monitor (through the saved-data footer) and omit the strap-
+    /// management chrome — workout, model picker, controls, and the frame log. The Today calibration
+    /// card presents the monitor this way; the Live tab keeps the full chrome (default false).
+    var monitorOnly: Bool = false
+
     /// Which strap the user is pairing — persists across launches. Drives which
     /// BLE service we scan for so a WHOOP 4.0 scan never hangs on a WHOOP 5 wrist.
     @AppStorage("selectedWhoopModel") private var selectedModelRaw = WhoopModel.whoop4.rawValue
@@ -44,13 +49,17 @@ struct LiveView: View {
                 liveSignals
                 syncSignals
                 savedFooter
-                workoutSection
-                // Show the strap picker whenever we're not actively streaming, so a user with both a
-                // WHOOP 4 and a 5/MG can switch between them. (It used to hide once `bonded`, which is
-                // sticky across disconnects — so after the first pairing the picker vanished for good.)
-                if !activeConnection { modelPicker }
-                controls
-                logCard
+                // Strap-management chrome lives only on the Live tab — the Today "see it beat by beat"
+                // monitor cover ends at the saved-data footer (monitorOnly).
+                if !monitorOnly {
+                    workoutSection
+                    // Show the strap picker whenever we're not actively streaming, so a user with both
+                    // a WHOOP 4 and a 5/MG can switch between them. (It used to hide once `bonded`, which
+                    // is sticky across disconnects — so after the first pairing the picker vanished.)
+                    if !activeConnection { modelPicker }
+                    controls
+                    logCard
+                }
             }
         }
         .onAppear { refreshLiveSession() }
