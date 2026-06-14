@@ -21,6 +21,22 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 - **Debug screenshot fixtures for Today's readiness states (developers only).** A new DEBUG-only `ScreenshotFixtures` seeds ~40 days of deterministic synthetic history — reverse-engineered against `ReadinessEngine` + `Baselines` — so TodayView can be captured in a specific verdict on demand: `-noop.fixture primed` (signals aligned, load supported) or `-noop.fixture strained` (one signal flagging). The seed publishes a matching dashboard plus synthetic workouts and a 24h heart-rate trace, and `AppModel.init` skips the production refresh loop while a fixture is active so it isn't overwritten. The `NOOPScreenshotTests` UI test gained one isolated method per state (`test_captureTodayEmpty/Primed/Strained`) that captures a top→bottom scroll sequence. All `#if DEBUG`-gated; no effect on release builds. ([Strand/App/ScreenshotFixtures.swift](Strand/App/ScreenshotFixtures.swift))
 
+- **Fix: trend charts no longer tint the hour labels or clip the last one.** The area fill under the
+  curve used to reach the floor of the plot and sit behind the X-axis labels (e.g. the heart-rate
+  chart on Today), tinting "2:25 p.m. / 2:40 p.m. …" a faint red, and the rightmost label was cut off
+  ("3:25 p..." instead of "3:25 p.m."). The chart's plot area now carries a small bottom/trailing
+  inset (`NoopMetrics.chartPlotInset`), lifting the fill off the label band and giving the last label
+  room to render in full before `ChartCard`'s frame clip. Applies everywhere `TrendChart` is used —
+  Today (heart rate), Trends and Explore — since it's one shared component. The `.monotone` fill (so
+  it never bleeds below the axis onto the footer) and the hover/crosshair logic are untouched.
+  ([Packages/StrandDesign/Sources/StrandDesign/TrendChart.swift](Packages/StrandDesign/Sources/StrandDesign/TrendChart.swift)) (FER-82)
+
+- **Today is shorter on iPhone: the "Last Workouts" strip is gone.** Today should read at a glance,
+  and your workouts already have their own Workouts tab — repeating them on the home screen only added
+  scroll. Today now flows verdict → Key Metrics → Heart Rate → Data Sources. Nothing else changed:
+  the Workouts tab still lists every session, the Apple Health workout count in Data Sources is
+  unaffected, and macOS keeps its "Last Workouts" section. ([Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift))
+
 - **Debug screenshot automation (developers only).** iOS debug builds now register a Darwin notification listener (`noop.nav.<screen>`) so every screen can be navigated programmatically — `xcrun simctl spawn booted notifyutil -p noop.nav.trends` — without triggering system permission dialogs. The "More" tab was refactored to use `NavigationLink(value:)` with a typed `MoreScreen` enum and a programmatic `NavigationPath`, enabling deep-link navigation into any sub-screen from the command line. A `noopdev://` URL scheme (backup transport) is also registered. All debug code is `#if DEBUG`-gated; it has no effect on release builds. ([StrandiOS/App/ScreenshotNav.swift](StrandiOS/App/ScreenshotNav.swift))
 
 - **Fix: `MetricInfoSheet` now compiles on macOS 13.0.** `.presentationBackground(_:)` requires macOS 13.3 but the sheet was calling it unconditionally. Wrapped in a `PresentationBackgroundModifier` with an `@available(macOS 13.3, iOS 16.4, *)` guard.

@@ -110,6 +110,13 @@ final class Repository: ObservableObject {
         return (counts, latest)
     }
 
+    /// "Verify my data": run the store's integrity check. false on any failure (incl. no store yet),
+    /// so the UI prompts a retry rather than silently doing nothing.
+    func verifyIntegrity() async -> Bool {
+        guard let store = await ensureStore() else { return false }
+        return (try? await store.integrityCheck()) ?? false
+    }
+
     /// Checkpoint the WAL into the main DB file if the store is already open, so a file-level
     /// backup captures everything. No-op (returns false) if no handle exists yet — the caller
     /// then copies the on-disk files as-is, which still includes the -wal sidecar.

@@ -13,6 +13,11 @@ public enum NoopMetrics {
     public static let screenPadding: CGFloat = 24
     public static let tileHeight: CGFloat = 104  // every metric tile is this tall
     public static let chartHeight: CGFloat = 220
+    /// Insets the chart's plot area from the card edges so the X-axis label band reads on a clean
+    /// surface (no AreaMark fill behind the hour labels) and the last label isn't clipped by
+    /// ChartCard's `.clipped()` frame. Bottom = gap between the fill floor and the label band;
+    /// trailing = room for the rightmost label's overflow past its tick. (FER-82)
+    public static let chartPlotInset = EdgeInsets(top: 0, leading: 0, bottom: 8, trailing: 18)
 }
 
 // MARK: - Surface
