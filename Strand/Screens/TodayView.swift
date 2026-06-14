@@ -207,11 +207,10 @@ struct TodayView: View {
     }
 
     /// The live-HR strip: the brand ECG waveform (tinted to the verdict, flatline when there's no
-    /// reading) with the current bpm pinned to the right. Static — the waveform is a brand mark, not
-    /// an animation (per the handoff).
+    /// reading) with the current bpm pinned to the right. Scrolls when the strap is transmitting live HR.
     @ViewBuilder private var liveStrip: some View {
         HStack(alignment: .center, spacing: 12) {
-            ECGWave(color: ecgColor, flat: liveBpm == nil)
+            ECGWave(color: ecgColor, flat: liveBpm == nil, animate: isLiveHR)
                 .frame(width: 152)
             Spacer(minLength: 0)
             HStack(alignment: .firstTextBaseline, spacing: 5) {

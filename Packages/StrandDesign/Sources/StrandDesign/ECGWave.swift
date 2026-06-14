@@ -2,10 +2,10 @@ import SwiftUI
 
 // MARK: - ECG waveform (brand motif)
 //
-// The NOOP signature: a single heartbeat trace derived from the app's logo mark. Rendered as a
-// STATIC vector (no flow / no beat — motion was removed in the Today handoff) so it reads as a
-// calm brand element on the live-HR strip. Pass `flat` for the no-data flatline. Edge-faded on
-// both sides so the strip dissolves into the layout instead of ending on a hard stub.
+// The NOOP signature: a single heartbeat trace derived from the app's logo mark.
+// Pass `flat` for the no-data flatline. Pass `animate: true` when the strap is streaming live HR
+// to enable a scrolling-ECG effect (two tiled copies scrolling left on a ~2.4 s loop). Edge-faded
+// on both sides so the strip dissolves into the layout instead of ending on a hard stub.
 //
 // Cross-platform, tokens-only — the first of the redesign primitives the rest of the app will reuse.
 
@@ -13,27 +13,65 @@ public struct ECGWave: View {
     public var color: Color
     public var flat: Bool
     public var lineWidth: CGFloat
+    public var animate: Bool
 
-    public init(color: Color = StrandPalette.accent, flat: Bool = false, lineWidth: CGFloat = 1.6) {
+    @State private var phase: CGFloat = 0
+
+    public init(
+        color: Color = StrandPalette.accent,
+        flat: Bool = false,
+        lineWidth: CGFloat = 1.6,
+        animate: Bool = false
+    ) {
         self.color = color
         self.flat = flat
         self.lineWidth = lineWidth
+        self.animate = animate
     }
 
+    private var isScrolling: Bool { animate && !flat }
+
     public var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width
+            HStack(spacing: 0) {
+                trace(width: w)
+                if isScrolling { trace(width: w) }
+            }
+            .offset(x: isScrolling ? -w * phase : 0)
+        }
+        .frame(height: ECGShape.designHeight)
+        .clipped()
+        .opacity(flat ? 0.6 : 1)
+        .mask(
+            LinearGradient(stops: [
+                .init(color: .clear, location: 0),
+                .init(color: .black, location: 0.14),
+                .init(color: .black, location: 0.86),
+                .init(color: .clear, location: 1),
+            ], startPoint: .leading, endPoint: .trailing)
+        )
+        .onAppear { startScrolling() }
+        .onChange(of: isScrolling) { scrolling in
+            if scrolling {
+                phase = 0
+                startScrolling()
+            }
+        }
+        .accessibilityHidden(true)
+    }
+
+    private func trace(width: CGFloat) -> some View {
         ECGShape(flat: flat)
             .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round))
-            .opacity(flat ? 0.6 : 1)
-            .frame(height: ECGShape.designHeight)
-            .mask(
-                LinearGradient(stops: [
-                    .init(color: .clear, location: 0),
-                    .init(color: .black, location: 0.14),
-                    .init(color: .black, location: 0.86),
-                    .init(color: .clear, location: 1),
-                ], startPoint: .leading, endPoint: .trailing)
-            )
-            .accessibilityHidden(true)
+            .frame(width: width, height: ECGShape.designHeight)
+    }
+
+    private func startScrolling() {
+        guard isScrolling else { return }
+        withAnimation(.linear(duration: 2.4).repeatForever(autoreverses: false)) {
+            phase = 1
+        }
     }
 }
 
@@ -68,12 +106,15 @@ struct ECGShape: Shape {
 #if DEBUG
 #Preview("ECGWave") {
     VStack(alignment: .leading, spacing: 20) {
-        ECGWave(color: StrandPalette.accent).frame(width: 152)
+        Text("Live (scrolling)").font(.caption).foregroundStyle(StrandPalette.textTertiary)
+        ECGWave(color: StrandPalette.accent, animate: true).frame(width: 152)
+        Text("Static (no data)").font(.caption).foregroundStyle(StrandPalette.textTertiary)
         ECGWave(color: StrandPalette.statusWarning).frame(width: 152)
+        Text("Flat (disconnected)").font(.caption).foregroundStyle(StrandPalette.textTertiary)
         ECGWave(color: StrandPalette.textTertiary, flat: true).frame(width: 152)
     }
     .padding(24)
-    .frame(width: 320, height: 200)
+    .frame(width: 320, height: 260)
     .background(StrandPalette.surfaceBase)
     .preferredColorScheme(.dark)
 }
