@@ -19,6 +19,13 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Apple Health workouts now appear in Today and Workouts (iPhone).** The live Apple Health sync asked
+  for workout permission but never actually fetched them — only the manual XML export brought them in.
+  The sync now queries HealthKit workouts in the same window as the rest of your health data, so
+  "Last Workouts" on Today and the Workouts tab fill in automatically on every sync without needing
+  to export anything. Activity names come through correctly (e.g. "Traditional Strength Training",
+  "Running") and the progress bar shows "Workouts (12/13)" while they load.
+
 - **The wait for your first verdict is alive now (iPhone, FER-61).** Before NOOP has banked enough
   nights to compute a verdict, Today shows a night-by-night progress card from night zero — four dots
   that fill in as each valid night lands (0 of 4 → 4 of 4), so you always see how many nights are left
