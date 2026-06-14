@@ -214,6 +214,9 @@ public final class BLEManager: NSObject, ObservableObject {
     /// readable and avoid forcing SwiftUI to auto-scroll on every ACK row.
     private var historicalAckLogCounter = 0
     private var clockRequested = false
+    /// FER-90 diagnostic: did the strap answer the GET_CLOCK we sent this connect? Reset when we send
+    /// GET_CLOCK, set when its response lands — a deferred check logs "sin respuesta" if it never does.
+    private var getClockResponded = false
     private var intentionalDisconnect = false
     /// The strap family the user chose to pair. Drives which service we scan for
     /// and which service we discover after connecting. Hydrated from the persisted
@@ -1357,6 +1360,13 @@ extension BLEManager: CBPeripheralDelegate {
                                            // the app's old default [0x00] is a wrong length the strap ignores.
                                            // (Offload no longer depends on this — Backfiller falls back to an
                                            // identity clockRef — but a real correlation helps realtime decode.)
+            // FER-90 diagnostic: flag the band if it never answers GET_CLOCK — that silence is itself the
+            // finding (we'd never learn the strap's RTC, so a stale-clock fix can't even detect drift).
+            getClockResponded = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4) { [weak self] in
+                guard let self, !self.getClockResponded else { return }
+                self.log("GET_CLOCK sin respuesta — la banda no contestó su reloj")
+            }
         }
         send(.sendR10R11Realtime, payload: [0x00])   // stop the type-43 realtime flood (BLE airtime/battery)
         send(.getDataRange)                          // refresh the strap's stored range for the watchdog
@@ -1393,6 +1403,14 @@ extension BLEManager: CBPeripheralDelegate {
         [UInt8(now & 0xFF), UInt8((now >> 8) & 0xFF),
          UInt8((now >> 16) & 0xFF), UInt8((now >> 24) & 0xFF),
          0, 0, 0, 0]
+    }
+
+    /// FER-90 diagnostic: format a unix timestamp as a short, human-readable LOCAL date for the strap
+    /// log (e.g. "2026-06-14 16:57"). Used to make GET_CLOCK / GET_DATA_RANGE legible to the user.
+    static func logDate(_ unix: Int) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd HH:mm"
+        return f.string(from: Date(timeIntervalSince1970: TimeInterval(unix)))
     }
 
     /// Newest plausible-unix marker in a GET_DATA_RANGE COMMAND_RESPONSE = the strap's newest stored
@@ -1468,15 +1486,30 @@ extension BLEManager: CBPeripheralDelegate {
                     continue
                 }
                 router.handle(frame: frame)                       // live/UI path
-                if frame.count > 6, frame[6] == WhoopCommand.getDataRange.rawValue,
-                   let newest = BLEManager.dataRangeNewestUnix(from: frame) {
-                    strapNewestTs = newest                        // feeds the liveness watchdog
-                    // Surface the band's retained-history window for the sync diagnostic (FER-83):
-                    // proof the sensor captured data and the band still holds it.
-                    state.strapHistoryNewest = TimeInterval(newest)
-                    if let oldest = BLEManager.dataRangeOldestUnix(from: frame) {
-                        state.strapHistoryOldest = TimeInterval(oldest)
+                if frame.count > 6, frame[6] == WhoopCommand.getDataRange.rawValue {
+                    if let newest = BLEManager.dataRangeNewestUnix(from: frame) {
+                        strapNewestTs = newest                    // feeds the liveness watchdog
+                        // Surface the band's retained-history window for the sync diagnostic (FER-83):
+                        // proof the sensor captured data and the band still holds it.
+                        state.strapHistoryNewest = TimeInterval(newest)
+                        let oldest = BLEManager.dataRangeOldestUnix(from: frame)
+                        if let oldest = oldest { state.strapHistoryOldest = TimeInterval(oldest) }
+                        // FER-90 diagnostic: the retained-history window in plain dates, in the strap log.
+                        log("La banda dice tener historial de \(BLEManager.logDate(oldest ?? newest)) a \(BLEManager.logDate(newest))")
+                    } else {
+                        // FER-90 diagnostic: response arrived but carries no plausible-unix window — the
+                        // band reports no stored history (or its record timestamps are out of range).
+                        log("La banda no reporta historial guardado")
                     }
+                }
+                // FER-90 diagnostic: log the strap's own RTC (from GET_CLOCK) as a readable date EVERY
+                // connect — independent of the clockRef==nil correlation below, which only logs once and
+                // then stops. Its value tells us directly whether SET_CLOCK is landing (≈now) or the band
+                // is stuck in the past (the "timestamp invalid; not saving data to flash" case).
+                if frame.count > 6, frame[6] == WhoopCommand.getClock.rawValue,
+                   let rtc = parseFrame(frame).parsed["clock"]?.intValue {
+                    getClockResponded = true
+                    log("La banda cree que son: \(BLEManager.logDate(rtc)) (RTC=\(rtc))")
                 }
                 // Clock correlation runs in both live and backfill modes. Once established it
                 // unblocks both the Collector (live path) and the Backfiller (chunk decoding).

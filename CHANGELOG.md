@@ -19,6 +19,14 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **WHOOP 4.0 clock & history diagnostics in the strap log.** When syncing a 4.0, the strap log now
+  spells out three things in plain language: the band's own clock as a readable date (or that it never
+  answered), the retained-history window it reports (`oldest → newest`, or that it holds nothing), and
+  a per-offload breakdown of what actually arrived (biometric records vs. firmware console logs vs.
+  other). This makes it possible to tell apart "the band's clock is wrong so it never saved history"
+  from "the band has nothing new" — without guessing. Observability only; no new strap commands.
+  ([Strand/BLE/BLEManager.swift](Strand/BLE/BLEManager.swift), [Strand/Collect/Backfiller.swift](Strand/Collect/Backfiller.swift))
+
 - **Strap sync diagnostic in Data Sources — honest proof your data is getting through.** The WHOOP
   strap row now expands into a read-only diagnostic that answers "did the band capture data, and is
   NOOP receiving, decoding and storing it?" It shows the band's own retained-history window
