@@ -19,6 +19,14 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **"Resting HR" help text no longer assumes the WHOOP strap (iPhone, FER-77).** Tapping Resting HR in
+  Key Metrics described it as "your lowest heart rate during sleep" — true for the strap, but since
+  Apple Health now fills the value when the strap hasn't (FER-62), that wording was wrong for the
+  Apple-sourced reading (Apple computes resting heart rate its own way, across the day). The help text
+  now describes the metric without assuming a source, and a footnote names both: measured overnight by
+  the strap, or read from Apple Health's resting heart rate when the strap isn't worn. Copy-only; no
+  calculation change.
+
 - **Apple Health strength workouts read as words again, not one run-on label (iPhone, FER-76).** On
   Today, the "Last Workouts" tiles took the workout type straight from Apple Health, so a *Traditional
   Strength Training* session showed up as a single glued, all-caps word (`TRADITIONALSTRENGTHTRAINING`)
