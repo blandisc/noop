@@ -46,27 +46,38 @@ tienes permiso de entregar; si no, te detienes.
 3. **In Progress.** Mueve el issue a `In Progress` y comenta que empezaste.
 4. **Rama limpia.** Aplica la estrategia de ramas de arriba (fetch, rama del issue
    desde `origin/iOS`, sin pisar).
-5. **Implementa el cambio mínimo** que cumpla el requerimiento. "Fuera de alcance"
-   es ley; un solo concern; lee el código que señalan las pistas técnicas antes de
-   editar; no inventes símbolos.
-6. **QA — verifica cada criterio (el gate).**
+5. **Diseña la UI (Spec + PNG) — solo si toca pantalla.** Si el issue toca una
+   pantalla y no trae ya un spec de UI aprobado, corre la **pasada de UI antes de
+   codear**: invoca la skill `/ui` (o el subagente `ui`). Produce el mapeo a
+   tokens de `StrandDesign` y **renderiza un PNG por estado** con el harness de
+   `ImageRenderer`. **Muéstrale los PNG al usuario y espera su OK** (gate: ver lo
+   visual antes de construir). Iteras sobre el PNG, no sobre el iPhone. El spec
+   aprobado es lo que codificas en el siguiente paso. Para bug / analytics /
+   import / performance / i18n / chore, **sáltate este paso**.
+6. **Implementa el cambio mínimo** que cumpla el requerimiento (y el spec de UI
+   aprobado, si lo hubo). "Fuera de alcance" es ley; un solo concern; lee el
+   código que señalan las pistas técnicas antes de editar; no inventes símbolos.
+7. **QA — verifica cada criterio (el gate).**
    - Compila y corre los tests del área tocada (comandos en `CLAUDE.md`).
    - Recorre los criterios de aceptación y el Definition of Done **uno por uno**.
+   - Si hubo pasada de UI: verifica los **criterios de UI** (solo tokens
+     StrandDesign, sin hex/spacing inline) y que **el render real coincida con el
+     PNG aprobado**.
    - Si algo falla, corrígelo. Si no puedes corregirlo o no puedes verificar, ve a
      "Cuándo PARAR".
-7. **Entrega (solo si TODO el QA pasó).** Commit descriptivo + CHANGELOG si aplica
+8. **Entrega (solo si TODO el QA pasó).** Commit descriptivo + CHANGELOG si aplica
    → push → PR hacia `iOS` (`Closes FER-NN`, criterios verificados en "How it was
    tested") → **squash-merge a `iOS`** → **borra la rama** (`--delete-branch`).
-8. **Actualiza el checkout de build.** Tras el merge, sincroniza el checkout
+9. **Actualiza el checkout de build.** Tras el merge, sincroniza el checkout
    canónico (`~/code/noop`, de donde sale el build del iPhone) para que el próximo
    build NO sea viejo: `git -C ~/code/noop fetch origin` y luego
    `git -C ~/code/noop merge --ff-only origin/iOS`. Usa `--ff-only`: preserva
    cualquier trabajo sin commitear que haya ahí y NUNCA lo pisa. Si falla (el
    checkout tiene cambios que chocan o divergió), NO fuerces: avísale al usuario en
    lenguaje claro que actualice su checkout antes de compilar.
-9. **Cierra y limpia.** Mueve el issue a `Done` con un comentario y el link del PR.
-   Deja el worktree limpio (de vuelta en `iOS` actualizado, sin ramas colgando).
-10. **Reporta en lenguaje claro** (el usuario NO es técnico): qué cambió en la app,
+10. **Cierra y limpia.** Mueve el issue a `Done` con un comentario y el link del PR.
+    Deja el worktree limpio (de vuelta en `iOS` actualizado, sin ramas colgando).
+11. **Reporta en lenguaje claro** (el usuario NO es técnico): qué cambió en la app,
     qué criterios quedaron verificados, y que ya está en `iOS` **y en su checkout
     principal**. El único paso manual que le queda: abrir Xcode y compilar/instalar
     en su iPhone.
@@ -80,6 +91,8 @@ claro si:
 - El cambio es **de alto riesgo o difícil de revertir**: toca el camino BLE, una
   migración de base de datos, o algo destructivo. Abre el PR y pide confirmación
   antes de mergear.
+- **El usuario no aprobó el PNG** de la pasada de UI (o pidió ajustes): itera el
+  diseño con `/ui`, no codifiques la pantalla a ciegas.
 
 ## Qué NO hacer
 
