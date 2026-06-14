@@ -219,7 +219,7 @@ struct MetricInfoSheet: View {
         .background(StrandPalette.surfaceBase)
         .presentationDetents([.medium])
         .presentationDragIndicator(.visible)
-        .presentationBackground(StrandPalette.surfaceBase)
+        .modifier(PresentationBackgroundModifier())
     }
 
     private var header: some View {
@@ -278,6 +278,18 @@ struct MetricInfoSheet: View {
         .padding(.vertical, 11)
         .frame(maxWidth: .infinity)
         .background(band.isActive ? band.color.opacity(0.07) : Color.clear)
+    }
+}
+
+// MARK: - Helpers
+
+private struct PresentationBackgroundModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(macOS 13.3, iOS 16.4, *) {
+            content.presentationBackground(StrandPalette.surfaceBase)
+        } else {
+            content
+        }
     }
 }
 

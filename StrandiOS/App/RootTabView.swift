@@ -7,6 +7,11 @@ import StrandDesign
 /// "More" list. Every screen is the same `StrandDesign`-built view the macOS app uses.
 struct RootTabView: View {
     private enum Tab: Hashable { case today, trends, live, sleep, more }
+    private enum MoreScreen: String, Hashable {
+        case intelligence, coach, insights, explore, compare
+        case workouts, health, stress, breathe, intervals
+        case applehealth, datasources, automations, settings, support
+    }
 
     /// The visible tab. Starts on Today, the launch screen.
     @State private var selection: Tab = .today
@@ -16,6 +21,7 @@ struct RootTabView: View {
     /// Was eager: all five tab bodies + their launch `.task`s ran at startup, widening the launch
     /// gap. The "More" list is already lazy (its destinations build on `NavigationLink` tap). FER-31.
     @State private var visited: Set<Tab> = [.today]
+    @State private var moreStack: [MoreScreen] = []
 
     var body: some View {
         TabView(selection: $selection) {
@@ -28,6 +34,30 @@ struct RootTabView: View {
         .tint(StrandPalette.accent)
         .preferredColorScheme(.dark)
         .onChange(of: selection) { _, newValue in visited.insert(newValue) }
+        #if DEBUG
+        .onReceive(NotificationCenter.default.publisher(for: .noopDebugNav)) { note in
+            guard let screen = note.object as? String else { return }
+            let tab: Tab? = switch screen {
+            case "today":   .today
+            case "trends":  .trends
+            case "live":    .live
+            case "sleep":   .sleep
+            case "more":    .more
+            default:        nil
+            }
+            if let tab {
+                selection = tab
+                visited.insert(tab)
+                moreStack = []
+                return
+            }
+            if let ms = MoreScreen(rawValue: screen) {
+                selection = .more
+                visited.insert(.more)
+                moreStack = [ms]
+            }
+        }
+        #endif
         // NOTE: the launch refresh is owned by AppModel.init (one source of truth). A second
         // `.task { repo.refresh() }` here ran a full-history load concurrently with that one at
         // launch — double DB work + an extra refreshSeq bump that re-fired TodayView.loadAll.
@@ -51,50 +81,65 @@ struct RootTabView: View {
     }
 
     private var moreTab: some View {
-        NavigationStack {
+        NavigationStack(path: $moreStack) {
             List {
                 Section("Insights") {
-                    link("Intelligence", "brain.head.profile") { IntelligenceView() }
-                    link("Coach", "sparkles") { CoachView() }
-                    link("Insights", "lightbulb.fill") { InsightsView() }
-                    link("Explore", "square.grid.2x2.fill") { MetricExplorerView() }
-                    link("Compare", "rectangle.split.2x1.fill") { CompareView() }
+                    NavigationLink(value: MoreScreen.intelligence) { Label("Intelligence", systemImage: "brain.head.profile") }.listRowBackground(StrandPalette.surfaceRaised)
+                    NavigationLink(value: MoreScreen.coach)        { Label("Coach",         systemImage: "sparkles") }.listRowBackground(StrandPalette.surfaceRaised)
+                    NavigationLink(value: MoreScreen.insights)     { Label("Insights",      systemImage: "lightbulb.fill") }.listRowBackground(StrandPalette.surfaceRaised)
+                    NavigationLink(value: MoreScreen.explore)      { Label("Explore",       systemImage: "square.grid.2x2.fill") }.listRowBackground(StrandPalette.surfaceRaised)
+                    NavigationLink(value: MoreScreen.compare)      { Label("Compare",       systemImage: "rectangle.split.2x1.fill") }.listRowBackground(StrandPalette.surfaceRaised)
                 }
                 Section("Body") {
-                    link("Workouts", "figure.run") { WorkoutsView() }
-                    link("Health", "heart.text.square.fill") { HealthView() }
-                    link("Stress", "bolt.heart.fill") { StressView() }
-                    link("Breathe", "wind") { BreathingView() }
-                    link("Intervals", "timer") { IntervalTimerView() }
+                    NavigationLink(value: MoreScreen.workouts)     { Label("Workouts", systemImage: "figure.run") }.listRowBackground(StrandPalette.surfaceRaised)
+                    NavigationLink(value: MoreScreen.health)       { Label("Health",   systemImage: "heart.text.square.fill") }.listRowBackground(StrandPalette.surfaceRaised)
+                    NavigationLink(value: MoreScreen.stress)       { Label("Stress",   systemImage: "bolt.heart.fill") }.listRowBackground(StrandPalette.surfaceRaised)
+                    NavigationLink(value: MoreScreen.breathe)      { Label("Breathe",  systemImage: "wind") }.listRowBackground(StrandPalette.surfaceRaised)
+                    NavigationLink(value: MoreScreen.intervals)    { Label("Intervals",systemImage: "timer") }.listRowBackground(StrandPalette.surfaceRaised)
                 }
                 Section("Data") {
-                    link("Apple Health", "heart.fill") { AppleHealthView() }
-                    link("Data Sources", "externaldrive.fill") { DataSourcesView() }
+                    NavigationLink(value: MoreScreen.applehealth)  { Label("Apple Health",  systemImage: "heart.fill") }.listRowBackground(StrandPalette.surfaceRaised)
+                    NavigationLink(value: MoreScreen.datasources)  { Label("Data Sources",  systemImage: "externaldrive.fill") }.listRowBackground(StrandPalette.surfaceRaised)
                 }
                 Section("App") {
-                    link("Automations", "wand.and.stars") { AutomationsView() }
-                    link("Settings", "gearshape.fill") { SettingsView() }
-                    link("Support", "hands.clap.fill") { SupportView() }
+                    NavigationLink(value: MoreScreen.automations)  { Label("Automations", systemImage: "wand.and.stars") }.listRowBackground(StrandPalette.surfaceRaised)
+                    NavigationLink(value: MoreScreen.settings)     { Label("Settings",    systemImage: "gearshape.fill") }.listRowBackground(StrandPalette.surfaceRaised)
+                    NavigationLink(value: MoreScreen.support)      { Label("Support",     systemImage: "hands.clap.fill") }.listRowBackground(StrandPalette.surfaceRaised)
                 }
             }
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
             .background(StrandPalette.surfaceBase.ignoresSafeArea())
             .navigationTitle("More")
+            .navigationDestination(for: MoreScreen.self) { screen in
+                moreDestination(screen)
+                    .background(StrandPalette.surfaceBase.ignoresSafeArea())
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbarBackground(StrandPalette.surfaceBase, for: .navigationBar)
+            }
         }
         .tabItem { Label("More", systemImage: "ellipsis.circle.fill") }
     }
 
-    private func link<V: View>(_ title: LocalizedStringKey, _ icon: String, @ViewBuilder _ dest: @escaping () -> V) -> some View {
-        NavigationLink {
-            dest()
-                .background(StrandPalette.surfaceBase.ignoresSafeArea())
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbarBackground(StrandPalette.surfaceBase, for: .navigationBar)
-        } label: {
-            Label(title, systemImage: icon)
+    @ViewBuilder
+    private func moreDestination(_ screen: MoreScreen) -> some View {
+        switch screen {
+        case .intelligence: IntelligenceView()
+        case .coach:        CoachView()
+        case .insights:     InsightsView()
+        case .explore:      MetricExplorerView()
+        case .compare:      CompareView()
+        case .workouts:     WorkoutsView()
+        case .health:       HealthView()
+        case .stress:       StressView()
+        case .breathe:      BreathingView()
+        case .intervals:    IntervalTimerView()
+        case .applehealth:  AppleHealthView()
+        case .datasources:  DataSourcesView()
+        case .automations:  AutomationsView()
+        case .settings:     SettingsView()
+        case .support:      SupportView()
         }
-        .listRowBackground(StrandPalette.surfaceRaised)
     }
 }
 #endif

@@ -18,7 +18,7 @@ settings:
     # String Catalog on build (the English (US) base entries).
     SWIFT_EMIT_LOC_STRINGS: YES
     SWIFT_STRICT_CONCURRENCY: minimal
-    DEVELOPMENT_TEAM: ""
+    DEVELOPMENT_TEAM: "B7KRCF776Z"
     CODE_SIGN_STYLE: Automatic
     # Build for both Apple Silicon and Intel so the release runs on every Mac.
     ARCHS: "$(ARCHS_STANDARD)"
@@ -93,6 +93,9 @@ targets:
       base:
         GENERATE_INFOPLIST_FILE: YES
         PRODUCT_BUNDLE_IDENTIFIER: com.noopapp.strandtests
+        # The macOS app PRODUCT_NAME is NOOP (not Strand), so xcodegen's auto TEST_HOST is wrong.
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/NOOP.app/Contents/MacOS/NOOP"
+        BUNDLE_LOADER: "$(TEST_HOST)"
 
   # ---------------------------------------------------------------------------
   # iOS app target. Reuses the five shared packages and almost all of Strand/
@@ -145,19 +148,26 @@ targets:
         NSBluetoothAlwaysUsageDescription: "NOOP connects directly to your WHOOP strap over Bluetooth to read heart rate, R-R intervals, battery, and sensor data locally on your iPhone. Nothing leaves your device."
         NSHealthShareUsageDescription: "NOOP reads your own Apple Health data on-device to compute recovery, strain, and sleep. Nothing leaves your device."
         NSHealthUpdateUsageDescription: "NOOP writes the metrics it computes from your strap back into Apple Health, on-device and only when you allow it."
+        # Debug-only URL scheme for screenshot automation (simulator navigation via xcrun simctl openurl)
+        CFBundleURLTypes:
+          - CFBundleURLSchemes:
+              - noopdev
     entitlements:
       path: StrandiOS/Resources/NOOP.entitlements
       properties:
         com.apple.developer.healthkit: true
-        com.apple.developer.healthkit.access: []
+        # NOTE: com.apple.developer.healthkit.access (Clinical/Verifiable Health
+        # Records) is intentionally omitted — free "Personal Team" Apple IDs cannot
+        # provision it, and NOOP never reads clinical records. Base HealthKit above
+        # is enough for steps/HR/sleep. Restore the key only with a paid team.
         com.apple.security.application-groups:
-          - group.com.noopapp.noop
+          - group.com.feriracheta.noop
     settings:
       base:
         # Build number for the iOS target; threaded into Info.plist's CFBundleVersion via
         # $(CURRENT_PROJECT_VERSION). Bump on each TestFlight / App Store upload.
         CURRENT_PROJECT_VERSION: "25"
-        PRODUCT_BUNDLE_IDENTIFIER: com.noopapp.noop
+        PRODUCT_BUNDLE_IDENTIFIER: com.feriracheta.noop
         PRODUCT_NAME: NOOP
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: NO
@@ -195,15 +205,32 @@ targets:
       path: StrandiOSWidgets/NOOPWidgets.entitlements
       properties:
         com.apple.security.application-groups:
-          - group.com.noopapp.noop
+          - group.com.feriracheta.noop
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.noopapp.noop.widgets
+        PRODUCT_BUNDLE_IDENTIFIER: com.feriracheta.noop.widgets
         PRODUCT_NAME: NOOPWidgets
         GENERATE_INFOPLIST_FILE: NO
         TARGETED_DEVICE_FAMILY: "1,2"
     dependencies:
       - package: StrandDesign
+
+  # ---------------------------------------------------------------------------
+  # UI test bundle that drives NOOPiOS in the simulator and captures screenshots
+  # of every screen for design review / Figma import.
+  # Run: xcodebuild test -scheme NOOPiOS -destination 'platform=iOS Simulator,name=iPhone 16'
+  NOOPiOSUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - StrandiOSUITests
+    dependencies:
+      - target: NOOPiOS
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.feriracheta.noop.uitests
 
 # Explicit shared schemes so `xcodebuild -scheme …` works straight after
 # `xcodegen generate` — without these, schemes only exist after Xcode's GUI
@@ -213,11 +240,21 @@ schemes:
     build:
       targets:
         Strand: all
+        StrandTests: [testing]
     run:
       config: Debug
+    test:
+      config: Debug
+      targets:
+        - StrandTests
   NOOPiOS:
     build:
       targets:
         NOOPiOS: all
+        NOOPiOSUITests: [testing]
     run:
       config: Debug
+    test:
+      config: Debug
+      targets:
+        - NOOPiOSUITests

@@ -37,6 +37,10 @@ struct StrandiOSApp: App {
                 .environmentObject(health)
                 .environmentObject(autoBackup)
                 .preferredColorScheme(.dark)
+                #if DEBUG
+                .modifier(DebugURLHandler())
+                .onAppear { DebugNavWatcher.shared.start() }
+                #endif
         }
         // HealthKit authorization is intentionally NOT requested on launch. The system permission
         // dialog without prior in-app rationale violates Apple HIG / App Review guidance — the user
