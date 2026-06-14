@@ -19,6 +19,8 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Debug screenshot fixtures for Today's readiness states (developers only).** A new DEBUG-only `ScreenshotFixtures` seeds ~40 days of deterministic synthetic history — reverse-engineered against `ReadinessEngine` + `Baselines` — so TodayView can be captured in a specific verdict on demand: `-noop.fixture primed` (signals aligned, load supported) or `-noop.fixture strained` (one signal flagging). The seed publishes a matching dashboard plus synthetic workouts and a 24h heart-rate trace, and `AppModel.init` skips the production refresh loop while a fixture is active so it isn't overwritten. The `NOOPScreenshotTests` UI test gained one isolated method per state (`test_captureTodayEmpty/Primed/Strained`) that captures a top→bottom scroll sequence. All `#if DEBUG`-gated; no effect on release builds. ([Strand/App/ScreenshotFixtures.swift](Strand/App/ScreenshotFixtures.swift))
+
 - **Fix: trend charts no longer tint the hour labels or clip the last one.** The area fill under the
   curve used to reach the floor of the plot and sit behind the X-axis labels (e.g. the heart-rate
   chart on Today), tinting "2:25 p.m. / 2:40 p.m. …" a faint red, and the rightmost label was cut off
