@@ -54,8 +54,25 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
   baseline firms up, the scores trust your signals a little more, reaching full sensitivity by ~14
   nights. Once your baseline is established, nothing changes — this only tempers the noisy early
   window.
+- **A recovery score from your first night with the strap (FER-60).** NOOP used to need about four
+  nights before it could show a calibrated recovery score, so a fresh install sat in "calibrating"
+  for days. If you've connected Apple Health, NOOP now seeds your personal baseline from your recent
+  Apple Health history (overnight HRV, resting heart rate, respiration) so a score can appear on
+  night one. The strap always wins: the Apple Health seed is capped to about a week and treated as
+  provisional, so your own strap nights take over as they accumulate and the early score stays
+  honestly tempered. Apple Watch and the strap measure HRV a little differently, so the first couple
+  of days may read slightly off until your strap baseline settles.
 
 _The items below are developer / docs — no user-facing change._
+- **Apple Health baseline prior (FER-60).** `IntelligenceEngine.analyzeRecent` now folds an Apple
+  Health prior (`deviceId: "apple-health"`) UNDER the imported + on-device strap layers when seeding
+  the HRV / resting-HR / respiration baselines — filling only days neither strap source covers (the
+  existing `== nil` precedence idiom, so the strap always wins). The prior is capped to
+  `applePriorMaxNights` (7) so the seeded baseline lands `.provisional`, letting FER-13 confidence
+  shrinkage temper the SDNN(Apple)↔RMSSD(strap) HRV scale gap; the 14-night EWMA converges to the
+  strap as real nights arrive. Pure helpers `applePriorDays` / `foldApplePrior` are unit-tested
+  (`IntelligenceBaselinePriorTests`), and the cold-start contract they rely on is pinned in
+  `ColdStartPriorTests`. Efficiency / skin-temp are not seeded (Apple has no comparable signal here).
 
 - **Confidence shrinkage on thin baselines (FER-13).** Added `Baselines.confidence(nValid:)` — a
   weight that ramps linearly from `confidenceFloor` (0.5) at `minNightsSeed` to 1.0 at
