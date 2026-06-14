@@ -19,6 +19,12 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **The Heart Rate graph on Today now fills from a live-only session (iPhone).** If you wore the strap
+  with NOOP connected but never imported a WHOOP export, today's Heart Rate chart stayed empty even
+  though your live pulse showed at the top of the screen. The live heart rate streaming over the
+  strap's realtime channel was shown but never saved, so the chart had nothing to draw. It's now
+  recorded as it streams (deduplicated so a strap sending both channels isn't double-counted), and the
+  chart appears on its own after a few minutes of wear — no import or app restart needed.
 - **Apple Health workouts now appear in Today and Workouts (iPhone).** The live Apple Health sync asked
   for workout permission but never actually fetched them — only the manual XML export brought them in.
   The sync now queries HealthKit workouts in the same window as the rest of your health data, so
