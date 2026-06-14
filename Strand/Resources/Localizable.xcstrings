@@ -11473,6 +11473,22 @@
         }
       }
     },
+    "The engine gets sharper every night — you already have %lld.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The engine gets sharper every night — you already have %lld."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El motor mejora cada noche — ya tienes %lld."
+          }
+        }
+      }
+    },
     "The full terms are in TERMS.md, shipped with NOOP. This is not legal advice.": {
       "localizations": {
         "es": {
