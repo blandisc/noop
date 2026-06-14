@@ -275,6 +275,7 @@ struct DataSourcesView: View {
         case "active_kcal", "basal_kcal": return String(localized: "Energy")
         case "vo2max":                    return String(localized: "VO₂ max")
         case "sleep":                     return String(localized: "Sleep")
+        case "workouts":                  return String(localized: "Workouts")
         case "saving":                    return String(localized: "Saving…")
         default:                          return String(localized: "Apple Health")
         }
