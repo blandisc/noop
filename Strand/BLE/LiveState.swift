@@ -63,6 +63,9 @@ public final class LiveState: ObservableObject {
     /// Chunks acked during the current offload session — an honest progress signal (total pending is
     /// unknowable from the protocol, so a count, never a percent).
     @Published public var syncChunksThisSession: Int = 0
+    /// Incremented each time a standard-HR flush commits to SQLite. TodayView observes this
+    /// to re-query hrBuckets immediately, without waiting for the 15-min analyzeRecent cycle.
+    @Published public var hrFlushSeq: Int = 0
 
     /// Optional hook invoked on every battery update (wired by LiveViewModel to the alert monitor).
     /// Kept as a closure so LiveState stays a plain observable snapshot with no alert dependency.
