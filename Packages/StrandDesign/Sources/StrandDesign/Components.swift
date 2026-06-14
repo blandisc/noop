@@ -105,15 +105,18 @@ public struct ChartCard<ChartBody: View, Footer: View>: View {
     let title: LocalizedStringKey
     var subtitle: String? = nil
     var trailing: String? = nil
+    /// Optional source badge shown in the header (e.g. "Apple Health"). (FER-62)
+    var badge: SourceBadge? = nil
     var height: CGFloat = NoopMetrics.chartHeight
     @ViewBuilder let chart: () -> ChartBody
     @ViewBuilder let footer: () -> Footer
 
     public init(title: LocalizedStringKey, subtitle: String? = nil, trailing: String? = nil,
+                badge: SourceBadge? = nil,
                 height: CGFloat = NoopMetrics.chartHeight,
                 @ViewBuilder chart: @escaping () -> ChartBody,
                 @ViewBuilder footer: @escaping () -> Footer = { EmptyView() }) {
-        self.title = title; self.subtitle = subtitle; self.trailing = trailing
+        self.title = title; self.subtitle = subtitle; self.trailing = trailing; self.badge = badge
         self.height = height; self.chart = chart; self.footer = footer
     }
 
@@ -126,6 +129,7 @@ public struct ChartCard<ChartBody: View, Footer: View>: View {
                         if let subtitle { Text(subtitle).font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary) }
                     }
                     Spacer()
+                    if let badge { badge }
                     if let trailing { Text(trailing).font(StrandFont.bodyNumber).foregroundStyle(StrandPalette.textPrimary) }
                 }
                 chart().frame(height: height).clipped()  // contain any mark overshoot to the plot frame so it never bleeds onto the footer

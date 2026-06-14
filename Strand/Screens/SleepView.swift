@@ -84,12 +84,17 @@ struct SleepView: View {
         let intervals = model.intervals
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
             SectionHeader("Last night", overline: "Sleep",
-                          trailing: "\(night.dateLabel) · \(night.onsetText)–\(night.wakeText)")
+                          trailing: model.isAppleHealth
+                            ? night.dateLabel
+                            : "\(night.dateLabel) · \(night.onsetText)–\(night.wakeText)")
             ChartCard(
                 title: "Stage breakdown",
-                subtitle: "\(durationText(night.timeInBed)) in bed · \(efficiencyText(night)) efficiency"
-                    + (model.isPersistedHypnogram ? " · stages approximate (on-device)" : ""),
+                subtitle: model.isAppleHealth
+                    ? "\(durationText(s.asleep)) asleep · from Apple Health"
+                    : "\(durationText(night.timeInBed)) in bed · \(efficiencyText(night)) efficiency"
+                        + (model.isPersistedHypnogram ? " · stages approximate (on-device)" : ""),
                 trailing: durationText(s.asleep),
+                badge: model.isAppleHealth ? SourceBadge("Apple Health", tint: StrandPalette.metricCyan) : nil,
                 height: NoopMetrics.chartHeight,
                 chart: {
                     if intervals.count >= 2 {
@@ -368,11 +373,16 @@ struct SleepView: View {
     /// so each full pass over repo.days / repo.sleeps runs once per data change rather than
     /// once per render. Returns nil when there is no usable latest night (renders empty state).
     private func buildModel() -> SleepModel? {
-        guard let night = latestNight else { return nil }
+        // The strap session always wins; if there's none, fall back to Apple Health's stage
+        // minutes so a strap-uncovered user still sees last night's breakdown (FER-62).
+        let strap = latestNight
+        guard let night = strap ?? appleHealthNight() else { return nil }
+        let isApple = (strap == nil)
         return SleepModel(
             night: night,
-            intervals: night.intervals,
-            isPersistedHypnogram: (night.realSegments?.count ?? 0) >= 2,
+            // Apple has no real timeline → empty intervals force the proportional stage bar.
+            intervals: isApple ? [] : night.intervals,
+            isPersistedHypnogram: !isApple && (night.realSegments?.count ?? 0) >= 2,
             performance: performanceSeries,
             efficiency: efficiencySeries,
             consistency: consistencySeries,
@@ -384,7 +394,27 @@ struct SleepView: View {
             typicalDeepMin: typicalStageMin(\.deepMin),
             typicalRemMin: typicalStageMin(\.remMin),
             typicalLightMin: typicalStageMin(\.lightMin),
-            trendPoints: durationTrendPoints)
+            trendPoints: durationTrendPoints,
+            isAppleHealth: isApple)
+    }
+
+    /// Build a fallback Night from the most recent Apple Health day carrying sleep-stage minutes,
+    /// for when the strap has no session yet. Apple's aggregate has no per-epoch timeline or real
+    /// bed/wake times, so the hero renders a proportional stage bar (not a hypnogram) and hides the
+    /// onset–wake clock; only the date is shown. (FER-62)
+    private func appleHealthNight() -> Night? {
+        guard let d = repo.days.last(where: {
+            repo.appleHealthDays.contains($0.day) && ($0.totalSleepMin ?? 0) > 0
+        }) else { return nil }
+        let deep = d.deepMin ?? 0, rem = d.remMin ?? 0, light = d.lightMin ?? 0
+        guard deep + rem + light > 0 else { return nil }
+        // Apple's daily aggregate sums asleep stages only (no separate awake), so awake = 0.
+        let stages = Stages(awake: 0, light: light, deep: deep, rem: rem)
+        // Noon-UTC of the day → dateLabel lands on the right calendar date in any time zone.
+        let startTs = Int((Self.dayParser.date(from: d.day) ?? Date()).timeIntervalSince1970) + 12 * 3600
+        let session = CachedSleepSession(startTs: startTs, endTs: startTs, efficiency: d.efficiency,
+                                         restingHr: d.restingHr, avgHrv: d.avgHrv, stagesJSON: nil)
+        return Night(session: session, stages: stages)
     }
 
     // MARK: - Derived model
@@ -556,7 +586,7 @@ struct SleepView: View {
         // While the strap is mid-offload, say so — "No nights" reads as final otherwise (#77).
         if live.backfilling { SyncingHistoryNote(chunks: live.syncChunksThisSession) }
         if repo.loaded {
-            ComingSoon(what: "No nights here yet. Import your WHOOP export in Data Sources to see every night, your sleep stages and trends straight away. Or open Intelligence to see last night computed from the strap after you wear it to bed.")
+            ComingSoon(what: "No nights here yet. Import your WHOOP export — or connect Apple Health — in Data Sources to see your sleep stages and trends. Or open Intelligence to see last night computed from the strap after you wear it to bed.")
         } else {
             ComingSoon(what: "Loading your sleep history…")
         }
@@ -749,6 +779,10 @@ private struct SleepModel {
     let typicalLightMin: Double?
 
     let trendPoints: [TrendPoint]
+
+    /// The night came from Apple Health (stage minutes only — no per-epoch timeline, no real bed/wake
+    /// times), so the hero shows a proportional stage bar and hides the onset–wake clock. (FER-62)
+    var isAppleHealth: Bool = false
 }
 
 private struct Stages {

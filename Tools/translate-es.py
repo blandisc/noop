@@ -320,7 +320,7 @@ ES: dict[str, str] = {
     "Latest reading": "Última lectura",
     "Trend": "Tendencia",
     "Not enough recent days to chart a trend yet. Import a history or keep wearing your strap.": "Aún no hay suficientes días recientes para trazar una tendencia. Importa un historial o sigue usando tu banda.",
-    "Trends need history to draw. Import your WHOOP export in Data Sources to see weeks, months and years instantly.": "Las tendencias necesitan historial para dibujarse. Importa tu exportación de WHOOP en Fuentes de datos para ver semanas, meses y años al instante.",
+    "Trends need history to draw. Import your WHOOP export — or connect Apple Health — in Data Sources to see weeks, months and years.": "Las tendencias necesitan historial para dibujarse. Importa tu exportación de WHOOP — o conecta Apple Health — en Fuentes de datos para ver semanas, meses y años.",
 
     # Sleep.
     "Last night": "Anoche",
@@ -343,7 +343,7 @@ ES: dict[str, str] = {
     "Stages vs typical": "Etapas vs. lo típico",
     "Restorative": "Restaurador",
     "Loading your sleep history…": "Cargando tu historial de sueño…",
-    "No nights here yet. Import your WHOOP export in Data Sources to see every night, your sleep stages and trends straight away. Or open Intelligence to see last night computed from the strap after you wear it to bed.": "Aún no hay noches aquí. Importa tu exportación de WHOOP en Fuentes de datos para ver de inmediato cada noche, tus etapas de sueño y tendencias. O abre Inteligencia para ver la noche anterior calculada desde la banda después de dormir con ella.",
+    "No nights here yet. Import your WHOOP export — or connect Apple Health — in Data Sources to see your sleep stages and trends. Or open Intelligence to see last night computed from the strap after you wear it to bed.": "Aún no hay noches aquí. Importa tu exportación de WHOOP — o conecta Apple Health — en Fuentes de datos para ver tus etapas de sueño y tendencias. O abre Inteligencia para ver la noche anterior calculada desde la banda después de dormir con ella.",
     "NOOP-computed": "Calculado por NOOP",
     "Provenance": "Procedencia",
     "Source Apple Health": "Fuente: Apple Health",
