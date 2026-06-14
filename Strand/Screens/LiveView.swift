@@ -242,15 +242,16 @@ struct LiveView: View {
 
     private var syncSignals: some View {
         let ago = live.lastSyncedAt.map { relativeAgo($0) }
+        let c = receipt?.counts
         return VStack(alignment: .leading, spacing: 0) {
             sectionLabel("Completes on sync")
-            syncRow("drop.fill", String(localized: "Blood oxygen (SpO₂)"), ago)
+            syncRow("drop.fill", String(localized: "Blood oxygen (SpO₂)"), stored: c?.spo2 ?? 0, ago: ago)
             rowDivider
-            syncRow("thermometer", String(localized: "Skin temperature"), ago)
+            syncRow("thermometer", String(localized: "Skin temperature"), stored: c?.skinTemp ?? 0, ago: ago)
             rowDivider
-            syncRow("lungs.fill", String(localized: "Respiration"), ago)
+            syncRow("lungs.fill", String(localized: "Respiration"), stored: c?.resp ?? 0, ago: ago)
             rowDivider
-            syncRow("figure.walk", String(localized: "Movement"), ago)
+            syncRow("figure.walk", String(localized: "Movement"), stored: c?.gravity ?? 0, ago: ago)
         }
     }
 
@@ -277,13 +278,16 @@ struct LiveView: View {
         .padding(.vertical, 9)
     }
 
-    private func syncRow(_ icon: String, _ name: String, _ ago: String?) -> some View {
-        HStack(spacing: 11) {
+    private func syncRow(_ icon: String, _ name: String, stored: Int, ago: String?) -> some View {
+        // Honest: the global last-sync time only means THIS stream arrived if it actually has rows.
+        // A stream with 0 stored is still pending — it never claims "synced" just because a sync ran.
+        let syncedAgo = stored > 0 ? ago : nil
+        return HStack(spacing: 11) {
             Image(systemName: icon).font(StrandFont.subhead)
                 .foregroundStyle(StrandPalette.textTertiary).frame(width: 22)
             Text(name).font(StrandFont.subhead).foregroundStyle(StrandPalette.textSecondary)
             Spacer(minLength: 0)
-            Text(ago.map { String(localized: "synced \($0)") } ?? String(localized: "not yet"))
+            Text(syncedAgo.map { String(localized: "synced \($0)") } ?? String(localized: "not yet"))
                 .font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
         }
         .padding(.vertical, 9)
@@ -376,10 +380,18 @@ struct LiveView: View {
             Text(label)
                 .font(StrandFont.caption).foregroundStyle(StrandPalette.textSecondary)
                 .lineLimit(1).minimumScaleFactor(0.8)
-            Text(n, format: .number)
-                .font(StrandFont.number(19, weight: .semibold)).monospacedDigit()
-                .foregroundStyle(StrandPalette.textPrimary)
-                .contentTransition(.numericText()).animation(.snappy, value: n)
+            if n > 0 {
+                Text(n, format: .number)
+                    .font(StrandFont.number(19, weight: .semibold)).monospacedDigit()
+                    .foregroundStyle(StrandPalette.textPrimary)
+                    .contentTransition(.numericText()).animation(.snappy, value: n)
+            } else {
+                // Nothing stored yet for this stream (e.g. an offload-only sensor before its first
+                // sync) — a muted "—" instead of an alarming "0".
+                Text("—")
+                    .font(StrandFont.number(19, weight: .semibold)).monospacedDigit()
+                    .foregroundStyle(StrandPalette.textTertiary)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(11)
