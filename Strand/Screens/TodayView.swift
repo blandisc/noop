@@ -878,7 +878,7 @@ struct TodayView: View {
                 LazyVGrid(columns: grid, alignment: .leading, spacing: NoopMetrics.gap) {
                     ForEach(Array(workouts.prefix(6).enumerated()), id: \.offset) { _, w in
                         StatTile(
-                            label: "\(w.sport)",
+                            label: "\(WorkoutSource.displaySport(w.sport))",
                             value: workoutDuration(w),
                             caption: workoutCaption(w),
                             accent: StrandPalette.strainColor(w.strain ?? 0),

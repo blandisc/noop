@@ -226,7 +226,7 @@ struct WorkoutsView: View {
                      caption: "covered",
                      accent: StrandPalette.metricCyan)
             StatTile(label: "Most Active",
-                     value: modal.sport,
+                     value: WorkoutSource.displaySport(modal.sport),
                      caption: modal.count > 0 ? "\(modal.count) session\(modal.count == 1 ? "" : "s")" : nil,
                      accent: StrandPalette.textPrimary)
         }
@@ -256,7 +256,7 @@ struct WorkoutsView: View {
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(StrandPalette.accent)
                         .frame(width: 22, alignment: .center)
-                    Text(g.sport)
+                    Text(WorkoutSource.displaySport(g.sport))
                         .font(StrandFont.headline)
                         .foregroundStyle(StrandPalette.textPrimary)
                         .lineLimit(1)

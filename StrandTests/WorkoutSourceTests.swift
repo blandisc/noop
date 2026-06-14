@@ -32,6 +32,17 @@ final class WorkoutSourceTests: XCTestCase {
         XCTAssertEqual(WorkoutSource.displaySport("Running"), "Running")
     }
 
+    func testDisplaySportSplitsAppleHealthCamelCase() {
+        // Apple Health stores the raw HealthKit case name with no spaces; it must read as words
+        // so the Last Workouts tile doesn't show a run-on "TRADITIONALSTRENGTHTRAINING". (FER-76)
+        XCTAssertEqual(WorkoutSource.displaySport("TraditionalStrengthTraining"), "Traditional Strength Training")
+        XCTAssertEqual(WorkoutSource.displaySport("HighIntensityIntervalTraining"), "High Intensity Interval Training")
+        XCTAssertEqual(WorkoutSource.displaySport("CoreTraining"), "Core Training")
+        // Single words and already-spaced (WHOOP / manual) names are left untouched.
+        XCTAssertEqual(WorkoutSource.displaySport("Hiking"), "Hiking")
+        XCTAssertEqual(WorkoutSource.displaySport("Weight Training"), "Weight Training")
+    }
+
     // MARK: - dismissed spans (durable #107 filter)
 
     func testParseDismissedSpansDropsMalformed() {

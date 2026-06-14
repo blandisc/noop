@@ -23,9 +23,30 @@ enum WorkoutSource: Equatable {
         return .apple
     }
 
-    /// Sport-cell text. The detector stores the machine token "detected"; show it as a neutral
-    /// "Activity" (we don't claim a sport we didn't actually classify).
-    static func displaySport(_ sport: String) -> String { sport == "detected" ? "Activity" : sport }
+    /// Sport-cell text. Two clean-ups before display:
+    ///   - the detector stores the machine token "detected"; show it as a neutral "Activity"
+    ///     (we don't claim a sport we didn't actually classify);
+    ///   - Apple Health stores the raw HealthKit case name with no spaces
+    ///     ("TraditionalStrengthTraining"); split the camel-case so it reads
+    ///     "Traditional Strength Training" instead of one run-on, all-caps word. (FER-76)
+    static func displaySport(_ sport: String) -> String {
+        sport == "detected" ? "Activity" : spacedActivityName(sport)
+    }
+
+    /// Insert a space at every camel-case boundary (lower/digit → Upper) so a run-on HealthKit
+    /// case name reads as words. Names that already contain a space (WHOOP / manual rows like
+    /// "Weight Training") are returned untouched, so this only ever expands the glued Apple names.
+    static func spacedActivityName(_ raw: String) -> String {
+        guard !raw.contains(" ") else { return raw }
+        var out = ""
+        var prev: Character?
+        for ch in raw {
+            if let p = prev, ch.isUppercase, p.isLowercase || p.isNumber { out.append(" ") }
+            out.append(ch)
+            prev = ch
+        }
+        return out
+    }
 
     // MARK: - Dismissed detected bouts (durable across re-detection)
     //
