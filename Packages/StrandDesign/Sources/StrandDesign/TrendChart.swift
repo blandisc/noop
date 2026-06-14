@@ -138,6 +138,14 @@ public struct TrendChart: View {
             }
         }
         .chartYScale(domain: valueRange)
+        // Inset the plot inside the chart so the X-axis labels live on a clean band: the bottom
+        // inset lifts the AreaMark fill floor off the hour labels (no more red tint behind them),
+        // and the trailing inset gives the rightmost label room to render in full before ChartCard's
+        // `.clipped()` frame cuts it. The label/grid bands sit outside plotAreaFrame, so hover (which
+        // maps through proxy.plotAreaFrame) stays correct. (FER-82)
+        .chartPlotStyle { plotArea in
+            plotArea.padding(NoopMetrics.chartPlotInset)
+        }
         .chartXAxis {
             AxisMarks(values: .automatic(desiredCount: 5)) { _ in
                 AxisGridLine().foregroundStyle(StrandPalette.hairline.opacity(0.4))
