@@ -44,6 +44,15 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
   covers shows the strap's reading, and Apple Health only fills the gaps. Apple's sleep is shown as a
   proportional deep / light / REM bar (no minute-by-minute hypnogram — that's strap-only). Fully
   localized (English + Spanish + German).
+- **"Key Metrics" on Today fills in from Apple Health too (FER-62 follow-up).** Until now only Steps
+  read from Apple Health on the Today screen — HRV, resting heart rate, sleep and blood oxygen stayed
+  blank whenever the strap hadn't scored the day, even though Apple Health had the data. They now show
+  your Apple Health reading, each tagged "Apple Health" so it's never mistaken for a live strap value
+  — the same treatment Trends and Sleep already got. To keep the "Today" label honest, a value only
+  fills in if it's from today or yesterday; anything older reads "—" (the full history still shows in
+  Trends). Day Strain stays strap-only — it's a computed score Apple doesn't provide. Also closed a
+  gap where a stale import could show a months-old Steps count under Today; it's now bounded to recent
+  days. No new copy — reuses the existing "Apple Health" tag, so it's localized everywhere already.
 - **The live heart-rate ECG reads like a real monitor now (iPhone, FER-58).** When your strap is streaming, the brand ECG strip on Today no longer just scrolls one fixed wave faster or slower. A sweep head moves across the strip drawing each heartbeat the instant it reaches that beat — complexes spaced by your live BPM, so a faster heart packs them closer together. The trace now stays continuous like a hospital monitor: the head wipes last pass forward into this one behind a small erase gap instead of blanking to a flat line, so the beats no longer jump sideways between passes. And the beat breathes — subtle beat-to-beat variation in spacing and height plus a slow respiratory drift — so it reads like a living heart rather than one frame looping. With no strap connected it rests on a calm flatline.
 - **Apple Health import is no longer a black box (FER-70).** Connecting or syncing Apple Health used
   to run silently — you couldn't tell whether it was working, how many days came in, or which metrics
