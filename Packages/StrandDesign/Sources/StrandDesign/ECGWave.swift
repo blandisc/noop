@@ -6,13 +6,17 @@ import SwiftUI
 //
 // Two render modes:
 //  • Static  — the brand polyline (default), or a centered flatline when `flat` (no data).
-//  • Monitor — when `animate: true` + a live `bpm:` is supplied, a real patient-monitor sweep:
-//    a head travels left→right *drawing* the trace in real time, each QRS complex landing as the
-//    beat happens. Spacing between complexes is set by the live BPM (a faster heart packs the
-//    beats closer), NOT by playback speed. On reaching the right edge the head wraps to the left
-//    and overwrites the previous sweep, with a short transparent erase gap just ahead of it —
-//    exactly like an ECG monitor. (This replaces the earlier "scroll one fixed wave faster or
-//    slower" approach, which only changed speed and never drew beats individually.)
+//  • Monitor — when `animate: true` + a live `bpm:` is supplied, a hospital-monitor sweep:
+//    a head travels left→right at a constant paper-feed speed, *drawing* each QRS the instant the
+//    sweep reaches that beat. Spacing between complexes is set by the live BPM (a faster heart packs
+//    the beats closer), NOT by playback speed. The strip never blanks to flat: ahead of the head the
+//    PREVIOUS pass stays lit (phosphor persistence) and the head wipes it forward behind a short
+//    erase gap — exactly like a vital-signs monitor, so successive passes read as one continuous
+//    trace instead of a pattern that jumps sideways when the pass length doesn't divide the R–R.
+//    The beat itself breathes: per-beat HRV (R–R jitter), ±14% R-height variation and a slow
+//    respiratory baseline wander, all derived deterministically from the wall clock so the trace
+//    never flickers yet no two beats look identical. (Replaces "scroll one fixed wave faster or
+//    slower", and a cut that wiped ahead of the head to a flat baseline — which made the beats jump.)
 //
 // Cross-platform, tokens-only — a redesign primitive reused across the app.
 
@@ -97,8 +101,9 @@ public struct ECGWave: View {
         let headX = travelled.truncatingRemainder(dividingBy: w)
         let sweepIndex = (travelled / w).rounded(.down)
 
-        // Build the visible trace column by column. For each x, find the wall-clock instant the head
-        // last crossed it (this sweep if x ≤ head, else the previous one) and sample the beat there.
+        // Build the visible trace column by column. Each column maps to the wall-clock instant the
+        // head crossed it: this pass behind the head, the PREVIOUS pass ahead of it — so the strip is
+        // always fully drawn and the head just overwrites last pass with this one, a moving seam.
         var path = Path()
         var penDown = false
         let step: CGFloat = 0.5
@@ -111,8 +116,11 @@ public struct ECGWave: View {
                 x += step
                 continue
             }
-            let crossSweep = x <= headX ? sweepIndex : sweepIndex - 1
-            let tCross = (crossSweep * w + x) / sweepSpeed          // seconds (reference-date based)
+            // Behind the head → this pass; ahead of it → the previous pass still lit (phosphor
+            // persistence). Sampling both from the same clock keeps the trace continuous across the
+            // wrap, so it no longer jumps sideways when a pass length doesn't divide the R–R.
+            let pass = (x <= headX) ? sweepIndex : sweepIndex - 1
+            let tCross = (pass * w + x) / sweepSpeed                 // seconds (reference-date based)
             let y = mid - beatAmplitude(at: Double(tCross)) * ampScale
             let pt = CGPoint(x: x, y: y)
             if penDown { path.addLine(to: pt) } else { path.move(to: pt); penDown = true }
@@ -131,12 +139,41 @@ public struct ECGWave: View {
     }
 
     /// Amplitude (design y-units, + = up from baseline) of the brand QRS complex at wall-clock time
-    /// `t`, repeating every `beatPeriod`. Outside the complex window the trace rests on the baseline.
+    /// `t`. The beat repeats every `beatPeriod`, but each one is nudged a little so the trace reads
+    /// like a living heart, not a looping GIF — see the per-beat HRV/amplitude jitter and the slow
+    /// respiratory wander below. All variation is a pure function of `t`, so every frame redraws the
+    /// exact same curve (no flicker) while no two beats look identical.
     private func beatAmplitude(at t: Double) -> CGFloat {
-        let phase = t.truncatingRemainder(dividingBy: beatPeriod)
-        let complexDur = min(0.42, beatPeriod * 0.85)   // compacts the complex at very high BPM
-        guard phase >= 0, phase < complexDur else { return 0 }
-        return ECGShape.complexAmplitude(at: CGFloat(phase / complexDur))
+        let period = beatPeriod
+        let complexDur = min(0.42, period * 0.85)       // compacts the complex at very high BPM
+        let phase = t.truncatingRemainder(dividingBy: period)
+        let beatIndex = (t / period).rounded(.down)     // identifies this beat for stable jitter
+
+        // HRV: slide each beat's start within its flat slack so the R–R spacing breathes (~±12%),
+        // and vary the R height ±14%. Both keyed off the beat index → constant within a beat.
+        let slack = max(0, period - complexDur)
+        let offset = slack * (0.5 + (hash01(beatIndex) - 0.5) * 0.5)
+        let ampMul = 1 + (hash01(beatIndex * 2 + 7) - 0.5) * 0.28
+
+        let localPhase = phase - offset
+        var qrs = 0.0
+        if localPhase >= 0, localPhase < complexDur {
+            qrs = Double(ECGShape.complexAmplitude(at: CGFloat(localPhase / complexDur))) * ampMul
+        }
+        return CGFloat(qrs + baselineWander(at: t))
+    }
+
+    /// Slow two-tone drift (~respiration) added to the baseline so the line is never dead-flat.
+    /// Amplitude is ~1 design y-unit — felt, not seen.
+    private func baselineWander(at t: Double) -> Double {
+        sin(t * 0.8) * 0.8 + sin(t * 2.1 + 1.3) * 0.35
+    }
+
+    /// Deterministic pseudo-random in [0,1) from a beat-index seed. Same seed → same value, so the
+    /// per-beat jitter holds steady frame-to-frame; the classic fract(sin·k) hash, fine for a motif.
+    private func hash01(_ n: Double) -> Double {
+        let x = sin(n * 127.1 + 311.7) * 43758.5453
+        return x - x.rounded(.down)
     }
 }
 

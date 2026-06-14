@@ -506,7 +506,7 @@ struct TodayView: View {
         let stepsFresh = appleDays.last(where: { $0.day >= stepsCutoff })?.steps
         let stepsStr = stepsFresh.map { intString(Double($0)) } ?? latestString("steps", decimals: 0)
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-            SectionHeader("Key Metrics", overline: "Today", trailing: String(localized: "14-day"))
+            SectionHeader("Key Metrics", overline: "Today", trailing: String(localized: "14-day trend"))
             VStack(spacing: 0) {
                 Button { metricDetail = .strain(d?.strain) } label: {
                     MetricRow(label: "Day Strain",
