@@ -68,12 +68,16 @@ struct TodayView: View {
                                          hasRecovery: repo.today?.recovery != nil)
     }
 
-    /// Valid HRV nights banked so far as a plain number (0…), so the night-dots card can render from
-    /// night zero. Unlike `recoveryCalibration` (nil both at 0 and at/after the seed gate), this stays
-    /// a count — reusing the exact same validity filter via a high seed so the two never disagree.
-    private var validNights: Int {
-        RecoveryScorer.calibrationNights(nightlyHrv: repo.days.map(\.avgHrv),
-                                         hasRecovery: false, seed: .max) ?? 0
+    /// Nights of the user's OWN strap data with usable HRV, 0… (drives the night-dots progress).
+    /// Apple-Health days are deliberately EXCLUDED: Apple Health fills Trends/Sleep preliminarily but
+    /// it's borrowed data — its rows carry `recovery: nil` and never seed the recovery baseline — so
+    /// the dots keep counting toward the 4 nights of YOUR data the verdict actually needs. Reuses the
+    /// same in-range HRV filter via a high seed; once this reaches the seed the baseline is genuinely
+    /// yours and the verdict path takes over.
+    private var ownNights: Int {
+        let appleDays = repo.appleHealthDays
+        let strapHrv = repo.days.filter { !appleDays.contains($0.day) }.map(\.avgHrv)
+        return RecoveryScorer.calibrationNights(nightlyHrv: strapHrv, hasRecovery: false, seed: .max) ?? 0
     }
 
     /// Synthesis-card copy while the recovery baseline calibrates; nil otherwise. Built as
@@ -163,12 +167,13 @@ struct TodayView: View {
                     // seen; the old data-pending gauge ("Sin datos") is gone so the empty state never
                     // looks half-built — even right after the strap connects in onboarding.
                     if live.backfilling { SyncingHistoryNote(chunks: live.syncChunksThisSession) }
-                    if (live.lastSyncedAt != nil || liveBpm != nil) && validNights < Baselines.minNightsSeed {
-                        // Genuinely still gathering the first `seed` nights (0…seed−1) → the night-dots
-                        // card from night zero. The count is REAL banked nights; the moment it reaches the
-                        // seed — by wear OR by a full history import — we're no longer calibrating, so a
-                        // sync of an existing account never fakes a "4 of 4 — computing" here (#23-adjacent).
-                        CalibrationProgressCard(nights: validNights,
+                    if (live.lastSyncedAt != nil || liveBpm != nil) && ownNights < Baselines.minNightsSeed {
+                        // Still gathering the first `seed` nights of the user's OWN strap data → the
+                        // night-dots card from night zero. Apple-Health days don't count (borrowed,
+                        // preliminary), so a full Apple Health sync keeps the dots honest at "N of 4"
+                        // instead of faking 4/4; a real WHOOP-own history (import/wear) fills them and
+                        // hands off to the verdict once today's reading lands.
+                        CalibrationProgressCard(nights: ownNights,
                                                 total: Baselines.minNightsSeed,
                                                 onTapLive: { showLiveMonitor = true })
                     } else {
