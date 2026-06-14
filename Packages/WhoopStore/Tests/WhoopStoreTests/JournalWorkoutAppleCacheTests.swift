@@ -332,4 +332,68 @@ final class JournalWorkoutAppleCacheTests: XCTestCase {
         XCTAssertEqual(rows.count, 1, "duplicate natural key in one batch must not error or duplicate")
         XCTAssertEqual(rows[0].steps, 9_999)
     }
+
+    // MARK: - appleHealthCoverage (FER-70)
+    // Per-metric import coverage powers the live-sync status panel: how many days each metric carries,
+    // the distinct-day span across the two daily tables, and "missing" expressed as an absent key.
+
+    func testAppleHealthCoverageCountsDaysPerMetricAndSpan() async throws {
+        let store = try await WhoopStore.inMemory()
+        // appleDaily: steps both days, active_kcal + avg HR only some; dailyMetric: HRV/sleep/resting
+        // both days, SpO₂ one. 2026-05-02 appears in BOTH tables, so distinct days = 3.
+        try await store.upsertAppleDaily([
+            AppleDaily(day: "2026-05-01", steps: 1_000, activeKcal: 200, basalKcal: nil, vo2max: nil,
+                       avgHr: 60, maxHr: 120, walkingHr: nil, weightKg: nil),
+            AppleDaily(day: "2026-05-02", steps: 2_000, activeKcal: nil, basalKcal: nil, vo2max: nil,
+                       avgHr: 61, maxHr: nil, walkingHr: nil, weightKg: nil),
+        ], deviceId: "apple-health")
+        try await store.upsertDailyMetrics([
+            DailyMetric(day: "2026-05-02", totalSleepMin: 420, efficiency: nil, deepMin: nil,
+                        remMin: nil, lightMin: nil, disturbances: nil, restingHr: 55, avgHrv: 40,
+                        recovery: nil, strain: nil, exerciseCount: nil, spo2Pct: 96, respRateBpm: nil),
+            DailyMetric(day: "2026-05-03", totalSleepMin: 400, efficiency: nil, deepMin: nil,
+                        remMin: nil, lightMin: nil, disturbances: nil, restingHr: 54, avgHrv: 42,
+                        recovery: nil, strain: nil, exerciseCount: nil, spo2Pct: nil, respRateBpm: nil),
+        ], deviceId: "apple-health")
+
+        let cov = try await store.appleHealthCoverage(deviceId: "apple-health")
+        XCTAssertEqual(cov.firstDay, "2026-05-01")
+        XCTAssertEqual(cov.lastDay, "2026-05-03")
+        XCTAssertEqual(cov.totalDays, 3, "distinct days across both tables (2026-05-02 overlaps)")
+        XCTAssertEqual(cov.daysByMetric["steps"], 2)
+        XCTAssertEqual(cov.daysByMetric["avg_hr"], 2)
+        XCTAssertEqual(cov.daysByMetric["active_kcal"], 1)
+        XCTAssertEqual(cov.daysByMetric["hrv"], 2)
+        XCTAssertEqual(cov.daysByMetric["asleep_min"], 2)
+        XCTAssertEqual(cov.daysByMetric["resting_hr"], 2)
+        XCTAssertEqual(cov.daysByMetric["spo2"], 1)
+        XCTAssertNil(cov.daysByMetric["resp_rate"], "no respiration days → key absent, not 0")
+        XCTAssertNil(cov.daysByMetric["vo2max"], "no VO₂max days → key absent, not 0")
+    }
+
+    func testAppleHealthCoverageEmptyWhenNothingImported() async throws {
+        let store = try await WhoopStore.inMemory()
+        let cov = try await store.appleHealthCoverage(deviceId: "apple-health")
+        XCTAssertNil(cov.firstDay)
+        XCTAssertNil(cov.lastDay)
+        XCTAssertEqual(cov.totalDays, 0)
+        XCTAssertTrue(cov.daysByMetric.isEmpty)
+    }
+
+    func testAppleHealthCoverageScopedByDevice() async throws {
+        let store = try await WhoopStore.inMemory()
+        try await store.upsertAppleDaily([
+            AppleDaily(day: "2026-05-01", steps: 1_000, activeKcal: nil, basalKcal: nil, vo2max: nil,
+                       avgHr: nil, maxHr: nil, walkingHr: nil, weightKg: nil),
+        ], deviceId: "apple-health")
+        try await store.upsertAppleDaily([
+            AppleDaily(day: "2026-05-01", steps: 5_000, activeKcal: nil, basalKcal: nil, vo2max: nil,
+                       avgHr: nil, maxHr: nil, walkingHr: nil, weightKg: nil),
+            AppleDaily(day: "2026-05-02", steps: 6_000, activeKcal: nil, basalKcal: nil, vo2max: nil,
+                       avgHr: nil, maxHr: nil, walkingHr: nil, weightKg: nil),
+        ], deviceId: "my-whoop")
+        let cov = try await store.appleHealthCoverage(deviceId: "apple-health")
+        XCTAssertEqual(cov.totalDays, 1, "must not bleed another device's rows")
+        XCTAssertEqual(cov.daysByMetric["steps"], 1)
+    }
 }

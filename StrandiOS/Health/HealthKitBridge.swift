@@ -14,12 +14,39 @@ final class HealthKitBridge: ObservableObject {
 
     enum AuthState: Equatable { case unknown, unavailable, denied, authorized }
 
+    /// Live progress of the running `sync`. `done/total` counts pipeline stages; `stageKey` names the
+    /// current one ("hrv", "sleep", "saving", …) so the UI maps it to a localized "Importing HRV…"
+    /// label. Nil whenever idle. (FER-70)
+    struct SyncProgress: Equatable {
+        let stageKey: String
+        let done: Int
+        let total: Int
+    }
+
+    /// Share (write-back) authorization for one metric we write into Health. HealthKit only exposes
+    /// *write* status reliably — read permission is private — so this tracks the write-back metrics;
+    /// the per-metric *read* result is inferred from `coverage` (whether days actually landed). (FER-70)
+    struct WritePermission: Equatable, Identifiable {
+        var id: String { key }
+        let key: String                   // metric key, matching `coverage.daysByMetric` keys
+        let status: HKAuthorizationStatus
+    }
+
     @Published private(set) var auth: AuthState = .unknown
     @Published private(set) var lastSync: Date?
     @Published private(set) var syncing = false
     /// The most recent failure surfaced by `sync` / `writeBack`. Cleared on a successful run. UI binds
     /// here so an Apple Health auth revoke, quota hit, or invalid sample is visible instead of silent.
     @Published private(set) var lastError: String?
+    /// Live stage of the running import (nil when idle), so the card shows real progress instead of a
+    /// context-free spinner. (FER-70)
+    @Published private(set) var syncProgress: SyncProgress?
+    /// What actually landed in the store under the apple-health source: days per metric + overall
+    /// span. Reloaded after every `sync` and on demand via `refreshStatus`. Powers the coverage
+    /// summary and the per-metric status list. (FER-70)
+    @Published private(set) var coverage: AppleHealthCoverage?
+    /// Per-metric write-back authorization, refreshed alongside `coverage`. (FER-70)
+    @Published private(set) var writePermissions: [WritePermission] = []
 
     private let store = HKHealthStore()
     private let repo: Repository
@@ -57,7 +84,7 @@ final class HealthKitBridge: ObservableObject {
     // noisier and surfaces a privacy ask we don't honour.
     private static let quantityReadIds: [HKQuantityTypeIdentifier] = [
         .heartRate, .restingHeartRate, .heartRateVariabilitySDNN, .oxygenSaturation,
-        .respiratoryRate, .bodyTemperature, .stepCount, .activeEnergyBurned,
+        .respiratoryRate, .stepCount, .activeEnergyBurned,
         .basalEnergyBurned, .vo2Max
     ]
     private static let quantityWriteIds: [HKQuantityTypeIdentifier] = [
@@ -73,8 +100,33 @@ final class HealthKitBridge: ObservableObject {
         do {
             try await store.requestAuthorization(toShare: writeTypes, read: readTypes)
             auth = .authorized
+            await refreshStatus()   // surface granted write scopes + any prior coverage immediately
         } catch {
             auth = .denied
+        }
+    }
+
+    /// Reload what the status panel shows *without* running an import: write permissions (cheap,
+    /// synchronous) and the coverage already stored. Call from the card's `.task` so opening it shows
+    /// "X days imported" and the per-metric list right away. (FER-70)
+    func refreshStatus() async {
+        refreshPermissions()
+        guard let store = await repo.storeHandle() else { return }
+        coverage = try? await store.appleHealthCoverage(deviceId: appleDeviceId)
+    }
+
+    /// Snapshot write-back authorization per metric. HealthKit reports *write* (share) status
+    /// faithfully; read status stays private, so the read side is inferred from `coverage`. (FER-70)
+    private func refreshPermissions() {
+        let types: [(String, HKObjectType?)] = [
+            ("resting_hr", HKObjectType.quantityType(forIdentifier: .restingHeartRate)),
+            ("hrv", HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN)),
+            ("spo2", HKObjectType.quantityType(forIdentifier: .oxygenSaturation)),
+            ("resp_rate", HKObjectType.quantityType(forIdentifier: .respiratoryRate)),
+            ("sleep", HKObjectType.categoryType(forIdentifier: .sleepAnalysis)),
+        ]
+        writePermissions = types.compactMap { key, type in
+            type.map { WritePermission(key: key, status: store.authorizationStatus(for: $0)) }
         }
     }
 
@@ -86,7 +138,7 @@ final class HealthKitBridge: ObservableObject {
     func sync(days: Int = 30) async {
         guard auth == .authorized, !syncing else { return }
         syncing = true
-        defer { syncing = false }
+        defer { syncing = false; syncProgress = nil }
         guard let store = await repo.storeHandle() else { return }
 
         let cal = Calendar.current
@@ -96,44 +148,62 @@ final class HealthKitBridge: ObservableObject {
         var byDay: [String: DayAgg] = [:]
         func agg(_ day: String) -> DayAgg { byDay[day] ?? DayAgg() }
 
+        // 10 quantity collectors + sleep + the store write = 12 pipeline stages. Publishing the stage
+        // *before* running it turns the silent background pull into "Importing HRV… (4/12)" in the UI;
+        // `done` counts stages already finished. (FER-70)
+        let total = 12
+        func stage(_ done: Int, _ key: String) { syncProgress = SyncProgress(stageKey: key, done: done, total: total) }
+
         // Quantity aggregates per day.
+        stage(0, "resting_hr")
         await collect(.restingHeartRate, unit: HKUnit.count().unitDivided(by: .minute()), start: start, end: end, op: .discreteAverage) { day, v in
             var a = agg(day); a.restingHr = v; byDay[day] = a
         }
+        stage(1, "avg_hr")
         await collect(.heartRate, unit: HKUnit.count().unitDivided(by: .minute()), start: start, end: end, op: .discreteAverage) { day, v in
             var a = agg(day); a.avgHr = v; byDay[day] = a
         }
+        stage(2, "max_hr")
         await collect(.heartRate, unit: HKUnit.count().unitDivided(by: .minute()), start: start, end: end, op: .discreteMax) { day, v in
             var a = agg(day); a.maxHr = v; byDay[day] = a
         }
+        stage(3, "hrv")
         await collect(.heartRateVariabilitySDNN, unit: .secondUnit(with: .milli), start: start, end: end, op: .discreteAverage) { day, v in
             var a = agg(day); a.hrv = v; byDay[day] = a
         }
+        stage(4, "spo2")
         await collect(.oxygenSaturation, unit: .percent(), start: start, end: end, op: .discreteAverage) { day, v in
             var a = agg(day); a.spo2 = v * 100; byDay[day] = a   // 0…1 → percent
         }
+        stage(5, "resp_rate")
         await collect(.respiratoryRate, unit: HKUnit.count().unitDivided(by: .minute()), start: start, end: end, op: .discreteAverage) { day, v in
             var a = agg(day); a.respRate = v; byDay[day] = a
         }
+        stage(6, "steps")
         await collect(.stepCount, unit: .count(), start: start, end: end, op: .cumulativeSum) { day, v in
             var a = agg(day); a.steps = v; byDay[day] = a
         }
+        stage(7, "active_kcal")
         await collect(.activeEnergyBurned, unit: .kilocalorie(), start: start, end: end, op: .cumulativeSum) { day, v in
             var a = agg(day); a.activeKcal = v; byDay[day] = a
         }
+        stage(8, "basal_kcal")
         await collect(.basalEnergyBurned, unit: .kilocalorie(), start: start, end: end, op: .cumulativeSum) { day, v in
             var a = agg(day); a.basalKcal = v; byDay[day] = a
         }
+        stage(9, "vo2max")
         await collect(.vo2Max, unit: HKUnit(from: "ml/kg*min"), start: start, end: end, op: .discreteAverage) { day, v in
             var a = agg(day); a.vo2max = v; byDay[day] = a
         }
 
         // Sleep minutes per day (asleep stages summed; attributed to wake day).
+        stage(10, "sleep")
         await collectSleep(start: start, end: end) { day, asleepMin, deepMin, remMin, coreMin in
             var a = agg(day)
             a.asleepMin = asleepMin; a.deepMin = deepMin; a.remMin = remMin; a.coreMin = coreMin
             byDay[day] = a
         }
+        stage(11, "saving")
 
         // Build + upsert the store rows under the apple-health source.
         let appleRows = byDay.map { (day, a) in
@@ -160,6 +230,8 @@ final class HealthKitBridge: ObservableObject {
             lastSync = Date()
             lastError = nil
             await repo.refresh()   // surface the freshly-synced Apple Health days in the dashboard
+            coverage = try? await store.appleHealthCoverage(deviceId: appleDeviceId)
+            refreshPermissions()   // a denied scope may have changed between runs
         } catch {
             lastError = "Apple Health sync failed: \(error.localizedDescription)"
         }

@@ -19,6 +19,14 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Apple Health import is no longer a black box (FER-70).** Connecting or syncing Apple Health used
+  to run silently — you couldn't tell whether it was working, how many days came in, or which metrics
+  never arrived. The "Apple Health — Live Sync" card on Data Sources now shows live per-stage progress
+  while it runs ("Importing HRV… · 4/12"), then a coverage summary ("12 May → 9 Jun · 28 d") and a
+  per-metric checklist of exactly what landed (HRV ✓ 28 d · Sleep ✓ 25 d · SpO₂ —). It links straight
+  to Settings to grant any missing permission, and the onboarding import step now shows a live record
+  counter so a long export reads as progressing rather than frozen. NOOP also stops asking for the
+  Body Temperature permission it never actually imported. Fully localized (English + Spanish).
 - **Redesigned Today screen (iPhone).** The Today tab is now a tighter, verdict-first "instrument"
   read. It opens with an honesty line ("Synced 2 min ago · strap 87%" / "Last sync — never") and the
   brand ECG strip with your live heart rate, then a single committed verdict — "You're Primed",

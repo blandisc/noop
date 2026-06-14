@@ -760,9 +760,19 @@ private struct ImportStep: View {
                 .frame(maxWidth: 480)
 
                 if model.hasActiveImport {
-                    ProgressView()
-                        .controlSize(.small)
-                        .tint(StrandPalette.accent)
+                    // Live record counter (Apple Health streams a running count) so a multi-minute
+                    // export reads as progressing, not stalled — mirrors the Data Sources card. (FER-70)
+                    HStack(spacing: 8) {
+                        ProgressView()
+                            .controlSize(.small)
+                            .tint(StrandPalette.accent)
+                        if let n = model.appleHealthImportProgress {
+                            Text("\(n) records")
+                                .font(StrandFont.footnote)
+                                .foregroundStyle(StrandPalette.textTertiary)
+                                .monospacedDigit()
+                        }
+                    }
                 }
 
                 // Show the summary for the source the user last imported, styled off the typed
