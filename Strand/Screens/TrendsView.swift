@@ -22,12 +22,12 @@ struct TrendsView: View {
         var id: Int { rawValue }
         var label: String {
             switch self {
-            case .week:    return "W"
-            case .month:   return "M"
-            case .quarter: return "3M"
-            case .half:    return "6M"
-            case .year:    return "1Y"
-            case .all:     return "ALL"
+            case .week:    return String(localized: "W")
+            case .month:   return String(localized: "M")
+            case .quarter: return String(localized: "3M")
+            case .half:    return String(localized: "6M")
+            case .year:    return String(localized: "1Y")
+            case .all:     return String(localized: "ALL")
             }
         }
         /// Trailing-day window, or nil for "all history".
