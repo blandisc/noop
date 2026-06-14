@@ -19,6 +19,10 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Debug screenshot automation (developers only).** iOS debug builds now register a Darwin notification listener (`noop.nav.<screen>`) so every screen can be navigated programmatically — `xcrun simctl spawn booted notifyutil -p noop.nav.trends` — without triggering system permission dialogs. The "More" tab was refactored to use `NavigationLink(value:)` with a typed `MoreScreen` enum and a programmatic `NavigationPath`, enabling deep-link navigation into any sub-screen from the command line. A `noopdev://` URL scheme (backup transport) is also registered. All debug code is `#if DEBUG`-gated; it has no effect on release builds. ([StrandiOS/App/ScreenshotNav.swift](StrandiOS/App/ScreenshotNav.swift))
+
+- **Fix: `MetricInfoSheet` now compiles on macOS 13.0.** `.presentationBackground(_:)` requires macOS 13.3 but the sheet was calling it unconditionally. Wrapped in a `PresentationBackgroundModifier` with an `@available(macOS 13.3, iOS 16.4, *)` guard.
+
 - **The Heart Rate graph on Today now fills from a live-only session (iPhone).** If you wore the strap
   with NOOP connected but never imported a WHOOP export, today's Heart Rate chart stayed empty even
   though your live pulse showed at the top of the screen. The live heart rate streaming over the
