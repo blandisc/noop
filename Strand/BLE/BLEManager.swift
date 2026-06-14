@@ -294,12 +294,13 @@ public final class BLEManager: NSObject, ObservableObject {
             collector = Collector(store: store, deviceId: deviceId,
                                   enableRawCapture: enableRawCapture)
             collector?.onHRFlushed = { [weak self] in self?.state.hrFlushSeq += 1 }
-            // Live HR off the custom REALTIME stream is otherwise display-only (FrameRouter sets
-            // state.heartRate but never persisted it). Route it into the same standard-HR buffer so
-            // the Today trend fills from a live-only session; ingestStandardHR dedupes by ts so a
-            // strap emitting BOTH the realtime stream and 0x2A37 is recorded once.
-            router.onLiveHR = { [weak self] hr in
-                self?.collector?.ingestStandardHR(hr: hr, rr: [], at: Int(Date().timeIntervalSince1970))
+            // Live HR + R-R off the custom REALTIME stream are otherwise display-only (FrameRouter sets
+            // state.heartRate/state.rr but never persisted them). Route both into the same standard-HR
+            // buffer so the Today trend AND rrInterval fill from a live-only session (FER-84);
+            // ingestStandardHR dedupes HR by ts and the rrInterval upsert dedupes R-R, so a strap
+            // emitting BOTH the realtime stream and 0x2A37 is recorded once.
+            router.onLiveHR = { [weak self] hr, rr in
+                self?.collector?.ingestStandardHR(hr: hr, rr: rr, at: Int(Date().timeIntervalSince1970))
             }
             backfiller = Backfiller(store: store, deviceId: deviceId,
                                     ackTrim: { [weak self] trim, endData in

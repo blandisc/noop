@@ -85,6 +85,44 @@ final class NOOPScreenshotTests: XCTestCase {
         }
     }
 
+    // MARK: - TodayView verdict states (for the Figma design sync)
+
+    /// Each state is its OWN test method so they run isolated — a SpringBoard banner interruption (or
+    /// any timeout) while capturing one state can't prevent the others from being captured. Run on an
+    /// ERASED simulator for a clean store so "empty" is genuinely empty: `xcrun simctl erase <udid>`.
+    /// The verdict seeds live in `ScreenshotFixtures` (DEBUG-only), selected by `-noop.fixture`.
+
+    func test_captureTodayEmpty()    throws { captureToday(state: "empty") }
+    func test_captureTodayPrimed()   throws { captureToday(state: "primed") }
+    func test_captureTodayStrained() throws { captureToday(state: "strained") }
+
+    /// Launch TodayView in one readiness state and capture a top→bottom scroll sequence so the full
+    /// scrollable screen (verdict · why · metrics · workouts · heart rate · sources) is covered.
+    private func captureToday(state: String) {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-noop.onboarded",               "YES",
+            "-noop.acceptedTermsVersion",    "1.0",
+            "-noop.lastSeenChangelogVersion","1.80",
+            "-noop.didOfferRestore",         "YES",
+        ]
+        if state != "empty" { app.launchArguments += ["-noop.fixture", state] }
+        app.launch()
+        _ = app.tabBars.firstMatch.waitForExistence(timeout: 8)
+
+        // Today is the launch tab. The verdict states seed asynchronously (store writes + a dashboard
+        // publish that drives loadAll), so give them a beat longer than the empty path.
+        wait(state == "empty" ? 2 : 5)
+
+        // Top→bottom scroll sequence; 4 frames cover the ~2-screen-tall design with overlap.
+        snap("Today_\(state)_1")
+        for i in 2...4 {
+            app.swipeUp()
+            wait(1)
+            snap("Today_\(state)_\(i)")
+        }
+    }
+
     // MARK: - Helpers
 
     private func tap(tab: String) {
