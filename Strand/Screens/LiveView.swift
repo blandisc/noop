@@ -35,6 +35,15 @@ struct LiveView: View {
     /// as new data flushes (live.hrFlushSeq) so the user watches the numbers climb.
     private typealias Receipt = (counts: (hr: Int, rr: Int, spo2: Int, skinTemp: Int, resp: Int, gravity: Int), latestHRTs: Int?)
     @State private var receipt: Receipt? = nil
+    /// "Verify my data" (PRAGMA integrity_check) button state.
+    @State private var verifying = false
+    @State private var verifyOK: Bool? = nil
+    /// Day-key parser for the coverage strip, en_US_POSIX so it matches `DailyMetric.day`.
+    private static let dayFmt: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; f.locale = Locale(identifier: "en_US_POSIX"); return f
+    }()
+    /// How many recent calendar days the coverage strip shows.
+    private static let coverageWindow = 28
 
     var body: some View {
         ScreenScaffold(title: "Live",
@@ -315,7 +324,8 @@ struct LiveView: View {
     @ViewBuilder
     private func receiptSection(_ r: Receipt) -> some View {
         let c = r.counts
-        VStack(alignment: .leading, spacing: 10) {
+        let cov = recentCoverage
+        VStack(alignment: .leading, spacing: 12) {
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
                 receiptCount("Heart rate", c.hr)
                 receiptCount("Variability (R-R)", c.rr)
@@ -324,12 +334,40 @@ struct LiveView: View {
                 receiptCount("Respiration", c.resp)
                 receiptCount("Movement", c.gravity)
             }
-            HStack(spacing: 8) {
-                Image(systemName: "internaldrive.fill")
-                    .font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
-                Text("\(repo.days.count) nights stored · on your iPhone, system-encrypted")
-                    .font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
+            // Coverage — recent day-by-day continuity, so a night that never synced shows as a gap.
+            if !cov.isEmpty {
+                let gaps = cov.filter { !$0 }.count
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .bottom, spacing: 2) {
+                        ForEach(Array(cov.enumerated()), id: \.offset) { _, has in
+                            Capsule()
+                                .fill(has ? StrandPalette.accent : StrandPalette.hairline)
+                                .frame(maxWidth: .infinity).frame(height: 16)
+                        }
+                    }
+                    Text(gaps == 0 ? "Continuous · last \(cov.count) days"
+                                   : "\(gaps) gaps · last \(cov.count) days")
+                        .font(StrandFont.caption)
+                        .foregroundStyle(gaps == 0 ? StrandPalette.textTertiary : StrandPalette.statusWarning)
+                }
             }
+            // Storage + (if armed) iCloud backup.
+            VStack(alignment: .leading, spacing: 5) {
+                HStack(spacing: 8) {
+                    Image(systemName: "internaldrive.fill")
+                        .font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
+                    Text("\(repo.days.count) nights stored · on your iPhone, system-encrypted")
+                        .font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
+                }
+                if let backup = lastBackupText {
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark.icloud")
+                            .font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
+                        Text(backup).font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
+                    }
+                }
+            }
+            verifyRow
         }
     }
 
@@ -346,6 +384,59 @@ struct LiveView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(11)
         .background(StrandPalette.surfaceRaised, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    /// Present/absent flags for the last `coverageWindow` calendar days ending at the most recent
+    /// stored day — a missing night (one that never synced) shows as a gap. Bounded + cheap.
+    private var recentCoverage: [Bool] {
+        guard let lastKey = repo.days.last?.day, let last = Self.dayFmt.date(from: lastKey) else { return [] }
+        let keys = Set(repo.days.suffix(Self.coverageWindow * 2).map(\.day))
+        let cal = Calendar.current
+        return (0..<Self.coverageWindow).reversed().compactMap { offset in
+            cal.date(byAdding: .day, value: -offset, to: last).map { keys.contains(Self.dayFmt.string(from: $0)) }
+        }
+    }
+
+    /// iCloud auto-backup status, read straight from UserDefaults — the `AutoBackup` env object is
+    /// NOT injected on macOS and this view is shared, so reading the keys avoids a crash. nil when no
+    /// destination/date is set (then no backup line shows).
+    private var lastBackupText: String? {
+        let d = UserDefaults.standard
+        guard d.string(forKey: "noop.autoBackup.folderName") != nil,
+              let t = d.object(forKey: "noop.autoBackup.lastDate") as? Double else { return nil }
+        return String(localized: "Backed up to iCloud \(relativeAgo(t))")
+    }
+
+    @ViewBuilder private var verifyRow: some View {
+        HStack(spacing: 10) {
+            Button {
+                verifying = true; verifyOK = nil
+                Task { let ok = await repo.verifyIntegrity(); verifying = false; verifyOK = ok }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.shield")
+                    Text("Verify my data")
+                }
+                .font(StrandFont.subhead).fontWeight(.medium)
+                .foregroundStyle(StrandPalette.accent)
+                .padding(.horizontal, 14).padding(.vertical, 8)
+                .background(StrandPalette.surfaceRaised, in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .disabled(verifying)
+            if verifying {
+                ProgressView().controlSize(.small)
+                Text("Checking…").font(StrandFont.caption).foregroundStyle(StrandPalette.textSecondary)
+            } else if let ok = verifyOK {
+                Image(systemName: ok ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                    .font(StrandFont.caption)
+                    .foregroundStyle(ok ? StrandPalette.accent : StrandPalette.statusWarning)
+                Text(ok ? "Everything checks out" : "Check failed — try a re-sync")
+                    .font(StrandFont.caption)
+                    .foregroundStyle(ok ? StrandPalette.textSecondary : StrandPalette.statusWarning)
+            }
+            Spacer(minLength: 0)
+        }
     }
 
     // MARK: - Manual workout

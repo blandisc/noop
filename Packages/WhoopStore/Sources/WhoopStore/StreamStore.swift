@@ -183,6 +183,15 @@ extension WhoopStore {
         }
     }
 
+    /// SQLite's `PRAGMA integrity_check` — the "Verify my data" check. Returns true iff the database
+    /// reports "ok" (no corruption). Thorough (full scan); the caller runs it off a button tap.
+    public func integrityCheck() async throws -> Bool {
+        try syncRead { db in
+            let result = try String.fetchOne(db, sql: "PRAGMA integrity_check") ?? ""
+            return result == "ok"
+        }
+    }
+
     public func deviceRowForTest(id: String) async throws -> (mac: String?, name: String?)? {
         try syncRead { db in
             guard let row = try Row.fetchOne(db,
