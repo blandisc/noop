@@ -19,8 +19,9 @@ final class LiveActivityController {
     private var isStarting = false
 
     /// Drive the activity from the latest live values. Lazily starts when the strap is bonded and a
-    /// heart rate is present; ends when the strap goes offline. Throttled to ~once every 2s so we
-    /// stay well under the Live Activity update budget.
+    /// heart rate is present; ends when the strap goes offline. Throttled to ~once every 5s — no
+    /// animated indicator requires sub-second freshness, and BPM at 5 s granularity is still live
+    /// enough for lock-screen / Dynamic Island monitoring.
     func update(bpm: Int?, recovery: Int?, bonded: Bool) {
         guard authInfo.areActivitiesEnabled else { return }
 
@@ -33,7 +34,7 @@ final class LiveActivityController {
         let state = NOOPActivityAttributes.ContentState(bpm: bpm, recovery: recovery, bonded: bonded)
 
         if let activity {
-            guard Date().timeIntervalSince(lastPush) > 2 else { return }
+            guard Date().timeIntervalSince(lastPush) > 5 else { return }
             lastPush = Date()
             Task { await activity.update(ActivityContent(state: state, staleDate: nil)) }
         } else {
