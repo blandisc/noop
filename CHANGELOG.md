@@ -21,14 +21,18 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 - **Debug screenshot fixtures for Today's readiness states (developers only).** A new DEBUG-only `ScreenshotFixtures` seeds ~40 days of deterministic synthetic history — reverse-engineered against `ReadinessEngine` + `Baselines` — so TodayView can be captured in a specific verdict on demand: `-noop.fixture primed` (signals aligned, load supported) or `-noop.fixture strained` (one signal flagging). The seed publishes a matching dashboard plus synthetic workouts and a 24h heart-rate trace, and `AppModel.init` skips the production refresh loop while a fixture is active so it isn't overwritten. The `NOOPScreenshotTests` UI test gained one isolated method per state (`test_captureTodayEmpty/Primed/Strained`) that captures a top→bottom scroll sequence. All `#if DEBUG`-gated; no effect on release builds. ([Strand/App/ScreenshotFixtures.swift](Strand/App/ScreenshotFixtures.swift))
 
-- **Fix: trend charts no longer tint the hour labels or clip the last one.** The area fill under the
-  curve used to reach the floor of the plot and sit behind the X-axis labels (e.g. the heart-rate
-  chart on Today), tinting "2:25 p.m. / 2:40 p.m. …" a faint red, and the rightmost label was cut off
-  ("3:25 p..." instead of "3:25 p.m."). The chart's plot area now carries a small bottom/trailing
-  inset (`NoopMetrics.chartPlotInset`), lifting the fill off the label band and giving the last label
-  room to render in full before `ChartCard`'s frame clip. Applies everywhere `TrendChart` is used —
-  Today (heart rate), Trends and Explore — since it's one shared component. The `.monotone` fill (so
-  it never bleeds below the axis onto the footer) and the hover/crosshair logic are untouched.
+- **Fix: trend charts no longer tint the hour labels or clip the last one.** On a tight value domain
+  (e.g. the heart-rate chart on Today, 64–145 bpm) the area fill anchored to its implicit zero
+  baseline — which sits *below* the domain — so it filled all the way to the plot's bottom edge,
+  straight behind the X-axis labels and tinting "2:25 p.m. / 2:40 p.m. …" a faint red; the rightmost
+  label was also cut off ("3:25 p..." instead of "3:25 p.m."). The fill is now pinned to the value
+  domain's floor (`AreaMark` `yStart`), and the Y-scale reserves a clean band below it for the labels
+  while the X-scale insets its trailing edge so the last label renders in full
+  (`NoopMetrics.chartXLabelBand` / `chartXTrailingInset`). Pinning the floor also makes the fill
+  *physically unable* to bleed below the axis onto the footer (reinforces FER-10). Applies everywhere
+  `TrendChart` is used — Today (heart rate), Trends and Explore — since it's one shared component;
+  `.monotone` interpolation and the hover/crosshair logic are untouched. Verified by rendering the
+  card to PNG in a unit test (`ChartSnapshotTests`).
   ([Packages/StrandDesign/Sources/StrandDesign/TrendChart.swift](Packages/StrandDesign/Sources/StrandDesign/TrendChart.swift)) (FER-82)
 
 - **Today is shorter on iPhone: the "Last Workouts" strip is gone.** Today should read at a glance,
