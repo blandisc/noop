@@ -7,7 +7,6 @@ import SwiftUI
 struct StrandiOSApp: App {
     @StateObject private var model: AppModel
     @StateObject private var health: HealthKitBridge
-    @State private var liveActivity = LiveActivityController()
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
@@ -36,14 +35,6 @@ struct StrandiOSApp: App {
                 .environmentObject(model.coach)
                 .environmentObject(health)
                 .preferredColorScheme(.dark)
-                .onReceive(model.live.$heartRate) { _ in
-                    liveActivity.update(
-                        bpm: model.bpm ?? model.live.heartRate,
-                        recovery: model.repo.days.last(where: { $0.recovery != nil })?
-                            .recovery.map { Int($0.rounded()) },
-                        bonded: model.live.bonded
-                    )
-                }
         }
         // HealthKit authorization is intentionally NOT requested on launch. The system permission
         // dialog without prior in-app rationale violates Apple HIG / App Review guidance — the user

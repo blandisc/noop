@@ -885,6 +885,8 @@ ES: dict[str, str] = {
     "Today's verdict": "Veredicto de hoy",
     "No reading yet": "Aún no hay lectura",
     "Connect your WHOOP strap to see this morning's readiness, recovery and heart rate.": "Conecta tu banda WHOOP para ver tu disposición, recuperación y frecuencia cardiaca de esta mañana.",
+    "Your scores are building": "Tus puntuaciones se están construyendo",
+    "Your strap is connected. Recovery, strain and sleep build over your next few nights of wear. Import your WHOOP export in Data Sources to backfill instantly.": "Tu banda está conectada. La recuperación, el esfuerzo y el sueño se construyen durante tus próximas noches de uso. Importa tu exportación de WHOOP en Fuentes de datos para rellenarlo al instante.",
     "Scan for strap": "Buscar banda",
     "Plan a hard session": "Planea una sesión dura",
     "Low conf": "Conf. baja",
