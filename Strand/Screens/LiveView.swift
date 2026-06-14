@@ -21,6 +21,10 @@ struct LiveView: View {
     /// Smoothed, spike-filtered live HR from AppModel (median over a short window).
     private var displayHR: Int? { model.bpm }
     private var activeConnection: Bool { live.connected && live.bonded }
+    /// True when a live HR is actually streaming from a worn strap — drives the ECG monitor sweep.
+    private var isLiveHR: Bool { live.heartRate != nil && live.worn }
+    /// Rolling beat-to-beat buffer (last ~40 R-R intervals) so the tachogram builds as beats arrive.
+    @State private var rrHistory: [Int] = []
 
     var body: some View {
         ScreenScaffold(title: "Live",
@@ -35,8 +39,11 @@ struct LiveView: View {
                 // also appears in Settings). A 5/MG strap still bonded to the WHOOP app refuses pairing
                 // with "Encryption is insufficient" — this tells the user to free it and re-pair.
                 if let hint = live.pairingHint { pairingHintBanner(hint) }
-                heartRateCard
-                statusGrid
+                ecgHero
+                sessionTally
+                liveSignals
+                syncSignals
+                savedFooter
                 workoutSection
                 // Show the strap picker whenever we're not actively streaming, so a user with both a
                 // WHOOP 4 and a 5/MG can switch between them. (It used to hide once `bonded`, which is
@@ -50,14 +57,35 @@ struct LiveView: View {
         .onDisappear { model.stopRealtimeHR() }
         .onChange(of: live.bonded) { _ in refreshLiveSession() }
         .onChange(of: live.connected) { _ in refreshLiveSession() }
+        .onChange(of: live.rr) { newRR in
+            // LiveState.rr only holds the latest notification's intervals; keep a rolling buffer so the
+            // tachogram builds up beat by beat as the user watches.
+            rrHistory.append(contentsOf: newRR)
+            if rrHistory.count > 40 { rrHistory.removeFirst(rrHistory.count - 40) }
+        }
     }
 
     // MARK: - Connection
 
     private var connectionRow: some View {
-        HStack {
+        HStack(spacing: 10) {
             connectionPill
             Spacer()
+            if let b = live.batteryPct {
+                Label("\(Int(b))%", systemImage: batteryIcon(b))
+                    .labelStyle(.titleAndIcon)
+                    .font(StrandFont.caption).foregroundStyle(StrandPalette.textSecondary)
+            }
+        }
+    }
+
+    private func batteryIcon(_ pct: Double) -> String {
+        switch pct {
+        case ..<13: return "battery.0"
+        case ..<38: return "battery.25"
+        case ..<63: return "battery.50"
+        case ..<88: return "battery.75"
+        default:    return "battery.100"
         }
     }
 
@@ -79,49 +107,179 @@ struct LiveView: View {
         .background(StrandPalette.surfaceRaised, in: Capsule())
     }
 
-    // MARK: - Heart rate
+    // MARK: - Monitor hero (ECG sweep + live BPM)
 
-    private var heartRateCard: some View {
+    private var ecgHero: some View {
         NoopCard {
-            VStack(spacing: 6) {
-                Text("HEART RATE").font(StrandFont.overline).tracking(StrandFont.overlineTracking)
-                    .foregroundStyle(StrandPalette.textSecondary)
-                Text(displayHR.map(String.init) ?? "—")
-                    .font(.system(size: 96, weight: .semibold).monospacedDigit())
-                    .foregroundStyle(displayHR == nil ? StrandPalette.textTertiary : StrandPalette.accent)
-                    .contentTransition(.numericText())
-                    .animation(.snappy, value: displayHR)
-                Text("bpm").font(StrandFont.caption).foregroundStyle(StrandPalette.textSecondary)
-                if !live.rr.isEmpty {
-                    Text("R-R: " + live.rr.suffix(4).map(String.init).joined(separator: " · ") + " ms")
-                        .font(StrandFont.mono).foregroundStyle(StrandPalette.textTertiary)
+            VStack(alignment: .leading, spacing: 14) {
+                ECGWave(color: isLiveHR ? StrandPalette.accent : StrandPalette.textTertiary,
+                        flat: displayHR == nil, animate: isLiveHR, bpm: displayHR)
+                    .frame(maxWidth: .infinity)
+                HStack(alignment: .firstTextBaseline, spacing: 7) {
+                    Text(displayHR.map(String.init) ?? "—")
+                        .font(.system(size: 64, weight: .semibold).monospacedDigit())
+                        .foregroundStyle(displayHR == nil ? StrandPalette.textTertiary : StrandPalette.accent)
+                        .contentTransition(.numericText())
+                        .animation(.snappy, value: displayHR)
+                    Text("bpm").font(StrandFont.headline).foregroundStyle(StrandPalette.textSecondary)
+                    Spacer(minLength: 0)
+                    Text(isLiveHR ? "live" : "—").font(StrandFont.caption)
+                        .foregroundStyle(StrandPalette.textTertiary)
                 }
             }
-            .frame(maxWidth: .infinity).padding(.vertical, 20)
-        }
-    }
-
-    // MARK: - Status tiles
-
-    private var statusGrid: some View {
-        HStack(spacing: NoopMetrics.gap) {
-            stat(String(localized: "Battery"), live.batteryPct.map { "\(Int($0))%" } ?? "—")
-            stat(String(localized: "Last frame"), live.lastFrameType ?? "—")
-            stat(String(localized: "Last event"), live.lastEvent ?? "—")
-        }
-    }
-
-    private func stat(_ title: String, _ value: String) -> some View {
-        NoopCard {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title.uppercased()).font(StrandFont.overline).tracking(StrandFont.overlineTracking)
-                    .foregroundStyle(StrandPalette.textSecondary)
-                Text(value).font(StrandFont.headline).monospacedDigit()
-                    .foregroundStyle(StrandPalette.textPrimary)
-                    .lineLimit(1).minimumScaleFactor(0.6)
-            }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 4)
         }
+    }
+
+    // MARK: - Session tally (beats accruing + beat-to-beat tachogram)
+
+    private var sessionTally: some View {
+        NoopCard {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Beats this session").font(StrandFont.subhead)
+                        .foregroundStyle(StrandPalette.textSecondary)
+                    Spacer()
+                    HStack(spacing: 4) {
+                        Text("\(live.beatsThisSession)")
+                            .font(.system(size: 26, weight: .semibold).monospacedDigit())
+                            .foregroundStyle(StrandPalette.accent)
+                            .contentTransition(.numericText())
+                            .animation(.snappy, value: live.beatsThisSession)
+                        Image(systemName: "arrow.up").font(StrandFont.caption)
+                            .foregroundStyle(StrandPalette.accent)
+                    }
+                }
+                rrTachogram(rrHistory)
+                HStack {
+                    Text("Beat to beat").font(StrandFont.caption)
+                        .foregroundStyle(StrandPalette.textTertiary)
+                    Spacer()
+                    Text(rrHistory.last.map { "\($0) ms" } ?? "—")
+                        .font(StrandFont.captionNumber).foregroundStyle(StrandPalette.textPrimary)
+                }
+            }
+        }
+    }
+
+    private func rrTachogram(_ intervals: [Int]) -> some View {
+        let recent = Array(intervals.suffix(28))
+        return HStack(alignment: .bottom, spacing: 3) {
+            if recent.isEmpty {
+                Text("Waiting for beats…").font(StrandFont.caption)
+                    .foregroundStyle(StrandPalette.textTertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                ForEach(Array(recent.enumerated()), id: \.offset) { idx, ms in
+                    Capsule()
+                        .fill(idx == recent.count - 1 ? StrandPalette.accent
+                                                       : StrandPalette.accent.opacity(0.45))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: rrBarHeight(ms))
+                }
+            }
+        }
+        .frame(height: 40, alignment: .bottom)
+        .animation(.snappy, value: recent.count)
+    }
+
+    private func rrBarHeight(_ ms: Int) -> CGFloat {
+        let lo = 400.0, hi = 1400.0
+        let f = min(1, max(0, (Double(ms) - lo) / (hi - lo)))
+        return 8 + CGFloat(f) * 30
+    }
+
+    // MARK: - Signal lists (honest: what's live now vs. what arrives on the next sync)
+
+    private var liveSignals: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            sectionLabel("Capturing live")
+            signalRow(icon: "heart.fill", name: String(localized: "Heart rate"),
+                      value: displayHR.map { "\($0) bpm" } ?? "—", isLive: isLiveHR)
+            rowDivider
+            signalRow(icon: "waveform.path.ecg", name: String(localized: "Variability (R-R)"),
+                      value: rrHistory.last.map { "\($0) ms" } ?? "—", isLive: isLiveHR)
+        }
+    }
+
+    private var syncSignals: some View {
+        let ago = live.lastSyncedAt.map { relativeAgo($0) }
+        return VStack(alignment: .leading, spacing: 0) {
+            sectionLabel("Completes on sync")
+            syncRow("drop.fill", String(localized: "Blood oxygen (SpO₂)"), ago)
+            rowDivider
+            syncRow("thermometer", String(localized: "Skin temperature"), ago)
+            rowDivider
+            syncRow("lungs.fill", String(localized: "Respiration"), ago)
+            rowDivider
+            syncRow("figure.walk", String(localized: "Movement"), ago)
+        }
+    }
+
+    private var rowDivider: some View {
+        Rectangle().fill(StrandPalette.hairline).frame(height: 0.5)
+    }
+
+    private func sectionLabel(_ text: LocalizedStringKey) -> some View {
+        Text(text).font(StrandFont.overline).tracking(StrandFont.overlineTracking)
+            .foregroundStyle(StrandPalette.textSecondary)
+            .padding(.bottom, 6)
+    }
+
+    private func signalRow(icon: String, name: String, value: String, isLive: Bool) -> some View {
+        HStack(spacing: 11) {
+            Image(systemName: icon).font(StrandFont.subhead)
+                .foregroundStyle(StrandPalette.accent).frame(width: 22)
+            Text(name).font(StrandFont.subhead).foregroundStyle(StrandPalette.textPrimary)
+            Spacer(minLength: 0)
+            Text(value).font(StrandFont.captionNumber).foregroundStyle(StrandPalette.textSecondary)
+            Circle().fill(isLive ? StrandPalette.accent : StrandPalette.textTertiary)
+                .frame(width: 7, height: 7)
+        }
+        .padding(.vertical, 9)
+    }
+
+    private func syncRow(_ icon: String, _ name: String, _ ago: String?) -> some View {
+        HStack(spacing: 11) {
+            Image(systemName: icon).font(StrandFont.subhead)
+                .foregroundStyle(StrandPalette.textTertiary).frame(width: 22)
+            Text(name).font(StrandFont.subhead).foregroundStyle(StrandPalette.textSecondary)
+            Spacer(minLength: 0)
+            Text(ago.map { String(localized: "synced \($0)") } ?? String(localized: "not yet"))
+                .font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
+        }
+        .padding(.vertical, 9)
+    }
+
+    // MARK: - Saved footer (the canary: secure pairing + recent sync = everything is saved)
+
+    @ViewBuilder private var savedFooter: some View {
+        if activeConnection && live.encryptedBond {
+            monitorFooterRow(icon: "checkmark.circle.fill", tint: StrandPalette.accent,
+                             text: live.lastSyncedAt.map {
+                                String(localized: "Everything saved on your iPhone · synced \(relativeAgo($0))")
+                             } ?? String(localized: "Everything saved on your iPhone"))
+        } else if activeConnection {
+            monitorFooterRow(icon: "exclamationmark.triangle.fill", tint: StrandPalette.statusWarning,
+                             text: String(localized: "Live heart rate only — finish secure pairing to save the rest"))
+        } else {
+            monitorFooterRow(icon: "clock", tint: StrandPalette.textTertiary,
+                             text: live.lastSyncedAt.map {
+                                String(localized: "Last synced \(relativeAgo($0))")
+                             } ?? String(localized: "Not synced yet"))
+        }
+    }
+
+    private func monitorFooterRow(icon: String, tint: Color, text: String) -> some View {
+        HStack(spacing: 9) {
+            Image(systemName: icon).foregroundStyle(tint)
+            Text(text).font(StrandFont.footnote).foregroundStyle(StrandPalette.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+        .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     // MARK: - Manual workout

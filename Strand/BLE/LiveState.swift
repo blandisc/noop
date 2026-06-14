@@ -6,7 +6,9 @@ import Combine
 /// `@MainActor` so SwiftUI views observe it safely; mutators are called on the main queue.
 @MainActor
 public final class LiveState: ObservableObject {
-    @Published public var connected: Bool = false
+    @Published public var connected: Bool = false {
+        didSet { if connected && !oldValue { beatsThisSession = 0 } }  // fresh session → zero the live beat tally
+    }
     // NOTE: do NOT auto-clear `pairingHint` when `bonded` flips true. On a 5/MG, `bonded` is also set by
     // the live-HR shortcut (BLEManager — HR over the unbonded standard profile), so clearing the hint
     // there hides the still-accurate "free the strap" guidance from users who are streaming HR but never
@@ -22,7 +24,12 @@ public final class LiveState: ObservableObject {
     /// alarm, double-tap, history offload) only works when this is true.
     @Published public var encryptedBond: Bool = false
     @Published public var heartRate: Int? = nil
-    @Published public var rr: [Int] = []
+    @Published public var rr: [Int] = [] {
+        didSet { beatsThisSession += rr.count }  // each notification carries the beats since the last → running session total
+    }
+    /// Beats captured live this connection session (sum of R-R intervals received). Zeroed on a fresh
+    /// connect — drives the Live monitor's "beats this session" tally as the user watches data accrue.
+    @Published public var beatsThisSession: Int = 0
     @Published public var batteryPct: Double? = nil
     /// Charging flag from the strap's BATTERY_LEVEL events — wire observation: u8 bit0 in the
     /// event payload (4.0 @26 / 5.0 @30), pushed ~every 8 min on captured links. nil until the
