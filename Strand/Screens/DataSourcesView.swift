@@ -354,8 +354,140 @@ struct DataSourcesView: View {
                 Circle().fill(dot).frame(width: 8, height: 8)
                 Text(label).font(StrandFont.subhead).foregroundStyle(StrandPalette.textSecondary)
             }
+            Divider().overlay(StrandPalette.hairline)
+            strapSyncDiagnostic
         }
     }
+
+    /// Sync diagnostic (FER-83): honest, read-only evidence that the band captured data and that NOOP
+    /// is receiving, decoding and storing it. Informs only — the one action is "Sync now" (a single
+    /// safe, reversible offload). State-driven: connect prompt / pairing prompt / live progress /
+    /// result (band range + per-sensor receipt + verdict) / error.
+    @ViewBuilder
+    private var strapSyncDiagnostic: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Sync diagnostic").strandOverline()
+                .foregroundStyle(StrandPalette.textTertiary)
+
+            if !live.connected {
+                Text("Connect your strap to run the sync diagnostic.")
+                    .font(StrandFont.subhead).foregroundStyle(StrandPalette.textTertiary)
+            } else if !live.encryptedBond {
+                Text("Complete secure pairing first — the strap won’t offload its history until the encrypted bond is set.")
+                    .font(StrandFont.subhead).foregroundStyle(StrandPalette.textTertiary)
+            } else {
+                strapRangeRow
+                syncNowButton
+                if live.backfilling {
+                    syncProgressRow
+                } else if let err = live.lastSyncError {
+                    Text(verbatim: err)
+                        .font(StrandFont.footnote).foregroundStyle(StrandPalette.statusWarning)
+                } else if live.syncCompletedThisSession {
+                    syncReceiptList
+                    syncVerdictRow
+                }
+            }
+        }
+    }
+
+    /// "On the band" — the strap's own retained-history window (proof the sensor captured + still holds
+    /// it). "—" until a GET_DATA_RANGE response has been seen.
+    @ViewBuilder
+    private var strapRangeRow: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "externaldrive.fill")
+                .font(.system(size: 12)).foregroundStyle(StrandPalette.textTertiary)
+            Text("On the band:").font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
+            if let oldest = live.strapHistoryOldest, let newest = live.strapHistoryNewest {
+                Text(verbatim: "\(Self.dayFormatter.string(from: Date(timeIntervalSince1970: oldest))) → \(Self.dayFormatter.string(from: Date(timeIntervalSince1970: newest)))")
+                    .font(StrandFont.footnote).monospacedDigit()
+                    .foregroundStyle(StrandPalette.textSecondary)
+            } else {
+                Text(verbatim: "—").font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
+            }
+        }
+    }
+
+    private var syncNowButton: some View {
+        Button {
+            model.ble.syncNow()
+        } label: {
+            Label(live.backfilling ? "Syncing…" : "Sync now",
+                  systemImage: "arrow.triangle.2.circlepath").padding(.horizontal, 6)
+        }
+        .buttonStyle(.borderedProminent).tint(StrandPalette.accent)
+        .disabled(live.backfilling)
+    }
+
+    /// Live offload progress — a pulsing pill plus the running chunk count (the only honest progress
+    /// signal; the protocol never reveals the total pending, so a count, never a percent).
+    private var syncProgressRow: some View {
+        HStack(spacing: 10) {
+            StatePill("Syncing strap history…", tone: .accent, pulsing: true)
+            Text("\(live.syncChunksThisSession) pieces")
+                .font(StrandFont.footnote).monospacedDigit()
+                .foregroundStyle(StrandPalette.textSecondary)
+        }
+    }
+
+    /// "Received this sync" — rows that decoded and landed, per sensor. The honest data receipt
+    /// (counts from StreamStore.insert, accumulated over the offload session).
+    @ViewBuilder
+    private var syncReceiptList: some View {
+        let r = live.syncReceipt
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Received this sync").strandOverline()
+                .foregroundStyle(StrandPalette.textTertiary)
+            VStack(spacing: 0) {
+                ForEach(Self.syncSensorRows(r), id: \.key) { row in
+                    HStack(spacing: 8) {
+                        Image(systemName: row.count > 0 ? "checkmark.circle.fill" : "minus.circle")
+                            .font(.system(size: 12))
+                            .foregroundStyle(row.count > 0 ? StrandPalette.statusPositive : StrandPalette.textTertiary)
+                        Text(LocalizedStringKey(row.key)).font(StrandFont.subhead)
+                            .foregroundStyle(row.count > 0 ? StrandPalette.textSecondary : StrandPalette.textTertiary)
+                        Spacer()
+                        Text(verbatim: row.count > 0 ? "\(row.count)" : "—")
+                            .font(StrandFont.footnote).monospacedDigit()
+                            .foregroundStyle(row.count > 0 ? StrandPalette.textSecondary : StrandPalette.textTertiary)
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+        }
+    }
+
+    /// The honest 3-state verdict, derived purely from what the offload session observed.
+    @ViewBuilder
+    private var syncVerdictRow: some View {
+        let r = live.syncReceipt
+        let (icon, text, tint): (String, LocalizedStringKey, Color) = {
+            if r.framesReceived == 0 {
+                return ("circle", "The band has nothing new.", StrandPalette.textSecondary)
+            } else if r.rowsDecoded == 0 {
+                return ("exclamationmark.triangle.fill", "Data arrives but doesn’t decode — please report.", StrandPalette.statusWarning)
+            } else {
+                return ("checkmark.seal.fill", "Receiving and storing everything.", StrandPalette.statusPositive)
+            }
+        }()
+        HStack(spacing: 6) {
+            Image(systemName: icon).font(.system(size: 13)).foregroundStyle(tint)
+            Text(text).font(StrandFont.subhead).foregroundStyle(tint)
+        }
+    }
+
+    /// The six sensor streams the receipt reports, paired with their (localizable) English label keys
+    /// — `key` doubles as the stable ForEach id and the LocalizedStringKey lookup (FER-83).
+    private static func syncSensorRows(_ r: LiveState.SyncReceipt) -> [(key: String, count: Int)] {
+        [("Heart rate", r.hr), ("R-R", r.rr), ("Blood oxygen", r.spo2),
+         ("Temperature", r.skinTemp), ("Respiration", r.resp), ("Movement", r.gravity)]
+    }
+
+    /// Medium-date formatter for the band's retained-history window (FER-83).
+    private static let dayFormatter: DateFormatter = {
+        let f = DateFormatter(); f.dateStyle = .medium; f.timeStyle = .none; return f
+    }()
 
     @ViewBuilder
     private func card<C: View>(title: String, icon: String, subtitle: String,

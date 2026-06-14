@@ -64,6 +64,38 @@ public final class LiveState: ObservableObject {
     /// anyway, so persisting a stale error across launches would outlive its relevance.
     @Published public var lastSyncError: String? = nil
 
+    /// The strap's own stored-history window (real-unix seconds) from the last `GET_DATA_RANGE`
+    /// response — proof the SENSOR captured data and the band still holds it. `oldest`/`newest` are
+    /// the min/max plausible-unix markers in that response; both nil until a range response arrives.
+    /// Surfaced read-only in the Data Sources sync diagnostic (FER-83).
+    @Published public var strapHistoryOldest: TimeInterval?
+    @Published public var strapHistoryNewest: TimeInterval?
+
+    /// Per-sensor "data receipt" for the current/last offload session — proof NOOP received, decoded
+    /// and stored the strap's history. The per-sensor counts are rows ACTUALLY persisted (from
+    /// `StreamStore.insert`'s return, accumulated across chunks); `framesReceived` vs `rowsDecoded`
+    /// distinguish "the band had nothing new" (no frames) from "frames arrive but don't decode"
+    /// (frames, zero decoded rows — the silent-loss case, #30/#77). Zeroed when a fresh offload begins.
+    @Published public var syncReceipt = SyncReceipt()
+
+    /// True once a historical offload has run to completion (HISTORY_COMPLETE) THIS session — so the
+    /// sync diagnostic only shows its receipt + verdict after a real sync, not a stale `lastSyncedAt`
+    /// restored from a prior launch. Reset when a fresh offload begins (FER-83).
+    @Published public var syncCompletedThisSession = false
+
+    /// Accumulated offload receipt. Per-sensor fields mirror the six sensor streams the diagnostic
+    /// shows (hr/rr/spo₂/temp/respiration/movement); `framesReceived`/`rowsDecoded` drive the verdict.
+    public struct SyncReceipt: Equatable {
+        public var hr = 0, rr = 0, spo2 = 0, skinTemp = 0, resp = 0, gravity = 0
+        /// Total historical frames fed into chunks this session (proof bytes arrived from the band).
+        public var framesReceived = 0
+        /// Total decoded rows across all six sensor streams this session (proof they decoded).
+        public var rowsDecoded = 0
+        public init() {}
+        /// Rows newly stored across the six sensors this session (the "what landed" total).
+        public var rowsStored: Int { hr + rr + spo2 + skinTemp + resp + gravity }
+    }
+
     /// True while a historical offload session is running, so screens can say "Syncing strap
     /// history…" instead of presenting half-loaded data as final (#77).
     @Published public var backfilling = false

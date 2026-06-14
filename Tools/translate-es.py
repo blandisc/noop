@@ -963,6 +963,17 @@ ES: dict[str, str] = {
     "It looks like there's no data on this device. If you've used NOOP before — on this phone or another — restore your strap history and settings from an iCloud Drive backup.": "Parece que no hay datos en este dispositivo. Si ya usaste NOOP antes — en este teléfono u otro — restaura el historial de tu banda y tus ajustes desde un respaldo en iCloud Drive.",
     "Restore": "Restaurar",
     "Your data has been restored. Reopen NOOP for it to take effect.": "Tus datos se restauraron. Vuelve a abrir NOOP para que surta efecto.",
+    # FER-83 — Data Sources strap-sync diagnostic (band range + per-sensor receipt + verdict).
+    "Sync diagnostic": "Diagnóstico de sincronización",
+    "Connect your strap to run the sync diagnostic.": "Conecta tu banda para ejecutar el diagnóstico de sincronización.",
+    "Complete secure pairing first — the strap won’t offload its history until the encrypted bond is set.": "Primero completa el emparejamiento seguro — la banda no descargará su historial hasta que se establezca el vínculo cifrado.",
+    "On the band:": "En la banda:",
+    "%lld pieces": "%lld piezas",
+    "Received this sync": "Recibido en este sync",
+    "R-R": "R-R",
+    "The band has nothing new.": "La banda no tiene nada nuevo.",
+    "Data arrives but doesn’t decode — please report.": "Llegan datos pero no se decodifican — repórtalo.",
+    "Receiving and storing everything.": "Recibiendo y guardando todo.",
 }
 
 

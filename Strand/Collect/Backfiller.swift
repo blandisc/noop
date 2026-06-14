@@ -34,6 +34,16 @@ extension WhoopStore: BackfillStoreWriting {}
 final class Backfiller {
     typealias Extractor = ([ParsedFrame], Int, Int) -> Streams
 
+    /// Per-chunk "data receipt" the Backfiller hands back so BLEManager can accumulate an honest
+    /// "what this sync received" tally and derive the sync verdict (FER-83). Per-sensor fields are
+    /// rows ACTUALLY persisted (from `StreamStore.insert`'s return); `framesReceived`/`rowsDecoded`
+    /// distinguish "nothing new" from "frames arrive but don't decode".
+    struct ChunkReceipt {
+        var hr = 0, rr = 0, spo2 = 0, skinTemp = 0, resp = 0, gravity = 0
+        var framesReceived = 0
+        var rowsDecoded = 0
+    }
+
     private let store: BackfillStoreWriting
     private let deviceId: String
     /// Confirms one HISTORY_END chunk to the strap. Carries both the trim cursor (= first u32
@@ -63,6 +73,10 @@ final class Backfiller {
 
     /// Diagnostic sink (strap log). Surfaces historical records whose firmware layout we can't decode.
     private let log: ((String) -> Void)?
+    /// Per-chunk receipt sink (FER-83). Invoked once per HISTORY_END that carried frames, so the
+    /// caller can accumulate the session's "what was received/decoded/stored" tally. nil in tests
+    /// that don't care.
+    private let onReceipt: ((ChunkReceipt) -> Void)?
     /// Versions already reported this session, so the diagnostic logs each once (no spam).
     private var loggedUnmappedVersions: Set<Int> = []
 
@@ -71,12 +85,14 @@ final class Backfiller {
          ackTrim: @escaping (_ trim: UInt32, _ endData: [UInt8]) -> Void,
          enableRawCapture: Bool = false,
          log: ((String) -> Void)? = nil,
+         onReceipt: ((ChunkReceipt) -> Void)? = nil,
          extract: @escaping Extractor = { extractHistoricalStreams($0, deviceClockRef: $1, wallClockRef: $2) }) {
         self.store = store
         self.deviceId = deviceId
         self.ackTrim = ackTrim
         self.enableRawCapture = enableRawCapture
         self.log = log
+        self.onReceipt = onReceipt
         self.extract = extract
     }
 
@@ -172,7 +188,17 @@ final class Backfiller {
                     log?("Backfill: rejected frame[\(i)] \(f.count)B: \(hex)\(f.count > 64 ? "…" : "")")
                 }
             }
-            do { try await store.insert(decoded, deviceId: deviceId) } catch { return }
+            let stored: (hr: Int, rr: Int, events: Int, battery: Int, spo2: Int, skinTemp: Int, resp: Int, gravity: Int)
+            do { stored = try await store.insert(decoded, deviceId: deviceId) } catch { return }
+
+            // Data receipt (FER-83): rows actually stored per sensor, plus frames-received vs
+            // rows-decoded so the diagnostic can tell "nothing new" from "frames but no decode".
+            let rowsDecoded = decoded.hr.count + decoded.rr.count + decoded.spo2.count
+                + decoded.skinTemp.count + decoded.resp.count + decoded.gravity.count
+            onReceipt?(ChunkReceipt(
+                hr: stored.hr, rr: stored.rr, spo2: stored.spo2, skinTemp: stored.skinTemp,
+                resp: stored.resp, gravity: stored.gravity,
+                framesReceived: frames.count, rowsDecoded: rowsDecoded))
 
             // RAW: only persisted when the research toggle is ON. Default OFF → decoded-only; the
             // chunk is still durably committed (decoded) so the trim is safe to advance + ack.

@@ -19,6 +19,16 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Strap sync diagnostic in Data Sources — honest proof your data is getting through.** The WHOOP
+  strap row now expands into a read-only diagnostic that answers "did the band capture data, and is
+  NOOP receiving, decoding and storing it?" It shows the band's own retained-history window
+  (`oldest → newest`, from the strap's last data-range report — proof the sensor captured and still
+  holds it), a **Sync now** button that forces a single safe history offload and shows live progress,
+  a per-sensor receipt of what landed this sync (heart rate, R-R, blood oxygen, temperature,
+  respiration, movement), and one honest verdict: *Receiving and storing everything* · *The band has
+  nothing new* · *Data arrives but doesn't decode — please report*. It only informs — the sole action
+  is Sync now (never a reboot/wipe). Localized in English and Spanish. ([Strand/Screens/DataSourcesView.swift](Strand/Screens/DataSourcesView.swift))
+
 - **Debug screenshot fixtures for Today's readiness states (developers only).** A new DEBUG-only `ScreenshotFixtures` seeds ~40 days of deterministic synthetic history — reverse-engineered against `ReadinessEngine` + `Baselines` — so TodayView can be captured in a specific verdict on demand: `-noop.fixture primed` (signals aligned, load supported) or `-noop.fixture strained` (one signal flagging). The seed publishes a matching dashboard plus synthetic workouts and a 24h heart-rate trace, and `AppModel.init` skips the production refresh loop while a fixture is active so it isn't overwritten. The `NOOPScreenshotTests` UI test gained one isolated method per state (`test_captureTodayEmpty/Primed/Strained`) that captures a top→bottom scroll sequence. All `#if DEBUG`-gated; no effect on release builds. ([Strand/App/ScreenshotFixtures.swift](Strand/App/ScreenshotFixtures.swift))
 
 - **Fix: trend charts no longer tint the hour labels or clip the last one.** On a tight value domain
