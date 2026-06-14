@@ -15778,6 +15778,40 @@
           }
         }
       }
+    },
+    "No reading for today yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No reading for today yet"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no hay lectura de hoy"
+          }
+        }
+      }
+    },
+    "Your baseline is set. Wear your strap overnight and this morning's recovery, strain and sleep land once it syncs.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your baseline is set. Wear your strap overnight and this morning's recovery, strain and sleep land once it syncs."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu línea base ya está lista. Usa la banda durante la noche y la recuperación, el esfuerzo y el sueño de esta mañana aparecen en cuanto sincronice."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

@@ -163,15 +163,18 @@ struct TodayView: View {
                     // seen; the old data-pending gauge ("Sin datos") is gone so the empty state never
                     // looks half-built — even right after the strap connects in onboarding.
                     if live.backfilling { SyncingHistoryNote(chunks: live.syncChunksThisSession) }
-                    if live.lastSyncedAt != nil || liveBpm != nil {
-                        // The night-dots card is the single waiting screen now, shown from night zero
-                        // (0 of 4) so the runway to a verdict is always visible once a strap exists.
-                        CalibrationProgressCard(nights: min(validNights, Baselines.minNightsSeed),
+                    if (live.lastSyncedAt != nil || liveBpm != nil) && validNights < Baselines.minNightsSeed {
+                        // Genuinely still gathering the first `seed` nights (0…seed−1) → the night-dots
+                        // card from night zero. The count is REAL banked nights; the moment it reaches the
+                        // seed — by wear OR by a full history import — we're no longer calibrating, so a
+                        // sync of an existing account never fakes a "4 of 4 — computing" here (#23-adjacent).
+                        CalibrationProgressCard(nights: validNights,
                                                 total: Baselines.minNightsSeed,
                                                 onTapLive: { showLiveMonitor = true })
                     } else {
-                        // Never saw a strap → keep emptyHero's committed "No reading yet" + Scan CTA,
-                        // so the only way to start (pairing) isn't hidden behind an empty dots row.
+                        // No strap ever (→ Scan CTA), OR a seeded baseline (≥seed valid nights, e.g. from
+                        // a full account sync) that simply has no reading for TODAY yet — not calibration.
+                        // emptyHero tells the honest story for both, never a fabricated calibration count.
                         emptyHero
                     }
                 } else {
@@ -277,20 +280,21 @@ struct TodayView: View {
         return r.level != .insufficient ? readinessColor(r.level) : StrandPalette.metricRose
     }
 
-    /// Verdict hero for the no-data state — one calm screen from first launch through calibration.
-    /// Copy adapts to whether a strap has ever been seen: before, a committed "no reading yet" + a
-    /// single "scan" CTA; after the strap connects (live HR or any past sync), an honest "scores are
-    /// building" note with the import hint and no button. No gauge, no fabricated numbers either way.
+    /// Verdict hero for the no-data state. Two honest cases, by whether a strap has ever been seen:
+    /// before — a committed "no reading yet" + a single "scan" CTA. After — the baseline is already
+    /// seeded (by wear OR a full import) but today's reading hasn't landed, so a calm "no reading for
+    /// today yet". The 1…seed−1 calibration window is owned by CalibrationProgressCard, not here, so
+    /// this never claims "scores are building" once an account's history is in. No fabricated numbers.
     private var emptyHero: some View {
         let strapSeen = live.lastSyncedAt != nil || liveBpm != nil
         return NoopCard(padding: 18) {
             VStack(alignment: .leading, spacing: 9) {
                 Text("Today's verdict").strandOverline()
-                Text(strapSeen ? "Your scores are building" : "No reading yet")
+                Text(strapSeen ? "No reading for today yet" : "No reading yet")
                     .font(StrandFont.title1)
                     .foregroundStyle(StrandPalette.textSecondary)
                 Text(strapSeen
-                     ? "Your strap is connected. Recovery, strain and sleep build over your next few nights of wear. Import your WHOOP export in Data Sources to backfill instantly."
+                     ? "Your baseline is set. Wear your strap overnight and this morning's recovery, strain and sleep land once it syncs."
                      : "Connect your WHOOP strap to see this morning's readiness, recovery and heart rate.")
                     .font(StrandFont.subhead)
                     .foregroundStyle(StrandPalette.textSecondary)
