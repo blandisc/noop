@@ -100,7 +100,14 @@ public struct TrendChart: View {
                 ForEach(points) { p in
                     AreaMark(
                         x: .value("Date", p.date),
-                        y: .value("Value", p.value)
+                        // Anchor the fill's floor to the value domain's lower bound, NOT the implicit
+                        // zero baseline. With a tight domain (e.g. HR 64…145) zero sits below the
+                        // domain, so a plain `y:` AreaMark fills clear to the plot's bottom edge —
+                        // straight behind the X-axis hour labels, tinting them. Pinning yStart to the
+                        // floor stops the fill at the data region; the Y-scale's startPadding then
+                        // leaves a clean band below it for the labels. (FER-82)
+                        yStart: .value("Floor", valueRange.lowerBound),
+                        yEnd: .value("Value", p.value)
                     )
                     // monotone, NOT catmullRom: Catmull-Rom overshoots past the data on
                     // tightly-oscillating daily signals (resting HR 50↔55, strain), dipping the
@@ -137,15 +144,10 @@ public struct TrendChart: View {
                 .foregroundStyle(StrandPalette.sample(stops: gradient.toStops(), at: unit(p.value)))
             }
         }
-        .chartYScale(domain: valueRange)
-        // Inset the plot inside the chart so the X-axis labels live on a clean band: the bottom
-        // inset lifts the AreaMark fill floor off the hour labels (no more red tint behind them),
-        // and the trailing inset gives the rightmost label room to render in full before ChartCard's
-        // `.clipped()` frame cuts it. The label/grid bands sit outside plotAreaFrame, so hover (which
-        // maps through proxy.plotAreaFrame) stays correct. (FER-82)
-        .chartPlotStyle { plotArea in
-            plotArea.padding(NoopMetrics.chartPlotInset)
-        }
+        // Reserve a clean band below the fill for the X-axis labels (startPadding on the Y-scale's
+        // bottom), and inset the X-scale's trailing edge so the last label isn't clipped. (FER-82)
+        .chartYScale(domain: valueRange, range: .plotDimension(startPadding: NoopMetrics.chartXLabelBand, endPadding: 0))
+        .chartXScale(range: .plotDimension(startPadding: 0, endPadding: NoopMetrics.chartXTrailingInset))
         .chartXAxis {
             AxisMarks(values: .automatic(desiredCount: 5)) { _ in
                 AxisGridLine().foregroundStyle(StrandPalette.hairline.opacity(0.4))
