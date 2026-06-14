@@ -69,10 +69,14 @@ Bias toward caution over speed; for trivial changes, use judgment.
 
 ## How we work here (process)
 
-The flow is **requirement → screen → code → QA**, with acceptance criteria as the through-line. Two skills cover it:
+The flow is **requirement → experience → screen → code → QA**, with acceptance criteria as the through-line. Four skills cover it (the two design ones only kick in for screen work):
 
-- **`/pm`** turns a raw idea into a clear requirement (acceptance criteria + Definition of Done) and files it as a Linear issue — *before* any code. Start product work here.
-- **`/implement FER-NN`** takes that issue to production: implements against the criteria, verifies each one (QA), and — if all pass and the build is green — merges to `iOS` and closes the issue. It stops to ask only if QA fails, it cannot verify, or the change is high-risk.
+- **`/pm`** turns a raw idea into a clear requirement (acceptance criteria + Definition of Done) and files it as a Linear issue — *before* any code. Start product work here. For screen work it runs the **UX** pass to fix the flow, states, copy (es-MX) and accessibility into the requirement.
+- **`/ux`** (folded into `/pm`, also standalone) designs the **experience** before pixels: flow, states (incl. no-HealthKit-permission and offline), information architecture, copy and accessibility — never colors/fonts. Leans on `lazyweb` + `impeccable`.
+- **`/ui`** (folded into `/implement` as the pre-code step, also standalone) designs the **visual** against `StrandDesign`: token-by-token mapping plus a **rendered PNG per state (ImageRenderer)** the user approves *before* any code. Leans on `design-for-ai` + `lazyweb` + `impeccable`.
+- **`/implement FER-NN`** takes that issue to production: runs the UI pass (PNG gate) for screen work, implements against the criteria, verifies each one (QA), and — if all pass and the build is green — merges to `iOS` and closes the issue. It stops to ask only if QA fails, it cannot verify, the change is high-risk, or the user did not approve the PNG.
+
+Both `/ux` and `/ui` also exist as subagents (`.claude/agents/`) so `/implement` can delegate or explore visual variants in parallel.
 
 - **Linear:** team **Fer**, project **NOOP iOS**. Label every issue by type (`UI/Today`, `Analytics`, `Bug`, `Import`, `Performance`, `i18n`, `Diseño`, `Feature`, …). Issue lifecycle: **Todo → In Progress → In Review → Done**. Reference the issue in the PR (`Closes FER-NN`).
 - **Branch hygiene — one branch per issue, never collide.** Use the issue's Linear-generated `gitBranchName` (e.g. `blandisc/fer-81-…`), branched from an up-to-date `origin/iOS` (`git fetch` first). Never work on `iOS`, never reuse another issue's branch, and if the branch already exists, another session owns it — stop, don't overwrite. PRs target `iOS`, squash-merge, then delete the branch.

@@ -86,10 +86,23 @@ abiertas). Banco de preguntas por tipo — elige las que apliquen:
 - **Performance:** ¿métrica objetivo (ms, MB, fps)? ¿en qué dispositivo/pantalla
   se mide? ¿cuál es el número de hoy?
 
+### 4.5 Diseña la experiencia (UX) — solo si hay pantalla
+Si el trabajo toca UI (Feature con pantalla, Cambio de UI / Diseño), corre la
+**pasada de UX antes de redactar**: invoca la skill `/ux` (o delega en el
+subagente `ux`) con el contexto que llevas. La UX te devuelve el **flujo**, los
+**estados** (vacío, cargando, datos, error, **sin permiso HealthKit**,
+**offline/sin strap**), la **arquitectura de info**, el **copy es-MX** y la
+**accesibilidad**, más **criterios de aceptación de UX**. Inyecta todo eso en las
+secciones "Estados" y "Criterios de aceptación" del requerimiento — así el diseño
+de experiencia queda decidido aquí, no en el código. Para bug / analytics /
+import / performance / i18n / chore, **sáltate este paso**.
+
 ### 5. Redacta el requerimiento
 Usa la plantilla de abajo. Omite las secciones que no apliquen al tipo. El texto
 es para un **agente de coding**: explícito, sin ambigüedad, con pistas de dónde
-vive el cambio y qué convenciones aplican (ver "Conocimiento de NOOP").
+vive el cambio y qué convenciones aplican (ver "Conocimiento de NOOP"). Si
+corriste la pasada de UX, su salida ya llena "Estados", el copy y los criterios
+de experiencia.
 
 ### 6. Aprueba antes de crear (gate)
 Muestra el borrador completo al usuario y pregunta si lo aprueba o quiere
