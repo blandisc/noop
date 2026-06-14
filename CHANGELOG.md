@@ -26,7 +26,7 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
   covers shows the strap's reading, and Apple Health only fills the gaps. Apple's sleep is shown as a
   proportional deep / light / REM bar (no minute-by-minute hypnogram — that's strap-only). Fully
   localized (English + Spanish + German).
-- **The live heart-rate ECG reads like a real monitor now (iPhone, FER-58).** When your strap is streaming, the brand ECG strip on Today no longer just scrolls one fixed wave faster or slower. A sweep head now traces the line in real time — drawing each heartbeat as it happens, with the complexes spaced by your live BPM, so a faster heart packs them closer together. When the head reaches the right edge it wraps around and overwrites the previous pass behind a small moving erase gap, exactly like a patient monitor. With no strap connected it rests on a calm flatline.
+- **The live heart-rate ECG reads like a real monitor now (iPhone, FER-58).** When your strap is streaming, the brand ECG strip on Today no longer just scrolls one fixed wave faster or slower. The line sits flat and a sweep head moves across it, drawing each heartbeat the instant it reaches that beat — with the complexes spaced by your live BPM, so a faster heart packs them closer together. On each pass the head wipes the trace back to a flat baseline, exactly like a hospital vital-signs monitor. With no strap connected it rests on a calm flatline.
 - **Apple Health import is no longer a black box (FER-70).** Connecting or syncing Apple Health used
   to run silently — you couldn't tell whether it was working, how many days came in, or which metrics
   never arrived. The "Apple Health — Live Sync" card on Data Sources now shows live per-stage progress
