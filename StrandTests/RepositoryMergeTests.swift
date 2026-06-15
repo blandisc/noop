@@ -5,6 +5,7 @@ import WhoopStore
 /// Pins the FER-62 dashboard merge: Apple Health is the lowest-precedence base, on-device computed
 /// rows fill its gaps, and imported strap rows win over everything — so the strap always beats Apple
 /// Health. `appleDays` tracks only the days that stayed Apple-sourced, for the source badge.
+@MainActor
 final class RepositoryMergeTests: XCTestCase {
 
     private func dm(_ day: String, hrv: Double? = nil) -> DailyMetric {

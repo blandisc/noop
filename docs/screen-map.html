@@ -82,7 +82,7 @@ body {
 #canvas {
   position: absolute;
   width: 1450px;
-  height: 1340px;
+  height: 4000px;
   transform-origin: 0 0;
 }
 
@@ -93,6 +93,46 @@ body {
   letter-spacing: 1.8px; text-transform: uppercase;
   color: var(--muted2);
   pointer-events: none;
+}
+
+/* ── Fixture thumbnail (inside node) ── */
+.node-thumb {
+  width: calc(100% + 24px);
+  margin: -11px -12px 11px;
+  aspect-ratio: 393 / 852;   /* iPhone portrait ratio — shows full screen */
+  overflow: hidden;
+  border-radius: 10px 10px 0 0;
+  background: #111;
+  flex-shrink: 0;
+}
+/* Multi-frame: stack frames vertically, natural height */
+.node-thumb.multi {
+  aspect-ratio: unset;
+  height: auto;
+}
+.node-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.node-thumb.multi img {
+  height: auto;   /* natural proportional height per frame */
+  object-fit: unset;
+}
+.node-thumb img.loaded { opacity: 1; }
+.node-thumb.no-img {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.node-thumb.no-img::after {
+  content: 'sin fixture';
+  font-size: 9px;
+  color: var(--muted2);
 }
 
 /* ── Node ── */
@@ -153,7 +193,7 @@ body {
   position: absolute;
   inset: 0;
   width: 1450px;
-  height: 1340px;
+  height: 4000px;
   pointer-events: none;
   overflow: visible;
   z-index: 1;
@@ -183,6 +223,19 @@ body {
   display: flex; align-items: center; justify-content: center;
 }
 #panel-close:hover { color: var(--text); border-color: var(--border2); }
+
+/* ── Panel fixture preview ── */
+.p-fixture {
+  margin-bottom: 18px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #0a0a0a;
+  border: 1px solid var(--border);
+}
+.p-fixture img {
+  width: 100%;
+  display: block; /* no max-height — full screenshot */
+}
 
 .p-title { font-size: 15px; font-weight: 600; margin-bottom: 3px; }
 .p-file  {
@@ -297,6 +350,7 @@ const SCREENS = [
   // ── ROW 0: Dashboard (y = 60) ─────────────
   {
     id: 'today', x: 30, y: 60,
+    scrollFrames: ['today','today_2','today_3','today_4'],
     name: 'Today', desc: 'Dashboard · Hub principal',
     file: 'Strand/Screens/TodayView.swift',
     icon: '⚡', color: '#18C98B',
@@ -313,7 +367,7 @@ const SCREENS = [
       { to: 'metric-info', label: 'Tap métrica', type: 'sheet' },
       { to: 'support', label: 'Toolbar ❤', type: 'toolbar' },
     ],
-    components: ['HealthAlertBanner', 'CalibrationProgressCard', 'LiveHeartbeatRow', 'ReadinessGaugeBar', 'RecoveryRing', 'InsightCard', 'StatTile ×10', 'ChartCard (HR Trend)', 'SourceBadge'],
+    components: ['HealthAlertBanner', 'CalibrationProgressCard', 'LiveHeartbeatRow', 'ReadinessGaugeBar', 'RecoveryRing', 'InsightCard', 'StatTile ×10', 'ChartCard (HR Trend)', 'SourceBadge (footnote compacto)'],
   },
   {
     id: 'health', x: 284, y: 60,
@@ -356,9 +410,9 @@ const SCREENS = [
     components: ['Hero Gauge Card', 'StatTile ×2 (RHR / HRV)', 'ChartCard (tendencia)', 'Metodología (z-score)'],
   },
 
-  // ── ROW 1: Actividad (y = 280) ────────────
+  // ── ROW 1: Actividad (y = 710) ────────────
   {
-    id: 'workouts', x: 30, y: 285,
+    id: 'workouts', x: 30, y: 710,
     name: 'Workouts', desc: 'Log de actividad',
     file: 'Strand/Screens/WorkoutsView.swift',
     icon: '🏋', color: '#4A9EFF',
@@ -375,7 +429,7 @@ const SCREENS = [
     components: ['SegmentedPillControl (7D–All)', 'StatTile ×5', 'Activity Breakdown', 'HR Zones', 'Sessions table'],
   },
   {
-    id: 'trends', x: 284, y: 285,
+    id: 'trends', x: 284, y: 710,
     name: 'Trends', desc: 'Análisis longitudinal',
     file: 'Strand/Screens/TrendsView.swift',
     icon: '📈', color: '#18C98B',
@@ -388,7 +442,7 @@ const SCREENS = [
     components: ['SegmentedPillControl (W–ALL)', 'Hero ChartCard (Recovery)', 'ChartCard ×3 (HRV/RHR/Strain)', 'YearHeatStrip'],
   },
   {
-    id: 'insights', x: 538, y: 285,
+    id: 'insights', x: 538, y: 710,
     name: 'Insights', desc: 'Correlaciones de comportamiento',
     file: 'Strand/Screens/InsightsView.swift',
     icon: '💡', color: '#F5A623',
@@ -402,9 +456,9 @@ const SCREENS = [
     components: ['JournalLogCard', 'Behavior Effects Cards (Cohen\'s d)', 'RBar chart (Pearson r)', 'Metric Relationships Card'],
   },
 
-  // ── ROW 2: Análisis (y = 500) ─────────────
+  // ── ROW 2: Análisis (y = 1360) ────────────
   {
-    id: 'explore', x: 30, y: 500,
+    id: 'explore', x: 30, y: 1360,
     name: 'Explore', desc: 'Catálogo de métricas',
     file: 'Strand/Screens/MetricExplorerView.swift',
     icon: '🔍', color: '#4A9EFF',
@@ -420,7 +474,7 @@ const SCREENS = [
     components: ['MetricCatalog grouped list', 'Hero StatTile', 'ChartCard (tendencia)', 'Avg/Min/Max footer', 'Banding vs baseline'],
   },
   {
-    id: 'compare', x: 284, y: 500,
+    id: 'compare', x: 284, y: 1360,
     name: 'Compare', desc: 'Superponer 2–4 métricas',
     file: 'Strand/Screens/CompareView.swift',
     icon: '⚖', color: '#9B8FFF',
@@ -433,7 +487,7 @@ const SCREENS = [
     components: ['Multi-select picker', 'SegmentedPillControl', 'Overlay ChartCard (normalizado 0–1)', 'Correlation rows (Pearson r + p-value)'],
   },
   {
-    id: 'apple-health', x: 538, y: 500,
+    id: 'apple-health', x: 538, y: 1360,
     name: 'Apple Health', desc: 'Historia de Apple Health',
     file: 'Strand/Screens/AppleHealthView.swift',
     icon: '🍎', color: '#FF5A5A',
@@ -446,7 +500,7 @@ const SCREENS = [
     components: ['StatTile hero por métrica', 'ChartCard ×4 secciones (Heart, Activity, Body, Sleep)', 'SegmentedPillControl'],
   },
   {
-    id: 'intelligence', x: 792, y: 500,
+    id: 'intelligence', x: 792, y: 1360,
     name: 'Intelligence', desc: 'Scores on-device',
     file: 'Strand/Screens/IntelligenceView.swift',
     icon: '🧠', color: '#18C98B',
@@ -459,9 +513,9 @@ const SCREENS = [
     components: ['Explainer Card (pesos: HRV 60%/RHR 20%/sleep 15%/resp 5%)', 'Day Cards (Recovery/Strain/Sleep + NOOP badge)', 'Toolbar Recompute'],
   },
 
-  // ── ROW 3: Dispositivo (y = 715) ──────────
+  // ── ROW 3: Dispositivo (y = 2010) ─────────
   {
-    id: 'live', x: 30, y: 715,
+    id: 'live', x: 30, y: 2010,
     name: 'Live', desc: 'ECG en vivo · gestión de correa',
     file: 'Strand/Screens/LiveView.swift',
     icon: '📡', color: '#18C98B',
@@ -476,7 +530,7 @@ const SCREENS = [
     components: ['ECG Hero Sparkline', 'Session Tally', 'Live Signals (zone / %max)', 'Sync Signals (battery / last sync)', 'Data Receipt (frame counts)', 'Coverage Strip (28d heat map)', 'Strap Management (model picker / controls)'],
   },
   {
-    id: 'automations', x: 284, y: 715,
+    id: 'automations', x: 284, y: 2010,
     name: 'Automations', desc: 'Double-tap · wear · alarmas',
     file: 'Strand/Screens/AutomationsView.swift',
     icon: '⚙️', color: '#888',
@@ -488,7 +542,7 @@ const SCREENS = [
     components: ['StatePill (bonded/not)', 'Action picker (None/App/Shortcut)', 'Shortcut name field', 'Test button', 'Moments list (últimos 5 taps)'],
   },
   {
-    id: 'breathing', x: 538, y: 715,
+    id: 'breathing', x: 538, y: 2010,
     name: 'Breathing', desc: 'HRV biofeedback trainer',
     file: 'Strand/Screens/BreathingView.swift',
     icon: '🫧', color: '#4A9EFF',
@@ -502,7 +556,7 @@ const SCREENS = [
     components: ['Pace selector (Relax/Coherence/Box)', 'Timer display', 'Live HR + zone', 'Rolling RMSSD chart', 'Strap bonded pill'],
   },
   {
-    id: 'interval', x: 792, y: 715,
+    id: 'interval', x: 792, y: 2010,
     name: 'Interval Timer', desc: 'HIIT timer haptic silencioso',
     file: 'Strand/Screens/IntervalTimerView.swift',
     icon: '⏱', color: '#F5A623',
@@ -516,9 +570,9 @@ const SCREENS = [
     components: ['Duration inputs (Work / Rest / Rounds)', 'Timer display grande', 'Progress ring (phase)', 'Round counter', 'Start / Pause / Reset'],
   },
 
-  // ── ROW 4: App (y = 930) ──────────────────
+  // ── ROW 4: App (y = 2660) ─────────────────
   {
-    id: 'coach', x: 30, y: 930,
+    id: 'coach', x: 30, y: 2660,
     name: 'Coach', desc: 'LLM coaching (OpenAI / Anthropic)',
     file: 'Strand/Screens/CoachView.swift',
     icon: '🤖', color: '#9B8FFF',
@@ -533,7 +587,7 @@ const SCREENS = [
     components: ['Setup Card (provider/model/key)', 'Consent Bar (toggle)', 'Transcript (bubbles)', 'Suggestion Chips (scroll H)', 'Composer + send button', 'Privacy Footnote'],
   },
   {
-    id: 'settings', x: 284, y: 930,
+    id: 'settings', x: 284, y: 2660,
     name: 'Settings', desc: 'Configuración y perfil',
     file: 'Strand/Screens/SettingsView.swift',
     icon: '⚙', color: '#888',
@@ -547,7 +601,7 @@ const SCREENS = [
     components: ['SettingsSection cards', 'FormRow (age/sex/weight/height)', 'Units toggles (metric/imperial/°C/°F)', 'Strap card', 'Experimental toggle (Puffin)', 'Backup card (export/restore)', 'About card'],
   },
   {
-    id: 'data-sources', x: 538, y: 930,
+    id: 'data-sources', x: 538, y: 2660,
     name: 'Data Sources', desc: 'Importar WHOOP · Apple Health',
     file: 'Strand/Screens/DataSourcesView.swift',
     icon: '📥', color: '#4A9EFF',
@@ -561,7 +615,7 @@ const SCREENS = [
     components: ['WHOOP Export Card', 'Apple Health Export Card', 'Apple Health Live Card (iOS, toggle)', 'Live Strap Card', 'File importer (fileImporter)'],
   },
   {
-    id: 'support', x: 792, y: 930,
+    id: 'support', x: 792, y: 2660,
     name: 'Support', desc: 'Donaciones · contacto · atribución',
     file: 'Strand/Screens/SupportView.swift',
     icon: '❤', color: '#FF5A5A',
@@ -572,9 +626,9 @@ const SCREENS = [
     components: ['Built On Card (attrs)', 'Donate Card (BTC/ETH + copy)', 'Contact Card (mailto)', 'Disclaimer Card'],
   },
 
-  // ── ROW 5: Sheets / Modales (y = 1145) ────
+  // ── ROW 5: Sheets / Modales (y = 3310) ────
   {
-    id: 'manual-workout', x: 30, y: 1145,
+    id: 'manual-workout', x: 30, y: 3310,
     name: 'Manual Workout', desc: 'Sheet: agregar / editar sesión',
     file: 'Strand/Screens/ManualWorkoutSheet.swift',
     icon: '✏', color: '#4A9EFF',
@@ -588,7 +642,7 @@ const SCREENS = [
     components: ['Sport TextField', 'DatePicker (start)', 'Duration spinner (minutos)', 'Avg HR (opcional)', 'kcal (opcional)', 'Save button (disabled si inválido)'],
   },
   {
-    id: 'metric-info', x: 284, y: 1145,
+    id: 'metric-info', x: 284, y: 3310,
     name: 'Metric Info', desc: 'Sheet: detalle de métrica (desde Today)',
     file: 'Strand/Screens/MetricInfoSheet.swift',
     icon: 'ℹ', color: '#4A9EFF',
@@ -600,7 +654,7 @@ const SCREENS = [
     components: ['Metric name + headline', 'Valor actual + color', 'Bands (3–4 rangos)', 'Nota opcional'],
   },
   {
-    id: 'whats-new', x: 538, y: 1145,
+    id: 'whats-new', x: 538, y: 3310,
     name: 'What\'s New', desc: 'Sheet: historial de versiones',
     file: 'Strand/Screens/WhatsNewView.swift',
     icon: '🆕', color: '#18C98B',
@@ -612,7 +666,7 @@ const SCREENS = [
     components: ['Expectations Card', 'Release Cards (AppChangelog.releases)'],
   },
   {
-    id: 'notif-settings', x: 792, y: 1145,
+    id: 'notif-settings', x: 792, y: 3310,
     name: 'Notification Settings', desc: 'Alertas de muñeca via correa',
     file: 'Strand/Screens/NotificationSettingsView.swift',
     icon: '🔔', color: '#F5A623',
@@ -644,11 +698,11 @@ const EDGES = [
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const SECTIONS = [
   { label: 'Dashboard',         x: 30, y: 32 },
-  { label: 'Actividad',         x: 30, y: 257 },
-  { label: 'Análisis',          x: 30, y: 472 },
-  { label: 'Dispositivo',       x: 30, y: 687 },
-  { label: 'App',               x: 30, y: 902 },
-  { label: 'Sheets & Modales',  x: 30, y: 1117 },
+  { label: 'Actividad',         x: 30, y: 682 },
+  { label: 'Análisis',          x: 30, y: 1332 },
+  { label: 'Dispositivo',       x: 30, y: 1982 },
+  { label: 'App',               x: 30, y: 2632 },
+  { label: 'Sheets & Modales',  x: 30, y: 3282 },
 ];
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -683,7 +737,18 @@ SCREENS.forEach(s => {
     `<span class="sc ${st.type}">${st.label}</span>`
   ).join('');
 
+  const frames = s.scrollFrames || [s.id];
+  const multiClass = frames.length > 1 ? ' multi' : '';
+  const imgsHtml = frames.map(f =>
+    `<img src="fixtures/${f}.png" alt=""
+          onload="this.classList.add('loaded')"
+          onerror="this.remove()">`
+  ).join('');
+
   el.innerHTML = `
+    <div class="node-thumb${multiClass}" id="thumb-${s.id}">
+      ${imgsHtml}
+    </div>
     <div class="node-hd">
       <div class="node-icon" style="background:${s.color}1a">${s.icon}</div>
       <div>
@@ -700,21 +765,15 @@ SCREENS.forEach(s => {
 
 // ─── Arrows ───────────────────────────────
 const EDGE_COLORS = {
-  fullscreen: '#0a2a18',
-  sheet:      '#0a1a2e',
-  push:       '#1a1a2e',
-  toolbar:    '#2e1a1a',
-};
-const ARROW_COLORS = {
-  fullscreen: '#0d3a22',
-  sheet:      '#0d253d',
-  push:       '#1a1a3d',
-  toolbar:    '#3d1a1a',
+  fullscreen: '#18C98B',
+  sheet:      '#4A9EFF',
+  push:       '#9B8FFF',
+  toolbar:    '#FF5A5A',
 };
 
 function renderArrows() {
   arrowSvg.innerHTML = `<defs>
-    ${Object.entries(ARROW_COLORS).map(([k, c]) => `
+    ${Object.entries(EDGE_COLORS).map(([k, c]) => `
       <marker id="arr-${k}" viewBox="0 0 8 8" refX="7" refY="4"
         markerWidth="5" markerHeight="5" orient="auto">
         <path d="M0,1 L7,4 L0,7 Z" fill="${c}"/>
@@ -726,19 +785,23 @@ function renderArrows() {
     const to   = byId[edge.to];
     if (!from || !to) return;
 
-    // Exit from bottom-center of 'from', enter top-center of 'to'
+    // Use actual DOM height so multi-frame nodes get correct y1
+    const fromEl = document.getElementById('node-' + edge.from);
+    const nodeH  = fromEl ? fromEl.offsetHeight : 600;
+
     const x1 = from.x + NODE_W / 2;
-    const y1 = from.y + 160; // approximate node bottom
+    const y1 = from.y + nodeH;
     const x2 = to.x + NODE_W / 2;
     const y2 = to.y;
 
     const cy = (y1 + y2) / 2;
     const d  = `M${x1},${y1} C${x1},${cy} ${x2},${cy} ${x2},${y2}`;
 
+    const color = EDGE_COLORS[edge.type] || '#555';
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.setAttribute('d', d);
-    path.setAttribute('stroke', EDGE_COLORS[edge.type] || '#2a2a2a');
-    path.setAttribute('stroke-width', '1.5');
+    path.setAttribute('stroke', color + '99');   /* 60% opacity */
+    path.setAttribute('stroke-width', '2');
     path.setAttribute('fill', 'none');
     path.setAttribute('marker-end', `url(#arr-${edge.type})`);
     arrowSvg.appendChild(path);
@@ -746,19 +809,21 @@ function renderArrows() {
     // Label at curve midpoint
     const mx = (x1 + x2) / 2;
     const my = (y1 + y2) / 2 - 6;
+    const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     txt.setAttribute('x', mx);
     txt.setAttribute('y', my);
     txt.setAttribute('text-anchor', 'middle');
     txt.setAttribute('font-size', '9');
-    txt.setAttribute('fill', '#2e2e2e');
+    txt.setAttribute('fill', color);
     txt.setAttribute('font-family', '-apple-system, sans-serif');
     txt.textContent = edge.label;
     arrowSvg.appendChild(txt);
   });
 }
 
-renderArrows();
+// Delay so multi-frame images settle their layout before measuring offsetHeight
+setTimeout(renderArrows, 200);
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  PANEL
@@ -781,7 +846,14 @@ function openPanel(s) {
       <ul>${s.components.map(c => `<li>${c}</li>`).join('')}</ul>
     </div>` : '';
 
+  const fixtureHtml = `
+    <div class="p-fixture">
+      <img src="fixtures/${s.id}.png" alt="${s.name}"
+           onerror="this.parentElement.style.display='none'">
+    </div>`;
+
   document.getElementById('panel-content').innerHTML = `
+    ${fixtureHtml}
     <div class="p-title">${s.icon} ${s.name}</div>
     <div class="p-file">${s.file}</div>
 
