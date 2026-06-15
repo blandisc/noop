@@ -95,6 +95,37 @@ body {
   pointer-events: none;
 }
 
+/* ── Fixture thumbnail (inside node) ── */
+.node-thumb {
+  width: calc(100% + 24px);
+  margin: -11px -12px 11px;
+  height: 110px;
+  overflow: hidden;
+  border-radius: 10px 10px 0 0;
+  background: #111;
+  flex-shrink: 0;
+}
+.node-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.node-thumb img.loaded { opacity: 1; }
+.node-thumb.no-img {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.node-thumb.no-img::after {
+  content: 'sin fixture';
+  font-size: 9px;
+  color: var(--muted2);
+}
+
 /* ── Node ── */
 .node {
   position: absolute;
@@ -183,6 +214,22 @@ body {
   display: flex; align-items: center; justify-content: center;
 }
 #panel-close:hover { color: var(--text); border-color: var(--border2); }
+
+/* ── Panel fixture preview ── */
+.p-fixture {
+  margin-bottom: 18px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #0a0a0a;
+  border: 1px solid var(--border);
+}
+.p-fixture img {
+  width: 100%;
+  display: block;
+  max-height: 340px;
+  object-fit: cover;
+  object-position: top center;
+}
 
 .p-title { font-size: 15px; font-weight: 600; margin-bottom: 3px; }
 .p-file  {
@@ -683,6 +730,11 @@ SCREENS.forEach(s => {
   ).join('');
 
   el.innerHTML = `
+    <div class="node-thumb" id="thumb-${s.id}">
+      <img src="fixtures/${s.id}.png" alt=""
+           onload="this.classList.add('loaded')"
+           onerror="this.parentElement.classList.add('no-img');this.remove()">
+    </div>
     <div class="node-hd">
       <div class="node-icon" style="background:${s.color}1a">${s.icon}</div>
       <div>
@@ -780,7 +832,14 @@ function openPanel(s) {
       <ul>${s.components.map(c => `<li>${c}</li>`).join('')}</ul>
     </div>` : '';
 
+  const fixtureHtml = `
+    <div class="p-fixture">
+      <img src="fixtures/${s.id}.png" alt="${s.name}"
+           onerror="this.parentElement.style.display='none'">
+    </div>`;
+
   document.getElementById('panel-content').innerHTML = `
+    ${fixtureHtml}
     <div class="p-title">${s.icon} ${s.name}</div>
     <div class="p-file">${s.file}</div>
 

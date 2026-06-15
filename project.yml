@@ -67,6 +67,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.noopapp.noop
         PRODUCT_NAME: NOOP
+        SWIFT_MODULE_NAME: Strand
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: NO
         # Hardened Runtime closes the DYLD_INSERT_LIBRARIES injection vector for the
@@ -89,6 +90,7 @@ targets:
       - target: Strand
       - package: WhoopProtocol
       - package: WhoopStore
+      - package: StrandAnalytics
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES

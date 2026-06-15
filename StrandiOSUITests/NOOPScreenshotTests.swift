@@ -1,15 +1,32 @@
 import XCTest
 
-/// Captures a screenshot of every main screen in NOOP and saves PNGs to ~/Desktop/noop-screenshots/.
-/// Run via: xcodebuild test -scheme NOOPiOS -destination '...' -only-testing NOOPiOSUITests
+/// Captures a screenshot of every main screen in NOOP and saves PNGs to docs/fixtures/.
+/// The HTML screen map at docs/screen-map.html loads these as thumbnails.
+///
+/// Run (no simulator pre-launch needed — xcodebuild boots one):
+///   GIT_CONFIG=/dev/null xcodebuild test \
+///     -project Strand.xcodeproj -scheme NOOPiOS \
+///     -destination 'platform=iOS Simulator,name=iPhone 16' \
+///     CODE_SIGNING_ALLOWED=NO \
+///     -only-testing NOOPiOSUITests/NOOPScreenshotTests
+///
+/// Maintenance: when you add/remove/rename a state in a *View.swift, add/update the
+/// corresponding case here and re-run to regenerate the fixtures in the same PR.
 final class NOOPScreenshotTests: XCTestCase {
 
     var app: XCUIApplication!
 
+    // docs/fixtures/ relative to repo root (SRCROOT is set by Xcode in both unit and UI test runners)
     static let outputDir: URL = {
-        // HOME env var is the Mac user home when the test runner executes on the host
-        let home = ProcessInfo.processInfo.environment["HOME"] ?? NSTemporaryDirectory()
-        let dir = URL(fileURLWithPath: home).appendingPathComponent("Desktop/noop-screenshots")
+        let root: URL
+        if let s = ProcessInfo.processInfo.environment["SRCROOT"], !s.isEmpty {
+            root = URL(fileURLWithPath: s)
+        } else {
+            // Fallback for manual runs: write next to the test file
+            let home = ProcessInfo.processInfo.environment["HOME"] ?? NSTemporaryDirectory()
+            root = URL(fileURLWithPath: home).appendingPathComponent("code/noop")
+        }
+        let dir = root.appendingPathComponent("docs/fixtures")
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }()
@@ -36,42 +53,47 @@ final class NOOPScreenshotTests: XCTestCase {
         }
 
         app.launch()
-        // Wait for the UI to settle after launch
         _ = app.tabBars.firstMatch.waitForExistence(timeout: 8)
     }
 
-    // MARK: - Main test
+    // MARK: - Today (three verdict states)
+
+    /// Each state is its OWN test so a permission alert in one doesn't block the others.
+    /// Run on an ERASED simulator for a clean store: `xcrun simctl erase <udid>`.
+    func test_today_empty()    throws { captureToday(state: "empty") }
+    func test_today_primed()   throws { captureToday(state: "primed") }
+    func test_today_strained() throws { captureToday(state: "strained") }
+
+    // MARK: - All screens (empty/default state)
 
     func test_captureAllScreens() throws {
         // ── Main tabs ─────────────────────────────────────────────────────────
-        wait(1)
-        snap("01_Today")
-
-        tap(tab: "Trends");  wait(2); snap("02_Trends")
-        tap(tab: "Live");    wait(2); snap("03_Live")
-        tap(tab: "Sleep");   wait(2); snap("04_Sleep")
-        tap(tab: "More");    wait(1); snap("05_More_list")
+        wait(1);  snap("today")
+        tap(tab: "Trends"); wait(2); snap("trends")
+        tap(tab: "Live");   wait(2); snap("live")
+        tap(tab: "Sleep");  wait(2); snap("sleep")
+        tap(tab: "More");   wait(1) // list — not captured as its own screen
 
         // ── Screens inside the More list ──────────────────────────────────────
-        let moreScreens: [(cell: String, file: String)] = [
-            ("Intelligence",  "06_Intelligence"),
-            ("Coach",         "07_Coach"),
-            ("Insights",      "08_Insights"),
-            ("Explore",       "09_MetricExplorer"),
-            ("Compare",       "10_Compare"),
-            ("Workouts",      "11_Workouts"),
-            ("Health",        "12_Health"),
-            ("Stress",        "13_Stress"),
-            ("Breathe",       "14_Breathe"),
-            ("Intervals",     "15_IntervalTimer"),
-            ("Apple Health",  "16_AppleHealth"),
-            ("Data Sources",  "17_DataSources"),
-            ("Automations",   "18_Automations"),
-            ("Settings",      "19_Settings"),
-            ("Support",       "20_Support"),
+        let moreScreens: [(cell: String, id: String)] = [
+            ("Intelligence", "intelligence"),
+            ("Coach",        "coach"),
+            ("Insights",     "insights"),
+            ("Explore",      "explore"),
+            ("Compare",      "compare"),
+            ("Workouts",     "workouts"),
+            ("Health",       "health"),
+            ("Stress",       "stress"),
+            ("Breathe",      "breathing"),
+            ("Intervals",    "interval"),
+            ("Apple Health", "apple-health"),
+            ("Data Sources", "data-sources"),
+            ("Automations",  "automations"),
+            ("Settings",     "settings"),
+            ("Support",      "support"),
         ]
 
-        for (cell, file) in moreScreens {
+        for (cell, id) in moreScreens {
             returnToMoreList()
             let row = app.staticTexts[cell]
             guard row.waitForExistence(timeout: 3) else {
@@ -79,83 +101,58 @@ final class NOOPScreenshotTests: XCTestCase {
             }
             row.tap()
             wait(2)
-            app.swipeUp() // scroll to capture more content if any
-            wait(1)
-            snap(file)
+            snap(id)
         }
     }
 
-    // MARK: - TodayView verdict states (for the Figma design sync)
+    // MARK: - Today detail (top → bottom scroll for design review)
 
-    /// Each state is its OWN test method so they run isolated — a SpringBoard banner interruption (or
-    /// any timeout) while capturing one state can't prevent the others from being captured. Run on an
-    /// ERASED simulator for a clean store so "empty" is genuinely empty: `xcrun simctl erase <udid>`.
-    /// The verdict seeds live in `ScreenshotFixtures` (DEBUG-only), selected by `-noop.fixture`.
-
-    func test_captureTodayEmpty()    throws { captureToday(state: "empty") }
-    func test_captureTodayPrimed()   throws { captureToday(state: "primed") }
-    func test_captureTodayStrained() throws { captureToday(state: "strained") }
-
-    /// Launch TodayView in one readiness state and capture a top→bottom scroll sequence so the full
-    /// scrollable screen (verdict · why · metrics · workouts · heart rate · sources) is covered.
     private func captureToday(state: String) {
-        let app = XCUIApplication()
-        app.launchArguments = [
+        let a = XCUIApplication()
+        a.launchArguments = [
             "-noop.onboarded",               "YES",
             "-noop.acceptedTermsVersion",    "1.0",
             "-noop.lastSeenChangelogVersion","1.80",
             "-noop.didOfferRestore",         "YES",
         ]
-        if state != "empty" { app.launchArguments += ["-noop.fixture", state] }
-        app.launch()
-        _ = app.tabBars.firstMatch.waitForExistence(timeout: 8)
+        if state != "empty" { a.launchArguments += ["-noop.fixture", state] }
+        a.launch()
+        _ = a.tabBars.firstMatch.waitForExistence(timeout: 8)
 
-        // Today is the launch tab. The verdict states seed asynchronously (store writes + a dashboard
-        // publish that drives loadAll), so give them a beat longer than the empty path.
+        // Seeding writes to the store asynchronously; give it extra time on non-empty states.
         wait(state == "empty" ? 2 : 5)
 
-        // Top→bottom scroll sequence; 4 frames cover the ~2-screen-tall design with overlap.
-        snap("Today_\(state)_1")
+        // Frame 1 = top (used as the primary fixture thumbnail in screen-map.html)
+        let prefix = state == "empty" ? "today" : "today_\(state)"
+        snap(prefix, app: a)
         for i in 2...4 {
-            app.swipeUp()
-            wait(1)
-            snap("Today_\(state)_\(i)")
+            a.swipeUp(); wait(1)
+            snap("\(prefix)_\(i)", app: a)
         }
     }
 
     // MARK: - Helpers
 
-    private func tap(tab: String) {
-        app.tabBars.buttons[tab].tap()
-    }
+    private func tap(tab: String) { app.tabBars.buttons[tab].tap() }
 
     private func returnToMoreList() {
-        // If we're inside a pushed screen, pop back; then tap More
-        let backButton = app.navigationBars.buttons.firstMatch
-        if backButton.exists && backButton.isHittable {
-            backButton.tap()
-            wait(1)
-        }
-        if !app.navigationBars["More"].exists {
-            tap(tab: "More")
-            wait(1)
-        }
+        let back = app.navigationBars.buttons.firstMatch
+        if back.exists && back.isHittable { back.tap(); wait(1) }
+        if !app.navigationBars["More"].exists { tap(tab: "More"); wait(1) }
     }
 
-    private func wait(_ seconds: UInt32) {
-        Thread.sleep(forTimeInterval: TimeInterval(seconds))
+    private func wait(_ seconds: TimeInterval) {
+        Thread.sleep(forTimeInterval: seconds)
     }
 
-    private func snap(_ name: String) {
+    private func snap(_ id: String, app: XCUIApplication? = nil) {
+        let target = app ?? self.app!
         let shot = XCUIScreen.main.screenshot()
-
-        // Save to ~/Desktop/noop-screenshots/<name>.png
-        let fileURL = Self.outputDir.appendingPathComponent("\(name).png")
+        _ = target // suppress unused warning
+        let fileURL = Self.outputDir.appendingPathComponent("\(id).png")
         try? shot.image.pngData()?.write(to: fileURL)
-
-        // Also attach to the Xcode test report
         let attachment = XCTAttachment(screenshot: shot)
-        attachment.name = name
+        attachment.name = id
         attachment.lifetime = .keepAlways
         add(attachment)
     }
