@@ -119,8 +119,9 @@ struct DataSourcesView: View {
                 Text(verbatim: err)
                     .font(StrandFont.footnote).foregroundStyle(StrandPalette.statusWarning)
             }
-            // FER-115: coverage grid — shown whenever any data exists, regardless of auth state
-            if !repo.days.isEmpty || !repo.appleHealthDays.isEmpty {
+            // FER-115: coverage grid — hide when Apple Health is denied/unavailable and there are no strap days
+            let healthAccessible = health.auth != .denied && health.auth != .unavailable
+            if !repo.days.isEmpty || (!repo.appleHealthDays.isEmpty && healthAccessible) {
                 Divider().overlay(StrandPalette.hairline)
                 coverageBodyView
             }
