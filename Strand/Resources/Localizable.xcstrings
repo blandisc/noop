@@ -16186,6 +16186,116 @@
           }
         }
       }
+    },
+    "Calibration confidence": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zuverlässigkeit der Berechnung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calibration confidence"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confianza del cálculo"
+          }
+        }
+      }
+    },
+    "Sharpening with your strap": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird mit deinem Band genauer"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sharpening with your strap"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se afina con tu banda"
+          }
+        }
+      }
+    },
+    "Sharpening with your strap, %lld of %lld nights.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird mit deinem Band genauer, %lld von %lld Nächten."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sharpening with your strap, %lld of %lld nights."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se afina con tu banda, %lld de %lld noches."
+          }
+        }
+      }
+    },
+    "Sharpening with your strap, %lld of %lld nights. Your baseline comes from Apple Health.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird mit deinem Band genauer, %lld von %lld Nächten. Deine Basislinie stammt aus Apple Health."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sharpening with your strap, %lld of %lld nights. Your baseline comes from Apple Health."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se afina con tu banda, %lld de %lld noches. Tu base viene de Apple Health."
+          }
+        }
+      }
+    },
+    "Your baseline comes from Apple Health.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Basislinie stammt aus Apple Health."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your baseline comes from Apple Health."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu base viene de Apple Health."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

@@ -541,7 +541,8 @@ struct TodayView: View {
                         .padding(.top, 10)
                 }
                 // Honesty beats a fake CTA: a short night flags the read low-confidence; otherwise a
-                // well-backed day earns a single committed nudge.
+                // well-backed day earns a single committed nudge. A short night owns the foot (it's the
+                // most actionable note today), so the calibration row is suppressed that day.
                 if r.confidenceLow, let note = r.confidenceNote {
                     HStack(spacing: 7) {
                         Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 10))
@@ -549,16 +550,26 @@ struct TodayView: View {
                     }
                     .foregroundStyle(StrandPalette.statusWarning)
                     .padding(.top, 11)
-                } else if r.level == .primed || r.level == .balanced {
-                    HStack(spacing: 5) {
-                        Text("Plan a hard session").font(StrandFont.captionNumber)
-                        Image(systemName: "arrow.right").font(.system(size: 10, weight: .semibold))
+                } else {
+                    if r.level == .primed || r.level == .balanced {
+                        HStack(spacing: 5) {
+                            Text("Plan a hard session").font(StrandFont.captionNumber)
+                            Image(systemName: "arrow.right").font(.system(size: 10, weight: .semibold))
+                        }
+                        .foregroundStyle(lc)
+                        .padding(.horizontal, 12).padding(.vertical, 6)
+                        .background(lc.opacity(0.13), in: Capsule())
+                        .overlay(Capsule().strokeBorder(lc.opacity(0.30), lineWidth: 1))
+                        .padding(.top, 12)
                     }
-                    .foregroundStyle(lc)
-                    .padding(.horizontal, 12).padding(.vertical, 6)
-                    .background(lc.opacity(0.13), in: Capsule())
-                    .overlay(Capsule().strokeBorder(lc.opacity(0.30), lineWidth: 1))
-                    .padding(.top, 12)
+                    // Calibration confidence: while the user's OWN strap nights are still ramping to the
+                    // trusted baseline (minNightsTrust = 14), a quiet progress bar shows the read keeps
+                    // sharpening with each strap night. Deliberately distinct from the 0–100 gauge above
+                    // (no 0/100 scale, accent fill, "N of 14 nights") so the two never read as the same
+                    // thing twice. Retires itself at the trusted baseline. (FER-105)
+                    if (1..<Baselines.minNightsTrust).contains(ownNights) {
+                        calibrationConfidence
+                    }
                 }
                 // Live pulse + beat-to-beat monitor, anchored to the foot of the verdict.
                 LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
@@ -571,6 +582,56 @@ struct TodayView: View {
         } else {
             heroSection
         }
+    }
+
+    /// Whether the personal baseline draws on imported Apple Health history — drives the
+    /// "Your baseline comes from Apple Health" note on the calibration row. (FER-105)
+    private var baselineFromApple: Bool { !repo.appleHealthDays.isEmpty }
+
+    /// Quiet calibration-progress row at the foot of the verdict: the read keeps sharpening as the
+    /// user's OWN strap nights ramp to the trusted baseline (`minNightsTrust`). Visually distinct
+    /// from the 0–100 readiness gauge — a thin accent track with no 0/100 scale and an "N of 14
+    /// nights" counter — so the two never read as the same thing twice. When Apple Health seeded the
+    /// baseline, a tertiary note names the source so the early verdict never feels unexplained. (FER-105)
+    private var calibrationConfidence: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Image(systemName: "sparkles").font(.system(size: 10))
+                    Text("Sharpening with your strap")
+                        .font(StrandFont.caption)
+                        .fixedSize(horizontal: false, vertical: true)   // wrap, never truncate, at large Dynamic Type
+                }
+                .foregroundStyle(StrandPalette.textSecondary)
+                Spacer(minLength: 8)
+                Text("\(ownNights) of \(Baselines.minNightsTrust) nights")
+                    .font(StrandFont.captionNumber)
+                    .foregroundStyle(StrandPalette.textSecondary)
+                    .fixedSize()
+                    .layoutPriority(1)
+            }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(StrandPalette.textPrimary.opacity(0.10)).frame(height: 6)
+                    Capsule().fill(StrandPalette.accent)
+                        .frame(width: max(6, geo.size.width * CGFloat(ownNights) / CGFloat(Baselines.minNightsTrust)),
+                               height: 6)
+                }
+            }
+            .frame(height: 6)
+            if baselineFromApple {
+                Text("Your baseline comes from Apple Health.")
+                    .font(StrandFont.caption)
+                    .foregroundStyle(StrandPalette.textTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.top, 12)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Calibration confidence"))
+        .accessibilityValue(Text(baselineFromApple
+            ? "Sharpening with your strap, \(ownNights) of \(Baselines.minNightsTrust) nights. Your baseline comes from Apple Health."
+            : "Sharpening with your strap, \(ownNights) of \(Baselines.minNightsTrust) nights."))
     }
 
     /// Synthesis strip behind the verdict — recovery · HRV · sleep as three borderless stats split by
