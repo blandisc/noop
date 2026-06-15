@@ -49,6 +49,10 @@ struct TodayView: View {
     @State private var sparks: [String: [Double]] = [:]
     @State private var workouts: [WorkoutRow] = []
     @State private var appleDays: [AppleDaily] = []
+    // Apple-Health daily metric rows (sleep/HRV/RHR/SpO₂) read straight from the apple-health source,
+    // so Key Metrics can fall back to them when a strap row clobbered Apple's row for the day in the
+    // dashboard merge (e.g. a WHOOP 4.0 that didn't decode HRV/sleep). (FER-98)
+    @State private var appleMetricDays: [DailyMetric] = []
 
     // Today's heart rate as 5-minute bucket means (midnight → now), for the 24h trend chart.
     @State private var hrPoints: [TrendPoint] = []
@@ -1142,6 +1146,7 @@ struct TodayView: View {
         async let activeKcal = sparkValues("active_kcal", source: "apple-health", window: 14)
         async let wkRows     = repo.workoutRows()
         async let adRows     = repo.appleDailyRows()
+        async let amRows     = repo.appleDailyMetricRows()
 
         // Today's HR trend — 5-minute bucket means from local midnight → now.
         let startOfToday = Int(Calendar.current.startOfDay(for: Date()).timeIntervalSince1970)
@@ -1160,6 +1165,7 @@ struct TodayView: View {
         sparks["active_kcal"]     = await activeKcal
         workouts  = await wkRows
         appleDays = await adRows
+        appleMetricDays = (await amRows).sorted { $0.day < $1.day }
         hrPoints  = await hrBucketRows
             .map { TrendPoint(date: Date(timeIntervalSince1970: TimeInterval($0.ts)), value: $0.bpm) }
     }
@@ -1288,8 +1294,17 @@ struct TodayView: View {
         if let d = repo.today, let v = pick(d) { return (v, repo.appleHealthDays.contains(todayKey)) }
         let cutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date())
         for day in repo.days.reversed() {
-            guard day.day >= cutoff else { return nil }
+            guard day.day >= cutoff else { break }
             if let v = pick(day) { return (v, repo.appleHealthDays.contains(day.day)) }
+        }
+        // mergeDaily replaces a day's Apple row wholesale when the strap also has that day, so a strap
+        // day with a nil field (e.g. a WHOOP 4.0 that didn't decode HRV/sleep) hides the value Apple
+        // Health does have. Fall back to the Apple-only rows within the SAME today/yesterday window,
+        // badged fromApple, so the strap (when it has the value) still wins above but Key Metrics fills
+        // from Apple instead of placeholdering. (FER-98)
+        for day in appleMetricDays.reversed() {
+            guard day.day >= cutoff else { break }
+            if let v = pick(day) { return (v, true) }
         }
         return nil
     }
