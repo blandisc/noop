@@ -256,43 +256,10 @@ struct TodayView: View {
     /// Recovery score driving the readiness gauge (the 0–100 the bar fills to). nil while calibrating.
     private var recoveryScore: Int? { repo.today?.recovery.map { Int($0.rounded()) } }
 
-    /// True in the calibration sub-state (strap seen, still gathering the first `minNightsSeed` own
-    /// nights) — the branch that shows CalibrationProgressCard. The live bpm moves into that card here,
-    /// so the header drops it to avoid showing the number twice.
-    private var isCalibrating: Bool {
-        repo.today?.recovery == nil
-            && (live.lastSyncedAt != nil || liveBpm != nil)
-            && ownNights < Baselines.minNightsSeed
-    }
-
-    /// Date + honesty line, then the live bpm — the screen's calm header. During calibration the bpm
-    /// lives in the card instead, so the header is just date + sync.
+    /// Date + honesty line — the screen's calm header. The live bpm now lives in each hero's
+    /// "beat by beat" row (LiveHeartbeatRow), never here, so the header is just date + sync.
     private var headerBlock: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            utilityRow
-            if !isCalibrating { liveStrip }
-        }
-    }
-
-    /// The live-HR strip: the current bpm pinned to the right. The rose dot marks a live reading from
-    /// the strap; muted when there's none.
-    @ViewBuilder private var liveStrip: some View {
-        HStack(alignment: .center, spacing: 12) {
-            Spacer(minLength: 0)
-            HStack(alignment: .firstTextBaseline, spacing: 5) {
-                Circle()
-                    .fill(isLiveHR ? StrandPalette.metricRose : StrandPalette.textTertiary)
-                    .frame(width: 6, height: 6)
-                    .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 1 }
-                Text(liveBpm.map { "\($0)" } ?? "--")
-                    .font(StrandFont.number(15, weight: .semibold))
-                    .foregroundStyle(liveBpm == nil ? StrandPalette.textTertiary : StrandPalette.textPrimary)
-                Text("bpm").font(.system(size: 10)).foregroundStyle(StrandPalette.textTertiary)
-            }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text(isLiveHR ? "Live heart rate" : "Heart rate"))
-            .accessibilityValue(Text(liveBpm.map { "\($0) bpm" } ?? "no reading"))
-        }
+        utilityRow
     }
 
     /// Verdict hero for the no-data state. Two honest cases, by whether a strap has ever been seen:
@@ -326,8 +293,68 @@ struct TodayView: View {
                     .buttonStyle(.plain)
                     .padding(.top, 5)
                 }
+                // Strap seen but no reading for today yet → the live pulse + monitor live here too.
+                if strapSeen {
+                    LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    /// The live-heartbeat row: the brand pulse glyph + "See it beat by beat", the live bpm pill (or a
+    /// muted "No reading" badge), and a chevron — one Button that opens the beat-to-beat monitor.
+    /// Anchored at the foot of every hero with a strap (calibration, verdict, empty-with-strap) so the
+    /// live pulse and its monitor live in one consistent place instead of floating in the header.
+    private struct LiveHeartbeatRow: View {
+        var liveBpm: Int?
+        var isLiveHR: Bool
+        let onTap: () -> Void
+
+        var body: some View {
+            VStack(spacing: 0) {
+                Rectangle().fill(StrandPalette.hairline).frame(height: 0.5)
+                    .padding(.top, 16).padding(.bottom, 12)
+                Button(action: onTap) {
+                    HStack(spacing: 9) {
+                        Image(systemName: "waveform.path.ecg")
+                            .font(StrandFont.subhead).foregroundStyle(StrandPalette.accent)
+                        Text("See it beat by beat")
+                            .font(StrandFont.subhead).fontWeight(.medium)
+                            .foregroundStyle(StrandPalette.textPrimary)
+                        Spacer(minLength: 0)
+                        badge
+                        Image(systemName: "chevron.right")
+                            .font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
+                    }
+                    .frame(minHeight: 44)
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .ignore)
+                .accessibilityAddTraits(.isButton)
+                .accessibilityLabel(Text(isLiveHR ? "Live heart rate" : "Heart rate"))
+                .accessibilityValue(Text(liveBpm.map { "\($0) bpm" } ?? "No reading"))
+                .accessibilityHint(Text("Opens the beat-to-beat monitor"))
+            }
+        }
+
+        /// The live bpm pill, or a muted "No reading" badge when the strap isn't streaming.
+        @ViewBuilder private var badge: some View {
+            if let bpm = liveBpm {
+                HStack(alignment: .firstTextBaseline, spacing: 5) {
+                    Circle().fill(isLiveHR ? StrandPalette.metricRose : StrandPalette.textTertiary)
+                        .frame(width: 6, height: 6)
+                        .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 1 }
+                    Text("\(bpm)").font(StrandFont.number(13, weight: .semibold))
+                        .foregroundStyle(StrandPalette.textPrimary)
+                    Text("bpm").font(.system(size: 10)).foregroundStyle(StrandPalette.textTertiary)
+                }
+            } else {
+                HStack(spacing: 5) {
+                    Circle().fill(StrandPalette.textTertiary).frame(width: 6, height: 6)
+                    Text("No reading").font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
+                }
+            }
         }
     }
 
@@ -352,26 +379,6 @@ struct TodayView: View {
             if nights == 0 { return "Wear the strap tonight — the first of \(total) nights your verdict needs." }
             if nights >= total { return "All \(total) nights are in — computing your first verdict." }
             return "The engine gets sharper every night — you already have \(nights)."
-        }
-
-        /// The live bpm pill for the "beat by beat" row, or a muted "No reading" badge when the strap
-        /// isn't streaming. Replaces the old generic "live" tag with the actual number.
-        @ViewBuilder private var liveBadge: some View {
-            if let bpm = liveBpm {
-                HStack(alignment: .firstTextBaseline, spacing: 5) {
-                    Circle().fill(isLiveHR ? StrandPalette.metricRose : StrandPalette.textTertiary)
-                        .frame(width: 6, height: 6)
-                        .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 1 }
-                    Text("\(bpm)").font(StrandFont.number(13, weight: .semibold))
-                        .foregroundStyle(StrandPalette.textPrimary)
-                    Text("bpm").font(.system(size: 10)).foregroundStyle(StrandPalette.textTertiary)
-                }
-            } else {
-                HStack(spacing: 5) {
-                    Circle().fill(StrandPalette.textTertiary).frame(width: 6, height: 6)
-                    Text("No reading").font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
-                }
-            }
         }
 
         var body: some View {
@@ -407,25 +414,7 @@ struct TodayView: View {
                         }
                     }
                     if let onTapLive {
-                        Rectangle().fill(StrandPalette.hairline).frame(height: 0.5)
-                            .padding(.top, 16).padding(.bottom, 12)
-                        Button(action: onTapLive) {
-                            HStack(spacing: 9) {
-                                Image(systemName: "waveform.path.ecg")
-                                    .font(StrandFont.subhead)
-                                    .foregroundStyle(StrandPalette.accent)
-                                Text("See it beat by beat")
-                                    .font(StrandFont.subhead).fontWeight(.medium)
-                                    .foregroundStyle(StrandPalette.textPrimary)
-                                Spacer(minLength: 0)
-                                liveBadge
-                                Image(systemName: "chevron.right")
-                                    .font(StrandFont.caption)
-                                    .foregroundStyle(StrandPalette.textTertiary)
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(Text("See your heart rate live, beat by beat"))
+                        LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: onTapLive)
                     }
                 }
             }
@@ -536,6 +525,8 @@ struct TodayView: View {
                     .overlay(Capsule().strokeBorder(lc.opacity(0.30), lineWidth: 1))
                     .padding(.top, 12)
                 }
+                // Live pulse + beat-to-beat monitor, anchored to the foot of the verdict.
+                LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)

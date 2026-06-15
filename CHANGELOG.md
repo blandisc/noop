@@ -19,6 +19,19 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Tu pulso en vivo y el monitor latido a latido, en cada pantalla / Live pulse and the beat-to-beat monitor, on every screen.**
+  **ES** — La fila "Míralo latido a latido" (con tu `• NN bpm` en vivo) ahora aparece al pie del
+  veredicto del día y de la pantalla "Aún sin lectura de hoy", no solo durante la calibración. Tócala
+  para ver tu corazón latido a latido — antes no había forma de abrir ese monitor desde el veredicto.
+  Y el encabezado quedó definitivamente limpio (solo fecha y sincronización) en todas las pantallas.
+  Si la banda no transmite, la fila dice "Sin lectura".
+  **EN** — The "See it beat by beat" row (with your live `• NN bpm`) now sits at the foot of the day's
+  verdict and of the "No reading for today yet" screen, not just during calibration. Tap it to watch
+  your heart beat to beat — there was no way to open that monitor from the verdict before. And the
+  header is finally clean (just date and sync) on every screen. When the strap isn't streaming, the
+  row reads "No reading".
+  ([Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift))
+
 - **Tu pulso en vivo se mudó a la tarjeta de tu primera noche / Live heart rate moved into the first-night card.**
   **ES** — Durante la calibración (la pantalla de las 4 noches), tu ritmo cardiaco en vivo ya no va
   arriba en el encabezado: ahora aparece como `• NN bpm` en la fila "Míralo latido a latido" de la
