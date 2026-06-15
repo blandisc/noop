@@ -4,29 +4,26 @@
 
 ## 🗺️ Mapa visual interactivo
 
-[`docs/screen-map.html`](screen-map.html) es un mapa tipo flow de Figma con **screenshots reales** de cada pantalla (marcos de iPhone + conectores de navegación). Para abrirlo:
+[`docs/screen-map.html`](screen-map.html) es un mapa tipo flow de Figma con **screenshots reales** de cada pantalla (marcos de iPhone + conectores de navegación).
+
+**Para abrirlo:** doble clic en `docs/screen-map.html` (o `open docs/screen-map.html`). No necesita servidor — las imágenes cargan por ruta relativa. Hazle bookmark en el navegador la primera vez para tenerlo a un clic.
+
+**Para regenerar las capturas** (`docs/fixtures/*.png`) cuando cambies una pantalla — un solo comando (necesita Xcode + simulador iOS):
 
 ```bash
-# desde la raíz del repo
-python3 -m http.server 8742 --directory docs
-# luego abre http://localhost:8742/screen-map.html
+./Tools/update-screen-map.sh                 # iPhone 17 Pro Max por defecto
+./Tools/update-screen-map.sh "iPhone 16"     # otro simulador
 ```
 
-Las capturas (`docs/fixtures/*.png`) se regeneran con el UI test de iOS cuando cambias una pantalla:
+Corre el UI test `NOOPScreenshotTests`, copia las PNGs al repo y sube la fecha del toolbar. Luego commitea los cambios en `docs/`.
+
+**Recordatorio automático:** hay un git hook (`.githooks/pre-commit`) que avisa si commiteas un `*View.swift` sin actualizar el mapa. Habilítalo una vez (en `~/code/noop`; los worktrees lo heredan):
 
 ```bash
-GIT_CONFIG=/dev/null xcodebuild test \
-  -project Strand.xcodeproj -scheme NOOPiOS \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' \
-  CODE_SIGNING_ALLOWED=NO \
-  -only-testing NOOPiOSUITests/NOOPScreenshotTests \
-  2>&1 | tee /tmp/noop-test.log
-# copia las PNGs de la sandbox del simulador al repo:
-grep "^FIXTURE_WRITTEN:" /tmp/noop-test.log | sed 's/^FIXTURE_WRITTEN: //' \
-  | while read -r f; do cp "$f" docs/fixtures/$(basename "$f"); done
+git config core.hooksPath .githooks
 ```
 
-**Regla de mantenimiento:** si tu PR modifica un `*View.swift`, actualiza la sección correspondiente aquí y en el array `SCREENS` de `screen-map.html`, y actualiza la fecha en el toolbar del HTML. Mismo PR, no opcional.
+**Regla de mantenimiento:** si tu PR modifica un `*View.swift`, actualiza la sección correspondiente aquí y en el array `SCREENS` de `screen-map.html` (la fecha del toolbar la sube el script). Mismo PR, no opcional.
 
 ---
 
