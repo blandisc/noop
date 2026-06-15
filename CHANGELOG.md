@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **"Procedencia" muestra ahora el recuento correcto de días de la banda / "Provenance" now shows the correct strap day count.**
+  **ES** — El renglón "Whoop" en la sección de Procedencia contaba todos los días del dashboard (incluyendo los de Apple Health), no solo los días donde la banda fue la fuente ganadora. Con 31 días de Apple Health y 1 de la banda, mostraba "32 días" en lugar de "1 día". Ahora el conteo es exacto: solo aparecen los días con datos reales del strap.
+  **EN** — The "Whoop" row in the Provenance section was counting every day in the dashboard (including Apple Health days) instead of only the days where the strap won. With 31 Apple Health days and 1 strap day it showed "32 days" instead of "1 day". The count is now accurate: only days with real strap data are shown.
+  ([Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift))
+
 - **"Métricas clave" rellena con Apple Salud cuando la banda viene vacía / "Key Metrics" fills from Apple Health when the strap comes up empty.**
   **ES** — Si tu banda registraba el día pero sin HRV / sueño / FC en reposo / oxígeno (le pasa a la WHOOP 4.0 cuando no alcanza a decodificar), esos datos tapaban los que Apple Salud sí tenía y "Métricas clave" quedaba en "—". Ahora, cuando la banda no trae el valor de hoy o ayer, "Métricas clave" usa el de Apple Salud (marcado "Apple Health"). Si la banda sí lo tiene, ese gana. No cambia el cálculo de recuperación.
   **EN** — If your strap logged the day but without HRV / sleep / resting HR / blood oxygen (which happens to the WHOOP 4.0 when it can't decode them), that empty row hid the values Apple Health did have and "Key Metrics" showed "—". Now, when the strap lacks today's or yesterday's value, "Key Metrics" uses Apple Health's (badged "Apple Health"). If the strap has it, the strap wins. Recovery scoring is unchanged.
