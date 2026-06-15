@@ -22,6 +22,8 @@ Cross-platform **Swift packages do the real work**; thin platform apps wrap them
 
 **Rule of thumb:** the more wire-level or math-level a change is, the deeper into `Packages/` it belongs, and the more it must be covered by a `swift test` that needs no app, strap, or CoreBluetooth. Every package targets both iOS and macOS and **must not** `import AppKit/UIKit/CoreBluetooth` — guard framework code with `#if canImport(...)`. See the "where logic belongs" table in CONTRIBUTING.
 
+**Deep reference:** before any structural change (new package, DB migration, BLE/protocol path, concurrency model, cross-package work), read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — the full system map (pipeline, package boundaries, actor model, live vs. historical path, safe-trim, storage schema). It's the source of truth so you don't have to re-derive the design from code. Keep it honest: **if your change moves the architecture, update `docs/ARCHITECTURE.md` in the same PR** (same discipline as the CHANGELOG). The `/arquitecto` step owns this doc.
+
 ## Build & test
 
 Packages are the fast loop (no Xcode, no strap):
@@ -69,14 +71,15 @@ Bias toward caution over speed; for trivial changes, use judgment.
 
 ## How we work here (process)
 
-The flow is **requirement → experience → screen → code → QA**, with acceptance criteria as the through-line. Four skills cover it (the two design ones only kick in for screen work):
+The flow is **requirement → (architecture) → experience → screen → code → QA**, with acceptance criteria as the through-line. Five skills cover it (the two design ones only kick in for screen work; the architecture one only for structural/deep changes):
 
 - **`/pm`** turns a raw idea into a clear requirement (acceptance criteria + Definition of Done) and files it as a Linear issue — *before* any code. Start product work here. For screen work it runs the **UX** pass to fix the flow, states, copy (es-MX) and accessibility into the requirement.
+- **`/arquitecto`** (standalone, selective — *not* every change) is the **technical-design** step between `/pm` and `/implement`, for **cambios de fondo only**: a new package, a DB migration, the BLE/protocol path, the concurrency model, or anything cross-package. It reads [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), proposes the *how* (where the code lands per "where logic belongs", which migrations/tests, the invariants it must preserve), validates it against the hard rules, and writes verifiable technical criteria `/implement` then checks. `/pm` owns the *what*; `/arquitecto` owns the *how* and keeps `docs/ARCHITECTURE.md` fresh. Skip it for UI/copy/bugfix/single-screen work.
 - **`/ux`** (folded into `/pm`, also standalone) designs the **experience** before pixels: flow, states (incl. no-HealthKit-permission and offline), information architecture, copy and accessibility — never colors/fonts. Leans on `lazyweb` + `impeccable`.
 - **`/ui`** (folded into `/implement` as the pre-code step, also standalone) designs the **visual** against `StrandDesign`: token-by-token mapping plus a **rendered PNG per state (ImageRenderer)** the user approves *before* any code. Leans on `design-for-ai` + `lazyweb` + `impeccable`.
 - **`/implement FER-NN`** takes that issue to production: runs the UI pass (PNG gate) for screen work, implements against the criteria, verifies each one (QA), and — if all pass and the build is green — merges to `iOS` and closes the issue. It stops to ask only if QA fails, it cannot verify, the change is high-risk, or the user did not approve the PNG.
 
-Both `/ux` and `/ui` also exist as subagents (`.claude/agents/`) so `/implement` can delegate or explore visual variants in parallel.
+`/ux`, `/ui`, and `/arquitecto` also exist as subagents (`.claude/agents/`) so `/implement` can delegate the design or technical-design pass, or explore variants in parallel.
 
 - **Linear:** team **Fer**, project **NOOP iOS**. Label every issue by type (`UI/Today`, `Analytics`, `Bug`, `Import`, `Performance`, `i18n`, `Diseño`, `Feature`, …). Issue lifecycle: **Todo → In Progress → In Review → Done**. Reference the issue in the PR (`Closes FER-NN`).
 - **Branch hygiene — one branch per issue, never collide.** Use the issue's Linear-generated `gitBranchName` (e.g. `blandisc/fer-81-…`), branched from an up-to-date `origin/iOS` (`git fetch` first). Never work on `iOS`, never reuse another issue's branch, and if the branch already exists, another session owns it — stop, don't overwrite. PRs target `iOS`, squash-merge, then delete the branch.

@@ -1,6 +1,6 @@
 # NOOP — System Architecture
 
-NOOP is a standalone, fully **offline** companion app for WHOOP straps (4.0 and 5.0). It talks
+NOOP is a standalone, fully **offline** companion app for WHOOP straps (4.0, 5.0, and MG). It talks
 directly to the strap over Bluetooth Low Energy, stores everything on-device in SQLite, and computes
 recovery, strain, HRV, and sleep locally. There is no WHOOP cloud, no account —
 the app interoperates with **your own device and your own data**. It can also import data you already
@@ -99,13 +99,20 @@ Packages/                       Cross-platform Swift packages (iOS 16+ / macOS 1
 ├── StrandImport/               WHOOP CSV + Apple Health importers
 └── StrandDesign/               SwiftUI design system (palette, components, charts)
 
+StrandiOS/                      iOS SwiftUI app target (App/Health/System/Widgets/Resources)
+StrandiOSShared/                code shared between the iOS app and its widgets
+StrandiOSWidgets/               iOS home / lock-screen widgets
+android/                        full Kotlin app (shipped) — mirrors the same architecture
+
 Tools/Backfill/                 CLI offload/replay tool
 ```
 
-The app target (`Strand/`) is the **macOS reference implementation**. iOS and Android apps are
-planned; the five packages already declare `.iOS(.v16)` and `.macOS(.v13)` and keep all
-UI-framework code behind `#if canImport(UIKit)` / `#if canImport(AppKit)` guards so the cores port
-unchanged.
+The app target (`Strand/`) is the **macOS reference implementation**, where CoreBluetooth and the
+live/decode seam are proven first. **`StrandiOS/`** is the iOS app target (with home / lock-screen
+widgets) and is the line under active development; **`android/`** is a separate, fully shipped Kotlin
+app. All three share the same architecture: the five packages declare `.iOS(.v16)` and `.macOS(.v13)`
+and keep every UI-framework call behind `#if canImport(UIKit)` / `#if canImport(AppKit)` guards, so
+the pure cores port to each platform unchanged.
 
 ---
 
@@ -285,7 +292,7 @@ shell doesn't re-render on every beat.
 
 ## 7. Storage model (WhoopStore / SQLite)
 
-GRDB drives a migrator (`WhoopStoreInfo.schemaVersion`, currently `9`). The schema groups into four
+GRDB drives a migrator (`WhoopStoreInfo.schemaVersion`, currently `11`). The schema groups into four
 concerns:
 
 **Durable decoded streams** — natural key `(deviceId, ts)`, one row per sample:
