@@ -62,6 +62,7 @@ struct TodayView: View {
 
     // Metric-info sheet — tapping any Key Metrics row presents this.
     @State private var metricDetail: MetricInfo? = nil
+    @State private var showWhyVerdict = false
 
     // THE single grid definition — every tile group reuses it so margins line up.
     private let grid = [GridItem(.adaptive(minimum: 168), spacing: NoopMetrics.gap)]
@@ -135,6 +136,9 @@ struct TodayView: View {
                 #else
                 MetricInfoSheet(info: info)
                 #endif
+            }
+            .sheet(isPresented: $showWhyVerdict) {
+                WhyVerdictSheet(readiness: readiness)
             }
     }
 
@@ -506,77 +510,57 @@ struct TodayView: View {
         let r = readiness
         if r.level != .insufficient {
             let lc = readinessColor(r.level)
-            VStack(alignment: .leading, spacing: 6) {
-                // Overline + load share one row — the load no longer claims its own line at the
-                // bottom, so the card loses the dead band beneath it.
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("Today's verdict")
-                        .font(StrandFont.overline).tracking(StrandFont.overlineTracking)
-                        .foregroundStyle(StrandPalette.textTertiary)
-                        .lineLimit(1)
-                    Spacer(minLength: 8)
-                    // Training load as a glanceable, flag-colored word — not a raw "load 1.05" the
-                    // user can't read, and not a `.help()` tooltip (dead on iOS touch). The exact
-                    // ratio still reaches VoiceOver via the accessibility label.
-                    if let acwr = r.acwr {
-                        let band = ReadinessEngine.loadBand(forACWR: acwr)
-                        HStack(spacing: 5) {
-                            Text("Load").font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
-                            Text(band.shortLabel)
-                                .font(StrandFont.captionNumber)
-                                .foregroundStyle(flagColor(band.flag))
-                        }
-                        .lineLimit(1)
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(Text("Training load: \(band.shortLabel) (acute:chronic \(String(format: "%.2f", acwr)))"))
-                    }
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Today's verdict")
+                    .font(StrandFont.overline).tracking(StrandFont.overlineTracking)
+                    .foregroundStyle(StrandPalette.textTertiary)
+                    .lineLimit(1)
+                // Two truths side by side: "should you push?" (verdict) and "how recovered are you?"
+                // (recovery) are different reads and can diverge — each gets its OWN labeled box in its
+                // OWN color, so a high recovery is never repainted by the verdict's color (the old bug,
+                // where the gauge inherited the verdict tint and a green 92 looked amber). (FER-113)
+                HStack(spacing: 10) {
+                    verdictBox(r: r, color: lc)
+                    recoveryBox
                 }
-                // Committed verdict — the headline takes the level's color so the day's tone is
-                // legible at a glance (mint Primed → amber Strained → rose Run down).
-                Text(r.headline)
-                    .font(StrandFont.title1)
-                    .foregroundStyle(lc)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text(r.summary)
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(StrandPalette.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                // Readiness as a 0–100 gauge filled to today's recovery score (hidden while the
-                // baseline is still seeding and recovery is nil).
-                if let score = recoveryScore {
-                    ReadinessGaugeBar(score: score, accent: lc)
-                        .padding(.top, 10)
+                // The reconciliation line — one plain-language sentence that explains the divergence
+                // ("you woke up recovered; the thing to watch is your load, not your body").
+                if let bridge = r.bridge {
+                    Text(bridge)
+                        .font(StrandFont.subhead)
+                        .foregroundStyle(StrandPalette.textPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                // Honesty beats a fake CTA: a short night flags the read low-confidence; otherwise a
-                // well-backed day earns a single committed nudge. A short night owns the foot (it's the
-                // most actionable note today), so the calibration row is suppressed that day.
+                // Short-night caveat keeps its honesty note.
                 if r.confidenceLow, let note = r.confidenceNote {
                     HStack(spacing: 7) {
                         Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 10))
                         Text(note).font(StrandFont.caption)
                     }
                     .foregroundStyle(StrandPalette.statusWarning)
-                    .padding(.top, 11)
-                } else {
-                    if r.level == .primed || r.level == .balanced {
-                        HStack(spacing: 5) {
-                            Text("Plan a hard session").font(StrandFont.captionNumber)
-                            Image(systemName: "arrow.right").font(.system(size: 10, weight: .semibold))
-                        }
-                        .foregroundStyle(lc)
-                        .padding(.horizontal, 12).padding(.vertical, 6)
-                        .background(lc.opacity(0.13), in: Capsule())
-                        .overlay(Capsule().strokeBorder(lc.opacity(0.30), lineWidth: 1))
-                        .padding(.top, 12)
+                }
+                // "Why?" — the drivers + color legend live in a sheet so the hero stays light. Its OWN
+                // row (never pinned to the variable-length bridge) so the layout can't break, and the
+                // verb word tracks the verdict ("Why strained?" / "Why primed?").
+                Divider().overlay(StrandPalette.hairline).padding(.top, 2)
+                Button { showWhyVerdict = true } label: {
+                    HStack(spacing: 7) {
+                        Image(systemName: "info.circle").font(.system(size: 13))
+                        Text("Why \(r.headline.lowercased())?").font(StrandFont.caption)
+                        Spacer(minLength: 0)
+                        Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(StrandPalette.textTertiary)
                     }
-                    // Calibration confidence: while the user's OWN strap nights are still ramping to the
-                    // trusted baseline (minNightsTrust = 14), a quiet progress bar shows the read keeps
-                    // sharpening with each strap night. Deliberately distinct from the 0–100 gauge above
-                    // (no 0/100 scale, accent fill, "N of 14 nights") so the two never read as the same
-                    // thing twice. Retires itself at the trusted baseline. (FER-105)
-                    if (1..<Baselines.minNightsTrust).contains(ownNights) {
-                        calibrationConfidence
-                    }
+                    .foregroundStyle(StrandPalette.metricCyan)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint(Text("Opens why today's verdict reads this way"))
+                // Calibration confidence (FER-105): while the user's OWN strap nights are still ramping
+                // to the trusted baseline (minNightsTrust), a quiet progress bar shows the read keeps
+                // sharpening with each strap night. Retires itself at the trusted baseline.
+                if (1..<Baselines.minNightsTrust).contains(ownNights) {
+                    calibrationConfidence
                 }
                 // Live pulse + beat-to-beat monitor, anchored to the foot of the verdict.
                 LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
@@ -589,6 +573,53 @@ struct TodayView: View {
         } else {
             heroSection
         }
+    }
+
+    /// Left "two truths" box: the verdict word in the level's color + a sublabel naming the culprit
+    /// ("from your training load"). Keeps the verdict's own color (mint / green / amber / rose).
+    @ViewBuilder private func verdictBox(r: ReadinessEngine.Readiness, color: Color) -> some View {
+        verdictMiniBox(label: "Verdict", tint: color) {
+            Text(r.headline).font(StrandFont.title2).foregroundStyle(color)
+                .fixedSize(horizontal: false, vertical: true)
+            if let culprit = r.culpritNoun {
+                Text("from \(culprit)").font(StrandFont.caption).foregroundStyle(color)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    /// Right "two truths" box: today's recovery score in ITS OWN band color (`recoveryColor`), never
+    /// the verdict color — the fix at the heart of FER-113. Shows "92 / 100" + the state word (PEAK …).
+    @ViewBuilder private var recoveryBox: some View {
+        let score = recoveryScore
+        let c = score.map { StrandPalette.recoveryColor(Double($0)) } ?? StrandPalette.textTertiary
+        verdictMiniBox(label: "Recovery", tint: c) {
+            if let score {
+                HStack(alignment: .firstTextBaseline, spacing: 1) {
+                    Text("\(score)").font(StrandFont.number(22)).foregroundStyle(c)
+                    Text("/100").font(StrandFont.caption).foregroundStyle(c.opacity(0.8))
+                }
+                Text(StrandPalette.recoveryState(Double(score)))
+                    .font(StrandFont.caption).foregroundStyle(c)
+            } else {
+                Text("—").font(StrandFont.number(22)).foregroundStyle(StrandPalette.textTertiary)
+            }
+        }
+    }
+
+    /// Shared "two truths" box chrome: a tinted, hairline-bordered well with a small overline label.
+    @ViewBuilder private func verdictMiniBox<Content: View>(label: LocalizedStringKey, tint: Color,
+                                                            @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label)
+                .font(StrandFont.overline).tracking(StrandFont.overlineTracking)
+                .foregroundStyle(StrandPalette.textTertiary).lineLimit(1)
+            content()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 10).padding(.vertical, 9)
+        .background(tint.opacity(0.10), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(tint.opacity(0.30), lineWidth: 0.5))
     }
 
     /// Whether the personal baseline draws on imported Apple Health history — drives the
@@ -906,7 +937,7 @@ struct TodayView: View {
 
     private func readinessColor(_ l: ReadinessEngine.Level) -> Color {
         switch l {
-        case .primed:       return StrandPalette.accent
+        case .primed:       return StrandPalette.statusPrimed
         case .balanced:     return StrandPalette.statusPositive
         case .strained:     return StrandPalette.statusWarning
         case .rundown:      return StrandPalette.metricRose

@@ -372,9 +372,10 @@ const SCREENS = [
       { to: 'metric-info', label: 'Tap métrica', type: 'sheet' },
       { to: 'metric-info', label: 'Tap Recuperación (síntesis) → cómo se calcula', type: 'sheet' },
       { to: 'metric-info', label: 'Tap HRV (síntesis) → cómo se calcula', type: 'sheet' },
+      { to: 'why-verdict', label: '¿Por qué {veredicto}?', type: 'sheet' },
       { to: 'support', label: 'Toolbar ❤', type: 'toolbar' },
     ],
-    components: ['HealthAlertBanner', 'CalibrationProgressCard', 'LiveHeartbeatRow', 'ReadinessGaugeBar', 'RecoveryRing', 'InsightCard', 'StatTile ×10', 'ChartCard (HR Trend)', 'SourceBadge (footnote compacto)'],
+    components: ['HealthAlertBanner', 'CalibrationProgressCard', 'LiveHeartbeatRow', 'WhyVerdictSheet (héroe dos-verdades · FER-113)', 'RecoveryRing', 'InsightCard', 'StatTile ×10', 'ChartCard (HR Trend)', 'SourceBadge (footnote compacto)', 'ReadinessGaugeBar (solo macOS)'],
   },
   {
     id: 'health', x: 284, y: 60,
@@ -666,6 +667,20 @@ const SCREENS = [
     ],
     nav: [],
     components: ['Metric name + headline', 'Valor actual + color', 'Bands (3–4 rangos)', 'Nota opcional', 'TrendChart esfuerzo acumulado (solo Day Strain)', 'Weight breakdown + «Ver el método» disclosure + calibration card (solo Recovery)'],
+  },
+  {
+    id: 'why-verdict', x: 30, y: 3310,
+    name: 'Why Verdict', desc: 'Sheet: por qué el veredicto de hoy (desde Today · FER-113)',
+    file: 'Strand/Screens/WhyVerdictSheet.swift',
+    icon: '❓', color: '#2FC7FF',
+    isSheet: true,
+    states: [
+      { label: 'Divergencia (recuperación alta vs veredicto)', type: 'data' },
+      { label: 'Alineado (primed/balanced)', type: 'data' },
+      { label: 'Agotado / varias señales', type: 'warn' },
+    ],
+    nav: [],
+    components: ['Título "¿Por qué {veredicto}?"', 'Chip de color del día', 'Frase puente (Readiness.bridge)', 'Señales del día (Readiness.signals)', 'Leyenda de colores + marcador HOY'],
   },
   {
     id: 'whats-new', x: 538, y: 3310,
