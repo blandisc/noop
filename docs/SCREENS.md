@@ -31,6 +31,8 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 | Sin lectura de hoy | Strap visto, sin offload de hoy |
 | Veredicto listo | Recovery score calculado |
 
+**Nota — indicador de sincronización (iOS):** cuando `live.backfilling == true`, la `syncMeta` en la `utilityRow` muestra "Syncing strap history…" en tono terciario/mono en lugar del texto habitual "Synced X ago". No hay pill ni color prominente; el texto vuelve al estado normal al terminar el backfill. El pill `SyncingHistoryNote` se conserva solo en el path macOS de esta vista.
+
 **Componentes:** `HealthAlertBanner`, `CalibrationProgressCard`, `LiveHeartbeatRow`, `ReadinessGaugeBar`, `RecoveryRing`, `InsightCard`, `StatTile ×10`, `ChartCard (HR Trend)`, `SourceBadge`  
 **Navegación:** → `LiveView` (fullScreenCover, "See it beat by beat") · → `MetricInfoSheet` (sheet, tap métrica) · → `SupportView` (toolbar ❤)
 
@@ -56,7 +58,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 
 | Estado | Condición de entrada |
 |--------|---------------------|
-| Sin datos de noche | Sin intervalos de sueño registrados |
+| Sin datos de noche | Sin intervalos de sueño registrados (muestra `ComingSoon`, sin pill de sincronización) |
 | Apple Health | Fuente `apple-health` (sin duración en cama) |
 | WHOOP · hipnograma | Intervalos WHOOP persistidos |
 | WHOOP · estimado | Hipnograma aproximado (stacked bar) |
@@ -179,8 +181,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 | Estado | Condición de entrada |
 |--------|---------------------|
 | Calculando | `IntelligenceEngine` en progreso |
-| Sin datos (mid-offload) | Offload histórico en curso |
-| Sin datos (pending wear) | Esperando uso de la correa |
+| Sin datos (mid-offload o pending wear) | Muestra `DataPendingNote` sin pill de sincronización; el offload en curso ya se refleja en `syncMeta` de TodayView |
 | Resultados por día | Análisis reciente disponible |
 
 **Componentes:** `Explainer Card (pesos: HRV 60% / RHR 20% / sleep 15% / resp 5%)`, `Day Cards (Recovery/Strain/Sleep + NOOP badge)`, `Toolbar Recompute`

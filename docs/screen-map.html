@@ -305,6 +305,7 @@ const SCREENS = [
       { label: 'Calibrando (1–3 noches)', type: 'loading' },
       { label: 'Sin lectura de hoy', type: 'warn' },
       { label: 'Veredicto listo', type: 'live' },
+      { label: 'Sincronizando (transversal iOS) — syncMeta muestra "Syncing strap history…" en utility row; sin pill', type: 'warn' },
     ],
     nav: [
       { to: 'live', label: 'See it beat by beat', type: 'fullscreen' },
@@ -332,7 +333,7 @@ const SCREENS = [
     file: 'Strand/Screens/SleepView.swift',
     icon: '🌙', color: '#7B8FFF',
     states: [
-      { label: 'Sin datos de noche', type: 'empty' },
+      { label: 'Sin datos de noche (sin pill de backfilling)', type: 'empty' },
       { label: 'Apple Health', type: 'data' },
       { label: 'WHOOP · hipnograma', type: 'live' },
       { label: 'WHOOP · estimado', type: 'data' },
@@ -450,8 +451,7 @@ const SCREENS = [
     icon: '🧠', color: '#18C98B',
     states: [
       { label: 'Calculando', type: 'loading' },
-      { label: 'Sin datos (mid-offload)', type: 'warn' },
-      { label: 'Sin datos (pending wear)', type: 'empty' },
+      { label: 'Sin datos (mid-offload o pending wear, sin pill)', type: 'empty' },
       { label: 'Resultados por día', type: 'data' },
     ],
     nav: [],

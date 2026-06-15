@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Sincronización discreta: el indicador de sincronización ya no interrumpe la pantalla / Quiet sync indicator: syncing no longer interrupts the screen.**
+  **ES** — Mientras la app descarga el historial de la banda, ya no aparece un pill verde pulsante en la pantalla. En su lugar, la pequeña línea de estado en la esquina superior derecha (la misma que muestra "Sincronizado hace 2 min · banda 87%") cambia discretamente a "Sincronizando historial de la banda…" en el mismo tono gris apagado. Cuando termina, vuelve al estado normal sin ningún parpadeo.
+  **EN** — While the app downloads strap history, the pulsing green pill no longer interrupts the screen. Instead, the small status line in the top-right corner (the one that shows "Synced 2 min ago · strap 87%") quietly reads "Syncing strap history…" in the same muted gray. When it finishes, it returns to normal with no flash.
+  ([Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift), [Strand/Screens/IntelligenceView.swift](Strand/Screens/IntelligenceView.swift), [Strand/Screens/SleepView.swift](Strand/Screens/SleepView.swift))
+
 - **Apple Salud se queda conectado entre aperturas / Apple Health stays connected between launches.**
   **ES** — Antes, al cerrar y reabrir la app tenías que volver a conectar Apple Salud cada vez, y
   "Métricas clave" en Hoy se quedaba solo con "Esfuerzo del día". Ahora la conexión se recuerda: al
