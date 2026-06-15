@@ -354,8 +354,11 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 | Estado | Condición de entrada |
 |--------|---------------------|
 | Estático por métrica | Siempre (strain / sleep / HRV / RHR / SpO₂ / steps) |
+| Esfuerzo · con curva | Variante Day Strain, hay puntaje del día y suficiente FC: gráfica «Cómo se acumuló hoy» (esfuerzo acumulado 00:00→ahora, eje Y auto-escalado) |
+| Esfuerzo · cargando | Variante Day Strain mientras se calcula la curva (placeholder) |
+| Esfuerzo · sin datos | Variante Day Strain sin puntaje / poca actividad: mensaje «Aún no hay suficiente actividad del día para graficar.» |
 
-**Componentes:** `Metric name + headline`, `Valor actual + color`, `Bands (3–4 rangos + active highlight)`, `Nota opcional`
+**Componentes:** `Metric name + headline`, `Valor actual + color`, `Bands (3–4 rangos + active highlight)`, `Nota opcional`, `TrendChart de esfuerzo acumulado (solo Day Strain, FER-110)`
 
 ---
 

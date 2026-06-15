@@ -215,4 +215,67 @@ public enum StrainScorer {
         }
         return trimpToStrain(trimp, denominator: denominator)
     }
+
+    // MARK: - Cumulative (intraday) strain
+
+    /// One step of the day's accumulated strain: the 0–21 strain reached by `date`.
+    public struct CumulativeStrainPoint: Equatable, Sendable {
+        public let date: Date
+        public let strain: Double
+        public init(date: Date, strain: Double) {
+            self.date = date
+            self.strain = strain
+        }
+    }
+
+    /// The day's strain as it accumulates, sampled at `bucketSeconds` boundaries. APPROXIMATE.
+    ///
+    /// TRIMP is additive, so this walks the (time-ordered) series once, accumulating the same
+    /// Edwards/Banister TRIMP that `strain(_:)` uses, and emits the compressed strain at the end of
+    /// each `bucketSeconds` bucket (plus the final sample). The result is monotonically
+    /// non-decreasing and its LAST point equals `strain(hr, …)` over the same window and parameters
+    /// — so a chart of this series ends exactly on the day's strain score.
+    ///
+    /// Returns `[]` under the same guard as `strain(_:)`: fewer than `minReadings` samples or
+    /// maxHR ≤ restingHR (invalid HRR). Parameters mirror `strain(_:)` so the caller can pass the
+    /// SAME values it used for the daily score and get a matching endpoint.
+    public static func cumulativeStrain(_ hr: [HRSample],
+                                        bucketSeconds: Int = 900,
+                                        maxHR: Double? = nil,
+                                        restingHR: Double = defaultRestingHR,
+                                        method: Method = .edwards,
+                                        sex: String = "male",
+                                        denominator: Double = strainDenominator) -> [CumulativeStrainPoint] {
+        let effMax = maxHR ?? Double(defaultMaxHR())
+        guard hr.count >= minReadings, effMax > restingHR, bucketSeconds > 0 else { return [] }
+
+        let sampleDur = sampleDurationMinutes(hr)
+        let hrReserve = effMax - restingHR
+        let b = sex.lowercased().hasPrefix("f") ? banisterBWomen : banisterBMen
+
+        var points: [CumulativeStrainPoint] = []
+        var weighted = 0       // Edwards: running Σ zone weight
+        var acc = 0.0          // Banister: running Σ contribution
+
+        for (i, s) in hr.enumerated() {
+            switch method {
+            case .edwards:
+                weighted += zoneWeight(Double(s.bpm), restingHR: restingHR, hrReserve: hrReserve)
+            case .banister:
+                let x = pctHRR(Double(s.bpm), restingHR: restingHR, hrReserve: hrReserve) / 100.0
+                if x > 0 { acc += sampleDur * x * banisterScale * exp(b * x) }
+            }
+            let isLast = (i == hr.count - 1)
+            // Emit once per bucket — at the last sample whose timestamp falls in that bucket — plus
+            // the final sample, whose cumulative TRIMP equals the full window's (endpoint == strain()).
+            let endsBucket = isLast || (hr[i + 1].ts / bucketSeconds) != (s.ts / bucketSeconds)
+            if endsBucket {
+                let trimp = method == .banister ? acc : Double(weighted) * sampleDur
+                points.append(CumulativeStrainPoint(
+                    date: Date(timeIntervalSince1970: TimeInterval(s.ts)),
+                    strain: trimpToStrain(trimp, denominator: denominator)))
+            }
+        }
+        return points
+    }
 }
