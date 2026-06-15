@@ -17,7 +17,7 @@ import Foundation
 //               Sleep, HRV, RHR, SpO2, Respiratory, Steps, Weight, Calories) each with
 //               a 14-day sparkline so the grid tiles perfectly with no empty cells.
 //   (c) LAST WORKOUTS — the SAME adaptive grid of fixed-104pt workout StatTiles.
-//   (d) DATA SOURCES — one full-width NoopCard footer of SourceBadges + counts.
+//   (d) DATA SOURCES — compact 2-line footnote (SourceBadges + counts, sync status).
 //
 // Sparse series (weight) fall back to ALL history so a tile never shows an empty
 // state when data exists. Only locked StrandDesign components are used.
@@ -1053,74 +1053,48 @@ struct TodayView: View {
         }
     }
 
-    // MARK: (d) DATA SOURCES — one full-width footer card.
+    // MARK: (d) DATA SOURCES — compact footnote.
 
     @ViewBuilder
     private var sourcesSection: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-            SectionHeader("Data Sources", overline: "Provenance")
-            NoopCard {
-                VStack(alignment: .leading, spacing: 12) {
-                    sourceRow(
-                        badge: "Whoop",
-                        tint: StrandPalette.accent,
-                        present: repo.days.count > repo.appleHealthDays.count,
-                        detail: String(localized: "\(repo.days.count - repo.appleHealthDays.count) days · \(repo.sleeps.count) sleeps")
-                    )
-                    Divider().overlay(StrandPalette.hairline)
-                    sourceRow(
-                        badge: "Apple Health",
-                        tint: StrandPalette.metricCyan,
-                        present: !appleDays.isEmpty,
-                        detail: String(localized: "\(appleDays.count) days · \(workouts.filter { $0.source == "apple-health" }.count) workouts")
-                    )
-                    Divider().overlay(StrandPalette.hairline)
-                    strapSyncRow
+        let whoopDays  = repo.days.count - repo.appleHealthDays.count
+        let ahDays     = appleDays.count
+        let ahWorkouts = workouts.filter { $0.source == "apple-health" }.count
+        let hasData    = whoopDays > 0 || ahDays > 0
+        let hasSync    = live.lastSyncError != nil || live.lastSyncedAt != nil
+
+        if hasData || hasSync {
+            VStack(alignment: .leading, spacing: 4) {
+                if hasData {
+                    HStack(spacing: 6) {
+                        if whoopDays > 0 {
+                            SourceBadge("Whoop", tint: StrandPalette.accent)
+                            Text(String(localized: "\(whoopDays) days · \(repo.sleeps.count) sleeps"))
+                                .font(StrandFont.footnote)
+                                .foregroundStyle(StrandPalette.textTertiary)
+                        }
+                        if whoopDays > 0 && ahDays > 0 {
+                            Text("·").font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
+                        }
+                        if ahDays > 0 {
+                            SourceBadge("Apple Health", tint: StrandPalette.metricCyan)
+                            Text(String(localized: "\(ahDays) days · \(ahWorkouts) workouts"))
+                                .font(StrandFont.footnote)
+                                .foregroundStyle(StrandPalette.textTertiary)
+                        }
+                    }
                 }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func sourceRow(badge: String, tint: Color, present: Bool, detail: String) -> some View {
-        HStack(spacing: 10) {
-            SourceBadge("\(badge)", tint: present ? tint : StrandPalette.textTertiary)
-            Spacer()
-            Text(present ? detail : String(localized: "Not connected"))
-                .font(StrandFont.captionNumber)
-                .foregroundStyle(present ? StrandPalette.textSecondary : StrandPalette.textTertiary)
-        }
-    }
-
-    /// Honest strap-sync outcome for a cloud-free app (ports the Android Live line, ed6a31d): the
-    /// stalled-offload error when the last one died, else "History synced N ago". Hidden while an
-    /// offload runs — syncMeta in the utility row already signals the in-progress state subtly.
-    /// TimelineView re-renders the relative label each minute so "5 min ago" can't go stale while
-    /// the window sits open with no strap connected (LiveState publishes nothing then).
-    @ViewBuilder
-    private var strapSyncRow: some View {
-        if !live.backfilling {
-            TimelineView(.periodic(from: .now, by: 60)) { context in
-                HStack(alignment: .top, spacing: 10) {
-                    SourceBadge("Strap sync",
-                                tint: live.lastSyncError != nil ? StrandPalette.statusWarning
-                                    : live.lastSyncedAt != nil ? StrandPalette.accent
-                                    : StrandPalette.textTertiary)
-                    Spacer()
-                    if let error = live.lastSyncError {
-                        Text(error)
-                            .font(StrandFont.captionNumber)
-                            .foregroundStyle(StrandPalette.statusWarning)
-                            .multilineTextAlignment(.trailing)
-                            .fixedSize(horizontal: false, vertical: true)
-                    } else if let at = live.lastSyncedAt {
-                        Text("History synced \(relativeAgo(at, now: context.date.timeIntervalSince1970))")
-                            .font(StrandFont.captionNumber)
-                            .foregroundStyle(StrandPalette.textSecondary)
-                    } else {
-                        Text("Not synced yet")
-                            .font(StrandFont.captionNumber)
-                            .foregroundStyle(StrandPalette.textTertiary)
+                if !live.backfilling && hasSync {
+                    TimelineView(.periodic(from: .now, by: 60)) { context in
+                        if let error = live.lastSyncError {
+                            Text(error)
+                                .font(StrandFont.footnote)
+                                .foregroundStyle(StrandPalette.statusWarning)
+                        } else if let at = live.lastSyncedAt {
+                            Text("History synced \(relativeAgo(at, now: context.date.timeIntervalSince1970))")
+                                .font(StrandFont.footnote)
+                                .foregroundStyle(StrandPalette.textTertiary)
+                        }
                     }
                 }
             }
