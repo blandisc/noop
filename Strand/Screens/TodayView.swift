@@ -182,6 +182,8 @@ struct TodayView: View {
                         // hands off to the verdict once today's reading lands.
                         CalibrationProgressCard(nights: ownNights,
                                                 total: Baselines.minNightsSeed,
+                                                liveBpm: liveBpm,
+                                                isLiveHR: isLiveHR,
                                                 onTapLive: { showLiveMonitor = true })
                     } else {
                         // No strap ever (→ Scan CTA), OR a seeded baseline (≥seed valid nights, e.g. from
@@ -254,11 +256,21 @@ struct TodayView: View {
     /// Recovery score driving the readiness gauge (the 0–100 the bar fills to). nil while calibrating.
     private var recoveryScore: Int? { repo.today?.recovery.map { Int($0.rounded()) } }
 
-    /// Date + honesty line, then the live bpm — the screen's calm header.
+    /// True in the calibration sub-state (strap seen, still gathering the first `minNightsSeed` own
+    /// nights) — the branch that shows CalibrationProgressCard. The live bpm moves into that card here,
+    /// so the header drops it to avoid showing the number twice.
+    private var isCalibrating: Bool {
+        repo.today?.recovery == nil
+            && (live.lastSyncedAt != nil || liveBpm != nil)
+            && ownNights < Baselines.minNightsSeed
+    }
+
+    /// Date + honesty line, then the live bpm — the screen's calm header. During calibration the bpm
+    /// lives in the card instead, so the header is just date + sync.
     private var headerBlock: some View {
         VStack(alignment: .leading, spacing: 12) {
             utilityRow
-            liveStrip
+            if !isCalibrating { liveStrip }
         }
     }
 
@@ -325,6 +337,9 @@ struct TodayView: View {
     private struct CalibrationProgressCard: View {
         let nights: Int
         let total: Int
+        /// Live heart rate for the "beat by beat" row (nil → "No reading"); rose dot when streaming.
+        var liveBpm: Int? = nil
+        var isLiveHR: Bool = false
         /// Tap target for the live monitor; nil hides the "See it beat by beat" row.
         var onTapLive: (() -> Void)? = nil
 
@@ -337,6 +352,26 @@ struct TodayView: View {
             if nights == 0 { return "Wear the strap tonight — the first of \(total) nights your verdict needs." }
             if nights >= total { return "All \(total) nights are in — computing your first verdict." }
             return "The engine gets sharper every night — you already have \(nights)."
+        }
+
+        /// The live bpm pill for the "beat by beat" row, or a muted "No reading" badge when the strap
+        /// isn't streaming. Replaces the old generic "live" tag with the actual number.
+        @ViewBuilder private var liveBadge: some View {
+            if let bpm = liveBpm {
+                HStack(alignment: .firstTextBaseline, spacing: 5) {
+                    Circle().fill(isLiveHR ? StrandPalette.metricRose : StrandPalette.textTertiary)
+                        .frame(width: 6, height: 6)
+                        .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 1 }
+                    Text("\(bpm)").font(StrandFont.number(13, weight: .semibold))
+                        .foregroundStyle(StrandPalette.textPrimary)
+                    Text("bpm").font(.system(size: 10)).foregroundStyle(StrandPalette.textTertiary)
+                }
+            } else {
+                HStack(spacing: 5) {
+                    Circle().fill(StrandPalette.textTertiary).frame(width: 6, height: 6)
+                    Text("No reading").font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
+                }
+            }
         }
 
         var body: some View {
@@ -383,8 +418,7 @@ struct TodayView: View {
                                     .font(StrandFont.subhead).fontWeight(.medium)
                                     .foregroundStyle(StrandPalette.textPrimary)
                                 Spacer(minLength: 0)
-                                Text("live").font(StrandFont.caption)
-                                    .foregroundStyle(StrandPalette.textTertiary)
+                                liveBadge
                                 Image(systemName: "chevron.right")
                                     .font(StrandFont.caption)
                                     .foregroundStyle(StrandPalette.textTertiary)

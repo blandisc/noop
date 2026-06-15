@@ -19,6 +19,17 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Tu pulso en vivo se mudó a la tarjeta de tu primera noche / Live heart rate moved into the first-night card.**
+  **ES** — Durante la calibración (la pantalla de las 4 noches), tu ritmo cardiaco en vivo ya no va
+  arriba en el encabezado: ahora aparece como `• NN bpm` en la fila "Míralo latido a latido" de la
+  tarjeta, justo donde tocas para verlo latido a latido. El encabezado queda solo con la fecha y la
+  sincronización. Si la banda no está transmitiendo, la fila dice "Sin lectura".
+  **EN** — During calibration (the four-night screen), your live heart rate no longer sits up in the
+  header: it now shows as `• NN bpm` in the card's "See it beat by beat" row, right where you tap to
+  watch it live. The header is just date and sync. When the strap isn't streaming, the row reads
+  "No reading".
+  ([Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift))
+
 - **La fila de Recuperación / HRV / Sueño ahora va centrada / Recovery · HRV · Sleep row is now centered.**
   **ES** — La franja de resumen bajo el veredicto (Recuperación, HRV, Sueño) estaba pegada a la
   izquierda con un hueco a la derecha. Ahora sus tres columnas van centradas y balanceadas, con los
