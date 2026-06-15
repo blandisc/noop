@@ -19,6 +19,19 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Apple Salud se queda conectado entre aperturas / Apple Health stays connected between launches.**
+  **ES** — Antes, al cerrar y reabrir la app tenías que volver a conectar Apple Salud cada vez, y
+  "Métricas clave" en Hoy se quedaba solo con "Esfuerzo del día". Ahora la conexión se recuerda: al
+  reabrir, la sincronización corre sola y tus métricas de Apple Salud (HRV, sueño, FC en reposo,
+  oxígeno, pasos) vuelven a aparecer sin reconectar. Y si todavía no has conectado Apple Salud,
+  "Métricas clave" muestra un acceso discreto "Conectar Apple Salud" que te lleva a Fuentes de datos.
+  **EN** — Closing and reopening the app used to make you reconnect Apple Health every time, leaving
+  Today's "Key Metrics" with just "Day Strain." The connection is now remembered: on reopen the sync
+  runs on its own and your Apple Health metrics (HRV, sleep, resting HR, blood oxygen, steps) come
+  back without reconnecting. And if you haven't connected Apple Health yet, "Key Metrics" shows a
+  discreet "Connect Apple Health" shortcut that takes you to Data Sources.
+  ([StrandiOS/Health/HealthKitBridge.swift](StrandiOS/Health/HealthKitBridge.swift), [Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift))
+
 - **Tu pulso en vivo y el monitor latido a latido, en cada pantalla / Live pulse and the beat-to-beat monitor, on every screen.**
   **ES** — La fila "Míralo latido a latido" (con tu `• NN bpm` en vivo) ahora aparece al pie del
   veredicto del día y de la pantalla "Aún sin lectura de hoy", no solo durante la calibración. Tócala
