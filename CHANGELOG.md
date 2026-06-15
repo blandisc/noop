@@ -24,6 +24,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
   **EN** — After each sync, the sleep stages WHOOP measures throughout the night (light, deep, REM, wake) appear in the Health app under the "NOOP" source. WHOOP measures stages with continuous PPG all night, unlike Apple Watch which takes spot readings. The data coexists with Watch readings and the user can set priority in Health → [metric] → Data Sources. No duplicates are created: NOOP deletes its own prior entries before writing new ones.
   ([StrandiOS/Health/HealthKitBridge.swift](StrandiOS/Health/HealthKitBridge.swift))
 
+- **La info de fuentes en "Hoy" ocupa menos espacio / Data source info on Today takes less space.**
+  **ES** — La sección "Procedencia" al fondo de la pantalla Hoy era un card grande (con título de sección y tres renglones separados) que le daba peso de pantalla principal a información secundaria. Ahora aparece como dos líneas discretas en el fondo del scroll: una con los badges de fuente y conteos, otra con el estado del último sync de la banda.
+  **EN** — The "Provenance" section at the bottom of Today was a full card (with section title and three separate rows) that gave primary-screen weight to secondary metadata. It now appears as two compact lines at the bottom of the scroll: one with source badges and counts, one with the strap's last sync status.
+  ([Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift))
+
 - **"Procedencia" muestra ahora el recuento correcto de días de la banda / "Provenance" now shows the correct strap day count.**
   **ES** — El renglón "Whoop" en la sección de Procedencia contaba todos los días del dashboard (incluyendo los de Apple Health), no solo los días donde la banda fue la fuente ganadora. Con 31 días de Apple Health y 1 de la banda, mostraba "32 días" en lugar de "1 día". Ahora el conteo es exacto: solo aparecen los días con datos reales del strap.
   **EN** — The "Whoop" row in the Provenance section was counting every day in the dashboard (including Apple Health days) instead of only the days where the strap won. With 31 Apple Health days and 1 strap day it showed "32 days" instead of "1 day". The count is now accurate: only days with real strap data are shown.
