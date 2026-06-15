@@ -421,6 +421,20 @@ final class Repository: ObservableObject {
             to: Self.dayString(now.addingTimeInterval(86_400)))) ?? []
     }
 
+    /// Apple-Health `dailyMetric` rows (sleep / HRV / resting HR / SpO₂ / resp rate) read straight from
+    /// the apple-health source — NOT the merged dashboard. `mergeDaily` replaces a day's Apple row
+    /// wholesale when the strap also has that day, so a strap day with nil fields (e.g. a WHOOP 4.0 that
+    /// didn't decode HRV/sleep) hides the value Apple Health does have; Today's Key Metrics falls back
+    /// to these to fill that gap without disturbing the dashboard merge or the recovery baseline. (FER-98)
+    func appleDailyMetricRows(days: Int = 4000) async -> [DailyMetric] {
+        guard let store = await ensureStore() else { return [] }
+        let now = Date()
+        return (try? await store.dailyMetrics(
+            deviceId: "apple-health",
+            from: Self.dayString(now.addingTimeInterval(-Double(days) * 86_400)),
+            to: Self.dayString(now.addingTimeInterval(86_400)))) ?? []
+    }
+
     /// Shared formatter — created once. Hot read path (called per series window / refresh);
     /// allocating a DateFormatter per call was a measurable waste. Read-only use is thread-safe.
     private static let dayFormatter: DateFormatter = {
