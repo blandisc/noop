@@ -1064,8 +1064,8 @@ struct TodayView: View {
                     sourceRow(
                         badge: "Whoop",
                         tint: StrandPalette.accent,
-                        present: !repo.days.isEmpty,
-                        detail: String(localized: "\(repo.days.count) days · \(repo.sleeps.count) sleeps")
+                        present: repo.days.count > repo.appleHealthDays.count,
+                        detail: String(localized: "\(repo.days.count - repo.appleHealthDays.count) days · \(repo.sleeps.count) sleeps")
                     )
                     Divider().overlay(StrandPalette.hairline)
                     sourceRow(
