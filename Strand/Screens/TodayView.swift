@@ -17,7 +17,7 @@ import Foundation
 //               Sleep, HRV, RHR, SpO2, Respiratory, Steps, Weight, Calories) each with
 //               a 14-day sparkline so the grid tiles perfectly with no empty cells.
 //   (c) LAST WORKOUTS — the SAME adaptive grid of fixed-104pt workout StatTiles.
-//   (d) DATA SOURCES — one full-width NoopCard footer of SourceBadges + counts.
+//   (d) DATA SOURCES — compact 2-line footnote (SourceBadges + counts, sync status).
 //
 // Sparse series (weight) fall back to ALL history so a tile never shows an empty
 // state when data exists. Only locked StrandDesign components are used.

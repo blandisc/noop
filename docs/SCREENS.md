@@ -33,6 +33,8 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 
 **Nota — indicador de sincronización (iOS):** cuando `live.backfilling == true`, la `syncMeta` en la `utilityRow` muestra "Syncing strap history…" en tono terciario/mono en lugar del texto habitual "Synced X ago". No hay pill ni color prominente; el texto vuelve al estado normal al terminar el backfill. El pill `SyncingHistoryNote` se conserva solo en el path macOS de esta vista.
 
+**Nota — footnote de procedencia (fondo del scroll):** en lugar del antiguo `SectionHeader + NoopCard` de tres renglones, la procedencia aparece como dos líneas compactas en `StrandFont.footnote` / `textTertiary`: (1) badges `SourceBadge` con conteos por fuente (Whoop y/o Apple Health, omitidos si no hay datos), (2) estado del último sync del strap (en `statusWarning` si hay error). El bloque completo se oculta si no hay datos de ninguna fuente ni sync registrado.
+
 **Componentes:** `HealthAlertBanner`, `CalibrationProgressCard`, `LiveHeartbeatRow`, `ReadinessGaugeBar`, `RecoveryRing`, `InsightCard`, `StatTile ×10`, `ChartCard (HR Trend)`, `SourceBadge`  
 **Navegación:** → `LiveView` (fullScreenCover, "See it beat by beat") · → `MetricInfoSheet` (sheet, tap métrica) · → `SupportView` (toolbar ❤)
 
