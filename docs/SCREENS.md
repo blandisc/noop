@@ -2,6 +2,30 @@
 
 **Fuente de verdad textual** del mapa de pantallas. La representación visual vive en [`docs/screen-map.html`](screen-map.html).
 
+## 🗺️ Mapa visual interactivo
+
+[`docs/screen-map.html`](screen-map.html) es un mapa tipo flow de Figma con **screenshots reales** de cada pantalla (marcos de iPhone + conectores de navegación). Para abrirlo:
+
+```bash
+# desde la raíz del repo
+python3 -m http.server 8742 --directory docs
+# luego abre http://localhost:8742/screen-map.html
+```
+
+Las capturas (`docs/fixtures/*.png`) se regeneran con el UI test de iOS cuando cambias una pantalla:
+
+```bash
+GIT_CONFIG=/dev/null xcodebuild test \
+  -project Strand.xcodeproj -scheme NOOPiOS \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' \
+  CODE_SIGNING_ALLOWED=NO \
+  -only-testing NOOPiOSUITests/NOOPScreenshotTests \
+  2>&1 | tee /tmp/noop-test.log
+# copia las PNGs de la sandbox del simulador al repo:
+grep "^FIXTURE_WRITTEN:" /tmp/noop-test.log | sed 's/^FIXTURE_WRITTEN: //' \
+  | while read -r f; do cp "$f" docs/fixtures/$(basename "$f"); done
+```
+
 **Regla de mantenimiento:** si tu PR modifica un `*View.swift`, actualiza la sección correspondiente aquí y en el array `SCREENS` de `screen-map.html`, y actualiza la fecha en el toolbar del HTML. Mismo PR, no opcional.
 
 ---
@@ -32,9 +56,6 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 | Veredicto listo | Recovery score calculado |
 
 **Nota — indicador de sincronización (iOS):** cuando `live.backfilling == true`, la `syncMeta` en la `utilityRow` muestra "Syncing strap history…" en tono terciario/mono en lugar del texto habitual "Synced X ago". No hay pill ni color prominente; el texto vuelve al estado normal al terminar el backfill. El pill `SyncingHistoryNote` se conserva solo en el path macOS de esta vista.
-
-**Nota — confianza del veredicto (FER-105, iOS):** dentro del estado *Veredicto listo*, mientras las noches propias del strap (`ownNights`) no alcanzan el baseline de confianza (`Baselines.minNightsTrust` = 14), el pie del veredicto muestra una barra de calibración discreta — «Se afina con tu banda · N de 14 noches» (sparkles + `textSecondary`, fill `accent`, sin escala 0/100, distinta de la `ReadinessGaugeBar`). Si la base se sembró con Apple Health (`appleHealthDays` no vacío), añade la nota terciaria «Tu base viene de Apple Health». Una noche corta (`confidenceLow`) tiene prioridad y la suprime ese día; al llegar a 14 noches la barra se retira sola.
-**Nota — footnote de procedencia (fondo del scroll):** en lugar del antiguo `SectionHeader + NoopCard` de tres renglones, la procedencia aparece como dos líneas compactas en `StrandFont.footnote` / `textTertiary`: (1) badges `SourceBadge` con conteos por fuente (Whoop y/o Apple Health, omitidos si no hay datos), (2) estado del último sync del strap (en `statusWarning` si hay error). El bloque completo se oculta si no hay datos de ninguna fuente ni sync registrado.
 
 **Componentes:** `HealthAlertBanner`, `CalibrationProgressCard`, `LiveHeartbeatRow`, `ReadinessGaugeBar`, `RecoveryRing`, `InsightCard`, `StatTile ×10`, `ChartCard (HR Trend)`, `SourceBadge`  
 **Navegación:** → `LiveView` (fullScreenCover, "See it beat by beat") · → `MetricInfoSheet` (sheet, tap métrica) · → `SupportView` (toolbar ❤)
