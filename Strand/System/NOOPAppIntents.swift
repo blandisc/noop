@@ -55,6 +55,7 @@ struct MarkMomentIntent: AppIntent {
 /// Auto-surfaces the actions in Shortcuts.app with suggested phrases.
 @available(macOS 13.0, *)
 struct NOOPShortcuts: AppShortcutsProvider {
+    @AppShortcutsBuilder
     static var appShortcuts: [AppShortcut] {
         AppShortcut(intent: BuzzStrapIntent(),
                     phrases: ["Buzz my strap with \(.applicationName)", "Buzz \(.applicationName)"],
