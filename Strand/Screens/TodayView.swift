@@ -34,6 +34,11 @@ struct TodayView: View {
     /// Presents the live beat-to-beat monitor (LiveView) over Today when the calibration card's
     /// "See it beat by beat" affordance is tapped.
     @State private var showLiveMonitor = false
+    /// Live Apple Health bridge (iOS only). Today reads `health.auth` to nudge the user to connect
+    /// Apple Salud when the measured Key Metrics are empty; `showDataSources` presents Data Sources
+    /// so they can connect in one tap instead of hunting through the More tab. (FER-94)
+    @EnvironmentObject var health: HealthKitBridge
+    @State private var showDataSources = false
     #endif
 
     // Imperial/Metric display preference (D#103). Only the Weight tile carries a convertible unit here.
@@ -221,6 +226,26 @@ struct TodayView: View {
                     .padding(.trailing, 16).padding(.top, 8)
                 }
                 .preferredColorScheme(.dark)
+        }
+        .sheet(isPresented: $showDataSources) {
+            // Present Data Sources directly so the Key Metrics nudge connects Apple Health in one tap,
+            // without sending the user to dig through the More tab. A sheet starts a fresh environment
+            // branch, so re-inject the objects DataSourcesView needs (same pattern as the cover above).
+            NavigationStack {
+                DataSourcesView()
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") { showDataSources = false }
+                                .foregroundStyle(StrandPalette.accent)
+                        }
+                    }
+            }
+            .environmentObject(model)
+            .environmentObject(repo)
+            .environmentObject(live)
+            .environmentObject(health)
+            .preferredColorScheme(.dark)
         }
     }
 
@@ -613,6 +638,11 @@ struct TodayView: View {
         let stepsCutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -13, to: Date()) ?? Date())
         let stepsFresh = appleDays.last(where: { $0.day >= stepsCutoff })?.steps
         let stepsStr = stepsFresh.map { intString(Double($0)) } ?? latestString("steps", decimals: 0)
+        // Nudge to connect Apple Health only when it isn't connected AND a measured row is actually
+        // empty — so a strap-covered day never nags and a connected user never sees it. Tapping opens
+        // Data Sources; once connected, the launch auto-sync fills these rows on its own. (FER-94)
+        let notConnected = health.auth != .authorized && health.auth != .unavailable
+        let anyMeasuredMissing = hrvR == nil || sleepR == nil || rhrR == nil || spo2R == nil || stepsFresh == nil
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
             SectionHeader("Key Metrics", overline: "Today", trailing: String(localized: "14-day trend"))
             VStack(spacing: 0) {
@@ -672,6 +702,20 @@ struct TodayView: View {
                               sparkline: sparks["steps"], sparkColor: StrandPalette.metricCyan,
                               isPlaceholder: stepsStr == "—")
                 }.buttonStyle(.plain)
+            }
+            if notConnected && anyMeasuredMissing {
+                Button { showDataSources = true } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "heart.fill")
+                        Text("Connect Apple Health")
+                        Spacer(minLength: 0)
+                        Image(systemName: "chevron.right")
+                            .foregroundStyle(StrandPalette.textTertiary)
+                    }
+                    .font(StrandFont.caption)
+                    .foregroundStyle(StrandPalette.metricCyan)
+                }
+                .buttonStyle(.plain)
             }
         }
     }
@@ -1331,9 +1375,11 @@ struct TodayView: View {
     return TodayView()
         .environmentObject(repo)
         #if os(iOS)
-        // iOS TodayView reads AppModel (for the first-launch "Scan for strap" CTA); inject one so the
-        // iOS canvas renders instead of trapping on a missing environment object.
+        // iOS TodayView reads AppModel (first-launch "Scan for strap" CTA) and HealthKitBridge (the
+        // Apple Health connect nudge); inject both so the iOS canvas renders instead of trapping on a
+        // missing environment object.
         .environmentObject(AppModel())
+        .environmentObject(HealthKitBridge(repo: repo, appleDeviceId: "preview-apple", noopDeviceId: "preview"))
         #endif
         .frame(width: 920, height: 940)
         .preferredColorScheme(.dark)

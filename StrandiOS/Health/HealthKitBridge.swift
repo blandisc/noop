@@ -55,11 +55,23 @@ final class HealthKitBridge: ObservableObject {
     /// NOOP's own strap-derived source id, read back when writing into Health.
     private let noopDeviceId: String
 
+    /// Persists "the user already connected Apple Health" across launches. HealthKit keeps the grant
+    /// itself, but never reveals *read* authorization (it's private), so `authorizationStatus` can't
+    /// tell us on launch whether we're connected. Without our own flag, `auth` reset to `.unknown`
+    /// every launch and the scenePhase auto-sync silently no-op'd (its `guard auth == .authorized`),
+    /// leaving Today's Key Metrics empty until a manual reconnect. (FER-94)
+    private static let connectedDefaultsKey = "appleHealthConnected"
+
     init(repo: Repository, appleDeviceId: String, noopDeviceId: String) {
         self.repo = repo
         self.appleDeviceId = appleDeviceId
         self.noopDeviceId = noopDeviceId
-        if !HKHealthStore.isHealthDataAvailable() { auth = .unavailable }
+        if !HKHealthStore.isHealthDataAvailable() {
+            auth = .unavailable
+        } else if UserDefaults.standard.bool(forKey: Self.connectedDefaultsKey) {
+            // Restore the prior connection so the launch auto-sync runs without forcing a reconnect.
+            auth = .authorized
+        }
     }
 
     // MARK: - Types
@@ -100,6 +112,7 @@ final class HealthKitBridge: ObservableObject {
         do {
             try await store.requestAuthorization(toShare: writeTypes, read: readTypes)
             auth = .authorized
+            UserDefaults.standard.set(true, forKey: Self.connectedDefaultsKey)   // persist so the next launch's auto-sync runs (FER-94)
             await refreshStatus()   // surface granted write scopes + any prior coverage immediately
         } catch {
             auth = .denied
