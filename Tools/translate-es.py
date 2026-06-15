@@ -806,6 +806,7 @@ ES: dict[str, str] = {
     "All %lld nights are in — computing your first verdict.": "Ya tienes las %lld noches — calculando tu primer veredicto.",
     "The engine gets sharper every night — you already have %lld.": "El motor se afina cada noche — ya llevas %lld.",
     "See it beat by beat": "Míralo latido a latido",
+    "No reading": "Sin lectura",
     "See your heart rate live, beat by beat": "Mira tu frecuencia cardíaca en vivo, latido a latido",
     "Beats this session": "Latidos esta sesión",
     "Beat to beat": "Latido a latido",
