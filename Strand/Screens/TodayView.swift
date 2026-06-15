@@ -185,7 +185,10 @@ struct TodayView: View {
     #if os(iOS)
     private var iosBody: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            // Today runs a tighter section rhythm than the standard `sectionGap` (28): the verdict-first
+            // layout stacks many short sections, so 22 compresses the column vertically without the
+            // sections reading as merged (owner ask — kill the vertical dead space).
+            VStack(alignment: .leading, spacing: 22) {
                 headerBlock
                 HealthAlertBanner()
                 if repo.today?.recovery == nil {
@@ -353,7 +356,7 @@ struct TodayView: View {
         var body: some View {
             VStack(spacing: 0) {
                 Rectangle().fill(StrandPalette.hairline).frame(height: 0.5)
-                    .padding(.top, 16).padding(.bottom, 12)
+                    .padding(.top, 8).padding(.bottom, 10)
                 Button(action: onTap) {
                     HStack(spacing: 9) {
                         Image(systemName: "waveform.path.ecg")
@@ -565,7 +568,9 @@ struct TodayView: View {
                 // Live pulse + beat-to-beat monitor, anchored to the foot of the verdict.
                 LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
             }
-            .padding(16)
+            // Trim the bottom inset: the live-heartbeat row (a 44pt tap target) is the last element, so
+            // 16pt below it read as dead space against the card edge. Keep the standard 16 elsewhere.
+            .padding([.horizontal, .top], 16).padding(.bottom, 12)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(lc.opacity(0.08), in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
