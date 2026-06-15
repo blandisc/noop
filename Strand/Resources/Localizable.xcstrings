@@ -16533,6 +16533,91 @@
         }
       }
     },
+    "HRV is how much the time between your heartbeats varies, in milliseconds, while you sleep. More variation usually means better recovery. What matters isn't the number itself, but how it compares with your own average.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HRV is how much the time between your heartbeats varies, in milliseconds, while you sleep. More variation usually means better recovery. What matters isn't the number itself, but how it compares with your own average."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La HRV es cuánto varían, en milisegundos, los tiempos entre tus latidos mientras duermes. Más variación suele indicar mejor recuperación. Lo que importa no es el número en sí, sino cómo se compara con tu propio promedio."
+          }
+        }
+      }
+    },
+    "HRV is personal. There are no universal good/bad thresholds — only your trend over time.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HRV is personal. There are no universal good/bad thresholds — only your trend over time."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La HRV es personal. No hay umbrales universales de bueno o malo —solo tu tendencia en el tiempo."
+          }
+        }
+      }
+    },
+    "No HRV from last night. That can happen if you didn't wear the strap, or the night was too short to gather 20 clean beats.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No HRV from last night. That can happen if you didn't wear the strap, or the night was too short to gather 20 clean beats."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hay HRV de anoche. Puede pasar si no usaste el strap o si la noche fue muy corta para reunir 20 latidos limpios."
+          }
+        }
+      }
+    },
+    "We take the intervals between your heartbeats overnight, drop any outside 300–2000 ms and any that deviate more than 20% from their neighbours (ectopic beats). If at least 20 clean beats remain, we compute RMSSD.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We take the intervals between your heartbeats overnight, drop any outside 300–2000 ms and any that deviate more than 20% from their neighbours (ectopic beats). If at least 20 clean beats remain, we compute RMSSD."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tomamos los intervalos entre tus latidos durante la noche, descartamos los que quedan fuera de 300–2000 ms y los que se desvían más de 20% de sus vecinos (latidos ectópicos). Si quedan al menos 20 latidos limpios, calculamos el RMSSD."
+          }
+        }
+      }
+    },
+    "RMSSD (Task Force, 1996); ectopic rejection by Malik's rule. HRV is about 60% of your recovery score.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RMSSD (Task Force, 1996); ectopic rejection by Malik's rule. HRV is about 60% of your recovery score."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RMSSD (Task Force, 1996); rechazo de ectópicos con la regla de Malik. La HRV pesa cerca del 60% de tu recuperación."
+          }
+        }
+      }
+    },
     "Several signals are down at once. Treat today as recovery.": {
       "extractionState": "manual",
       "localizations": {
@@ -16901,6 +16986,29 @@
         }
       }
     },
+    "Opens why today's verdict reads this way": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens why today's verdict reads this way"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre por qué tu veredicto de hoy se lee así"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffnet, warum dein heutiges Urteil so ausfällt"
+          }
+        }
+      }
+    },
     "What each color means": {
       "extractionState": "manual",
       "localizations": {
@@ -17150,29 +17258,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "HEUTE"
-          }
-        }
-      }
-    },
-    "Opens why today's verdict reads this way": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Opens why today's verdict reads this way"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abre por qué tu veredicto de hoy se lee así"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Öffnet, warum dein heutiges Urteil so ausfällt"
           }
         }
       }

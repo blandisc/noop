@@ -693,10 +693,17 @@ struct TodayView: View {
             .buttonStyle(.plain)
             .accessibilityHint(Text("See how it's calculated."))
             synthDivider
-            synthCell(label: "HRV",
-                      value: d?.avgHrv.map { "\(Int($0.rounded()))" } ?? "—",
-                      unit: "ms",
-                      color: StrandPalette.textPrimary)
+            Button {
+                metricDetail = .hrv(d?.avgHrv)
+            } label: {
+                synthCell(label: "HRV",
+                          value: d?.avgHrv.map { "\(Int($0.rounded()))" } ?? "—",
+                          unit: "ms",
+                          color: StrandPalette.textPrimary,
+                          showsInfo: true)
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint(Text("See how it's calculated."))
             synthDivider
             synthCell(label: "Sleep",
                       value: sleepValue(d),
