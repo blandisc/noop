@@ -217,6 +217,11 @@ public final class BLEManager: NSObject, ObservableObject {
     /// FER-90 diagnostic: did the strap answer the GET_CLOCK we sent this connect? Reset when we send
     /// GET_CLOCK, set when its response lands — a deferred check logs "sin respuesta" if it never does.
     private var getClockResponded = false
+    /// FER-87: the strap answers GET_CLOCK on `cmdNotifyChar`. If we send the clock handshake before that
+    /// subscription is ACTIVE, the reply lands before we're listening and is lost (every connect:
+    /// "GET_CLOCK sin respuesta"). When the connect handshake runs before the char is notifying, we defer
+    /// the SET/GET_CLOCK pair and fire it from `didUpdateNotificationStateFor` once the channel is live.
+    private var pendingClockHandshakeOnNotify = false
     private var intentionalDisconnect = false
     /// The strap family the user chose to pair. Drives which service we scan for
     /// and which service we discover after connecting. Hydrated from the persisted
@@ -1062,6 +1067,7 @@ extension BLEManager: CBCentralManagerDelegate {
         whoop5RealtimeArmed = false
         whoop5SessionStarted = false
         clockRequested = false
+        pendingClockHandshakeOnNotify = false   // FER-87: next connect re-arms the notify-gated clock handshake
         connectHandshakeDone = false
         realtimeArmedAt = nil   // cleared after the marginal-radio detector above read it (#80)
         // Reset backfill state so the next connect starts a fresh offload (incl. the syncing pill —
@@ -1353,23 +1359,20 @@ extension BLEManager: CBPeripheralDelegate {
         // (PHASE A = 50 records; PHASE B high-freq = 0). We still exchange hello to mirror WHOOP exactly.
         send(.getHelloHarvard)
         send(.getAdvertisingNameHarvard)
-        send(.setClock, payload: BLEManager.setClockPayload())
-        if clockRef == nil && !clockRequested {
-            clockRequested = true
-            send(.getClock, payload: [])   // the strap expects GET_CLOCK with an EMPTY payload;
-                                           // the app's old default [0x00] is a wrong length the strap ignores.
-                                           // (Offload no longer depends on this — Backfiller falls back to an
-                                           // identity clockRef — but a real correlation helps realtime decode.)
-            // FER-90 diagnostic: flag the band if it never answers GET_CLOCK — that silence is itself the
-            // finding (we'd never learn the strap's RTC, so a stale-clock fix can't even detect drift).
-            getClockResponded = false
-            DispatchQueue.main.asyncAfter(deadline: .now() + 4) { [weak self] in
-                guard let self, !self.getClockResponded else { return }
-                self.log("GET_CLOCK sin respuesta — la banda no contestó su reloj")
-            }
-        }
         send(.sendR10R11Realtime, payload: [0x00])   // stop the type-43 realtime flood (BLE airtime/battery)
         send(.getDataRange)                          // refresh the strap's stored range for the watchdog
+        // FER-87: subscribe the response/notify chars FIRST, then run the SET/GET_CLOCK handshake only once
+        // `cmdNotifyChar` is actually NOTIFYING. Sending the clock pair in the old inline burst raced the
+        // (async) subscription: the strap answers GET_CLOCK instantly, the reply lands before we're
+        // listening, and it's lost — the per-connect "GET_CLOCK sin respuesta" seen on hardware (FER-90).
+        // GET_DATA_RANGE survived the old order only because the strap is slower to answer it. No new
+        // outbound commands; only the timing of SET_CLOCK/GET_CLOCK moves.
+        enableLiveNotifications(reason: "post-bond")   // includes 0x2A37 standard HR — the fallback path
+        if let c = cmdNotifyCharacteristic, c.isNotifying {
+            sendConnectClockHandshake()                // channel already live (re-attach) — send now
+        } else {
+            pendingClockHandshakeOnNotify = true       // fired from didUpdateNotificationStateFor
+        }
         // Plain offload (no high-freq-sync), rate-limited (first connect always runs; reconnect-flaps are
         // throttled by BackfillPolicy). Deferred ~1.5s so SET_CLOCK/GET_DATA_RANGE round-trip first and
         // SEND_HISTORICAL runs on a settled link, like the paced Mac prototype. beginBackfill is itself
@@ -1377,7 +1380,6 @@ extension BLEManager: CBPeripheralDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in self?.requestSync(.connect) }
         startBackfillTimer()   // re-offload the type-47 store every backfillIntervalSeconds
         startKeepAlive()       // always-ping: re-arm realtime, poll battery, watchdog the link
-        enableLiveNotifications(reason: "post-bond")   // includes 0x2A37 standard HR — the fallback path
         if wantsRealtime {
             if standardHRFallback {
                 // #80: this radio repeatedly dropped the link the instant we armed the R10/R11 burst.
@@ -1393,6 +1395,25 @@ extension BLEManager: CBPeripheralDelegate {
                 send(.toggleRealtimeHR, payload: [0x01])
                 realtimeArmedAt = Date()   // start the arm→drop stopwatch for the marginal-radio detector
             }
+        }
+    }
+
+    /// FER-87: the connect-time SET_CLOCK + GET_CLOCK pair, sent once the response channel
+    /// (`cmdNotifyChar`) is notifying so the strap's reply isn't lost in the subscription race.
+    /// SET_CLOCK latches the RTC (the strap discards biometrics while its clock is invalid); GET_CLOCK
+    /// establishes the device↔wall `ClockRef`. No new outbound commands — same two the connect handshake
+    /// always sent, only later in the sequence. Mirrors the original gating (SET_CLOCK every connect;
+    /// GET_CLOCK once, while uncorrelated).
+    private func sendConnectClockHandshake() {
+        send(.setClock, payload: BLEManager.setClockPayload())
+        guard clockRef == nil, !clockRequested else { return }
+        clockRequested = true
+        send(.getClock, payload: [])   // empty payload — the strap ignores a wrong-length GET_CLOCK
+        // FER-90 diagnostic: flag the band if it STILL never answers GET_CLOCK (now that we listen first).
+        getClockResponded = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4) { [weak self] in
+            guard let self, !self.getClockResponded else { return }
+            self.log("GET_CLOCK sin respuesta — la banda no contestó su reloj")
         }
     }
 
@@ -1568,6 +1589,16 @@ extension BLEManager: CBPeripheralDelegate {
             log("Notify enable failed for \(characteristic.uuid): \(error.localizedDescription)")
         } else {
             log("Notify \(characteristic.isNotifying ? "active" : "off") \(characteristic.uuid)")
+        }
+        // FER-87: the strap's GET_CLOCK reply rides `cmdNotifyChar`. Run the connect clock handshake the
+        // moment that channel is live — not in the connect burst, which raced this (async) subscription
+        // and lost the reply. Fires once per connect (the flag is cleared here and reset on disconnect).
+        if pendingClockHandshakeOnNotify,
+           characteristic.uuid == BLEManager.cmdNotifyChar,
+           characteristic.isNotifying {
+            pendingClockHandshakeOnNotify = false
+            log("Clock handshake: response channel active — sending SET/GET_CLOCK now (FER-87)")
+            sendConnectClockHandshake()
         }
     }
 }
