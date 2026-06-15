@@ -19,6 +19,12 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **The Today header no longer pulses — calmer, with more room for what matters.** The animated ECG
+  waveform that rode the top of the Today screen is gone. The header now reads as a quiet date + sync
+  line with your live heart rate still pinned to the right — just without the decorative pulse, which
+  ate the most valuable strip of the screen without telling you anything. (First of a few small steps
+  tidying the Today header.) ([Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift))
+
 - **Strap sync diagnostic in Data Sources — honest proof your data is getting through.** The WHOOP
   strap row now expands into a read-only diagnostic that answers "did the band capture data, and is
   NOOP receiving, decoding and storing it?" It shows the band's own retained-history window
