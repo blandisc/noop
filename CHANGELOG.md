@@ -19,6 +19,14 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **WHOOP 4.0 clock & history diagnostics in the strap log.** When syncing a 4.0, the strap log now
+  spells out three things in plain language: the band's own clock as a readable date (or that it never
+  answered), the retained-history window it reports (`oldest → newest`, or that it holds nothing), and
+  a per-offload breakdown of what actually arrived (biometric records vs. firmware console logs vs.
+  other). This makes it possible to tell apart "the band's clock is wrong so it never saved history"
+  from "the band has nothing new" — without guessing. Observability only; no new strap commands.
+  ([Strand/BLE/BLEManager.swift](Strand/BLE/BLEManager.swift), [Strand/Collect/Backfiller.swift](Strand/Collect/Backfiller.swift))
+
 - **The Today header no longer pulses — calmer, with more room for what matters.** The animated ECG
   waveform that rode the top of the Today screen is gone. The header now reads as a quiet date + sync
   line with your live heart rate still pinned to the right — just without the decorative pulse, which

@@ -162,6 +162,13 @@ final class Backfiller {
             // truly required to map REALTIME (type-40/43) device-epoch timestamps, never in a hist chunk.
             let ref = clockRef ?? { let now = Int(Date().timeIntervalSince1970); return ClockRef(device: now, wall: now) }()
             let parsed = frames.map { parseFrame($0, family: family) }
+            // FER-90 diagnostic: break down what this chunk actually contained by frame type. The 4.0
+            // "historical offload" sometimes returns CONSOLE_LOGS (type 50) and ZERO biometric records
+            // (type 47) — the band narrating firmware errors instead of serving history. This count makes
+            // that visible in the strap log (vs the opaque "decoded to 0 rows").
+            let bio = parsed.filter { $0.typeName == "HISTORICAL_DATA" }.count
+            let logs = parsed.filter { $0.typeName == "CONSOLE_LOGS" }.count
+            log?("Offload: \(frames.count) frames — \(bio) biometría (type-47), \(logs) console logs (type-50), \(parsed.count - bio - logs) otros")
             // Diagnostic (#30): a historical record whose firmware version we don't have a field map for
             // bails out of decode entirely — no HR, no R-R, no GRAVITY — so sleep (which is gravity/
             // motion-driven) can never be computed from it, even though the offload "completes". Surface
