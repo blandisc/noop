@@ -237,6 +237,30 @@ final class HealthKitBridge: ObservableObject {
                         recovery: nil, strain: nil, exerciseCount: nil,
                         spo2Pct: a.spo2, skinTempDevC: nil, respRateBpm: a.respRate)
         }
+        // Generic metricSeries points. The per-source pages (Apple Health, Explore, Compare) and the
+        // Today sparklines read from metricSeries, which the structured appleDaily/dailyMetric upserts
+        // above do NOT populate — only the XML importer did, so a live sync left those screens empty.
+        // Mirror the importer's keys (AppleHealthAggregator.metricPoints) so a live sync surfaces the
+        // same way as an import; only non-nil values are emitted. (FER-97)
+        let seriesRows: [MetricPoint] = byDay.flatMap { (day, a) -> [MetricPoint] in
+            var pts: [MetricPoint] = []
+            func add(_ key: String, _ value: Double?) { if let v = value { pts.append(MetricPoint(day: day, key: key, value: v)) } }
+            add("resting_hr", a.restingHr)
+            add("hrv", a.hrv)
+            add("spo2", a.spo2)
+            add("resp_rate", a.respRate)
+            add("avg_hr", a.avgHr)
+            add("max_hr", a.maxHr)
+            add("steps", a.steps)
+            add("active_kcal", a.activeKcal)
+            add("basal_kcal", a.basalKcal)
+            add("vo2max", a.vo2max)
+            add("asleep_min", a.asleepMin)
+            add("deep_min", a.deepMin)
+            add("rem_min", a.remMin)
+            add("core_min", a.coreMin)
+            return pts
+        }
         // The read→store upsert and the NOOP→Health write-back are one unit. If the store write
         // fails, do NOT advance lastSync (the next delta sync must re-attempt this window) and surface
         // the error instead of swallowing it with `try?` — a failed upsert used to be silent while
@@ -244,6 +268,7 @@ final class HealthKitBridge: ObservableObject {
         do {
             try await store.upsertAppleDaily(appleRows, deviceId: appleDeviceId)
             try await store.upsertDailyMetrics(dmRows, deviceId: appleDeviceId)
+            try await store.upsertMetricSeries(seriesRows, deviceId: appleDeviceId)
             try await store.upsertWorkouts(wkRows, deviceId: appleDeviceId)
             try await writeBack(whoopStore: store)
             lastSync = Date()
