@@ -19,6 +19,15 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **La fila de Recuperación / HRV / Sueño ahora va centrada / Recovery · HRV · Sleep row is now centered.**
+  **ES** — La franja de resumen bajo el veredicto (Recuperación, HRV, Sueño) estaba pegada a la
+  izquierda con un hueco a la derecha. Ahora sus tres columnas van centradas y balanceadas, con los
+  separadores a la misma distancia. Solo cambia la alineación; los números son los mismos.
+  **EN** — The summary strip under the verdict (Recovery, HRV, Sleep) hugged the left with a gap on
+  the right. Its three columns are now centered and balanced, with evenly spaced dividers. Only the
+  alignment changed; the numbers are the same.
+  ([Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift))
+
 - **WHOOP 4.0 clock & history diagnostics in the strap log.** When syncing a 4.0, the strap log now
   spells out three things in plain language: the band's own clock as a readable date (or that it never
   answered), the retained-history window it reports (`oldest → newest`, or that it holds nothing), and
