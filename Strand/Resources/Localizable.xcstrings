@@ -17153,6 +17153,29 @@
           }
         }
       }
+    },
+    "Opens why today's verdict reads this way": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens why today's verdict reads this way"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre por qué tu veredicto de hoy se lee así"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffnet, warum dein heutiges Urteil so ausfällt"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

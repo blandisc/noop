@@ -72,6 +72,7 @@ ES: dict[str, str] = {
     "Why %@?": "¿Por qué %@?",
     "Today your day is %@ — %@": "Hoy tu día es %@ — %@",
     "Your signals today": "Tus señales hoy",
+    "Opens why today's verdict reads this way": "Abre por qué tu veredicto de hoy se lee así",
     "What each color means": "Qué significa cada color",
     "mint": "menta",
     "green": "verde",

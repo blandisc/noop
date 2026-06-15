@@ -310,6 +310,7 @@ DE: dict[str, str] = {
     "Why %@?": "Warum %@?",
     "Today your day is %@ — %@": "Heute ist dein Tag %@ — %@",
     "Your signals today": "Deine Signale heute",
+    "Opens why today's verdict reads this way": "Öffnet, warum dein heutiges Urteil so ausfällt",
     "What each color means": "Was jede Farbe bedeutet",
     "mint": "Minze",
     "green": "Grün",
