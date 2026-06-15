@@ -18,6 +18,18 @@ CATALOG = Path("Strand/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
+    # Recovery "how it's calculated" explainer sheet (FER-108).
+    "Your recovery sums up how ready your body is today, from 0 to 100. It blends several signals from your night — your HRV above all — and compares them with your own average from recent weeks, not anyone else's.": "Tu recuperación resume qué tan listo está tu cuerpo hoy, del 0 al 100. Combina varias señales de tu noche —sobre todo tu HRV— y las compara con tu propio promedio de las últimas semanas, no con el de nadie más.",
+    "If a signal is missing on a given night, its weight is shared among the others.": "Si falta alguna señal esa noche, su peso se reparte entre las demás.",
+    "Each signal becomes a score of how far above or below your personal average it sits; they're averaged with the weights above and mapped onto a 0–100 scale, calibrated so a typical day lands near 58.": "Cada señal se vuelve un puntaje de qué tan arriba o abajo está de tu promedio personal; se promedian con los pesos de arriba y se ajustan a una escala 0–100, calibrada para que un día típico caiga cerca de 58.",
+    "A composite of z-scores through a logistic curve. HRV via RMSSD (Task Force, 1996).": "Un compuesto de z-scores con una curva logística. HRV vía RMSSD (Task Force, 1996).",
+    "See the method": "Ver el método",
+    "It's an estimate, not a diagnosis.": "Es una estimación, no un diagnóstico.",
+    "We can't score your recovery yet. We need at least %lld nights with your strap to learn your baseline; you're at %lld of %lld. We'd rather not show you a made-up number.": "Aún no calculamos tu recuperación. Necesitamos al menos %lld noches con tu strap para conocer tu línea base; llevas %lld de %lld. Preferimos no darte un número inventado.",
+    "Calibrating baseline": "Calibrando línea base",
+    "Skin temp": "Temp. de piel",
+    "See how it's calculated.": "Mira cómo se calcula.",
+
     # Symbols / pure placeholders — identical in Spanish.
     "—": "—",
     "·": "·",
