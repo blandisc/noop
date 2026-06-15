@@ -16,17 +16,21 @@ final class NOOPScreenshotTests: XCTestCase {
 
     var app: XCUIApplication!
 
-    // docs/fixtures/ relative to repo root (SRCROOT is set by Xcode in both unit and UI test runners)
+    // Output dir for PNG fixtures.
+    // The test runner process is sandboxed in a way that blocks writes to arbitrary Mac paths,
+    // so we write to the app's shared container (always writable) and print the path so
+    // a post-test copy step can move files to docs/fixtures/.
     static let outputDir: URL = {
-        let root: URL
-        if let s = ProcessInfo.processInfo.environment["SRCROOT"], !s.isEmpty {
-            root = URL(fileURLWithPath: s)
-        } else {
-            // Fallback for manual runs: write next to the test file
-            let home = ProcessInfo.processInfo.environment["HOME"] ?? NSTemporaryDirectory()
-            root = URL(fileURLWithPath: home).appendingPathComponent("code/noop")
+        // Prefer a path passed via TEST_RUNNER_NOOP_FIXTURES (if it propagates)
+        if let p = ProcessInfo.processInfo.environment["NOOP_FIXTURES"], !p.isEmpty {
+            let dir = URL(fileURLWithPath: p)
+            if (try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)) != nil
+                || FileManager.default.fileExists(atPath: p) {
+                return dir
+            }
         }
-        let dir = root.appendingPathComponent("docs/fixtures")
+        // Fallback: use the tmp directory (always writable in any process)
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("noop-fixtures")
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }()
@@ -67,6 +71,8 @@ final class NOOPScreenshotTests: XCTestCase {
     // MARK: - All screens (empty/default state)
 
     func test_captureAllScreens() throws {
+        continueAfterFailure = true
+
         // ── Main tabs ─────────────────────────────────────────────────────────
         wait(1);  snap("today")
         tap(tab: "Trends"); wait(2); snap("trends")
@@ -75,11 +81,12 @@ final class NOOPScreenshotTests: XCTestCase {
         tap(tab: "More");   wait(1) // list — not captured as its own screen
 
         // ── Screens inside the More list ──────────────────────────────────────
+        // "Explore" (MetricExplorer) is last: it sometimes crashes the app on exit.
+        // Putting it last means all other screens are captured even if Explore crashes.
         let moreScreens: [(cell: String, id: String)] = [
             ("Intelligence", "intelligence"),
             ("Coach",        "coach"),
             ("Insights",     "insights"),
-            ("Explore",      "explore"),
             ("Compare",      "compare"),
             ("Workouts",     "workouts"),
             ("Health",       "health"),
@@ -91,11 +98,21 @@ final class NOOPScreenshotTests: XCTestCase {
             ("Automations",  "automations"),
             ("Settings",     "settings"),
             ("Support",      "support"),
+            ("Explore",      "explore"),   // last — may crash app on exit
         ]
 
         for (cell, id) in moreScreens {
+            // Re-launch if the app crashed or backgrounded during a previous screen
+            if app.state != .runningForeground {
+                app.launch()
+                guard app.tabBars.firstMatch.waitForExistence(timeout: 8) else {
+                    XCTFail("App failed to relaunch for '\(cell)'"); continue
+                }
+                wait(1)
+            }
             returnToMoreList()
-            let row = app.staticTexts[cell]
+            // Use cells to avoid ambiguity when the label appears in multiple elements
+            let row = app.cells.containing(.staticText, identifier: cell).firstMatch
             guard row.waitForExistence(timeout: 3) else {
                 XCTFail("Cell '\(cell)' not found"); continue
             }
@@ -136,8 +153,13 @@ final class NOOPScreenshotTests: XCTestCase {
     private func tap(tab: String) { app.tabBars.buttons[tab].tap() }
 
     private func returnToMoreList() {
-        let back = app.navigationBars.buttons.firstMatch
-        if back.exists && back.isHittable { back.tap(); wait(1) }
+        guard app.state == .runningForeground else { return }
+        // Pop back through any pushed views (max 3 levels)
+        for _ in 0..<3 {
+            let back = app.navigationBars.buttons.firstMatch
+            guard back.exists && back.isHittable else { break }
+            back.tap(); wait(1)
+        }
         if !app.navigationBars["More"].exists { tap(tab: "More"); wait(1) }
     }
 
@@ -150,7 +172,14 @@ final class NOOPScreenshotTests: XCTestCase {
         let shot = XCUIScreen.main.screenshot()
         _ = target // suppress unused warning
         let fileURL = Self.outputDir.appendingPathComponent("\(id).png")
-        try? shot.image.pngData()?.write(to: fileURL)
+        if let data = shot.image.pngData() {
+            do {
+                try data.write(to: fileURL)
+                print("FIXTURE_WRITTEN: \(fileURL.path)")
+            } catch {
+                print("FIXTURE_WRITE_FAILED: \(fileURL.path) — \(error)")
+            }
+        }
         let attachment = XCTAttachment(screenshot: shot)
         attachment.name = id
         attachment.lifetime = .keepAlways
