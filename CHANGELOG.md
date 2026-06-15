@@ -19,6 +19,15 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **La fila de Recuperación / HRV / Sueño ahora va centrada / Recovery · HRV · Sleep row is now centered.**
+  **ES** — La franja de resumen bajo el veredicto (Recuperación, HRV, Sueño) estaba pegada a la
+  izquierda con un hueco a la derecha. Ahora sus tres columnas van centradas y balanceadas, con los
+  separadores a la misma distancia. Solo cambia la alineación; los números son los mismos.
+  **EN** — The summary strip under the verdict (Recovery, HRV, Sleep) hugged the left with a gap on
+  the right. Its three columns are now centered and balanced, with evenly spaced dividers. Only the
+  alignment changed; the numbers are the same.
+  ([Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift))
+
 - **The Today header no longer pulses — calmer, with more room for what matters.** The animated ECG
   waveform that rode the top of the Today screen is gone. The header now reads as a quiet date + sync
   line with your live heart rate still pinned to the right — just without the decorative pulse, which
