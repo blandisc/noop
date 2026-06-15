@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Avisa (sin bloquear) si commiteas cambios en una pantalla (*View.swift) sin
+# actualizar el mapa de pantallas. Recordatorio inteligente — no puede saber si
+# el visual realmente cambió, solo que tocaste un View.
+#
+# Habilítalo UNA VEZ (en ~/code/noop; los worktrees lo heredan):
+#   git config core.hooksPath .githooks
+set -euo pipefail
+
+staged="$(git diff --cached --name-only)"
+views="$(printf '%s\n' "$staged" | grep -E 'Screens/.*View\.swift$' || true)"
+docs="$(printf '%s\n' "$staged" | grep -E '^docs/(screen-map\.html|SCREENS\.md|fixtures/)' || true)"
+
+if [ -n "$views" ] && [ -z "$docs" ]; then
+  echo ""
+  echo "⚠️  Modificaste pantallas sin actualizar el mapa:"
+  printf '%s\n' "$views" | sed 's/^/     /'
+  echo "   Si cambió el visual, corre:  ./Tools/update-screen-map.sh"
+  echo "   y commitea docs/. (Este aviso NO bloquea el commit.)"
+  echo ""
+fi
+
+exit 0

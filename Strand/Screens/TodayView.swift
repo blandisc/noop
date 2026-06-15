@@ -679,10 +679,19 @@ struct TodayView: View {
     @ViewBuilder private var whySection: some View {
         let d = repo.today
         HStack(spacing: 0) {
-            synthCell(label: "Recovery",
-                      value: d?.recovery.map { "\(Int($0.rounded()))" } ?? "—",
-                      unit: nil,
-                      color: d?.recovery.map { StrandPalette.recoveryColor($0) } ?? StrandPalette.textTertiary)
+            Button {
+                metricDetail = .recovery(score: d?.recovery.map { Int($0.rounded()) },
+                                         calibrationNights: recoveryCalibration,
+                                         nightsNeeded: Baselines.minNightsSeed)
+            } label: {
+                synthCell(label: "Recovery",
+                          value: d?.recovery.map { "\(Int($0.rounded()))" } ?? "—",
+                          unit: nil,
+                          color: d?.recovery.map { StrandPalette.recoveryColor($0) } ?? StrandPalette.textTertiary,
+                          showsInfo: true)
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint(Text("See how it's calculated."))
             synthDivider
             synthCell(label: "HRV",
                       value: d?.avgHrv.map { "\(Int($0.rounded()))" } ?? "—",
@@ -702,13 +711,21 @@ struct TodayView: View {
 
     /// One borderless synthesis stat: small label over one big mono value (+ optional unit), centered
     /// within its equal-width column so the three read as a balanced row (no left-hugging gap).
-    private func synthCell(label: LocalizedStringKey, value: String, unit: String?, color: Color) -> some View {
+    private func synthCell(label: LocalizedStringKey, value: String, unit: String?, color: Color,
+                           showsInfo: Bool = false) -> some View {
         VStack(alignment: .center, spacing: 8) {
-            Text(label)
-                .font(StrandFont.caption)
-                .foregroundStyle(StrandPalette.textSecondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
+            HStack(spacing: 4) {
+                Text(label)
+                    .font(StrandFont.caption)
+                    .foregroundStyle(StrandPalette.textSecondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                if showsInfo {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 10))
+                        .foregroundStyle(StrandPalette.textTertiary)
+                }
+            }
             HStack(alignment: .firstTextBaseline, spacing: 3) {
                 Text(value)
                     .font(StrandFont.number(24))

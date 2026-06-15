@@ -16,11 +16,40 @@ struct MetricInfo: Identifiable {
     let bands: [Band]
     let note: LocalizedStringKey?
 
+    // Progressive-disclosure extras for composite metrics (Recovery; reused by HRV in FER-109).
+    // All optional with defaults so the band-based factories above stay untouched.
+    var weights: [WeightRow]? = nil
+    var weightsNote: LocalizedStringKey? = nil
+    var method: Method? = nil
+    var disclaimer: LocalizedStringKey? = nil
+    var calibration: Calibration? = nil
+
     struct Band {
         let label: LocalizedStringKey
         let range: String
         let color: Color
         var isActive: Bool
+    }
+
+    /// One driver in the recovery weight breakdown: a labeled bar whose fill length and tint
+    /// show how much it contributes to the score.
+    struct WeightRow {
+        let label: LocalizedStringKey
+        let percent: Int
+        let color: Color
+    }
+
+    /// The "See the method" disclosure: plain-language prose plus an optional citation line.
+    struct Method {
+        let prose: LocalizedStringKey
+        let citation: LocalizedStringKey?
+    }
+
+    /// Cold-start: recovery isn't scored yet, so show progress toward the seed gate instead
+    /// of a number.
+    struct Calibration {
+        let done: Int
+        let needed: Int
     }
 }
 
@@ -190,6 +219,61 @@ extension MetricInfo {
             note: "Steps come from Apple Health and are not recorded by the WHOOP strap."
         )
     }
+
+    /// Recovery (0–100) is a weighted composite, not a banded range, so it gets its own body:
+    /// a weight breakdown + a "See the method" disclosure. Weights mirror `RecoveryScorer`
+    /// (HRV .60 · RHR .20 · sleep .15 · skin-temp .10 · resp .05); the bars normalize to the
+    /// top driver so the row reads as relative contribution. While the baseline is still seeding
+    /// (`calibrationNights` non-nil) it shows honest progress instead of a made-up number. (FER-108)
+    static func recovery(score: Int?, calibrationNights: Int?, nightsNeeded: Int) -> MetricInfo {
+        let weights: [WeightRow] = [
+            WeightRow(label: "HRV",         percent: 60, color: StrandPalette.recoveryColor(92)),
+            WeightRow(label: "Resting HR",  percent: 20, color: StrandPalette.recoveryColor(74)),
+            WeightRow(label: "Sleep",       percent: 15, color: StrandPalette.recoveryColor(60)),
+            WeightRow(label: "Skin temp",   percent: 10, color: StrandPalette.recoveryColor(48)),
+            WeightRow(label: "Respiration", percent:  5, color: StrandPalette.recoveryColor(40)),
+        ]
+        let weightsNote: LocalizedStringKey =
+            "If a signal is missing on a given night, its weight is shared among the others."
+        let disclaimer: LocalizedStringKey = "It's an estimate, not a diagnosis."
+
+        if let done = calibrationNights {
+            return MetricInfo(
+                id: "recovery",
+                name: "Recovery",
+                headline: "We can't score your recovery yet. We need at least \(nightsNeeded) nights with your strap to learn your baseline; you're at \(done) of \(nightsNeeded). We'd rather not show you a made-up number.",
+                displayValue: "\(done)/\(nightsNeeded)",
+                unit: nil,
+                currentColor: StrandPalette.textSecondary,
+                bands: [],
+                note: nil,
+                weights: weights,
+                weightsNote: weightsNote,
+                method: nil,
+                disclaimer: disclaimer,
+                calibration: Calibration(done: done, needed: nightsNeeded)
+            )
+        }
+
+        return MetricInfo(
+            id: "recovery",
+            name: "Recovery",
+            headline: "Your recovery sums up how ready your body is today, from 0 to 100. It blends several signals from your night — your HRV above all — and compares them with your own average from recent weeks, not anyone else's.",
+            displayValue: score.map { "\($0)" } ?? "—",
+            unit: nil,
+            currentColor: score.map { StrandPalette.recoveryColor(Double($0)) } ?? StrandPalette.textTertiary,
+            bands: [],
+            note: nil,
+            weights: weights,
+            weightsNote: weightsNote,
+            method: Method(
+                prose: "Each signal becomes a score of how far above or below your personal average it sits; they're averaged with the weights above and mapped onto a 0–100 scale, calibrated so a typical day lands near 58.",
+                citation: "A composite of z-scores through a logistic curve. HRV via RMSSD (Task Force, 1996)."
+            ),
+            disclaimer: disclaimer,
+            calibration: nil
+        )
+    }
 }
 
 // MARK: - MetricInfoSheet
@@ -207,6 +291,9 @@ struct MetricInfoSheet: View {
     /// content so it never opens taller than it needs to. (FER-112 follow-up)
     @State private var contentHeight: CGFloat = 0
 
+    /// "See the method" disclosure — collapsed each time the sheet opens. (FER-108)
+    @State private var methodExpanded = false
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
@@ -215,11 +302,22 @@ struct MetricInfoSheet: View {
                     .font(StrandFont.subhead)
                     .foregroundStyle(StrandPalette.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
+                if let calibration = info.calibration { calibrationCard(calibration) }
+                if let weights = info.weights {
+                    weightsBlock(weights, note: info.weightsNote, dimmed: info.calibration != nil)
+                }
                 if !info.bands.isEmpty { bandsTable }
                 if info.id == "strain" { strainSection }
+                if let method = info.method { methodDisclosure(method) }
                 if let note = info.note {
                     Text(note)
                         .font(StrandFont.caption)
+                        .foregroundStyle(StrandPalette.textTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if let disclaimer = info.disclaimer {
+                    Text(disclaimer)
+                        .font(StrandFont.footnote)
                         .foregroundStyle(StrandPalette.textTertiary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -372,6 +470,107 @@ struct MetricInfoSheet: View {
         return f
     }()
     private static func hourString(_ date: Date) -> String { hourFormatter.string(from: date) }
+
+    // MARK: - Recovery weight breakdown + method disclosure (FER-108)
+
+    /// Cold-start progress: "Calibrating baseline" over a thin accent track, shown instead of a
+    /// score while the recovery baseline is still seeding.
+    private func calibrationCard(_ cal: MetricInfo.Calibration) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Calibrating baseline").strandOverline()
+                Spacer()
+                Text("\(cal.done) of \(cal.needed) nights")
+                    .font(StrandFont.captionNumber)
+                    .foregroundStyle(StrandPalette.textSecondary)
+            }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(StrandPalette.surfaceInset).frame(height: 6)
+                    Capsule().fill(StrandPalette.accent)
+                        .frame(width: max(6, geo.size.width * CGFloat(cal.done) / CGFloat(max(cal.needed, 1))),
+                               height: 6)
+                }
+            }
+            .frame(height: 6)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(StrandPalette.surfaceRaised, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    /// The weight breakdown — one labeled bar per driver, longest = top contributor. A single
+    /// raised surface, no per-row rules: bar length already separates the rows (Tufte). Dimmed
+    /// while calibrating, since the method exists but doesn't apply yet.
+    private func weightsBlock(_ weights: [MetricInfo.WeightRow], note: LocalizedStringKey?, dimmed: Bool) -> some View {
+        let maxPct = max(weights.map(\.percent).max() ?? 1, 1)
+        return VStack(alignment: .leading, spacing: 12) {
+            ForEach(Array(weights.enumerated()), id: \.offset) { _, w in
+                weightRow(w, fraction: Double(w.percent) / Double(maxPct))
+            }
+            if let note {
+                Text(note)
+                    .font(StrandFont.caption)
+                    .foregroundStyle(StrandPalette.textTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(StrandPalette.surfaceRaised, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .opacity(dimmed ? StrandPalette.disabledOpacity : 1)
+    }
+
+    private func weightRow(_ w: MetricInfo.WeightRow, fraction: Double) -> some View {
+        HStack(spacing: 10) {
+            Text(w.label)
+                .font(StrandFont.subhead)
+                .foregroundStyle(StrandPalette.textPrimary)
+                .lineLimit(1)
+                .frame(width: 96, alignment: .leading)
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(StrandPalette.surfaceInset).frame(height: 8)
+                    Capsule().fill(w.color)
+                        .frame(width: max(8, geo.size.width * CGFloat(fraction)), height: 8)
+                }
+                .frame(maxHeight: .infinity, alignment: .center)
+            }
+            .frame(height: 8)
+            Text(verbatim: "\(w.percent)%")
+                .font(StrandFont.captionNumber)
+                .foregroundStyle(StrandPalette.textSecondary)
+                .frame(width: 40, alignment: .trailing)
+        }
+    }
+
+    /// Progressive disclosure: the technical "how" lives one tap down, collapsed by default.
+    private func methodDisclosure(_ method: MetricInfo.Method) -> some View {
+        DisclosureGroup(isExpanded: $methodExpanded) {
+            VStack(alignment: .leading, spacing: 10) {
+                Divider().overlay(StrandPalette.hairline)
+                Text(method.prose)
+                    .font(StrandFont.subhead)
+                    .foregroundStyle(StrandPalette.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let citation = method.citation {
+                    Text(citation)
+                        .font(StrandFont.caption)
+                        .foregroundStyle(StrandPalette.textTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(.top, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } label: {
+            Text("See the method")
+                .font(StrandFont.subhead)
+                .foregroundStyle(StrandPalette.textPrimary)
+        }
+        .tint(StrandPalette.textTertiary)
+        .padding(14)
+        .background(StrandPalette.surfaceRaised, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
 }
 
 // MARK: - Helpers
@@ -432,6 +631,20 @@ private func sampleStrainCurve(score: Double) -> [TrendPoint] {
 #Preview("MetricInfoSheet — SpO₂") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricInfoSheet(info: .spo2(97))
+    }
+    .preferredColorScheme(.dark)
+}
+
+#Preview("MetricInfoSheet — Recovery") {
+    Color.clear.sheet(isPresented: .constant(true)) {
+        MetricInfoSheet(info: .recovery(score: 92, calibrationNights: nil, nightsNeeded: 4))
+    }
+    .preferredColorScheme(.dark)
+}
+
+#Preview("MetricInfoSheet — Recovery (calibrating)") {
+    Color.clear.sheet(isPresented: .constant(true)) {
+        MetricInfoSheet(info: .recovery(score: nil, calibrationNights: 2, nightsNeeded: 4))
     }
     .preferredColorScheme(.dark)
 }
