@@ -370,6 +370,7 @@ const SCREENS = [
     nav: [
       { to: 'live', label: 'See it beat by beat', type: 'fullscreen' },
       { to: 'metric-info', label: 'Tap métrica', type: 'sheet' },
+      { to: 'metric-info', label: 'Tap Recuperación (síntesis) → cómo se calcula', type: 'sheet' },
       { to: 'support', label: 'Toolbar ❤', type: 'toolbar' },
     ],
     components: ['HealthAlertBanner', 'CalibrationProgressCard', 'LiveHeartbeatRow', 'ReadinessGaugeBar', 'RecoveryRing', 'InsightCard', 'StatTile ×10', 'ChartCard (HR Trend)', 'SourceBadge (footnote compacto)'],
@@ -657,9 +658,11 @@ const SCREENS = [
       { label: 'Esfuerzo · curva acumulada', type: 'data' },
       { label: 'Esfuerzo · cargando', type: 'loading' },
       { label: 'Esfuerzo · sin datos', type: 'empty' },
+      { label: 'Recuperación · con dato (pesos + «Ver el método»)', type: 'data' },
+      { label: 'Recuperación · calibrando (N/4, pesos atenuados)', type: 'loading' },
     ],
     nav: [],
-    components: ['Metric name + headline', 'Valor actual + color', 'Bands (3–4 rangos)', 'Nota opcional', 'TrendChart esfuerzo acumulado (solo Day Strain)'],
+    components: ['Metric name + headline', 'Valor actual + color', 'Bands (3–4 rangos)', 'Nota opcional', 'TrendChart esfuerzo acumulado (solo Day Strain)', 'Weight breakdown + «Ver el método» disclosure + calibration card (solo Recovery)'],
   },
   {
     id: 'whats-new', x: 538, y: 3310,

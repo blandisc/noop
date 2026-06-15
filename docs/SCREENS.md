@@ -58,7 +58,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 **Nota — indicador de sincronización (iOS):** cuando `live.backfilling == true`, la `syncMeta` en la `utilityRow` muestra "Syncing strap history…" en tono terciario/mono en lugar del texto habitual "Synced X ago". No hay pill ni color prominente; el texto vuelve al estado normal al terminar el backfill. El pill `SyncingHistoryNote` se conserva solo en el path macOS de esta vista.
 
 **Componentes:** `HealthAlertBanner`, `CalibrationProgressCard`, `LiveHeartbeatRow`, `ReadinessGaugeBar`, `RecoveryRing`, `InsightCard`, `StatTile ×10`, `ChartCard (HR Trend)`, `SourceBadge`  
-**Navegación:** → `LiveView` (fullScreenCover, "See it beat by beat") · → `MetricInfoSheet` (sheet, tap métrica) · → `SupportView` (toolbar ❤)
+**Navegación:** → `LiveView` (fullScreenCover, "See it beat by beat") · → `MetricInfoSheet` (sheet, tap métrica del grid · tap del stat **Recuperación** de la síntesis → explicador «cómo se calcula», FER-108) · → `SupportView` (toolbar ❤)
 
 ---
 
@@ -349,7 +349,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 
 ### MetricInfoSheet
 **Archivo:** `Strand/Screens/MetricInfoSheet.swift`  
-**Presentado por:** `TodayView` (tap cualquier métrica del grid)
+**Presentado por:** `TodayView` (tap cualquier métrica del grid · tap del stat **Recuperación** en la fila de síntesis)
 
 | Estado | Condición de entrada |
 |--------|---------------------|
@@ -357,8 +357,10 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 | Esfuerzo · con curva | Variante Day Strain, hay puntaje del día y suficiente FC: gráfica «Cómo se acumuló hoy» (esfuerzo acumulado 00:00→ahora, eje Y auto-escalado) |
 | Esfuerzo · cargando | Variante Day Strain mientras se calcula la curva (placeholder) |
 | Esfuerzo · sin datos | Variante Day Strain sin puntaje / poca actividad: mensaje «Aún no hay suficiente actividad del día para graficar.» |
+| Recuperación · con dato | Variante `recovery`: frase llana + desglose de pesos (HRV 60 / FC reposo 20 / Sueño 15 / Temp. piel 10 / Respiración 5) + desplegable «Ver el método» (z-scores + RMSSD, Task Force 1996) + disclaimer (FER-108) |
+| Recuperación · calibrando | Variante `recovery` con `recovery == nil`: tarjeta «Calibrando línea base» (N/`minNightsSeed`), pesos atenuados, sin desplegable |
 
-**Componentes:** `Metric name + headline`, `Valor actual + color`, `Bands (3–4 rangos + active highlight)`, `Nota opcional`, `TrendChart de esfuerzo acumulado (solo Day Strain, FER-110)`
+**Componentes:** `Metric name + headline`, `Valor actual + color`, `Bands (3–4 rangos + active highlight)`, `Nota opcional`, `TrendChart de esfuerzo acumulado (solo Day Strain, FER-110)`, `Weight breakdown + DisclosureGroup «Ver el método» + calibration card (solo Recovery, FER-108)`
 
 ---
 
