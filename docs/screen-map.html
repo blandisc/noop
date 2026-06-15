@@ -81,97 +81,94 @@ body {
 /* ── Canvas ── */
 #canvas {
   position: absolute;
-  width: 1450px;
+  width: 1320px;
   height: 4000px;
   transform-origin: 0 0;
+  background-image: radial-gradient(circle, #1b1b1b 1.1px, transparent 1.1px);
+  background-size: 26px 26px;
 }
 
-/* Section labels */
+/* Section labels (Figma-style group header) */
 .sec-label {
   position: absolute;
-  font-size: 9px; font-weight: 700;
-  letter-spacing: 1.8px; text-transform: uppercase;
-  color: var(--muted2);
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: #6e6e6e;
   pointer-events: none;
+  display: flex; align-items: center; gap: 9px;
+}
+.sec-label::before {
+  content: ''; width: 14px; height: 2px; border-radius: 2px;
+  background: var(--accent);
 }
 
-/* ── Fixture thumbnail (inside node) ── */
-.node-thumb {
-  width: calc(100% + 24px);
-  margin: -11px -12px 11px;
-  aspect-ratio: 393 / 852;   /* iPhone portrait ratio — shows full screen */
-  overflow: hidden;
-  border-radius: 10px 10px 0 0;
-  background: #111;
-  flex-shrink: 0;
-}
-/* Multi-frame: stack frames vertically, natural height */
-.node-thumb.multi {
-  aspect-ratio: unset;
-  height: auto;
-}
-.node-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: top center;
-  display: block;
-  opacity: 0;
-  transition: opacity 0.25s;
-}
-.node-thumb.multi img {
-  height: auto;   /* natural proportional height per frame */
-  object-fit: unset;
-}
-.node-thumb img.loaded { opacity: 1; }
-.node-thumb.no-img {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.node-thumb.no-img::after {
-  content: 'sin fixture';
-  font-size: 9px;
-  color: var(--muted2);
-}
-
-/* ── Node ── */
+/* ── Node = device frame + caption label (Figma-style) ── */
 .node {
   position: absolute;
-  width: 204px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 11px 12px 12px;
+  width: 212px;
   cursor: pointer;
-  transition: border-color 0.1s, box-shadow 0.1s;
   z-index: 2;
 }
-.node:hover {
-  border-color: var(--border2);
-  box-shadow: 0 4px 24px rgba(0,0,0,0.6);
-}
-.node.selected {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent), 0 4px 24px rgba(24,201,139,0.15);
-}
-.node.sheet {
-  border-style: dashed;
-  background: #111;
-}
 
-.node-hd {
-  display: flex; align-items: center;
-  gap: 9px; margin-bottom: 9px;
+/* the phone frame — lifts the screen off the dark canvas */
+.frame {
+  position: relative;
+  width: 212px;
+  padding: 6px;
+  background: #050505;
+  border: 1px solid #353535;
+  border-radius: 28px;
+  box-shadow: 0 12px 34px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.5);
+  transition: border-color .12s, box-shadow .12s, transform .12s;
 }
-.node-icon {
-  width: 28px; height: 28px;
-  border-radius: 7px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px; flex-shrink: 0;
+.frame::after {  /* notch */
+  content: ''; position: absolute; top: 6px; left: 50%;
+  transform: translateX(-50%);
+  width: 66px; height: 16px; background: #050505;
+  border-radius: 0 0 11px 11px; z-index: 3;
 }
-.node-name { font-size: 12px; font-weight: 600; line-height: 1.25; }
-.node-desc { font-size: 9.5px; color: var(--muted); margin-top: 1.5px; line-height: 1.3; }
+.node:hover .frame {
+  border-color: var(--accent);
+  box-shadow: 0 16px 42px rgba(0,0,0,0.62), 0 0 0 1px var(--accent);
+  transform: translateY(-3px);
+}
+.node.selected .frame {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent), 0 16px 46px rgba(24,201,139,0.28);
+}
+.node.sheet .frame { border-style: dashed; border-color: #4a4a4a; }
+
+.frame-screen {
+  width: 100%; aspect-ratio: 393 / 852;
+  border-radius: 22px; overflow: hidden;
+  background: #111; display: block;
+}
+.frame-screen img {
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: top center;
+  display: block; opacity: 0; transition: opacity .25s;
+}
+.frame-screen img.loaded { opacity: 1; }
+.frame-screen.no-img { display: flex; align-items: center; justify-content: center; }
+.frame-screen.no-img::after { content: 'sin fixture'; font-size: 10px; color: var(--muted2); }
+
+/* caption below the frame — the readable frame label */
+.cap { padding: 12px 2px 0; }
+.cap-row { display: flex; align-items: center; gap: 8px; }
+.cap-icon {
+  width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 12px;
+}
+.cap-name { font-size: 14px; font-weight: 650; color: var(--text); letter-spacing: -0.2px; }
+.cap-tag {
+  font-size: 8px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase;
+  color: #8a8a8a; border: 1px solid #3a3a3a; border-radius: 4px;
+  padding: 1px 4px; margin-left: auto;
+}
+.cap-desc { font-size: 10.5px; color: var(--muted); margin-top: 4px; line-height: 1.35; padding-left: 30px; }
+.cap-dots { display: flex; gap: 4px; align-items: center; margin-top: 8px; padding-left: 30px; }
+.cap-dot { width: 7px; height: 7px; border-radius: 50%; }
+.cap-dots .cap-n { font-size: 9.5px; color: var(--muted2); margin-left: 3px; font-variant-numeric: tabular-nums; }
 
 .states { display: flex; flex-wrap: wrap; gap: 4px; }
 
@@ -188,15 +185,24 @@ body {
 .sc.warn    { color: var(--warn);   border-color: #312208; background: #180f04; }
 .sc.err     { color: var(--err);    border-color: #351414; background: #180808; }
 
-/* ── SVG arrows ── */
+/* ── SVG arrows (flows) ── */
 #arrows {
   position: absolute;
   inset: 0;
-  width: 1450px;
+  width: 1320px;
   height: 4000px;
   pointer-events: none;
   overflow: visible;
-  z-index: 1;
+  z-index: 3;   /* above frames so connectors read clearly */
+}
+.edge-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: 10px; font-weight: 650; white-space: nowrap;
+  padding: 3px 9px; border-radius: 20px;
+  background: #0c0c0c; border: 1px solid;
+  z-index: 6; pointer-events: none;
+  letter-spacing: .2px;
 }
 
 /* ── Detail panel ── */
@@ -359,7 +365,6 @@ const SCREENS = [
       { label: 'Calibrando (1–3 noches)', type: 'loading' },
       { label: 'Sin lectura de hoy', type: 'warn' },
       { label: 'Veredicto listo', type: 'live' },
-      { label: 'Veredicto provisional (1–13 noches de banda) — barra "Se afina con tu banda · N de 14" + nota Apple Health (FER-105)', type: 'loading' },
       { label: 'Sincronizando (transversal iOS) — syncMeta muestra "Syncing strap history…" en utility row; sin pill', type: 'warn' },
     ],
     nav: [
@@ -715,115 +720,159 @@ const NODE_W   = 204;
 const byId = {};
 SCREENS.forEach(s => byId[s.id] = s);
 
-// Section labels
-SECTIONS.forEach(s => {
+// ─── Auto-layout: clean uniform grid (one section per row) ───
+const MX = 70, MY = 96, STEPX = 304, STEPY = 624, OUTER_W = 212;
+const secYs = SECTIONS.map(s => s.y);
+function rowOf(y) { let r = 0; for (const sy of secYs) if (y >= sy) r++; return r - 1; }
+SCREENS.forEach(s => {
+  s._col = Math.round((s.x - 30) / 254);
+  s._row = rowOf(s.y);
+  s.X = MX + s._col * STEPX;
+  s.Y = MY + s._row * STEPY;
+});
+
+// State-type → legend colour (matches toolbar legend)
+const STATE_COLOR = {
+  empty: '#3a3a3a', loading: '#5a5a5a',
+  data: '#4A9EFF', live: '#18C98B', warn: '#F5A623', err: '#FF5A5A',
+};
+
+// Section labels (positioned above each row)
+SECTIONS.forEach((s, r) => {
   const el = document.createElement('div');
   el.className = 'sec-label';
-  el.style.left = s.x + 'px';
-  el.style.top  = s.y + 'px';
+  el.style.left = MX + 'px';
+  el.style.top  = (MY + r * STEPY - 38) + 'px';
   el.textContent = s.label;
   canvas.appendChild(el);
 });
 
-// Nodes
+// Nodes — device frame + readable caption
 SCREENS.forEach(s => {
   const el = document.createElement('div');
   el.className = 'node' + (s.isSheet ? ' sheet' : '');
   el.id = 'node-' + s.id;
-  el.style.left = s.x + 'px';
-  el.style.top  = s.y + 'px';
+  el.style.left = s.X + 'px';
+  el.style.top  = s.Y + 'px';
 
-  const chipsHtml = s.states.map(st =>
-    `<span class="sc ${st.type}">${st.label}</span>`
-  ).join('');
-
-  const frames = s.scrollFrames || [s.id];
-  const multiClass = frames.length > 1 ? ' multi' : '';
-  const imgsHtml = frames.map(f =>
-    `<img src="fixtures/${f}.png" alt=""
-          onload="this.classList.add('loaded')"
-          onerror="this.remove()">`
+  const dotsHtml = s.states.map(st =>
+    `<span class="cap-dot" style="background:${STATE_COLOR[st.type] || '#555'}"
+           title="${st.label.replace(/"/g, '')}"></span>`
   ).join('');
 
   el.innerHTML = `
-    <div class="node-thumb${multiClass}" id="thumb-${s.id}">
-      ${imgsHtml}
-    </div>
-    <div class="node-hd">
-      <div class="node-icon" style="background:${s.color}1a">${s.icon}</div>
-      <div>
-        <div class="node-name">${s.name}</div>
-        <div class="node-desc">${s.desc}</div>
+    <div class="frame">
+      <div class="frame-screen" id="thumb-${s.id}">
+        <img src="fixtures/${s.id}.png" alt=""
+             onload="this.classList.add('loaded')"
+             onerror="this.parentElement.classList.add('no-img');this.remove()">
       </div>
     </div>
-    <div class="states">${chipsHtml}</div>
+    <div class="cap">
+      <div class="cap-row">
+        <div class="cap-icon" style="background:${s.color}26">${s.icon}</div>
+        <div class="cap-name">${s.name}</div>
+        ${s.isSheet ? '<span class="cap-tag">sheet</span>' : ''}
+      </div>
+      <div class="cap-desc">${s.desc}</div>
+      <div class="cap-dots">${dotsHtml}<span class="cap-n">${s.states.length}</span></div>
+    </div>
   `;
 
   el.addEventListener('click', e => { e.stopPropagation(); openPanel(s); });
   canvas.appendChild(el);
 });
 
-// ─── Arrows ───────────────────────────────
+// ─── Flows (orthogonal connectors routed through gutters) ───
 const EDGE_COLORS = {
   fullscreen: '#18C98B',
   sheet:      '#4A9EFF',
   push:       '#9B8FFF',
   toolbar:    '#FF5A5A',
 };
+const GAPX = STEPX - OUTER_W;                       // horizontal gutter width
+const colCenter   = c => MX + c * STEPX + OUTER_W / 2;
+const gutterLeft  = c => MX + c * STEPX - GAPX / 2; // vertical channel left of a column
+
+// Build an orthogonal path with rounded corners through a list of points
+function roundedPath(pts, r) {
+  pts = pts.filter((p, i) => i === 0 || p[0] !== pts[i - 1][0] || p[1] !== pts[i - 1][1]);
+  if (pts.length < 2) return '';
+  let d = `M${pts[0][0]},${pts[0][1]}`;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], [x2, y2] = pts[i + 1];
+    const len1 = Math.hypot(x1 - x0, y1 - y0), len2 = Math.hypot(x2 - x1, y2 - y1);
+    const rr = Math.min(r, len1 / 2, len2 / 2);
+    const v1x = Math.sign(x1 - x0), v1y = Math.sign(y1 - y0);
+    const v2x = Math.sign(x2 - x1), v2y = Math.sign(y2 - y1);
+    d += ` L${x1 - v1x * rr},${y1 - v1y * rr} Q${x1},${y1} ${x1 + v2x * rr},${y1 + v2y * rr}`;
+  }
+  const last = pts[pts.length - 1];
+  d += ` L${last[0]},${last[1]}`;
+  return d;
+}
 
 function renderArrows() {
+  // clear previous labels
+  document.querySelectorAll('.edge-label').forEach(n => n.remove());
   arrowSvg.innerHTML = `<defs>
     ${Object.entries(EDGE_COLORS).map(([k, c]) => `
-      <marker id="arr-${k}" viewBox="0 0 8 8" refX="7" refY="4"
-        markerWidth="5" markerHeight="5" orient="auto">
-        <path d="M0,1 L7,4 L0,7 Z" fill="${c}"/>
+      <marker id="arr-${k}" viewBox="0 0 10 10" refX="8" refY="5"
+        markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M0,1 L9,5 L0,9 Z" fill="${c}"/>
       </marker>`).join('')}
   </defs>`;
 
+  // count out-edges per source so we can spread their exit points
+  const outTotal = {}, outSeen = {};
+  EDGES.forEach(e => outTotal[e.from] = (outTotal[e.from] || 0) + 1);
+
   EDGES.forEach(edge => {
-    const from = byId[edge.from];
-    const to   = byId[edge.to];
+    const from = byId[edge.from], to = byId[edge.to];
     if (!from || !to) return;
 
-    // Use actual DOM height so multi-frame nodes get correct y1
     const fromEl = document.getElementById('node-' + edge.from);
-    const nodeH  = fromEl ? fromEl.offsetHeight : 600;
+    const h = fromEl ? fromEl.offsetHeight : 560;
 
-    const x1 = from.x + NODE_W / 2;
-    const y1 = from.y + nodeH;
-    const x2 = to.x + NODE_W / 2;
-    const y2 = to.y;
+    const N = outTotal[edge.from];
+    const i = (outSeen[edge.from] = (outSeen[edge.from] || 0)) , _ = (outSeen[edge.from]++);
+    const spread = N === 1 ? 0.5 : 0.28 + 0.44 * (i / (N - 1));
 
-    const cy = (y1 + y2) / 2;
-    const d  = `M${x1},${y1} C${x1},${cy} ${x2},${cy} ${x2},${y2}`;
+    const sxc = from.X + OUTER_W * spread;   // exit x along source bottom
+    const sB  = from.Y + h;                  // source bottom
+    const txc = colCenter(to._col);
+    const tT  = to.Y - 6;                     // target top (frame)
 
-    const color = EDGE_COLORS[edge.type] || '#555';
+    const ya  = sB + 34 + i * 14;             // channel just below source
+    const yb  = tT - 46;                      // channel just above target
+    const xg  = gutterLeft(to._col);          // vertical channel near target
+
+    const pts = [[sxc, sB], [sxc, ya], [xg, ya], [xg, yb], [txc, yb], [txc, tT]];
+    const color = EDGE_COLORS[edge.type] || '#888';
+
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('d', d);
-    path.setAttribute('stroke', color + '99');   /* 60% opacity */
-    path.setAttribute('stroke-width', '2');
+    path.setAttribute('d', roundedPath(pts, 14));
+    path.setAttribute('stroke', color);
+    path.setAttribute('stroke-width', '2.5');
     path.setAttribute('fill', 'none');
+    path.setAttribute('stroke-linecap', 'round');
     path.setAttribute('marker-end', `url(#arr-${edge.type})`);
     arrowSvg.appendChild(path);
 
-    // Label at curve midpoint
-    const mx = (x1 + x2) / 2;
-    const my = (y1 + y2) / 2 - 6;
-    const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    txt.setAttribute('x', mx);
-    txt.setAttribute('y', my);
-    txt.setAttribute('text-anchor', 'middle');
-    txt.setAttribute('font-size', '9');
-    txt.setAttribute('fill', color);
-    txt.setAttribute('font-family', '-apple-system, sans-serif');
-    txt.textContent = edge.label;
-    arrowSvg.appendChild(txt);
+    // label pill placed on the long vertical channel segment
+    const lbl = document.createElement('div');
+    lbl.className = 'edge-label';
+    lbl.textContent = edge.label;
+    lbl.style.left = xg + 'px';
+    lbl.style.top  = ((ya + yb) / 2) + 'px';
+    lbl.style.color = color;
+    lbl.style.borderColor = color + '66';
+    canvas.appendChild(lbl);
   });
 }
 
-// Delay so multi-frame images settle their layout before measuring offsetHeight
-setTimeout(renderArrows, 200);
+// Delay so frames settle their layout before measuring offsetHeight
+setTimeout(renderArrows, 250);
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  PANEL
@@ -846,10 +895,12 @@ function openPanel(s) {
       <ul>${s.components.map(c => `<li>${c}</li>`).join('')}</ul>
     </div>` : '';
 
+  // Full screenshot — stack all scroll frames so the whole screen is visible here
+  const frames = s.scrollFrames || [s.id];
   const fixtureHtml = `
     <div class="p-fixture">
-      <img src="fixtures/${s.id}.png" alt="${s.name}"
-           onerror="this.parentElement.style.display='none'">
+      ${frames.map(f => `<img src="fixtures/${f}.png" alt="${s.name}"
+           onerror="this.remove()">`).join('')}
     </div>`;
 
   document.getElementById('panel-content').innerHTML = `
@@ -870,12 +921,10 @@ function openPanel(s) {
 
   document.getElementById('panel').classList.add('open');
 
-  // Scroll node into view (approx — bring to center)
+  // Bring the node toward the centre of the visible area (left of the panel)
   const rect = document.getElementById('wrapper').getBoundingClientRect();
-  const targetX = rect.width / 2  - (s.x + NODE_W / 2) * scale;
-  const targetY = rect.height / 2 - (s.y + 80) * scale;
-  offsetX = targetX;
-  offsetY = targetY;
+  offsetX = (rect.width - 300) / 2 - (s.X + OUTER_W / 2) * scale;
+  offsetY = rect.height / 2 - (s.Y + 200) * scale;
   applyTransform();
 }
 
@@ -891,7 +940,7 @@ document.getElementById('wrapper').addEventListener('click', e => {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  PAN & ZOOM
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-let scale = 0.72, offsetX = 40, offsetY = 20;
+let scale = 0.64, offsetX = 50, offsetY = 16;
 let dragging = false, sx, sy, sox, soy;
 
 const wrapper = document.getElementById('wrapper');
@@ -946,7 +995,7 @@ function doZoom(f) {
 }
 
 function resetView() {
-  scale = 0.72; offsetX = 40; offsetY = 20;
+  scale = 0.64; offsetX = 50; offsetY = 16;
   applyTransform();
   closePanel();
 }
