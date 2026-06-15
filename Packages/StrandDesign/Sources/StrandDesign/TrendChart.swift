@@ -196,22 +196,7 @@ public struct TrendChart: View {
                 }
                 .animation(StrandMotion.fade, value: hoverX)
                 .contentShape(Rectangle())
-                .onContinuousHover(coordinateSpace: .local) { phase in
-                    guard showsHover else { return }
-                    // Update the hover position in a NON-animating transaction. Otherwise entering or
-                    // leaving the chart flips hoverX inside an animated context, the body re-evaluates,
-                    // and SwiftUI Charts re-runs the line's draw-on animation — flickering the curve to a
-                    // flat baseline and back as the cursor crosses the plot edge (#104). The crosshair's
-                    // own fade is the overlay's .animation(value: hoverX) above and is unaffected by this.
-                    var tx = Transaction()
-                    tx.disablesAnimations = true
-                    withTransaction(tx) {
-                        switch phase {
-                        case .active(let location): hoverX = location.x
-                        case .ended: hoverX = nil
-                        }
-                    }
-                }
+                .scrubGesture(enabled: showsHover, hoverX: $hoverX)
             }
         }
         .frame(height: height)
@@ -220,6 +205,54 @@ public struct TrendChart: View {
     private var averageValue: Double {
         guard !points.isEmpty else { return valueRange.lowerBound }
         return points.map(\.value).reduce(0, +) / Double(points.count)
+    }
+}
+
+// MARK: - Platform scrub gesture
+
+private extension View {
+    /// Attaches the chart-scrub affordance: `DragGesture` on iOS (finger drag, no minimum
+    /// distance so the crosshair appears on first touch), `onContinuousHover` on macOS
+    /// (pointer hover). Both update the `hoverX` binding so the same crosshair + tooltip
+    /// overlay renders on both platforms without duplication.
+    ///
+    /// On iOS, `.gesture()` (not `.simultaneousGesture`) is intentional: it gives the
+    /// scrubber exclusive priority so a drag that starts inside the chart never scrolls the
+    /// parent ScrollView (#118).
+    ///
+    /// Position updates use a non-animating Transaction to prevent SwiftUI Charts from
+    /// re-running its draw-on animation when `hoverX` changes mid-gesture (#104).
+    @ViewBuilder
+    func scrubGesture(enabled: Bool, hoverX: Binding<CGFloat?>) -> some View {
+        #if os(iOS)
+        self.gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { v in
+                    guard enabled else { return }
+                    var tx = Transaction()
+                    tx.disablesAnimations = true
+                    withTransaction(tx) { hoverX.wrappedValue = v.location.x }
+                }
+                .onEnded { _ in
+                    guard enabled else { return }
+                    var tx = Transaction()
+                    tx.disablesAnimations = true
+                    withTransaction(tx) { hoverX.wrappedValue = nil }
+                }
+        )
+        #else
+        self.onContinuousHover(coordinateSpace: .local) { phase in
+            guard enabled else { return }
+            var tx = Transaction()
+            tx.disablesAnimations = true
+            withTransaction(tx) {
+                switch phase {
+                case .active(let location): hoverX.wrappedValue = location.x
+                case .ended:               hoverX.wrappedValue = nil
+                }
+            }
+        }
+        #endif
     }
 }
 
