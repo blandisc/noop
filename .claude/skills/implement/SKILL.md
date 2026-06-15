@@ -3,11 +3,12 @@ name: implement
 description: >-
   Lleva un issue de Linear (ya especificado por /pm) de requerimiento hasta
   producción, solo. Lo mueve a In Progress, crea su rama limpia desde iOS,
-  implementa contra los criterios de aceptación, verifica cada uno (QA real:
-  build + tests) y, si todo pasa, abre el PR, lo mergea a iOS, cierra el issue
-  en Done y borra la rama. Se detiene a preguntarte solo si el QA falla, no puede
-  verificar, o el cambio es riesgoso. Es la etapa de código + QA + entrega del
-  flujo, después de /pm. Dispáralo con /implement FER-NN.
+  implementa contra los criterios de aceptación, hace su QA rápido y luego pasa la
+  rama al verificador independiente (subagente qa) como gate de merge: solo con su
+  veredicto PASS abre el PR, lo mergea a iOS, cierra el issue en Done y borra la
+  rama. Se detiene a preguntarte si el verificador queda en FAIL/BLOCKED tras el
+  loop acotado, no puede verificar, o el cambio es riesgoso. Es la etapa de código
+  + QA + entrega del flujo, después de /pm. Dispáralo con /implement FER-NN.
 ---
 
 # Agente de implementación — NOOP
@@ -24,6 +25,13 @@ Tu trabajo: implementar el cambio mínimo, **verificar CADA criterio**, y **llev
 hasta el final** (mergeado y cerrado) — o parar limpio y avisar si algo no cuadra.
 Los criterios de aceptación son el seguro: si todos pasan y el build está verde,
 tienes permiso de entregar; si no, te detienes.
+
+**Quien implementa no se aprueba a sí mismo.** Tu autocomprobación es el loop
+rápido de corrección, pero el **gate que autoriza el merge lo da un verificador
+independiente** (el subagente `qa`): toma tu rama, la contrasta contra los
+criterios del issue sin tu narrativa, y reproduce el QA por su cuenta. Solo
+entregas con su veredicto PASS. Es la mejor práctica de la industria: ojos frescos,
+con la rúbrica en mano, encuentran el hueco que el autor no ve.
 
 ## Estrategia de ramas (limpia, sin pisar a nadie)
 
@@ -57,29 +65,43 @@ tienes permiso de entregar; si no, te detienes.
 6. **Implementa el cambio mínimo** que cumpla el requerimiento (y el spec de UI
    aprobado, si lo hubo). "Fuera de alcance" es ley; un solo concern; lee el
    código que señalan las pistas técnicas antes de editar; no inventes símbolos.
-7. **QA — verifica cada criterio (el gate).**
+7. **QA propio (tu loop rápido de corrección).**
    - Compila y corre los tests del área tocada (comandos en `CLAUDE.md`).
    - Recorre los criterios de aceptación y el Definition of Done **uno por uno**.
    - Si hubo pasada de UI: verifica los **criterios de UI** (solo tokens
      StrandDesign, sin hex/spacing inline) y que **el render real coincida con el
      PNG aprobado**.
-   - Si algo falla, corrígelo. Si no puedes corregirlo o no puedes verificar, ve a
-     "Cuándo PARAR".
-8. **Entrega (solo si TODO el QA pasó).** Commit descriptivo + **entrada en la
-   bitácora de producto** (`CHANGELOG.md` — obligatoria si el cambio es visible
+   - Arregla lo que encuentres. Esto es tu autocomprobación rápida — el gate real
+     lo da el verificador del paso 8. Si no puedes corregir o no puedes verificar
+     nada, ve a "Cuándo PARAR".
+8. **Verificación independiente (el gate de QA).** Antes de mergear, invoca al
+   **subagente `qa`** (o la skill `/qa`) y pásale **solo** el ID del issue
+   (`FER-NN`) y la rama — **NO** tu resumen de lo que hiciste (esa narrativa
+   contamina la verificación; él la reconstruye del diff). Él carga los criterios
+   del issue, mira el diff, **re-ejecuta** build y tests, prueba estados y casos
+   límite de forma adversarial, y devuelve un **veredicto por criterio
+   (PASS / FAIL / BLOCKED)** con evidencia reproducible.
+   - **PASS** (todos los criterios) → sigue a la entrega.
+   - **FAIL** → corrige los defectos que reportó y **vuélvelo a invocar**. Loop
+     acotado: **máximo 3 rondas**. Si tras 3 sigue en FAIL, ve a "Cuándo PARAR".
+   - **BLOCKED** (no pudo verificar algo) → no mergees; ve a "Cuándo PARAR".
+   No mergees sin su PASS y no discutas su veredicto: o corriges, o escalas al
+   usuario.
+9. **Entrega (solo si el verificador dio PASS).** Commit descriptivo + **entrada en
+   la bitácora de producto** (`CHANGELOG.md` — obligatoria si el cambio es visible
    para el usuario; ver "La bitácora de producto" abajo) → push → PR hacia `iOS`
    (`Closes FER-NN`, criterios verificados en "How it was tested") →
    **squash-merge a `iOS`** → **borra la rama** (`--delete-branch`).
-9. **Actualiza el checkout de build.** Tras el merge, sincroniza el checkout
+10. **Actualiza el checkout de build.** Tras el merge, sincroniza el checkout
    canónico (`~/code/noop`, de donde sale el build del iPhone) para que el próximo
    build NO sea viejo: `git -C ~/code/noop fetch origin` y luego
    `git -C ~/code/noop merge --ff-only origin/iOS`. Usa `--ff-only`: preserva
    cualquier trabajo sin commitear que haya ahí y NUNCA lo pisa. Si falla (el
    checkout tiene cambios que chocan o divergió), NO fuerces: avísale al usuario en
    lenguaje claro que actualice su checkout antes de compilar.
-10. **Cierra y limpia.** Mueve el issue a `Done` con un comentario y el link del PR.
+11. **Cierra y limpia.** Mueve el issue a `Done` con un comentario y el link del PR.
     Deja el worktree limpio (de vuelta en `iOS` actualizado, sin ramas colgando).
-11. **Reporta en lenguaje claro** (el usuario NO es técnico): qué cambió en la app,
+12. **Reporta en lenguaje claro** (el usuario NO es técnico): qué cambió en la app,
     qué criterios quedaron verificados, y que ya está en `iOS` **y en su checkout
     principal**. El único paso manual que le queda: abrir Xcode y compilar/instalar
     en su iPhone.
@@ -89,7 +111,7 @@ tienes permiso de entregar; si no, te detienes.
 `CHANGELOG.md` (en la raíz) es la bitácora que **el usuario lee para entender cómo
 evoluciona la app**, sin jerga. **No es opcional:** todo cambio que el usuario
 pueda ver o usar —una pantalla, una métrica, un copy, un comportamiento, un fix
-visible— **agrega una entrada bajo `## Unreleased` antes de mergear** (paso 8). Los
+visible— **agrega una entrada bajo `## Unreleased` antes de mergear** (paso 9). Los
 cambios que el usuario nunca percibe (refactor, chore, tooling, los propios skills)
 **no** van aquí: ensucian la bitácora.
 
@@ -111,6 +133,10 @@ Voz de la entrada — producto, no commit:
 
 Detente, deja el trabajo en una rama/PR **sin mergear**, y explícalo en lenguaje
 claro si:
+- **El verificador independiente quedó en FAIL tras 3 rondas** — no insistas en
+  solitario ni mergees contra su veredicto; trae al usuario.
+- **El verificador quedó en BLOCKED** (no pudo verificar algún criterio en este
+  entorno: falta strap/hardware, build no corre) — no des PASS a ciegas.
 - **Algún criterio de aceptación no pasa** y no puedes corregirlo con confianza.
 - **No puedes verificar** (el build/test no corre en este entorno) — no mergees sin QA.
 - El cambio es **de alto riesgo o difícil de revertir**: toca el camino BLE, una
@@ -125,5 +151,7 @@ claro si:
 - No te salgas del alcance. Si encuentras otra cosa, créala como issue aparte (vía
   `/pm`), no la metas aquí.
 - No reuses ni pises la rama de otra sesión; no trabajes en `iOS`.
+- **No te saltes el verificador independiente ni mergees sin su PASS.** Tu propio
+  QA no autoriza el merge — el gate del paso 8 sí. No le pases tu narrativa.
 - No mergees si el QA no pasó o si es de alto riesgo (ver "Cuándo PARAR").
 - No repitas ni contradigas `CLAUDE.md` / `docs/CONTRIBUTING.md`; síguelos.
