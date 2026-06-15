@@ -254,7 +254,7 @@ struct TodayView: View {
     /// Recovery score driving the readiness gauge (the 0–100 the bar fills to). nil while calibrating.
     private var recoveryScore: Int? { repo.today?.recovery.map { Int($0.rounded()) } }
 
-    /// Date + honesty line, then the brand ECG strip with the live bpm — the screen's calm header.
+    /// Date + honesty line, then the live bpm — the screen's calm header.
     private var headerBlock: some View {
         VStack(alignment: .leading, spacing: 12) {
             utilityRow
@@ -262,12 +262,10 @@ struct TodayView: View {
         }
     }
 
-    /// The live-HR strip: the brand ECG waveform (tinted to the verdict, flatline when there's no
-    /// reading) with the current bpm pinned to the right. Scrolls when the strap is transmitting live HR.
+    /// The live-HR strip: the current bpm pinned to the right. The rose dot marks a live reading from
+    /// the strap; muted when there's none.
     @ViewBuilder private var liveStrip: some View {
         HStack(alignment: .center, spacing: 12) {
-            ECGWave(color: ecgColor, flat: liveBpm == nil, animate: isLiveHR, bpm: liveBpm)
-                .frame(width: 152)
             Spacer(minLength: 0)
             HStack(alignment: .firstTextBaseline, spacing: 5) {
                 Circle()
@@ -283,13 +281,6 @@ struct TodayView: View {
             .accessibilityLabel(Text(isLiveHR ? "Live heart rate" : "Heart rate"))
             .accessibilityValue(Text(liveBpm.map { "\($0) bpm" } ?? "no reading"))
         }
-    }
-
-    /// ECG tint: warm when streaming live, the verdict color when we have a read, muted otherwise.
-    private var ecgColor: Color {
-        if liveBpm == nil { return StrandPalette.textTertiary }
-        let r = readiness
-        return r.level != .insufficient ? readinessColor(r.level) : StrandPalette.metricRose
     }
 
     /// Verdict hero for the no-data state. Two honest cases, by whether a strap has ever been seen:
