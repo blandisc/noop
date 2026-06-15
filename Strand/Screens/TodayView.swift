@@ -178,7 +178,6 @@ struct TodayView: View {
                     // calibration. The clean verdict hero adapts its copy to whether a strap has been
                     // seen; the old data-pending gauge ("Sin datos") is gone so the empty state never
                     // looks half-built — even right after the strap connects in onboarding.
-                    if live.backfilling { SyncingHistoryNote(chunks: live.syncChunksThisSession) }
                     if (live.lastSyncedAt != nil || liveBpm != nil) && ownNights < Baselines.minNightsSeed {
                         // Still gathering the first `seed` nights of the user's OWN strap data → the
                         // night-dots card from night zero. Apple-Health days don't count (borrowed,
@@ -459,26 +458,33 @@ struct TodayView: View {
         }
     }
 
-    /// Honesty line — "Synced 2 min ago · strap 87%" / "Last sync — never". Mono + tertiary so it
-    /// reads as quiet provenance, the trust signal the design leads with. A `TimelineView` re-renders
-    /// it each minute so the "min ago" can't go stale while the screen sits open.
+    /// Honesty line — "Synced 2 min ago · strap 87%" / "Last sync — never". Shows "Syncing strap
+    /// history…" while a history offload runs so the user gets a quiet, non-intrusive signal without
+    /// a prominent pill. Mono + tertiary in all states so it reads as quiet provenance.
     @ViewBuilder private var syncMeta: some View {
-        TimelineView(.periodic(from: .now, by: 60)) { context in
-            Group {
-                if let at = live.lastSyncedAt {
-                    let rel = relativeAgo(at, now: context.date.timeIntervalSince1970)
-                    if let pct = live.batteryPct {
-                        Text("Synced \(rel) · strap \(Int(pct.rounded()))%")
+        if live.backfilling {
+            Text("Syncing strap history…")
+                .font(StrandFont.mono(10))
+                .foregroundStyle(StrandPalette.textTertiary)
+                .lineLimit(1)
+        } else {
+            TimelineView(.periodic(from: .now, by: 60)) { context in
+                Group {
+                    if let at = live.lastSyncedAt {
+                        let rel = relativeAgo(at, now: context.date.timeIntervalSince1970)
+                        if let pct = live.batteryPct {
+                            Text("Synced \(rel) · strap \(Int(pct.rounded()))%")
+                        } else {
+                            Text("Synced \(rel)")
+                        }
                     } else {
-                        Text("Synced \(rel)")
+                        Text("Last sync — never")
                     }
-                } else {
-                    Text("Last sync — never")
                 }
+                .font(StrandFont.mono(10))
+                .foregroundStyle(StrandPalette.textTertiary)
+                .lineLimit(1)
             }
-            .font(StrandFont.mono(10))
-            .foregroundStyle(StrandPalette.textTertiary)
-            .lineLimit(1)
         }
     }
 
@@ -1084,9 +1090,9 @@ struct TodayView: View {
 
     /// Honest strap-sync outcome for a cloud-free app (ports the Android Live line, ed6a31d): the
     /// stalled-offload error when the last one died, else "History synced N ago". Hidden while an
-    /// offload runs — SyncingHistoryNote already says so. TimelineView re-renders the relative label
-    /// each minute so "5 min ago" can't go stale while the window sits open with no strap connected
-    /// (LiveState publishes nothing then).
+    /// offload runs — syncMeta in the utility row already signals the in-progress state subtly.
+    /// TimelineView re-renders the relative label each minute so "5 min ago" can't go stale while
+    /// the window sits open with no strap connected (LiveState publishes nothing then).
     @ViewBuilder
     private var strapSyncRow: some View {
         if !live.backfilling {
