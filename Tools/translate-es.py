@@ -808,6 +808,7 @@ ES: dict[str, str] = {
     "See it beat by beat": "Míralo latido a latido",
     "No reading": "Sin lectura",
     "See your heart rate live, beat by beat": "Mira tu frecuencia cardíaca en vivo, latido a latido",
+    "Opens the beat-to-beat monitor": "Abre el monitor latido a latido",
     "Beats this session": "Latidos esta sesión",
     "Beat to beat": "Latido a latido",
     "Waiting for beats…": "Esperando latidos…",
