@@ -87,6 +87,13 @@ struct DataSourcesView: View {
                 Text(s).font(StrandFont.subhead)
                     .foregroundStyle(model.appleHealthImportFailed ? StrandPalette.statusWarning : StrandPalette.statusPositive)
             }
+            // FER-115: coverage grid — macOS only (iOS shows it inside the live-sync card)
+            #if !os(iOS)
+            if !repo.days.isEmpty || !repo.appleHealthDays.isEmpty {
+                Divider().overlay(StrandPalette.hairline)
+                coverageBodyView
+            }
+            #endif
         }
     }
 
@@ -111,6 +118,11 @@ struct DataSourcesView: View {
             if let err = health.lastError {
                 Text(verbatim: err)
                     .font(StrandFont.footnote).foregroundStyle(StrandPalette.statusWarning)
+            }
+            // FER-115: coverage grid — shown whenever any data exists, regardless of auth state
+            if !repo.days.isEmpty || !repo.appleHealthDays.isEmpty {
+                Divider().overlay(StrandPalette.hairline)
+                coverageBodyView
             }
         }
         // Load coverage + write permissions on appear so opening the screen shows "X days imported"
@@ -311,6 +323,81 @@ struct DataSourcesView: View {
         return "\(shortDate.string(from: f)) → \(shortDate.string(from: l)) · \(cov.totalDays) d"
     }
     #endif
+
+    // MARK: FER-115 — 30-day source coverage grid
+
+    /// Overline + summary line + 6×5 grid + legend. Caller adds the leading Divider.
+    @ViewBuilder
+    private var coverageBodyView: some View {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let days30: [String] = (0..<30).reversed().compactMap { offset in
+            cal.date(byAdding: .day, value: -offset, to: today).map { Repository.localDayKey($0) }
+        }
+        let allDayKeys = Set(repo.days.map(\.day))
+        let whoopCount = days30.filter { allDayKeys.contains($0) && !repo.appleHealthDays.contains($0) }.count
+        let appleCount = days30.filter { repo.appleHealthDays.contains($0) }.count
+        let emptyCount  = 30 - whoopCount - appleCount
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Data coverage").strandOverline()
+                .foregroundStyle(StrandPalette.textTertiary)
+            Text(coverageSummaryString(whoop: whoopCount, apple: appleCount))
+                .font(StrandFont.subhead)
+                .foregroundStyle(whoopCount + appleCount > 0 ? StrandPalette.textSecondary
+                                                             : StrandPalette.textTertiary)
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 6), spacing: 4) {
+                ForEach(Array(days30.enumerated()), id: \.offset) { _, day in
+                    let isWhoop = allDayKeys.contains(day) && !repo.appleHealthDays.contains(day)
+                    let isApple = repo.appleHealthDays.contains(day)
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(isWhoop ? StrandPalette.accent
+                              : isApple ? StrandPalette.metricCyan
+                              : StrandPalette.textTertiary.opacity(0.3))
+                        .frame(height: 30)
+                }
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(coverageA11yLabel(whoop: whoopCount, apple: appleCount, empty: emptyCount))
+            coverageLegendView(hasWhoop: whoopCount > 0, hasApple: appleCount > 0)
+        }
+    }
+
+    private func coverageSummaryString(whoop: Int, apple: Int) -> String {
+        let total = whoop + apple
+        if total == 0 { return String(localized: "No data in the last 30 days") }
+        if apple == 0 { return String(localized: "\(total) of 30 days from your WHOOP strap") }
+        if whoop == 0 { return String(localized: "\(total) of 30 days · Apple Health only") }
+        return String(localized: "\(total) of 30 days · \(whoop) from the strap, \(apple) Apple Health only")
+    }
+
+    private func coverageA11yLabel(whoop: Int, apple: Int, empty: Int) -> String {
+        let total = whoop + apple
+        return String(localized: "Data coverage for the last 30 days: \(total) days with data. \(whoop) days from the WHOOP strap, \(apple) days Apple Health only, \(empty) days with no data.")
+    }
+
+    @ViewBuilder
+    private func coverageLegendView(hasWhoop: Bool, hasApple: Bool) -> some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) { coverageLegendItems(hasWhoop: hasWhoop, hasApple: hasApple) }
+            VStack(alignment: .leading, spacing: 4) { coverageLegendItems(hasWhoop: hasWhoop, hasApple: hasApple) }
+        }
+    }
+
+    @ViewBuilder
+    private func coverageLegendItems(hasWhoop: Bool, hasApple: Bool) -> some View {
+        coverageLegendItem(color: StrandPalette.accent, label: "WHOOP strap", active: hasWhoop)
+        coverageLegendItem(color: StrandPalette.metricCyan, label: "Apple Health only", active: hasApple)
+        coverageLegendItem(color: StrandPalette.textTertiary.opacity(0.5), label: "No data", active: true)
+    }
+
+    @ViewBuilder
+    private func coverageLegendItem(color: Color, label: LocalizedStringKey, active: Bool) -> some View {
+        HStack(spacing: 5) {
+            RoundedRectangle(cornerRadius: 2).fill(color).frame(width: 10, height: 10)
+            Text(label).font(StrandFont.footnote).foregroundStyle(StrandPalette.textSecondary)
+        }
+        .opacity(active ? 1.0 : 0.3)
+    }
 
     private func presentImporter(_ target: ImportTarget) {
         importTarget = target

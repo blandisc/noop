@@ -1036,6 +1036,57 @@
         }
       }
     },
+    "%lld of 30 days · %lld from the strap, %lld Apple Health only": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of 30 days · %lld from the strap, %lld Apple Health only"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld de 30 días · %lld desde la banda, %lld solo de Apple Health"
+          }
+        }
+      }
+    },
+    "%lld of 30 days · Apple Health only": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of 30 days · Apple Health only"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld de 30 días · solo Apple Health"
+          }
+        }
+      }
+    },
+    "%lld of 30 days from your WHOOP strap": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of 30 days from your WHOOP strap"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld de 30 días desde tu banda WHOOP"
+          }
+        }
+      }
+    },
     "%lld overlapping days · %@ %@ correlation": {
       "localizations": {
         "de": {
@@ -2297,6 +2348,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Apple Health"
+          }
+        }
+      }
+    },
+    "Apple Health only": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Health only"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo Apple Health"
           }
         }
       }
@@ -4517,6 +4585,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fuentes de datos"
+          }
+        }
+      }
+    },
+    "Data coverage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data coverage"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cobertura de datos"
+          }
+        }
+      }
+    },
+    "Data coverage for the last 30 days: %lld days with data. %lld days from the WHOOP strap, %lld days Apple Health only, %lld days with no data.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data coverage for the last 30 days: %lld days with data. %lld days from the WHOOP strap, %lld days Apple Health only, %lld days with no data."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cobertura de datos de los últimos 30 días: %lld días con datos. %lld días desde la banda WHOOP, %lld días solo de Apple Health, %lld días sin datos."
           }
         }
       }
@@ -8458,6 +8560,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sin datos"
+          }
+        }
+      }
+    },
+    "No data in the last 30 days": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No data in the last 30 days"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin datos en los últimos 30 días"
           }
         }
       }
@@ -14399,6 +14518,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Importación de Whoop"
+          }
+        }
+      }
+    },
+    "WHOOP strap": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WHOOP strap"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Banda WHOOP"
           }
         }
       }
