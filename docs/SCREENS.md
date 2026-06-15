@@ -33,6 +33,8 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 
 **Nota — indicador de sincronización (iOS):** cuando `live.backfilling == true`, la `syncMeta` en la `utilityRow` muestra "Syncing strap history…" en tono terciario/mono en lugar del texto habitual "Synced X ago". No hay pill ni color prominente; el texto vuelve al estado normal al terminar el backfill. El pill `SyncingHistoryNote` se conserva solo en el path macOS de esta vista.
 
+**Nota — confianza del veredicto (FER-105, iOS):** dentro del estado *Veredicto listo*, mientras las noches propias del strap (`ownNights`) no alcanzan el baseline de confianza (`Baselines.minNightsTrust` = 14), el pie del veredicto muestra una barra de calibración discreta — «Se afina con tu banda · N de 14 noches» (sparkles + `textSecondary`, fill `accent`, sin escala 0/100, distinta de la `ReadinessGaugeBar`). Si la base se sembró con Apple Health (`appleHealthDays` no vacío), añade la nota terciaria «Tu base viene de Apple Health». Una noche corta (`confidenceLow`) tiene prioridad y la suprime ese día; al llegar a 14 noches la barra se retira sola.
+
 **Componentes:** `HealthAlertBanner`, `CalibrationProgressCard`, `LiveHeartbeatRow`, `ReadinessGaugeBar`, `RecoveryRing`, `InsightCard`, `StatTile ×10`, `ChartCard (HR Trend)`, `SourceBadge`  
 **Navegación:** → `LiveView` (fullScreenCover, "See it beat by beat") · → `MetricInfoSheet` (sheet, tap métrica) · → `SupportView` (toolbar ❤)
 
