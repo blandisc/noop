@@ -294,8 +294,13 @@ struct MetricInfoSheet: View {
     /// other metric (and on macOS). Run lazily when the sheet appears. (FER-110)
     var strainCurveLoader: (() async -> [TrendPoint])? = nil
 
+    /// Loads the 14-day trend for this metric. Supplied for all key metrics; triggers lazily on appear.
+    var trendLoader: (() async -> [TrendPoint])? = nil
+
     @State private var strainCurve: [TrendPoint] = []
     @State private var strainLoading = false
+    @State private var trendData: [TrendPoint] = []
+    @State private var trendLoading = false
     /// Measured natural height of the sheet's content — used to size the Day Strain detent to its
     /// content so it never opens taller than it needs to. (FER-112 follow-up)
     @State private var contentHeight: CGFloat = 0
@@ -311,6 +316,7 @@ struct MetricInfoSheet: View {
                     .font(StrandFont.subhead)
                     .foregroundStyle(StrandPalette.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
+                if trendLoader != nil { trendSection }
                 if let calibration = info.calibration { calibrationCard(calibration) }
                 if let weights = info.weights {
                     weightsBlock(weights, note: info.weightsNote, dimmed: info.calibration != nil)
@@ -348,14 +354,19 @@ struct MetricInfoSheet: View {
             strainCurve = await loader()
             strainLoading = false
         }
+        .task {
+            guard let loader = trendLoader else { return }
+            trendLoading = true
+            trendData = await loader()
+            trendLoading = false
+        }
     }
 
-    /// Day Strain carries the accumulation chart below the zones table, so the sheet is sized to its
-    /// own content: it opens tall enough to show the whole chart and can't be dragged up into empty
-    /// space (a single content-height detent). Until the first layout pass measures it, fall back to
-    /// `.large`. Every other metric is short and stays compact at `.medium`. (FER-112 follow-up)
+    /// Sheets with a trend chart (or the strain accumulation curve) are sized to their content so the
+    /// chart is never cut off. Falls back to `.large` until the first layout pass measures the height.
+    /// Short, band-only sheets stay at `.medium`. (FER-112 follow-up, extended for trend charts)
     private var strainDetents: Set<PresentationDetent> {
-        guard info.id == "strain" else { return [.medium] }
+        guard info.id == "strain" || trendLoader != nil else { return [.medium] }
         return contentHeight > 0 ? [.height(contentHeight)] : [.large]
     }
 
@@ -415,6 +426,106 @@ struct MetricInfoSheet: View {
         .padding(.vertical, 11)
         .frame(maxWidth: .infinity)
         .background(band.isActive ? band.color.opacity(0.07) : Color.clear)
+    }
+
+    // MARK: - 14-day trend chart
+
+    /// "Last 14 days" trend chart shown in the upper section of every key-metric sheet. The chart
+    /// auto-scales to the metric's own range so a narrow RHR window (52–58 bpm) still reads as a
+    /// clear curve instead of a flat line pinned to 0–200. Gradient and tooltip format are keyed
+    /// to the metric id so each signal uses its established colour. (FER-115 follow-up)
+    @ViewBuilder private var trendSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Last 14 days")
+                .font(StrandFont.headline)
+                .foregroundStyle(StrandPalette.textPrimary)
+            if trendData.count > 1 {
+                TrendChart(
+                    points: trendData,
+                    gradient: trendGradient,
+                    valueRange: trendValueRange,
+                    showsArea: true,
+                    height: 140,
+                    showsHover: true,
+                    valueFormat: trendValueFormat,
+                    dateFormat: Self.trendDayString
+                )
+                .accessibilityElement()
+                .accessibilityLabel(Text("14-day trend"))
+            } else if trendLoading {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(StrandPalette.surfaceRaised)
+                    .frame(height: 140)
+                    .overlay { ProgressView().tint(StrandPalette.textTertiary) }
+            } else {
+                VStack(spacing: 10) {
+                    Image(systemName: "chart.xyaxis.line")
+                        .font(.system(size: 22))
+                        .foregroundStyle(StrandPalette.textTertiary)
+                    Text("No data for the last 14 days.")
+                        .font(StrandFont.subhead)
+                        .foregroundStyle(StrandPalette.textTertiary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 28)
+                .background(StrandPalette.surfaceRaised,
+                            in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+        }
+    }
+
+    private var trendGradient: Gradient {
+        switch info.id {
+        case "strain":  return StrandPalette.strainGradient
+        case "recovery", "hrv":
+            return StrandPalette.recoveryGradient
+        case "sleep":
+            return Gradient(colors: [StrandPalette.metricPurple.opacity(0.45),
+                                     StrandPalette.metricPurple])
+        case "rhr":
+            return Gradient(colors: [StrandPalette.metricRose.opacity(0.45),
+                                     StrandPalette.metricRose])
+        case "spo2", "steps":
+            return Gradient(colors: [StrandPalette.metricCyan.opacity(0.45),
+                                     StrandPalette.metricCyan])
+        default:
+            return StrandPalette.recoveryGradient
+        }
+    }
+
+    /// Auto-scale: 15% headroom above the max, floor capped at zero.
+    private var trendValueRange: ClosedRange<Double> {
+        let vals = trendData.map(\.value)
+        guard let lo = vals.min(), let hi = vals.max() else { return 0...100 }
+        let span = max(hi - lo, 1)
+        let pad  = span * 0.15
+        return max(0, lo - pad)...hi + pad
+    }
+
+    private var trendValueFormat: (Double) -> String {
+        switch info.id {
+        case "strain":  return { String(format: "%.1f", $0) }
+        case "sleep":   return { Self.formatSleep(Int($0.rounded())) }
+        case "rhr":     return { "\(Int($0.rounded())) bpm" }
+        case "spo2":    return { String(format: "%.0f%%", $0) }
+        case "steps":   return { Self.stepFmt.string(from: NSNumber(value: Int($0.rounded()))) ?? "\(Int($0.rounded()))" }
+        default:        return { "\(Int($0.rounded()))" }
+        }
+    }
+
+    private static let trendDayFmt: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "d MMM"; return f
+    }()
+    private static func trendDayString(_ date: Date) -> String { trendDayFmt.string(from: date) }
+
+    private static let stepFmt: NumberFormatter = {
+        let f = NumberFormatter(); f.numberStyle = .decimal; return f
+    }()
+
+    private static func formatSleep(_ totalMinutes: Int) -> String {
+        let h = totalMinutes / 60, m = totalMinutes % 60
+        return m > 0 ? "\(h)h \(m)m" : "\(h)h"
     }
 
     // MARK: - Day-strain accumulation chart (FER-110)

@@ -131,10 +131,11 @@ struct TodayView: View {
                 #if os(iOS)
                 MetricInfoSheet(
                     info: info,
-                    strainCurveLoader: info.id == "strain" ? { await loadStrainCurve() } : nil
+                    strainCurveLoader: info.id == "strain" ? { await loadStrainCurve() } : nil,
+                    trendLoader: trendLoader(for: info.id)
                 )
                 #else
-                MetricInfoSheet(info: info)
+                MetricInfoSheet(info: info, trendLoader: trendLoader(for: info.id))
                 #endif
             }
             .sheet(isPresented: $showWhyVerdict) {
@@ -1271,6 +1272,34 @@ struct TodayView: View {
         appleMetricDays = (await amRows).sorted { $0.day < $1.day }
         hrPoints  = await hrBucketRows
             .map { TrendPoint(date: Date(timeIntervalSince1970: TimeInterval($0.ts)), value: $0.bpm) }
+    }
+
+    // MARK: - 14-day trend loader (all platforms)
+
+    /// Reads the trailing 14-day series for a metric and returns it as dated TrendPoints. Noon UTC
+    /// is used for each day so daily points render at consistent x-positions across time zones.
+    private func loadTrend(key: String, source: String, window: Int = 14) async -> [TrendPoint] {
+        let all = await repo.series(key: key, source: source, days: window + 2)
+        guard !all.isEmpty else { return [] }
+        return trailingWindow(all, days: window).compactMap { row -> TrendPoint? in
+            guard let date = Self.dayParser.date(from: row.day) else { return nil }
+            return TrendPoint(date: date.addingTimeInterval(12 * 3600), value: row.value)
+        }
+    }
+
+    /// Returns a loader closure for the given metric id, dispatching to the right key + source.
+    /// Called inline when the MetricInfoSheet is created; runs lazily once the sheet appears.
+    private func trendLoader(for id: String) -> () async -> [TrendPoint] {
+        switch id {
+        case "recovery": return { await self.loadTrend(key: "recovery",        source: "my-whoop") }
+        case "strain":   return { await self.loadTrend(key: "strain",          source: "my-whoop") }
+        case "sleep":    return { await self.loadTrend(key: "sleep_total_min", source: "my-whoop") }
+        case "hrv":      return { await self.loadTrend(key: "hrv",             source: "my-whoop") }
+        case "rhr":      return { await self.loadTrend(key: "rhr",             source: "my-whoop") }
+        case "spo2":     return { await self.loadTrend(key: "spo2",            source: "my-whoop") }
+        case "steps":    return { await self.loadTrend(key: "steps",           source: "apple-health") }
+        default:         return { [] }
+        }
     }
 
     #if os(iOS)
