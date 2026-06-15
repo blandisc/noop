@@ -523,8 +523,7 @@ struct TodayView: View {
             synthCell(label: "Recovery",
                       value: d?.recovery.map { "\(Int($0.rounded()))" } ?? "—",
                       unit: nil,
-                      color: d?.recovery.map { StrandPalette.recoveryColor($0) } ?? StrandPalette.textTertiary,
-                      first: true)
+                      color: d?.recovery.map { StrandPalette.recoveryColor($0) } ?? StrandPalette.textTertiary)
             synthDivider
             synthCell(label: "HRV",
                       value: d?.avgHrv.map { "\(Int($0.rounded()))" } ?? "—",
@@ -542,9 +541,10 @@ struct TodayView: View {
         Rectangle().fill(StrandPalette.hairline).frame(width: 1, height: 34)
     }
 
-    /// One borderless synthesis stat: small label over one big mono value (+ optional unit).
-    private func synthCell(label: LocalizedStringKey, value: String, unit: String?, color: Color, first: Bool = false) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+    /// One borderless synthesis stat: small label over one big mono value (+ optional unit), centered
+    /// within its equal-width column so the three read as a balanced row (no left-hugging gap).
+    private func synthCell(label: LocalizedStringKey, value: String, unit: String?, color: Color) -> some View {
+        VStack(alignment: .center, spacing: 8) {
             Text(label)
                 .font(StrandFont.caption)
                 .foregroundStyle(StrandPalette.textSecondary)
@@ -561,9 +561,8 @@ struct TodayView: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.leading, first ? 0 : 14)
-        .padding(.trailing, 14)
+        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.horizontal, 8)
     }
 
     /// "Key Metrics" — a dense borderless list (label · sparkline · value) instead of a tile grid,
