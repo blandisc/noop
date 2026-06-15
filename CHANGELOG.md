@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **La pantalla "Apple Health" ya muestra lo que sincronizas en vivo / The "Apple Health" page now shows what you sync live.**
+  **ES** — Si conectabas Apple Salud (sin importar un archivo de exportación), la pantalla "Apple Health" (en Más), "Explorar" y "Comparar" salían vacías aunque los datos sí estaban en el teléfono. Era porque la sincronización en vivo no llenaba la tabla que esas pantallas leen. Ahora sí: tus pasos, FC en reposo, HRV, oxígeno, sueño y energía aparecen ahí —y las mini-gráficas de Apple en Hoy se dibujan— sin necesidad de importar nada.
+  **EN** — If you connected Apple Health (without importing an export file), the "Apple Health" page (in More), "Explore" and "Compare" came up empty even though the data was on your phone — the live sync wasn't filling the table those screens read from. Now it does: your steps, resting HR, HRV, blood oxygen, sleep and energy show up there, and the Apple sparklines on Today draw, with nothing to import.
+  ([StrandiOS/Health/HealthKitBridge.swift](StrandiOS/Health/HealthKitBridge.swift))
+
 - **Sincronización discreta: el indicador de sincronización ya no interrumpe la pantalla / Quiet sync indicator: syncing no longer interrupts the screen.**
   **ES** — Mientras la app descarga el historial de la banda, ya no aparece un pill verde pulsante en la pantalla. En su lugar, la pequeña línea de estado en la esquina superior derecha (la misma que muestra "Sincronizado hace 2 min · banda 87%") cambia discretamente a "Sincronizando historial de la banda…" en el mismo tono gris apagado. Cuando termina, vuelve al estado normal sin ningún parpadeo.
   **EN** — While the app downloads strap history, the pulsing green pill no longer interrupts the screen. Instead, the small status line in the top-right corner (the one that shows "Synced 2 min ago · strap 87%") quietly reads "Syncing strap history…" in the same muted gray. When it finishes, it returns to normal with no flash.
