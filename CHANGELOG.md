@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **NOOP escribe tu sueño de WHOOP en Apple Salud / NOOP writes your WHOOP sleep to Apple Health.**
+  **ES** — Tras cada sincronización, las fases de sueño que la WHOOP mide toda la noche (light, deep, REM, wake) aparecen en la app de Salud como fuente "NOOP". La WHOOP mide las fases con PPG continua durante la noche, a diferencia del Apple Watch que hace muestreos puntuales. Los datos coexisten con los del Watch y el usuario elige cuál tiene prioridad en Salud → [métrica] → Fuentes. No se crean duplicados: NOOP borra sus propias entradas anteriores antes de escribir las nuevas.
+  **EN** — After each sync, the sleep stages WHOOP measures throughout the night (light, deep, REM, wake) appear in the Health app under the "NOOP" source. WHOOP measures stages with continuous PPG all night, unlike Apple Watch which takes spot readings. The data coexists with Watch readings and the user can set priority in Health → [metric] → Data Sources. No duplicates are created: NOOP deletes its own prior entries before writing new ones.
+  ([StrandiOS/Health/HealthKitBridge.swift](StrandiOS/Health/HealthKitBridge.swift))
+
 - **"Procedencia" muestra ahora el recuento correcto de días de la banda / "Provenance" now shows the correct strap day count.**
   **ES** — El renglón "Whoop" en la sección de Procedencia contaba todos los días del dashboard (incluyendo los de Apple Health), no solo los días donde la banda fue la fuente ganadora. Con 31 días de Apple Health y 1 de la banda, mostraba "32 días" en lugar de "1 día". Ahora el conteo es exacto: solo aparecen los días con datos reales del strap.
   **EN** — The "Whoop" row in the Provenance section was counting every day in the dashboard (including Apple Health days) instead of only the days where the strap won. With 31 Apple Health days and 1 strap day it showed "32 days" instead of "1 day". The count is now accurate: only days with real strap data are shown.

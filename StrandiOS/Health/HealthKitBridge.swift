@@ -1,6 +1,7 @@
 #if os(iOS)
 import Foundation
 import HealthKit
+import StrandImport
 import WhoopStore
 
 /// Two-way Apple Health bridge for the iOS app.
@@ -331,22 +332,56 @@ final class HealthKitBridge: ObservableObject {
                 add(.respiratoryRate, HKUnit.count().unitDivided(by: .minute()), rr, row.day, noon)
             }
         }
-        guard !candidates.isEmpty else { return }
-
-        // Delete any of OUR prior samples that carry the same metadata keys, then write the fresh
-        // batch. Scoped to HKSource.default() so we never touch a sample written by another app
-        // that happens to use the same external UUID. Delete failures are non-fatal (e.g., nothing
-        // to delete on first run) — only the save throws.
-        let bySource = HKQuery.predicateForObjects(from: HKSource.default())
-        let grouped = Dictionary(grouping: candidates, by: { $0.type })
-        for (type, items) in grouped {
-            let keys = Array(Set(items.map { $0.key }))
-            let byKey = HKQuery.predicateForObjects(withMetadataKey: HKMetadataKeyExternalUUID,
-                                                    allowedValues: keys)
-            let pred = NSCompoundPredicate(andPredicateWithSubpredicates: [bySource, byKey])
-            _ = try? await self.store.deleteObjects(of: type, predicate: pred)
+        // Quantity metrics: delete our prior samples, then write fresh ones.
+        // Delete is non-fatal (nothing to delete on first run); only the save throws.
+        if !candidates.isEmpty {
+            let bySource = HKQuery.predicateForObjects(from: HKSource.default())
+            let grouped = Dictionary(grouping: candidates, by: { $0.type })
+            for (type, items) in grouped {
+                let keys = Array(Set(items.map { $0.key }))
+                let byKey = HKQuery.predicateForObjects(withMetadataKey: HKMetadataKeyExternalUUID,
+                                                        allowedValues: keys)
+                let pred = NSCompoundPredicate(andPredicateWithSubpredicates: [bySource, byKey])
+                _ = try? await self.store.deleteObjects(of: type, predicate: pred)
+            }
+            try await self.store.save(candidates.map { $0.sample })
         }
-        try await self.store.save(candidates.map { $0.sample })
+
+        // Sleep stages: one HKCategorySample per WHOOP stage segment plus one .inBed per session.
+        // Uses the same external-UUID dedup strategy as the quantity metrics above.
+        try await writeSleepBack(whoopStore: whoopStore, fromDate: fromDate)
+    }
+
+    /// Write WHOOP sleep sessions (staged hypnogram) into Apple Health.
+    ///
+    /// Each stage segment from `stagesJSON` maps to a `HKCategorySample` with the matching
+    /// `HKCategoryValueSleepAnalysis` value. A single `.inBed` sample covers the full session span.
+    /// The dedup key `"noop:<deviceId>:sleep:<sessionStart>:<segStart>"` prevents duplicates on
+    /// repeated calls — we delete our own prior samples before saving the fresh batch.
+    private func writeSleepBack(whoopStore: WhoopStore, fromDate: Date) async throws {
+        guard let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis),
+              store.authorizationStatus(for: sleepType) == .sharingAuthorized else { return }
+
+        let fromTs = Int(fromDate.timeIntervalSince1970)
+        let toTs   = Int(Date().timeIntervalSince1970)
+        guard let sessions = try? await whoopStore.sleepSessions(
+            deviceId: noopDeviceId, from: fromTs, to: toTs, limit: 90) else { return }
+
+        let encoded = SleepHKEncoder.samples(from: sessions, deviceId: noopDeviceId)
+        guard !encoded.isEmpty else { return }
+
+        let hkSamples = encoded.map { enc in
+            HKCategorySample(type: sleepType, value: enc.hkValue,
+                             start: enc.start, end: enc.end,
+                             metadata: [HKMetadataKeyExternalUUID: enc.dedupeKey])
+        }
+        let keys = encoded.map(\.dedupeKey)
+        let bySource = HKQuery.predicateForObjects(from: HKSource.default())
+        let byKey = HKQuery.predicateForObjects(
+            withMetadataKey: HKMetadataKeyExternalUUID, allowedValues: keys)
+        let pred = NSCompoundPredicate(andPredicateWithSubpredicates: [bySource, byKey])
+        _ = try? await self.store.deleteObjects(of: sleepType, predicate: pred)
+        try await self.store.save(hkSamples)
     }
 
     private struct DayAgg {
