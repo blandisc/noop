@@ -90,7 +90,7 @@ final class ChartSnapshotTests: XCTestCase {
                 gradient: StrandPalette.strainGradient,
                 valueRange: range,
                 showsArea: true,
-                height: 170,
+                height: 132,
                 showsHover: false,
                 valueFormat: { String(format: "%.1f", $0) },
                 dateFormat: { fmt.string(from: $0) }

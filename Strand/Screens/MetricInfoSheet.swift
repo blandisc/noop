@@ -225,7 +225,10 @@ struct MetricInfoSheet: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(StrandPalette.surfaceBase)
-        .presentationDetents([.medium, .large])
+        // Day Strain carries the accumulation chart below the zones table — too tall for .medium, so it
+        // opens .large (chart visible on first view) and can still collapse to .medium. Every other
+        // metric is short, so it stays compact at .medium. (FER-112)
+        .presentationDetents(info.id == "strain" ? [.large, .medium] : [.medium])
         .presentationDragIndicator(.visible)
         .modifier(PresentationBackgroundModifier())
         .task {
@@ -310,7 +313,7 @@ struct MetricInfoSheet: View {
                     gradient: StrandPalette.strainGradient,
                     valueRange: strainCurveRange,
                     showsArea: true,
-                    height: 170,
+                    height: 132,
                     showsHover: true,
                     valueFormat: { String(format: "%.1f", $0) },
                     dateFormat: { Self.hourString($0) }
@@ -320,7 +323,7 @@ struct MetricInfoSheet: View {
             } else if strainLoading {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(StrandPalette.surfaceRaised)
-                    .frame(height: 170)
+                    .frame(height: 132)
                     .overlay { ProgressView().tint(StrandPalette.textTertiary) }
             } else {
                 strainEmpty
