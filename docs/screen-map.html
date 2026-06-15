@@ -82,7 +82,7 @@ body {
 #canvas {
   position: absolute;
   width: 1450px;
-  height: 1340px;
+  height: 4000px;
   transform-origin: 0 0;
 }
 
@@ -99,7 +99,7 @@ body {
 .node-thumb {
   width: calc(100% + 24px);
   margin: -11px -12px 11px;
-  height: 110px;
+  aspect-ratio: 393 / 852;   /* iPhone portrait ratio — shows full screen */
   overflow: hidden;
   border-radius: 10px 10px 0 0;
   background: #111;
@@ -184,7 +184,7 @@ body {
   position: absolute;
   inset: 0;
   width: 1450px;
-  height: 1340px;
+  height: 4000px;
   pointer-events: none;
   overflow: visible;
   z-index: 1;
@@ -225,10 +225,7 @@ body {
 }
 .p-fixture img {
   width: 100%;
-  display: block;
-  max-height: 340px;
-  object-fit: cover;
-  object-position: top center;
+  display: block; /* no max-height — full screenshot */
 }
 
 .p-title { font-size: 15px; font-weight: 600; margin-bottom: 3px; }
@@ -402,9 +399,9 @@ const SCREENS = [
     components: ['Hero Gauge Card', 'StatTile ×2 (RHR / HRV)', 'ChartCard (tendencia)', 'Metodología (z-score)'],
   },
 
-  // ── ROW 1: Actividad (y = 330) ────────────
+  // ── ROW 1: Actividad (y = 710) ────────────
   {
-    id: 'workouts', x: 30, y: 330,
+    id: 'workouts', x: 30, y: 710,
     name: 'Workouts', desc: 'Log de actividad',
     file: 'Strand/Screens/WorkoutsView.swift',
     icon: '🏋', color: '#4A9EFF',
@@ -421,7 +418,7 @@ const SCREENS = [
     components: ['SegmentedPillControl (7D–All)', 'StatTile ×5', 'Activity Breakdown', 'HR Zones', 'Sessions table'],
   },
   {
-    id: 'trends', x: 284, y: 330,
+    id: 'trends', x: 284, y: 710,
     name: 'Trends', desc: 'Análisis longitudinal',
     file: 'Strand/Screens/TrendsView.swift',
     icon: '📈', color: '#18C98B',
@@ -434,7 +431,7 @@ const SCREENS = [
     components: ['SegmentedPillControl (W–ALL)', 'Hero ChartCard (Recovery)', 'ChartCard ×3 (HRV/RHR/Strain)', 'YearHeatStrip'],
   },
   {
-    id: 'insights', x: 538, y: 330,
+    id: 'insights', x: 538, y: 710,
     name: 'Insights', desc: 'Correlaciones de comportamiento',
     file: 'Strand/Screens/InsightsView.swift',
     icon: '💡', color: '#F5A623',
@@ -448,9 +445,9 @@ const SCREENS = [
     components: ['JournalLogCard', 'Behavior Effects Cards (Cohen\'s d)', 'RBar chart (Pearson r)', 'Metric Relationships Card'],
   },
 
-  // ── ROW 2: Análisis (y = 600) ─────────────
+  // ── ROW 2: Análisis (y = 1360) ────────────
   {
-    id: 'explore', x: 30, y: 600,
+    id: 'explore', x: 30, y: 1360,
     name: 'Explore', desc: 'Catálogo de métricas',
     file: 'Strand/Screens/MetricExplorerView.swift',
     icon: '🔍', color: '#4A9EFF',
@@ -466,7 +463,7 @@ const SCREENS = [
     components: ['MetricCatalog grouped list', 'Hero StatTile', 'ChartCard (tendencia)', 'Avg/Min/Max footer', 'Banding vs baseline'],
   },
   {
-    id: 'compare', x: 284, y: 600,
+    id: 'compare', x: 284, y: 1360,
     name: 'Compare', desc: 'Superponer 2–4 métricas',
     file: 'Strand/Screens/CompareView.swift',
     icon: '⚖', color: '#9B8FFF',
@@ -479,7 +476,7 @@ const SCREENS = [
     components: ['Multi-select picker', 'SegmentedPillControl', 'Overlay ChartCard (normalizado 0–1)', 'Correlation rows (Pearson r + p-value)'],
   },
   {
-    id: 'apple-health', x: 538, y: 600,
+    id: 'apple-health', x: 538, y: 1360,
     name: 'Apple Health', desc: 'Historia de Apple Health',
     file: 'Strand/Screens/AppleHealthView.swift',
     icon: '🍎', color: '#FF5A5A',
@@ -492,7 +489,7 @@ const SCREENS = [
     components: ['StatTile hero por métrica', 'ChartCard ×4 secciones (Heart, Activity, Body, Sleep)', 'SegmentedPillControl'],
   },
   {
-    id: 'intelligence', x: 792, y: 600,
+    id: 'intelligence', x: 792, y: 1360,
     name: 'Intelligence', desc: 'Scores on-device',
     file: 'Strand/Screens/IntelligenceView.swift',
     icon: '🧠', color: '#18C98B',
@@ -505,9 +502,9 @@ const SCREENS = [
     components: ['Explainer Card (pesos: HRV 60%/RHR 20%/sleep 15%/resp 5%)', 'Day Cards (Recovery/Strain/Sleep + NOOP badge)', 'Toolbar Recompute'],
   },
 
-  // ── ROW 3: Dispositivo (y = 870) ──────────
+  // ── ROW 3: Dispositivo (y = 2010) ─────────
   {
-    id: 'live', x: 30, y: 870,
+    id: 'live', x: 30, y: 2010,
     name: 'Live', desc: 'ECG en vivo · gestión de correa',
     file: 'Strand/Screens/LiveView.swift',
     icon: '📡', color: '#18C98B',
@@ -522,7 +519,7 @@ const SCREENS = [
     components: ['ECG Hero Sparkline', 'Session Tally', 'Live Signals (zone / %max)', 'Sync Signals (battery / last sync)', 'Data Receipt (frame counts)', 'Coverage Strip (28d heat map)', 'Strap Management (model picker / controls)'],
   },
   {
-    id: 'automations', x: 284, y: 870,
+    id: 'automations', x: 284, y: 2010,
     name: 'Automations', desc: 'Double-tap · wear · alarmas',
     file: 'Strand/Screens/AutomationsView.swift',
     icon: '⚙️', color: '#888',
@@ -534,7 +531,7 @@ const SCREENS = [
     components: ['StatePill (bonded/not)', 'Action picker (None/App/Shortcut)', 'Shortcut name field', 'Test button', 'Moments list (últimos 5 taps)'],
   },
   {
-    id: 'breathing', x: 538, y: 870,
+    id: 'breathing', x: 538, y: 2010,
     name: 'Breathing', desc: 'HRV biofeedback trainer',
     file: 'Strand/Screens/BreathingView.swift',
     icon: '🫧', color: '#4A9EFF',
@@ -548,7 +545,7 @@ const SCREENS = [
     components: ['Pace selector (Relax/Coherence/Box)', 'Timer display', 'Live HR + zone', 'Rolling RMSSD chart', 'Strap bonded pill'],
   },
   {
-    id: 'interval', x: 792, y: 870,
+    id: 'interval', x: 792, y: 2010,
     name: 'Interval Timer', desc: 'HIIT timer haptic silencioso',
     file: 'Strand/Screens/IntervalTimerView.swift',
     icon: '⏱', color: '#F5A623',
@@ -562,9 +559,9 @@ const SCREENS = [
     components: ['Duration inputs (Work / Rest / Rounds)', 'Timer display grande', 'Progress ring (phase)', 'Round counter', 'Start / Pause / Reset'],
   },
 
-  // ── ROW 4: App (y = 1140) ─────────────────
+  // ── ROW 4: App (y = 2660) ─────────────────
   {
-    id: 'coach', x: 30, y: 1140,
+    id: 'coach', x: 30, y: 2660,
     name: 'Coach', desc: 'LLM coaching (OpenAI / Anthropic)',
     file: 'Strand/Screens/CoachView.swift',
     icon: '🤖', color: '#9B8FFF',
@@ -579,7 +576,7 @@ const SCREENS = [
     components: ['Setup Card (provider/model/key)', 'Consent Bar (toggle)', 'Transcript (bubbles)', 'Suggestion Chips (scroll H)', 'Composer + send button', 'Privacy Footnote'],
   },
   {
-    id: 'settings', x: 284, y: 1140,
+    id: 'settings', x: 284, y: 2660,
     name: 'Settings', desc: 'Configuración y perfil',
     file: 'Strand/Screens/SettingsView.swift',
     icon: '⚙', color: '#888',
@@ -593,7 +590,7 @@ const SCREENS = [
     components: ['SettingsSection cards', 'FormRow (age/sex/weight/height)', 'Units toggles (metric/imperial/°C/°F)', 'Strap card', 'Experimental toggle (Puffin)', 'Backup card (export/restore)', 'About card'],
   },
   {
-    id: 'data-sources', x: 538, y: 1140,
+    id: 'data-sources', x: 538, y: 2660,
     name: 'Data Sources', desc: 'Importar WHOOP · Apple Health',
     file: 'Strand/Screens/DataSourcesView.swift',
     icon: '📥', color: '#4A9EFF',
@@ -607,7 +604,7 @@ const SCREENS = [
     components: ['WHOOP Export Card', 'Apple Health Export Card', 'Apple Health Live Card (iOS, toggle)', 'Live Strap Card', 'File importer (fileImporter)'],
   },
   {
-    id: 'support', x: 792, y: 1140,
+    id: 'support', x: 792, y: 2660,
     name: 'Support', desc: 'Donaciones · contacto · atribución',
     file: 'Strand/Screens/SupportView.swift',
     icon: '❤', color: '#FF5A5A',
@@ -618,9 +615,9 @@ const SCREENS = [
     components: ['Built On Card (attrs)', 'Donate Card (BTC/ETH + copy)', 'Contact Card (mailto)', 'Disclaimer Card'],
   },
 
-  // ── ROW 5: Sheets / Modales (y = 1410) ────
+  // ── ROW 5: Sheets / Modales (y = 3310) ────
   {
-    id: 'manual-workout', x: 30, y: 1410,
+    id: 'manual-workout', x: 30, y: 3310,
     name: 'Manual Workout', desc: 'Sheet: agregar / editar sesión',
     file: 'Strand/Screens/ManualWorkoutSheet.swift',
     icon: '✏', color: '#4A9EFF',
@@ -634,7 +631,7 @@ const SCREENS = [
     components: ['Sport TextField', 'DatePicker (start)', 'Duration spinner (minutos)', 'Avg HR (opcional)', 'kcal (opcional)', 'Save button (disabled si inválido)'],
   },
   {
-    id: 'metric-info', x: 284, y: 1410,
+    id: 'metric-info', x: 284, y: 3310,
     name: 'Metric Info', desc: 'Sheet: detalle de métrica (desde Today)',
     file: 'Strand/Screens/MetricInfoSheet.swift',
     icon: 'ℹ', color: '#4A9EFF',
@@ -646,7 +643,7 @@ const SCREENS = [
     components: ['Metric name + headline', 'Valor actual + color', 'Bands (3–4 rangos)', 'Nota opcional'],
   },
   {
-    id: 'whats-new', x: 538, y: 1410,
+    id: 'whats-new', x: 538, y: 3310,
     name: 'What\'s New', desc: 'Sheet: historial de versiones',
     file: 'Strand/Screens/WhatsNewView.swift',
     icon: '🆕', color: '#18C98B',
@@ -658,7 +655,7 @@ const SCREENS = [
     components: ['Expectations Card', 'Release Cards (AppChangelog.releases)'],
   },
   {
-    id: 'notif-settings', x: 792, y: 1410,
+    id: 'notif-settings', x: 792, y: 3310,
     name: 'Notification Settings', desc: 'Alertas de muñeca via correa',
     file: 'Strand/Screens/NotificationSettingsView.swift',
     icon: '🔔', color: '#F5A623',
@@ -690,11 +687,11 @@ const EDGES = [
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const SECTIONS = [
   { label: 'Dashboard',         x: 30, y: 32 },
-  { label: 'Actividad',         x: 30, y: 302 },
-  { label: 'Análisis',          x: 30, y: 572 },
-  { label: 'Dispositivo',       x: 30, y: 842 },
-  { label: 'App',               x: 30, y: 1112 },
-  { label: 'Sheets & Modales',  x: 30, y: 1382 },
+  { label: 'Actividad',         x: 30, y: 682 },
+  { label: 'Análisis',          x: 30, y: 1332 },
+  { label: 'Dispositivo',       x: 30, y: 1982 },
+  { label: 'App',               x: 30, y: 2632 },
+  { label: 'Sheets & Modales',  x: 30, y: 3282 },
 ];
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
