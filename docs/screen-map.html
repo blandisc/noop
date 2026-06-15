@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NOOP iOS · Mapa de Pantallas</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d0d0d;
+  --surface: #161616;
+  --surface2: #1e1e1e;
+  --border: #272727;
+  --border2: #333;
+  --text: #e8e8e8;
+  --muted: #555;
+  --muted2: #3a3a3a;
+  --accent: #18C98B;
+  --warn: #F5A623;
+  --info: #4A9EFF;
+  --err: #FF5A5A;
+  --purple: #9B8FFF;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  overflow: hidden;
+  height: 100vh;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ── Toolbar ── */
+#toolbar {
+  position: fixed;
+  top: 0; left: 0; right: 0; height: 44px;
+  background: rgba(13,13,13,0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 16px; gap: 10px; z-index: 200;
+}
+
+#toolbar h1 {
+  font-size: 13px; font-weight: 600;
+  letter-spacing: -0.3px; color: var(--text);
+  white-space: nowrap;
+}
+
+.chip {
+  font-size: 10px; font-weight: 500;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2px 8px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.sep { flex: 1; }
+
+.legend { display: flex; gap: 12px; align-items: center; }
+.leg { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--muted); white-space: nowrap; }
+.leg-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+.tb-updated { font-size: 10px; color: var(--muted2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* ── Wrapper ── */
+#wrapper {
+  position: fixed;
+  inset: 44px 0 0 0;
+  overflow: hidden;
+  cursor: grab;
+}
+#wrapper.dragging { cursor: grabbing; }
+
+/* ── Canvas ── */
+#canvas {
+  position: absolute;
+  width: 1450px;
+  height: 1340px;
+  transform-origin: 0 0;
+}
+
+/* Section labels */
+.sec-label {
+  position: absolute;
+  font-size: 9px; font-weight: 700;
+  letter-spacing: 1.8px; text-transform: uppercase;
+  color: var(--muted2);
+  pointer-events: none;
+}
+
+/* ── Node ── */
+.node {
+  position: absolute;
+  width: 204px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 12px 12px;
+  cursor: pointer;
+  transition: border-color 0.1s, box-shadow 0.1s;
+  z-index: 2;
+}
+.node:hover {
+  border-color: var(--border2);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+}
+.node.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 4px 24px rgba(24,201,139,0.15);
+}
+.node.sheet {
+  border-style: dashed;
+  background: #111;
+}
+
+.node-hd {
+  display: flex; align-items: center;
+  gap: 9px; margin-bottom: 9px;
+}
+.node-icon {
+  width: 28px; height: 28px;
+  border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0;
+}
+.node-name { font-size: 12px; font-weight: 600; line-height: 1.25; }
+.node-desc { font-size: 9.5px; color: var(--muted); margin-top: 1.5px; line-height: 1.3; }
+
+.states { display: flex; flex-wrap: wrap; gap: 4px; }
+
+.sc {
+  font-size: 9.5px; line-height: 1.5;
+  padding: 1.5px 6px;
+  border-radius: 8px;
+  border: 1px solid;
+}
+.sc.empty   { color: #484848; border-color: #242424; background: #131313; }
+.sc.loading { color: #444;    border-color: #202020; background: #111;    }
+.sc.data    { color: var(--info);   border-color: #152540; background: #0a1525; }
+.sc.live    { color: var(--accent); border-color: #0c2e1c; background: #060f0a; }
+.sc.warn    { color: var(--warn);   border-color: #312208; background: #180f04; }
+.sc.err     { color: var(--err);    border-color: #351414; background: #180808; }
+
+/* ── SVG arrows ── */
+#arrows {
+  position: absolute;
+  inset: 0;
+  width: 1450px;
+  height: 1340px;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 1;
+}
+
+/* ── Detail panel ── */
+#panel {
+  position: fixed;
+  right: 0; top: 44px; bottom: 0; width: 300px;
+  background: rgba(13,13,13,0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-left: 1px solid var(--border);
+  padding: 20px 20px 40px;
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform 0.18s ease;
+  z-index: 150;
+}
+#panel.open { transform: translateX(0); }
+
+#panel-close {
+  position: absolute; top: 14px; right: 14px;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--muted); border-radius: 6px;
+  width: 24px; height: 24px; cursor: pointer; font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+}
+#panel-close:hover { color: var(--text); border-color: var(--border2); }
+
+.p-title { font-size: 15px; font-weight: 600; margin-bottom: 3px; }
+.p-file  {
+  font-size: 10px; color: var(--muted);
+  font-family: 'SF Mono', ui-monospace, monospace;
+  margin-bottom: 18px; line-height: 1.5;
+  word-break: break-all;
+}
+
+.p-sec { margin-bottom: 18px; }
+.p-sec h3 {
+  font-size: 9px; font-weight: 700;
+  letter-spacing: 1.2px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 8px;
+}
+.p-sec ul { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+.p-sec ul li {
+  font-size: 11px; color: var(--text);
+  display: flex; gap: 8px; align-items: baseline; line-height: 1.4;
+}
+.p-sec ul li::before { content: '·'; color: var(--muted2); flex-shrink: 0; }
+.nav-type {
+  font-size: 9px; color: var(--muted);
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 4px; padding: 1px 5px; flex-shrink: 0;
+}
+
+/* ── Zoom controls ── */
+#zoom-bar {
+  position: fixed;
+  bottom: 16px; right: 16px;
+  display: flex; gap: 4px; z-index: 200;
+  align-items: center;
+}
+#zoom-bar button {
+  width: 30px; height: 30px;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); border-radius: 7px; cursor: pointer;
+  font-size: 15px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.1s;
+}
+#zoom-bar button:hover { background: var(--border); }
+#zoom-pct {
+  font-size: 10px; color: var(--muted);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 7px; padding: 0 8px; height: 30px;
+  display: flex; align-items: center;
+  font-variant-numeric: tabular-nums; min-width: 44px;
+  justify-content: center;
+}
+
+/* ── Hint ── */
+#hint {
+  position: fixed; bottom: 16px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px; color: var(--muted2);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 5px 12px;
+  pointer-events: none; z-index: 200;
+  transition: opacity 0.5s;
+}
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <h1>NOOP iOS · Mapa de Pantallas</h1>
+  <span class="chip">20 pantallas</span>
+  <span class="chip">~74 estados</span>
+  <div class="sep"></div>
+  <div class="legend">
+    <div class="leg"><div class="leg-dot" style="background:#2e2e2e"></div>Vacío</div>
+    <div class="leg"><div class="leg-dot" style="background:#4A9EFF"></div>Con datos</div>
+    <div class="leg"><div class="leg-dot" style="background:#18C98B"></div>Live</div>
+    <div class="leg"><div class="leg-dot" style="background:#F5A623"></div>Aviso</div>
+    <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
+  </div>
+  <div class="sep"></div>
+  <span class="tb-updated">Actualizado 2026-06-15</span>
+</div>
+
+<div id="wrapper">
+  <div id="canvas">
+    <svg id="arrows"></svg>
+    <!-- nodes injected by JS -->
+  </div>
+</div>
+
+<div id="panel">
+  <button id="panel-close" onclick="closePanel()">✕</button>
+  <div id="panel-content"></div>
+</div>
+
+<div id="zoom-bar">
+  <button onclick="doZoom(1.25)" title="Acercar">+</button>
+  <div id="zoom-pct">75%</div>
+  <button onclick="doZoom(0.8)" title="Alejar">−</button>
+  <button onclick="resetView()" title="Reset">⊙</button>
+</div>
+
+<div id="hint">Arrastra para mover · Scroll para zoom · Click para detalles</div>
+
+<script>
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  SCREEN DATA  ← editar aquí para actualizar el mapa
+//  Cuando modifiques un *View.swift, actualiza el objeto
+//  correspondiente y la fecha en el toolbar.
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const SCREENS = [
+
+  // ── ROW 0: Dashboard (y = 60) ─────────────
+  {
+    id: 'today', x: 30, y: 60,
+    name: 'Today', desc: 'Dashboard · Hub principal',
+    file: 'Strand/Screens/TodayView.swift',
+    icon: '⚡', color: '#18C98B',
+    states: [
+      { label: 'Empty / First launch', type: 'empty' },
+      { label: 'Calibrando (1–3 noches)', type: 'loading' },
+      { label: 'Sin lectura de hoy', type: 'warn' },
+      { label: 'Veredicto listo', type: 'live' },
+    ],
+    nav: [
+      { to: 'live', label: 'See it beat by beat', type: 'fullscreen' },
+      { to: 'metric-info', label: 'Tap métrica', type: 'sheet' },
+      { to: 'support', label: 'Toolbar ❤', type: 'toolbar' },
+    ],
+    components: ['HealthAlertBanner', 'CalibrationProgressCard', 'LiveHeartbeatRow', 'ReadinessGaugeBar', 'RecoveryRing', 'InsightCard', 'StatTile ×10', 'ChartCard (HR Trend)', 'SourceBadge'],
+  },
+  {
+    id: 'health', x: 284, y: 60,
+    name: 'Health', desc: 'Vitales en vivo',
+    file: 'Strand/Screens/HealthView.swift',
+    icon: '❤️', color: '#FF5A5A',
+    states: [
+      { label: 'Sin datos', type: 'empty' },
+      { label: 'Streaming HR', type: 'live' },
+      { label: 'Datos históricos', type: 'data' },
+    ],
+    nav: [],
+    components: ['Sparkline', 'StatePill (STREAMING/IDLE)', 'StatTile ×5'],
+  },
+  {
+    id: 'sleep', x: 538, y: 60,
+    name: 'Sleep', desc: 'Análisis de sueño',
+    file: 'Strand/Screens/SleepView.swift',
+    icon: '🌙', color: '#7B8FFF',
+    states: [
+      { label: 'Sin datos de noche', type: 'empty' },
+      { label: 'Apple Health', type: 'data' },
+      { label: 'WHOOP · hipnograma', type: 'live' },
+      { label: 'WHOOP · estimado', type: 'data' },
+    ],
+    nav: [],
+    components: ['ChartCard (hipnograma/stacked)', 'StatTile ×7', 'Stages vs Typical Card', 'Duration Trend ChartCard'],
+  },
+  {
+    id: 'stress', x: 792, y: 60,
+    name: 'Stress', desc: 'Monitor de estrés 0–3',
+    file: 'Strand/Screens/StressView.swift',
+    icon: '🌡', color: '#F5A623',
+    states: [
+      { label: 'Calculando', type: 'loading' },
+      { label: 'Sin datos', type: 'empty' },
+      { label: 'Score calculado', type: 'data' },
+    ],
+    nav: [],
+    components: ['Hero Gauge Card', 'StatTile ×2 (RHR / HRV)', 'ChartCard (tendencia)', 'Metodología (z-score)'],
+  },
+
+  // ── ROW 1: Actividad (y = 280) ────────────
+  {
+    id: 'workouts', x: 30, y: 285,
+    name: 'Workouts', desc: 'Log de actividad',
+    file: 'Strand/Screens/WorkoutsView.swift',
+    icon: '🏋', color: '#4A9EFF',
+    states: [
+      { label: 'Cargando', type: 'loading' },
+      { label: 'Sin sesiones', type: 'empty' },
+      { label: 'Ventana vacía (auto-widen)', type: 'warn' },
+      { label: 'Con sesiones', type: 'data' },
+    ],
+    nav: [
+      { to: 'manual-workout', label: 'Add workout', type: 'sheet' },
+      { to: 'manual-workout', label: 'Edit (context menu)', type: 'sheet' },
+    ],
+    components: ['SegmentedPillControl (7D–All)', 'StatTile ×5', 'Activity Breakdown', 'HR Zones', 'Sessions table'],
+  },
+  {
+    id: 'trends', x: 284, y: 285,
+    name: 'Trends', desc: 'Análisis longitudinal',
+    file: 'Strand/Screens/TrendsView.swift',
+    icon: '📈', color: '#18C98B',
+    states: [
+      { label: 'Ventana vacía', type: 'empty' },
+      { label: 'Un solo punto', type: 'warn' },
+      { label: 'Múltiples puntos', type: 'data' },
+    ],
+    nav: [],
+    components: ['SegmentedPillControl (W–ALL)', 'Hero ChartCard (Recovery)', 'ChartCard ×3 (HRV/RHR/Strain)', 'YearHeatStrip'],
+  },
+  {
+    id: 'insights', x: 538, y: 285,
+    name: 'Insights', desc: 'Correlaciones de comportamiento',
+    file: 'Strand/Screens/InsightsView.swift',
+    icon: '💡', color: '#F5A623',
+    states: [
+      { label: 'Calculando', type: 'loading' },
+      { label: 'Sin journal', type: 'empty' },
+      { label: 'Con comportamientos', type: 'data' },
+      { label: 'Correlaciones (Pearson r)', type: 'data' },
+    ],
+    nav: [],
+    components: ['JournalLogCard', 'Behavior Effects Cards (Cohen\'s d)', 'RBar chart (Pearson r)', 'Metric Relationships Card'],
+  },
+
+  // ── ROW 2: Análisis (y = 500) ─────────────
+  {
+    id: 'explore', x: 30, y: 500,
+    name: 'Explore', desc: 'Catálogo de métricas',
+    file: 'Strand/Screens/MetricExplorerView.swift',
+    icon: '🔍', color: '#4A9EFF',
+    states: [
+      { label: 'Lista por categoría', type: 'data' },
+      { label: 'Detalle · sin datos', type: 'empty' },
+      { label: 'Detalle · un punto', type: 'warn' },
+      { label: 'Detalle · tendencia', type: 'data' },
+    ],
+    nav: [
+      { to: 'explore', label: 'Tap métrica → MetricDetailView', type: 'push' },
+    ],
+    components: ['MetricCatalog grouped list', 'Hero StatTile', 'ChartCard (tendencia)', 'Avg/Min/Max footer', 'Banding vs baseline'],
+  },
+  {
+    id: 'compare', x: 284, y: 500,
+    name: 'Compare', desc: 'Superponer 2–4 métricas',
+    file: 'Strand/Screens/CompareView.swift',
+    icon: '⚖', color: '#9B8FFF',
+    states: [
+      { label: 'Sin selección', type: 'empty' },
+      { label: '< 2 métricas', type: 'warn' },
+      { label: '2+ métricas', type: 'data' },
+    ],
+    nav: [],
+    components: ['Multi-select picker', 'SegmentedPillControl', 'Overlay ChartCard (normalizado 0–1)', 'Correlation rows (Pearson r + p-value)'],
+  },
+  {
+    id: 'apple-health', x: 538, y: 500,
+    name: 'Apple Health', desc: 'Historia de Apple Health',
+    file: 'Strand/Screens/AppleHealthView.swift',
+    icon: '🍎', color: '#FF5A5A',
+    states: [
+      { label: 'Sin datos', type: 'empty' },
+      { label: 'Ventana vacía (auto-widen)', type: 'warn' },
+      { label: 'Con datos', type: 'data' },
+    ],
+    nav: [],
+    components: ['StatTile hero por métrica', 'ChartCard ×4 secciones (Heart, Activity, Body, Sleep)', 'SegmentedPillControl'],
+  },
+  {
+    id: 'intelligence', x: 792, y: 500,
+    name: 'Intelligence', desc: 'Scores on-device',
+    file: 'Strand/Screens/IntelligenceView.swift',
+    icon: '🧠', color: '#18C98B',
+    states: [
+      { label: 'Calculando', type: 'loading' },
+      { label: 'Sin datos (mid-offload)', type: 'warn' },
+      { label: 'Sin datos (pending wear)', type: 'empty' },
+      { label: 'Resultados por día', type: 'data' },
+    ],
+    nav: [],
+    components: ['Explainer Card (pesos: HRV 60%/RHR 20%/sleep 15%/resp 5%)', 'Day Cards (Recovery/Strain/Sleep + NOOP badge)', 'Toolbar Recompute'],
+  },
+
+  // ── ROW 3: Dispositivo (y = 715) ──────────
+  {
+    id: 'live', x: 30, y: 715,
+    name: 'Live', desc: 'ECG en vivo · gestión de correa',
+    file: 'Strand/Screens/LiveView.swift',
+    icon: '📡', color: '#18C98B',
+    states: [
+      { label: 'No bonded', type: 'empty' },
+      { label: 'Bonded, sin conexión', type: 'warn' },
+      { label: 'Conectado, no puesto', type: 'data' },
+      { label: 'Puesto · Streaming', type: 'live' },
+      { label: 'monitorOnly mode', type: 'data' },
+    ],
+    nav: [],
+    components: ['ECG Hero Sparkline', 'Session Tally', 'Live Signals (zone / %max)', 'Sync Signals (battery / last sync)', 'Data Receipt (frame counts)', 'Coverage Strip (28d heat map)', 'Strap Management (model picker / controls)'],
+  },
+  {
+    id: 'automations', x: 284, y: 715,
+    name: 'Automations', desc: 'Double-tap · wear · alarmas',
+    file: 'Strand/Screens/AutomationsView.swift',
+    icon: '⚙️', color: '#888',
+    states: [
+      { label: 'Strap no bonded', type: 'empty' },
+      { label: 'Strap bonded', type: 'data' },
+    ],
+    nav: [],
+    components: ['StatePill (bonded/not)', 'Action picker (None/App/Shortcut)', 'Shortcut name field', 'Test button', 'Moments list (últimos 5 taps)'],
+  },
+  {
+    id: 'breathing', x: 538, y: 715,
+    name: 'Breathing', desc: 'HRV biofeedback trainer',
+    file: 'Strand/Screens/BreathingView.swift',
+    icon: '🫧', color: '#4A9EFF',
+    states: [
+      { label: 'Setup (pace selector)', type: 'empty' },
+      { label: 'Idle · bonded', type: 'data' },
+      { label: 'Corriendo', type: 'live' },
+      { label: 'Completo', type: 'data' },
+    ],
+    nav: [],
+    components: ['Pace selector (Relax/Coherence/Box)', 'Timer display', 'Live HR + zone', 'Rolling RMSSD chart', 'Strap bonded pill'],
+  },
+  {
+    id: 'interval', x: 792, y: 715,
+    name: 'Interval Timer', desc: 'HIIT timer haptic silencioso',
+    file: 'Strand/Screens/IntervalTimerView.swift',
+    icon: '⏱', color: '#F5A623',
+    states: [
+      { label: 'Config', type: 'empty' },
+      { label: 'Idle', type: 'data' },
+      { label: 'Corriendo', type: 'live' },
+      { label: 'Completo', type: 'data' },
+    ],
+    nav: [],
+    components: ['Duration inputs (Work / Rest / Rounds)', 'Timer display grande', 'Progress ring (phase)', 'Round counter', 'Start / Pause / Reset'],
+  },
+
+  // ── ROW 4: App (y = 930) ──────────────────
+  {
+    id: 'coach', x: 30, y: 930,
+    name: 'Coach', desc: 'LLM coaching (OpenAI / Anthropic)',
+    file: 'Strand/Screens/CoachView.swift',
+    icon: '🤖', color: '#9B8FFF',
+    states: [
+      { label: 'Sin clave API', type: 'empty' },
+      { label: 'Sin consentimiento', type: 'warn' },
+      { label: 'Vacío (consentido)', type: 'data' },
+      { label: 'Con mensajes', type: 'data' },
+      { label: 'Error (API / red)', type: 'err' },
+    ],
+    nav: [],
+    components: ['Setup Card (provider/model/key)', 'Consent Bar (toggle)', 'Transcript (bubbles)', 'Suggestion Chips (scroll H)', 'Composer + send button', 'Privacy Footnote'],
+  },
+  {
+    id: 'settings', x: 284, y: 930,
+    name: 'Settings', desc: 'Configuración y perfil',
+    file: 'Strand/Screens/SettingsView.swift',
+    icon: '⚙', color: '#888',
+    states: [
+      { label: 'Vista única (scrollable)', type: 'data' },
+    ],
+    nav: [
+      { to: 'whats-new', label: 'What\'s New', type: 'sheet' },
+      { to: 'notif-settings', label: 'Notification Settings', type: 'push' },
+    ],
+    components: ['SettingsSection cards', 'FormRow (age/sex/weight/height)', 'Units toggles (metric/imperial/°C/°F)', 'Strap card', 'Experimental toggle (Puffin)', 'Backup card (export/restore)', 'About card'],
+  },
+  {
+    id: 'data-sources', x: 538, y: 930,
+    name: 'Data Sources', desc: 'Importar WHOOP · Apple Health',
+    file: 'Strand/Screens/DataSourcesView.swift',
+    icon: '📥', color: '#4A9EFF',
+    states: [
+      { label: 'Idle', type: 'empty' },
+      { label: 'Importando WHOOP', type: 'loading' },
+      { label: 'Importando Apple Health', type: 'loading' },
+      { label: 'Import completo', type: 'live' },
+    ],
+    nav: [],
+    components: ['WHOOP Export Card', 'Apple Health Export Card', 'Apple Health Live Card (iOS, toggle)', 'Live Strap Card', 'File importer (fileImporter)'],
+  },
+  {
+    id: 'support', x: 792, y: 930,
+    name: 'Support', desc: 'Donaciones · contacto · atribución',
+    file: 'Strand/Screens/SupportView.swift',
+    icon: '❤', color: '#FF5A5A',
+    states: [
+      { label: 'Estático', type: 'data' },
+    ],
+    nav: [],
+    components: ['Built On Card (attrs)', 'Donate Card (BTC/ETH + copy)', 'Contact Card (mailto)', 'Disclaimer Card'],
+  },
+
+  // ── ROW 5: Sheets / Modales (y = 1145) ────
+  {
+    id: 'manual-workout', x: 30, y: 1145,
+    name: 'Manual Workout', desc: 'Sheet: agregar / editar sesión',
+    file: 'Strand/Screens/ManualWorkoutSheet.swift',
+    icon: '✏', color: '#4A9EFF',
+    isSheet: true,
+    states: [
+      { label: 'Modo agregar (editing: nil)', type: 'empty' },
+      { label: 'Modo editar (editing: row)', type: 'data' },
+      { label: 'Validación fallida', type: 'err' },
+    ],
+    nav: [],
+    components: ['Sport TextField', 'DatePicker (start)', 'Duration spinner (minutos)', 'Avg HR (opcional)', 'kcal (opcional)', 'Save button (disabled si inválido)'],
+  },
+  {
+    id: 'metric-info', x: 284, y: 1145,
+    name: 'Metric Info', desc: 'Sheet: detalle de métrica (desde Today)',
+    file: 'Strand/Screens/MetricInfoSheet.swift',
+    icon: 'ℹ', color: '#4A9EFF',
+    isSheet: true,
+    states: [
+      { label: 'Estático por métrica', type: 'data' },
+    ],
+    nav: [],
+    components: ['Metric name + headline', 'Valor actual + color', 'Bands (3–4 rangos)', 'Nota opcional'],
+  },
+  {
+    id: 'whats-new', x: 538, y: 1145,
+    name: 'What\'s New', desc: 'Sheet: historial de versiones',
+    file: 'Strand/Screens/WhatsNewView.swift',
+    icon: '🆕', color: '#18C98B',
+    isSheet: true,
+    states: [
+      { label: 'Lista scrollable', type: 'data' },
+    ],
+    nav: [],
+    components: ['Expectations Card', 'Release Cards (AppChangelog.releases)'],
+  },
+  {
+    id: 'notif-settings', x: 792, y: 1145,
+    name: 'Notification Settings', desc: 'Alertas de muñeca via correa',
+    file: 'Strand/Screens/NotificationSettingsView.swift',
+    icon: '🔔', color: '#F5A623',
+    isSheet: false,
+    states: [
+      { label: 'Alertas desactivadas', type: 'empty' },
+      { label: 'Activado, sin apps', type: 'warn' },
+      { label: 'Activado, con apps', type: 'data' },
+    ],
+    nav: [],
+    components: ['Master Card (toggle + strap pill + test buzz)', 'Category Cards (per-app toggle + buzz pattern)', 'Behaviour Card (quiet hours)'],
+  },
+];
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  EDGES — navigation connections
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const EDGES = [
+  { from: 'today',    to: 'live',           label: 'fullScreenCover',  type: 'fullscreen' },
+  { from: 'today',    to: 'metric-info',    label: 'sheet',            type: 'sheet'      },
+  { from: 'today',    to: 'support',        label: 'toolbar ❤',        type: 'toolbar'    },
+  { from: 'workouts', to: 'manual-workout', label: 'sheet',            type: 'sheet'      },
+  { from: 'settings', to: 'whats-new',      label: 'sheet',            type: 'sheet'      },
+  { from: 'settings', to: 'notif-settings', label: 'push',             type: 'push'       },
+];
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  SECTION LABELS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const SECTIONS = [
+  { label: 'Dashboard',         x: 30, y: 32 },
+  { label: 'Actividad',         x: 30, y: 257 },
+  { label: 'Análisis',          x: 30, y: 472 },
+  { label: 'Dispositivo',       x: 30, y: 687 },
+  { label: 'App',               x: 30, y: 902 },
+  { label: 'Sheets & Modales',  x: 30, y: 1117 },
+];
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  RENDER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const canvas   = document.getElementById('canvas');
+const arrowSvg = document.getElementById('arrows');
+const NODE_W   = 204;
+
+const byId = {};
+SCREENS.forEach(s => byId[s.id] = s);
+
+// Section labels
+SECTIONS.forEach(s => {
+  const el = document.createElement('div');
+  el.className = 'sec-label';
+  el.style.left = s.x + 'px';
+  el.style.top  = s.y + 'px';
+  el.textContent = s.label;
+  canvas.appendChild(el);
+});
+
+// Nodes
+SCREENS.forEach(s => {
+  const el = document.createElement('div');
+  el.className = 'node' + (s.isSheet ? ' sheet' : '');
+  el.id = 'node-' + s.id;
+  el.style.left = s.x + 'px';
+  el.style.top  = s.y + 'px';
+
+  const chipsHtml = s.states.map(st =>
+    `<span class="sc ${st.type}">${st.label}</span>`
+  ).join('');
+
+  el.innerHTML = `
+    <div class="node-hd">
+      <div class="node-icon" style="background:${s.color}1a">${s.icon}</div>
+      <div>
+        <div class="node-name">${s.name}</div>
+        <div class="node-desc">${s.desc}</div>
+      </div>
+    </div>
+    <div class="states">${chipsHtml}</div>
+  `;
+
+  el.addEventListener('click', e => { e.stopPropagation(); openPanel(s); });
+  canvas.appendChild(el);
+});
+
+// ─── Arrows ───────────────────────────────
+const EDGE_COLORS = {
+  fullscreen: '#0a2a18',
+  sheet:      '#0a1a2e',
+  push:       '#1a1a2e',
+  toolbar:    '#2e1a1a',
+};
+const ARROW_COLORS = {
+  fullscreen: '#0d3a22',
+  sheet:      '#0d253d',
+  push:       '#1a1a3d',
+  toolbar:    '#3d1a1a',
+};
+
+function renderArrows() {
+  arrowSvg.innerHTML = `<defs>
+    ${Object.entries(ARROW_COLORS).map(([k, c]) => `
+      <marker id="arr-${k}" viewBox="0 0 8 8" refX="7" refY="4"
+        markerWidth="5" markerHeight="5" orient="auto">
+        <path d="M0,1 L7,4 L0,7 Z" fill="${c}"/>
+      </marker>`).join('')}
+  </defs>`;
+
+  EDGES.forEach(edge => {
+    const from = byId[edge.from];
+    const to   = byId[edge.to];
+    if (!from || !to) return;
+
+    // Exit from bottom-center of 'from', enter top-center of 'to'
+    const x1 = from.x + NODE_W / 2;
+    const y1 = from.y + 160; // approximate node bottom
+    const x2 = to.x + NODE_W / 2;
+    const y2 = to.y;
+
+    const cy = (y1 + y2) / 2;
+    const d  = `M${x1},${y1} C${x1},${cy} ${x2},${cy} ${x2},${y2}`;
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', d);
+    path.setAttribute('stroke', EDGE_COLORS[edge.type] || '#2a2a2a');
+    path.setAttribute('stroke-width', '1.5');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('marker-end', `url(#arr-${edge.type})`);
+    arrowSvg.appendChild(path);
+
+    // Label at curve midpoint
+    const mx = (x1 + x2) / 2;
+    const my = (y1 + y2) / 2 - 6;
+    const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    txt.setAttribute('x', mx);
+    txt.setAttribute('y', my);
+    txt.setAttribute('text-anchor', 'middle');
+    txt.setAttribute('font-size', '9');
+    txt.setAttribute('fill', '#2e2e2e');
+    txt.setAttribute('font-family', '-apple-system, sans-serif');
+    txt.textContent = edge.label;
+    arrowSvg.appendChild(txt);
+  });
+}
+
+renderArrows();
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  PANEL
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function openPanel(s) {
+  document.querySelectorAll('.node').forEach(n => n.classList.remove('selected'));
+  document.getElementById('node-' + s.id).classList.add('selected');
+
+  const navHtml = s.nav.length ? `
+    <div class="p-sec">
+      <h3>Navegación saliente</h3>
+      <ul>${s.nav.map(n =>
+        `<li>${n.label} <span class="nav-type">${n.type}</span></li>`
+      ).join('')}</ul>
+    </div>` : '';
+
+  const compHtml = s.components.length ? `
+    <div class="p-sec">
+      <h3>Componentes clave</h3>
+      <ul>${s.components.map(c => `<li>${c}</li>`).join('')}</ul>
+    </div>` : '';
+
+  document.getElementById('panel-content').innerHTML = `
+    <div class="p-title">${s.icon} ${s.name}</div>
+    <div class="p-file">${s.file}</div>
+
+    <div class="p-sec">
+      <h3>Estados visuales</h3>
+      <div class="states" style="display:flex;flex-wrap:wrap;gap:5px">
+        ${s.states.map(st => `<span class="sc ${st.type}">${st.label}</span>`).join('')}
+      </div>
+    </div>
+
+    ${navHtml}
+    ${compHtml}
+  `;
+
+  document.getElementById('panel').classList.add('open');
+
+  // Scroll node into view (approx — bring to center)
+  const rect = document.getElementById('wrapper').getBoundingClientRect();
+  const targetX = rect.width / 2  - (s.x + NODE_W / 2) * scale;
+  const targetY = rect.height / 2 - (s.y + 80) * scale;
+  offsetX = targetX;
+  offsetY = targetY;
+  applyTransform();
+}
+
+function closePanel() {
+  document.querySelectorAll('.node').forEach(n => n.classList.remove('selected'));
+  document.getElementById('panel').classList.remove('open');
+}
+
+document.getElementById('wrapper').addEventListener('click', e => {
+  if (!e.target.closest('.node') && !e.target.closest('#panel')) closePanel();
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  PAN & ZOOM
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let scale = 0.72, offsetX = 40, offsetY = 20;
+let dragging = false, sx, sy, sox, soy;
+
+const wrapper = document.getElementById('wrapper');
+
+function applyTransform() {
+  canvas.style.transform = `translate(${offsetX}px,${offsetY}px) scale(${scale})`;
+  canvas.style.transformOrigin = '0 0';
+  document.getElementById('zoom-pct').textContent = Math.round(scale * 100) + '%';
+}
+applyTransform();
+
+wrapper.addEventListener('mousedown', e => {
+  if (e.target.closest('.node') || e.target.closest('#panel')) return;
+  dragging = true;
+  wrapper.classList.add('dragging');
+  sx = e.clientX; sy = e.clientY; sox = offsetX; soy = offsetY;
+});
+window.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  offsetX = sox + (e.clientX - sx);
+  offsetY = soy + (e.clientY - sy);
+  applyTransform();
+});
+window.addEventListener('mouseup', () => {
+  dragging = false;
+  wrapper.classList.remove('dragging');
+});
+
+wrapper.addEventListener('wheel', e => {
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? 0.9 : 1.1;
+  const rect = wrapper.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  const wx = (mx - offsetX) / scale;
+  const wy = (my - offsetY) / scale;
+  scale = Math.max(0.2, Math.min(2.5, scale * delta));
+  offsetX = mx - wx * scale;
+  offsetY = my - wy * scale;
+  applyTransform();
+}, { passive: false });
+
+function doZoom(f) {
+  const rect = wrapper.getBoundingClientRect();
+  const cx = rect.width / 2, cy = rect.height / 2;
+  const wx = (cx - offsetX) / scale;
+  const wy = (cy - offsetY) / scale;
+  scale = Math.max(0.2, Math.min(2.5, scale * f));
+  offsetX = cx - wx * scale;
+  offsetY = cy - wy * scale;
+  applyTransform();
+}
+
+function resetView() {
+  scale = 0.72; offsetX = 40; offsetY = 20;
+  applyTransform();
+  closePanel();
+}
+
+// Hide hint after 4 s
+setTimeout(() => {
+  const h = document.getElementById('hint');
+  h.style.opacity = '0';
+  setTimeout(() => h.remove(), 500);
+}, 4000);
+</script>
+</body>
+</html>
