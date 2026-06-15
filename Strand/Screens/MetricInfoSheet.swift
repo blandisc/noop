@@ -203,6 +203,9 @@ struct MetricInfoSheet: View {
 
     @State private var strainCurve: [TrendPoint] = []
     @State private var strainLoading = false
+    /// Measured natural height of the sheet's content — used to size the Day Strain detent to its
+    /// content so it never opens taller than it needs to. (FER-112 follow-up)
+    @State private var contentHeight: CGFloat = 0
 
     var body: some View {
         ScrollView {
@@ -223,12 +226,13 @@ struct MetricInfoSheet: View {
             }
             .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .background(GeometryReader { g in
+                Color.clear.preference(key: SheetContentHeightKey.self, value: g.size.height)
+            })
         }
+        .onPreferenceChange(SheetContentHeightKey.self) { contentHeight = $0 }
         .background(StrandPalette.surfaceBase)
-        // Day Strain carries the accumulation chart below the zones table — too tall for .medium, so it
-        // opens .large (chart visible on first view) and can still collapse to .medium. Every other
-        // metric is short, so it stays compact at .medium. (FER-112)
-        .presentationDetents(info.id == "strain" ? [.large, .medium] : [.medium])
+        .presentationDetents(strainDetents)
         .presentationDragIndicator(.visible)
         .modifier(PresentationBackgroundModifier())
         .task {
@@ -237,6 +241,15 @@ struct MetricInfoSheet: View {
             strainCurve = await loader()
             strainLoading = false
         }
+    }
+
+    /// Day Strain carries the accumulation chart below the zones table, so the sheet is sized to its
+    /// own content: it opens tall enough to show the whole chart and can't be dragged up into empty
+    /// space (a single content-height detent). Until the first layout pass measures it, fall back to
+    /// `.large`. Every other metric is short and stays compact at `.medium`. (FER-112 follow-up)
+    private var strainDetents: Set<PresentationDetent> {
+        guard info.id == "strain" else { return [.medium] }
+        return contentHeight > 0 ? [.height(contentHeight)] : [.large]
     }
 
     private var header: some View {
@@ -362,6 +375,12 @@ struct MetricInfoSheet: View {
 }
 
 // MARK: - Helpers
+
+/// Carries the sheet content's measured natural height up to size the Day Strain detent. (FER-112)
+private struct SheetContentHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
 
 private struct PresentationBackgroundModifier: ViewModifier {
     func body(content: Content) -> some View {
