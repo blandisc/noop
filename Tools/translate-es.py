@@ -18,6 +18,13 @@ CATALOG = Path("Strand/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
+    # HRV "how it's calculated" explainer sheet (FER-109).
+    "HRV is how much the time between your heartbeats varies, in milliseconds, while you sleep. More variation usually means better recovery. What matters isn't the number itself, but how it compares with your own average.": "La HRV es cuánto varían, en milisegundos, los tiempos entre tus latidos mientras duermes. Más variación suele indicar mejor recuperación. Lo que importa no es el número en sí, sino cómo se compara con tu propio promedio.",
+    "HRV is personal. There are no universal good/bad thresholds — only your trend over time.": "La HRV es personal. No hay umbrales universales de bueno o malo —solo tu tendencia en el tiempo.",
+    "No HRV from last night. That can happen if you didn't wear the strap, or the night was too short to gather 20 clean beats.": "No hay HRV de anoche. Puede pasar si no usaste el strap o si la noche fue muy corta para reunir 20 latidos limpios.",
+    "We take the intervals between your heartbeats overnight, drop any outside 300–2000 ms and any that deviate more than 20% from their neighbours (ectopic beats). If at least 20 clean beats remain, we compute RMSSD.": "Tomamos los intervalos entre tus latidos durante la noche, descartamos los que quedan fuera de 300–2000 ms y los que se desvían más de 20% de sus vecinos (latidos ectópicos). Si quedan al menos 20 latidos limpios, calculamos el RMSSD.",
+    "RMSSD (Task Force, 1996); ectopic rejection by Malik's rule. HRV is about 60% of your recovery score.": "RMSSD (Task Force, 1996); rechazo de ectópicos con la regla de Malik. La HRV pesa cerca del 60% de tu recuperación.",
+
     # Recovery "how it's calculated" explainer sheet (FER-108).
     "Your recovery sums up how ready your body is today, from 0 to 100. It blends several signals from your night — your HRV above all — and compares them with your own average from recent weeks, not anyone else's.": "Tu recuperación resume qué tan listo está tu cuerpo hoy, del 0 al 100. Combina varias señales de tu noche —sobre todo tu HRV— y las compara con tu propio promedio de las últimas semanas, no con el de nadie más.",
     "If a signal is missing on a given night, its weight is shared among the others.": "Si falta alguna señal esa noche, su peso se reparte entre las demás.",

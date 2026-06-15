@@ -126,16 +126,25 @@ extension MetricInfo {
         )
     }
 
+    /// HRV (RMSSD, ms). Plain-language headline + the existing "it's personal" note, plus a
+    /// "See the method" disclosure (reusing FER-108's component) with the real cleaning pipeline.
+    /// When there's no reading, the note explains why instead of leaving a bare "—". (FER-109)
     static func hrv(_ value: Double?) -> MetricInfo {
         MetricInfo(
             id: "hrv",
             name: "HRV",
-            headline: "Heart Rate Variability — the millisecond fluctuation between heartbeats. Higher isn't always better: what matters is how your HRV compares to your own baseline. A dip from your norm signals stress, fatigue, or recovery debt. NOOP weights HRV at ~60% of your recovery score.",
+            headline: "HRV is how much the time between your heartbeats varies, in milliseconds, while you sleep. More variation usually means better recovery. What matters isn't the number itself, but how it compares with your own average.",
             displayValue: value.map { "\(Int($0.rounded()))" } ?? "—",
             unit: "ms",
             currentColor: StrandPalette.metricPurple,
             bands: [],
-            note: "HRV is personal. There are no universal good/bad thresholds — only your trend over time."
+            note: value == nil
+                ? "No HRV from last night. That can happen if you didn't wear the strap, or the night was too short to gather 20 clean beats."
+                : "HRV is personal. There are no universal good/bad thresholds — only your trend over time.",
+            method: Method(
+                prose: "We take the intervals between your heartbeats overnight, drop any outside 300–2000 ms and any that deviate more than 20% from their neighbours (ectopic beats). If at least 20 clean beats remain, we compute RMSSD.",
+                citation: "RMSSD (Task Force, 1996); ectopic rejection by Malik's rule. HRV is about 60% of your recovery score."
+            )
         )
     }
 
@@ -624,6 +633,13 @@ private func sampleStrainCurve(score: Double) -> [TrendPoint] {
 #Preview("MetricInfoSheet — HRV") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricInfoSheet(info: .hrv(66))
+    }
+    .preferredColorScheme(.dark)
+}
+
+#Preview("MetricInfoSheet — HRV (no data)") {
+    Color.clear.sheet(isPresented: .constant(true)) {
+        MetricInfoSheet(info: .hrv(nil))
     }
     .preferredColorScheme(.dark)
 }
