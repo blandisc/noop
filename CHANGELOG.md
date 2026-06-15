@@ -22,6 +22,10 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 - **La pantalla de Hoy queda más compacta — menos aire muerto vertical / The Today screen is more compact — less vertical dead space.**
   **ES** — Hoy se sentía holgada: demasiado espacio en blanco entre secciones y, en especial, un hueco grande arriba de la fila «Míralo latido a latido», justo debajo de «Tu base viene de Apple Health». Apretamos un poco la pantalla: las secciones se acercan, la fila de latido sube para matar ese hueco, y se recorta el aire bajo la tarjeta de veredicto — conservando el área de toque cómoda de la fila. Mismo contenido, solo más junto. No cambia ninguna otra pantalla.
   **EN** — Today felt airy: too much whitespace between sections and, especially, a big gap above the "See it beat by beat" row, right under "Your baseline comes from Apple Health." We tightened the screen a touch: sections sit closer, the heartbeat row moves up to kill that gap, and the space below the verdict card is trimmed — while keeping the row's comfortable tap target. Same content, just closer together. No other screen changes.
+
+- **Fuentes de datos en Hoy se ven ordenadas en dos columnas / Data sources in Today are now laid out in a clean two-column grid.**
+  **ES** — WHOOP y Apple Health ahora aparecen lado a lado, cada uno con su badge arriba y sus conteos debajo. Antes, cuando los dos estaban activos, el texto se partía de forma rara con el separador «·» colgando al final de la primera línea.
+  **EN** — WHOOP and Apple Health now sit side by side, each with its badge on top and counts below. Previously, when both were active, the text broke awkwardly with the separator «·» dangling at the end of the first line.
   ([Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift))
 
 - **Tu tarjeta de hoy ya no confunde una recuperación alta con un veredicto exigente / Your Today card no longer makes a high recovery look like it's fighting the verdict.**

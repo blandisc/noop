@@ -1194,21 +1194,22 @@ struct TodayView: View {
         if hasData || hasSync {
             VStack(alignment: .leading, spacing: 4) {
                 if hasData {
-                    HStack(spacing: 6) {
+                    HStack(alignment: .top, spacing: 16) {
                         if whoopDays > 0 {
-                            SourceBadge("Whoop", tint: StrandPalette.accent)
-                            Text(String(localized: "\(whoopDays) days · \(repo.sleeps.count) sleeps"))
-                                .font(StrandFont.footnote)
-                                .foregroundStyle(StrandPalette.textTertiary)
-                        }
-                        if whoopDays > 0 && ahDays > 0 {
-                            Text("·").font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
+                            VStack(alignment: .leading, spacing: 3) {
+                                SourceBadge("Whoop", tint: StrandPalette.accent)
+                                Text(String(localized: "\(whoopDays) days · \(repo.sleeps.count) sleeps"))
+                                    .font(StrandFont.footnote)
+                                    .foregroundStyle(StrandPalette.textTertiary)
+                            }
                         }
                         if ahDays > 0 {
-                            SourceBadge("Apple Health", tint: StrandPalette.metricCyan)
-                            Text(String(localized: "\(ahDays) days · \(ahWorkouts) workouts"))
-                                .font(StrandFont.footnote)
-                                .foregroundStyle(StrandPalette.textTertiary)
+                            VStack(alignment: .leading, spacing: 3) {
+                                SourceBadge("Apple Health", tint: StrandPalette.metricCyan)
+                                Text(String(localized: "\(ahDays) days · \(ahWorkouts) workouts"))
+                                    .font(StrandFont.footnote)
+                                    .foregroundStyle(StrandPalette.textTertiary)
+                            }
                         }
                     }
                 }
