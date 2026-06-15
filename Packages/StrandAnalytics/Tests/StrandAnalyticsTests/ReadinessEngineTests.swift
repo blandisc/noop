@@ -118,6 +118,77 @@ final class ReadinessEngineTests: XCTestCase {
         XCTAssertFalse(r.confidenceLow)
     }
 
+    // MARK: - Reconciliation (recovery vs. verdict bridge)
+
+    /// ACWR spike (→ strained, acwr `.bad`) with an explicit recovery score on today's row, so we
+    /// can drive the high/low divergence gate. Recovery signals stay neutral, so `acwr` is the lead.
+    private func acwrSpike(todayRecovery: Double?) -> [DailyMetric] {
+        var days: [DailyMetric] = []
+        for i in 1...21 { days.append(d(i, hrv: 60, rhr: 52, strain: 5)) }
+        for i in 22...28 { days.append(d(i, hrv: 60, rhr: 52, strain: 15)) }
+        days.append(DailyMetric(day: "2024-03-29", totalSleepMin: nil, efficiency: nil,
+            deepMin: nil, remMin: nil, lightMin: nil, disturbances: nil, restingHr: 52,
+            avgHrv: 60, recovery: todayRecovery, strain: 15, exerciseCount: nil,
+            spo2Pct: nil, skinTempDevC: nil, respRateBpm: nil))
+        return days
+    }
+
+    func testBridgeNoneWhenInsufficient() {
+        let r = ReadinessEngine.evaluate(days: [])
+        XCTAssertEqual(r.bridgeKind, .none)
+        XCTAssertNil(r.bridge)
+    }
+
+    func testBridgeAlignedWhenPrimed() {
+        let r = ReadinessEngine.evaluate(days: baseline(todayHrv: 72, todayRhr: 46, todayStrain: 10))
+        XCTAssertEqual(r.level, .primed)
+        XCTAssertEqual(r.bridgeKind, .aligned)
+        XCTAssertNotNil(r.bridge)
+        XCTAssertNil(r.culpritNoun)   // nothing to blame on an aligned day
+    }
+
+    func testBridgeRundownWhenSeveralDown() {
+        let r = ReadinessEngine.evaluate(days: baseline(todayHrv: 50, todayRhr: 60, todayStrain: 10))
+        XCTAssertEqual(r.level, .rundown)
+        XCTAssertEqual(r.bridgeKind, .rundown)
+    }
+
+    func testBridgeDivergenceLoadWhenRecoveryHighAndLoadSpikes() {
+        // Strained by an ACWR spike, but the user woke up well recovered → the load is the culprit,
+        // not the body: the "great everywhere except your load" case.
+        let r = ReadinessEngine.evaluate(days: acwrSpike(todayRecovery: 80))
+        XCTAssertEqual(r.level, .strained)
+        XCTAssertEqual(r.bridgeKind, .divergenceLoad)
+        XCTAssertNotNil(r.bridge)
+        XCTAssertTrue(r.bridge!.lowercased().contains("load"))
+        XCTAssertEqual(r.culpritNoun?.lowercased().contains("load"), true)   // sublabel names the load
+    }
+
+    func testBridgeStrainedFlatWhenRecoveryNotHigh() {
+        // Same ACWR spike, but recovery is not in the green band → no divergence to explain.
+        XCTAssertEqual(ReadinessEngine.evaluate(days: acwrSpike(todayRecovery: nil)).bridgeKind, .strainedFlat)
+        XCTAssertEqual(ReadinessEngine.evaluate(days: acwrSpike(todayRecovery: 40)).bridgeKind, .strainedFlat)
+    }
+
+    func testBridgeDivergenceGateBoundaryAtYellowMax() {
+        // The high-recovery gate is exactly RecoveryScorer.bandYellowMax (67): below → flat, at → divergence.
+        XCTAssertEqual(ReadinessEngine.evaluate(days: acwrSpike(todayRecovery: 66)).bridgeKind, .strainedFlat)
+        XCTAssertEqual(ReadinessEngine.evaluate(days: acwrSpike(todayRecovery: 67)).bridgeKind, .divergenceLoad)
+    }
+
+    func testBridgeDivergenceBodyWhenRecoveryHighAndBodySignalFlags() {
+        // High recovery, but a body signal (skin temp) flags → divergence framed on the body, not load.
+        var days = baseline(todayHrv: 60, todayRhr: 52, todayStrain: 10)
+        days[days.count - 1] = DailyMetric(day: "2024-03-29", totalSleepMin: nil, efficiency: nil,
+            deepMin: nil, remMin: nil, lightMin: nil, disturbances: nil, restingHr: 52,
+            avgHrv: 60, recovery: 80, strain: 10, exerciseCount: nil,
+            spo2Pct: nil, skinTempDevC: 1.0, respRateBpm: nil)
+        let r = ReadinessEngine.evaluate(days: days)
+        XCTAssertEqual(r.level, .strained)
+        XCTAssertEqual(r.bridgeKind, .divergenceBody)
+        XCTAssertNotNil(r.bridge)
+    }
+
     func testStatsHelpers() {
         XCTAssertEqual(ReadinessEngine.mean([2, 4, 6]), 4)
         XCTAssertEqual(ReadinessEngine.sampleSD([2, 4, 6])!, 2.0, accuracy: 0.0001)

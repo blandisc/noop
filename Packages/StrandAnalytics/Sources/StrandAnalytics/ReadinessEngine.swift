@@ -36,6 +36,20 @@ public enum ReadinessEngine {
         case good, neutral, watch, bad
     }
 
+    /// Why the verdict reads the way it does, as one small decision the UI turns into a single
+    /// reconciling sentence ("you woke up recovered, but your load is the thing to watch"). Kept
+    /// separate from the copy so the *decision* is unit-testable without asserting localized
+    /// strings. "Recovery high" everywhere here means recovery ≥ `RecoveryScorer.bandYellowMax`
+    /// (the green band) — one source of truth, shared with the score's own coloring.
+    public enum BridgeKind: String, Sendable, Equatable {
+        case divergenceLoad   // recovery high, but training load (ACWR) is the lead flag
+        case divergenceBody   // recovery high, but a body signal (HRV/RHR/temp/resp) is flagging
+        case aligned          // primed / balanced — nothing meaningfully flagging
+        case strainedFlat     // strained without a high-recovery divergence to explain
+        case rundown          // several signals down at once
+        case none             // insufficient history — no verdict to reconcile
+    }
+
     /// The acute:chronic workload band, as a small named scale shared by every surface so the
     /// thresholds (0.8 / 1.3 / 1.5) live in exactly one place. The verdict hero shows `shortLabel`
     /// colored by `flag`; the signals list keeps the longer per-band sentence in `acwrSignal`.
@@ -90,12 +104,24 @@ public enum ReadinessEngine {
         public let confidenceLow: Bool
         /// A localized one-liner explaining `confidenceLow` (nil when confidence is normal).
         public let confidenceNote: String?
+        /// Why the verdict reads the way it does — the testable decision behind `bridge`.
+        public let bridgeKind: BridgeKind
+        /// A localized one-liner reconciling recovery vs. the verdict for the user
+        /// ("you woke up recovered, but your load is the thing to watch"). nil only for `.none`.
+        public let bridge: String?
+        /// Short localized noun for what's behind the verdict, for the verdict card sublabel
+        /// ("from your training load"). nil when nothing is to blame (aligned / insufficient).
+        public let culpritNoun: String?
         public init(level: Level, headline: String, summary: String,
                     signals: [Signal], acwr: Double?, monotony: Double?,
-                    confidenceLow: Bool = false, confidenceNote: String? = nil) {
+                    confidenceLow: Bool = false, confidenceNote: String? = nil,
+                    bridgeKind: BridgeKind = .none, bridge: String? = nil,
+                    culpritNoun: String? = nil) {
             self.level = level; self.headline = headline; self.summary = summary
             self.signals = signals; self.acwr = acwr; self.monotony = monotony
             self.confidenceLow = confidenceLow; self.confidenceNote = confidenceNote
+            self.bridgeKind = bridgeKind; self.bridge = bridge
+            self.culpritNoun = culpritNoun
         }
 
         /// The training-load band for this read, derived from `acwr` (nil when there's no load yet).
@@ -227,9 +253,16 @@ public enum ReadinessEngine {
 
         let (level, headline, summary) = synthesize(signals: signals,
                                                     hasHistory: !history.isEmpty || acwr != nil)
+        // Reconciliation line: recovery and the verdict are two different reads and can diverge
+        // (a high recovery with a "Strained" verdict is the classic case). Decide WHY in one place
+        // (testable), then localize it. recovery comes from today's row; nil → not "high".
+        let lead = leadSignal(signals)
+        let kind = bridgeKind(level: level, recovery: latest.recovery, lead: lead)
         return Readiness(level: level, headline: headline, summary: summary,
                          signals: signals, acwr: acwr, monotony: monotony,
-                         confidenceLow: confidenceLow, confidenceNote: confidenceNote)
+                         confidenceLow: confidenceLow, confidenceNote: confidenceNote,
+                         bridgeKind: kind, bridge: bridgeCopy(kind, lead: lead),
+                         culpritNoun: verdictCulprit(kind: kind, lead: lead))
     }
 
     // MARK: Signal builders
@@ -321,6 +354,76 @@ public enum ReadinessEngine {
         }
         return (.balanced, String(localized: "Balanced", bundle: .main),
                 String(localized: "Nothing's flagging. Train to feel — your body's holding steady.", bundle: .main))
+    }
+
+    // MARK: Reconciliation (recovery vs. verdict)
+
+    /// The single signal most responsible for the verdict, for the reconciling sentence: the
+    /// worst-flagged one (`.bad` before `.watch`), taken in append order so the first match is the
+    /// natural culprit. nil when nothing is flagging.
+    static func leadSignal(_ signals: [Signal]) -> Signal? {
+        signals.first { $0.flag == .bad } ?? signals.first { $0.flag == .watch }
+    }
+
+    /// The reconciliation decision (pure, deterministic, testable). `recovery` is today's 0–100
+    /// recovery score (nil while calibrating). "High" reuses `RecoveryScorer.bandYellowMax` so the
+    /// "you woke up recovered" claim and the score's green band can never disagree.
+    static func bridgeKind(level: Level, recovery: Double?, lead: Signal?) -> BridgeKind {
+        let recoveryHigh = (recovery ?? 0) >= RecoveryScorer.bandYellowMax
+        switch level {
+        case .insufficient:    return .none
+        case .primed, .balanced: return .aligned
+        case .rundown:         return .rundown
+        case .strained:
+            // Only a genuinely high recovery makes this a "great everywhere except X" divergence;
+            // otherwise it's a flat caution with nothing to reconcile.
+            guard recoveryHigh, let lead else { return .strainedFlat }
+            return lead.key == "acwr" ? .divergenceLoad : .divergenceBody
+        }
+    }
+
+    /// Possessive noun for a signal, for the divergence sentence ("…what needs care is {your HRV}")
+    /// and the verdict card's sublabel ("from {your training load}"). One source so both agree.
+    private static func signalNoun(_ key: String) -> String {
+        switch key {
+        case "acwr":     return String(localized: "your training load", bundle: .main)
+        case "hrv":      return String(localized: "your HRV", bundle: .main)
+        case "rhr":      return String(localized: "your resting heart rate", bundle: .main)
+        case "skinTemp": return String(localized: "your skin temperature", bundle: .main)
+        case "respRate": return String(localized: "your breathing", bundle: .main)
+        default:         return String(localized: "one of your signals", bundle: .main)
+        }
+    }
+
+    /// Short noun for the culprit behind the verdict, for the verdict card's sublabel
+    /// ("Strained · from your training load"). nil when there's nothing to blame (aligned / none).
+    static func verdictCulprit(kind: BridgeKind, lead: Signal?) -> String? {
+        switch kind {
+        case .none, .aligned:
+            return nil
+        case .rundown:
+            return String(localized: "several signals", bundle: .main)
+        case .divergenceLoad, .divergenceBody, .strainedFlat:
+            return lead.map { signalNoun($0.key) }
+        }
+    }
+
+    /// The localized reconciling sentence for a bridge decision (nil only for `.none`).
+    static func bridgeCopy(_ kind: BridgeKind, lead: Signal?) -> String? {
+        switch kind {
+        case .none:
+            return nil
+        case .aligned:
+            return String(localized: "Your signals are aligned and your load is supported. A harder session is well backed today.", bundle: .main)
+        case .rundown:
+            return String(localized: "Several signals are down at once. Treat today as recovery.", bundle: .main)
+        case .strainedFlat:
+            return String(localized: "One of your signals is flagging. You can train, but keep it controlled.", bundle: .main)
+        case .divergenceLoad:
+            return String(localized: "You woke up well recovered. What needs care today is your training load, not your body.", bundle: .main)
+        case .divergenceBody:
+            return String(localized: "Your recovery is high, but \(signalNoun(lead?.key ?? "")) is flagging — keep an eye on that today.", bundle: .main)
+        }
     }
 
     // MARK: Stats helpers

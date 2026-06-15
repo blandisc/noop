@@ -35,7 +35,7 @@ grep "^FIXTURE_WRITTEN:" /tmp/noop-test.log | sed 's/^FIXTURE_WRITTEN: //' \
 ```
 Tab bar → 18 destinos principales (sidebar en macOS, tab bar en iOS)
 SettingsView → WhatsNewView (sheet) · NotificationSettingsView (push)
-TodayView   → LiveView (fullScreenCover) · MetricInfoSheet (sheet) · SupportView (toolbar)
+TodayView   → LiveView (fullScreenCover) · MetricInfoSheet (sheet) · WhyVerdictSheet (sheet) · SupportView (toolbar)
 WorkoutsView → ManualWorkoutSheet (sheet: add / edit)
 MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 ```
@@ -55,10 +55,12 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 | Sin lectura de hoy | Strap visto, sin offload de hoy |
 | Veredicto listo | Recovery score calculado |
 
+**Nota — héroe del veredicto "dos verdades" (iOS, FER-113):** el héroe muestra Veredicto (izquierda, color del nivel) y Recuperación (derecha, `92/100` + estado, en su **color de banda** `recoveryColor` — nunca el color del veredicto), reconciliados por una frase puente dinámica (`Readiness.bridge`, decidida en `ReadinessEngine`). Un enlace al pie "¿Por qué {veredicto}?" abre `WhyVerdictSheet` con las señales (`Readiness.signals`, antes solo en macOS) y la leyenda de colores. "Listo" (primed) usa `StrandPalette.statusPrimed` (menta brillante), distinto de "Equilibrado" (verde). La barra `ReadinessGaugeBar` se retiró del héroe iOS (la caja de Recuperación la sustituye).
+
 **Nota — indicador de sincronización (iOS):** cuando `live.backfilling == true`, la `syncMeta` en la `utilityRow` muestra "Syncing strap history…" en tono terciario/mono en lugar del texto habitual "Synced X ago". No hay pill ni color prominente; el texto vuelve al estado normal al terminar el backfill. El pill `SyncingHistoryNote` se conserva solo en el path macOS de esta vista.
 
-**Componentes:** `HealthAlertBanner`, `CalibrationProgressCard`, `LiveHeartbeatRow`, `ReadinessGaugeBar`, `RecoveryRing`, `InsightCard`, `StatTile ×10`, `ChartCard (HR Trend)`, `SourceBadge`  
-**Navegación:** → `LiveView` (fullScreenCover, "See it beat by beat") · → `MetricInfoSheet` (sheet, tap métrica) · → `SupportView` (toolbar ❤)
+**Componentes:** `HealthAlertBanner`, `CalibrationProgressCard`, `LiveHeartbeatRow`, `WhyVerdictSheet`, `RecoveryRing`, `InsightCard`, `StatTile ×10`, `ChartCard (HR Trend)`, `SourceBadge` · macOS: `ReadinessGaugeBar`, `readinessSection`  
+**Navegación:** → `LiveView` (fullScreenCover, "See it beat by beat") · → `MetricInfoSheet` (sheet, tap métrica) · → `WhyVerdictSheet` (sheet, "¿Por qué {veredicto}?") · → `SupportView` (toolbar ❤)
 
 ---
 

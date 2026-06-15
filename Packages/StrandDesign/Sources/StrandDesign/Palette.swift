@@ -111,6 +111,7 @@ public enum StrandPalette {
     public static let hrZones: [Color] = [zone1, zone1, zone2, zone3, zone4, zone5]
 
     // MARK: Status (§9.1) — never reused as recovery colors.
+    public static let statusPrimed   = Color(hex: "#3CEBC8") // "primed" verdict — bright aqua-mint, clearly apart from balanced's green
     public static let statusPositive = Color(hex: "#18C98B")
     public static let statusWarning  = Color(hex: "#F5A623")
     public static let statusCritical = Color(hex: "#FF4F73")
