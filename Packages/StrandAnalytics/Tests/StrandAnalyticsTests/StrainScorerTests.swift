@@ -111,4 +111,60 @@ final class StrainScorerTests: XCTestCase {
         XCTAssertEqual(StrainScorer.zoneWeight(150, restingHR: 60, hrReserve: 0), 0)
         XCTAssertEqual(StrainScorer.zoneWeight(150, restingHR: 60, hrReserve: -10), 0)
     }
+
+    // MARK: - Cumulative (intraday) strain (FER-110)
+
+    /// Two-phase 1 Hz series: `nA` samples at `bpmA`, then `nB` at `bpmB`, contiguous in time.
+    private func twoPhase(_ bpmA: Int, _ nA: Int, _ bpmB: Int, _ nB: Int) -> [HRSample] {
+        hr(bpmA, nA, start: 0) + hr(bpmB, nB, start: nA)
+    }
+
+    func testCumulativeStrainEndsAtDailyStrain() {
+        // The LAST cumulative point must equal strain() over the SAME window + params, so a chart of
+        // the curve lands exactly on the day's score.
+        let series = twoPhase(120, 3600, 185, 3600)
+        let daily = StrainScorer.strain(series, maxHR: 190, restingHR: 60)!
+        let curve = StrainScorer.cumulativeStrain(series, bucketSeconds: 900, maxHR: 190, restingHR: 60)
+        XCTAssertFalse(curve.isEmpty)
+        XCTAssertEqual(curve.last!.strain, daily, accuracy: 1e-9)
+    }
+
+    func testCumulativeStrainBanisterEndsAtDailyStrain() {
+        let series = twoPhase(120, 3600, 185, 3600)
+        let daily = StrainScorer.strain(series, maxHR: 190, restingHR: 60, method: .banister)!
+        let curve = StrainScorer.cumulativeStrain(series, bucketSeconds: 900, maxHR: 190, restingHR: 60, method: .banister)
+        XCTAssertEqual(curve.last!.strain, daily, accuracy: 1e-9)
+    }
+
+    func testCumulativeStrainMonotonicNonDecreasing() {
+        // Accumulated load only ever grows; every point ≥ the previous and within [0, 21].
+        let series = twoPhase(120, 3600, 185, 3600)
+        let curve = StrainScorer.cumulativeStrain(series, bucketSeconds: 600, maxHR: 190, restingHR: 60)
+        XCTAssertGreaterThan(curve.count, 1)
+        for i in 1..<curve.count {
+            XCTAssertGreaterThanOrEqual(curve[i].strain, curve[i - 1].strain)
+            XCTAssertLessThanOrEqual(curve[i].strain, 21.0)
+        }
+        // Dates are strictly increasing too.
+        for i in 1..<curve.count {
+            XCTAssertGreaterThan(curve[i].date, curve[i - 1].date)
+        }
+    }
+
+    func testCumulativeStrainEmptyTooFewReadings() {
+        XCTAssertTrue(StrainScorer.cumulativeStrain(hr(150, 599), maxHR: 190, restingHR: 60).isEmpty)
+    }
+
+    func testCumulativeStrainEmptyInvalidHRR() {
+        XCTAssertTrue(StrainScorer.cumulativeStrain(hr(150, 600), maxHR: 60, restingHR: 60).isEmpty)
+    }
+
+    func testCumulativeStrainCoarserBucketsFewerPointsSameEndpoint() {
+        let series = twoPhase(120, 3600, 185, 3600)
+        let fine = StrainScorer.cumulativeStrain(series, bucketSeconds: 300, maxHR: 190, restingHR: 60)
+        let coarse = StrainScorer.cumulativeStrain(series, bucketSeconds: 1800, maxHR: 190, restingHR: 60)
+        XCTAssertGreaterThan(fine.count, coarse.count)
+        // Bucket size changes the sampling density, never the final accumulated score.
+        XCTAssertEqual(fine.last!.strain, coarse.last!.strain, accuracy: 1e-9)
+    }
 }

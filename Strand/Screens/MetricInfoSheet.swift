@@ -197,6 +197,13 @@ extension MetricInfo {
 struct MetricInfoSheet: View {
     let info: MetricInfo
 
+    /// Loads today's accumulated-strain curve. Supplied only for the Day Strain sheet; nil for every
+    /// other metric (and on macOS). Run lazily when the sheet appears. (FER-110)
+    var strainCurveLoader: (() async -> [TrendPoint])? = nil
+
+    @State private var strainCurve: [TrendPoint] = []
+    @State private var strainLoading = false
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
@@ -206,6 +213,7 @@ struct MetricInfoSheet: View {
                     .foregroundStyle(StrandPalette.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
                 if !info.bands.isEmpty { bandsTable }
+                if info.id == "strain" { strainSection }
                 if let note = info.note {
                     Text(note)
                         .font(StrandFont.caption)
@@ -217,9 +225,15 @@ struct MetricInfoSheet: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(StrandPalette.surfaceBase)
-        .presentationDetents([.medium])
+        .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .modifier(PresentationBackgroundModifier())
+        .task {
+            guard info.id == "strain", let loader = strainCurveLoader else { return }
+            strainLoading = true
+            strainCurve = await loader()
+            strainLoading = false
+        }
     }
 
     private var header: some View {
@@ -279,6 +293,69 @@ struct MetricInfoSheet: View {
         .frame(maxWidth: .infinity)
         .background(band.isActive ? band.color.opacity(0.07) : Color.clear)
     }
+
+    // MARK: - Day-strain accumulation chart (FER-110)
+
+    /// "How today added up" — the day's strain building from 0 to the score in the header. Shows the
+    /// curve once loaded, a quiet placeholder while loading, and a short message when there isn't
+    /// enough of today's activity to chart.
+    @ViewBuilder private var strainSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("How today added up")
+                .font(StrandFont.headline)
+                .foregroundStyle(StrandPalette.textPrimary)
+            if strainCurve.count > 1 {
+                TrendChart(
+                    points: strainCurve,
+                    gradient: StrandPalette.strainGradient,
+                    valueRange: strainCurveRange,
+                    showsArea: true,
+                    height: 170,
+                    showsHover: true,
+                    valueFormat: { String(format: "%.1f", $0) },
+                    dateFormat: { Self.hourString($0) }
+                )
+                .accessibilityElement()
+                .accessibilityLabel(Text("Accumulated day strain, rising through the day."))
+            } else if strainLoading {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(StrandPalette.surfaceRaised)
+                    .frame(height: 170)
+                    .overlay { ProgressView().tint(StrandPalette.textTertiary) }
+            } else {
+                strainEmpty
+            }
+        }
+    }
+
+    private var strainEmpty: some View {
+        VStack(spacing: 10) {
+            Image(systemName: "chart.xyaxis.line")
+                .font(.system(size: 22))
+                .foregroundStyle(StrandPalette.textTertiary)
+            Text("Not enough activity yet today to chart.")
+                .font(StrandFont.subhead)
+                .foregroundStyle(StrandPalette.textTertiary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 30)
+        .background(StrandPalette.surfaceRaised, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    /// Auto-scale the Y axis to the day's own buildup (0 → a little above the peak) so a low-strain
+    /// day still reads as a clear curve instead of a flat line pinned to the 0–21 floor.
+    private var strainCurveRange: ClosedRange<Double> {
+        let peak = strainCurve.map(\.value).max() ?? 1
+        return 0...max(peak * 1.15, 1)
+    }
+
+    private static let hourFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.setLocalizedDateFormatFromTemplate("j")   // locale hour, 12/24h per region
+        return f
+    }()
+    private static func hourString(_ date: Date) -> String { hourFormatter.string(from: date) }
 }
 
 // MARK: - Helpers
@@ -296,9 +373,29 @@ private struct PresentationBackgroundModifier: ViewModifier {
 // MARK: - Preview
 
 #if DEBUG
-#Preview("MetricInfoSheet — Strain") {
+/// A rising sample curve from local midnight, ending at `score`, for previews/renders.
+private func sampleStrainCurve(score: Double) -> [TrendPoint] {
+    let midnight = Calendar.current.startOfDay(for: Date())
+    let shape: [(h: Double, f: Double)] = [
+        (0, 0), (6.5, 0.09), (8, 0.19), (10, 0.32), (12, 0.49),
+        (12.75, 0.67), (13.25, 0.80), (14, 0.90), (15, 1.0),
+    ]
+    return shape.map { p in
+        TrendPoint(date: midnight.addingTimeInterval(p.h * 3600), value: score * p.f)
+    }
+}
+
+#Preview("MetricInfoSheet — Strain (curve)") {
     Color.clear.sheet(isPresented: .constant(true)) {
-        MetricInfoSheet(info: .strain(11.5))
+        MetricInfoSheet(info: .strain(11.5),
+                        strainCurveLoader: { sampleStrainCurve(score: 11.5) })
+    }
+    .preferredColorScheme(.dark)
+}
+
+#Preview("MetricInfoSheet — Strain (no data)") {
+    Color.clear.sheet(isPresented: .constant(true)) {
+        MetricInfoSheet(info: .strain(3.9))
     }
     .preferredColorScheme(.dark)
 }

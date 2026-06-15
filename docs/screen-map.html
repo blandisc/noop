@@ -654,9 +654,12 @@ const SCREENS = [
     isSheet: true,
     states: [
       { label: 'Estático por métrica', type: 'data' },
+      { label: 'Esfuerzo · curva acumulada', type: 'data' },
+      { label: 'Esfuerzo · cargando', type: 'loading' },
+      { label: 'Esfuerzo · sin datos', type: 'empty' },
     ],
     nav: [],
-    components: ['Metric name + headline', 'Valor actual + color', 'Bands (3–4 rangos)', 'Nota opcional'],
+    components: ['Metric name + headline', 'Valor actual + color', 'Bands (3–4 rangos)', 'Nota opcional', 'TrendChart esfuerzo acumulado (solo Day Strain)'],
   },
   {
     id: 'whats-new', x: 538, y: 3310,

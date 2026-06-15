@@ -16296,6 +16296,72 @@
           }
         }
       }
+    },
+    "How today added up": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wie sich heute aufgebaut hat"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How today added up"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cómo se acumuló hoy"
+          }
+        }
+      }
+    },
+    "Not enough activity yet today to chart.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch nicht genug Aktivität heute für ein Diagramm."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not enough activity yet today to chart."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no hay suficiente actividad del día para graficar."
+          }
+        }
+      }
+    },
+    "Accumulated day strain, rising through the day.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kumulierte Tagesbelastung, im Tagesverlauf steigend."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accumulated day strain, rising through the day."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esfuerzo acumulado del día, en ascenso a lo largo del día."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

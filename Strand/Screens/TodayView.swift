@@ -127,7 +127,14 @@ struct TodayView: View {
             }
             .animation(.easeOut(duration: 0.18), value: showingSupport)
             .sheet(item: $metricDetail) { info in
+                #if os(iOS)
+                MetricInfoSheet(
+                    info: info,
+                    strainCurveLoader: info.id == "strain" ? { await loadStrainCurve() } : nil
+                )
+                #else
                 MetricInfoSheet(info: info)
+                #endif
             }
     }
 
@@ -1204,6 +1211,32 @@ struct TodayView: View {
         hrPoints  = await hrBucketRows
             .map { TrendPoint(date: Date(timeIntervalSince1970: TimeInterval($0.ts)), value: $0.bpm) }
     }
+
+    #if os(iOS)
+    /// Today's accumulated-strain curve for the Day Strain info sheet (FER-110). Reads today's HR
+    /// (local midnight → now) and runs it through the SAME strain parameters as the daily score — the
+    /// user's HRmax, today's resting HR, sex — so the curve's last point lands on the Day Strain value
+    /// shown in the header. Loaded lazily when the sheet opens. Returns [] when there's no score yet or
+    /// too little activity, so the sheet shows its "not enough activity" state.
+    private func loadStrainCurve() async -> [TrendPoint] {
+        guard repo.today?.strain != nil else { return [] }
+        let startOfToday = Int(Calendar.current.startOfDay(for: Date()).timeIntervalSince1970)
+        let nowTs = Int(Date().timeIntervalSince1970)
+        let samples = await repo.hrSamples(from: startOfToday, to: nowTs, limit: 100_000)
+        let restHR = repo.today?.restingHr.map(Double.init) ?? StrainScorer.defaultRestingHR
+        let curve = StrainScorer.cumulativeStrain(
+            samples,
+            maxHR: Double(model.profile.hrMax),
+            restingHR: restHR,
+            sex: model.profile.sex
+        ).map { TrendPoint(date: $0.date, value: $0.strain) }
+        guard !curve.isEmpty else { return [] }
+        // Anchor the x-axis to local midnight so the curve reads "from 00:00" even when the strap
+        // wasn't worn until later — no recorded load before the first sample means strain 0.
+        let midnight = TrendPoint(date: Date(timeIntervalSince1970: TimeInterval(startOfToday)), value: 0)
+        return [midnight] + curve
+    }
+    #endif
 
     /// Trailing-window values for a metric — NO fall back to all history. The section is labelled a
     /// current trend ("14-day trend"), so a stale import must not render months-old points as if they
