@@ -4,7 +4,7 @@ import Foundation
 /// Support screen and kept in sync with the cross-platform docs (see docs/DONATIONS.md). Deliberately
 /// contains no author/AI identifiers so the public repo can stay anonymous.
 enum ProjectInfo {
-    static let appName = "NOOP"
+    static let appName = "Cénit"
     static let tagline = "Your strap. Your data. Your machine. Local-first, no cloud."
     static let version = "0.1.0"
     /// Public contact for questions, feedback, bug reports. Baked into every platform.

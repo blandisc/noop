@@ -31,7 +31,7 @@ enum PendingIntents {
 /// Record a timestamped "moment" — the iOS analogue of the strap double-tap "mark a moment" action.
 struct MarkMomentIntent: AppIntent {
     static var title: LocalizedStringResource = "Mark a Moment"
-    static var description = IntentDescription("Record a timestamped moment in NOOP.")
+    static var description = IntentDescription("Record a timestamped moment in Cénit.")
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
         PendingIntents.append(.markMoment)

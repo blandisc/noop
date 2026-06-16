@@ -9,7 +9,7 @@ struct IntelligenceView: View {
 
     var body: some View {
         ScreenScaffold(title: "Intelligence",
-                       subtitle: "NOOP scores your recovery, strain and sleep itself — on-device, no cloud.") {
+                       subtitle: "Cénit scores your recovery, strain and sleep itself — on-device, no cloud.") {
             explainerCard
             if intelligence.computing {
                 StrandCard(padding: 20) {
@@ -59,7 +59,7 @@ struct IntelligenceView: View {
                         .accessibilityHidden(true)
                     Text("How this works").font(StrandFont.headline).foregroundStyle(StrandPalette.textPrimary)
                 }
-                Text("Recovery weighs your HRV against your personal baseline (~60%), resting heart rate (~20%), sleep performance (~15%) and respiration (~5%). Day strain is a 0–21 cardiovascular load from time in heart-rate zones. Sleep is staged from movement and heart rate. Everything is computed here from the strap's raw data — it works for any day NOOP collected raw streams.")
+                Text("Recovery weighs your HRV against your personal baseline (~60%), resting heart rate (~20%), sleep performance (~15%) and respiration (~5%). Day strain is a 0–21 cardiovascular load from time in heart-rate zones. Sleep is staged from movement and heart rate. Everything is computed here from the strap's raw data — it works for any day Cénit collected raw streams.")
                     .font(StrandFont.subhead).foregroundStyle(StrandPalette.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -72,7 +72,7 @@ struct IntelligenceView: View {
                 HStack {
                     Text(d.day).font(StrandFont.headline).foregroundStyle(StrandPalette.textPrimary)
                     Spacer()
-                    SourceBadge("NOOP-computed")
+                    SourceBadge("Cénit-computed")
                 }
                 HStack(spacing: 0) {
                     stat("Recovery", d.recovery.map { "\(Int($0.rounded()))%" } ?? "—", recoveryColor(d.recovery))

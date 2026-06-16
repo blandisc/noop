@@ -110,7 +110,7 @@ struct DataSourcesView: View {
     @ViewBuilder
     private var appleHealthLiveCard: some View {
         card(title: "Apple Health — Live Sync", icon: "heart.text.square.fill",
-             subtitle: "Sync the last few weeks two-way, on-device: NOOP reads your Apple Health HR, HRV, sleep, SpO₂ and steps, and writes its own strap-derived metrics back. Strictly opt-in — nothing leaves your iPhone. (For a one-time bulk history, use the export import above.)") {
+             subtitle: "Sync the last few weeks two-way, on-device: Cénit reads your Apple Health HR, HRV, sleep, SpO₂ and steps, and writes its own strap-derived metrics back. Strictly opt-in — nothing leaves your iPhone. (For a one-time bulk history, use the export import above.)") {
             switch health.auth {
             case .unavailable:
                 Text(verbatim: "Apple Health isn’t available on this device.")
@@ -182,7 +182,7 @@ struct DataSourcesView: View {
             if hkBusy { ProgressView().controlSize(.small) }
         }
         if health.auth == .denied {
-            Text(verbatim: "Apple Health access was declined. Enable it in Settings › Privacy & Security › Health › NOOP.")
+            Text(verbatim: "Apple Health access was declined. Enable it in Settings › Privacy & Security › Health › Cénit.")
                 .font(StrandFont.footnote).foregroundStyle(StrandPalette.statusWarning)
             settingsButton
         }

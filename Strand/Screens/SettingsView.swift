@@ -47,7 +47,7 @@ struct SettingsView: View {
 
     var body: some View {
         ScreenScaffold(title: "Settings",
-                       subtitle: "Your numbers, your strap, and how NOOP works. All on this Mac.") {
+                       subtitle: "Your numbers, your strap, and how Cénit works. All on this Mac.") {
             profileCard
             unitsCard
             strapCard
@@ -267,7 +267,7 @@ struct SettingsView: View {
         SettingsSection(
             icon: "antenna.radiowaves.left.and.right",
             title: "Strap",
-            blurb: "NOOP pairs directly with your WHOOP over Bluetooth — no WHOOP app, no cloud."
+            blurb: "Cénit pairs directly with your WHOOP over Bluetooth — no WHOOP app, no cloud."
         ) {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(spacing: 12) {
@@ -354,7 +354,7 @@ struct SettingsView: View {
                 }
                 .toggleStyle(.switch)
                 .tint(StrandPalette.accent)
-                Text("On a 5/MG connection NOOP will send a puffin realtime-stream request after the handshake, and log what comes back. If you have a 5/MG strap, turning this on and sharing your strap log helps map the protocol. No effect on WHOOP 4.0.")
+                Text("On a 5/MG connection Cénit will send a puffin realtime-stream request after the handshake, and log what comes back. If you have a 5/MG strap, turning this on and sharing your strap log helps map the protocol. No effect on WHOOP 4.0.")
                     .font(StrandFont.caption)
                     .foregroundStyle(StrandPalette.textTertiary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -424,7 +424,7 @@ struct SettingsView: View {
         SettingsSection(
             icon: "externaldrive.fill",
             title: "Backup & restore",
-            blurb: "Move all your NOOP data to another machine. Export saves everything — history, sleeps, workouts, settings — to a single file you can copy across; import replaces this Mac's data with a backup."
+            blurb: "Move all your Cénit data to another machine. Export saves everything — history, sleeps, workouts, settings — to a single file you can copy across; import replaces this Mac's data with a backup."
         ) {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(spacing: 12) {
@@ -467,7 +467,7 @@ struct SettingsView: View {
                         .foregroundStyle(StrandPalette.textTertiary)
                         .font(.system(size: 13))
                         .accessibilityHidden(true)
-                    Text("Importing overwrites everything currently on this Mac. Your old data is kept in a side file just in case. NOOP needs a relaunch for an import to take effect. Export CSV writes a WHOOP-format zip of your days, sleeps, workouts and journal that re-imports into NOOP on Mac or Android — on-device computed rows are marked APPROXIMATE in its Source column; the full backup stays the lossless restore path.")
+                    Text("Importing overwrites everything currently on this Mac. Your old data is kept in a side file just in case. Cénit needs a relaunch for an import to take effect. Export CSV writes a WHOOP-format zip of your days, sleeps, workouts and journal that re-imports into Cénit on Mac or Android — on-device computed rows are marked APPROXIMATE in its Source column; the full backup stays the lossless restore path.")
                         .font(StrandFont.footnote)
                         .foregroundStyle(StrandPalette.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -484,7 +484,7 @@ struct SettingsView: View {
         SettingsSection(
             icon: "icloud.and.arrow.up.fill",
             title: "Automatic iCloud backup",
-            blurb: "Pick a folder in iCloud Drive and NOOP keeps a fresh copy of all your data there. Your strap history lives only inside the app, so this is what protects it if you reinstall NOOP or switch phones. It uses your own iCloud Drive — a free Apple ID is enough."
+            blurb: "Pick a folder in iCloud Drive and Cénit keeps a fresh copy of all your data there. Your strap history lives only inside the app, so this is what protects it if you reinstall Cénit or switch phones. It uses your own iCloud Drive — a free Apple ID is enough."
         ) {
             VStack(alignment: .leading, spacing: 14) {
                 if let name = autoBackup.destinationName {
@@ -602,7 +602,7 @@ struct SettingsView: View {
                 return
             case .exported(let url):
                 backupAlertTitle = "CSV exported"
-                backupAlertMessage = "Saved to \(url.lastPathComponent). The zip re-imports into NOOP (Data Sources → WHOOP Export) on any Mac or Android device."
+                backupAlertMessage = "Saved to \(url.lastPathComponent). The zip re-imports into Cénit (Data Sources → WHOOP Export) on any Mac or Android device."
                 showBackupAlert = true
             case .failure(let message):
                 backupAlertTitle = "Export problem"
@@ -624,7 +624,7 @@ struct SettingsView: View {
             showBackupAlert = true
         case .imported:
             backupAlertTitle = "Backup imported"
-            backupAlertMessage = "Your data has been restored. Quit and reopen NOOP for it to take effect."
+            backupAlertMessage = "Your data has been restored. Quit and reopen Cénit for it to take effect."
             showBackupAlert = true
         case .failure(let message):
             backupAlertTitle = "Backup problem"
@@ -639,11 +639,11 @@ struct SettingsView: View {
         SettingsSection(
             icon: "info.circle.fill",
             title: "About",
-            blurb: "NOOP — all your data, none of the cloud."
+            blurb: "Cénit — all your data, none of the cloud."
         ) {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(spacing: 10) {
-                    Text("NOOP")
+                    Text("Cénit")
                         .font(StrandFont.title2)
                         .foregroundStyle(StrandPalette.textPrimary)
                     StatePill("v\(AppChangelog.currentVersion)", tone: .neutral, showsDot: false)
@@ -731,7 +731,7 @@ struct SettingsView: View {
                         .foregroundStyle(StrandPalette.textTertiary)
                 }
 
-                Text("A standalone companion for your WHOOP. Everything stays on this device — your history, your live stream, your numbers. Nothing is uploaded. NOOP is an independent, experimental project, not the WHOOP app.")
+                Text("A standalone companion for your WHOOP. Everything stays on this device — your history, your live stream, your numbers. Nothing is uploaded. Cénit is an independent, experimental project, not the WHOOP app.")
                     .font(StrandFont.subhead)
                     .foregroundStyle(StrandPalette.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -742,7 +742,7 @@ struct SettingsView: View {
                         .foregroundStyle(StrandPalette.statusWarning)
                         .font(.system(size: 13))
                         .accessibilityHidden(true)
-                    Text("NOOP is not a medical device. It is for informational and personal-insight purposes only and is not intended to diagnose, treat, cure or prevent any condition. Talk to a clinician for medical advice.")
+                    Text("Cénit is not a medical device. It is for informational and personal-insight purposes only and is not intended to diagnose, treat, cure or prevent any condition. Talk to a clinician for medical advice.")
                         .font(StrandFont.footnote)
                         .foregroundStyle(StrandPalette.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)

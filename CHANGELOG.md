@@ -1,23 +1,28 @@
 # Changelog
 
-All notable changes to NOOP. NOOP is an independent, experimental project — not the WHOOP app, and
+All notable changes to Cénit. Cénit is an independent, experimental project — not the WHOOP app, and
 not affiliated with WHOOP. It reads a strap you own, on your own device, fully offline. Dates are
 approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/releases) page.
 
 ## What to expect
 
-- **Independent, and experimental.** Treat NOOP as a capable work-in-progress rather than a finished
+- **Independent, and experimental.** Treat Cénit as a capable work-in-progress rather than a finished
   product.
 - **WHOOP 4.0 is the supported path.** It is tested and works end to end. WHOOP 5.0/MG is newer: live
   heart rate works today, but deeper metrics (recovery, strain, sleep) for 5/MG are still being
-  figured out. NOOP always tells you what's live versus still building.
+  figured out. Cénit always tells you what's live versus still building.
 - **Your scores build over a few nights.** Live heart rate is instant; recovery, strain and sleep
-  sharpen as NOOP learns your baseline. Import your WHOOP export to backfill your history instantly.
+  sharpen as Cénit learns your baseline. Import your WHOOP export to backfill your history instantly.
 - **Everything stays on your device.** No account, no cloud, no sync.
 
 ---
 
 ## Unreleased
+
+- **La app estrena nombre e icono: ahora se llama «Cénit» / The app has a new name and icon: it's now called "Cénit".**
+  **ES** — NOOP ahora se llama **Cénit** —el punto más alto del recorrido del sol, el cénit del dial de 24 horas, en guiño al icono—. Es un cambio puramente de imagen: el nombre bajo el icono (app y widget), un nuevo icono «dial diurno» (anillo de 24 h con el arco del día en ámbar, la muesca del cénit arriba y el punto verde del «ahora») con sus tres aparencias de iOS 18 —claro, oscuro y tintado—, y todos los textos de la app pasan a «Cénit», en español, inglés y alemán. Tus datos, tu vínculo con la banda y tus respaldos quedan intactos: no hay que reinstalar ni volver a vincular nada, y los respaldos anteriores «NOOP-backup» se siguen restaurando igual.
+  **EN** — NOOP is now called **Cénit** — the sun's highest point, the zenith of the 24-hour dial, echoing the icon. It's a pure rebrand: the name under the icon (app and widget), a new "daytime dial" icon (a 24-hour ring with the day's arc in amber, the cénit notch at the top and the green "now" dot) with its three iOS 18 appearances — light, dark and tinted — and every in-app text now reads "Cénit," in Spanish, English and German. Your data, your strap pairing and your backups are untouched: nothing to reinstall or re-pair, and older "NOOP-backup" files still restore exactly as before.
+  ([project.yml](project.yml), [Strand/System/ProjectInfo.swift](Strand/System/ProjectInfo.swift), [Tools/gen-icon.swift](Tools/gen-icon.swift))
 
 - **Hoy se lee más fácil: barra de estado en tinta, métricas más grandes y separadores más marcados / Today reads easier: dark status bar, larger metrics, and clearer separators.**
   **ES** — Pulido de legibilidad sobre el rediseño de **Hoy**: los íconos del sistema (hora, señal, batería) ahora se ven en **tinta oscura** sobre el papel claro, en vez de blancos y lavados. Las **«Métricas clave»** crecieron —etiquetas y números más grandes— para que el dato se lea de un vistazo, el título **«Métricas clave»** vuelve a tener contraste (antes quedaba casi invisible), y las **líneas divisorias** entre métricas y sobre «Verlo latido a latido» son un poco más gruesas y marcadas. Se quitó el rótulo «Hoy» sobre las métricas para un encabezado más limpio.

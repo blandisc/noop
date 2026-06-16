@@ -15,7 +15,7 @@ struct TermsGateView: View {
 
             VStack(spacing: 0) {
                 VStack(spacing: 6) {
-                    Text("Before you use NOOP")
+                    Text("Before you use Cénit")
                         .font(StrandFont.title1)
                         .foregroundStyle(StrandPalette.textPrimary)
                     Text("Please read and accept the points below.")
@@ -39,7 +39,7 @@ struct TermsGateView: View {
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                         }
-                        Text("The full terms are in TERMS.md, shipped with NOOP. This is not legal advice.")
+                        Text("The full terms are in TERMS.md, shipped with Cénit. This is not legal advice.")
                             .font(StrandFont.footnote)
                             .foregroundStyle(StrandPalette.textTertiary)
                             .padding(.top, 2)
@@ -54,7 +54,7 @@ struct TermsGateView: View {
 
                 VStack(spacing: 16) {
                     Toggle(isOn: $checked) {
-                        Text("I have read and accept these terms, and I'm using NOOP with my own device and my own data, at my own risk.")
+                        Text("I have read and accept these terms, and I'm using Cénit with my own device and my own data, at my own risk.")
                             .font(StrandFont.footnote)
                             .foregroundStyle(StrandPalette.textPrimary)
                             .fixedSize(horizontal: false, vertical: true)

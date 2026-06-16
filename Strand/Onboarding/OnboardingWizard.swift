@@ -186,7 +186,7 @@ public struct OnboardingWizard: View {
         case .profile:    return "Save & Continue"
         case .importData: return "Continue"
         case .notifications: return "Continue"
-        case .done:       return "Enter NOOP"
+        case .done:       return "Enter Cénit"
         }
     }
 
@@ -253,7 +253,7 @@ private struct WelcomeStep: View {
                         .blur(radius: 60)
                         .opacity(appear ? 0.55 : 0.0)
                         .blendMode(.plusLighter)
-                    Text("NOOP")
+                    Text("Cénit")
                         .font(StrandFont.display(64))
                         .foregroundStyle(StrandPalette.textPrimary)
                         .scaleEffect(appear ? 1 : 0.92)
@@ -303,7 +303,7 @@ private struct WhatItDoesStep: View {
     ]
 
     var body: some View {
-        StepShell(title: "What NOOP does", subtitle: "Three quiet promises.") {
+        StepShell(title: "What Cénit does", subtitle: "Three quiet promises.") {
             VStack(spacing: 14) {
                 ForEach(Array(slides.enumerated()), id: \.element.id) { index, slide in
                     SlideRow(slide: slide, index: index)
@@ -413,10 +413,10 @@ private struct BluetoothStep: View {
                     icon: "lock.fill",
                     tint: StrandPalette.statusPositive,
                     title: "Nothing leaves your Mac",
-                    message: "NOOP talks to your strap directly over Bluetooth Low Energy. There's no server in the middle — the connection is local, and so is every reading it pulls in."
+                    message: "Cénit talks to your strap directly over Bluetooth Low Energy. There's no server in the middle — the connection is local, and so is every reading it pulls in."
                 )
 
-                Text("When the system prompt appears, choose Allow so NOOP can find your strap.")
+                Text("When the system prompt appears, choose Allow so Cénit can find your strap.")
                     .font(StrandFont.subhead)
                     .foregroundStyle(StrandPalette.textTertiary)
                     .multilineTextAlignment(.center)
@@ -473,7 +473,7 @@ private struct ScanStep: View {
 
     var body: some View {
         StepShell(title: "Find your strap",
-                  subtitle: live.bonded ? "Bonded. You're set." : "NOOP starts looking as soon as this step appears. You can keep going while it bonds.") {
+                  subtitle: live.bonded ? "Bonded. You're set." : "Cénit starts looking as soon as this step appears. You can keep going while it bonds.") {
             VStack(spacing: 24) {
                 RadarSweep(active: scanning && !live.bonded, bonded: live.bonded)
                     .frame(width: 220, height: 220)
@@ -563,7 +563,7 @@ private struct ScanStep: View {
                         .foregroundStyle(StrandPalette.textPrimary)
                 }
 
-                Text("WHOOP straps don't appear in macOS System Settings → Bluetooth. They advertise on a custom profile that only apps like NOOP can find — so there's nothing to pair there, and you shouldn't try.")
+                Text("WHOOP straps don't appear in macOS System Settings → Bluetooth. They advertise on a custom profile that only apps like Cénit can find — so there's nothing to pair there, and you shouldn't try.")
                     .font(StrandFont.subhead)
                     .foregroundStyle(StrandPalette.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -847,7 +847,7 @@ private struct NotificationsStep: View {
     @State private var pulse = false
     var body: some View {
         StepShell(title: "Stay in the loop",
-                  subtitle: "NOOP can tap your wrist when your Mac needs you — no glance at the screen required.") {
+                  subtitle: "Cénit can tap your wrist when your Mac needs you — no glance at the screen required.") {
             VStack(spacing: 24) {
                 ZStack {
                     Circle()
@@ -868,7 +868,7 @@ private struct NotificationsStep: View {
                     icon: "applewatch.radiowaves.left.and.right",
                     tint: StrandPalette.statusPositive,
                     title: "A buzz, not a banner",
-                    message: "When the Mac apps you choose send a notification, NOOP taps your strap — Slack, Calendar, Messages, whatever matters. Everything stays on this Mac."
+                    message: "When the Mac apps you choose send a notification, Cénit taps your strap — Slack, Calendar, Messages, whatever matters. Everything stays on this Mac."
                 )
 
                 VStack(spacing: 12) {
@@ -912,7 +912,7 @@ private struct DoneStep: View {
                     Text("Your thread starts here.")
                         .font(StrandFont.title1)
                         .foregroundStyle(StrandPalette.textPrimary)
-                    Text("Every beat, every night, every day — woven into one quiet picture of you. Welcome to NOOP.")
+                    Text("Every beat, every night, every day — woven into one quiet picture of you. Welcome to Cénit.")
                         .font(StrandFont.body)
                         .foregroundStyle(StrandPalette.textSecondary)
                         .multilineTextAlignment(.center)

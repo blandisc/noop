@@ -68,7 +68,7 @@ struct ContentView: View {
             Button("Restore from backup…") { Task { await runRestore() } }
             Button("Not now", role: .cancel) { }
         } message: {
-            Text("It looks like there's no data on this device. If you've used NOOP before — on this phone or another — restore your strap history and settings from an iCloud Drive backup.")
+            Text("It looks like there's no data on this device. If you've used Cénit before — on this phone or another — restore your strap history and settings from an iCloud Drive backup.")
         }
         .alert("Restore", isPresented: $showRestoreResult) {
             Button("OK", role: .cancel) { }
@@ -90,7 +90,7 @@ struct ContentView: View {
     @MainActor private func runRestore() async {
         switch await DataBackup.runImport() {
         case .imported:
-            restoreMessage = String(localized: "Your data has been restored. Reopen NOOP for it to take effect.")
+            restoreMessage = String(localized: "Your data has been restored. Reopen Cénit for it to take effect.")
             showRestoreResult = true
         case .failure(let message):
             restoreMessage = message

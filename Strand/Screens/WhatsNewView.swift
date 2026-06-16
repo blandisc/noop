@@ -36,7 +36,7 @@ struct WhatsNewView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("What's new").font(StrandFont.title2)
                     .foregroundStyle(StrandPalette.textPrimary)
-                Text("NOOP \(AppChangelog.currentVersion)").font(StrandFont.caption)
+                Text("Cénit \(AppChangelog.currentVersion)").font(StrandFont.caption)
                     .foregroundStyle(StrandPalette.textTertiary)
             }
             Spacer()

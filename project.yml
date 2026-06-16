@@ -59,8 +59,8 @@ targets:
     info:
       path: StrandiOS/Resources/Info.plist
       properties:
-        CFBundleName: NOOP
-        CFBundleDisplayName: NOOP
+        CFBundleName: Cénit
+        CFBundleDisplayName: Cénit
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         # Derive CFBundleVersion from the project setting so App Store / TestFlight uploads track a
         # single source (settings.base.CURRENT_PROJECT_VERSION below) instead of a literal here.
@@ -76,9 +76,9 @@ targets:
           - UIInterfaceOrientationLandscapeRight
         UIBackgroundModes:
           - bluetooth-central
-        NSBluetoothAlwaysUsageDescription: "NOOP connects directly to your WHOOP strap over Bluetooth to read heart rate, R-R intervals, battery, and sensor data locally on your iPhone. Nothing leaves your device."
-        NSHealthShareUsageDescription: "NOOP reads your own Apple Health data on-device to compute recovery, strain, and sleep. Nothing leaves your device."
-        NSHealthUpdateUsageDescription: "NOOP writes the metrics it computes from your strap back into Apple Health, on-device and only when you allow it."
+        NSBluetoothAlwaysUsageDescription: "Cénit connects directly to your WHOOP strap over Bluetooth to read heart rate, R-R intervals, battery, and sensor data locally on your iPhone. Nothing leaves your device."
+        NSHealthShareUsageDescription: "Cénit reads your own Apple Health data on-device to compute recovery, strain, and sleep. Nothing leaves your device."
+        NSHealthUpdateUsageDescription: "Cénit writes the metrics it computes from your strap back into Apple Health, on-device and only when you allow it."
         # Debug-only URL scheme for screenshot automation (simulator navigation via xcrun simctl openurl)
         CFBundleURLTypes:
           - CFBundleURLSchemes:
@@ -130,7 +130,7 @@ targets:
     info:
       path: StrandiOSWidgets/Info.plist
       properties:
-        CFBundleDisplayName: NOOP
+        CFBundleDisplayName: Cénit
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     entitlements:
