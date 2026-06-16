@@ -145,7 +145,33 @@ public final class LiveState: ObservableObject {
     }
 
     public func append(log line: String) {
-        log.append(line)
+        log.append(Self.redactPii(line))
         if log.count > 200 { log.removeFirst(log.count - 200) }
+    }
+
+    /// Scrub personal identifiers from a strap-log line so it's safe to share publicly (#445): BLE MAC
+    /// addresses are masked to their first + last byte, the WHOOP's SERIAL — carried in its device
+    /// name ("WHOOP 4C1594026") and tied to the owner's account — is removed, and the CoreBluetooth
+    /// peripheral identifier (a per-install random UUID iOS/macOS print in "Discovered …(<uuid>)" lines)
+    /// is masked. Applied at the single log sink, so every line that reaches the shareable strap log
+    /// (BLEManager + the generic-HR diagnostics both feed it via `append(log:)`) is redacted.
+    /// MACs require colons, so hex command payloads are untouched; the dotted model names ("WHOOP
+    /// 4.0"/"5.0") don't match the serial pattern. The UUID rule deliberately KEEPS standard-BLE-base
+    /// UUIDs (…-0000-1000-8000-00805f9b34fb, e.g. the 0x2A37 HR characteristic) and the WHOOP vendor
+    /// service base (…-8d6d-82b8-614a-1c8cb0f8dcc6) — those are public, identical on every strap, and
+    /// are exactly the GATT diagnostics a shared log needs to be useful (#421). Thanks @ujix (#447) for
+    /// catching the peripheral-UUID leak; this is a targeted form so we don't redact the service UUIDs.
+    static func redactPii(_ s: String) -> String {
+        var out = s
+        out = out.replacingOccurrences(
+            of: "([0-9A-Fa-f]{2}):[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:([0-9A-Fa-f]{2})",
+            with: "$1:••:••:••:••:$2", options: .regularExpression)
+        out = out.replacingOccurrences(
+            of: "WHOOP (\\d[0-9A-Za-z]{5,})", with: "WHOOP <serial>", options: .regularExpression)
+        // Mask a CoreBluetooth peripheral UUID, but NOT a standard-BLE / WHOOP-vendor service UUID.
+        out = out.replacingOccurrences(
+            of: "(?![0-9A-Fa-f]{8}-(?:0000-1000-8000-00805f9b34fb|8d6d-82b8-614a-1c8cb0f8dcc6))[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}",
+            with: "<device>", options: [.regularExpression, .caseInsensitive])
+        return out
     }
 }
