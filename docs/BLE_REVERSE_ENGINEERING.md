@@ -114,9 +114,16 @@ Once bonded, NOOP runs a WHOOP-faithful lifecycle exactly once
    A *wrong-length* SET_CLOCK is ack'd but not latched, which leaves the RTC lost and the strap
    refuses to serve history — a real bug found and fixed here.
 3. `GET_CLOCK` (11) with an **empty** payload — establishes the device↔wall clock correlation.
-4. `SEND_R10_R11_REALTIME` (63) with `[0x00]` — **disables** the raw realtime flood (see §4).
-5. `GET_DATA_RANGE` (34) — read the strap's stored data window for the liveness watchdog.
-6. After a short settle, request the historical offload (`SEND_HISTORICAL_DATA`).
+4. `SET_CONFIG` (120) ×11 — the **SET_CONFIG burst** (`SetConfig.officialBurst`). Reverse-engineered
+   from the official app's HCI capture (FER-156): it enables the `r19` / `write_r24` / `write_r25` /
+   `capsense_wear_detect` firmware data streams the strap records to flash. NOOP never sent these —
+   leading hypothesis (FER-93b) for why a power-reset 4.0 stops persisting biometry until the official
+   app re-enables them. Sent byte-for-byte identical to the app (`SetConfigTests`); effect on a lost
+   band pending hardware verification. (Aside: this firmware never *answers* `GET_CLOCK` — confirmed in
+   the same capture, for the official app too, so the GET_CLOCK silence is not the bug.)
+5. `SEND_R10_R11_REALTIME` (63) with `[0x00]` — **disables** the raw realtime flood (see §4).
+6. `GET_DATA_RANGE` (34) — read the strap's stored data window for the liveness watchdog.
+7. After a short settle, request the historical offload (`SEND_HISTORICAL_DATA`).
 
 ---
 
