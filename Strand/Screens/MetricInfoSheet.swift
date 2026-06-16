@@ -229,6 +229,23 @@ extension MetricInfo {
         )
     }
 
+    /// Heart Rate — today's continuous HR off the strap's own ~1Hz history. No bands (a personalized
+    /// zone model would need the user's HRmax — out of scope), so the body is just one context line +
+    /// the 24h curve. Distinct from Resting HR (the night's low), which keeps its own banded sheet.
+    /// (FER-137)
+    static func heartRate(avgBpm: Int?) -> MetricInfo {
+        MetricInfo(
+            id: "heart_rate",
+            name: "Heart Rate",
+            headline: "Your heart rate across the day, averaged in 5-minute buckets.",
+            displayValue: avgBpm.map { "\($0)" } ?? "—",
+            unit: "bpm",
+            currentColor: StrandPalette.metricRose,
+            bands: [],
+            note: nil
+        )
+    }
+
     /// Recovery (0–100) is a weighted composite, not a banded range, so it gets its own body:
     /// a weight breakdown + a "See the method" disclosure. Weights mirror `RecoveryScorer`
     /// (HRV .60 · RHR .20 · sleep .15 · skin-temp .10 · resp .05); the bars normalize to the
@@ -294,11 +311,17 @@ struct MetricInfoSheet: View {
     /// other metric (and on macOS). Run lazily when the sheet appears. (FER-110)
     var strainCurveLoader: (() async -> [TrendPoint])? = nil
 
+    /// Loads today's 24h HR curve (5-minute buckets). Supplied only for the Heart Rate sheet; nil
+    /// elsewhere (and on macOS). Run lazily when the sheet appears. (FER-137)
+    var heartRateCurveLoader: (() async -> [TrendPoint])? = nil
+
     /// Loads the 14-day trend for this metric. Supplied for all key metrics; triggers lazily on appear.
     var trendLoader: (() async -> [TrendPoint])? = nil
 
     @State private var strainCurve: [TrendPoint] = []
     @State private var strainLoading = false
+    @State private var heartRateCurve: [TrendPoint] = []
+    @State private var heartRateLoading = false
     @State private var trendData: [TrendPoint] = []
     @State private var trendLoading = false
     /// Measured natural height of the sheet's content — used to size the Day Strain detent to its
@@ -322,6 +345,9 @@ struct MetricInfoSheet: View {
                 // bands — so chart placement reads consistently across all sheets. (strain has no
                 // trendLoader, so the two never both appear.)
                 if info.id == "strain" { strainSection }
+                // Heart Rate's 24h curve sits in the same middle slot (it has no 14-day trendLoader,
+                // so the two never both appear). (FER-137)
+                if info.id == "heart_rate" { heartRateSection }
                 if let calibration = info.calibration { calibrationCard(calibration) }
                 if let weights = info.weights {
                     weightsBlock(weights, note: info.weightsNote, dimmed: info.calibration != nil)
@@ -359,6 +385,12 @@ struct MetricInfoSheet: View {
             strainLoading = false
         }
         .task {
+            guard info.id == "heart_rate", let loader = heartRateCurveLoader else { return }
+            heartRateLoading = true
+            heartRateCurve = await loader()
+            heartRateLoading = false
+        }
+        .task {
             guard let loader = trendLoader else { return }
             trendLoading = true
             trendData = await loader()
@@ -370,7 +402,7 @@ struct MetricInfoSheet: View {
     /// chart is never cut off. Falls back to `.large` until the first layout pass measures the height.
     /// Short, band-only sheets stay at `.medium`. (FER-112 follow-up, extended for trend charts)
     private var strainDetents: Set<PresentationDetent> {
-        guard info.id == "strain" || trendLoader != nil else { return [.medium] }
+        guard info.id == "strain" || info.id == "heart_rate" || trendLoader != nil else { return [.medium] }
         return contentHeight > 0 ? [.height(contentHeight)] : [.large]
     }
 
@@ -431,6 +463,71 @@ struct MetricInfoSheet: View {
         .frame(maxWidth: .infinity)
         .background(band.isActive ? band.color.opacity(0.07) : Color.clear)
     }
+
+    // MARK: - Heart-rate 24h chart (FER-137)
+
+    /// Today's continuous HR curve, a bit taller than the standard chart. This is the old
+    /// `heartRateTrendSection` that used to sit on Today, now reached by tapping the Key-Metrics row.
+    /// Empty curve → an honest "no readings yet" well (a strap-only day with no wear).
+    @ViewBuilder private var heartRateSection: some View {
+        if heartRateCurve.count > 1 {
+            let v = heartRateCurve.map(\.value)
+            ChartCard(
+                title: "Beats per minute",
+                subtitle: String(localized: "5-minute average · since midnight"),
+                trailing: v.last.map { "\(Int($0.rounded())) bpm" },
+                height: 260
+            ) {
+                TrendChart(
+                    points: heartRateCurve,
+                    gradient: Gradient(colors: [StrandPalette.metricRose.opacity(0.55), StrandPalette.metricRose]),
+                    valueRange: Self.hrRange(v),
+                    showsArea: true,
+                    height: 260,
+                    showsHover: true,
+                    valueFormat: { "\(Int($0.rounded())) bpm" },
+                    dateFormat: { Self.hrClock.string(from: $0) }
+                )
+            } footer: {
+                ChartFooter([
+                    ("Min", "\(Int((v.min() ?? 0).rounded()))"),
+                    ("Avg", "\(Int((v.reduce(0, +) / Double(v.count)).rounded()))"),
+                    ("Max", "\(Int((v.max() ?? 0).rounded()))"),
+                ])
+            }
+        } else if heartRateLoading {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(StrandPalette.surfaceRaised)
+                .frame(height: 200)
+                .overlay { ProgressView().tint(StrandPalette.textTertiary) }
+        } else {
+            VStack(spacing: 10) {
+                Image(systemName: "waveform.path.ecg")
+                    .font(.system(size: 22))
+                    .foregroundStyle(StrandPalette.textTertiary)
+                Text("No readings yet today.")
+                    .font(StrandFont.subhead)
+                    .foregroundStyle(StrandPalette.textTertiary)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 28)
+            .background(StrandPalette.surfaceRaised,
+                        in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+    }
+
+    /// Padded HR axis range so the line never sits flush against an edge (mirrors TodayView.hrRange).
+    private static func hrRange(_ v: [Double]) -> ClosedRange<Double> {
+        guard let lo = v.min(), let hi = v.max() else { return 40...120 }
+        if hi <= lo { return (lo - 5)...(hi + 5) }
+        let span = hi - lo
+        return (lo - span * 0.12)...(hi + span * 0.12)
+    }
+
+    private static let hrClock: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "h a"; return f
+    }()
 
     // MARK: - 14-day trend chart
 
