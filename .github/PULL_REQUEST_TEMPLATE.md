@@ -25,7 +25,7 @@ that covers it. "Builds and unit tests pass" alone is not enough for BLE work.
 - [ ] UI changes use only `StrandDesign` tokens — no hardcoded colors, fonts, or spacing
 - [ ] No hardcoded hex frame bytes; protocol facts live in the schema / decoders
 - [ ] Follows the conventions in [`docs/CONTRIBUTING.md`](../docs/CONTRIBUTING.md)
-- [ ] I did not commit generated output (`Strand.xcodeproj/`) or any secrets/keystores
+- [ ] I did not commit generated output (`Cenit.xcodeproj/`) or any secrets/keystores
 
 ## Related issues
 

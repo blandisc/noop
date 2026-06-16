@@ -18,7 +18,7 @@ involved in any of the exchanges described here.
 
 The protocol decoder is platform-pure Swift in the `WhoopProtocol` package
 (`Packages/WhoopProtocol/`); it never imports CoreBluetooth, so it runs unchanged in tests and
-CLI tools. The CoreBluetooth transport lives in the app target (NOOPiOS) under `Strand/BLE/`.
+CLI tools. The CoreBluetooth transport lives in the app target (Cenit) under `Cenit/BLE/`.
 
 This work builds on two community reverse-engineering efforts:
 
@@ -69,7 +69,7 @@ The 5.0 transport ("puffin") adds a fifth characteristic (`…0007`). UUID strin
 | Battery | `180F` | Battery Level | `2A19` | single byte = battery percent |
 
 The `0x2A37` channel is the BLE-standard Heart Rate Measurement and is parsed by the pure
-`StandardHeartRate.parse(_:)` (`Strand/BLE/StandardHeartRate.swift`): flag byte, 8- or 16-bit
+`StandardHeartRate.parse(_:)` (`Cenit/BLE/StandardHeartRate.swift`): flag byte, 8- or 16-bit
 HR, optional Energy-Expended skip, then R-R intervals in 1/1024 s converted to milliseconds.
 NOOP treats this as the *reliable* HR/R-R source (the custom `REALTIME_DATA` stream usually
 reports `rr_count = 0`). `0x2A19` is read as a raw percent (`state.setBattery(Double(pct))`).
@@ -111,7 +111,7 @@ total frame size = length + 4
   computed over the **inner bytes** `frame[4 .. length)`.
 
 Reference: `verifyFrame(_:)` and `crc8(_:)` / `crc32(_:)` in `Framing.swift`, and the
-outbound builder `WhoopCommand.frame(seq:payload:)` in `Strand/BLE/Commands.swift`.
+outbound builder `WhoopCommand.frame(seq:payload:)` in `Cenit/BLE/Commands.swift`.
 
 ```swift
 // Framing.swift — WHOOP 4.0 validation (abridged)
@@ -316,7 +316,7 @@ link) are then started. The `GET_CLOCK` response is decoded by `ClockCorrelation
 
 ## 6. CommandNumber (sending) — the safe subset
 
-NOOP exposes a curated, **safe** command set in `WhoopCommand` (`Strand/BLE/Commands.swift`).
+NOOP exposes a curated, **safe** command set in `WhoopCommand` (`Cenit/BLE/Commands.swift`).
 The raw value is the on-wire command byte at `[6]` (inside a type-35 `COMMAND` frame). Commands
 are built by `WhoopCommand.frame(seq:payload:)` and written to `…0002`.
 
@@ -531,11 +531,11 @@ inherit a base layout and override only what changed. The streamed decode that f
 | `Packages/WhoopProtocol/Sources/WhoopProtocol/PostHooks.swift` | per-type irregular-field decoders |
 | `Packages/WhoopProtocol/Sources/WhoopProtocol/HistoricalMeta.swift` | `classifyHistoricalMeta` (START/END/COMPLETE) |
 | `Packages/WhoopProtocol/Sources/WhoopProtocol/Resources/whoop_protocol.json` | canonical enums + packet layouts |
-| `Strand/BLE/BLEManager.swift` | CoreBluetooth transport, bond, connect lifecycle, backfill orchestration |
-| `Strand/BLE/Commands.swift` | safe `WhoopCommand` set + outbound frame builder |
-| `Strand/BLE/FrameRouter.swift` | decode → `LiveState` (UI) |
-| `Strand/BLE/StandardHeartRate.swift` | `0x2A37` HR/R-R parser |
-| `Strand/Collect/Backfiller.swift` | historical-offload state machine + safe-trim invariant |
+| `Cenit/BLE/BLEManager.swift` | CoreBluetooth transport, bond, connect lifecycle, backfill orchestration |
+| `Cenit/BLE/Commands.swift` | safe `WhoopCommand` set + outbound frame builder |
+| `Cenit/BLE/FrameRouter.swift` | decode → `LiveState` (UI) |
+| `Cenit/BLE/StandardHeartRate.swift` | `0x2A37` HR/R-R parser |
+| `Cenit/Collect/Backfiller.swift` | historical-offload state machine + safe-trim invariant |
 
 ---
 

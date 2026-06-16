@@ -22,42 +22,42 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 - **La app estrena nombre e icono: ahora se llama «Cénit» / The app has a new name and icon: it's now called "Cénit".**
   **ES** — NOOP ahora se llama **Cénit** —el punto más alto del recorrido del sol, el cénit del dial de 24 horas, en guiño al icono—. Es un cambio puramente de imagen: el nombre bajo el icono (app y widget), un nuevo icono «dial diurno» (anillo de 24 h con el arco del día en ámbar, la muesca del cénit arriba y el punto verde del «ahora») con sus tres aparencias de iOS 18 —claro, oscuro y tintado—, y todos los textos de la app pasan a «Cénit», en español, inglés y alemán. Tus datos, tu vínculo con la banda y tus respaldos quedan intactos: no hay que reinstalar ni volver a vincular nada, y los respaldos anteriores «NOOP-backup» se siguen restaurando igual.
   **EN** — NOOP is now called **Cénit** — the sun's highest point, the zenith of the 24-hour dial, echoing the icon. It's a pure rebrand: the name under the icon (app and widget), a new "daytime dial" icon (a 24-hour ring with the day's arc in amber, the cénit notch at the top and the green "now" dot) with its three iOS 18 appearances — light, dark and tinted — and every in-app text now reads "Cénit," in Spanish, English and German. Your data, your strap pairing and your backups are untouched: nothing to reinstall or re-pair, and older "NOOP-backup" files still restore exactly as before.
-  ([project.yml](project.yml), [Strand/System/ProjectInfo.swift](Strand/System/ProjectInfo.swift), [Tools/gen-icon.swift](Tools/gen-icon.swift))
+  ([project.yml](project.yml), [Cenit/System/ProjectInfo.swift](Cenit/System/ProjectInfo.swift), [Tools/gen-icon.swift](Tools/gen-icon.swift))
 
 - **Hoy se lee más fácil: barra de estado en tinta, métricas más grandes y separadores más marcados / Today reads easier: dark status bar, larger metrics, and clearer separators.**
   **ES** — Pulido de legibilidad sobre el rediseño de **Hoy**: los íconos del sistema (hora, señal, batería) ahora se ven en **tinta oscura** sobre el papel claro, en vez de blancos y lavados. Las **«Métricas clave»** crecieron —etiquetas y números más grandes— para que el dato se lea de un vistazo, el título **«Métricas clave»** vuelve a tener contraste (antes quedaba casi invisible), y las **líneas divisorias** entre métricas y sobre «Verlo latido a latido» son un poco más gruesas y marcadas. Se quitó el rótulo «Hoy» sobre las métricas para un encabezado más limpio.
   **EN** — A legibility pass over the **Today** redesign: the system icons (clock, signal, battery) now show in **dark ink** on the light paper instead of washed-out white. **"Key Metrics"** grew — larger labels and numbers — so the data reads at a glance, the **"Key Metrics"** title has contrast again (it was nearly invisible before), and the **divider lines** between metrics and above "See it beat by beat" are a touch thicker and clearer. The "Today" overline above the metrics was removed for a cleaner header.
-  ([Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift), [Packages/StrandDesign/Sources/StrandDesign/MetricRow.swift](Packages/StrandDesign/Sources/StrandDesign/MetricRow.swift))
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift), [Packages/StrandDesign/Sources/StrandDesign/MetricRow.swift](Packages/StrandDesign/Sources/StrandDesign/MetricRow.swift))
 
 - **La pantalla de Hoy se rediseñó: un número, un dial y la luz del día / The Today screen has been redesigned: one number, one dial, and daylight.**
   **ES** — Llegó el rediseño de **Hoy** (por ahora en iPhone): la pantalla es ahora **papel cálido que cambia de tono con la hora del día** —amanece, se ilumina y anochece contigo, con el modo claro «Instrumento diurno» y el cálculo de sol sin GPS de los pasos anteriores—. Manda **un solo número**: tu recuperación de 0 a 100, grande y en su propio color (verde / ámbar / rojo según la banda). A su lado, el **dial de 24 horas** marca la hora, tu **ventana de sueño** de anoche y tu **amanecer y atardecer**. Debajo, la **palabra del veredicto** lleva su propio color y una **«i»** que abre el porqué —puede no coincidir con el número, y eso está bien—. Tus **«Métricas clave»** (esfuerzo, sueño, HRV, frecuencia cardíaca, FC en reposo, oxígeno y pasos) bajan a una lista tranquila donde cada una muestra su **tendencia de 14 días** con una **banda de referencia** (tu rango típico) detrás de la línea. El color saturado vive **solo en el dato**; todo lo demás es tinta. No se perdió nada de información: solo se reacomodó para que respire.
   **EN** — The **Today** redesign has landed (on iPhone for now): the screen is now **warm paper that shifts tone with the time of day** — it dawns, brightens and darkens with you, using the "Instrumento diurno" light mode and the no-GPS sun math from the earlier steps. It leads with **one number**: your recovery from 0 to 100, large and in its own color (green / amber / red by band). Beside it, the **24-hour dial** marks the time, last night's **sleep window**, and your **sunrise and sunset**. Below, the **verdict word** carries its own color and an **"i"** that opens the why — it may not match the number, and that's fine. Your **"Key Metrics"** (strain, sleep, HRV, heart rate, resting HR, oxygen and steps) move into a calm list where each shows its **14-day trend** with a **reference band** (your typical range) behind the line. Saturated color lives **only in the data**; everything else is ink. No information was lost — it was just rearranged to breathe.
-  ([Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift))
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
 
 - **El encabezado de Hoy siempre muestra la fecha real, ya no se queda «atorado» en ayer / The Today header always shows the real date, no longer "stuck" on yesterday.**
   **ES** — La fecha bajo el saludo de la pantalla de Hoy mostraba el día del último dato registrado, no el del calendario. Antes de que existiera el registro de hoy, el encabezado se quedaba en ayer (p. ej. «lun, 15 de junio» cuando ya era 16), dando la impresión de que la app se había congelado. Ahora siempre muestra el día real de hoy, igual que el saludo.
   **EN** — The date under the greeting on the Today screen showed the day of the last recorded data, not the calendar day. Before today's row existed, the header stayed on yesterday (e.g. "Mon, Jun 15" when it was already the 16th), making the app look frozen. It now always shows the real current day, just like the greeting.
-  ([Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift))
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
 
 - **«En la banda» ya no muestra fechas imposibles / "On the band" no longer shows impossible dates.**
   **ES** — En el diagnóstico de Fuentes de datos, la línea «En la banda» —que muestra el rango de historial que dice tener tu strap— a veces enseñaba fechas basura: un solo día repetido (p. ej. «mar 15, 2025 → mar 15, 2025») o incluso fechas del futuro, porque la WHOOP 4.0 con el reloj inestable manda lecturas sin sentido. Ahora NOOP valida esa ventana antes de mostrarla: si no es plausible (fecha futura, o un rango colapsado a un solo punto), muestra «—» en vez de inventar un historial. Cuando la banda sí reporta un rango real, se muestra igual que antes.
   **EN** — In the Data Sources diagnostic, the "On the band" line — which shows the history range your strap claims to hold — sometimes displayed garbage dates: a single day repeated (e.g. "Mar 15, 2025 → Mar 15, 2025") or even future dates, because a WHOOP 4.0 with an unstable clock sends meaningless readings. NOOP now validates that window before showing it: if it isn't plausible (a future date, or a range collapsed to a single point), it shows "—" instead of inventing a history. When the band does report a real range, it's shown just as before.
-  ([Strand/BLE/BLEManager.swift](Strand/BLE/BLEManager.swift))
+  ([Cenit/BLE/BLEManager.swift](Cenit/BLE/BLEManager.swift))
 
 - **Hoy reconoce de dónde viene tu base: Apple Health o tu banda / Today now recognizes where your baseline comes from: Apple Health or your strap.**
   **ES** — Antes de tu primer veredicto, la pantalla de Hoy ahora cuenta una historia coherente según de dónde salió tu base. Si importaste tu historial de **Apple Health**, ya no te pide «calibrar desde cero» ni muestra «0 de 4 noches»: te dice que **tu base ya está lista** y que solo falta que uses tu banda para el dato de hoy —el único que Apple Health no puede darte—. Si todavía no tienes historial, la tarjeta de calibración sigue contando tus noches 0→4, pero ahora aclara que son las noches que **tu propia base** necesita (no «tu veredicto») y te ofrece un atajo para conectar Apple Health y adelantar la base. Si no diste permiso a Apple Health, ningún mensaje te promete una base que no tienes. Es el complemento del cambio anterior en el veredicto (la línea «Se afina con tu banda · N de 14»).
   **EN** — Before your first verdict, the Today screen now tells a coherent story based on where your baseline came from. If you imported your **Apple Health** history, it no longer asks you to "calibrate from zero" or shows "0 of 4 nights": it tells you **your baseline is ready** and all that's missing is wearing your strap for today's reading — the one thing Apple Health can't give you. If you don't have history yet, the calibration card still counts your nights 0→4, but now it makes clear those are the nights **your own baseline** needs (not "your verdict") and offers a shortcut to connect Apple Health and give your baseline a head start. If you haven't granted Apple Health permission, no message promises a baseline you don't have. It's the companion to the earlier verdict change (the "Sharpening with your strap · N of 14" line).
-  ([Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift))
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
 
 - **El diagnóstico de sincronización ya distingue «la banda no está guardando (reloj)» de un error que reportar / The sync diagnostic now tells "the band isn't storing (clock)" apart from a bug to report.**
   **ES** — Antes, cuando una WHOOP 4.0 con el reloj perdido se conectaba, el diagnóstico de Fuentes de datos decía «Llegan datos pero no se decodifican — repórtalo». Era engañoso: no había nada que reportar; la banda simplemente no estaba guardando nada porque perdió la hora, así que solo manda mensajes internos (no biometría). Ahora ese caso —cuando no llega ni un registro biométrico y la banda no muestra historial guardado— se lee como «La banda no está guardando (reloj). Pásala por la app de WHOOP para reanudar», que es la acción correcta. El caso real en que sí llegan biométricos pero no se pueden decodificar conserva su mensaje de «repórtalo».
   **EN** — Before, when a WHOOP 4.0 with a lost clock connected, the Data Sources diagnostic said "Data arrives but doesn't decode — please report." That was misleading: there was nothing to report; the band simply wasn't storing anything because it lost the time, so it only sends internal log messages (no biometrics). Now that case — when not a single biometric record arrives and the band shows no stored history — reads "The band isn't storing data (clock). Run it through the WHOOP app to resume," which is the right action. The genuine case where biometric data does arrive but can't be decoded keeps its "report it" message.
-  ([Strand/BLE/LiveState.swift](Strand/BLE/LiveState.swift))
+  ([Cenit/BLE/LiveState.swift](Cenit/BLE/LiveState.swift))
 
 - **Tu tendencia de variabilidad cardíaca ya no deja huecos los días que el strap no completó la noche / Your heart-rate-variability trend no longer leaves gaps on days the strap didn't finish the night.**
   **ES** — Si un día llevaste el strap pero NOOP no alcanzó a calcular tu variabilidad cardíaca (HRV) de esa noche —pasa en días de conexión parcial—, la mini-gráfica de 14 días y la tendencia de HRV en Hoy se quedaban con un hueco aunque Apple Salud sí tuviera el dato. Ahora rellenan ese día con el valor de Apple Salud, así la línea queda continua. Cuando el strap **sí** calculó tu HRV, ese valor manda y Apple no lo pisa. Esto es solo para lo que ves en la gráfica: tu recuperación y la calibración de tu línea base siguen contando únicamente las noches reales del strap, sin cambios.
   **EN** — If you wore the strap on a day but NOOP couldn't compute that night's heart-rate variability (HRV) — which happens on partial-connection days — the 14-day mini-chart and the HRV trend on Today were left with a gap even when Apple Health did have the value. They now fill that day from Apple Health, so the line stays continuous. When the strap **did** compute your HRV, that value wins and Apple never overrides it. This only affects what you see in the chart: your recovery and your baseline calibration still count strap-only nights, unchanged.
-  ([Strand/Data/Repository.swift](Strand/Data/Repository.swift), [Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift))
+  ([Cenit/Data/Repository.swift](Cenit/Data/Repository.swift), [Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
 
 - **NOOP ya puede calcular tu «Vitalidad» y tu «edad corporal» a partir de tus señales de bienestar / NOOP can now compute your "Vitality" and "Body Age" from your wellness signals.**
   **ES** — Nueva pieza de fondo: NOOP ya sabe calcular una «Vitalidad» (un puntaje de bienestar de 0 a 100) y una «edad corporal» (en años) combinando tu pulso nocturno en reposo, tu fitness (VO₂max), tu sueño, la regularidad de tu sueño, tu variabilidad cardíaca y tus pasos. Cada señal se traduce a su riesgo publicado de mortalidad por todas las causas (UK Biobank, FRIEND, Paluch 2022, Windred 2024, entre otros) y se combinan en una sola cifra. A diferencia de la «edad de fitness» —que mira solo lo cardiorrespiratorio—, la edad corporal es una mirada de **cuerpo entero** que suma sueño, regularidad, HRV y pasos. Tras una revisión experta del modelo le aplicamos seis correcciones para que sea honesto con los datos reales del strap: lo anclamos a tu pulso **nocturno**, separamos el riesgo de dormir poco del de dormir de más, ajustamos el solapamiento entre señales (para no castigar a quien tiene pocas), atenuamos la HRV (cuyos hazard ratios vienen de electrocardiograma clínico, no de la correa), corregimos la referencia de regularidad y volvemos el umbral de pasos sensible a la edad. Es, por diseño, una **comparación de bienestar, nunca una edad biológica ni un dato clínico**. Todavía no aparece en ninguna pantalla: es la base sobre la que se construirá esa vista después.
@@ -77,7 +77,7 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 - **Tu frecuencia cardíaca de hoy vive ahora en Métricas clave / Today's heart rate now lives in Key Metrics.**
   **ES** — En el iPhone, la gráfica de frecuencia cardíaca de 24 h dejó de ser una sección suelta al fondo de Hoy: ahora es un renglón más de «Métricas clave», justo encima de «FC en reposo». Muestra tu promedio del día y, al tocarlo, abre la curva de las últimas 24 horas —un poco más grande— con tus valores mínimo, promedio y máximo. Si todavía no hay lecturas del día, el renglón muestra «—» y el detalle avisa que aún no hay datos de hoy. Además, la tarjeta de «Fuentes» se movió de Hoy al final de la pantalla «Fuentes de datos». Así, Hoy queda como una sola pantalla: tu veredicto del día y tus métricas clave, sin scroll de más.
   **EN** — On iPhone, the 24h heart-rate chart is no longer a loose section at the bottom of Today: it's now a row in "Key Metrics", right above "Resting HR". It shows your average for the day and, when tapped, opens the last-24-hours curve — a little larger — with your min, average and max. If there are no readings yet today, the row shows "—" and the detail says so. The "Sources" card also moved from Today to the bottom of the "Data Sources" screen. Today now reads as a single screen: your day's verdict and your key metrics, with no extra scrolling.
-  ([Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift), [Strand/Screens/MetricInfoSheet.swift](Strand/Screens/MetricInfoSheet.swift), [Strand/Screens/SourcesSummaryCard.swift](Strand/Screens/SourcesSummaryCard.swift), [Strand/Screens/DataSourcesView.swift](Strand/Screens/DataSourcesView.swift))
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift), [Cenit/Screens/MetricInfoSheet.swift](Cenit/Screens/MetricInfoSheet.swift), [Cenit/Screens/SourcesSummaryCard.swift](Cenit/Screens/SourcesSummaryCard.swift), [Cenit/Screens/DataSourcesView.swift](Cenit/Screens/DataSourcesView.swift))
 
 - **El nuevo modo claro de NOOP cambia de tono con la hora del día / NOOP's new light mode shifts its tone with the time of day.**
   **ES** — La siguiente etapa del rediseño (el lenguaje «Instrumento diurno», un modo claro sobre papel cálido) ahora respira con tu reloj: amanecer durazno, día neutro luminoso, atardecer ámbar y noche en pergamino atenuado. El cambio es continuo —se interpola minuto a minuto en un espacio de color perceptual, sin saltos bruscos— y se calcula por completo en tu dispositivo con la hora local (y, si está disponible, tu amanecer/atardecer del paso anterior). La noche se apaga y se entibia, pero **no** se vuelve modo oscuro: así el texto se mantiene legible —cumpliendo el estándar de accesibilidad AA— a cualquier hora. Es la pieza que tiñe todo el rediseño; todavía no cambia ninguna pantalla (las pantallas la adoptan en los siguientes pasos).
@@ -102,17 +102,17 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 - **Tu registro del strap ya oculta tus identificadores al compartirlo / Your shared strap log now hides your identifiers.**
   **ES** — Cuando compartes tu registro del strap para ayudar a mapear el protocolo, NOOP ahora borra automáticamente tus datos personales antes de que salgan: la dirección MAC del Bluetooth queda enmascarada (solo su primer y último byte), el número de serie del WHOOP —que va en el nombre del dispositivo y está atado a tu cuenta— se elimina, y el identificador único de tu instalación se reemplaza por «<device>». Se conservan a propósito los UUID de servicio públicos (idénticos en todo strap) para que el registro siga sirviendo para diagnóstico.
   **EN** — When you share your strap log to help map the protocol, NOOP now automatically scrubs your personal data before it leaves: the Bluetooth MAC address is masked (first and last byte only), the WHOOP serial number — carried in the device name and tied to your account — is removed, and your install's unique identifier is replaced with "<device>". The public service UUIDs (identical on every strap) are deliberately kept so the log stays useful for diagnostics.
-  ([Strand/BLE/LiveState.swift](Strand/BLE/LiveState.swift))
+  ([Cenit/BLE/LiveState.swift](Cenit/BLE/LiveState.swift))
 
 - **Tus fuentes de datos en Hoy ahora viven en una tarjeta ordenada / Your data sources in Today now live in a tidy card.**
   **ES** — La nota de fuentes al pie de Hoy se rediseñó como una tarjeta «FUENTES»: cada fuente en su renglón con un ícono propio (rayo+corazón para WHOOP, corazón para Apple Health) a la izquierda y sus conteos alineados a la derecha, y el estado de sincronización abajo, separado por una línea fina y con un puntito de color (ámbar si algo falló). Antes los dos badges de color competían entre sí y el texto colgaba sin orden. Mismo contenido, ahora ordenado y fácil de leer de un vistazo.
   **EN** — The data-sources note at the bottom of Today was redesigned as a "Sources" card: each source on its own row with its own icon (bolt+heart for WHOOP, heart for Apple Health) on the left and its counts aligned right, with the sync status below, set off by a thin divider and a small colored dot (amber if something failed). Before, the two colored badges competed and the text hung without order. Same content, now tidy and easy to read at a glance.
-  ([Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift), [Packages/StrandDesign/Sources/StrandDesign/Components.swift](Packages/StrandDesign/Sources/StrandDesign/Components.swift))
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift), [Packages/StrandDesign/Sources/StrandDesign/Components.swift](Packages/StrandDesign/Sources/StrandDesign/Components.swift))
 
 - **Toca cualquier métrica clave para ver su tendencia de los últimos 14 días / Tap any key metric to see its 14-day trend.**
   **ES** — Al tocar Recuperación, HRV, FC en Reposo, Sueño, Oxígeno en Sangre o Pasos en Hoy, el sheet ahora muestra primero una gráfica de línea de los últimos 14 días — antes de las bandas de referencia y la explicación del método. La tendencia se arma con tu historial real combinado (tu banda cuando la tiene, Apple Health cuando no), igual que los mini-gráficos de los tiles, así que se llena aunque no hayas importado un CSV de WHOOP. El color y la escala son propios de cada métrica (gradiente indigo→menta para Recuperación y HRV, rosa para FC en Reposo, etc.), y el sheet se abre con la altura exacta que necesita para que la gráfica no quede cortada. Esfuerzo no la lleva: ya tiene su propia gráfica de «cómo se acumuló hoy».
   **EN** — Tapping Recovery, HRV, Resting HR, Sleep, Blood Oxygen or Steps in Today now shows a 14-day line chart at the top of the info sheet — before the reference bands and method disclosure. The trend is built from your real merged history (your strap when it has the day, Apple Health when it doesn't), the same source the tile sparklines use, so it fills in even without a WHOOP CSV import. Each metric uses its own color and scale (indigo→mint gradient for Recovery and HRV, rose for Resting HR, etc.), and the sheet opens just tall enough so the chart is never cut off. Strain doesn't get one: it already has its own "how today added up" curve.
-  ([Strand/Screens/MetricInfoSheet.swift](Strand/Screens/MetricInfoSheet.swift), [Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift))
+  ([Cenit/Screens/MetricInfoSheet.swift](Cenit/Screens/MetricInfoSheet.swift), [Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
 
 - **Toca y arrastra cualquier gráfica para ver el valor exacto de ese día / Touch and drag any chart to see the exact value for that day.**
   **ES** — Ahora puedes tocar cualquier `TrendChart` en la app (la gráfica de 14 días de HRV, Recuperación, FC en Reposo, Sueño, Oxígeno, Pasos, y la curva de acumulación del Esfuerzo de hoy) y arrastrar el dedo sobre ella: aparece un crosshair vertical, un punto resaltado sobre la línea y un tooltip con el valor exacto + la fecha. Mientras el dedo se mueve, el tooltip lo sigue en tiempo real. Al soltar, desaparece. Los macOS ya podían hacer esto con el cursor; ahora también funciona táctilmente en el iPhone.
@@ -126,32 +126,32 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 - **Fuentes de datos en Hoy se ven ordenadas en dos columnas / Data sources in Today are now laid out in a clean two-column grid.**
   **ES** — WHOOP y Apple Health ahora aparecen lado a lado, cada uno con su badge arriba y sus conteos debajo. Antes, cuando los dos estaban activos, el texto se partía de forma rara con el separador «·» colgando al final de la primera línea.
   **EN** — WHOOP and Apple Health now sit side by side, each with its badge on top and counts below. Previously, when both were active, the text broke awkwardly with the separator «·» dangling at the end of the first line.
-  ([Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift))
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
 
 - **Tu tarjeta de hoy ya no confunde una recuperación alta con un veredicto exigente / Your Today card no longer makes a high recovery look like it's fighting the verdict.**
   **ES** — Si amaneces muy recuperado (digamos 92) pero el veredicto del día sale «Exigido», antes parecía una contradicción — y el 92 hasta se pintaba del color del veredicto (ámbar). Ahora la tarjeta muestra dos cosas distintas, lado a lado y cada una en su color: tu **Veredicto** (¿te exiges hoy?) y tu **Recuperación** (¿qué tan recuperado amaneciste?, 92/100, en verde). Una frase abajo las reconcilia: «Amaneciste muy recuperado. Lo que pide cuidado: hoy es tu carga, no tu cuerpo». Y un enlace «¿Por qué exigido?» abre una pantalla que explica qué señal pesó (HRV, carga, FC en reposo…) y qué significa cada color (menta = Listo, verde = Equilibrado, ámbar = Exigido, rosa = Desgastado), marcando en cuál estás hoy — información que en el iPhone antes no aparecía. «Listo» ahora se ve en menta brillante, distinto del verde de «Equilibrado». No cambia cómo se calcula tu recuperación ni tu veredicto.
   **EN** — When you wake up well recovered (say 92) but the day's verdict reads "Strained", it used to look like a contradiction — and the 92 was even painted in the verdict's color (amber). Now the card shows two separate things, side by side and each in its own color: your **Verdict** (should you push today?) and your **Recovery** (how recovered did you wake up?, 92/100, in green). A line below reconciles them: "You woke up well recovered. What needs care today is your training load, not your body." And a "Why strained?" link opens a screen explaining which signal weighed in (HRV, load, resting HR…) and what each color means (mint = Primed, green = Balanced, amber = Strained, rose = Run down), marking where you land today — information that wasn't on iPhone before. "Primed" now shows in a bright mint, distinct from "Balanced" green. How your recovery and verdict are computed is unchanged.
-  ([Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift), [Strand/Screens/WhyVerdictSheet.swift](Strand/Screens/WhyVerdictSheet.swift), [Packages/StrandAnalytics/Sources/StrandAnalytics/ReadinessEngine.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/ReadinessEngine.swift), [Packages/StrandDesign/Sources/StrandDesign/Palette.swift](Packages/StrandDesign/Sources/StrandDesign/Palette.swift))
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift), [Cenit/Screens/WhyVerdictSheet.swift](Cenit/Screens/WhyVerdictSheet.swift), [Packages/StrandAnalytics/Sources/StrandAnalytics/ReadinessEngine.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/ReadinessEngine.swift), [Packages/StrandDesign/Sources/StrandDesign/Palette.swift](Packages/StrandDesign/Sources/StrandDesign/Palette.swift))
 
 - **Toca tu HRV para ver de dónde sale ese número / Tap your HRV to see where that number comes from.**
   **ES** — Igual que con la recuperación, ahora puedes tocar «HRV» en la fila de resumen de Hoy (y en Métricas clave) para entenderlo en lenguaje llano: qué es la variabilidad entre latidos, por qué importa tu propia tendencia y no un umbral universal, y —a un toque más— cómo se calcula (tomamos los intervalos entre latidos de tu noche, descartamos los fuera de 300–2000 ms y los latidos raros, y si quedan al menos 20 limpios sacamos el RMSSD; Task Force 1996, regla de Malik). Si no hubo HRV anoche, te dice por qué. Todo en tu dispositivo.
   **EN** — Just like recovery, you can now tap "HRV" in the Today summary row (and in Key Metrics) to understand it in plain language: what beat-to-beat variability is, why your own trend matters more than any universal threshold, and — one tap deeper — how it's computed (we take the intervals between your heartbeats overnight, drop the ones outside 300–2000 ms and the odd beats, and if at least 20 clean ones remain we compute RMSSD; Task Force 1996, Malik's rule). If there was no HRV last night, it tells you why. All on your device.
-  ([Strand/Screens/MetricInfoSheet.swift](Strand/Screens/MetricInfoSheet.swift), [Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift))
+  ([Cenit/Screens/MetricInfoSheet.swift](Cenit/Screens/MetricInfoSheet.swift), [Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
 
 - **Mira cuántos días vienen de tu banda y cuántos de Apple Health / See how many days come from your strap vs. Apple Health.**
   **ES** — En Fuentes de datos → card de Apple Health aparece una nueva sección «Cobertura de datos»: un grid de 30 cuadros, uno por día, que muestra de dónde vino cada dato — verde si lo midió la banda, cyan si solo vino de Apple Health, gris si no hay dato. Una línea de resumen arriba del grid y una leyenda abajo hacen la lectura inmediata. Sin taps ni ventanas nuevas; sólo una vista honesta de cómo la banda va reemplazando a Apple Health día a día.
   **EN** — In Data Sources → Apple Health card, a new "Data coverage" section shows a 30-cell grid — one cell per day — color-coded by source: green if the strap measured it, cyan if it came from Apple Health only, gray if there's no data. A summary line above the grid and a legend below make it instantly readable. No taps, no new screens; just an honest view of how the strap is taking over from Apple Health day by day.
-  ([Strand/Screens/DataSourcesView.swift](Strand/Screens/DataSourcesView.swift))
+  ([Cenit/Screens/DataSourcesView.swift](Cenit/Screens/DataSourcesView.swift))
 
 - **Toca tu número de recuperación para ver de dónde sale / Tap your recovery number to see where it comes from.**
   **ES** — Al tocar «Recuperación» en la fila de resumen de Hoy se abre una explicación en lenguaje llano de cómo se arma tu número del 0 al 100: cuánto pesa cada señal de tu noche (HRV 60 %, FC en reposo 20 %, sueño 15 %, temperatura de piel 10 %, respiración 5 %) y, a un toque más, el método detrás —cada señal comparada con tu propio promedio, RMSSD, Task Force 1996—. Si tu base aún se está calibrando, te dice por qué todavía no hay número en vez de inventarlo. Todo en tu dispositivo; es una estimación, no un diagnóstico.
   **EN** — Tapping "Recovery" in the Today summary row now opens a plain-language explanation of how your 0–100 number is built: how much each signal from your night counts (HRV 60%, resting HR 20%, sleep 15%, skin temp 10%, respiration 5%) and, one tap deeper, the method behind it — each signal compared with your own average, RMSSD, Task Force 1996. While your baseline is still calibrating, it tells you why there's no number yet instead of making one up. All on your device; it's an estimate, not a diagnosis.
-  ([Strand/Screens/MetricInfoSheet.swift](Strand/Screens/MetricInfoSheet.swift), [Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift))
+  ([Cenit/Screens/MetricInfoSheet.swift](Cenit/Screens/MetricInfoSheet.swift), [Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
 
 - **Mira cómo se acumuló tu esfuerzo a lo largo del día / See how your strain built up through the day.**
   **ES** — Al tocar «Esfuerzo del día» en Hoy, debajo de la tabla de zonas aparece una gráfica nueva, «Cómo se acumuló hoy»: la curva de tu esfuerzo subiendo desde la medianoche hasta el número que ves arriba, para que veas de dónde salió tu puntaje y a qué horas te exigiste. El eje se ajusta solo a tu día, así que incluso un día tranquilo se lee claro. Si aún no hay suficiente actividad, en su lugar aparece un aviso breve. Se calcula al vuelo con los datos de hoy, en tu dispositivo.
   **EN** — Tapping "Day Strain" on Today now shows a new chart below the zones table, "How today added up": your strain rising from midnight to the number shown above, so you can see where your score came from and when you pushed hardest. The axis fits your own day, so even a quiet day reads clearly. When there isn't enough activity yet, a short note appears instead. Computed on the fly from today's data, on your device.
-  ([Strand/Screens/MetricInfoSheet.swift](Strand/Screens/MetricInfoSheet.swift), [Packages/StrandAnalytics/Sources/StrandAnalytics/StrainScorer.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/StrainScorer.swift), [Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift))
+  ([Cenit/Screens/MetricInfoSheet.swift](Cenit/Screens/MetricInfoSheet.swift), [Packages/StrandAnalytics/Sources/StrandAnalytics/StrainScorer.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/StrainScorer.swift), [Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
 
 - **Tu veredicto te dice de dónde viene tu base y cuánto le falta para afinarse / Your verdict now shows where your baseline comes from and how far it has to sharpen.**
   **ES** — Si importaste tu historial de Apple Health, NOOP puede darte el veredicto del día con una sola noche de banda — lo que antes confundía ("¿no eran varias noches?"). Ahora, al pie del veredicto, una barra discreta —«Se afina con tu banda · N de 14 noches»— muestra que tu cálculo sigue afinándose con cada noche que usas la banda, y cuando tu base se sembró con Apple Health, te lo dice. La barra se retira sola al llegar a tus 14 noches; una noche corta cede el lugar al aviso de baja confianza. No cambia cómo se calcula tu recuperación.
@@ -159,32 +159,32 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 - **NOOP escribe tu sueño de WHOOP en Apple Salud / NOOP writes your WHOOP sleep to Apple Health.**
   **ES** — Tras cada sincronización, las fases de sueño que la WHOOP mide toda la noche (light, deep, REM, wake) aparecen en la app de Salud como fuente "NOOP". La WHOOP mide las fases con PPG continua durante la noche, a diferencia del Apple Watch que hace muestreos puntuales. Los datos coexisten con los del Watch y el usuario elige cuál tiene prioridad en Salud → [métrica] → Fuentes. No se crean duplicados: NOOP borra sus propias entradas anteriores antes de escribir las nuevas.
   **EN** — After each sync, the sleep stages WHOOP measures throughout the night (light, deep, REM, wake) appear in the Health app under the "NOOP" source. WHOOP measures stages with continuous PPG all night, unlike Apple Watch which takes spot readings. The data coexists with Watch readings and the user can set priority in Health → [metric] → Data Sources. No duplicates are created: NOOP deletes its own prior entries before writing new ones.
-  ([StrandiOS/Health/HealthKitBridge.swift](StrandiOS/Health/HealthKitBridge.swift))
+  ([CenitApp/Health/HealthKitBridge.swift](CenitApp/Health/HealthKitBridge.swift))
 
 - **La info de fuentes en "Hoy" ocupa menos espacio / Data source info on Today takes less space.**
   **ES** — La sección "Procedencia" al fondo de la pantalla Hoy era un card grande (con título de sección y tres renglones separados) que le daba peso de pantalla principal a información secundaria. Ahora aparece como dos líneas discretas en el fondo del scroll: una con los badges de fuente y conteos, otra con el estado del último sync de la banda.
   **EN** — The "Provenance" section at the bottom of Today was a full card (with section title and three separate rows) that gave primary-screen weight to secondary metadata. It now appears as two compact lines at the bottom of the scroll: one with source badges and counts, one with the strap's last sync status.
-  ([Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift))
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
 
 - **"Procedencia" muestra ahora el recuento correcto de días de la banda / "Provenance" now shows the correct strap day count.**
   **ES** — El renglón "Whoop" en la sección de Procedencia contaba todos los días del dashboard (incluyendo los de Apple Health), no solo los días donde la banda fue la fuente ganadora. Con 31 días de Apple Health y 1 de la banda, mostraba "32 días" en lugar de "1 día". Ahora el conteo es exacto: solo aparecen los días con datos reales del strap.
   **EN** — The "Whoop" row in the Provenance section was counting every day in the dashboard (including Apple Health days) instead of only the days where the strap won. With 31 Apple Health days and 1 strap day it showed "32 days" instead of "1 day". The count is now accurate: only days with real strap data are shown.
-  ([Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift))
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
 
 - **"Métricas clave" rellena con Apple Salud cuando la banda viene vacía / "Key Metrics" fills from Apple Health when the strap comes up empty.**
   **ES** — Si tu banda registraba el día pero sin HRV / sueño / FC en reposo / oxígeno (le pasa a la WHOOP 4.0 cuando no alcanza a decodificar), esos datos tapaban los que Apple Salud sí tenía y "Métricas clave" quedaba en "—". Ahora, cuando la banda no trae el valor de hoy o ayer, "Métricas clave" usa el de Apple Salud (marcado "Apple Health"). Si la banda sí lo tiene, ese gana. No cambia el cálculo de recuperación.
   **EN** — If your strap logged the day but without HRV / sleep / resting HR / blood oxygen (which happens to the WHOOP 4.0 when it can't decode them), that empty row hid the values Apple Health did have and "Key Metrics" showed "—". Now, when the strap lacks today's or yesterday's value, "Key Metrics" uses Apple Health's (badged "Apple Health"). If the strap has it, the strap wins. Recovery scoring is unchanged.
-  ([Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift), [Strand/Data/Repository.swift](Strand/Data/Repository.swift))
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift), [Cenit/Data/Repository.swift](Cenit/Data/Repository.swift))
 
 - **La pantalla "Apple Health" ya muestra lo que sincronizas en vivo / The "Apple Health" page now shows what you sync live.**
   **ES** — Si conectabas Apple Salud (sin importar un archivo de exportación), la pantalla "Apple Health" (en Más), "Explorar" y "Comparar" salían vacías aunque los datos sí estaban en el teléfono. Era porque la sincronización en vivo no llenaba la tabla que esas pantallas leen. Ahora sí: tus pasos, FC en reposo, HRV, oxígeno, sueño y energía aparecen ahí —y las mini-gráficas de Apple en Hoy se dibujan— sin necesidad de importar nada.
   **EN** — If you connected Apple Health (without importing an export file), the "Apple Health" page (in More), "Explore" and "Compare" came up empty even though the data was on your phone — the live sync wasn't filling the table those screens read from. Now it does: your steps, resting HR, HRV, blood oxygen, sleep and energy show up there, and the Apple sparklines on Today draw, with nothing to import.
-  ([StrandiOS/Health/HealthKitBridge.swift](StrandiOS/Health/HealthKitBridge.swift))
+  ([CenitApp/Health/HealthKitBridge.swift](CenitApp/Health/HealthKitBridge.swift))
 
 - **Sincronización discreta: el indicador de sincronización ya no interrumpe la pantalla / Quiet sync indicator: syncing no longer interrupts the screen.**
   **ES** — Mientras la app descarga el historial de la banda, ya no aparece un pill verde pulsante en la pantalla. En su lugar, la pequeña línea de estado en la esquina superior derecha (la misma que muestra "Sincronizado hace 2 min · banda 87%") cambia discretamente a "Sincronizando historial de la banda…" en el mismo tono gris apagado. Cuando termina, vuelve al estado normal sin ningún parpadeo.
   **EN** — While the app downloads strap history, the pulsing green pill no longer interrupts the screen. Instead, the small status line in the top-right corner (the one that shows "Synced 2 min ago · strap 87%") quietly reads "Syncing strap history…" in the same muted gray. When it finishes, it returns to normal with no flash.
-  ([Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift), [Strand/Screens/IntelligenceView.swift](Strand/Screens/IntelligenceView.swift), [Strand/Screens/SleepView.swift](Strand/Screens/SleepView.swift))
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift), [Cenit/Screens/IntelligenceView.swift](Cenit/Screens/IntelligenceView.swift), [Cenit/Screens/SleepView.swift](Cenit/Screens/SleepView.swift))
 
 - **Apple Salud se queda conectado entre aperturas / Apple Health stays connected between launches.**
   **ES** — Antes, al cerrar y reabrir la app tenías que volver a conectar Apple Salud cada vez, y
@@ -197,7 +197,7 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
   runs on its own and your Apple Health metrics (HRV, sleep, resting HR, blood oxygen, steps) come
   back without reconnecting. And if you haven't connected Apple Health yet, "Key Metrics" shows a
   discreet "Connect Apple Health" shortcut that takes you to Data Sources.
-  ([StrandiOS/Health/HealthKitBridge.swift](StrandiOS/Health/HealthKitBridge.swift), [Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift))
+  ([CenitApp/Health/HealthKitBridge.swift](CenitApp/Health/HealthKitBridge.swift), [Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
 
 - **Tu pulso en vivo y el monitor latido a latido, en cada pantalla / Live pulse and the beat-to-beat monitor, on every screen.**
   **ES** — La fila "Míralo latido a latido" (con tu `• NN bpm` en vivo) ahora aparece al pie del
@@ -210,7 +210,7 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
   your heart beat to beat — there was no way to open that monitor from the verdict before. And the
   header is finally clean (just date and sync) on every screen. When the strap isn't streaming, the
   row reads "No reading".
-  ([Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift))
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
 
 - **Tu pulso en vivo se mudó a la tarjeta de tu primera noche / Live heart rate moved into the first-night card.**
   **ES** — Durante la calibración (la pantalla de las 4 noches), tu ritmo cardiaco en vivo ya no va
@@ -221,7 +221,7 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
   header: it now shows as `• NN bpm` in the card's "See it beat by beat" row, right where you tap to
   watch it live. The header is just date and sync. When the strap isn't streaming, the row reads
   "No reading".
-  ([Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift))
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
 
 - **La fila de Recuperación / HRV / Sueño ahora va centrada / Recovery · HRV · Sleep row is now centered.**
   **ES** — La franja de resumen bajo el veredicto (Recuperación, HRV, Sueño) estaba pegada a la
@@ -230,7 +230,7 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
   **EN** — The summary strip under the verdict (Recovery, HRV, Sleep) hugged the left with a gap on
   the right. Its three columns are now centered and balanced, with evenly spaced dividers. Only the
   alignment changed; the numbers are the same.
-  ([Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift))
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
 
 - **WHOOP 4.0 clock & history diagnostics in the strap log.** When syncing a 4.0, the strap log now
   spells out three things in plain language: the band's own clock as a readable date (or that it never
@@ -238,13 +238,13 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
   a per-offload breakdown of what actually arrived (biometric records vs. firmware console logs vs.
   other). This makes it possible to tell apart "the band's clock is wrong so it never saved history"
   from "the band has nothing new" — without guessing. Observability only; no new strap commands.
-  ([Strand/BLE/BLEManager.swift](Strand/BLE/BLEManager.swift), [Strand/Collect/Backfiller.swift](Strand/Collect/Backfiller.swift))
+  ([Cenit/BLE/BLEManager.swift](Cenit/BLE/BLEManager.swift), [Cenit/Collect/Backfiller.swift](Cenit/Collect/Backfiller.swift))
 
 - **The Today header no longer pulses — calmer, with more room for what matters.** The animated ECG
   waveform that rode the top of the Today screen is gone. The header now reads as a quiet date + sync
   line with your live heart rate still pinned to the right — just without the decorative pulse, which
   ate the most valuable strip of the screen without telling you anything. (First of a few small steps
-  tidying the Today header.) ([Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift))
+  tidying the Today header.) ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
 
 - **Strap sync diagnostic in Data Sources — honest proof your data is getting through.** The WHOOP
   strap row now expands into a read-only diagnostic that answers "did the band capture data, and is
@@ -254,9 +254,9 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
   a per-sensor receipt of what landed this sync (heart rate, R-R, blood oxygen, temperature,
   respiration, movement), and one honest verdict: *Receiving and storing everything* · *The band has
   nothing new* · *Data arrives but doesn't decode — please report*. It only informs — the sole action
-  is Sync now (never a reboot/wipe). Localized in English and Spanish. ([Strand/Screens/DataSourcesView.swift](Strand/Screens/DataSourcesView.swift))
+  is Sync now (never a reboot/wipe). Localized in English and Spanish. ([Cenit/Screens/DataSourcesView.swift](Cenit/Screens/DataSourcesView.swift))
 
-- **Debug screenshot fixtures for Today's readiness states (developers only).** A new DEBUG-only `ScreenshotFixtures` seeds ~40 days of deterministic synthetic history — reverse-engineered against `ReadinessEngine` + `Baselines` — so TodayView can be captured in a specific verdict on demand: `-noop.fixture primed` (signals aligned, load supported) or `-noop.fixture strained` (one signal flagging). The seed publishes a matching dashboard plus synthetic workouts and a 24h heart-rate trace, and `AppModel.init` skips the production refresh loop while a fixture is active so it isn't overwritten. The `NOOPScreenshotTests` UI test gained one isolated method per state (`test_captureTodayEmpty/Primed/Strained`) that captures a top→bottom scroll sequence. All `#if DEBUG`-gated; no effect on release builds. ([Strand/App/ScreenshotFixtures.swift](Strand/App/ScreenshotFixtures.swift))
+- **Debug screenshot fixtures for Today's readiness states (developers only).** A new DEBUG-only `ScreenshotFixtures` seeds ~40 days of deterministic synthetic history — reverse-engineered against `ReadinessEngine` + `Baselines` — so TodayView can be captured in a specific verdict on demand: `-noop.fixture primed` (signals aligned, load supported) or `-noop.fixture strained` (one signal flagging). The seed publishes a matching dashboard plus synthetic workouts and a 24h heart-rate trace, and `AppModel.init` skips the production refresh loop while a fixture is active so it isn't overwritten. The `NOOPScreenshotTests` UI test gained one isolated method per state (`test_captureTodayEmpty/Primed/Strained`) that captures a top→bottom scroll sequence. All `#if DEBUG`-gated; no effect on release builds. ([Cenit/App/ScreenshotFixtures.swift](Cenit/App/ScreenshotFixtures.swift))
 
 - **Fix: trend charts no longer tint the hour labels or clip the last one.** On a tight value domain
   (e.g. the heart-rate chart on Today, 64–145 bpm) the area fill anchored to its implicit zero
@@ -276,9 +276,9 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
   and your workouts already have their own Workouts tab — repeating them on the home screen only added
   scroll. Today now flows verdict → Key Metrics → Heart Rate → Data Sources. Nothing else changed:
   the Workouts tab still lists every session, the Apple Health workout count in Data Sources is
-  unaffected, and macOS keeps its "Last Workouts" section. ([Strand/Screens/TodayView.swift](Strand/Screens/TodayView.swift))
+  unaffected, and macOS keeps its "Last Workouts" section. ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
 
-- **Debug screenshot automation (developers only).** iOS debug builds now register a Darwin notification listener (`noop.nav.<screen>`) so every screen can be navigated programmatically — `xcrun simctl spawn booted notifyutil -p noop.nav.trends` — without triggering system permission dialogs. The "More" tab was refactored to use `NavigationLink(value:)` with a typed `MoreScreen` enum and a programmatic `NavigationPath`, enabling deep-link navigation into any sub-screen from the command line. A `noopdev://` URL scheme (backup transport) is also registered. All debug code is `#if DEBUG`-gated; it has no effect on release builds. ([StrandiOS/App/ScreenshotNav.swift](StrandiOS/App/ScreenshotNav.swift))
+- **Debug screenshot automation (developers only).** iOS debug builds now register a Darwin notification listener (`noop.nav.<screen>`) so every screen can be navigated programmatically — `xcrun simctl spawn booted notifyutil -p noop.nav.trends` — without triggering system permission dialogs. The "More" tab was refactored to use `NavigationLink(value:)` with a typed `MoreScreen` enum and a programmatic `NavigationPath`, enabling deep-link navigation into any sub-screen from the command line. A `noopdev://` URL scheme (backup transport) is also registered. All debug code is `#if DEBUG`-gated; it has no effect on release builds. ([CenitApp/App/ScreenshotNav.swift](CenitApp/App/ScreenshotNav.swift))
 
 - **Fix: `MetricInfoSheet` now compiles on macOS 13.0.** `.presentationBackground(_:)` requires macOS 13.3 but the sheet was calling it unconditionally. Wrapped in a `PresentationBackgroundModifier` with an `@available(macOS 13.3, iOS 16.4, *)` guard.
 
@@ -545,7 +545,7 @@ nights.
 Work on the experimental iOS port. All on-device, no cloud — nothing here changes that.
 
 - **Spanish (es-MX) localization (new):** the whole app is translated to Mexican Spanish via the
-  String Catalog (`Strand/Resources/Localizable.xcstrings`), driven by a re-runnable
+  String Catalog (`Cenit/Resources/Localizable.xcstrings`), driven by a re-runnable
   `Tools/translate-es.py`, with its own catalog for the widget. The catch was that many labels were
   plain Swift `String`s SwiftUI never extracts (metric titles/categories, readiness/behaviour/stress
   sentences, range pickers, strap-connection states, intelligence notes) — these now go through
@@ -583,7 +583,7 @@ Work on the experimental iOS port. All on-device, no cloud — nothing here chan
   gets swallowed by `try?` while `lastSync` advances — it now surfaces the error and re-attempts the
   window next time, instead of silently dropping that day's data; a successful sync refreshes the
   dashboard so the imported days appear immediately.
-- **Build:** explicit shared Xcode schemes in `project.yml`, so `xcodebuild -scheme NOOPiOS` works in
+- **Build:** explicit shared Xcode schemes in `project.yml`, so `xcodebuild -scheme Cenit` works in
   a clean checkout / CI without opening Xcode first.
 
 ---
@@ -972,7 +972,7 @@ killed standard-0x2A37 live HR).
 ## 1.56 — Shortcuts on Mac, recovery in the Android notification
 
 - **New (macOS): App Intents / Shortcuts actions — "Buzz Strap" and "Mark a Moment."** New
-  `Strand/System/NOOPAppIntents.swift` exposes both as `AppIntent`s with an `AppShortcutsProvider`, so
+  `Cenit/System/NOOPAppIntents.swift` exposes both as `AppIntent`s with an `AppShortcutsProvider`, so
   they're available from Shortcuts.app, Spotlight, and menu-bar/keyboard triggers without opening the
   window. They reach the live bonded strap via a new `static weak var AppModel.shared` (published in
   `AppModel.init`) — constructing a fresh `AppModel` from an intent would spin up a second BLEManager +

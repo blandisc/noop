@@ -129,7 +129,7 @@ that premise:
 ## Features
 
 The app organizes everything behind a single navigation surface. Each item below
-is a real screen in `Strand/Screens/`.
+is a real screen in `Cenit/Screens/`.
 
 | Screen | What it does |
 |---|---|
@@ -138,7 +138,7 @@ is a real screen in `Strand/Screens/`.
 | **Live** | Real-time view of the connected strap — heart rate and frame stream as they arrive (~1 Hz). |
 | **Breathe** | **HRV haptic breathing biofeedback.** The strap both *measures* HRV (R-R intervals) and *buzzes* its haptic motor, so NOOP paces your breath with felt cues (one buzz inhale, two exhale) and shows live HR + rolling RMSSD responding as the session deepens. Presets: Relax 4-6, Coherence 5.5, Box 4-4. |
 | **Intervals** | **Silent haptic HIIT timer.** The strap buzzes every transition (triple-buzz into WORK, single into REST, 3-2-1 tick at phase ends, long buzz on finish) so you train hands-free. Falls back to a glanceable visual timer with no strap. |
-| **Explore** (Metric Explorer) | Interrogate any single metric over time, built from the metric catalog (`Strand/Data/MetricCatalog.swift`). |
+| **Explore** (Metric Explorer) | Interrogate any single metric over time, built from the metric catalog (`Cenit/Data/MetricCatalog.swift`). |
 | **Compare** | Plot two metrics together / against each other over a shared timeline. |
 | **Insights** | Behavioral and correlational insights derived from your own series. |
 | **Sleep** | Sleep sessions with a hypnogram, stage breakdown, efficiency, resting HR, and HRV — computed by the on-device sleep stager. |
@@ -166,7 +166,7 @@ import required.
 
 | Platform | Status |
 |---|---|
-| **iOS** | ✅ The app (`NOOPiOS`, SwiftUI, iOS 16+) — app target + widgets + Live Activity + HealthKit. Pairs over BLE, offloads the strap's history, and scores recovery / strain / sleep on-device. **Build-from-source only, not distributed:** iOS has no anonymous distribution path (App Store and TestFlight both require a real Apple Developer identity), which is fundamentally at odds with this project staying anonymous. |
+| **iOS** | ✅ The app (`Cenit`, SwiftUI, iOS 16+) — app target + widgets + Live Activity + HealthKit. Pairs over BLE, offloads the strap's history, and scores recovery / strain / sleep on-device. **Build-from-source only, not distributed:** iOS has no anonymous distribution path (App Store and TestFlight both require a real Apple Developer identity), which is fundamentally at odds with this project staying anonymous. |
 | **Windows** | 🗺️ Planned. The protocol facts and framing/CRC rules are language-agnostic, so the wire behavior is portable; the work is a Windows BLE stack + UI re-implementation. |
 
 ### Strap support
@@ -226,11 +226,11 @@ needs a little data before everything fills in:
 ## Architecture
 
 The repository is split into platform-pure Swift packages plus the iOS app target
-(`NOOPiOS`). All packages declare both `.iOS(.v16)` and `.macOS(.v13)`;
+(`Cenit`). All packages declare both `.iOS(.v16)` and `.macOS(.v13)`;
 framework-specific UI is guarded with `#if canImport(UIKit)` / `#if canImport(AppKit)`.
 
 ```
-Strand/                  Shared SwiftUI app layer (BLE/Collect/Data/Screens/System) — built by NOOPiOS
+Cenit/                  Shared SwiftUI app layer (BLE/Collect/Data/Screens/System) — built by Cenit
 Packages/
   WhoopProtocol/         BLE frame parsing, CRC, command/event/packet decode
   WhoopStore/            GRDB/SQLite persistence (migrations, streams, caches)
@@ -255,8 +255,8 @@ public enum DeviceFamily: String, Sendable, CaseIterable {
 
 Decoding is schema-driven (`Resources/whoop_protocol.json`) and includes CRC8,
 CRC16-Modbus, and zlib CRC-32 implementations, frame framing, value
-interpretation, and historical-stream reassembly. The app layer (`Strand/BLE/`,
-`Strand/Collect/`) wraps these UUID *strings* in `CBUUID` and handles bonding,
+interpretation, and historical-stream reassembly. The app layer (`Cenit/BLE/`,
+`Cenit/Collect/`) wraps these UUID *strings* in `CBUUID` and handles bonding,
 offload, and live notifications.
 
 ### `WhoopStore` — local SQLite via GRDB
@@ -328,7 +328,7 @@ cd NOOP
 brew install xcodegen   # if you don't have it
 xcodegen generate
 
-# 3. Open in Xcode, then select the NOOPiOS scheme and run on your iPhone.
+# 3. Open in Xcode, then select the Cenit scheme and run on your iPhone.
 ```
 
 Notes:
@@ -352,7 +352,7 @@ See [`docs/BUILD.md`](docs/BUILD.md) for the full build guide.
 ## How your data flows
 
 ```
-WHOOP strap ──BLE──▶ Strand/BLE + Strand/Collect ──▶ WhoopProtocol (decode)
+WHOOP strap ──BLE──▶ Cenit/BLE + Cenit/Collect ──▶ WhoopProtocol (decode)
                                                           │
 WHOOP CSV  ─┐                                             ▼
 Apple Health├─▶ StrandImport (parse) ───────────▶ WhoopStore (local SQLite)
@@ -448,4 +448,4 @@ under the same terms — see [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md).
 - [`DISCLAIMER.md`](DISCLAIMER.md) — trademark, interoperability, and medical/legal notice.
 - [`ATTRIBUTION.md`](ATTRIBUTION.md) — full credits and licensing notes.
 - [`docs/DONATIONS.md`](docs/DONATIONS.md) — optional donation addresses (also in-app under **Support**).
-- [`project.yml`](project.yml) — XcodeGen project definition (source of `Strand.xcodeproj`).
+- [`project.yml`](project.yml) — XcodeGen project definition (source of `Cenit.xcodeproj`).

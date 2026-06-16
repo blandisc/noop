@@ -63,7 +63,7 @@ StrandImport   ──► WhoopProtocol, WhoopStore   (+ ZIPFoundation)
 StrandDesign   (standalone — SwiftUI only, no internal deps)
 ```
 
-The app target (`Strand/`, built by `NOOPiOS`) is the integration layer: it
+The app target (`Cenit/`, built by `Cenit`) is the integration layer: it
 owns the CoreBluetooth transport, wraps the protocol library's UUID *strings* in
 `CBUUID`, and wires the pure packages together. The pure packages are
 platform-agnostic and reusable on their own.

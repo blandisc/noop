@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build Strand/Resources/Localizable.xcstrings (English US base) from the
+"""Build Cenit/Resources/Localizable.xcstrings (English US base) from the
 .stringsdata files xcodebuild emits during a build. Each extracted key becomes
 an `en` localization whose value is the key itself (the authored English text).
 
@@ -11,7 +11,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-CATALOG = Path("Strand/Resources/Localizable.xcstrings")
+CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 
 def find_stringsdata() -> list[Path]:

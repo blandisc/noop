@@ -43,7 +43,7 @@ The biometric pipeline and all five Swift packages
 (`WhoopProtocol`, `WhoopStore`, `StrandAnalytics`, `StrandImport`, `StrandDesign`)
 contain **no** use of `URLSession`, `URLRequest`, `NWConnection`, `dataTask`, or any
 other networking API. The **only** networking anywhere in the app is the AI Coach
-(`Strand/AI/AICoach.swift`), described in
+(`Cenit/AI/AICoach.swift`), described in
 §1.1a. The package manifests reference dependency *download* URLs that Swift Package
 Manager resolves at build time, never at runtime:
 
@@ -77,7 +77,7 @@ If you never enable the AI Coach, NOOP makes zero network connections.
 ### 1.2 The iOS app's entitlements
 
 The iOS app ships with a deliberately minimal entitlement set
-(`StrandiOS/Resources/NOOP.entitlements`):
+(`CenitApp/Resources/NOOP.entitlements`):
 
 ```xml
 <key>com.apple.developer.healthkit</key>                       <true/>
@@ -116,7 +116,7 @@ because there is no network code to begin with, not merely by convention.
 ### 2.1 Where the data lives
 
 All durable data is stored in a single GRDB/SQLite database. The app
-opens it at (`Strand/Collect/StorePaths.swift`):
+opens it at (`Cenit/Collect/StorePaths.swift`):
 
 ```
 <Application Support>/OpenWhoop/whoop.sqlite
@@ -186,7 +186,7 @@ send is the connection log. NOOP keeps one so it can be shared **without** needi
 developer setup (this is what made issues #17/#18 reportable), and the same
 log doubles as the primary tool for **debugging and protocol development**.
 
-**What it is.** The BLE client (`Strand/BLE/BLEManager.swift`) keeps an **in-memory ring
+**What it is.** The BLE client (`Cenit/BLE/BLEManager.swift`) keeps an **in-memory ring
 buffer** of the connection's control flow: scan results (strap
 advertised name + RSSI), the bond/handshake state machine, command names with their
 outbound payload **hex**, and offload progress (trim cursors, chunk acks). It is held
@@ -237,7 +237,7 @@ let ok = crc8OK && (crc32OK ?? false)
 ```
 
 The live BLE path then refuses anything that fails. In
-`Strand/BLE/FrameRouter.swift`:
+`Cenit/BLE/FrameRouter.swift`:
 
 ```swift
 let parsed = parseFrame(frame)
@@ -246,7 +246,7 @@ guard parsed.ok else { return }
 if parsed.crcOK == false { return }
 ```
 
-The same gate guards clock correlation (`Strand/Collect/ClockCorrelation.swift`
+The same gate guards clock correlation (`Cenit/Collect/ClockCorrelation.swift`
 requires `parsed.ok, parsed.crcOK != false`), so a corrupt frame can neither update
 the displayed metrics nor poison the device-clock model.
 
@@ -359,18 +359,18 @@ bundle of CSV files, but the same defensive posture applies.
 
 | Surface | Risk | Mitigation | Where |
 |---------|------|------------|-------|
-| Process | Data exfiltration / network egress | Only the opt-in AI Coach networks (your key, to your chosen provider, a text summary — §1.1a) — nothing else makes a network call, and nothing is sent until you ask | `Strand/AI/AICoach.swift` |
-| Filesystem | Broad disk access | Only `files.user-selected.read-write`; data stays in the sandbox container | `Strand.entitlements`, `Strand/Collect/StorePaths.swift` |
-| BLE frames | Malformed / adversarial packets | CRC8 + CRC32 (+ CRC16 for v5) gating; reject on failure | `WhoopProtocol/Framing.swift`, `Strand/BLE/FrameRouter.swift` |
+| Process | Data exfiltration / network egress | Only the opt-in AI Coach networks (your key, to your chosen provider, a text summary — §1.1a) — nothing else makes a network call, and nothing is sent until you ask | `Cenit/AI/AICoach.swift` |
+| Filesystem | Broad disk access | Only `files.user-selected.read-write`; data stays in the sandbox container | `Strand.entitlements`, `Cenit/Collect/StorePaths.swift` |
+| BLE frames | Malformed / adversarial packets | CRC8 + CRC32 (+ CRC16 for v5) gating; reject on failure | `WhoopProtocol/Framing.swift`, `Cenit/BLE/FrameRouter.swift` |
 | BLE frames | Out-of-bounds reads from short/lying length | `nil`-returning bounds-checked readers; slice clamping; min-length guards | `WhoopProtocol/Interpreter.swift` |
 | BLE frames | Garbage / partial fragments | SOF-resync reassembler bounded by declared length | `WhoopProtocol/Framing.swift` (`Reassembler`) |
-| App state | Implausible-but-valid values | Range gates (e.g. HR 30–220) at the state edge | `Strand/BLE/FrameRouter.swift` |
+| App state | Implausible-but-valid values | Range gates (e.g. HR 30–220) at the state edge | `Cenit/BLE/FrameRouter.swift` |
 | Health import | XML bomb / multi-GB DOM blowup | Streaming SAX over `InputStream`; per-element autorelease pool | `StrandImport/AppleHealthImporter.swift` |
 | Health import | Zip bomb | 8 GB decompressed ceiling, chunked to disk, hard abort | `StrandImport/AppleHealthImporter.swift` |
 | CSV import | Zip bomb / oversized entries | 256 MB per-entry cap (declared + running budget); CRC32 verify | `StrandImport/WhoopExportImporter.swift` |
 | CSV import | Arbitrary archive members | Filename allow-list; tolerant optional-column parsing | `StrandImport/WhoopExportImporter.swift` |
 | Data at rest | Disk theft / offline access | Relies on FileVault + sandbox container; SQLCipher available as an option | `WhoopStore/WhoopStore.swift` |
-| Diagnostics log | Strap connection log leaking secrets | In-app ring buffer only; no biometric values / tokens logged (§2.4) | `Strand/BLE/BLEManager.swift` |
+| Diagnostics log | Strap connection log leaking secrets | In-app ring buffer only; no biometric values / tokens logged (§2.4) | `Cenit/BLE/BLEManager.swift` |
 
 ---
 

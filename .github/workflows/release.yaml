@@ -29,7 +29,7 @@ jobs:
       - name: Generate Xcode Project
         run: xcodegen generate
 
-      # Baut über das NOOPiOS-SCHEME (nicht -target), damit die Widget- und
+      # Baut über das Cenit-SCHEME (nicht -target), damit die Widget- und
       # Live-Activity-Extension korrekt mitgebaut und embedded werden — `-target`
       # umgeht die Scheme-Pre-Actions und den Dependency-Graph, sodass eine kaputte
       # Extension nie CI-rot werden würde.
@@ -41,8 +41,8 @@ jobs:
       - name: Build Unsigned iOS App
         run: |
           xcodebuild build \
-            -project Strand.xcodeproj \
-            -scheme NOOPiOS \
+            -project Cenit.xcodeproj \
+            -scheme Cenit \
             -sdk iphoneos \
             -configuration Release \
             CONFIGURATION_BUILD_DIR="$(pwd)/build/ios_output" \

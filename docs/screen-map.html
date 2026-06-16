@@ -358,7 +358,7 @@ const SCREENS = [
     id: 'today', x: 30, y: 60,
     scrollFrames: ['today','today_2','today_3','today_4'],
     name: 'Today', desc: 'Dashboard · Hub principal',
-    file: 'Strand/Screens/TodayView.swift',
+    file: 'Cenit/Screens/TodayView.swift',
     icon: '⚡', color: '#18C98B',
     states: [
       { label: 'Empty / First launch', type: 'empty' },
@@ -380,7 +380,7 @@ const SCREENS = [
   {
     id: 'health', x: 284, y: 60,
     name: 'Health', desc: 'Vitales en vivo',
-    file: 'Strand/Screens/HealthView.swift',
+    file: 'Cenit/Screens/HealthView.swift',
     icon: '❤️', color: '#FF5A5A',
     states: [
       { label: 'Sin datos', type: 'empty' },
@@ -393,7 +393,7 @@ const SCREENS = [
   {
     id: 'sleep', x: 538, y: 60,
     name: 'Sleep', desc: 'Análisis de sueño',
-    file: 'Strand/Screens/SleepView.swift',
+    file: 'Cenit/Screens/SleepView.swift',
     icon: '🌙', color: '#7B8FFF',
     states: [
       { label: 'Sin datos de noche (sin pill de backfilling)', type: 'empty' },
@@ -407,7 +407,7 @@ const SCREENS = [
   {
     id: 'stress', x: 792, y: 60,
     name: 'Stress', desc: 'Monitor de estrés 0–3',
-    file: 'Strand/Screens/StressView.swift',
+    file: 'Cenit/Screens/StressView.swift',
     icon: '🌡', color: '#F5A623',
     states: [
       { label: 'Calculando', type: 'loading' },
@@ -422,7 +422,7 @@ const SCREENS = [
   {
     id: 'workouts', x: 30, y: 710,
     name: 'Workouts', desc: 'Log de actividad',
-    file: 'Strand/Screens/WorkoutsView.swift',
+    file: 'Cenit/Screens/WorkoutsView.swift',
     icon: '🏋', color: '#4A9EFF',
     states: [
       { label: 'Cargando', type: 'loading' },
@@ -439,7 +439,7 @@ const SCREENS = [
   {
     id: 'trends', x: 284, y: 710,
     name: 'Trends', desc: 'Análisis longitudinal',
-    file: 'Strand/Screens/TrendsView.swift',
+    file: 'Cenit/Screens/TrendsView.swift',
     icon: '📈', color: '#18C98B',
     states: [
       { label: 'Ventana vacía', type: 'empty' },
@@ -452,7 +452,7 @@ const SCREENS = [
   {
     id: 'insights', x: 538, y: 710,
     name: 'Insights', desc: 'Correlaciones de comportamiento',
-    file: 'Strand/Screens/InsightsView.swift',
+    file: 'Cenit/Screens/InsightsView.swift',
     icon: '💡', color: '#F5A623',
     states: [
       { label: 'Calculando', type: 'loading' },
@@ -468,7 +468,7 @@ const SCREENS = [
   {
     id: 'explore', x: 30, y: 1360,
     name: 'Explore', desc: 'Catálogo de métricas',
-    file: 'Strand/Screens/MetricExplorerView.swift',
+    file: 'Cenit/Screens/MetricExplorerView.swift',
     icon: '🔍', color: '#4A9EFF',
     states: [
       { label: 'Lista por categoría', type: 'data' },
@@ -484,7 +484,7 @@ const SCREENS = [
   {
     id: 'compare', x: 284, y: 1360,
     name: 'Compare', desc: 'Superponer 2–4 métricas',
-    file: 'Strand/Screens/CompareView.swift',
+    file: 'Cenit/Screens/CompareView.swift',
     icon: '⚖', color: '#9B8FFF',
     states: [
       { label: 'Sin selección', type: 'empty' },
@@ -497,7 +497,7 @@ const SCREENS = [
   {
     id: 'apple-health', x: 538, y: 1360,
     name: 'Apple Health', desc: 'Historia de Apple Health',
-    file: 'Strand/Screens/AppleHealthView.swift',
+    file: 'Cenit/Screens/AppleHealthView.swift',
     icon: '🍎', color: '#FF5A5A',
     states: [
       { label: 'Sin datos', type: 'empty' },
@@ -510,7 +510,7 @@ const SCREENS = [
   {
     id: 'intelligence', x: 792, y: 1360,
     name: 'Intelligence', desc: 'Scores on-device',
-    file: 'Strand/Screens/IntelligenceView.swift',
+    file: 'Cenit/Screens/IntelligenceView.swift',
     icon: '🧠', color: '#18C98B',
     states: [
       { label: 'Calculando', type: 'loading' },
@@ -525,7 +525,7 @@ const SCREENS = [
   {
     id: 'live', x: 30, y: 2010,
     name: 'Live', desc: 'ECG en vivo · gestión de correa',
-    file: 'Strand/Screens/LiveView.swift',
+    file: 'Cenit/Screens/LiveView.swift',
     icon: '📡', color: '#18C98B',
     states: [
       { label: 'No bonded', type: 'empty' },
@@ -540,7 +540,7 @@ const SCREENS = [
   {
     id: 'automations', x: 284, y: 2010,
     name: 'Automations', desc: 'Double-tap · wear · alarmas',
-    file: 'Strand/Screens/AutomationsView.swift',
+    file: 'Cenit/Screens/AutomationsView.swift',
     icon: '⚙️', color: '#888',
     states: [
       { label: 'Strap no bonded', type: 'empty' },
@@ -552,7 +552,7 @@ const SCREENS = [
   {
     id: 'breathing', x: 538, y: 2010,
     name: 'Breathing', desc: 'HRV biofeedback trainer',
-    file: 'Strand/Screens/BreathingView.swift',
+    file: 'Cenit/Screens/BreathingView.swift',
     icon: '🫧', color: '#4A9EFF',
     states: [
       { label: 'Setup (pace selector)', type: 'empty' },
@@ -566,7 +566,7 @@ const SCREENS = [
   {
     id: 'interval', x: 792, y: 2010,
     name: 'Interval Timer', desc: 'HIIT timer haptic silencioso',
-    file: 'Strand/Screens/IntervalTimerView.swift',
+    file: 'Cenit/Screens/IntervalTimerView.swift',
     icon: '⏱', color: '#F5A623',
     states: [
       { label: 'Config', type: 'empty' },
@@ -582,7 +582,7 @@ const SCREENS = [
   {
     id: 'coach', x: 30, y: 2660,
     name: 'Coach', desc: 'LLM coaching (OpenAI / Anthropic)',
-    file: 'Strand/Screens/CoachView.swift',
+    file: 'Cenit/Screens/CoachView.swift',
     icon: '🤖', color: '#9B8FFF',
     states: [
       { label: 'Sin clave API', type: 'empty' },
@@ -597,7 +597,7 @@ const SCREENS = [
   {
     id: 'settings', x: 284, y: 2660,
     name: 'Settings', desc: 'Configuración y perfil',
-    file: 'Strand/Screens/SettingsView.swift',
+    file: 'Cenit/Screens/SettingsView.swift',
     icon: '⚙', color: '#888',
     states: [
       { label: 'Vista única (scrollable)', type: 'data' },
@@ -610,7 +610,7 @@ const SCREENS = [
   {
     id: 'data-sources', x: 538, y: 2660,
     name: 'Data Sources', desc: 'Importar WHOOP · Apple Health',
-    file: 'Strand/Screens/DataSourcesView.swift',
+    file: 'Cenit/Screens/DataSourcesView.swift',
     icon: '📥', color: '#4A9EFF',
     states: [
       { label: 'Idle', type: 'empty' },
@@ -624,7 +624,7 @@ const SCREENS = [
   {
     id: 'support', x: 792, y: 2660,
     name: 'Support', desc: 'Donaciones · contacto · atribución',
-    file: 'Strand/Screens/SupportView.swift',
+    file: 'Cenit/Screens/SupportView.swift',
     icon: '❤', color: '#FF5A5A',
     states: [
       { label: 'Estático', type: 'data' },
@@ -637,7 +637,7 @@ const SCREENS = [
   {
     id: 'manual-workout', x: 30, y: 3310,
     name: 'Manual Workout', desc: 'Sheet: agregar / editar sesión',
-    file: 'Strand/Screens/ManualWorkoutSheet.swift',
+    file: 'Cenit/Screens/ManualWorkoutSheet.swift',
     icon: '✏', color: '#4A9EFF',
     isSheet: true,
     states: [
@@ -651,7 +651,7 @@ const SCREENS = [
   {
     id: 'metric-info', x: 284, y: 3310,
     name: 'Metric Info', desc: 'Sheet: detalle de métrica (desde Today)',
-    file: 'Strand/Screens/MetricInfoSheet.swift',
+    file: 'Cenit/Screens/MetricInfoSheet.swift',
     icon: 'ℹ', color: '#4A9EFF',
     isSheet: true,
     states: [
@@ -670,7 +670,7 @@ const SCREENS = [
   {
     id: 'why-verdict', x: 30, y: 3310,
     name: 'Why Verdict', desc: 'Sheet: por qué el veredicto de hoy (desde Today · FER-113)',
-    file: 'Strand/Screens/WhyVerdictSheet.swift',
+    file: 'Cenit/Screens/WhyVerdictSheet.swift',
     icon: '❓', color: '#2FC7FF',
     isSheet: true,
     states: [
@@ -684,7 +684,7 @@ const SCREENS = [
   {
     id: 'whats-new', x: 538, y: 3310,
     name: 'What\'s New', desc: 'Sheet: historial de versiones',
-    file: 'Strand/Screens/WhatsNewView.swift',
+    file: 'Cenit/Screens/WhatsNewView.swift',
     icon: '🆕', color: '#18C98B',
     isSheet: true,
     states: [

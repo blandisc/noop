@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Inject Spanish (es) translations into Strand/Resources/Localizable.xcstrings.
+"""Inject Spanish (es) translations into Cenit/Resources/Localizable.xcstrings.
 
 Reads the English (en) base values and adds an `es` stringUnit for each key.
 The translation is authored in Latin American / Mexican Spanish (tuteo, "esta
@@ -14,7 +14,7 @@ import json
 import re
 from pathlib import Path
 
-CATALOG = Path("Strand/Resources/Localizable.xcstrings")
+CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
@@ -830,7 +830,7 @@ ES: dict[str, str] = {
     "Out of range": "Fuera de rango",
 
     # Widget keys deduped into the main catalog by the seed (the widget bundle
-    # has its own copy in StrandiOSWidgets/Localizable.xcstrings).
+    # has its own copy in CenitWidgets/Localizable.xcstrings).
     "%": "%",
     "–": "–",
     "%@ bpm": "%@ bpm",
