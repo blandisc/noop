@@ -133,6 +133,7 @@ struct TodayView: View {
                 MetricInfoSheet(
                     info: info,
                     strainCurveLoader: info.id == "strain" ? { await loadStrainCurve() } : nil,
+                    heartRateCurveLoader: info.id == "heart_rate" ? { hrPoints } : nil,
                     trendLoader: trendLoader(for: info.id)
                 )
                 #else
@@ -220,8 +221,6 @@ struct TodayView: View {
                 }
                 whySection
                 iosMetricsSection
-                iosHeartRateSection
-                sourcesSection
             }
             // Lift the whole column toward the top: trim the screen's TOP inset (24 → 16) while keeping
             // the standard horizontal/bottom margins, so the verdict card sits a bit higher (owner ask).
@@ -270,35 +269,6 @@ struct TodayView: View {
             .environmentObject(health)
             .preferredColorScheme(.dark)
         }
-    }
-
-    /// HR for the phone: the real 24h trend when there's data, an honest "No readings yet" well on
-    /// first launch (the design's empty-state HR slot), nothing in between (a strap-only day with no
-    /// wear shouldn't render an empty axis).
-    @ViewBuilder private var iosHeartRateSection: some View {
-        if hrPoints.count > 1 {
-            heartRateTrendSection
-        } else if isFirstLaunch {
-            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-                SectionHeader("Heart Rate", overline: "Since midnight")
-                NoopCard {
-                    Text("No readings yet")
-                        .font(StrandFont.subhead)
-                        .foregroundStyle(StrandPalette.textTertiary)
-                        .frame(maxWidth: .infinity, minHeight: 52)
-                }
-            }
-        }
-    }
-
-    /// True only on a genuine first launch — no synced history, no stored days, no live reading. The
-    /// "calibrating" case (worn a few nights, recovery still seeding) is NOT empty: it keeps the
-    /// data-pending note + verdict path so an honest "scores are building" story shows instead.
-    private var isFirstLaunch: Bool {
-        repo.today?.recovery == nil
-            && repo.days.isEmpty
-            && live.lastSyncedAt == nil
-            && liveBpm == nil
     }
 
     /// Recovery score driving the readiness gauge (the 0–100 the bar fills to). nil while calibrating.
@@ -821,6 +791,16 @@ struct TodayView: View {
                               isPlaceholder: hrvR == nil)
                 }.buttonStyle(.plain)
                 metricSeparator
+                // Frecuencia cardíaca — la curva continua de hoy, justo encima de "FC en reposo"
+                // (RHR nocturna) para que se lean como par. Tap → sheet con la gráfica 24h. (FER-137)
+                Button { metricDetail = .heartRate(avgBpm: hrTodayAvg) } label: {
+                    MetricRow(label: "Heart Rate",
+                              value: hrTodayAvg.map { "\($0)" } ?? "—",
+                              unit: "bpm", valueColor: StrandPalette.metricRose,
+                              sparkline: hrSparkline, sparkColor: StrandPalette.metricRose,
+                              isPlaceholder: hrTodayAvg == nil)
+                }.buttonStyle(.plain)
+                metricSeparator
                 Button { metricDetail = .restingHR(rhrR.map { Int($0.value.rounded()) }) } label: {
                     MetricRow(label: "Resting HR",
                               value: rhrR.map { "\(Int($0.value.rounded()))" } ?? "—",
@@ -887,6 +867,23 @@ struct TodayView: View {
         if isLiveHR, let hr = live.heartRate { return hr }
         if let last = hrPoints.last?.value { return Int(last.rounded()) }
         return nil
+    }
+
+    /// Today's mean HR (nil when there are no readings) — the value on the "Heart Rate" Key-Metrics
+    /// row. The day's average summarizes the day without echoing the live bpm that lives in the hero.
+    private var hrTodayAvg: Int? {
+        guard hrPoints.count > 1 else { return nil }
+        let v = hrPoints.map(\.value)
+        return Int((v.reduce(0, +) / Double(v.count)).rounded())
+    }
+
+    /// The day's HR curve subsampled to a compact sparkline for the Key-Metrics row (≤32 points).
+    private var hrSparkline: [Double]? {
+        guard hrPoints.count > 1 else { return nil }
+        let v = hrPoints.map(\.value)
+        guard v.count > 40 else { return v }
+        let step = max(1, v.count / 32)
+        return stride(from: 0, to: v.count, by: step).map { v[$0] }
     }
 
     /// Compact localized date for the utility row, e.g. "THU 12 JUN" — context without the greeting.
@@ -1192,67 +1189,10 @@ struct TodayView: View {
 
     // MARK: (d) DATA SOURCES — compact footnote.
 
-    @ViewBuilder
+    /// The compact "Sources" footnote card, now `SourcesSummaryCard` (FER-137) so the iOS Data Sources
+    /// screen can host it too. macOS Today still shows it here; the iPhone Today dropped it.
     private var sourcesSection: some View {
-        let whoopDays  = repo.days.count - repo.appleHealthDays.count
-        let ahDays     = appleDays.count
-        let ahWorkouts = workouts.filter { $0.source == "apple-health" }.count
-        let hasData    = whoopDays > 0 || ahDays > 0
-        let hasSync    = live.lastSyncError != nil || live.lastSyncedAt != nil
-
-        let showsSync = !live.backfilling && hasSync
-
-        if hasData || showsSync {
-            NoopCard {
-                VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-                    Text("Sources").strandOverline()
-                    if hasData {
-                        if whoopDays > 0 {
-                            sourceRow(symbol: "bolt.heart.fill", name: "WHOOP",
-                                      count: String(localized: "\(whoopDays) days · \(repo.sleeps.count) sleeps"),
-                                      tint: StrandPalette.accent)
-                        }
-                        if ahDays > 0 {
-                            sourceRow(symbol: "heart.fill", name: "Apple Health",
-                                      count: String(localized: "\(ahDays) days · \(ahWorkouts) workouts"),
-                                      tint: StrandPalette.metricCyan)
-                        }
-                    }
-                    if showsSync {
-                        if hasData { Divider().overlay(StrandPalette.hairline) }
-                        TimelineView(.periodic(from: .now, by: 60)) { context in
-                            if let error = live.lastSyncError {
-                                syncLine(text: error, tone: .warning, color: StrandPalette.statusWarning)
-                            } else if let at = live.lastSyncedAt {
-                                syncLine(text: String(localized: "History synced \(relativeAgo(at, now: context.date.timeIntervalSince1970))"),
-                                         tone: .neutral, color: StrandPalette.textTertiary)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /// One data-source row: tinted glyph + brand name on the left, tabular count flush right.
-    private func sourceRow(symbol: String, name: LocalizedStringKey, count: String, tint: Color) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: symbol)
-                .font(.system(size: NoopMetrics.sourceGlyph, weight: .semibold))
-                .foregroundStyle(tint)
-                .frame(width: 18)
-            Text(name).font(StrandFont.subhead).foregroundStyle(StrandPalette.textPrimary)
-            Spacer(minLength: 8)
-            Text(count).font(StrandFont.captionNumber).foregroundStyle(StrandPalette.textSecondary)
-        }
-    }
-
-    /// The sync footer line: a small status dot + footnote text.
-    private func syncLine(text: String, tone: StrandTone, color: Color) -> some View {
-        HStack(spacing: 6) {
-            ConnectionDot(tone: tone, size: 6)
-            Text(text).font(StrandFont.footnote).foregroundStyle(color)
-        }
+        SourcesSummaryCard()
     }
 
     // MARK: - Loading

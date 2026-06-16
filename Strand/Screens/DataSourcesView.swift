@@ -28,6 +28,11 @@ struct DataSourcesView: View {
             appleHealthLiveCard
             #endif
             liveCard
+            #if os(iOS)
+            // FER-137 — the "Sources" summary card moved here off the iPhone Today (which now reads as
+            // verdict + Key Metrics only). iOS-only: macOS still shows it on its Today footer.
+            SourcesSummaryCard()
+            #endif
         }
         // A single target-aware importer avoids SwiftUI collapsing competing importers on the same screen.
         .fileImporter(isPresented: $showingImporter,
