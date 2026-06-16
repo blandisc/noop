@@ -32,6 +32,9 @@ struct TodayView: View {
     // off a real BLE scan (`AppModel.scan()`). macOS never renders the iOS body, so it never reads this.
     @EnvironmentObject var model: AppModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// El tema activo de «Instrumento diurno» (FER-135). El `iosBody` lo inyecta por hora con
+    /// `instrumentoThemeByHour(solar:)`; cada sub-vista lo lee de aquí para colorear en TINTA del tema.
+    @Environment(\.instrumentoTheme) private var theme
     /// Presents the live beat-to-beat monitor (LiveView) over Today when the calibration card's
     /// "See it beat by beat" affordance is tapped.
     @State private var showLiveMonitor = false
@@ -194,68 +197,78 @@ struct TodayView: View {
         }
     }
 
-    // MARK: - iOS Today (verdict-first · live HR pill · 2-up glance grid)
+    // MARK: - iOS Today (instrumento diurno · veredicto dominante · dial 24h · métricas en tinta)
     //
-    // iPhone-only layout (gated `#if os(iOS)`; macOS keeps `macBody`'s grid). It leads with
-    // the on-device READINESS verdict — the answer NOOP can give that the strap maker can't —
-    // instead of a score to interpret, carries a LIVE heart-rate pill in the top utility row
-    // (real `LiveState.heartRate`, never faked), and pins the metric grid to two columns
-    // (the desktop `.adaptive(minimum:168)` grid collapses to one column on a phone).
+    // iPhone-only layout (gated `#if os(iOS)`; macOS keeps `macBody`'s grid). Reescrito al lenguaje
+    // «Instrumento diurno» (FER-135): tema claro por hora del día (`instrumentoThemeByHour`), un solo
+    // número dominante (la recuperación), jerarquía por ESPACIO (sin card-in-card), y COLOR SOLO en el
+    // dato — el número de recuperación, la palabra del veredicto y la línea+punto de cada gráfica;
+    // todo lo demás (labels, valores, dial, iconos, chevrons, overlines) en TINTA del tema. Conserva
+    // toda la lógica de estados/datos previa; solo reacomoda y recolorea.
+    //
+    // El tema se aplica UNA vez envolviendo el iosBody (acotado a TodayView, NUNCA en RootTabView): el
+    // `SolarWindow` lo computa `SolarClock` para la fecha/zona actuales, de modo que el papel «amanece»
+    // y «anochece» con el sol real. Cada sub-vista lee `@Environment(\.instrumentoTheme)`.
 
     #if os(iOS)
     private var iosBody: some View {
         ScrollView {
-            // Today runs a tighter section rhythm than the standard `sectionGap` (28): the verdict-first
-            // layout stacks many short sections, so 22 compresses the column vertically without the
-            // sections reading as merged (owner ask — kill the vertical dead space).
+            // Ritmo de sección más apretado que el `sectionGap` estándar (28): la pantalla apila varias
+            // secciones cortas, así que 22 comprime la columna verticalmente sin que se lean fundidas.
             VStack(alignment: .leading, spacing: 22) {
                 headerBlock
                 HealthAlertBanner()
                 if repo.today?.recovery == nil {
-                    // No readiness yet → one calm, intentional screen from first launch through
-                    // calibration. The clean verdict hero adapts its copy to whether a strap has been
-                    // seen; the old data-pending gauge ("Sin datos") is gone so the empty state never
-                    // looks half-built — even right after the strap connects in onboarding.
+                    // Aún no hay veredicto → una sola pantalla calmada, de la primera apertura a la
+                    // calibración. El héroe vacío adapta su copy a si se ha visto un strap; FER-106
+                    // enruta primero el caso «base sembrada por Apple Health».
                     if hasImportedBaseline {
-                        // Apple Health seeded the baseline (≥seed valid HRV nights) but the user's own
-                        // strap hasn't reached the seed yet → the base is ALREADY done; the strap only
-                        // owes today's reading. Naming the source here kills the "0 of 4" contradiction
-                        // a freshly-imported user would otherwise see. Footer adapts: Scan before the
-                        // strap is seen, live-pulse row after (FER-106).
+                        // Apple Health sembró la base (≥seed noches con HRV válida) pero el strap PROPIO
+                        // aún no llega al seed → la base YA está; el strap solo debe la lectura de hoy.
+                        // Nombrar la fuente aquí mata la contradicción «0 de 4» que vería un usuario
+                        // recién importado. El pie se adapta: Buscar antes de ver strap, pulso vivo
+                        // después (FER-106).
                         importedBaselineHero
                     } else if (live.lastSyncedAt != nil || liveBpm != nil) && ownNights < Baselines.minNightsSeed {
-                        // Still gathering the first `seed` nights of the user's OWN strap data → the
-                        // night-dots card from night zero. Apple-Health days don't count (borrowed,
-                        // preliminary), so a full Apple Health sync keeps the dots honest at "N of 4"
-                        // instead of faking 4/4; a real WHOOP-own history (import/wear) fills them and
-                        // hands off to the verdict once today's reading lands. No import here, so the
-                        // card offers the Apple-Health head-start shortcut.
+                        // Aún juntando las primeras `seed` noches de datos PROPIOS del strap → la tarjeta
+                        // de night-dots desde la noche cero. Los días de Apple Health no cuentan (datos
+                        // prestados, preliminares), así que un sync completo de Apple mantiene los dots
+                        // honestos en "N de 4"; una historia propia del WHOOP (import/uso) los llena y
+                        // cede al veredicto en cuanto cae la lectura de hoy. Sin import aquí, la tarjeta
+                        // ofrece el atajo de adelanto por Apple Health (FER-106).
                         CalibrationProgressCard(nights: ownNights,
                                                 total: Baselines.minNightsSeed,
                                                 liveBpm: liveBpm,
                                                 isLiveHR: isLiveHR,
+                                                solar: solarWindow,
+                                                sleep: sleepWindow,
                                                 onTapLive: { showLiveMonitor = true },
                                                 onConnectAppleHealth: { showDataSources = true })
                     } else {
-                        // No strap ever (→ Scan CTA), OR a seeded baseline (≥seed valid nights, e.g. from
-                        // a full account sync) that simply has no reading for TODAY yet — not calibration.
-                        // emptyHero tells the honest story for both, never a fabricated calibration count.
+                        // Sin strap nunca (→ CTA Buscar), O una base ya sembrada (≥seed noches válidas,
+                        // p. ej. de un sync completo) que simplemente no tiene lectura de HOY — no es
+                        // calibración. emptyHero cuenta la historia honesta para ambos, sin inventar un
+                        // conteo de calibración.
                         emptyHero
                     }
                 } else {
                     verdictSection
                 }
-                whySection
                 iosMetricsSection
             }
-            // Lift the whole column toward the top: trim the screen's TOP inset (24 → 16) while keeping
-            // the standard horizontal/bottom margins, so the verdict card sits a bit higher (owner ask).
+            // Sube la columna hacia arriba: recorta el inset SUPERIOR (24 → 16) conservando los márgenes
+            // horizontal/inferior estándar, para que el héroe quede un poco más alto.
             .padding(.horizontal, NoopMetrics.screenPadding)
             .padding(.bottom, NoopMetrics.screenPadding)
             .padding(.top, 16)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(StrandPalette.surfaceBase)
+        // El fondo es el papel del tema (`PaperBackground` lee `\.instrumentoTheme` DENTRO del subárbol
+        // tematizado, así que el lienzo también se recolorea por hora). El tema por hora se inyecta aquí,
+        // acotado a TodayView (NUNCA en RootTabView): todo el árbol de abajo lee `\.instrumentoTheme` y
+        // se recolorea según la hora del día gratis.
+        .background(PaperBackground())
+        .instrumentoThemeByHour(solar: solarWindow)
         .fullScreenCover(isPresented: $showLiveMonitor) {
             // No NavigationStack: its nav-bar scroll-edge background painted a bar over the monitor on
             // the slightest scroll. A floating "Done" pill overlays the content and never blocks it.
@@ -297,229 +310,292 @@ struct TodayView: View {
         }
     }
 
-    /// Recovery score driving the readiness gauge (the 0–100 the bar fills to). nil while calibrating.
+    /// Recovery score driving the hero numeral (0–100). nil while calibrating.
     private var recoveryScore: Int? { repo.today?.recovery.map { Int($0.rounded()) } }
 
-    /// Date + honesty line — the screen's calm header. The live bpm now lives in each hero's
-    /// "beat by beat" row (LiveHeartbeatRow), never here, so the header is just date + sync.
+    /// El lienzo: el papel del tema, leído DENTRO del subárbol tematizado para que también recolore por
+    /// hora. (El `.background(theme.paper)` del propio `iosBody` resolvería contra el tema base, no el de
+    /// la hora — por eso esta vista hija lo lee del entorno.)
+    private struct PaperBackground: View {
+        @Environment(\.instrumentoTheme) private var theme
+        var body: some View { theme.paper.ignoresSafeArea() }
+    }
+
+    /// Ventana solar (amanecer/atardecer) para HOY, en horas reloj, derivada de `SolarClock` para la
+    /// zona horaria actual SIN GPS ni permisos. Mapeada al `SolarWindow` de StrandDesign que consumen
+    /// el motor de tema por hora y el `DiurnalDial`. `nil` en los casos polares (sin cruce de horizonte).
+    private var solarWindow: SolarWindow? {
+        guard let w = SolarClock.sunWindow(on: Date(), in: .current) else { return nil }
+        return SolarWindow(sunrise: w.sunrise, sunset: w.sunset)
+    }
+
+    /// Ventana de sueño de la noche más reciente, en horas reloj, desde el registro on-device que ya
+    /// tenemos (`repo.sleeps`) — sin permiso nuevo. `SleepWindowClock` hace la selección, el gate de
+    /// frescura y la conversión epoch→reloj; aquí solo se mapea a `SleepWindow` para el `DiurnalDial`.
+    private var sleepWindow: SleepWindow? {
+        guard let s = SleepWindowClock.recent(repo.sleeps, now: Date()) else { return nil }
+        return SleepWindow(bedtime: s.bedtime, wake: s.wake)
+    }
+
+    /// El color del DATO de recuperación por banda, en roles del tema (regla dura: color saturado solo
+    /// en el número de recuperación). Verde → `dataRecovery`, amarillo → `warning`, rojo → `critical`,
+    /// reusando el umbral de banda WHOOP que ya usa el resto de la app (`RecoveryScorer.band`: rojo <34,
+    /// amarillo 34–67, verde ≥67).
+    private func recoveryDataColor(_ score: Int) -> Color {
+        switch RecoveryScorer.band(Double(score)) {
+        case "green":  return theme.dataRecovery
+        case "yellow": return theme.warning
+        default:       return theme.critical   // "red"
+        }
+    }
+
+    /// El color del DATO del veredicto por nivel, en roles del tema (color saturado solo en la palabra
+    /// del veredicto). primed/balanced → `verdict`, strained → `warning`, rundown → `critical`.
+    private func verdictDataColor(_ level: ReadinessEngine.Level) -> Color {
+        switch level {
+        case .primed, .balanced: return theme.verdict
+        case .strained:          return theme.warning
+        case .rundown:           return theme.critical
+        case .insufficient:      return theme.inkTertiary
+        }
+    }
+
+    /// Date + honesty line — the screen's calm header (overline date + quiet sync provenance).
     private var headerBlock: some View {
         utilityRow
     }
 
-    /// Verdict hero for the no-data state. Two honest cases, by whether a strap has ever been seen:
-    /// before — a committed "no reading yet" + a single "scan" CTA. After — the baseline is already
-    /// seeded (by wear OR a full import) but today's reading hasn't landed, so a calm "no reading for
-    /// today yet". The 1…seed−1 calibration window is owned by CalibrationProgressCard, not here, so
-    /// this never claims "scores are building" once an account's history is in. No fabricated numbers.
+    /// Héroe del estado SIN datos, en «Instrumento diurno». Dos casos honestos, según si se ha visto un
+    /// strap: antes — un comprometido «Aún no hay lectura» + un único CTA «Buscar strap». Después — la
+    /// base ya está sembrada (por uso O un import completo) pero la lectura de hoy no ha caído, así que
+    /// un calmado «Aún no hay lectura de hoy». La ventana 1…seed−1 la posee CalibrationProgressCard, no
+    /// aquí. El dial vivo (24h) preside; sin números fabricados.
     private var emptyHero: some View {
         let strapSeen = live.lastSyncedAt != nil || liveBpm != nil
-        return NoopCard(padding: 18) {
-            VStack(alignment: .leading, spacing: 9) {
-                Text("Today's verdict").strandOverline()
-                Text(strapSeen ? "No reading for today yet" : "No reading yet")
-                    .font(StrandFont.title1)
-                    .foregroundStyle(StrandPalette.textSecondary)
-                Text(strapSeen
-                     ? "Your baseline is set. Wear your strap overnight and this morning's recovery, strain and sleep land once it syncs."
-                     : "Connect your WHOOP strap to see this morning's readiness, recovery and heart rate.")
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(StrandPalette.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                if !strapSeen {
-                    Button { model.scan() } label: {
-                        Text("Scan for strap")
-                            .font(StrandFont.headline)
-                            .foregroundStyle(StrandPalette.surfaceBase)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 11)
-                            .background(StrandPalette.accent, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.top, 5)
+        return VStack(alignment: .leading, spacing: 14) {
+            Text("El veredicto de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            HStack(alignment: .center, spacing: 16) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(strapSeen ? "Aún no hay lectura de hoy" : "Aún no hay lectura")
+                        .font(InstrumentoType.hero(28)).foregroundStyle(theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(strapSeen
+                         ? "Tu base está lista. Usa el strap esta noche y la recuperación, el esfuerzo y el sueño de la mañana aparecen al sincronizar."
+                         : "Conecta tu strap WHOOP para ver la disposición, la recuperación y la frecuencia cardiaca de la mañana.")
+                        .font(StrandFont.subhead)
+                        .foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                // Strap seen but no reading for today yet → the live pulse + monitor live here too.
-                if strapSeen {
-                    LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
-                }
+                Spacer(minLength: 8)
+                // El dial 24h vivo preside el estado vacío — el marcador de hora/sol/sueño se mantiene
+                // aunque no haya veredicto, así la pantalla nunca se ve a medio construir.
+                DiurnalDial(now: Date(), solar: solarWindow, sleep: sleepWindow, diameter: 94)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            if !strapSeen {
+                // Único CTA: el «dato accionable». Texto en el papel sobre el verde del veredicto.
+                Button { model.scan() } label: {
+                    Text("Buscar strap")
+                        .font(StrandFont.headline)
+                        .foregroundStyle(theme.paper)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 11)
+                        .background(theme.verdict, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 2)
+            }
+            // Strap visto pero sin lectura de hoy → el pulso vivo + monitor también viven aquí.
+            if strapSeen {
+                LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
+            }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// Empty-state hero for the imported-baseline path (`hasImportedBaseline`): the recovery baseline is
-    /// already seeded from Apple Health history, so this NAMES that source instead of asking the user to
-    /// "calibrate from zero". One honest message — the base is ready; the strap only owes today's reading
-    /// (the one thing Apple Health can't supply). The footer adapts like `emptyHero`: a Scan CTA before a
-    /// strap is ever seen, the live-pulse row once it has. Mirrors the verdict's "Your baseline comes from
-    /// Apple Health" provenance so the whole journey speaks with one voice (FER-106, sibling of FER-105).
+    /// Héroe del estado «base lista» (`hasImportedBaseline`), en «Instrumento diurno»: la base de
+    /// recuperación ya viene sembrada del historial de Apple Health, así que NOMBRA esa fuente en vez de
+    /// pedir «calibrar desde cero». Un mensaje honesto — la base está lista; el strap solo debe la lectura
+    /// de hoy (lo único que Apple Health no da). El pie se adapta como `emptyHero`: CTA Buscar antes de ver
+    /// un strap, el pulso vivo después. Refleja la procedencia «Tu base viene de Apple Salud» del veredicto
+    /// para que todo hable con una voz (FER-106, hermano de FER-105).
     private var importedBaselineHero: some View {
         let strapSeen = live.lastSyncedAt != nil || liveBpm != nil
-        return NoopCard(padding: 18) {
-            VStack(alignment: .leading, spacing: 9) {
-                Text("Today's verdict").strandOverline()
-                Text("Your baseline is ready")
-                    .font(StrandFont.title1)
-                    .foregroundStyle(StrandPalette.textPrimary)
-                // Provenance chip — the base's source is Apple Health, stated up front so "ready" is
-                // never unexplained (the cyan that marks Apple Health data across the app).
-                HStack(spacing: 6) {
-                    Image(systemName: "heart.fill").font(.system(size: 11))
-                    Text("Baseline · Apple Health").font(StrandFont.caption)
-                }
-                .foregroundStyle(StrandPalette.metricCyan)
-                .padding(.horizontal, 9).padding(.vertical, 4)
-                .background(StrandPalette.accentMuted, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-                Text("Wear your strap to add the one thing Apple Health can't: today's reading.")
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(StrandPalette.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                if !strapSeen {
-                    Button { model.scan() } label: {
-                        Text("Scan for strap")
-                            .font(StrandFont.headline)
-                            .foregroundStyle(StrandPalette.surfaceBase)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 11)
-                            .background(StrandPalette.accent, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        return VStack(alignment: .leading, spacing: 14) {
+            Text("El veredicto de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            HStack(alignment: .center, spacing: 16) {
+                VStack(alignment: .leading, spacing: 9) {
+                    Text("Tu base ya está lista")
+                        .font(InstrumentoType.hero(28)).foregroundStyle(theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                    // Chip de procedencia — la fuente de la base es Apple Health, dicho de frente para que
+                    // «lista» nunca quede sin explicar. En tono de dato (azul de Apple Salud), AA sobre papel.
+                    HStack(spacing: 6) {
+                        Image(systemName: "heart.fill").font(.system(size: 11))
+                        Text("Base · Apple Salud").font(StrandFont.caption)
                     }
-                    .buttonStyle(.plain)
-                    .padding(.top, 5)
-                } else {
-                    LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
+                    .foregroundStyle(theme.dataSpO2)
+                    .padding(.horizontal, 9).padding(.vertical, 4)
+                    .background(theme.dataSpO2.opacity(0.12), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    Text("Usa tu banda para sumar lo único que Apple Salud no puede: la lectura de hoy.")
+                        .font(StrandFont.subhead)
+                        .foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+                Spacer(minLength: 8)
+                // El dial 24h vivo preside también este estado, igual que en emptyHero.
+                DiurnalDial(now: Date(), solar: solarWindow, sleep: sleepWindow, diameter: 94)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            if !strapSeen {
+                // Único CTA: el «dato accionable». Texto en el papel sobre el verde del veredicto.
+                Button { model.scan() } label: {
+                    Text("Buscar strap")
+                        .font(StrandFont.headline)
+                        .foregroundStyle(theme.paper)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 11)
+                        .background(theme.verdict, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 2)
+            } else {
+                LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
+            }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// The live-heartbeat row: the brand pulse glyph + "See it beat by beat", the live bpm pill (or a
-    /// muted "No reading" badge), and a chevron — one Button that opens the beat-to-beat monitor.
-    /// Anchored at the foot of every hero with a strap (calibration, verdict, empty-with-strap) so the
-    /// live pulse and its monitor live in one consistent place instead of floating in the header.
+    /// El renglón de pulso vivo: el glifo de onda + «Verlo latido a latido», la pastilla de bpm vivo (o
+    /// una insignia callada «Sin lectura»), y un chevron — un Button que abre el monitor latido a latido.
+    /// Anclado al pie de cada héroe con strap (calibración, veredicto, vacío-con-strap). Recoloreado a
+    /// TINTA del tema: solo el punto de pulso vivo lleva color (`dataHeart`), el resto es tinta.
     private struct LiveHeartbeatRow: View {
         var liveBpm: Int?
         var isLiveHR: Bool
         let onTap: () -> Void
+        @Environment(\.instrumentoTheme) private var theme
 
         var body: some View {
             VStack(spacing: 0) {
-                Rectangle().fill(StrandPalette.hairline).frame(height: 0.5)
+                Rectangle().fill(theme.hairline).frame(height: 0.5)
                     .padding(.top, 3).padding(.bottom, 6)
                 Button(action: onTap) {
                     HStack(spacing: 9) {
                         Image(systemName: "waveform.path.ecg")
-                            .font(StrandFont.subhead).foregroundStyle(StrandPalette.accent)
-                        Text("See it beat by beat")
+                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        Text("Verlo latido a latido")
                             .font(StrandFont.subhead).fontWeight(.medium)
-                            .foregroundStyle(StrandPalette.textPrimary)
+                            .foregroundStyle(theme.ink)
                         Spacer(minLength: 0)
                         badge
                         Image(systemName: "chevron.right")
-                            .font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
+                            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     }
-                    // Compact tap target (34, below the 44 HIG ideal): this is a full-width row (wide
-                    // horizontal target) and a secondary affordance, traded down to kill the dead space
-                    // above/below the text the owner flagged. Reversible to 44 if accessibility wins out.
+                    // Objetivo táctil compacto (34, bajo el ideal HIG de 44): es un renglón full-width
+                    // (objetivo horizontal amplio) y una acción secundaria, recortado para matar el
+                    // espacio muerto. Reversible a 44 si la accesibilidad lo pide.
                     .frame(minHeight: 34)
                 }
                 .buttonStyle(.plain)
                 .accessibilityElement(children: .ignore)
                 .accessibilityAddTraits(.isButton)
-                .accessibilityLabel(Text(isLiveHR ? "Live heart rate" : "Heart rate"))
-                .accessibilityValue(Text(liveBpm.map { "\($0) bpm" } ?? "No reading"))
-                .accessibilityHint(Text("Opens the beat-to-beat monitor"))
+                .accessibilityLabel(Text(isLiveHR ? "Frecuencia cardiaca en vivo" : "Frecuencia cardiaca"))
+                .accessibilityValue(Text(liveBpm.map { "\($0) bpm" } ?? "Sin lectura"))
+                .accessibilityHint(Text("Abre el monitor latido a latido"))
             }
         }
 
-        /// The live bpm pill, or a muted "No reading" badge when the strap isn't streaming.
+        /// La pastilla de bpm vivo (punto en `dataHeart` cuando transmite), o una insignia callada
+        /// «Sin lectura» en tinta cuando el strap no está transmitiendo.
         @ViewBuilder private var badge: some View {
             if let bpm = liveBpm {
                 HStack(alignment: .firstTextBaseline, spacing: 5) {
-                    Circle().fill(isLiveHR ? StrandPalette.metricRose : StrandPalette.textTertiary)
+                    Circle().fill(isLiveHR ? theme.dataHeart : theme.inkTertiary)
                         .frame(width: 6, height: 6)
                         .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 1 }
                     Text("\(bpm)").font(StrandFont.number(13, weight: .semibold))
-                        .foregroundStyle(StrandPalette.textPrimary)
-                    Text("bpm").font(.system(size: 10)).foregroundStyle(StrandPalette.textTertiary)
+                        .foregroundStyle(theme.ink)
+                    Text("bpm").font(.system(size: 10)).foregroundStyle(theme.inkTertiary)
                 }
             } else {
                 HStack(spacing: 5) {
-                    Circle().fill(StrandPalette.textTertiary).frame(width: 6, height: 6)
-                    Text("No reading").font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
+                    Circle().fill(theme.inkTertiary).frame(width: 6, height: 6)
+                    Text("Sin lectura").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
             }
         }
     }
 
-    /// Progress card — the single waiting screen until the first verdict. Shows the night-dots from
-    /// night zero (0 of seed) through calibration, so the user always sees how many nights remain.
-    /// Copy adapts to three moments: night zero, mid-calibration, and "all nights in, computing".
+    /// Tarjeta de progreso — la única pantalla de espera hasta el primer veredicto, en «Instrumento
+    /// diurno». El dial 24h vivo preside; debajo, los night-dots (llenos en `dataRecovery`, vacíos en
+    /// `hairline`) desde la noche cero (0 de seed) hasta la calibración. El copy adapta a tres momentos:
+    /// noche cero, media calibración, y «todas las noches, computando».
     private struct CalibrationProgressCard: View {
         let nights: Int
         let total: Int
-        /// Live heart rate for the "beat by beat" row (nil → "No reading"); rose dot when streaming.
+        /// Live heart rate for the "beat by beat" row (nil → "Sin lectura"); rose dot when streaming.
         var liveBpm: Int? = nil
         var isLiveHR: Bool = false
-        /// Tap target for the live monitor; nil hides the "See it beat by beat" row.
+        /// Ventanas solar/sueño para el dial vivo (mismas que el resto de la pantalla).
+        var solar: SolarWindow? = nil
+        var sleep: SleepWindow? = nil
+        /// Tap target for the live monitor; nil hides the "beat by beat" row.
         var onTapLive: (() -> Void)? = nil
         /// Tap target for the Apple-Health head-start shortcut; nil hides the row. This card only ever
         /// shows on the NO-import path (an import routes to `importedBaselineHero`), so when present the
         /// shortcut is an honest offer to skip the 0→seed wait — never a promise of a base already there.
         var onConnectAppleHealth: (() -> Void)? = nil
+        @Environment(\.instrumentoTheme) private var theme
 
         private var headline: LocalizedStringKey {
-            if nights == 0 { return "Your first night counts" }
-            if nights >= total { return "Almost there" }
-            return "Your scores are building"
+            if nights == 0 { return "Tu primera noche cuenta" }
+            if nights >= total { return "Casi listo" }
+            return "Tus números se están formando"
         }
         // Frames the count as the nights YOUR OWN baseline needs — never "your verdict" — so a user with
         // Apple Health history understands this path builds a strap-native base, not the verdict itself.
         private var detail: LocalizedStringKey {
-            if nights == 0 { return "Wear the strap tonight — the first of \(total) nights your own baseline needs." }
-            if nights >= total { return "All \(total) nights are in — computing your first verdict." }
-            return "Your own baseline sharpens every night — you already have \(nights)."
+            if nights == 0 { return "Usa el strap esta noche — la primera de \(total) noches que tu propia base necesita." }
+            if nights >= total { return "Las \(total) noches están — computando tu primer veredicto." }
+            return "Tu propia base afina cada noche — ya llevas \(nights)."
         }
 
         var body: some View {
-            StrandCard(padding: 20) {
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack(alignment: .top, spacing: 12) {
-                        Image(systemName: "sparkles")
-                            .font(StrandFont.headline)
-                            .foregroundStyle(StrandPalette.accent)
-                            .accessibilityHidden(true)
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(headline)
-                                .font(StrandFont.headline)
-                                .foregroundStyle(StrandPalette.textPrimary)
-                            HStack(spacing: 8) {
-                                ForEach(0..<total, id: \.self) { i in
-                                    Circle()
-                                        .fill(i < nights ? StrandPalette.accent : StrandPalette.hairline)
-                                        .frame(width: 10, height: 10)
-                                        .shadow(color: i < nights ? StrandPalette.accent.opacity(0.5) : .clear,
-                                                radius: 3)
-                                }
-                                Text("\(nights) of \(total) nights")
-                                    .font(StrandFont.captionNumber)
-                                    .foregroundStyle(StrandPalette.accent)
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Calibrando").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                HStack(alignment: .center, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(headline)
+                            .font(InstrumentoType.hero(26)).foregroundStyle(theme.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                        // Night-dots: llenos en el dato (dataRecovery), vacíos en hairline.
+                        HStack(spacing: 8) {
+                            ForEach(0..<total, id: \.self) { i in
+                                Circle()
+                                    .fill(i < nights ? theme.dataRecovery : theme.hairline)
+                                    .frame(width: 10, height: 10)
                             }
-                            .accessibilityElement(children: .ignore)
-                            .accessibilityLabel(Text("\(nights) of \(total) nights calibrated"))
-                            Text(detail)
-                                .font(StrandFont.subhead)
-                                .foregroundStyle(StrandPalette.textSecondary)
-                                .fixedSize(horizontal: false, vertical: true)
+                            Text("\(nights) de \(total) noches")
+                                .font(StrandFont.captionNumber)
+                                .foregroundStyle(theme.inkSecondary)
                         }
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(Text("\(nights) de \(total) noches calibradas"))
+                        Text(detail)
+                            .font(StrandFont.subhead)
+                            .foregroundStyle(theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
-                    if let onConnectAppleHealth {
-                        appleHealthShortcut(onTap: onConnectAppleHealth)
-                    }
-                    if let onTapLive {
-                        LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: onTapLive)
-                    }
+                    Spacer(minLength: 8)
+                    DiurnalDial(now: Date(), solar: solar, sleep: sleep, diameter: 94)
+                }
+                if let onConnectAppleHealth {
+                    appleHealthShortcut(onTap: onConnectAppleHealth)
+                }
+                if let onTapLive {
+                    LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: onTapLive)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
 
         /// Head-start nudge: a user with Apple Health history can seed the base now instead of waiting
@@ -527,28 +603,28 @@ struct TodayView: View {
         /// chrome) that opens Data Sources. Cyan glyph marks it as the Apple-Health affordance.
         private func appleHealthShortcut(onTap: @escaping () -> Void) -> some View {
             VStack(spacing: 0) {
-                Rectangle().fill(StrandPalette.hairline).frame(height: 0.5)
+                Rectangle().fill(theme.hairline).frame(height: 0.5)
                     .padding(.top, 14).padding(.bottom, 10)
                 Button(action: onTap) {
                     HStack(spacing: 9) {
                         Image(systemName: "heart.fill")
-                            .font(.system(size: 12)).foregroundStyle(StrandPalette.metricCyan)
-                        Text("Have history in Apple Health? Connect it and your baseline gets a head start.")
+                            .font(.system(size: 12)).foregroundStyle(theme.dataSpO2)
+                        Text("¿Tienes historial en Apple Salud? Conéctalo y tu base arranca con ventaja.")
                             .font(StrandFont.caption)
-                            .foregroundStyle(StrandPalette.textSecondary)
+                            .foregroundStyle(theme.inkSecondary)
                             .multilineTextAlignment(.leading)
                             .fixedSize(horizontal: false, vertical: true)   // wrap at large Dynamic Type
                         Spacer(minLength: 6)
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 11)).foregroundStyle(StrandPalette.textTertiary)
+                            .font(.system(size: 11)).foregroundStyle(theme.inkTertiary)
                     }
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityElement(children: .ignore)
                 .accessibilityAddTraits(.isButton)
-                .accessibilityLabel(Text("Connect Apple Health"))
-                .accessibilityHint(Text("Opens Data Sources to give your baseline a head start"))
+                .accessibilityLabel(Text("Conectar Apple Salud"))
+                .accessibilityHint(Text("Abre Fuentes de datos para adelantar tu base"))
             }
         }
     }
@@ -560,7 +636,7 @@ struct TodayView: View {
             Text(shortDate)
                 .font(StrandFont.overline)
                 .tracking(StrandFont.overlineTracking)
-                .foregroundStyle(StrandPalette.textTertiary)
+                .foregroundStyle(theme.inkTertiary)
             Spacer(minLength: 8)
             syncMeta
         }
@@ -571,9 +647,9 @@ struct TodayView: View {
     /// a prominent pill. Mono + tertiary in all states so it reads as quiet provenance.
     @ViewBuilder private var syncMeta: some View {
         if live.backfilling {
-            Text("Syncing strap history…")
+            Text("Sincronizando historial…")
                 .font(StrandFont.mono(10))
-                .foregroundStyle(StrandPalette.textTertiary)
+                .foregroundStyle(theme.inkTertiary)
                 .lineLimit(1)
         } else {
             TimelineView(.periodic(from: .now, by: 60)) { context in
@@ -581,16 +657,16 @@ struct TodayView: View {
                     if let at = live.lastSyncedAt {
                         let rel = relativeAgo(at, now: context.date.timeIntervalSince1970)
                         if let pct = live.batteryPct {
-                            Text("Synced \(rel) · strap \(Int(pct.rounded()))%")
+                            Text("Sincronizado \(rel) · strap \(Int(pct.rounded()))%")
                         } else {
-                            Text("Synced \(rel)")
+                            Text("Sincronizado \(rel)")
                         }
                     } else {
-                        Text("Last sync — never")
+                        Text("Última sincronización: nunca")
                     }
                 }
                 .font(StrandFont.mono(10))
-                .foregroundStyle(StrandPalette.textTertiary)
+                .foregroundStyle(theme.inkTertiary)
                 .lineLimit(1)
             }
         }
@@ -601,120 +677,70 @@ struct TodayView: View {
     /// card tints to the readiness level. Falls back to the recovery ring while the baseline seeds.
     @ViewBuilder private var verdictSection: some View {
         let r = readiness
-        if r.level != .insufficient {
-            let lc = readinessColor(r.level)
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Today's verdict")
-                    .font(StrandFont.overline).tracking(StrandFont.overlineTracking)
-                    .foregroundStyle(StrandPalette.textTertiary)
-                    .lineLimit(1)
-                // Two truths side by side: "should you push?" (verdict) and "how recovered are you?"
-                // (recovery) are different reads and can diverge — each gets its OWN labeled box in its
-                // OWN color, so a high recovery is never repainted by the verdict's color (the old bug,
-                // where the gauge inherited the verdict tint and a green 92 looked amber). (FER-113)
-                HStack(spacing: 10) {
-                    verdictBox(r: r, color: lc)
-                    recoveryBox
+        let score = recoveryScore
+        VStack(alignment: .leading, spacing: 12) {
+            Text("El veredicto de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            // UN número dominante (la recuperación) con SU color de banda, y el dial del momento a su
+            // derecha (chrome en tinta). Jerarquía por espacio: sin cajas, sin fondo de card. (FER-113:
+            // el número conserva su propio color de banda — el veredicto no lo repinta.)
+            HStack(alignment: .center, spacing: 18) {
+                HStack(alignment: .firstTextBaseline, spacing: 5) {
+                    if let score {
+                        Text("\(score)").instrumentoHero(76).foregroundStyle(recoveryDataColor(score))
+                        Text("/100").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    } else {
+                        Text("—").instrumentoHero(76).foregroundStyle(theme.inkTertiary)
+                    }
                 }
-                // The reconciliation line — one plain-language sentence that explains the divergence
-                // ("you woke up recovered; the thing to watch is your load, not your body").
+                // El número abre el detalle de recuperación (cómo se calcula, serie, fuente). La síntesis
+                // de 3 celdas se fundió aquí: HRV y Sueño viven abajo en Métricas clave.
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    metricDetail = .recovery(score: score,
+                                             calibrationNights: recoveryCalibration,
+                                             nightsNeeded: Baselines.minNightsSeed)
+                }
+                Spacer(minLength: 8)
+                DiurnalDial(now: Date(), solar: solarWindow, sleep: sleepWindow, diameter: 94)
+            }
+            if r.level != .insufficient {
+                // La palabra del veredicto en SU color de estado (independiente del número → pueden
+                // divergir) + la «i» que abre el porqué (drivers + leyenda en un sheet).
+                Button { showWhyVerdict = true } label: {
+                    HStack(spacing: 6) {
+                        Text(r.headline).font(StrandFont.title2).fontWeight(.semibold)
+                            .foregroundStyle(verdictDataColor(r.level))
+                            .fixedSize(horizontal: false, vertical: true)
+                        Image(systemName: "info.circle").font(.system(size: 15))
+                            .foregroundStyle(theme.inkTertiary)
+                        Spacer(minLength: 0)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint(Text("Abre por qué el veredicto se lee así"))
+                // El puente reconciliador — una frase que explica la divergencia.
                 if let bridge = r.bridge {
-                    Text(bridge)
-                        .font(StrandFont.subhead)
-                        .foregroundStyle(StrandPalette.textPrimary)
+                    Text(bridge).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                // Short-night caveat keeps its honesty note.
+                // Salvedad de noche corta.
                 if r.confidenceLow, let note = r.confidenceNote {
                     HStack(spacing: 7) {
                         Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 10))
                         Text(note).font(StrandFont.caption)
                     }
-                    .foregroundStyle(StrandPalette.statusWarning)
+                    .foregroundStyle(theme.warning)
                 }
-                // "Why?" — the drivers + color legend live in a sheet so the hero stays light. Its OWN
-                // row (never pinned to the variable-length bridge) so the layout can't break, and the
-                // verb word tracks the verdict ("Why strained?" / "Why primed?").
-                Divider().overlay(StrandPalette.hairline).padding(.top, 2)
-                Button { showWhyVerdict = true } label: {
-                    HStack(spacing: 7) {
-                        Image(systemName: "info.circle").font(.system(size: 13))
-                        Text("Why \(r.headline.lowercased())?").font(StrandFont.caption)
-                        Spacer(minLength: 0)
-                        Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(StrandPalette.textTertiary)
-                    }
-                    .foregroundStyle(StrandPalette.metricCyan)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityHint(Text("Opens why today's verdict reads this way"))
-                // Calibration confidence (FER-105): while the user's OWN strap nights are still ramping
-                // to the trusted baseline (minNightsTrust), a quiet progress bar shows the read keeps
-                // sharpening with each strap night. Retires itself at the trusted baseline.
+                // Afinando con el strap hasta la base de confianza (1..<minNightsTrust).
                 if (1..<Baselines.minNightsTrust).contains(ownNights) {
                     calibrationConfidence
                 }
-                // Live pulse + beat-to-beat monitor, anchored to the foot of the verdict.
-                LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
             }
-            // Trim the bottom inset: the live-heartbeat row (the last element) leaves dead space against
-            // the card edge, so the bottom runs tighter (8) than the horizontal/top margins (16).
-            .padding([.horizontal, .top], 16).padding(.bottom, 8)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(lc.opacity(0.08), in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                .strokeBorder(lc.opacity(0.30), lineWidth: 1))
-        } else {
-            heroSection
-        }
-    }
-
-    /// Left "two truths" box: the verdict word in the level's color + a sublabel naming the culprit
-    /// ("from your training load"). Keeps the verdict's own color (mint / green / amber / rose).
-    @ViewBuilder private func verdictBox(r: ReadinessEngine.Readiness, color: Color) -> some View {
-        verdictMiniBox(label: "Verdict", tint: color) {
-            Text(r.headline).font(StrandFont.title2).foregroundStyle(color)
-                .fixedSize(horizontal: false, vertical: true)
-            if let culprit = r.culpritNoun {
-                Text("from \(culprit)").font(StrandFont.caption).foregroundStyle(color)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-    }
-
-    /// Right "two truths" box: today's recovery score in ITS OWN band color (`recoveryColor`), never
-    /// the verdict color — the fix at the heart of FER-113. Shows "92 / 100" + the state word (PEAK …).
-    @ViewBuilder private var recoveryBox: some View {
-        let score = recoveryScore
-        let c = score.map { StrandPalette.recoveryColor(Double($0)) } ?? StrandPalette.textTertiary
-        verdictMiniBox(label: "Recovery", tint: c) {
-            if let score {
-                HStack(alignment: .firstTextBaseline, spacing: 1) {
-                    Text("\(score)").font(StrandFont.number(22)).foregroundStyle(c)
-                    Text("/100").font(StrandFont.caption).foregroundStyle(c.opacity(0.8))
-                }
-                Text(StrandPalette.recoveryState(Double(score)))
-                    .font(StrandFont.caption).foregroundStyle(c)
-            } else {
-                Text("—").font(StrandFont.number(22)).foregroundStyle(StrandPalette.textTertiary)
-            }
-        }
-    }
-
-    /// Shared "two truths" box chrome: a tinted, hairline-bordered well with a small overline label.
-    @ViewBuilder private func verdictMiniBox<Content: View>(label: LocalizedStringKey, tint: Color,
-                                                            @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(label)
-                .font(StrandFont.overline).tracking(StrandFont.overlineTracking)
-                .foregroundStyle(StrandPalette.textTertiary).lineLimit(1)
-            content()
+            // Pulso vivo + monitor latido a latido, al pie del veredicto.
+            LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 10).padding(.vertical, 9)
-        .background(tint.opacity(0.10), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(tint.opacity(0.30), lineWidth: 0.5))
     }
 
     /// Whether the personal baseline draws on imported Apple Health history — drives the
@@ -731,116 +757,40 @@ struct TodayView: View {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Image(systemName: "sparkles").font(.system(size: 10))
-                    Text("Sharpening with your strap")
+                    Text("Afinando con tu strap")
                         .font(StrandFont.caption)
                         .fixedSize(horizontal: false, vertical: true)   // wrap, never truncate, at large Dynamic Type
                 }
-                .foregroundStyle(StrandPalette.textSecondary)
+                .foregroundStyle(theme.inkSecondary)
                 Spacer(minLength: 8)
-                Text("\(ownNights) of \(Baselines.minNightsTrust) nights")
+                Text("\(ownNights) de \(Baselines.minNightsTrust) noches")
                     .font(StrandFont.captionNumber)
-                    .foregroundStyle(StrandPalette.textSecondary)
+                    .foregroundStyle(theme.inkSecondary)
                     .fixedSize()
                     .layoutPriority(1)
             }
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(StrandPalette.textPrimary.opacity(0.10)).frame(height: 6)
-                    Capsule().fill(StrandPalette.accent)
+                    Capsule().fill(theme.ink.opacity(0.10)).frame(height: 6)
+                    Capsule().fill(theme.dataRecovery)
                         .frame(width: max(6, geo.size.width * CGFloat(ownNights) / CGFloat(Baselines.minNightsTrust)),
                                height: 6)
                 }
             }
             .frame(height: 6)
             if baselineFromApple {
-                Text("Your baseline comes from Apple Health.")
+                Text("Tu base viene de Apple Salud.")
                     .font(StrandFont.caption)
-                    .foregroundStyle(StrandPalette.textTertiary)
+                    .foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding(.top, 12)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("Calibration confidence"))
+        .accessibilityLabel(Text("Confianza de calibración"))
         .accessibilityValue(Text(baselineFromApple
-            ? "Sharpening with your strap, \(ownNights) of \(Baselines.minNightsTrust) nights. Your baseline comes from Apple Health."
-            : "Sharpening with your strap, \(ownNights) of \(Baselines.minNightsTrust) nights."))
-    }
-
-    /// Synthesis strip behind the verdict — recovery · HRV · sleep as three borderless stats split by
-    /// thin vertical hairlines (the Whoop/Apple pattern). No boxes: grouping by whitespace + a single
-    /// elevated hero (the verdict) is the design's whole premise. Recovery keeps its identity through
-    /// its state COLOR; all three values share one mono size and clamp to a single line.
-    @ViewBuilder private var whySection: some View {
-        let d = repo.today
-        HStack(spacing: 0) {
-            Button {
-                metricDetail = .recovery(score: d?.recovery.map { Int($0.rounded()) },
-                                         calibrationNights: recoveryCalibration,
-                                         nightsNeeded: Baselines.minNightsSeed)
-            } label: {
-                synthCell(label: "Recovery",
-                          value: d?.recovery.map { "\(Int($0.rounded()))" } ?? "—",
-                          unit: nil,
-                          color: d?.recovery.map { StrandPalette.recoveryColor($0) } ?? StrandPalette.textTertiary,
-                          showsInfo: true)
-            }
-            .buttonStyle(.plain)
-            .accessibilityHint(Text("See how it's calculated."))
-            synthDivider
-            Button {
-                metricDetail = .hrv(d?.avgHrv)
-            } label: {
-                synthCell(label: "HRV",
-                          value: d?.avgHrv.map { "\(Int($0.rounded()))" } ?? "—",
-                          unit: "ms",
-                          color: StrandPalette.textPrimary,
-                          showsInfo: true)
-            }
-            .buttonStyle(.plain)
-            .accessibilityHint(Text("See how it's calculated."))
-            synthDivider
-            synthCell(label: "Sleep",
-                      value: sleepValue(d),
-                      unit: nil,
-                      color: StrandPalette.textPrimary)
-        }
-    }
-
-    private var synthDivider: some View {
-        Rectangle().fill(StrandPalette.hairline).frame(width: 1, height: 34)
-    }
-
-    /// One borderless synthesis stat: small label over one big mono value (+ optional unit), centered
-    /// within its equal-width column so the three read as a balanced row (no left-hugging gap).
-    private func synthCell(label: LocalizedStringKey, value: String, unit: String?, color: Color,
-                           showsInfo: Bool = false) -> some View {
-        VStack(alignment: .center, spacing: 8) {
-            HStack(spacing: 4) {
-                Text(label)
-                    .font(StrandFont.caption)
-                    .foregroundStyle(StrandPalette.textSecondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                if showsInfo {
-                    Image(systemName: "info.circle")
-                        .font(.system(size: 10))
-                        .foregroundStyle(StrandPalette.textTertiary)
-                }
-            }
-            HStack(alignment: .firstTextBaseline, spacing: 3) {
-                Text(value)
-                    .font(StrandFont.number(24))
-                    .foregroundStyle(color)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                if let unit {
-                    Text(unit).font(.system(size: 11)).foregroundStyle(StrandPalette.textTertiary)
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .center)
-        .padding(.horizontal, 8)
+            ? "Afinando con tu strap, \(ownNights) de \(Baselines.minNightsTrust) noches. Tu base viene de Apple Salud."
+            : "Afinando con tu strap, \(ownNights) de \(Baselines.minNightsTrust) noches."))
     }
 
     /// "Key Metrics" — a dense borderless list (label · sparkline · value) instead of a tile grid,
@@ -857,87 +807,102 @@ struct TodayView: View {
         let rhrR   = resolveMeasured { $0.restingHr.map(Double.init) }
         let sleepR = resolveMeasured { $0.totalSleepMin }
         let spo2R  = resolveMeasured { $0.spo2Pct }
-        let hrvFlag: LocalizedStringKey? = hrvR?.fromApple == true ? "Apple Health"
-            : ((hrvR != nil && readiness.confidenceLow) ? "Low conf" : nil)
-        let hrvFlagColor = hrvR?.fromApple == true ? StrandPalette.metricCyan : StrandPalette.statusWarning
+        let hrvFlag: LocalizedStringKey? = hrvR?.fromApple == true ? "Apple Salud"
+            : ((hrvR != nil && readiness.confidenceLow) ? "Baja conf." : nil)
+        let hrvFlagColor = hrvR?.fromApple == true ? theme.inkTertiary : theme.warning
         // Steps come only from Apple Health; guard the most-recent row to the 14-day window so a stale
-        // import can't render months-old steps under a Today tile (the secondary path was already
-        // windowed — this closes the hole in the primary `appleDays.last`, which scanned all history).
+        // import can't render months-old steps under a Today tile.
         let stepsCutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -13, to: Date()) ?? Date())
         let stepsFresh = appleDays.last(where: { $0.day >= stepsCutoff })?.steps
         let stepsStr = stepsFresh.map { intString(Double($0)) } ?? latestString("steps", decimals: 0)
-        // Nudge to connect Apple Health only when it isn't connected AND a measured row is actually
-        // empty — so a strap-covered day never nags and a connected user never sees it. Tapping opens
-        // Data Sources; once connected, the launch auto-sync fills these rows on its own. (FER-94)
+        // Nudge to connect Apple Health only when it isn't connected AND a measured row is actually empty.
         let notConnected = health.auth != .authorized && health.auth != .unavailable
         let anyMeasuredMissing = hrvR == nil || sleepR == nil || rhrR == nil || spo2R == nil || stepsFresh == nil
+        // Serie 14d por métrica, calculada UNA vez: alimenta la línea Y su banda de referencia (p25–p75,
+        // FER-155). La línea va en el color de la métrica; la banda en tinta (`hairlineStrong`).
+        let strainSpark = sparks["strain"]
+        let sleepSpark  = measuredSpark("sleep_total_min") { $0.totalSleepMin }
+        let hrvSpark    = measuredSpark("hrv") { $0.avgHrv }
+        let hrSpark     = hrSparkline
+        let rhrSpark    = measuredSpark("rhr") { $0.restingHr.map(Double.init) }
+        let spo2Spark   = measuredSpark("spo2") { $0.spo2Pct }
+        let stepsSpark  = sparks["steps"]
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-            SectionHeader("Key Metrics", overline: "Today", trailing: String(localized: "14-day trend"))
+            SectionHeader("Métricas clave", overline: "Hoy", trailing: String(localized: "Tendencia 14 días"))
             VStack(spacing: 0) {
                 Button { metricDetail = .strain(d?.strain) } label: {
-                    MetricRow(label: "Day Strain",
+                    MetricRow(label: "Esfuerzo del día",
                               value: d?.strain.map { String(format: "%.1f", $0) } ?? "—",
-                              valueColor: d?.strain.map { StrandPalette.strainColor($0) } ?? StrandPalette.textPrimary,
-                              sparkline: sparks["strain"], sparkColor: StrandPalette.strain066,
+                              valueColor: theme.ink, labelColor: theme.inkSecondary, unitColor: theme.inkTertiary,
+                              sparkline: strainSpark, sparkColor: theme.dataStrain,
+                              referenceBand: strainSpark.flatMap { ReferenceRange.interquartile($0) },
+                              bandColor: theme.hairlineStrong,
                               isPlaceholder: d?.strain == nil)
                 }.buttonStyle(.plain)
                 metricSeparator
                 Button { metricDetail = .sleep(sleepR.map { Int($0.value.rounded()) }) } label: {
-                    MetricRow(label: "Sleep",
+                    MetricRow(label: "Sueño",
                               value: sleepR.map { sleepText($0.value) } ?? "—",
-                              flag: sleepR?.fromApple == true ? "Apple Health" : nil,
-                              flagColor: StrandPalette.metricCyan,
-                              sparkline: measuredSpark("sleep_total_min") { $0.totalSleepMin },
-                              sparkColor: StrandPalette.metricPurple,
+                              valueColor: theme.ink, labelColor: theme.inkSecondary, unitColor: theme.inkTertiary,
+                              flag: sleepR?.fromApple == true ? "Apple Salud" : nil, flagColor: theme.inkTertiary,
+                              sparkline: sleepSpark, sparkColor: theme.dataSleep,
+                              referenceBand: sleepSpark.flatMap { ReferenceRange.interquartile($0) },
+                              bandColor: theme.hairlineStrong,
                               isPlaceholder: sleepR == nil)
                 }.buttonStyle(.plain)
                 metricSeparator
                 Button { metricDetail = .hrv(hrvR?.value) } label: {
                     MetricRow(label: "HRV",
                               value: hrvR.map { "\(Int($0.value.rounded()))" } ?? "—",
-                              unit: "ms", valueColor: StrandPalette.metricPurple,
+                              unit: "ms", valueColor: theme.ink, labelColor: theme.inkSecondary, unitColor: theme.inkTertiary,
                               flag: hrvFlag, flagColor: hrvFlagColor,
-                              sparkline: measuredSpark("hrv") { $0.avgHrv },
-                              sparkColor: StrandPalette.metricPurple,
+                              sparkline: hrvSpark, sparkColor: theme.dataHrv,
+                              referenceBand: hrvSpark.flatMap { ReferenceRange.interquartile($0) },
+                              bandColor: theme.hairlineStrong,
                               isPlaceholder: hrvR == nil)
                 }.buttonStyle(.plain)
                 metricSeparator
                 // Frecuencia cardíaca — la curva continua de hoy, justo encima de "FC en reposo"
                 // (RHR nocturna) para que se lean como par. Tap → sheet con la gráfica 24h. (FER-137)
                 Button { metricDetail = .heartRate(avgBpm: hrTodayAvg) } label: {
-                    MetricRow(label: "Heart Rate",
+                    MetricRow(label: "Frecuencia cardíaca",
                               value: hrTodayAvg.map { "\($0)" } ?? "—",
-                              unit: "bpm", valueColor: StrandPalette.metricRose,
-                              sparkline: hrSparkline, sparkColor: StrandPalette.metricRose,
+                              unit: "bpm", valueColor: theme.ink, labelColor: theme.inkSecondary, unitColor: theme.inkTertiary,
+                              sparkline: hrSpark, sparkColor: theme.dataHeart,
+                              referenceBand: hrSpark.flatMap { ReferenceRange.interquartile($0) },
+                              bandColor: theme.hairlineStrong,
                               isPlaceholder: hrTodayAvg == nil)
                 }.buttonStyle(.plain)
                 metricSeparator
                 Button { metricDetail = .restingHR(rhrR.map { Int($0.value.rounded()) }) } label: {
-                    MetricRow(label: "Resting HR",
+                    MetricRow(label: "FC en reposo",
                               value: rhrR.map { "\(Int($0.value.rounded()))" } ?? "—",
-                              unit: "bpm", valueColor: StrandPalette.metricRose,
-                              flag: rhrR?.fromApple == true ? "Apple Health" : nil,
-                              flagColor: StrandPalette.metricCyan,
-                              sparkline: measuredSpark("rhr") { $0.restingHr.map(Double.init) },
-                              sparkColor: StrandPalette.metricRose,
+                              unit: "bpm", valueColor: theme.ink, labelColor: theme.inkSecondary, unitColor: theme.inkTertiary,
+                              flag: rhrR?.fromApple == true ? "Apple Salud" : nil, flagColor: theme.inkTertiary,
+                              sparkline: rhrSpark, sparkColor: theme.dataHeart,
+                              referenceBand: rhrSpark.flatMap { ReferenceRange.interquartile($0) },
+                              bandColor: theme.hairlineStrong,
                               isPlaceholder: rhrR == nil)
                 }.buttonStyle(.plain)
                 metricSeparator
                 Button { metricDetail = .spo2(spo2R?.value) } label: {
-                    MetricRow(label: "Blood Oxygen",
+                    MetricRow(label: "Oxígeno en sangre",
                               value: spo2R.map { String(format: "%.0f", $0.value) } ?? "—",
-                              unit: "%", valueColor: StrandPalette.metricCyan,
-                              flag: spo2R?.fromApple == true ? "Apple Health" : nil,
-                              flagColor: StrandPalette.metricCyan,
-                              sparkline: measuredSpark("spo2") { $0.spo2Pct },
-                              sparkColor: StrandPalette.metricCyan,
+                              unit: "%", valueColor: theme.ink, labelColor: theme.inkSecondary, unitColor: theme.inkTertiary,
+                              flag: spo2R?.fromApple == true ? "Apple Salud" : nil, flagColor: theme.inkTertiary,
+                              sparkline: spo2Spark, sparkColor: theme.dataSpO2,
+                              referenceBand: spo2Spark.flatMap { ReferenceRange.interquartile($0) },
+                              bandColor: theme.hairlineStrong,
                               isPlaceholder: spo2R == nil)
                 }.buttonStyle(.plain)
                 metricSeparator
                 Button { metricDetail = .steps(stepsFresh) } label: {
-                    MetricRow(label: "Steps",
+                    MetricRow(label: "Pasos",
                               value: stepsStr,
-                              sparkline: sparks["steps"], sparkColor: StrandPalette.metricCyan,
+                              valueColor: theme.ink, labelColor: theme.inkSecondary, unitColor: theme.inkTertiary,
+                              sparkline: stepsSpark, sparkColor: theme.dataSteps,
+                              referenceBand: stepsSpark.flatMap { ReferenceRange.interquartile($0) },
+                              bandColor: theme.hairlineStrong,
                               isPlaceholder: stepsStr == "—")
                 }.buttonStyle(.plain)
             }
@@ -945,13 +910,13 @@ struct TodayView: View {
                 Button { showDataSources = true } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "heart.fill")
-                        Text("Connect Apple Health")
+                        Text("Conectar Apple Salud")
                         Spacer(minLength: 0)
                         Image(systemName: "chevron.right")
-                            .foregroundStyle(StrandPalette.textTertiary)
+                            .foregroundStyle(theme.inkTertiary)
                     }
                     .font(StrandFont.caption)
-                    .foregroundStyle(StrandPalette.metricCyan)
+                    .foregroundStyle(theme.inkSecondary)
                 }
                 .buttonStyle(.plain)
             }
@@ -960,7 +925,7 @@ struct TodayView: View {
 
     /// Hairline between metric rows (not above the first — the section header already caps the list).
     private var metricSeparator: some View {
-        Divider().overlay(StrandPalette.hairline)
+        Divider().overlay(theme.hairline)
     }
 
     /// On-device readiness for the verdict hero (same engine the macOS `readinessSection` uses).
