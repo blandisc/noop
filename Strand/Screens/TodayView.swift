@@ -1283,30 +1283,39 @@ struct TodayView: View {
 
     // MARK: - 14-day trend loader (all platforms)
 
-    /// Reads the trailing 14-day series for a metric and returns it as dated TrendPoints. Noon UTC
-    /// is used for each day so daily points render at consistent x-positions across time zones.
-    private func loadTrend(key: String, source: String, window: Int = 14) async -> [TrendPoint] {
-        let all = await repo.series(key: key, source: source, days: window + 2)
-        guard !all.isEmpty else { return [] }
-        return trailingWindow(all, days: window).compactMap { row -> TrendPoint? in
-            guard let date = Self.dayParser.date(from: row.day) else { return nil }
-            return TrendPoint(date: date.addingTimeInterval(12 * 3600), value: row.value)
+    /// Builds the trailing 14-day trend from the MERGED dashboard rows (`repo.days`) — the same
+    /// layered source the Key Metrics tiles draw from (`measuredSpark`): Apple Health is the base,
+    /// on-device computed scores (`my-whoop-noop`) fill the strap's days, imported strap rows win.
+    /// Reading `repo.series(source: "my-whoop")` instead returned EMPTY for a BLE + Apple Health user,
+    /// because the computed recovery/HRV/RHR/strain/sleep live in the daily-metrics table under
+    /// `my-whoop-noop`, never in the `metricSeries` table that `series()` queries — that was the
+    /// empty-chart bug. Noon UTC anchors each day so points sit at consistent x-positions.
+    private func loadTrend(pick: @escaping (DailyMetric) -> Double?, window: Int = 14) async -> [TrendPoint] {
+        let cutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -(window - 1), to: Date()) ?? Date())
+        return repo.days.compactMap { row -> TrendPoint? in
+            guard row.day >= cutoff,
+                  let value = pick(row),
+                  let date = Self.dayParser.date(from: row.day) else { return nil }
+            return TrendPoint(date: date.addingTimeInterval(12 * 3600), value: value)
         }
     }
 
-    /// Returns a loader closure for the given metric id, dispatching to the right key + source.
-    /// Called inline when the MetricInfoSheet is created; runs lazily once the sheet appears.
-    private func trendLoader(for id: String) -> () async -> [TrendPoint] {
+    /// Returns a loader closure for the given metric id, picking the matching `DailyMetric` field.
+    /// Called inline when the MetricInfoSheet is created; runs lazily once the sheet appears. Strain
+    /// returns nil: its sheet already carries a dedicated intraday "How today added up" curve, so a
+    /// second 14-day line chart would be redundant.
+    private func trendLoader(for id: String) -> (() async -> [TrendPoint])? {
+        let pick: (DailyMetric) -> Double?
         switch id {
-        case "recovery": return { await self.loadTrend(key: "recovery",        source: "my-whoop") }
-        case "strain":   return { await self.loadTrend(key: "strain",          source: "my-whoop") }
-        case "sleep":    return { await self.loadTrend(key: "sleep_total_min", source: "my-whoop") }
-        case "hrv":      return { await self.loadTrend(key: "hrv",             source: "my-whoop") }
-        case "rhr":      return { await self.loadTrend(key: "rhr",             source: "my-whoop") }
-        case "spo2":     return { await self.loadTrend(key: "spo2",            source: "my-whoop") }
-        case "steps":    return { await self.loadTrend(key: "steps",           source: "apple-health") }
-        default:         return { [] }
+        case "recovery": pick = { $0.recovery }
+        case "sleep":    pick = { $0.totalSleepMin }
+        case "hrv":      pick = { $0.avgHrv }
+        case "rhr":      pick = { $0.restingHr.map(Double.init) }
+        case "spo2":     pick = { $0.spo2Pct }
+        case "steps":    pick = { $0.steps.map(Double.init) }
+        default:         return nil   // strain (own intraday curve) and anything else: no 14-day trend
         }
+        return { await self.loadTrend(pick: pick) }
     }
 
     #if os(iOS)
