@@ -102,17 +102,16 @@ Packages/                       Cross-platform Swift packages (iOS 16+ / macOS 1
 StrandiOS/                      iOS SwiftUI app target (App/Health/System/Widgets/Resources)
 StrandiOSShared/                code shared between the iOS app and its widgets
 StrandiOSWidgets/               iOS home / lock-screen widgets
-android/                        full Kotlin app (shipped) — mirrors the same architecture
 
 Tools/Backfill/                 CLI offload/replay tool
 ```
 
 The app target (`Strand/`) is the **macOS reference implementation**, where CoreBluetooth and the
 live/decode seam are proven first. **`StrandiOS/`** is the iOS app target (with home / lock-screen
-widgets) and is the line under active development; **`android/`** is a separate, fully shipped Kotlin
-app. All three share the same architecture: the five packages declare `.iOS(.v16)` and `.macOS(.v13)`
-and keep every UI-framework call behind `#if canImport(UIKit)` / `#if canImport(AppKit)` guards, so
-the pure cores port to each platform unchanged.
+widgets) and is the line under active development. Both share the same architecture: the five packages
+declare `.iOS(.v16)` and `.macOS(.v13)` and keep every UI-framework call behind
+`#if canImport(UIKit)` / `#if canImport(AppKit)` guards, so the pure cores port to each platform
+unchanged.
 
 ---
 

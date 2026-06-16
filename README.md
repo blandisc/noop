@@ -7,7 +7,7 @@
 <p align="center"><b>Your strap. Your data. Your machine. Local-first, no cloud.</b></p>
 
 <p align="center">
-  <img alt="Platforms" src="https://img.shields.io/badge/platforms-macOS%20%C2%B7%20Android%20%C2%B7%20iOS-18C98B?style=flat-square">
+  <img alt="Platforms" src="https://img.shields.io/badge/platforms-macOS%20%C2%B7%20iOS-18C98B?style=flat-square">
   <img alt="Local first" src="https://img.shields.io/badge/local-first-18C98B?style=flat-square">
   <img alt="Account free" src="https://img.shields.io/badge/account-free-2FE6A8?style=flat-square">
   <img alt="WHOOP 4 and 5" src="https://img.shields.io/badge/works%20with-WHOOP%204.0%20%26%205.0-8B9690?style=flat-square">
@@ -60,8 +60,6 @@ Pre-built apps you can run right now:
 | Platform | Build | Notes |
 |---|---|---|
 | **macOS** | `NOOP.app` (see [Releases](../../releases)) | Apple Silicon + Intel. Drag to Applications. Not notarized — see **First launch on macOS** below. |
-| **Android** | `NOOP-full.apk` (see [Releases](../../releases)) | The full app. `minSdk 26` (Android 8+). Sideload — enable "install unknown apps". Blocked by Play Protect? See **Installing on Android** below. |
-| **Android (demo)** | `NOOP-demo.apk` | Preloaded with sample data so you can explore every screen with no strap. Installs alongside the full app. |
 | **iOS** | Build from source — see [PR #42](../../pull/42) | An experimental community port (app + widgets + HealthKit). **Not distributed as a download:** iOS has no anonymous install path — the App Store and TestFlight both require a real Apple Developer identity — so it's build-it-yourself in Xcode, not officially maintained. |
 
 > **First launch on macOS.** NOOP is **not notarized** by Apple — notarization needs a paid Apple
@@ -77,23 +75,6 @@ Pre-built apps you can run right now:
 >   earlier you can also right-click the app → **Open**.)
 >
 > Prefer to avoid this entirely? Build from source — see [Quickstart](#quickstart-macos).
-
-> **Installing on Android (Play Protect blocked it?).** NOOP isn't on the Play Store — it's an
-> **unsigned, source-available APK** you sideload, because the project is anonymous and has no paid
-> Play identity to publish or sign under. So Android treats it as an "unknown app" and **Google
-> Play Protect** may warn or block on install (most stubbornly on stock Pixel / recent Android).
-> Nothing is wrong with the file — it's just missing a Play signature. To get it on:
->
-> - **Tap "Install anyway."** When the warning appears, choose **More details → Install anyway**.
-> - **No "Install anyway" button?** It can vanish after a first install + uninstall. Grant the source
->   directly: **Settings → Apps → Special app access → Install unknown apps**, pick the **browser or
->   file manager you're installing from**, turn on **"Allow from this source"**, then open the APK again.
-> - **Still blocked by Play Protect?** It's your call to make for an unsigned app you trust: open the
->   **Play Store → your profile icon → Play Protect → ⚙ Settings**, toggle **"Scan apps with Play
->   Protect" off**, install NOOP, then switch it **back on**.
-> - **Reinstalling is safe.** Uninstalling and installing again won't hurt anything — NOOP keeps all
->   data on-device with `allowBackup=false`, so a reinstall simply starts fresh. There's no cloud copy
->   to lose either way.
 
 Prefer to build it yourself? See [`docs/BUILD.md`](docs/BUILD.md).
 
@@ -185,7 +166,7 @@ The macOS reference app organizes everything behind a single sidebar
 | **Data Sources** | One-tap import of a WHOOP CSV export or an Apple Health export, plus live-strap status. "Bring your history in once, then it's yours." |
 | **Notifications** | Configure local notifications and thresholds (`Strand/Data/NotificationSettingsStore.swift`). |
 | **Automations** | Turn the strap's physical inputs and live biometrics into Mac actions — all on-device (see below). |
-| **Coach** | An optional **AI Coach** you can ask about your data in plain language. It's the one feature that ever uses the network: off until you add your own OpenAI/Anthropic key, and it sends only a short text summary of recent metrics plus your question — never raw streams or identifiers. Available on both macOS and Android. See [`docs/PRIVACY_SECURITY.md`](docs/PRIVACY_SECURITY.md). |
+| **Coach** | An optional **AI Coach** you can ask about your data in plain language. It's the one feature that ever uses the network: off until you add your own OpenAI/Anthropic key, and it sends only a short text summary of recent metrics plus your question — never raw streams or identifiers. See [`docs/PRIVACY_SECURITY.md`](docs/PRIVACY_SECURITY.md). |
 | **Settings** | Profile, preferences, the in-app **What's new** changelog, and an opt-in **Experimental** section (WHOOP 5/MG protocol probes). |
 | **Support** | Attribution + **optional** crypto donations. The whole app works without them. |
 
@@ -214,15 +195,13 @@ and an in-app **"What's new"** changelog shown after each update.
 
 ## Platform status
 
-NOOP's logic lives in cross-platform Swift packages, and the same protocol,
-storage, analytics, and scoring is ported to Kotlin on Android. Both apps pair
-with the strap and **score recovery, strain and sleep on your own device** — no
+NOOP's logic lives in cross-platform Swift packages. The macOS app pairs
+with the strap and **scores recovery, strain and sleep on your own device** — no
 import required.
 
 | Platform | Status |
 |---|---|
 | **macOS** | ✅ Full app (`Strand/`, SwiftUI, macOS 13+). Pairs over BLE, offloads the strap's history, and scores recovery / strain / sleep on-device. The complete feature set above runs here. |
-| **Android** | ✅ Full app (`android/`, Jetpack Compose, Android 8+). Pairs over BLE, persists and scores on-device, and imports WHOOP / Apple Health / Health Connect. Grab the APK from [Releases](../../releases). |
 | **iOS** | 🧪 Experimental community port in [PR #42](../../pull/42) — app target + widgets + Live Activity + HealthKit, builds for the iOS simulator. **Build-from-source only, not officially maintained or distributed:** iOS has no anonymous distribution path (App Store and TestFlight both require a real Apple Developer identity), which is fundamentally at odds with this project staying anonymous. The shared packages already declare `.iOS(.v16)` and UI-framework code is guarded with `#if canImport(UIKit)` / `AppKit`. |
 
 ### Strap support
