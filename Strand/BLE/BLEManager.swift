@@ -1431,32 +1431,35 @@ extension BLEManager: CBPeripheralDelegate {
         return f.string(from: Date(timeIntervalSince1970: TimeInterval(unix)))
     }
 
-    /// Newest plausible-unix marker in a GET_DATA_RANGE COMMAND_RESPONSE = the strap's newest stored
-    /// record. Mirrors re/diagnose_biometrics.py: scan u32 LE words in the response body (data starts at
-    /// frame[7], after [type,seq,cmd]), keep those in the unix range, return the max. nil if none.
-    static func dataRangeNewestUnix(from frame: [UInt8]) -> Int? {
-        guard frame.count > 7 else { return nil }
-        let body = Array(frame[7...]); var newest: Int? = nil; var i = 0
-        while i + 4 <= body.count {
-            let w = Int(body[i]) | Int(body[i+1]) << 8 | Int(body[i+2]) << 16 | Int(body[i+3]) << 24
-            if w >= 1_700_000_000 && w <= 1_900_000_000 { newest = max(newest ?? 0, w) }
-            i += 4
-        }
-        return newest
-    }
+    /// Earliest unix a strap record could plausibly carry (≈2023-11-14, before any WHOOP 4 data this
+    /// app would store). Words below this in a GET_DATA_RANGE body are not timestamps.
+    nonisolated static let dataRangeEarliestUnix = 1_700_000_000
 
-    /// Oldest plausible-unix marker in a GET_DATA_RANGE COMMAND_RESPONSE = the strap's oldest stored
-    /// record. Mirror of `dataRangeNewestUnix` (same body scan, same unix window) but the min — together
-    /// they bound the band's retained-history window for the Data Sources sync diagnostic (FER-83).
-    static func dataRangeOldestUnix(from frame: [UInt8]) -> Int? {
+    /// The band's retained-history window from a GET_DATA_RANGE COMMAND_RESPONSE — but **validated**, not
+    /// a raw u32 scan. The old code (`dataRangeNewestUnix`/`dataRangeOldestUnix`) kept any u32 LE word in
+    /// a fixed nov-2023 → mar-2030 window and returned its min/max; with the WHOOP 4.0's unstable RTC that
+    /// scooped up garbage — future dates (e.g. "2029-10-11") and single-point ranges (e.g. "mar 15, 2025 →
+    /// mar 15, 2025") that don't match the real offload (FER-150). This scans the body once (data starts at
+    /// frame[7], after [type,seq,cmd]) and returns a window ONLY when it's plausible:
+    ///   - every word lies in [dataRangeEarliestUnix, now] — nothing in the future (small skew tolerance),
+    ///   - at least two DISTINCT values bound it, so oldest < newest — never a collapsed single point.
+    /// Returns nil otherwise, which the diagnostic renders as "—". `now` is injected for testability.
+    nonisolated static func plausibleDataRange(from frame: [UInt8],
+                                               now: Int = Int(Date().timeIntervalSince1970)) -> (oldest: Int, newest: Int)? {
         guard frame.count > 7 else { return nil }
-        let body = Array(frame[7...]); var oldest: Int? = nil; var i = 0
+        let ceiling = now + 86_400   // 1-day tolerance absorbs benign RTC skew; still rejects year-future junk
+        let body = Array(frame[7...])
+        var oldest: Int? = nil, newest: Int? = nil, i = 0
         while i + 4 <= body.count {
             let w = Int(body[i]) | Int(body[i+1]) << 8 | Int(body[i+2]) << 16 | Int(body[i+3]) << 24
-            if w >= 1_700_000_000 && w <= 1_900_000_000 { oldest = min(oldest ?? Int.max, w) }
+            if w >= dataRangeEarliestUnix && w <= ceiling {
+                oldest = min(oldest ?? Int.max, w)
+                newest = max(newest ?? 0, w)
+            }
             i += 4
         }
-        return oldest
+        guard let oldest, let newest, oldest < newest else { return nil }
+        return (oldest, newest)
     }
 
     public func peripheral(_ peripheral: CBPeripheral,
@@ -1505,19 +1508,21 @@ extension BLEManager: CBPeripheralDelegate {
                 }
                 router.handle(frame: frame)                       // live/UI path
                 if frame.count > 6, frame[6] == WhoopCommand.getDataRange.rawValue {
-                    if let newest = BLEManager.dataRangeNewestUnix(from: frame) {
-                        strapNewestTs = newest                    // feeds the liveness watchdog
+                    if let window = BLEManager.plausibleDataRange(from: frame) {
+                        strapNewestTs = window.newest             // feeds the liveness watchdog
                         // Surface the band's retained-history window for the sync diagnostic (FER-83):
                         // proof the sensor captured data and the band still holds it.
-                        state.strapHistoryNewest = TimeInterval(newest)
-                        let oldest = BLEManager.dataRangeOldestUnix(from: frame)
-                        if let oldest = oldest { state.strapHistoryOldest = TimeInterval(oldest) }
+                        state.strapHistoryNewest = TimeInterval(window.newest)
+                        state.strapHistoryOldest = TimeInterval(window.oldest)
                         // FER-90 diagnostic: the retained-history window in plain dates, in the strap log.
-                        log("La banda dice tener historial de \(BLEManager.logDate(oldest ?? newest)) a \(BLEManager.logDate(newest))")
+                        log("La banda dice tener historial de \(BLEManager.logDate(window.oldest)) a \(BLEManager.logDate(window.newest))")
                     } else {
-                        // FER-90 diagnostic: response arrived but carries no plausible-unix window — the
-                        // band reports no stored history (or its record timestamps are out of range).
-                        log("La banda no reporta historial guardado")
+                        // Response arrived but carries no PLAUSIBLE window — no timestamps, all in the
+                        // future, or a collapsed single point (the WHOOP 4.0's unstable RTC, FER-150).
+                        // Clear any stale window so the diagnostic falls back to "—" instead of showing junk.
+                        state.strapHistoryNewest = nil
+                        state.strapHistoryOldest = nil
+                        log("La banda no reporta historial plausible (sin timestamps, futuro o rango colapsado)")
                     }
                 }
                 // FER-90 diagnostic: log the strap's own RTC (from GET_CLOCK) as a readable date EVERY
