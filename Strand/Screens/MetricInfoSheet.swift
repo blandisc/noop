@@ -317,12 +317,16 @@ struct MetricInfoSheet: View {
                     .foregroundStyle(StrandPalette.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
                 if trendLoader != nil { trendSection }
+                // Day Strain's intraday "How today added up" curve sits in the SAME middle slot as
+                // the 14-day trend on every other metric — after the headline, before the reference
+                // bands — so chart placement reads consistently across all sheets. (strain has no
+                // trendLoader, so the two never both appear.)
+                if info.id == "strain" { strainSection }
                 if let calibration = info.calibration { calibrationCard(calibration) }
                 if let weights = info.weights {
                     weightsBlock(weights, note: info.weightsNote, dimmed: info.calibration != nil)
                 }
                 if !info.bands.isEmpty { bandsTable }
-                if info.id == "strain" { strainSection }
                 if let method = info.method { methodDisclosure(method) }
                 if let note = info.note {
                     Text(note)

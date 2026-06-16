@@ -166,6 +166,14 @@ public struct TrendChart: View {
             GeometryReader { geo in
                 let plot = geo[proxy.plotAreaFrame]
                 ZStack(alignment: .topLeading) {
+                    // A full-bleed transparent layer so the overlay (and its scrub gesture / hover)
+                    // covers the WHOLE plot from the first touch. Without it the ZStack only has the
+                    // crosshair+tooltip as children — which exist solely WHILE hovering — so before
+                    // the first touch the ZStack is 0×0 and `.contentShape` had no hittable area, so
+                    // the drag never started (the "scrub does nothing on iOS" bug). Color.clear is
+                    // greedy and fills the GeometryReader, giving the gesture a full-size target. (#118)
+                    Color.clear
+
                     if showsHover,
                        let hx = hoverX,
                        let p = nearestPoint(toX: hx, proxy: proxy, plot: plot),
@@ -216,16 +224,18 @@ private extension View {
     /// (pointer hover). Both update the `hoverX` binding so the same crosshair + tooltip
     /// overlay renders on both platforms without duplication.
     ///
-    /// On iOS, `.gesture()` (not `.simultaneousGesture`) is intentional: it gives the
-    /// scrubber exclusive priority so a drag that starts inside the chart never scrolls the
-    /// parent ScrollView (#118).
+    /// On iOS, `.highPriorityGesture()` is intentional: these charts live inside the sheet's
+    /// ScrollView, and a plain `.gesture()` loses the touch to the ScrollView's vertical pan, so
+    /// the scrub never started. `.highPriorityGesture` makes the scrub win the touch over the
+    /// parent scroll while the finger is on the chart (the user can still scroll from anywhere
+    /// else in the sheet). With `minimumDistance: 0` the crosshair appears on first contact. (#118)
     ///
     /// Position updates use a non-animating Transaction to prevent SwiftUI Charts from
     /// re-running its draw-on animation when `hoverX` changes mid-gesture (#104).
     @ViewBuilder
     func scrubGesture(enabled: Bool, hoverX: Binding<CGFloat?>) -> some View {
         #if os(iOS)
-        self.gesture(
+        self.highPriorityGesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { v in
                     guard enabled else { return }
