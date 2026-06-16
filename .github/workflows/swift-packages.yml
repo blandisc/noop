@@ -1,8 +1,8 @@
 # Compile-and-test verification for the reusable Swift packages.
 #
-# This job intentionally does NOT touch the macOS app target: that build needs
-# XcodeGen to generate Strand.xcodeproj and a wired-up test scheme, and the app
-# release is produced and anonymized by hand. The packages, by contrast, build
+# This job intentionally does NOT touch the iOS app target: that build needs
+# XcodeGen to generate the Xcode project and a wired-up scheme, and runs on the
+# iOS simulator. The packages, by contrast, build
 # and test on their own with plain SwiftPM — no Xcode project, no signing, no
 # secrets — which makes them a safe, self-contained CI check that leaks nothing.
 name: Swift Packages CI

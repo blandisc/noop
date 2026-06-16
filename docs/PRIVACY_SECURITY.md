@@ -74,43 +74,35 @@ feature that uses the network, and only on your terms:
 
 If you never enable the AI Coach, NOOP makes zero network connections.
 
-### 1.2 The macOS sandbox (and what it means for the AI Coach)
+### 1.2 The iOS app's entitlements
 
-On macOS the App Sandbox is the backstop. The app ships with a deliberately minimal
-entitlement set (`Strand/Resources/Strand.entitlements`):
+The iOS app ships with a deliberately minimal entitlement set
+(`StrandiOS/Resources/NOOP.entitlements`):
 
 ```xml
-<key>com.apple.security.app-sandbox</key>                       <true/>
-<key>com.apple.security.device.bluetooth</key>                  <true/>
-<key>com.apple.security.files.user-selected.read-write</key>    <true/>
+<key>com.apple.developer.healthkit</key>                       <true/>
+<key>com.apple.security.application-groups</key>               <array>group.com.feriracheta.noop</array>
 ```
 
-That is the entire entitlement file. Three keys:
+- **`healthkit`** — read your own Apple Health data on-device (steps, heart rate, sleep)
+  to compute metrics, and write back the metrics NOOP computes, only when you allow it.
+  The Clinical/Verifiable Health Records key is intentionally **omitted** — NOOP never
+  reads clinical records.
+- **`application-groups`** — a shared container so the app and its widgets read the same
+  tiny snapshot. BLE access is granted by the `NSBluetoothAlwaysUsageDescription` prompt
+  plus the `bluetooth-central` background mode (declared in `project.yml`), not an
+  entitlement key.
 
-- **`app-sandbox`** — the process runs inside the macOS App Sandbox container.
-- **`device.bluetooth`** — permits BLE access to talk to the strap. The matching
-  `NSBluetoothAlwaysUsageDescription` string (declared in `project.yml`) states
-  plainly: *"NOOP connects directly to your WHOOP strap over Bluetooth to read heart
-  rate, R-R intervals, battery, and sensor data locally on your Mac. Nothing leaves
-  your device."*
-- **`files.user-selected.read-write`** — lets the app read import files the user
-  explicitly picks (and write the database in its own container).
+Notably **absent**: any **networking entitlement or code**. iOS does not gate outbound
+network behind a sandbox entitlement the way the macOS App Sandbox did, so the offline
+guarantee here is **structural in the code, not the OS**: the biometric pipeline and all
+five packages contain no networking API at all (§1.1), and the only code that can ever
+open a socket is the opt-in AI Coach (§1.1a) — with your own key, to your chosen provider,
+sending only a short text summary. The app also has no broad-filesystem access: it reads
+only the import files you explicitly pick, plus its own container.
 
-Notably **absent**:
-
-- `com.apple.security.network.client` — **no outbound network entitlement.** The macOS
-  sandbox will refuse any socket the app tries to open, **including the AI Coach's**. So
-  on the sandboxed macOS build the AI Coach cannot reach the network as currently
-  shipped — the whole macOS app, Coach included, is offline. Turning the
-  macOS Coach on would mean adding this entitlement; until that's a deliberate choice, it
-  stays out and macOS stays fully offline.
-- `com.apple.security.network.server` — no inbound listener.
-- No `files.downloads`, `files.documents`, or any broad filesystem entitlement —
-  the app cannot wander the disk; it sees only what the user hands it through the
-  open panel, plus its own sandbox container.
-
-This is the structural guarantee behind "offline by design" on macOS: the privacy
-property is enforced by the OS, not merely by convention.
+This is the structural guarantee behind "offline by design": the privacy property holds
+because there is no network code to begin with, not merely by convention.
 
 > **Note on Hardened Runtime.** `project.yml` currently sets
 > `ENABLE_HARDENED_RUNTIME: NO` for local development builds. Distributable /
@@ -123,7 +115,7 @@ property is enforced by the OS, not merely by convention.
 
 ### 2.1 Where the data lives
 
-All durable data is stored in a single GRDB/SQLite database. The macOS reference app
+All durable data is stored in a single GRDB/SQLite database. The app
 opens it at (`Strand/Collect/StorePaths.swift`):
 
 ```

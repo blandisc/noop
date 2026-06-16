@@ -17,8 +17,8 @@ Cross-platform **Swift packages do the real work**; thin platform apps wrap them
 - `Packages/StrandAnalytics` — recovery / strain / HRV / sleep math. **Pure, database-free.**
 - `Packages/StrandImport` — WHOOP CSV + Apple Health importers.
 - `Packages/StrandDesign` — the SwiftUI design system (single source of visual truth).
-- `Strand/` — macOS app (the **reference implementation**); CoreBluetooth lives only here (`Strand/BLE`, `Strand/Collect`).
-- `StrandiOS*/` — experimental iOS app target + widgets.
+- `Strand/` — the **shared SwiftUI app layer** (BLE / Collect / Data / Screens / System); CoreBluetooth lives only here (`Strand/BLE`, `Strand/Collect`).
+- `StrandiOS*/` — the iOS app target (`NOOPiOS`) + widgets. This is the only app target, and it builds `Strand/`.
 
 **Rule of thumb:** the more wire-level or math-level a change is, the deeper into `Packages/` it belongs, and the more it must be covered by a `swift test` that needs no app, strap, or CoreBluetooth. Every package targets both iOS and macOS and **must not** `import AppKit/UIKit/CoreBluetooth` — guard framework code with `#if canImport(...)`. See the "where logic belongs" table in CONTRIBUTING.
 
@@ -33,12 +33,12 @@ cd Packages/<Name> && swift build && swift test
 swift test --filter <TestCaseOrMethod>      # run a single test
 ```
 
-macOS app (the Xcode project is generated from `project.yml`, never committed):
+iOS app (the Xcode project is generated from `project.yml`, never committed):
 
 ```bash
 xcodegen generate                           # after adding/removing files or editing project.yml
-xcodebuild -project Strand.xcodeproj -scheme Strand -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO build
-xcodebuild -project Strand.xcodeproj -scheme Strand -destination 'platform=macOS' test
+xcodebuild -project Strand.xcodeproj -scheme NOOPiOS -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build
+xcodebuild -project Strand.xcodeproj -scheme NOOPiOS -destination 'generic/platform=iOS' test
 ```
 
 CI runs `swift build`/`swift test` only on `Packages/**` changes. (If `swift`/`xcodebuild` fail while fetching SwiftPM dependencies, a local `GIT_CONFIG` override is the known workaround.)

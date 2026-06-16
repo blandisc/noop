@@ -1,5 +1,5 @@
 import XCTest
-@testable import Strand
+@testable import NOOP
 
 /// Pins the #80 marginal-radio fallback decision: a flaky Bluetooth radio (2016 Mac / OpenCore) drops
 /// the WHOOP 4 link the instant NOOP arms the R10/R11 raw realtime burst, loops on rescan, and re-arms.

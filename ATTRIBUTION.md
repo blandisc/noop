@@ -1,6 +1,6 @@
 # Attribution
 
-Strand is an independent, unofficial, local-first macOS app. It is not affiliated
+Strand is an independent, unofficial, local-first iOS app. It is not affiliated
 with, endorsed by, or connected to WHOOP, Inc. "WHOOP" is used nominatively only to
 identify the hardware the app interoperates with.
 

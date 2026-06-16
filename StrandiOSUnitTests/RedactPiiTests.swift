@@ -1,5 +1,5 @@
 import XCTest
-@testable import Strand
+@testable import NOOP
 
 /// Pins the strap-log PII redaction (FER-127): a publicly shared strap log must lose the owner's BLE
 /// MAC, the WHOOP serial (carried in the device name, tied to the account), and the per-install

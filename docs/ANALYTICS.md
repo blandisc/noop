@@ -8,7 +8,7 @@ All analytics live in the cross-platform `StrandAnalytics` Swift package. Every 
 
 - Package: `Packages/StrandAnalytics/Sources/StrandAnalytics/`
 - Top-level index: `StrandAnalytics.swift` (`StrandAnalytics.version == "0.1.0"`)
-- App reference implementation: `Strand/` (macOS SwiftUI)
+- App layer: `Strand/` (the shared SwiftUI app layer that builds the `NOOPiOS` app target)
 
 ---
 
@@ -16,7 +16,7 @@ All analytics live in the cross-platform `StrandAnalytics` Swift package. Every 
 
 The package contains more analytics than the app currently calls. This section is the honest map of **library-only** vs **live**, verified against the app sources.
 
-| Engine | File | Status in the macOS app |
+| Engine | File | Status in the app |
 |---|---|---|
 | `HRVAnalyzer` | `HRVAnalyzer.swift` | **Library-only** as a type. The app computes RMSSD inline via `AppModel.rmssd(_:)` (same Task-Force formula) for the live stress nudge. |
 | `RecoveryScorer` | `RecoveryScorer.swift` | **Live.** Runs inside `AnalyticsEngine.analyzeDay` via `Strand/Data/IntelligenceEngine.swift`; computed recoveries are persisted under the `"<deviceId>-noop"` source and merged **under** any imported `recovery_score_pct` (imports always win). APPROXIMATE. |

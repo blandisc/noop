@@ -1,5 +1,5 @@
 import XCTest
-@testable import Strand
+@testable import NOOP
 
 /// Pins the exact conversion factors and the formatted-string shapes for the Imperial/Metric display
 /// layer (D#103). NOOP stores everything in SI; this is the only place the conversions live, so a wrong

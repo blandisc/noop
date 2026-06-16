@@ -30,8 +30,8 @@ git config core.hooksPath .githooks
 ## Estructura de navegación global
 
 ```
-Tab bar → 18 destinos principales (sidebar en macOS, tab bar en iOS)
-SettingsView → WhatsNewView (sheet) · NotificationSettingsView (push)
+Tab bar → 18 destinos principales
+SettingsView → WhatsNewView (sheet)
 TodayView   → LiveView (fullScreenCover) · MetricInfoSheet (sheet) · WhyVerdictSheet (sheet) · SupportView (toolbar)
 WorkoutsView → ManualWorkoutSheet (sheet: add / edit)
 MetricExplorerView → MetricDetailView (NavigationLink push, interno)
@@ -52,15 +52,15 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 | Sin lectura de hoy | Strap visto, sin offload de hoy |
 | Veredicto listo | Recovery score calculado |
 
-**Nota — héroe del veredicto "dos verdades" (iOS, FER-113):** el héroe muestra Veredicto (izquierda, color del nivel) y Recuperación (derecha, `92/100` + estado, en su **color de banda** `recoveryColor` — nunca el color del veredicto), reconciliados por una frase puente dinámica (`Readiness.bridge`, decidida en `ReadinessEngine`). Un enlace al pie "¿Por qué {veredicto}?" abre `WhyVerdictSheet` con las señales (`Readiness.signals`, antes solo en macOS) y la leyenda de colores. "Listo" (primed) usa `StrandPalette.statusPrimed` (menta brillante), distinto de "Equilibrado" (verde). La barra `ReadinessGaugeBar` se retiró del héroe iOS (la caja de Recuperación la sustituye).
+**Nota — héroe del veredicto "dos verdades" (iOS, FER-113):** el héroe muestra Veredicto (izquierda, color del nivel) y Recuperación (derecha, `92/100` + estado, en su **color de banda** `recoveryColor` — nunca el color del veredicto), reconciliados por una frase puente dinámica (`Readiness.bridge`, decidida en `ReadinessEngine`). Un enlace al pie "¿Por qué {veredicto}?" abre `WhyVerdictSheet` con las señales (`Readiness.signals`) y la leyenda de colores. "Listo" (primed) usa `StrandPalette.statusPrimed` (menta brillante), distinto de "Equilibrado" (verde). La barra `ReadinessGaugeBar` se retiró del héroe iOS (la caja de Recuperación la sustituye).
 
-**Nota — indicador de sincronización (iOS):** cuando `live.backfilling == true`, la `syncMeta` en la `utilityRow` muestra "Syncing strap history…" en tono terciario/mono en lugar del texto habitual "Synced X ago". No hay pill ni color prominente; el texto vuelve al estado normal al terminar el backfill. El pill `SyncingHistoryNote` se conserva solo en el path macOS de esta vista.
+**Nota — indicador de sincronización (iOS):** cuando `live.backfilling == true`, la `syncMeta` en la `utilityRow` muestra "Syncing strap history…" en tono terciario/mono en lugar del texto habitual "Synced X ago". No hay pill ni color prominente; el texto vuelve al estado normal al terminar el backfill.
 
-**Nota — Frecuencia cardiaca en Métricas clave (FER-137, iOS):** la sección-gráfica de HR de 24h suelta se retiró del `iosBody`. Ahora la FC continua del día es un renglón más de "Métricas clave" (`MetricRow` "Heart Rate" → "Frecuencia cardiaca", `metricRose`: promedio del día + sparkline de la curva del día), justo encima de "FC en reposo" (par de pulso). Al tocarlo abre `MetricInfoSheet` con `id "heart_rate"`: la curva de 24h (más alta, ~260pt) + Mín/Prom/Máx + una línea de contexto, sin bandas ni párrafo. Sin lecturas del día → renglón "—" y sheet con "Aún no hay lecturas de hoy". macOS conserva `heartRateTrendSection` en su Today.
+**Nota — Frecuencia cardiaca en Métricas clave (FER-137, iOS):** la sección-gráfica de HR de 24h suelta se retiró del `iosBody`. Ahora la FC continua del día es un renglón más de "Métricas clave" (`MetricRow` "Heart Rate" → "Frecuencia cardiaca", `metricRose`: promedio del día + sparkline de la curva del día), justo encima de "FC en reposo" (par de pulso). Al tocarlo abre `MetricInfoSheet` con `id "heart_rate"`: la curva de 24h (más alta, ~260pt) + Mín/Prom/Máx + una línea de contexto, sin bandas ni párrafo. Sin lecturas del día → renglón "—" y sheet con "Aún no hay lecturas de hoy".
 
-**Nota — tarjeta "Sources" → `SourcesSummaryCard` (estilo FER-119 · ubicación FER-137):** el resumen de fuentes (overline "Sources", una `sourceRow` por fuente —WHOOP en `accent`, Apple Health en `metricCyan`, tinte solo en el glifo— y `syncLine` con `ConnectionDot` bajo un divider, visible solo si `hasData || showsSync`) se extrajo al componente auto-contenido `SourcesSummaryCard` (lee `repo`/`live` y carga sus propios conteos). En **iPhone** ya **no** vive en Hoy: se movió al **fondo de `DataSourcesView`** (gated `#if os(iOS)`). El **Today de macOS** lo conserva al pie (`sourcesSection` → `SourcesSummaryCard`).
+**Nota — tarjeta "Sources" → `SourcesSummaryCard` (estilo FER-119 · ubicación FER-137):** el resumen de fuentes (overline "Sources", una `sourceRow` por fuente —WHOOP en `accent`, Apple Health en `metricCyan`, tinte solo en el glifo— y `syncLine` con `ConnectionDot` bajo un divider, visible solo si `hasData || showsSync`) se extrajo al componente auto-contenido `SourcesSummaryCard` (lee `repo`/`live` y carga sus propios conteos). Ya **no** vive en Hoy: se movió al **fondo de `DataSourcesView`**.
 
-**Componentes:** `HealthAlertBanner`, `CalibrationProgressCard`, `LiveHeartbeatRow`, `WhyVerdictSheet`, `RecoveryRing`, `MetricRow` (Métricas clave iOS, incl. **Frecuencia cardiaca** → sheet de curva 24h, FER-137) · macOS: `StatTile ×10`, `ChartCard (HR Trend)`, `SourcesSummaryCard (Sources)`, `ReadinessGaugeBar`, `readinessSection`  
+**Componentes:** `HealthAlertBanner`, `CalibrationProgressCard`, `LiveHeartbeatRow`, `WhyVerdictSheet`, `RecoveryRing`, `MetricRow` (Métricas clave, incl. **Frecuencia cardiaca** → sheet de curva 24h, FER-137)  
 **Navegación:** → `LiveView` (fullScreenCover, "See it beat by beat") · → `MetricInfoSheet` (sheet, tap métrica del grid · tap de los stats **Recuperación** / **HRV** de la síntesis → explicador «cómo se calcula», FER-108/109) · → `WhyVerdictSheet` (sheet, "¿Por qué {veredicto}?") · → `SupportView` (toolbar ❤)
 
 ---
@@ -303,7 +303,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 | Vista única (scrollable) | Siempre |
 
 **Componentes:** `SettingsSection cards`, `FormRow (age/sex/weight/height)`, `Units toggles (metric/imperial / °C/°F)`, `Strap card`, `Experimental toggle (Puffin)`, `Backup card (export/restore)`, `About card`  
-**Navegación:** → `WhatsNewView` (sheet) · → `NotificationSettingsView` (push)
+**Navegación:** → `WhatsNewView` (sheet)
 
 ---
 
@@ -381,20 +381,6 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 
 ---
 
-### NotificationSettingsView
-**Archivo:** `Strand/Screens/NotificationSettingsView.swift`  
-**Presentado por:** `SettingsView` (push)
-
-| Estado | Condición de entrada |
-|--------|---------------------|
-| Alertas desactivadas | Master toggle off |
-| Activado, sin apps | Toggle on, ninguna app configurada |
-| Activado, con apps | Toggle on + apps con buzz pattern |
-
-**Componentes:** `Master Card (toggle + strap pill + test buzz)`, `Category Cards (per-app toggle + buzz pattern picker)`, `Behaviour Card (quiet hours time range)`
-
----
-
 ## Resumen
 
 | Sección | Pantallas | Estados |
@@ -404,7 +390,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 | Análisis | 4 | 13 |
 | Dispositivo | 4 | 13 |
 | App | 4 | 8 |
-| Sheets & Modales | 4 | 9 |
-| **Total** | **23** | **~67** |
+| Sheets & Modales | 3 | 6 |
+| **Total** | **22** | **~64** |
 
-*Actualizado: 2026-06-15*
+*Actualizado: 2026-06-16*

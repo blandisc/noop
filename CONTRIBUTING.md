@@ -18,9 +18,9 @@ non-trivial PR.
 
 ## Quick start
 
-The codebase is reusable Swift packages (`Packages/`) plus a thin macOS app
-(`Strand/`). The fastest feedback loop is the packages — they build and test on
-their own, no Xcode project and no strap needed.
+The codebase is reusable Swift packages (`Packages/`) plus a thin iOS app layer
+(`Strand/`, built by the `NOOPiOS` target). The fastest feedback loop is the
+packages — they build and test on their own, no Xcode project and no strap needed.
 
 ### Swift packages
 
@@ -34,18 +34,18 @@ The five packages are `WhoopProtocol` (BLE framing / decode), `WhoopStore`
 `StrandImport` (WHOOP CSV + Apple Health importers), and `StrandDesign` (the
 SwiftUI design system).
 
-### macOS app
+### iOS app
 
 The Xcode project is generated from `project.yml` and is **not** committed.
 
 ```bash
 brew install xcodegen
 xcodegen generate         # regenerate after any project.yml or file add/remove
-open Strand.xcodeproj     # build and run from Xcode
 ```
 
-For a runnable, ad-hoc-signed `NOOP.app` without an Apple ID, see
-[`docs/BUILD.md`](docs/BUILD.md).
+Then open the project in Xcode, select the `NOOPiOS` scheme, and run on your
+iPhone. For the full build guide (signing, installing on-device without a paid
+Apple ID), see [`docs/BUILD.md`](docs/BUILD.md).
 
 ---
 
