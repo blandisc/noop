@@ -377,6 +377,32 @@ The Nes model was calibrated on HUNT questionnaire inputs; NOOP feeds it wearabl
 
 ---
 
+## `VitalityEngine` — on-device "Vitality" score + "Body Age" (WHOOP Age / Healthspan method)
+
+Source: `VitalityEngine.swift`. A pure, **independent** implementation of the published method behind WHOOP's "Healthspan / WHOOP Age": map each wearable input to its **all-cause-mortality hazard ratio** vs a population reference, sum the log-hazards with an overlap correction, and convert the combined hazard to **years of aging** via the Gompertz mortality-rate doubling time (~8 yr). Returns both a **Vitality** score (0–100) and a **Body Age** (years). It is a *wellness comparison, never a biological or clinical age*. Engine only — orchestration (feeding it from `Repository.days`) and UI are tracked separately (FER-145).
+
+**Differentiation from Fitness Age:** Fitness Age (above) is cardiorespiratory only (Nes/HUNT). Body Age is a **whole-body** composite that adds sleep duration, sleep regularity, HRV and steps; the two deliberately share the RHR/VO₂max signal, and the presentation layer keeps them distinct.
+
+### The model
+
+- **Factors** — each a signed log-hazard vs a reference (positive = ages you): resting HR, VO₂max vs the age/sex-expected value, sleep duration, sleep regularity, HRV (RMSSD), daily steps. `compute` returns nil until ≥ `minFactors` (3) are present (honesty gate).
+- **Combine** — `Δage = (Σ lnHR · shrink) / (ln2 / 8)`; `bodyAge = age + Δage` (clamped [20, 90]); `vitality = clamp(50 + (age − bodyAge)·2.5, 0, 100)`. `contributions` exposes the per-factor breakdown that drives the "what's moving this" UI.
+
+### NOOP corrections (FER-124)
+
+An expert review against current primary literature found the upstream coefficients portable but **not verbatim**. Six documented corrections (each verified by a test):
+
+1. **Resting-HR domain [= FER-122].** Re-anchored from the seated 65 to the **nocturnal** domain by reusing `FitnessAgeEngine.restingHRReference` (58) — one shared constant across both engines. Slope kept (≈+10%/10 bpm; Zhang 2016 / Aune 2017).
+2. **Sleep duration — asymmetric.** Optimum 7.0 h (±0.5 neutral); short arm 0.060, long arm 0.120 (Yin 2017; Cappuccio 2010), replacing the symmetric 0.110 that over-penalized short sleep.
+3. **Overlap shrink — factor-count-dependent.** `1/(1+0.35·(n−1))` instead of a fixed 0.75, which over-counted correlated signals and unfairly cut users with few inputs (e.g. steps only, no strap).
+4. **HRV — attenuated.** Weight 0.160 → 0.110, in log form (`ln(norm/rmssd)`, Hillebrand 2013) — the HRs come from clinical short-term ECG, not nocturnal PPG, and the daytime-calibrated norm table already makes the factor conservative. Carries a mandatory non-clinical domain caveat.
+5. **Sleep regularity — reference.** Slope kept (Windred 2024 — regularity predicts mortality more strongly than duration); ref 0.75 → 0.60 (the SRI population median). The engine's `sleepConsistency` (1 − CV of durations) is an interim proxy; orchestration should pass a real SRI/100.
+6. **Steps — age-aware threshold.** Reference `age ≥ 60 ? 7000 : 8500` (Paluch 2022); per-1,000 weight 0.064 and the 11k protection cap kept (conservative vs Jayedi 2022).
+
+Kept **verbatim** (well-centered, documented): VO₂max 0.130/MET (Kodama 2009 / Singh 2025; estimated ≈ measured); Gompertz MRDT 8 yr (within the human 7.7–9.9 range, a global ±~15% scale). The full per-coefficient review with primary sources is logged on the FER-124 issue. References: **Zhang 2016 / Aune 2017** (RHR), **Kodama 2009 / Singh 2025** (VO₂max), **Yin 2017 / Cappuccio 2010** (sleep), **Windred 2024** (regularity), **Jarczok 2022 / Hillebrand 2013** (HRV), **Paluch 2022 / Jayedi 2022** (steps).
+
+---
+
 ## Interactive engines (wired into screens)
 
 These are the **live** data-interrogation engines, used by `InsightsView`, `CompareView`, and `MetricExplorerView`.
