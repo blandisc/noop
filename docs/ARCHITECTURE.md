@@ -376,6 +376,28 @@ the opt-in, on-device behaviours (HR smoothing, illness/strain early-warning, st
 haptic coaching, double-tap actions, wrist-wear automation, smart alarm) — all default-off and all
 computed locally.
 
+### The «Instrumento diurno» by-the-hour theme engine
+
+`StrandDesign` carries a second, light-mode visual language («Instrumento diurno», warm paper) whose
+`InstrumentoTheme` role struct is injected through the `\.instrumentoTheme` Environment key (default
+`.base`). `InstrumentoThemeEngine` (FER-132) varies that theme by the device clock: it interpolates
+all twelve roles between four anchors (dawn / day / dusk / night, `day == .base`) in the perceptual
+**OKLab** space (Ottosson 2020), so adjacent minutes drift cleanly instead of dimming through sRGB.
+`InstrumentoThemeEngine.theme(at:calendar:solar:)` is a **pure, deterministic function** (the clock is
+passed in, never read internally); a `@MainActor InstrumentoThemeDriver` recomputes it on a 60-second
+timer and on `scenePhase == .active`, and `View.instrumentoThemeByHour(solar:)` overrides
+`\.instrumentoTheme` app-wide so every descendant (`ScreenScaffold`, the state views, future re-skinned
+screens) recolors by time of day for free.
+
+Two invariants hold the design together. **AA at every hour:** the night anchor is a *dimmed warm
+parchment*, never an inverted dark mode — keeping ink the dark pole at every anchor stops the
+interpolation from crossing a point where text and background share luminance (contrast 1:1), so every
+text/background pair clears WCAG AA across the whole 24-hour sweep (asserted minute-by-minute in
+`InstrumentoThemeEngineTests`). **Package purity:** sunrise/sunset (`StrandAnalytics.SolarClock`,
+FER-133) is consumed by **injection** of a plain `SolarWindow` value, never imported — `StrandDesign`
+remains the dependency-free leaf of the package graph, and the engine stays 100% offline
+(`Date`/`Calendar` only).
+
 ---
 
 ## 11. Design principles, restated
