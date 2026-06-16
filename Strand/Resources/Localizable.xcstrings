@@ -13304,22 +13304,6 @@
         }
       }
     },
-    "The engine gets sharper every night — you already have %lld.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The engine gets sharper every night — you already have %lld."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "El motor se afina cada noche — ya llevas %lld."
-          }
-        }
-      }
-    },
     "The full terms are in TERMS.md, shipped with NOOP. This is not legal advice.": {
       "localizations": {
         "es": {
@@ -15575,23 +15559,6 @@
         }
       }
     },
-    "Wear the strap tonight — the first of %lld nights your verdict needs.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wear the strap tonight — the first of %lld nights your verdict needs."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ponte la banda esta noche — la primera de %lld noches que tu veredicto necesita."
-          }
-        }
-      }
-    },
     "All %lld nights are in — computing your first verdict.": {
       "extractionState": "manual",
       "localizations": {
@@ -17465,6 +17432,167 @@
           "stringUnit": {
             "state": "translated",
             "value": "Aún no hay lecturas de hoy."
+          }
+        }
+      }
+    },
+    "Your baseline is ready": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your baseline is ready"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu base ya está lista"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Basislinie ist bereit"
+          }
+        }
+      }
+    },
+    "Baseline · Apple Health": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baseline · Apple Health"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Base · Apple Health"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Basislinie · Apple Health"
+          }
+        }
+      }
+    },
+    "Wear your strap to add the one thing Apple Health can't: today's reading.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wear your strap to add the one thing Apple Health can't: today's reading."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usa tu banda para sumar lo único que Apple Health no puede darte: la lectura de hoy."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trage deinen Strap, um das Einzige zu ergänzen, das Apple Health nicht kann: die heutige Messung."
+          }
+        }
+      }
+    },
+    "Wear the strap tonight — the first of %lld nights your own baseline needs.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wear the strap tonight — the first of %lld nights your own baseline needs."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ponte la banda esta noche — la primera de %lld noches que tu propia base necesita."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trage den Strap heute Nacht — die erste von %lld Nächten, die deine eigene Basislinie braucht."
+          }
+        }
+      }
+    },
+    "Your own baseline sharpens every night — you already have %lld.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your own baseline sharpens every night — you already have %lld."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu propia base se afina cada noche — ya llevas %lld."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine eigene Basislinie wird jede Nacht schärfer — du hast schon %lld."
+          }
+        }
+      }
+    },
+    "Have history in Apple Health? Connect it and your baseline gets a head start.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Have history in Apple Health? Connect it and your baseline gets a head start."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Tienes historial en Apple Health? Conéctalo y tu base toma ventaja."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verlauf in Apple Health? Verbinde ihn, und deine Basislinie bekommt einen Vorsprung."
+          }
+        }
+      }
+    },
+    "Opens Data Sources to give your baseline a head start": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens Data Sources to give your baseline a head start"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre Fuentes de datos para darle ventaja a tu base"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffnet Datenquellen, um deiner Basislinie einen Vorsprung zu geben"
           }
         }
       }

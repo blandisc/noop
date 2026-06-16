@@ -91,6 +91,23 @@ struct TodayView: View {
         return RecoveryScorer.calibrationNights(nightlyHrv: strapHrv, hasRecovery: false, seed: .max) ?? 0
     }
 
+    /// Nights of usable HRV across the WHOLE merged baseline (Apple Health + strap), 0… Reuses the
+    /// same in-range HRV predicate as `ownNights` via a high seed, but over `repo.days` (not just
+    /// strap rows), so a full Apple-Health import counts here even though it never counts in `ownNights`.
+    private var seededNights: Int {
+        RecoveryScorer.calibrationNights(nightlyHrv: repo.days.map(\.avgHrv), hasRecovery: false, seed: .max) ?? 0
+    }
+
+    /// True when the recovery baseline is already seeded (≥ `minNightsSeed` valid HRV nights) but the
+    /// user's OWN strap nights are still below the seed — i.e. the base came from imported Apple Health
+    /// history, not the strap. Drives the "your baseline is ready, the strap just adds today" onboarding
+    /// narrative so the pre-verdict states never read "0 of 4" as if no base existed (FER-106). Pure
+    /// read of existing signals — no engine math. Naturally false without an import (no permission, no
+    /// history → `seededNights < minNightsSeed`), so no state can promise an Apple-Health base it lacks.
+    private var hasImportedBaseline: Bool {
+        seededNights >= Baselines.minNightsSeed && ownNights < Baselines.minNightsSeed
+    }
+
     /// Synthesis-card copy while the recovery baseline calibrates; nil otherwise. Built as
     /// LocalizedStringKey literals so the String Catalog picks up the %lld patterns.
     private var calibrationStatus: LocalizedStringKey? {
@@ -199,17 +216,26 @@ struct TodayView: View {
                     // calibration. The clean verdict hero adapts its copy to whether a strap has been
                     // seen; the old data-pending gauge ("Sin datos") is gone so the empty state never
                     // looks half-built — even right after the strap connects in onboarding.
-                    if (live.lastSyncedAt != nil || liveBpm != nil) && ownNights < Baselines.minNightsSeed {
+                    if hasImportedBaseline {
+                        // Apple Health seeded the baseline (≥seed valid HRV nights) but the user's own
+                        // strap hasn't reached the seed yet → the base is ALREADY done; the strap only
+                        // owes today's reading. Naming the source here kills the "0 of 4" contradiction
+                        // a freshly-imported user would otherwise see. Footer adapts: Scan before the
+                        // strap is seen, live-pulse row after (FER-106).
+                        importedBaselineHero
+                    } else if (live.lastSyncedAt != nil || liveBpm != nil) && ownNights < Baselines.minNightsSeed {
                         // Still gathering the first `seed` nights of the user's OWN strap data → the
                         // night-dots card from night zero. Apple-Health days don't count (borrowed,
                         // preliminary), so a full Apple Health sync keeps the dots honest at "N of 4"
                         // instead of faking 4/4; a real WHOOP-own history (import/wear) fills them and
-                        // hands off to the verdict once today's reading lands.
+                        // hands off to the verdict once today's reading lands. No import here, so the
+                        // card offers the Apple-Health head-start shortcut.
                         CalibrationProgressCard(nights: ownNights,
                                                 total: Baselines.minNightsSeed,
                                                 liveBpm: liveBpm,
                                                 isLiveHR: isLiveHR,
-                                                onTapLive: { showLiveMonitor = true })
+                                                onTapLive: { showLiveMonitor = true },
+                                                onConnectAppleHealth: { showDataSources = true })
                     } else {
                         // No strap ever (→ Scan CTA), OR a seeded baseline (≥seed valid nights, e.g. from
                         // a full account sync) that simply has no reading for TODAY yet — not calibration.
@@ -320,6 +346,52 @@ struct TodayView: View {
         }
     }
 
+    /// Empty-state hero for the imported-baseline path (`hasImportedBaseline`): the recovery baseline is
+    /// already seeded from Apple Health history, so this NAMES that source instead of asking the user to
+    /// "calibrate from zero". One honest message — the base is ready; the strap only owes today's reading
+    /// (the one thing Apple Health can't supply). The footer adapts like `emptyHero`: a Scan CTA before a
+    /// strap is ever seen, the live-pulse row once it has. Mirrors the verdict's "Your baseline comes from
+    /// Apple Health" provenance so the whole journey speaks with one voice (FER-106, sibling of FER-105).
+    private var importedBaselineHero: some View {
+        let strapSeen = live.lastSyncedAt != nil || liveBpm != nil
+        return NoopCard(padding: 18) {
+            VStack(alignment: .leading, spacing: 9) {
+                Text("Today's verdict").strandOverline()
+                Text("Your baseline is ready")
+                    .font(StrandFont.title1)
+                    .foregroundStyle(StrandPalette.textPrimary)
+                // Provenance chip — the base's source is Apple Health, stated up front so "ready" is
+                // never unexplained (the cyan that marks Apple Health data across the app).
+                HStack(spacing: 6) {
+                    Image(systemName: "heart.fill").font(.system(size: 11))
+                    Text("Baseline · Apple Health").font(StrandFont.caption)
+                }
+                .foregroundStyle(StrandPalette.metricCyan)
+                .padding(.horizontal, 9).padding(.vertical, 4)
+                .background(StrandPalette.accentMuted, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                Text("Wear your strap to add the one thing Apple Health can't: today's reading.")
+                    .font(StrandFont.subhead)
+                    .foregroundStyle(StrandPalette.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                if !strapSeen {
+                    Button { model.scan() } label: {
+                        Text("Scan for strap")
+                            .font(StrandFont.headline)
+                            .foregroundStyle(StrandPalette.surfaceBase)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 11)
+                            .background(StrandPalette.accent, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 5)
+                } else {
+                    LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
     /// The live-heartbeat row: the brand pulse glyph + "See it beat by beat", the live bpm pill (or a
     /// muted "No reading" badge), and a chevron — one Button that opens the beat-to-beat monitor.
     /// Anchored at the foot of every hero with a strap (calibration, verdict, empty-with-strap) so the
@@ -390,16 +462,22 @@ struct TodayView: View {
         var isLiveHR: Bool = false
         /// Tap target for the live monitor; nil hides the "See it beat by beat" row.
         var onTapLive: (() -> Void)? = nil
+        /// Tap target for the Apple-Health head-start shortcut; nil hides the row. This card only ever
+        /// shows on the NO-import path (an import routes to `importedBaselineHero`), so when present the
+        /// shortcut is an honest offer to skip the 0→seed wait — never a promise of a base already there.
+        var onConnectAppleHealth: (() -> Void)? = nil
 
         private var headline: LocalizedStringKey {
             if nights == 0 { return "Your first night counts" }
             if nights >= total { return "Almost there" }
             return "Your scores are building"
         }
+        // Frames the count as the nights YOUR OWN baseline needs — never "your verdict" — so a user with
+        // Apple Health history understands this path builds a strap-native base, not the verdict itself.
         private var detail: LocalizedStringKey {
-            if nights == 0 { return "Wear the strap tonight — the first of \(total) nights your verdict needs." }
+            if nights == 0 { return "Wear the strap tonight — the first of \(total) nights your own baseline needs." }
             if nights >= total { return "All \(total) nights are in — computing your first verdict." }
-            return "The engine gets sharper every night — you already have \(nights)."
+            return "Your own baseline sharpens every night — you already have \(nights)."
         }
 
         var body: some View {
@@ -434,10 +512,43 @@ struct TodayView: View {
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
+                    if let onConnectAppleHealth {
+                        appleHealthShortcut(onTap: onConnectAppleHealth)
+                    }
                     if let onTapLive {
                         LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: onTapLive)
                     }
                 }
+            }
+        }
+
+        /// Head-start nudge: a user with Apple Health history can seed the base now instead of waiting
+        /// out the 0→seed nights. A hairline-topped, full-width tap row (matching LiveHeartbeatRow's
+        /// chrome) that opens Data Sources. Cyan glyph marks it as the Apple-Health affordance.
+        private func appleHealthShortcut(onTap: @escaping () -> Void) -> some View {
+            VStack(spacing: 0) {
+                Rectangle().fill(StrandPalette.hairline).frame(height: 0.5)
+                    .padding(.top, 14).padding(.bottom, 10)
+                Button(action: onTap) {
+                    HStack(spacing: 9) {
+                        Image(systemName: "heart.fill")
+                            .font(.system(size: 12)).foregroundStyle(StrandPalette.metricCyan)
+                        Text("Have history in Apple Health? Connect it and your baseline gets a head start.")
+                            .font(StrandFont.caption)
+                            .foregroundStyle(StrandPalette.textSecondary)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)   // wrap at large Dynamic Type
+                        Spacer(minLength: 6)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11)).foregroundStyle(StrandPalette.textTertiary)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .ignore)
+                .accessibilityAddTraits(.isButton)
+                .accessibilityLabel(Text("Connect Apple Health"))
+                .accessibilityHint(Text("Opens Data Sources to give your baseline a head start"))
             }
         }
     }
