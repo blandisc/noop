@@ -36,6 +36,10 @@ final class Repository: ObservableObject {
     /// it, so every existing `repo.days` / `repo.sleeps` / … call site is unchanged.
     struct DashboardData {
         var days: [DailyMetric] = []
+        /// Display-only twin of `days`: strap-covered days whose measured fields are nil back-fill from
+        /// the Apple Health row the merge overwrote (FER-149). The dashboard sparklines/trends read
+        /// these so a partial-connection day shows Apple's HRV instead of a gap; `days` stays strap-only.
+        var displayDays: [DailyMetric] = []
         var sleeps: [CachedSleepSession] = []
         var importedSleep: [String: ImportedSleepFigures] = [:]
         /// Days whose surfaced daily row came from Apple Health (no strap coverage), so Trends/Sleep
@@ -46,8 +50,12 @@ final class Repository: ObservableObject {
     }
     @Published private(set) var dashboard = DashboardData()
 
-    /// Daily metrics (recovery/strain/sleep/HRV/RHR…), oldest→newest.
+    /// Daily metrics (recovery/strain/sleep/HRV/RHR…), oldest→newest. Strap-only HRV/RHR — the
+    /// recovery baseline and `ownNights` read this, so Apple Health never leaks into the calibration.
     var days: [DailyMetric] { dashboard.days }
+    /// Display-only daily rows: `days`, but strap-covered days with nil measured fields back-fill from
+    /// Apple Health (FER-149). The dashboard sparklines/trends read these; analytics read `days`.
+    var displayDays: [DailyMetric] { dashboard.displayDays }
     /// Cached sleep sessions, oldest→newest.
     var sleeps: [CachedSleepSession] { dashboard.sleeps }
     /// Imported (export-verbatim) sleep figures by day. Empty until a WHOOP import lands.
@@ -159,6 +167,7 @@ final class Repository: ObservableObject {
         let merged = Self.mergeDaily(imported: imported, computed: computed, apple: apple)
         self.dashboard = DashboardData(
             days: merged.days,
+            displayDays: merged.displayDays,
             sleeps: Self.mergeSleep(imported: impSleep, computed: compSleep),
             importedSleep: fig,
             appleHealthDays: merged.appleDays,
@@ -174,7 +183,7 @@ final class Repository: ObservableObject {
                       importedSleep: [String: ImportedSleepFigures] = [:],
                       appleHealthDays: Set<String> = [],
                       loaded: Bool = true) {
-        dashboard = DashboardData(days: days, sleeps: sleeps, importedSleep: importedSleep,
+        dashboard = DashboardData(days: days, displayDays: days, sleeps: sleeps, importedSleep: importedSleep,
                                   appleHealthDays: appleHealthDays, loaded: loaded, seq: dashboard.seq + 1)
     }
 
@@ -182,14 +191,28 @@ final class Repository: ObservableObject {
     /// days they don't cover, and imported strap rows win over everything — so the strap always beats
     /// Apple Health. Also returns the days whose surfaced row stayed Apple Health (strap-uncovered),
     /// for source badging.
+    ///
+    /// `displayDays` (FER-149) is a display-only twin of `days`: a strap-covered day whose measured
+    /// fields are nil (a partial-connection day — IntelligenceEngine wrote a `daily` with HRV/recovery
+    /// nil) back-fills those nils from the Apple Health row this merge overwrote, so the HRV
+    /// sparkline/trend shows Apple's value instead of a gap. `days` and `appleDays` stay strap-only and
+    /// byte-for-byte unchanged: `ownNights` and the recovery baseline read `repo.days`/`appleHealthDays`,
+    /// so Apple HRV never leaks into the calibration (it's folded separately and capped in
+    /// IntelligenceEngine). The strap value always wins when present — only genuine gaps fill.
     static func mergeDaily(imported: [DailyMetric], computed: [DailyMetric],
-                           apple: [DailyMetric]) -> (days: [DailyMetric], appleDays: Set<String>) {
+                           apple: [DailyMetric]) -> (days: [DailyMetric], appleDays: Set<String>,
+                                                     displayDays: [DailyMetric]) {
         var byDay: [String: DailyMetric] = [:]
+        var appleByDay: [String: DailyMetric] = [:]
         var appleDays = Set<String>()
-        for d in apple    { byDay[d.day] = d; appleDays.insert(d.day) }   // base layer (lowest precedence)
+        for d in apple    { byDay[d.day] = d; appleByDay[d.day] = d; appleDays.insert(d.day) }  // base layer (lowest precedence)
         for d in computed { byDay[d.day] = d; appleDays.remove(d.day) }   // on-device strap overwrites Apple
         for d in imported { byDay[d.day] = d; appleDays.remove(d.day) }   // imported strap wins over all
-        return (byDay.values.sorted { $0.day < $1.day }, appleDays)
+        let days = byDay.values.sorted { $0.day < $1.day }
+        let displayDays = days.map { row in
+            appleByDay[row.day].map { row.fillingNils(from: $0) } ?? row
+        }
+        return (days, appleDays, displayDays)
     }
 
     /// Same precedence for sleep sessions, keyed by the day the night ends on.
@@ -445,4 +468,31 @@ final class Repository: ObservableObject {
     }()
 
     static func dayString(_ d: Date) -> String { dayFormatter.string(from: d) }
+}
+
+private extension DailyMetric {
+    /// Display back-fill (FER-149): a copy where each nil field takes the value from `other` (the Apple
+    /// Health row for the same day). Strap-present fields always win — only the gaps Apple can fill
+    /// change. recovery/strain stay strap-only in practice because Apple rows carry them as nil. This is
+    /// display-only and is never fed to the recovery baseline (`repo.days` keeps the un-filled row).
+    func fillingNils(from other: DailyMetric) -> DailyMetric {
+        DailyMetric(
+            day: day,
+            totalSleepMin: totalSleepMin ?? other.totalSleepMin,
+            efficiency: efficiency ?? other.efficiency,
+            deepMin: deepMin ?? other.deepMin,
+            remMin: remMin ?? other.remMin,
+            lightMin: lightMin ?? other.lightMin,
+            disturbances: disturbances ?? other.disturbances,
+            restingHr: restingHr ?? other.restingHr,
+            avgHrv: avgHrv ?? other.avgHrv,
+            recovery: recovery ?? other.recovery,
+            strain: strain ?? other.strain,
+            exerciseCount: exerciseCount ?? other.exerciseCount,
+            spo2Pct: spo2Pct ?? other.spo2Pct,
+            skinTempDevC: skinTempDevC ?? other.skinTempDevC,
+            respRateBpm: respRateBpm ?? other.respRateBpm,
+            steps: steps ?? other.steps,
+            activeKcalEst: activeKcalEst ?? other.activeKcalEst)
+    }
 }
