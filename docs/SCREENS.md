@@ -47,12 +47,15 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 
 | Estado | Condición de entrada |
 |--------|---------------------|
-| Empty / First launch | Ningún strap visto nunca |
-| Calibrando (1–3 noches) | `calibrationNightsLogged < 4` |
-| Sin lectura de hoy | Strap visto, sin offload de hoy |
+| Empty / First launch | Ningún strap visto, sin base importada |
+| Base lista (Apple Health) | `hasImportedBaseline` — base sembrada por import (≥4 noches HRV en `repo.days`) y `ownNights < 4`, sin lectura de hoy → `importedBaselineHero` |
+| Calibrando (1–3 noches) | Strap visto, `ownNights < 4`, **sin** base importada → `CalibrationProgressCard` |
+| Sin lectura de hoy | Strap visto, base propia ≥4 noches, sin offload de hoy |
 | Veredicto listo | Recovery score calculado |
 
 **Nota — héroe del veredicto "dos verdades" (iOS, FER-113):** el héroe muestra Veredicto (izquierda, color del nivel) y Recuperación (derecha, `92/100` + estado, en su **color de banda** `recoveryColor` — nunca el color del veredicto), reconciliados por una frase puente dinámica (`Readiness.bridge`, decidida en `ReadinessEngine`). Un enlace al pie "¿Por qué {veredicto}?" abre `WhyVerdictSheet` con las señales (`Readiness.signals`) y la leyenda de colores. "Listo" (primed) usa `StrandPalette.statusPrimed` (menta brillante), distinto de "Equilibrado" (verde). La barra `ReadinessGaugeBar` se retiró del héroe iOS (la caja de Recuperación la sustituye).
+
+**Nota — narrativa de onboarding por fuente de datos (FER-106, iOS):** los estados previos al primer veredicto reconocen de dónde viene la base. La señal de lectura `hasImportedBaseline` (≥`minNightsSeed` noches con HRV válida en `repo.days` **y** `ownNights < minNightsSeed`) significa "la base la sembró Apple Health, no la banda" y enruta a un héroe nuevo, `importedBaselineHero`: título "Tu base ya está lista" + chip "Base · Apple Health" (`metricCyan`) + "Usa tu banda para sumar… la lectura de hoy" — nunca muestra "0 de 4" como si no hubiera base. Su pie se adapta: CTA "Buscar banda" si no se ha visto strap, `LiveHeartbeatRow` si ya. Sin import, `CalibrationProgressCard` mantiene el conteo 0→4 pero con copy de **base propia** (no "veredicto") + un atajo "¿Tienes historial en Apple Health? Conéctalo…" que abre Data Sources. Sin import/permiso, `hasImportedBaseline` es falso por construcción, así que ningún estado promete una base de Apple Health que no existe. Es el hermano de FER-105 (la línea de confianza del veredicto, que cubre el momento *después* del primer veredicto).
 
 **Nota — indicador de sincronización (iOS):** cuando `live.backfilling == true`, la `syncMeta` en la `utilityRow` muestra "Syncing strap history…" en tono terciario/mono en lugar del texto habitual "Synced X ago". No hay pill ni color prominente; el texto vuelve al estado normal al terminar el backfill.
 
@@ -60,7 +63,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 
 **Nota — tarjeta "Sources" → `SourcesSummaryCard` (estilo FER-119 · ubicación FER-137):** el resumen de fuentes (overline "Sources", una `sourceRow` por fuente —WHOOP en `accent`, Apple Health en `metricCyan`, tinte solo en el glifo— y `syncLine` con `ConnectionDot` bajo un divider, visible solo si `hasData || showsSync`) se extrajo al componente auto-contenido `SourcesSummaryCard` (lee `repo`/`live` y carga sus propios conteos). Ya **no** vive en Hoy: se movió al **fondo de `DataSourcesView`**.
 
-**Componentes:** `HealthAlertBanner`, `CalibrationProgressCard`, `LiveHeartbeatRow`, `WhyVerdictSheet`, `RecoveryRing`, `MetricRow` (Métricas clave, incl. **Frecuencia cardiaca** → sheet de curva 24h, FER-137)  
+**Componentes:** `HealthAlertBanner`, `importedBaselineHero` (base lista por Apple Health, FER-106), `CalibrationProgressCard`, `LiveHeartbeatRow`, `WhyVerdictSheet`, `RecoveryRing`, `MetricRow` (Métricas clave, incl. **Frecuencia cardiaca** → sheet de curva 24h, FER-137)  
 **Navegación:** → `LiveView` (fullScreenCover, "See it beat by beat") · → `MetricInfoSheet` (sheet, tap métrica del grid · tap de los stats **Recuperación** / **HRV** de la síntesis → explicador «cómo se calcula», FER-108/109) · → `WhyVerdictSheet` (sheet, "¿Por qué {veredicto}?") · → `SupportView` (toolbar ❤)
 
 ---
