@@ -1369,6 +1369,12 @@ extension BLEManager: CBPeripheralDelegate {
                 self.log("GET_CLOCK sin respuesta — la banda no contestó su reloj")
             }
         }
+        // FER-93b hypothesis (FER-156): the official app enables these firmware data streams via
+        // SET_CONFIG; NOOP never did. A power-reset 4.0 may stop persisting biometry to flash until they
+        // are re-enabled, so we (re-)assert them once per connect, right after the clock. Safe/reversible
+        // (only toggles data streams); the bytes are byte-for-byte the app's (SetConfigTests). Effect on a
+        // lost band is pending hardware verification.
+        sendSetConfigBurst()
         send(.sendR10R11Realtime, payload: [0x00])   // stop the type-43 realtime flood (BLE airtime/battery)
         send(.getDataRange)                          // refresh the strap's stored range for the watchdog
         // Plain offload (no high-freq-sync), rate-limited (first connect always runs; reconnect-flaps are
@@ -1395,6 +1401,17 @@ extension BLEManager: CBPeripheralDelegate {
                 realtimeArmedAt = Date()   // start the arm→drop stopwatch for the marginal-radio detector
             }
         }
+    }
+
+    /// (Re-)assert the official app's SET_CONFIG burst (FER-156) so the WHOOP 4.0 enables the firmware
+    /// data streams it records to flash. WHOOP 4.0 only — `send` drops SET_CONFIG on 5/MG (not in its
+    /// allowlist). Called once per connect, inside the guarded handshake. FER-93b leading hypothesis;
+    /// effect on a lost band is pending hardware verification.
+    private func sendSetConfigBurst() {
+        for c in SetConfig.officialBurst {
+            send(.setConfig, payload: SetConfig.payload(key: c.key, value: c.value))
+        }
+        log("SET_CONFIG: (re)enabled \(SetConfig.officialBurst.count) data-stream flags (FER-93b hypothesis)")
     }
 
     /// SET_CLOCK(10) payload = the strap's 8-byte form: [seconds u32 LE][subseconds

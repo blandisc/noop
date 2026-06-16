@@ -28,6 +28,13 @@ public enum WhoopCommand: UInt8, CaseIterable {
     case getExtendedBatteryInfo = 98
     case toggleIMUMode         = 106
     case enableOpticalData     = 107
+    /// SET_CONFIG — enable named firmware data-stream packet types (the `r19` biometric record family,
+    /// `write_r24`/`write_r25`, `capsense_wear_detect`, …). Reverse-engineered from the official app's
+    /// connect handshake (FER-156). Leading hypothesis for FER-93b: a power-reset 4.0 stops persisting
+    /// biometry until these streams are re-enabled. SAFE/REVERSIBLE — only toggles data streams (no
+    /// reboot/wipe/DFU); payload via `WhoopProtocol.SetConfig.payload(key:value:)`. Outbound bytes verified
+    /// byte-for-byte vs the capture (`SetConfigTests`); effect on a lost band still pending hardware verify.
+    case setConfig             = 120
     /// Fire a preset haptic pattern. Payload = `[patternId, numLoops, 0, 0, 0]` (5 bytes, from
     /// the device's preset table). patternId indexes the device's preset patterns (GET_ALL_HAPTICS_PATTERN
     /// reports 7 on harvard); the official app fires id=2. Safe/reversible — just buzzes the motor.
@@ -77,6 +84,7 @@ public enum WhoopCommand: UInt8, CaseIterable {
         case .getExtendedBatteryInfo:return "Get Extended Battery Info"
         case .toggleIMUMode:         return "Toggle IMU Mode"
         case .enableOpticalData:     return "Enable Optical Data"
+        case .setConfig:             return "Set Config (enable streams)"
         case .runHapticsPattern:     return "Run Haptics Pattern"
         case .stopHaptics:           return "Stop Haptics"
         case .sendR10R11Realtime:    return "R10/R11 Realtime (raw stream)"

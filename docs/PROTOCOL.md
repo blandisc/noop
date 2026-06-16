@@ -359,6 +359,7 @@ public func frame(seq: UInt8, payload: [UInt8] = [0x00]) -> [UInt8] {
 | 100 | `CALIBRATE_CAPSENSE` | — | recalibrate cap-touch |
 | 105 / 106 | `TOGGLE_IMU_MODE_HISTORICAL` / `TOGGLE_IMU_MODE` | `[0x01]` | IMU stream mode |
 | 107 | `ENABLE_OPTICAL_DATA` | — | optical (PPG) data |
+| 120 | `SET_CONFIG` | `[0x01]+key(32 B ASCII, 0-pad)+[value]+0-pad` (65 B) | enable named firmware data streams (`enable_r19_packets`, `…_v2…v6`, `write_r24/r25`, `capsense_wear_detect`, …). **FER-156 / FER-93b hypothesis:** the official app sends a burst of these; NOOP (re-)asserts them once per connect so a power-reset 4.0 resumes persisting biometry to flash. Builder: `SetConfig.payload(key:value:)`. Safe/reversible. |
 | 122 | `STOP_HAPTICS` | `[0x00]` | stop an in-progress haptic |
 | 123 | `SELECT_WRIST` | — | set strap wrist |
 
@@ -367,6 +368,9 @@ public func frame(seq: UInt8, payload: [UInt8] = [0x00]) -> [UInt8] {
 - `setAlarmPayload(epochSec:)` → `[0x01] + epoch u32 LE + [0x00, 0x00]` (7 bytes).
 - `BLEManager.setClockPayload(now:)` → `[secs u32 LE][0,0,0,0]` (8 bytes; subseconds in
   1/32768 s, zero is fine).
+- `SetConfig.payload(key:value:)` → `[0x01] + key(32 B ASCII, null-padded) + [value] + 0x00…` (65 bytes).
+  `SetConfig.officialBurst` is the exact 11-key burst captured from the official app (FER-156), sent on
+  connect by `BLEManager.sendSetConfigBurst()` (WHOOP 4.0 only).
 
 > **Note on `ENTER_HIGH_FREQ_SYNC` (96):** current builds do **not** enter high-freq sync; they
 > send `EXIT_HIGH_FREQ_SYNC` (97) defensively on connect to release a strap a previous app may
