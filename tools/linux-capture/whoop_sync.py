@@ -5,7 +5,7 @@ Drains a strap's on-device historical store into a DURABLE, DEVICE-SCOPED SQLite
 persist-before-ack semantics and auto-reconnect, and exports a capture.json that `whoop-decode`
 understands. Family-aware via `--model whoop4|whoop5`.
 
-Verified offload sequence (mirrors noop's Strand/BLE/BLEManager.swift on real WHOOP-4 hardware; the
+Verified offload sequence (mirrors noop's Cenit/BLE/BLEManager.swift on real WHOOP-4 hardware; the
 WHOOP-5 transport + ack are verified via whoop_capture.py's --history-ack path):
   1. connect + subscribe the family's notify channels (and standard HR for ground-truth).
   2. (whoop5) write CLIENT_HELLO to open the session; quiet the live realtime flood on both families.

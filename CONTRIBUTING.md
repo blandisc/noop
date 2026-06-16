@@ -19,7 +19,7 @@ non-trivial PR.
 ## Quick start
 
 The codebase is reusable Swift packages (`Packages/`) plus a thin iOS app layer
-(`Strand/`, built by the `NOOPiOS` target). The fastest feedback loop is the
+(`Cenit/`, built by the `Cenit` target). The fastest feedback loop is the
 packages — they build and test on their own, no Xcode project and no strap needed.
 
 ### Swift packages
@@ -43,7 +43,7 @@ brew install xcodegen
 xcodegen generate         # regenerate after any project.yml or file add/remove
 ```
 
-Then open the project in Xcode, select the `NOOPiOS` scheme, and run on your
+Then open the project in Xcode, select the `Cenit` scheme, and run on your
 iPhone. For the full build guide (signing, installing on-device without a paid
 Apple ID), see [`docs/BUILD.md`](docs/BUILD.md).
 
@@ -60,7 +60,7 @@ secrets, no release.
 | **Swift Packages CI** (`.github/workflows/swift-packages.yml`) | changes under `Packages/**` | `swift build` + `swift test` for each package |
 
 If CI fails on your PR, fix the cause rather than working around it. Never commit
-generated output (`Strand.xcodeproj/`) or any secrets, keystores, or `local.properties`.
+generated output (`Cenit.xcodeproj/`) or any secrets, keystores, or `local.properties`.
 
 ---
 

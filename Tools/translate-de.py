@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Inject German (de) translations into Strand/Resources/Localizable.xcstrings.
+"""Inject German (de) translations into Cenit/Resources/Localizable.xcstrings.
 
 Reads the English (en) base values and adds a `de` stringUnit for each key.
 Format placeholders (%@, %lld, %%) are preserved. Pure symbol / placeholder-only
@@ -9,7 +9,7 @@ overwritten so this file stays the source of truth for the German translation.
 import json
 from pathlib import Path
 
-CATALOG = Path("Strand/Resources/Localizable.xcstrings")
+CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> German value. Keys must match the catalog exactly.
 DE: dict[str, str] = {

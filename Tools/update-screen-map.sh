@@ -19,10 +19,10 @@ LOG="$(mktemp -t noop-screenmap-XXXXXX).log"
 echo "▶︎ Corriendo UI test de screenshots en '$SIM'…"
 # GIT_CONFIG=/dev/null evita que un override local de git rompa la resolución de SwiftPM.
 GIT_CONFIG=/dev/null xcodebuild test \
-  -project "$ROOT/Strand.xcodeproj" -scheme NOOPiOS \
+  -project "$ROOT/Cenit.xcodeproj" -scheme Cenit \
   -destination "platform=iOS Simulator,name=$SIM" \
   CODE_SIGNING_ALLOWED=NO \
-  -only-testing NOOPiOSUITests/NOOPScreenshotTests \
+  -only-testing CenitUITests/NOOPScreenshotTests \
   2>&1 | tee "$LOG" | grep -E "Test Case|FIXTURE_WRITTEN|error:" || true
 
 echo "▶︎ Copiando fixtures a docs/fixtures/…"

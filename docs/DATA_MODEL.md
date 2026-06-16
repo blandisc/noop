@@ -19,17 +19,17 @@ The persistence layer is the `WhoopStore` Swift package
 (`Packages/WhoopStore`), built on [GRDB](https://github.com/groue/GRDB.swift) over SQLite. Like
 every package in the repo, it declares both platforms — `.iOS(.v16)` and `.macOS(.v13)`
 (`Packages/WhoopStore/Package.swift`) — and is UI-framework agnostic, so the same schema and
-storage code back the `NOOPiOS` app from a single cross-platform core.
+storage code back the `Cenit` app from a single cross-platform core.
 
 The app target opens the database at a fixed, per-user location
-(`Strand/Collect/StorePaths.swift`):
+(`Cenit/Collect/StorePaths.swift`):
 
 ```
 <Application Support>/OpenWhoop/whoop.sqlite
 ```
 
 ```swift
-// Strand/Collect/StorePaths.swift
+// Cenit/Collect/StorePaths.swift
 static func defaultDatabasePath() throws -> String {
     let fm = FileManager.default
     let base = try fm.url(for: .applicationSupportDirectory, in: .userDomainMask,

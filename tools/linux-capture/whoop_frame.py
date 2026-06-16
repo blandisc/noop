@@ -97,7 +97,7 @@ PUFFIN_CMD_SEND_HISTORICAL_DATA = 22
 # this is what advances the strap's trim cursor to the NEXT chunk; without it the strap re-sends the
 # same early chunk forever. The leading hypothesis for why the DSP (type-47) records never arrive is
 # that we never ack — so the cursor never reaches them. Build the payload from each METADATA (type 49)
-# chunk's trim/end_data; see Strand/BLE/BLEManager.swift `ackHistoricalChunk` for the 4.0 shape.
+# chunk's trim/end_data; see Cenit/BLE/BLEManager.swift `ackHistoricalChunk` for the 4.0 shape.
 PUFFIN_CMD_HISTORICAL_DATA_RESULT = 23
 PUFFIN_CMD_GET_CLOCK = 11
 PUFFIN_CMD_GET_DATA_RANGE = 34
@@ -186,7 +186,7 @@ def history_end_data(frame: bytes):
 def build_history_ack(end_data: bytes, seq: int = 0) -> bytes:
     """Build the HISTORICAL_DATA_RESULT(23) ack frame: payload = 0x01 + the 8-byte end_data.
 
-    Mirrors `ackHistoricalChunk` in Strand/BLE/BLEManager.swift (`send(.historicalDataResult,
+    Mirrors `ackHistoricalChunk` in Cenit/BLE/BLEManager.swift (`send(.historicalDataResult,
     payload: [0x01] + endData, .withResponse)`). Written to fd4b0002 as a CONFIRMED write.
     """
     return build_puffin_command(PUFFIN_CMD_HISTORICAL_DATA_RESULT, seq=seq,

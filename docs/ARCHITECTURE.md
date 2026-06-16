@@ -60,8 +60,8 @@ through `Repository`.
 ## 2. Repository layout
 
 ```
-Strand/                         Shared app-layer (BLE/Collect/Data/Screens/System) compiled by the iOS target
-├── App/                        Shared app state (the iOS app scene lives in StrandiOS/)
+Cenit/                         App-layer (BLE/Collect/Data/Screens/System) compiled by the iOS target
+├── App/                        App state (the iOS app scene lives in CenitApp/)
 │   ├── AppModel.swift          @MainActor root state — owns BLE, Repository, profiles
 │   └── ContentView.swift
 ├── BLE/                        CoreBluetooth + the live/decode seam
@@ -87,7 +87,7 @@ Strand/                         Shared app-layer (BLE/Collect/Data/Screens/Syste
 │   ├── Profile.swift           user profile (age/sex/body/HRmax)
 │   └── BehaviorStore.swift     toggles for automations/coaching
 ├── Screens/                    SwiftUI feature screens (Today, Live, Sleep, Trends…)
-└── System/                     app-layer helpers (ProjectInfo; some macOS-guarded paths pending FER-144 cleanup)
+└── System/                     app-layer helpers (ProjectInfo, Platform, StrapActions)
 
 Packages/                       Cross-platform Swift packages (iOS 16+ / macOS 13+)
 ├── WhoopProtocol/              BLE frame parsing, CRC, command/event/packet decode
@@ -96,19 +96,21 @@ Packages/                       Cross-platform Swift packages (iOS 16+ / macOS 1
 ├── StrandImport/               WHOOP CSV + Apple Health importers
 └── StrandDesign/               SwiftUI design system (palette, components, charts)
 
-StrandiOS/                      iOS SwiftUI app target (App/Health/System/Widgets/Resources)
-StrandiOSShared/                code shared between the iOS app and its widgets
-StrandiOSWidgets/               iOS home / lock-screen widgets
+CenitApp/                       iOS SwiftUI app shell (App/Health/System/Widgets/Resources)
+CenitShared/                    code shared between the iOS app and its widgets
+CenitWidgets/                   iOS home / lock-screen widgets
 
 Tools/Backfill/                 CLI offload/replay tool
 ```
 
-**`NOOPiOS`** is the app target: its shell (scene, HealthKit, widgets, intents) lives in **`StrandiOS/`**,
-and it compiles the shared app-layer under **`Strand/`** (CoreBluetooth, the live/decode seam, screens,
-data). The macOS app and its `Strand` / `StrandTests` targets were retired (FER-143); the app-layer unit
-tests now run as **`NOOPiOSUnitTests`** in the simulator. The five packages still declare `.iOS(.v16)`
-and `.macOS(.v13)` and keep every UI-framework call behind `#if canImport(UIKit)` / `#if canImport(AppKit)`
-guards. (Renaming `Strand/`→NOOP and removing the now-dead `#if os(macOS)` branches is the FER-144 follow-up.)
+The app target is **`Cenit`** (Swift module `Cenit`, product `Cenit.app`): its shell (scene, HealthKit,
+widgets, intents) lives in **`CenitApp/`**, and it compiles the app-layer under **`Cenit/`** (CoreBluetooth,
+the live/decode seam, screens, data). The user-visible name stays **NOOP** (`CFBundleDisplayName`); the
+visible rebrand to "Cénit" is tracked separately. The macOS app and its `Strand`/`StrandTests` targets were
+retired (FER-143) and the dead `#if os(macOS)`/`AppKit` branches removed (FER-144); the app-layer unit tests
+run as **`CenitUnitTests`** in the simulator. The five packages keep their `Strand*`/`Whoop*` names and still
+declare `.iOS(.v16)`/`.macOS(.v13)`, guarding UI-framework calls behind `#if canImport(UIKit)` /
+`#if canImport(AppKit)`.
 
 ---
 
@@ -359,11 +361,11 @@ backfilled streams, or imported data interchangeably. **All derived values are a
 
 ## 10. Presentation (the app + StrandDesign)
 
-The `NOOPiOS` app shell (under `StrandiOS/App/`) builds a single `AppModel`, injects it plus
+The `Cenit` app shell (under `CenitApp/App/`) builds a single `AppModel`, injects it plus
 `LiveState`, `Repository`, `ProfileStore`, and `BehaviorStore` into the environment, and presents the
-shared screens under `Strand/Screens/` (Today, Live, Breathe, Intervals, Explore, Compare, Insights,
+shared screens under `Cenit/Screens/` (Today, Live, Breathe, Intervals, Explore, Compare, Insights,
 Sleep, Trends, Workouts, Health, Stress, Apple Health, Data Sources, Automations, Settings, Support).
-The home / lock-screen widgets live in `StrandiOSWidgets/`.
+The home / lock-screen widgets live in `CenitWidgets/`.
 
 Screens bind to `Repository`'s published `days`/`sleeps` caches (refreshed on data change, not on the
 ~1 Hz stream) and render with `StrandDesign` components — `RecoveryRing`, `StrainGauge`, `Hypnogram`,

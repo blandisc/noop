@@ -42,7 +42,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 ## Dashboard
 
 ### TodayView
-**Archivo:** `Strand/Screens/TodayView.swift`  
+**Archivo:** `Cenit/Screens/TodayView.swift`  
 **Descripción:** Hub principal — número de recuperación dominante, palabra del veredicto, dial de 24h y métricas clave. Reingenierizado al lenguaje **«Instrumento diurno»** en iOS (papel cálido que cambia de tono con la hora del día; color saturado solo en el dato) — FER-135.
 
 | Estado | Condición de entrada |
@@ -71,7 +71,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 ---
 
 ### HealthView
-**Archivo:** `Strand/Screens/HealthView.swift`  
+**Archivo:** `Cenit/Screens/HealthView.swift`  
 **Descripción:** Vitales en vivo — HR desde la correa, respiración, SpO₂, RHR, HRV, temperatura de piel.
 
 | Estado | Condición de entrada |
@@ -85,7 +85,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 ---
 
 ### SleepView
-**Archivo:** `Strand/Screens/SleepView.swift`  
+**Archivo:** `Cenit/Screens/SleepView.swift`  
 **Descripción:** Análisis de sueño — etapas, eficiencia, consistencia, vs. típico.
 
 | Estado | Condición de entrada |
@@ -100,7 +100,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 ---
 
 ### StressView
-**Archivo:** `Strand/Screens/StressView.swift`  
+**Archivo:** `Cenit/Screens/StressView.swift`  
 **Descripción:** Monitor de estrés 0–3 basado en RHR + HRV vs. baseline 30 días.
 
 | Estado | Condición de entrada |
@@ -116,7 +116,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 ## Actividad
 
 ### WorkoutsView
-**Archivo:** `Strand/Screens/WorkoutsView.swift`  
+**Archivo:** `Cenit/Screens/WorkoutsView.swift`  
 **Descripción:** Log de actividad — importado (WHOOP, Apple), detectado automáticamente, manual.
 
 | Estado | Condición de entrada |
@@ -132,7 +132,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 ---
 
 ### TrendsView
-**Archivo:** `Strand/Screens/TrendsView.swift`  
+**Archivo:** `Cenit/Screens/TrendsView.swift`  
 **Descripción:** Análisis longitudinal — Recovery, HRV, RHR, Day Strain.
 
 | Estado | Condición de entrada |
@@ -146,7 +146,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 ---
 
 ### InsightsView
-**Archivo:** `Strand/Screens/InsightsView.swift`  
+**Archivo:** `Cenit/Screens/InsightsView.swift`  
 **Descripción:** Correlaciones — comportamientos que afectan recovery/HRV/sleep/RHR (Pearson r, Cohen's d).
 
 | Estado | Condición de entrada |
@@ -163,7 +163,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 ## Análisis
 
 ### MetricExplorerView / MetricDetailView
-**Archivo:** `Strand/Screens/MetricExplorerView.swift`  
+**Archivo:** `Cenit/Screens/MetricExplorerView.swift`  
 **Descripción:** Catálogo de métricas por categoría (Sleep, Strain, Workouts, Vitals, Body). Tap → dossier completo de una métrica.
 
 | Estado | Condición de entrada |
@@ -179,7 +179,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 ---
 
 ### CompareView
-**Archivo:** `Strand/Screens/CompareView.swift`  
+**Archivo:** `Cenit/Screens/CompareView.swift`  
 **Descripción:** Superponer 2–4 métricas en gráfica normalizada (0–1) + Pearson r entre pares.
 
 | Estado | Condición de entrada |
@@ -193,7 +193,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 ---
 
 ### AppleHealthView
-**Archivo:** `Strand/Screens/AppleHealthView.swift`  
+**Archivo:** `Cenit/Screens/AppleHealthView.swift`  
 **Descripción:** Historia de Apple Health — Steps, Active Energy, VO₂ Max, vitales, cuerpo, sueño.
 
 | Estado | Condición de entrada |
@@ -207,7 +207,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 ---
 
 ### IntelligenceView
-**Archivo:** `Strand/Screens/IntelligenceView.swift`  
+**Archivo:** `Cenit/Screens/IntelligenceView.swift`  
 **Descripción:** Scores on-device (recovery, strain, sleep desde streams crudos de la correa, sin cloud).
 
 | Estado | Condición de entrada |
@@ -223,7 +223,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 ## Dispositivo
 
 ### LiveView
-**Archivo:** `Strand/Screens/LiveView.swift`  
+**Archivo:** `Cenit/Screens/LiveView.swift`  
 **Descripción:** Monitor ECG en vivo + gestión de correa (pairing, model picker, workout logging, offload).
 
 | Estado | Condición de entrada |
@@ -239,7 +239,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 ---
 
 ### AutomationsView
-**Archivo:** `Strand/Screens/AutomationsView.swift`  
+**Archivo:** `Cenit/Screens/AutomationsView.swift`  
 **Descripción:** Double-tap → acción Mac, wear on/off → lock, coaching haptic, alarmas, illness watch.
 
 | Estado | Condición de entrada |
@@ -252,7 +252,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 ---
 
 ### BreathingView
-**Archivo:** `Strand/Screens/BreathingView.swift`  
+**Archivo:** `Cenit/Screens/BreathingView.swift`  
 **Descripción:** Trainer de respiración con biofeedback HRV en vivo (pacing haptic + visual).
 
 | Estado | Condición de entrada |
@@ -267,7 +267,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 ---
 
 ### IntervalTimerView
-**Archivo:** `Strand/Screens/IntervalTimerView.swift`  
+**Archivo:** `Cenit/Screens/IntervalTimerView.swift`  
 **Descripción:** HIIT timer haptic silencioso (work/rest, buzzes en transiciones).
 
 | Estado | Condición de entrada |
@@ -284,7 +284,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 ## App
 
 ### CoachView
-**Archivo:** `Strand/Screens/CoachView.swift`  
+**Archivo:** `Cenit/Screens/CoachView.swift`  
 **Descripción:** LLM coaching — pregunta sobre recovery/strain/sleep, integración OpenAI/Anthropic.
 
 | Estado | Condición de entrada |
@@ -300,7 +300,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 ---
 
 ### SettingsView
-**Archivo:** `Strand/Screens/SettingsView.swift`  
+**Archivo:** `Cenit/Screens/SettingsView.swift`  
 **Descripción:** Configuración — perfil (edad, sexo, peso, altura), unidades, strap, experimental, backup, about.
 
 | Estado | Condición de entrada |
@@ -313,7 +313,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 ---
 
 ### DataSourcesView
-**Archivo:** `Strand/Screens/DataSourcesView.swift`  
+**Archivo:** `Cenit/Screens/DataSourcesView.swift`  
 **Descripción:** Importar datos — WHOOP export (.zip), Apple Health export, sincronización en vivo Apple Health (iOS).
 
 | Estado | Condición de entrada |
@@ -328,7 +328,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 ---
 
 ### SupportView
-**Archivo:** `Strand/Screens/SupportView.swift`  
+**Archivo:** `Cenit/Screens/SupportView.swift`  
 **Descripción:** Donaciones + contacto + atribución. Contenido estático.
 
 | Estado | Condición de entrada |
@@ -342,7 +342,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 ## Sheets y Modales
 
 ### ManualWorkoutSheet
-**Archivo:** `Strand/Screens/ManualWorkoutSheet.swift`  
+**Archivo:** `Cenit/Screens/ManualWorkoutSheet.swift`  
 **Presentado por:** `WorkoutsView` (add / edit via context menu)
 
 | Estado | Condición de entrada |
@@ -356,7 +356,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 ---
 
 ### MetricInfoSheet
-**Archivo:** `Strand/Screens/MetricInfoSheet.swift`  
+**Archivo:** `Cenit/Screens/MetricInfoSheet.swift`  
 **Presentado por:** `TodayView` (tap cualquier métrica del grid · tap de los stats **Recuperación** / **HRV** en la fila de síntesis)
 
 | Estado | Condición de entrada |
@@ -375,7 +375,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 ---
 
 ### WhatsNewView
-**Archivo:** `Strand/Screens/WhatsNewView.swift`  
+**Archivo:** `Cenit/Screens/WhatsNewView.swift`  
 **Presentado por:** `SettingsView` ("What's New") · auto-shown on app update
 
 | Estado | Condición de entrada |

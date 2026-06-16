@@ -12,7 +12,7 @@
 // Colours come from `InstrumentoTheme.base` in StrandDesign (kept in sync by
 // hand; this script has no package deps so it runs as a plain `swift` file).
 //
-// Run:  swift Tools/gen-icon.swift StrandiOS/Resources/Assets.xcassets/AppIcon.appiconset
+// Run:  swift Tools/gen-icon.swift CenitApp/Resources/Assets.xcassets/AppIcon.appiconset
 // (defaults to that path when no argument is given). Legible down to 29 px.
 
 import Foundation
@@ -141,7 +141,7 @@ func draw(_ ap: Appearance) -> CGImage {
 
 let outDir = CommandLine.arguments.count > 1
     ? CommandLine.arguments[1]
-    : "StrandiOS/Resources/Assets.xcassets/AppIcon.appiconset"
+    : "CenitApp/Resources/Assets.xcassets/AppIcon.appiconset"
 let outURL = URL(fileURLWithPath: outDir, isDirectory: true)
 try? FileManager.default.createDirectory(at: outURL, withIntermediateDirectories: true)
 
