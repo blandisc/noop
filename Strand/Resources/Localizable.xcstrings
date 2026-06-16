@@ -16255,6 +16255,23 @@
         }
       }
     },
+    "The band isn’t storing data (clock). Run it through the WHOOP app to resume.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The band isn’t storing data (clock). Run it through the WHOOP app to resume."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La banda no está guardando (reloj). Pásala por la app de WHOOP para reanudar."
+          }
+        }
+      }
+    },
     "Data arrives but doesn’t decode — please report.": {
       "extractionState": "manual",
       "localizations": {

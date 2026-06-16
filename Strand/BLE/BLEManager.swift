@@ -828,6 +828,7 @@ public final class BLEManager: NSObject, ObservableObject {
         state.syncReceipt.resp += r.resp
         state.syncReceipt.gravity += r.gravity
         state.syncReceipt.framesReceived += r.framesReceived
+        state.syncReceipt.biometricFrames += r.biometricFrames
         state.syncReceipt.rowsDecoded += r.rowsDecoded
     }
 

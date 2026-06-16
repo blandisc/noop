@@ -551,16 +551,24 @@ struct DataSourcesView: View {
         }
     }
 
-    /// The honest 3-state verdict, derived purely from what the offload session observed.
+    /// The honest verdict, derived purely from what the offload session observed plus whether the band
+    /// reported a stored-history window. Branching lives in `LiveState.SyncVerdict.decide` (testable).
     @ViewBuilder
     private var syncVerdictRow: some View {
-        let r = live.syncReceipt
+        // The "On the band" window shows only when both markers are present — same signal here: a
+        // plausible GET_DATA_RANGE window means the band holds history, so a console-logs-only offload
+        // is a decode failure, not a lost clock (FER-152).
+        let reportsStoredHistory = live.strapHistoryOldest != nil && live.strapHistoryNewest != nil
+        let verdict = LiveState.SyncVerdict.decide(live.syncReceipt, reportsStoredHistory: reportsStoredHistory)
         let (icon, text, tint): (String, LocalizedStringKey, Color) = {
-            if r.framesReceived == 0 {
+            switch verdict {
+            case .nothingNew:
                 return ("circle", "The band has nothing new.", StrandPalette.textSecondary)
-            } else if r.rowsDecoded == 0 {
+            case .notStoringClock:
+                return ("clock.badge.exclamationmark.fill", "The band isn’t storing data (clock). Run it through the WHOOP app to resume.", StrandPalette.statusWarning)
+            case .arrivesButNoDecode:
                 return ("exclamationmark.triangle.fill", "Data arrives but doesn’t decode — please report.", StrandPalette.statusWarning)
-            } else {
+            case .receivingAndStoring:
                 return ("checkmark.seal.fill", "Receiving and storing everything.", StrandPalette.statusPositive)
             }
         }()

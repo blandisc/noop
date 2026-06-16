@@ -41,6 +41,10 @@ final class Backfiller {
     struct ChunkReceipt {
         var hr = 0, rr = 0, spo2 = 0, skinTemp = 0, resp = 0, gravity = 0
         var framesReceived = 0
+        /// type-47 HISTORICAL_DATA (biometric) frames in this chunk. Zero with frames > 0 is the
+        /// lost-clock case — the band narrates CONSOLE_LOGS (type-50) instead of serving history
+        /// because it stored nothing — distinct from biometry that arrives but won't decode (FER-152).
+        var biometricFrames = 0
         var rowsDecoded = 0
     }
 
@@ -205,7 +209,7 @@ final class Backfiller {
             onReceipt?(ChunkReceipt(
                 hr: stored.hr, rr: stored.rr, spo2: stored.spo2, skinTemp: stored.skinTemp,
                 resp: stored.resp, gravity: stored.gravity,
-                framesReceived: frames.count, rowsDecoded: rowsDecoded))
+                framesReceived: frames.count, biometricFrames: bio, rowsDecoded: rowsDecoded))
 
             // RAW: only persisted when the research toggle is ON. Default OFF → decoded-only; the
             // chunk is still durably committed (decoded) so the trim is safe to advance + ack.
