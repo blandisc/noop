@@ -1469,9 +1469,8 @@ struct TodayView: View {
         let f = DateFormatter()
         f.locale = .autoupdatingCurrent
         f.setLocalizedDateFormatFromTemplate("EEEEdMMMM")
-        if let day = repo.today?.day, let date = Self.dayParser.date(from: day) {
-            return f.string(from: date)
-        }
+        // Always the real calendar day — never the last data row's day, or the header
+        // looks "stuck" on yesterday until today's row exists (FER-151).
         return f.string(from: Date())
     }
 
