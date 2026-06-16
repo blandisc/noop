@@ -14,24 +14,39 @@ public struct MetricRow: View {
     let value: String
     var unit: String?
     var valueColor: Color
+    /// Label / unit ink. Default to the legacy `StrandPalette` so existing callers are unchanged;
+    /// «Instrumento diurno» screens pass `theme.inkSecondary` / `theme.inkTertiary`. (FER-135)
+    var labelColor: Color
+    var unitColor: Color
     var sparkline: [Double]?
     var sparkColor: Color
+    /// Optional reference band (p25–p75 typical range) drawn faintly behind the sparkline; `nil` = none.
+    var referenceBand: ClosedRange<Double>?
+    var bandColor: Color
     /// When there's no data yet: shows a faint skeleton in the sparkline slot (honest empty state).
     var isPlaceholder: Bool
 
     public init(label: LocalizedStringKey, value: String, unit: String? = nil,
                 valueColor: Color = StrandPalette.textPrimary,
+                labelColor: Color = StrandPalette.textSecondary,
+                unitColor: Color = StrandPalette.textTertiary,
                 flag: LocalizedStringKey? = nil, flagColor: Color = StrandPalette.statusWarning,
                 sparkline: [Double]? = nil, sparkColor: Color = StrandPalette.textSecondary,
+                referenceBand: ClosedRange<Double>? = nil,
+                bandColor: Color = StrandPalette.hairlineStrong,
                 isPlaceholder: Bool = false) {
         self.label = label
         self.value = value
         self.unit = unit
         self.valueColor = valueColor
+        self.labelColor = labelColor
+        self.unitColor = unitColor
         self.flag = flag
         self.flagColor = flagColor
         self.sparkline = sparkline
         self.sparkColor = sparkColor
+        self.referenceBand = referenceBand
+        self.bandColor = bandColor
         self.isPlaceholder = isPlaceholder
     }
 
@@ -40,7 +55,7 @@ public struct MetricRow: View {
             HStack(spacing: 6) {
                 Text(label)
                     .font(StrandFont.subhead)
-                    .foregroundStyle(StrandPalette.textSecondary)
+                    .foregroundStyle(labelColor)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                 if let flag { InlineFlagChip(flag, color: flagColor) }
@@ -50,6 +65,7 @@ public struct MetricRow: View {
                 if let sparkline, sparkline.count > 1 {
                     Sparkline(values: sparkline,
                               gradient: Gradient(colors: [sparkColor.opacity(0.55), sparkColor]),
+                              referenceBand: referenceBand, bandColor: bandColor,
                               lineWidth: 1.5, showsArea: false, showsHead: false, showsHover: false)
                 } else if isPlaceholder {
                     RoundedRectangle(cornerRadius: 3)
@@ -61,7 +77,7 @@ public struct MetricRow: View {
             HStack(alignment: .firstTextBaseline, spacing: 1) {
                 Text(value).font(StrandFont.number(15)).foregroundStyle(valueColor)
                 if let unit {
-                    Text(unit).font(.system(size: 10)).foregroundStyle(StrandPalette.textTertiary)
+                    Text(unit).font(.system(size: 10)).foregroundStyle(unitColor)
                 }
             }
             .lineLimit(1)
