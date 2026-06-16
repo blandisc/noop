@@ -439,6 +439,50 @@ It assembles a `DailyMetric` (the `WhoopStore` cache shape) plus rich `SleepSess
 
 ---
 
+## `ActivityCostEngine` — per-sport recovery association (not yet surfaced)
+
+Source: `ActivityCostEngine.swift`. A pure, DB-free engine that describes, **per sport**, how far your next-morning Charge (recovery) tends to sit *below* your rest-day baseline after a session, and roughly how long it tends to take to climb back. **Ported and tested, but not yet wired into any screen** — surfacing it (data sources + UI) is tracked separately (FER-139), and the Kotlin/Android mirror in FER-140.
+
+Given `activityDaysBySport` (per sport, the set of `yyyy-MM-dd` day keys it was tagged on) and `recoveryByDay` (daily Charge 0–100), for each sport S:
+
+```
+restDays       = days with a Charge value that are NEITHER tagged with any sport NOR inside any
+                 tagged day's forward window D+1…D+7   (your "untouched" days)
+baselineCenter = median(Charge over restDays)                        (shared across all sports)
+nextMorningCenter = median(Charge[D+1] over tagged days D that have a D+1 value)
+delta          = baselineCenter − nextMorningCenter        (positive → mornings sit below baseline)
+daysToBaseline = smallest k∈1…7 with median(Charge[D+k]) ≥ baselineCenter − 3      (.solid only)
+```
+
+- **Excluding the post-effect window from the baseline** is the key bit of hygiene: the mornings *after* a session are exactly the days the gap suppresses, so counting them as "rest" would contaminate the baseline with the very thing being measured.
+- It is plain descriptive statistics over aligned day keys — in the spirit of HRV-/recovery-guided training monitoring (Plews et al. 2013; Task Force 1996 for the HRV that backs Charge). Nothing is learned.
+
+### Expert-review adjustments (FER-123)
+
+The engine was ported from upstream NoopApp/noop **after an expert review of the method**, which found several upstream thresholds sat below the measurement-noise floor. Five adjustments were applied (each covered by a test), deliberately breaking byte-parity with the upstream oracle:
+
+| Lever | Upstream | NOOP | Why |
+|---|---|---|---|
+| Center | arithmetic mean | **median** | a single off night shouldn't dominate a thin sample (matches the robust-center house style of `Baselines`) |
+| `minSessions` | 4 | **6** | at n≈4 the standard error of the center (~5 pts for SD≈10) is the same order as the gap itself — mostly noise |
+| `barelyMovesPoints` | 1.0 | **3.0** | day-to-day Charge test-retest is ~±5–7 pts; a 1–2 pt "effect" is noise |
+| `daysToBaseline` | always | **`.solid` only** | the most fragile output (composite trajectory over different day subsets per horizon, `tol`=3 near the noise floor) |
+| Narrative | "cost you" | **association** | framed as correlation, not a causal cost (see below) |
+
+Kept as-is: `solidSessions = 8`, `maxLookahead = 7` days (recovery from a single bout is largely done in 24–72 h, with DOMS/eccentric damage trailing to ~5–7 days), `tolerance = 3` pts.
+
+### This is association, not a causal "cost"
+
+The narrative (`sentence()`) and these docs frame the gap as an **association over your own history**, never a cause. Three confounders make the causal reading wrong:
+
+- **Regression to the mean** — you tend to train on days you wake up feeling good (high Charge), so the next morning drifts back down regardless of the session.
+- **Non-random rest days** — you rest when tired / sick / travelling, so "untouched" days are not a clean counterfactual for "what your Charge would have been without the session".
+- **Day-of-week & overlapping sessions** — a sport done mostly on weekends conflates the sport with weekend behaviour; two sports on the same day both inherit that D+1 morning.
+
+A sport with fewer than `minSessions` next-morning pairs is **omitted entirely** (too thin to say anything honest); 6–7 pairs → `.building`, ≥ 8 → `.solid`. Results rank by `|delta|` descending, `.solid` before `.building`, then sport name — fully deterministic.
+
+---
+
 ## Data flow summary
 
 ```
