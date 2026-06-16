@@ -56,9 +56,11 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 
 **Nota — indicador de sincronización (iOS):** cuando `live.backfilling == true`, la `syncMeta` en la `utilityRow` muestra "Syncing strap history…" en tono terciario/mono en lugar del texto habitual "Synced X ago". No hay pill ni color prominente; el texto vuelve al estado normal al terminar el backfill. El pill `SyncingHistoryNote` se conserva solo en el path macOS de esta vista.
 
-**Nota — tarjeta de fuentes de datos "Sources" (FER-119):** la nota de fuentes al pie (`sourcesSection`) es una `NoopCard` con título overline "Sources" y una fila por fuente activa (`sourceRow`: glifo SF Symbol tintado + nombre a la izquierda, conteo tabular a la derecha; WHOOP en `accent`, Apple Health en `metricCyan` — el tinte va solo en el glifo). Bajo un divider hairline, `syncLine` muestra el estado de sincronización con un `ConnectionDot` (`warning` si `lastSyncError`, `neutral` si `lastSyncedAt`). La tarjeta solo aparece si `hasData || showsSync` (con `showsSync = !backfilling && hasSync`), así que durante el backfill sin datos no se renderiza. Ya no usa `SourceBadge`.
+**Nota — Frecuencia cardiaca en Métricas clave (FER-137, iOS):** la sección-gráfica de HR de 24h suelta se retiró del `iosBody`. Ahora la FC continua del día es un renglón más de "Métricas clave" (`MetricRow` "Heart Rate" → "Frecuencia cardiaca", `metricRose`: promedio del día + sparkline de la curva del día), justo encima de "FC en reposo" (par de pulso). Al tocarlo abre `MetricInfoSheet` con `id "heart_rate"`: la curva de 24h (más alta, ~260pt) + Mín/Prom/Máx + una línea de contexto, sin bandas ni párrafo. Sin lecturas del día → renglón "—" y sheet con "Aún no hay lecturas de hoy". macOS conserva `heartRateTrendSection` en su Today.
 
-**Componentes:** `HealthAlertBanner`, `CalibrationProgressCard`, `LiveHeartbeatRow`, `WhyVerdictSheet`, `RecoveryRing`, `InsightCard`, `StatTile ×10`, `ChartCard (HR Trend)`, `NoopCard (Sources)` · macOS: `ReadinessGaugeBar`, `readinessSection`  
+**Nota — tarjeta "Sources" → `SourcesSummaryCard` (estilo FER-119 · ubicación FER-137):** el resumen de fuentes (overline "Sources", una `sourceRow` por fuente —WHOOP en `accent`, Apple Health en `metricCyan`, tinte solo en el glifo— y `syncLine` con `ConnectionDot` bajo un divider, visible solo si `hasData || showsSync`) se extrajo al componente auto-contenido `SourcesSummaryCard` (lee `repo`/`live` y carga sus propios conteos). En **iPhone** ya **no** vive en Hoy: se movió al **fondo de `DataSourcesView`** (gated `#if os(iOS)`). El **Today de macOS** lo conserva al pie (`sourcesSection` → `SourcesSummaryCard`).
+
+**Componentes:** `HealthAlertBanner`, `CalibrationProgressCard`, `LiveHeartbeatRow`, `WhyVerdictSheet`, `RecoveryRing`, `MetricRow` (Métricas clave iOS, incl. **Frecuencia cardiaca** → sheet de curva 24h, FER-137) · macOS: `StatTile ×10`, `ChartCard (HR Trend)`, `SourcesSummaryCard (Sources)`, `ReadinessGaugeBar`, `readinessSection`  
 **Navegación:** → `LiveView` (fullScreenCover, "See it beat by beat") · → `MetricInfoSheet` (sheet, tap métrica del grid · tap de los stats **Recuperación** / **HRV** de la síntesis → explicador «cómo se calcula», FER-108/109) · → `WhyVerdictSheet` (sheet, "¿Por qué {veredicto}?") · → `SupportView` (toolbar ❤)
 
 ---
@@ -316,7 +318,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 | Importando Apple Health | `HealthImporter` corriendo |
 | Import completo | Proceso terminado, muestra conteos |
 
-**Componentes:** `WHOOP Export Card`, `Apple Health Export Card`, `Apple Health Live Card (iOS, toggle)`, `Live Strap Card`, `File importer (fileImporter)`
+**Componentes:** `WHOOP Export Card`, `Apple Health Export Card`, `Apple Health Live Card (iOS, toggle)`, `Live Strap Card`, `SourcesSummaryCard` (resumen de fuentes al pie, solo iOS · FER-137), `File importer (fileImporter)`
 
 ---
 

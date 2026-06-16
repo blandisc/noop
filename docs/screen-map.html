@@ -321,7 +321,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-15</span>
+  <span class="tb-updated">Actualizado 2026-06-16</span>
 </div>
 
 <div id="wrapper">
@@ -375,7 +375,7 @@ const SCREENS = [
       { to: 'why-verdict', label: '¿Por qué {veredicto}?', type: 'sheet' },
       { to: 'support', label: 'Toolbar ❤', type: 'toolbar' },
     ],
-    components: ['HealthAlertBanner', 'CalibrationProgressCard', 'LiveHeartbeatRow', 'WhyVerdictSheet (héroe dos-verdades · FER-113)', 'RecoveryRing', 'InsightCard', 'StatTile ×10', 'ChartCard (HR Trend)', 'NoopCard (Sources · FER-119)', 'ReadinessGaugeBar (solo macOS)'],
+    components: ['HealthAlertBanner', 'CalibrationProgressCard', 'LiveHeartbeatRow', 'WhyVerdictSheet (héroe dos-verdades · FER-113)', 'RecoveryRing', 'MetricRow (Métricas clave · incl. Frecuencia cardiaca → sheet curva 24h, FER-137)', 'SourcesSummaryCard (Sources · macOS Today / iOS Data Sources, FER-137)', 'StatTile ×10 (macOS)', 'ChartCard (HR Trend · macOS)', 'ReadinessGaugeBar (solo macOS)'],
   },
   {
     id: 'health', x: 284, y: 60,
@@ -620,7 +620,7 @@ const SCREENS = [
       { label: 'Import completo', type: 'live' },
     ],
     nav: [],
-    components: ['WHOOP Export Card', 'Apple Health Export Card', 'Apple Health Live Card (iOS, toggle)', 'Live Strap Card', 'File importer (fileImporter)'],
+    components: ['WHOOP Export Card', 'Apple Health Export Card', 'Apple Health Live Card (iOS, toggle)', 'Live Strap Card', 'SourcesSummaryCard (resumen Fuentes, solo iOS · FER-137)', 'File importer (fileImporter)'],
   },
   {
     id: 'support', x: 792, y: 2660,
