@@ -56,7 +56,9 @@ MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 
 **Nota — indicador de sincronización (iOS):** cuando `live.backfilling == true`, la `syncMeta` en la `utilityRow` muestra "Syncing strap history…" en tono terciario/mono en lugar del texto habitual "Synced X ago". No hay pill ni color prominente; el texto vuelve al estado normal al terminar el backfill. El pill `SyncingHistoryNote` se conserva solo en el path macOS de esta vista.
 
-**Componentes:** `HealthAlertBanner`, `CalibrationProgressCard`, `LiveHeartbeatRow`, `WhyVerdictSheet`, `RecoveryRing`, `InsightCard`, `StatTile ×10`, `ChartCard (HR Trend)`, `SourceBadge` · macOS: `ReadinessGaugeBar`, `readinessSection`  
+**Nota — tarjeta de fuentes de datos "Sources" (FER-119):** la nota de fuentes al pie (`sourcesSection`) es una `NoopCard` con título overline "Sources" y una fila por fuente activa (`sourceRow`: glifo SF Symbol tintado + nombre a la izquierda, conteo tabular a la derecha; WHOOP en `accent`, Apple Health en `metricCyan` — el tinte va solo en el glifo). Bajo un divider hairline, `syncLine` muestra el estado de sincronización con un `ConnectionDot` (`warning` si `lastSyncError`, `neutral` si `lastSyncedAt`). La tarjeta solo aparece si `hasData || showsSync` (con `showsSync = !backfilling && hasSync`), así que durante el backfill sin datos no se renderiza. Ya no usa `SourceBadge`.
+
+**Componentes:** `HealthAlertBanner`, `CalibrationProgressCard`, `LiveHeartbeatRow`, `WhyVerdictSheet`, `RecoveryRing`, `InsightCard`, `StatTile ×10`, `ChartCard (HR Trend)`, `NoopCard (Sources)` · macOS: `ReadinessGaugeBar`, `readinessSection`  
 **Navegación:** → `LiveView` (fullScreenCover, "See it beat by beat") · → `MetricInfoSheet` (sheet, tap métrica del grid · tap de los stats **Recuperación** / **HRV** de la síntesis → explicador «cómo se calcula», FER-108/109) · → `WhyVerdictSheet` (sheet, "¿Por qué {veredicto}?") · → `SupportView` (toolbar ❤)
 
 ---
