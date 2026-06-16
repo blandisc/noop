@@ -380,7 +380,7 @@ computed locally.
 `StrandDesign` carries a second, light-mode visual language («Instrumento diurno», warm paper) whose
 `InstrumentoTheme` role struct is injected through the `\.instrumentoTheme` Environment key (default
 `.base`). `InstrumentoThemeEngine` (FER-132) varies that theme by the device clock: it interpolates
-all twelve roles between four anchors (dawn / day / dusk / night, `day == .base`) in the perceptual
+all seventeen roles between four anchors (dawn / day / dusk / night, `day == .base`) in the perceptual
 **OKLab** space (Ottosson 2020), so adjacent minutes drift cleanly instead of dimming through sRGB.
 `InstrumentoThemeEngine.theme(at:calendar:solar:)` is a **pure, deterministic function** (the clock is
 passed in, never read internally); a `@MainActor InstrumentoThemeDriver` recomputes it on a 60-second
@@ -392,7 +392,7 @@ Two invariants hold the design together. **AA at every hour:** the night anchor 
 parchment*, never an inverted dark mode — keeping ink the dark pole at every anchor stops the
 interpolation from crossing a point where text and background share luminance (contrast 1:1), so every
 text/background pair clears WCAG AA across the whole 24-hour sweep (asserted minute-by-minute in
-`InstrumentoThemeEngineTests`). **Package purity:** sunrise/sunset (`StrandAnalytics.SolarClock`,
+`InstrumentoThemeEngineTests`). Data accents cover recovery, strain, and five per-metric hues (sleep, HRV, heart, SpO₂, steps; FER-147); the night anchor was darkened to a greyer parchment (`#A39C8F`), with ink and accents darkened in step so every pair still clears AA on the dimmer paper. **Package purity:** sunrise/sunset (`StrandAnalytics.SolarClock`,
 FER-133) is consumed by **injection** of a plain `SolarWindow` value, never imported — `StrandDesign`
 remains the dependency-free leaf of the package graph, and the engine stays 100% offline
 (`Date`/`Calendar` only).

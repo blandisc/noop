@@ -37,11 +37,14 @@ final class InstrumentoThemeEngineTests: XCTestCase {
     private func pairs(_ t: InstrumentoTheme) -> [(name: String, fg: Color, thr: Double)] {
         [("ink", t.ink, 4.5), ("inkSecondary", t.inkSecondary, 4.5), ("inkTertiary", t.inkTertiary, 4.5),
          ("dataRecovery", t.dataRecovery, 3.0), ("dataStrain", t.dataStrain, 3.0), ("verdict", t.verdict, 3.0),
+         ("dataSleep", t.dataSleep, 3.0), ("dataHrv", t.dataHrv, 3.0), ("dataHeart", t.dataHeart, 3.0),
+         ("dataSpO2", t.dataSpO2, 3.0), ("dataSteps", t.dataSteps, 3.0),
          ("warning", t.warning, 4.5), ("critical", t.critical, 4.5)]
     }
     private func roles(_ t: InstrumentoTheme) -> [Color] {
         [t.paper, t.surface, t.hairline, t.hairlineStrong, t.ink, t.inkSecondary,
-         t.inkTertiary, t.dataRecovery, t.dataStrain, t.verdict, t.warning, t.critical]
+         t.inkTertiary, t.dataRecovery, t.dataStrain, t.dataSleep, t.dataHrv, t.dataHeart,
+         t.dataSpO2, t.dataSteps, t.verdict, t.warning, t.critical]
     }
 
     // MARK: OKLab math
@@ -122,6 +125,11 @@ final class InstrumentoThemeEngineTests: XCTestCase {
         let n = InstrumentoThemeEngine.night
         XCTAssertGreaterThanOrEqual(contrast(n.dataRecovery, n.paper), 3.0, "recovery dead at night")
         XCTAssertGreaterThanOrEqual(contrast(n.dataStrain, n.paper), 3.0, "strain dead at night")
+        XCTAssertGreaterThanOrEqual(contrast(n.dataSleep, n.paper), 3.0, "sleep dead at night")
+        XCTAssertGreaterThanOrEqual(contrast(n.dataHrv, n.paper), 3.0, "hrv dead at night")
+        XCTAssertGreaterThanOrEqual(contrast(n.dataHeart, n.paper), 3.0, "heart dead at night")
+        XCTAssertGreaterThanOrEqual(contrast(n.dataSpO2, n.paper), 3.0, "spo2 dead at night")
+        XCTAssertGreaterThanOrEqual(contrast(n.dataSteps, n.paper), 3.0, "steps dead at night")
     }
 
     // MARK: solar injection (FER-133 by injection, no dependency)
