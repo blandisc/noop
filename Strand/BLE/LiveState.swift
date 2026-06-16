@@ -84,16 +84,47 @@ public final class LiveState: ObservableObject {
     @Published public var syncCompletedThisSession = false
 
     /// Accumulated offload receipt. Per-sensor fields mirror the six sensor streams the diagnostic
-    /// shows (hr/rr/spo₂/temp/respiration/movement); `framesReceived`/`rowsDecoded` drive the verdict.
+    /// shows (hr/rr/spo₂/temp/respiration/movement); `framesReceived`/`biometricFrames`/`rowsDecoded`
+    /// drive the verdict (see `SyncVerdict`).
     public struct SyncReceipt: Equatable {
         public var hr = 0, rr = 0, spo2 = 0, skinTemp = 0, resp = 0, gravity = 0
         /// Total historical frames fed into chunks this session (proof bytes arrived from the band).
         public var framesReceived = 0
+        /// type-47 HISTORICAL_DATA (biometric) frames received this session. Zero with frames > 0 is
+        /// the lost-clock case — the band sends CONSOLE_LOGS (type-50) because it stored nothing — and
+        /// must NOT be confused with biometry that arrives but won't decode (FER-152).
+        public var biometricFrames = 0
         /// Total decoded rows across all six sensor streams this session (proof they decoded).
         public var rowsDecoded = 0
         public init() {}
         /// Rows newly stored across the six sensors this session (the "what landed" total).
         public var rowsStored: Int { hr + rr + spo2 + skinTemp + resp + gravity }
+    }
+
+    /// The honest sync verdict the Data Sources diagnostic shows — derived purely from what the offload
+    /// observed plus whether `GET_DATA_RANGE` reported a plausible stored-history window. Pure and
+    /// exhaustive so the branching is unit-testable without the view (FER-83, FER-152).
+    public enum SyncVerdict: Equatable {
+        /// No frames arrived — the band had nothing new to offload.
+        case nothingNew
+        /// Frames arrived but none were biometric (type-47) and the band reports no stored history: it
+        /// isn't saving anything because its clock is lost. Action: re-arm via the WHOOP app (FER-93).
+        case notStoringClock
+        /// Biometric frames (type-47) arrived but decoded to zero rows — the silent-loss case
+        /// (CRC / unmapped layout / out-of-range timestamp). Action: report it (#30/#77).
+        case arrivesButNoDecode
+        /// Frames arrived and decoded — receiving and storing everything.
+        case receivingAndStoring
+
+        /// Decide the verdict from the session receipt and whether `GET_DATA_RANGE` reported a plausible
+        /// stored-history window. Order matters: the lost-clock case is checked before the
+        /// decode-failure case so a console-logs-only offload isn't mislabeled "report it" (FER-152).
+        public static func decide(_ r: SyncReceipt, reportsStoredHistory: Bool) -> SyncVerdict {
+            if r.framesReceived == 0 { return .nothingNew }
+            if r.biometricFrames == 0 && !reportsStoredHistory { return .notStoringClock }
+            if r.rowsDecoded == 0 { return .arrivesButNoDecode }
+            return .receivingAndStoring
+        }
     }
 
     /// True while a historical offload session is running, so screens can say "Syncing strap
