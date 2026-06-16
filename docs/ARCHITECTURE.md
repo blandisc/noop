@@ -60,11 +60,9 @@ through `Repository`.
 ## 2. Repository layout
 
 ```
-Strand/                         macOS SwiftUI app target (the reference implementation)
-├── App/                        Composition root + window/scene
-│   ├── StrandApp.swift         @main App scene; owns AppModel, wires environment objects
+Strand/                         Shared app-layer (BLE/Collect/Data/Screens/System) compiled by the iOS target
+├── App/                        Shared app state (the iOS app scene lives in StrandiOS/)
 │   ├── AppModel.swift          @MainActor root state — owns BLE, Repository, profiles
-│   ├── RootView.swift          NavigationSplitView shell + NavItem routing
 │   └── ContentView.swift
 ├── BLE/                        CoreBluetooth + the live/decode seam
 │   ├── BLEManager.swift        CBCentral/CBPeripheral delegate, scan→bond→stream
@@ -89,8 +87,7 @@ Strand/                         macOS SwiftUI app target (the reference implemen
 │   ├── Profile.swift           user profile (age/sex/body/HRmax)
 │   └── BehaviorStore.swift     toggles for automations/coaching
 ├── Screens/                    SwiftUI feature screens (Today, Live, Sleep, Trends…)
-├── MenuBar/                    glanceable menu-bar extra
-└── System/                     macOS integrations (lock screen, Shortcuts)
+└── System/                     app-layer helpers (ProjectInfo; some macOS-guarded paths pending FER-144 cleanup)
 
 Packages/                       Cross-platform Swift packages (iOS 16+ / macOS 13+)
 ├── WhoopProtocol/              BLE frame parsing, CRC, command/event/packet decode
@@ -106,12 +103,12 @@ StrandiOSWidgets/               iOS home / lock-screen widgets
 Tools/Backfill/                 CLI offload/replay tool
 ```
 
-The app target (`Strand/`) is the **macOS reference implementation**, where CoreBluetooth and the
-live/decode seam are proven first. **`StrandiOS/`** is the iOS app target (with home / lock-screen
-widgets) and is the line under active development. Both share the same architecture: the five packages
-declare `.iOS(.v16)` and `.macOS(.v13)` and keep every UI-framework call behind
-`#if canImport(UIKit)` / `#if canImport(AppKit)` guards, so the pure cores port to each platform
-unchanged.
+**`NOOPiOS`** is the app target: its shell (scene, HealthKit, widgets, intents) lives in **`StrandiOS/`**,
+and it compiles the shared app-layer under **`Strand/`** (CoreBluetooth, the live/decode seam, screens,
+data). The macOS app and its `Strand` / `StrandTests` targets were retired (FER-143); the app-layer unit
+tests now run as **`NOOPiOSUnitTests`** in the simulator. The five packages still declare `.iOS(.v16)`
+and `.macOS(.v13)` and keep every UI-framework call behind `#if canImport(UIKit)` / `#if canImport(AppKit)`
+guards. (Renaming `Strand/`→NOOP and removing the now-dead `#if os(macOS)` branches is the FER-144 follow-up.)
 
 ---
 
@@ -284,8 +281,8 @@ Supporting machinery, all on the main run loop:
 - **Auto-reconnect:** an unintentional disconnect flushes the `Collector` and rescans after 3s.
 
 `LiveState` is the published bridge: `BLEManager` and `FrameRouter` write it; SwiftUI observes it.
-`RootView` isolates the ~1 Hz HR/frame churn into a small `SidebarStatus` view so the rest of the
-shell doesn't re-render on every beat.
+The app shell isolates the ~1 Hz HR/frame churn into a small status view so the rest of the
+UI doesn't re-render on every beat.
 
 ---
 
@@ -360,13 +357,13 @@ backfilled streams, or imported data interchangeably. **All derived values are a
 
 ---
 
-## 10. Presentation (Strand app + StrandDesign)
+## 10. Presentation (the app + StrandDesign)
 
-`StrandApp` (`@main`) builds a single `AppModel`, injects it plus `LiveState`, `Repository`,
-`ProfileStore`, and `BehaviorStore` into the environment, and presents a `WindowGroup` (dark, hidden
-title bar) alongside a glanceable `MenuBarExtra`. `RootView` is a `NavigationSplitView` whose sidebar
-is the `NavItem` enum (Today, Live, Breathe, Intervals, Explore, Compare, Insights, Sleep, Trends,
-Workouts, Health, Stress, Apple Health, Data Sources, Notifications, Automations, Settings, Support).
+The `NOOPiOS` app shell (under `StrandiOS/App/`) builds a single `AppModel`, injects it plus
+`LiveState`, `Repository`, `ProfileStore`, and `BehaviorStore` into the environment, and presents the
+shared screens under `Strand/Screens/` (Today, Live, Breathe, Intervals, Explore, Compare, Insights,
+Sleep, Trends, Workouts, Health, Stress, Apple Health, Data Sources, Automations, Settings, Support).
+The home / lock-screen widgets live in `StrandiOSWidgets/`.
 
 Screens bind to `Repository`'s published `days`/`sleeps` caches (refreshed on data change, not on the
 ~1 Hz stream) and render with `StrandDesign` components — `RecoveryRing`, `StrainGauge`, `Hypnogram`,

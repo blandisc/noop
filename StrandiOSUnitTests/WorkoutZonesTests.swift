@@ -1,6 +1,6 @@
 import XCTest
 import WhoopStore
-@testable import Strand
+@testable import NOOP
 
 /// Pins the Workouts HR-zone card's parsing/aggregation to the real stored shapes:
 /// the macOS importer/backfill write {"z1".."z5"}, the Android importer writes

@@ -35,7 +35,7 @@ on-device verification notes embedded in `Resources/whoop_protocol.json`).
 
 ## Where the code lives
 
-The reverse-engineering logic is split between a platform-pure Swift package and the macOS app's BLE
+The reverse-engineering logic is split between a platform-pure Swift package and the app's BLE
 engine:
 
 | File | Role |
@@ -222,7 +222,7 @@ Bluetooth menu; for interoperability with a strap **you own**, an OS-level just-
 nonetheless sufficient — no app-side step is required. (The strap holds one central at a time, so the
 phone must be disconnected first; the firmware logs a `BLE Bond failure` for a contended attempt.)
 
-**How NOOP's macOS app triggers it (v1.5):** it writes `CLIENT_HELLO` to `fd4b0002` *with response*.
+**How NOOP triggers it (v1.5):** it writes `CLIENT_HELLO` to `fd4b0002` *with response*.
 That single confirmed write makes CoreBluetooth bring up the just-works bond *before* the puffin notify
 subscriptions are attempted — without it those subscriptions are rejected with *"Authentication is
 insufficient"* and the handshake hangs at "Finishing the secure pairing handshake…" forever (issue #17).

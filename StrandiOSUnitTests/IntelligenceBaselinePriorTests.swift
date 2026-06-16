@@ -1,7 +1,7 @@
 import XCTest
 import WhoopStore
 import StrandAnalytics
-@testable import Strand
+@testable import NOOP
 
 /// Pins the FER-60 Apple Health baseline prior: the pure helpers that fold Apple Health nights UNDER
 /// the strap layers (lowest precedence, capped) so a brand-new strap user crosses

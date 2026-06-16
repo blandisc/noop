@@ -1,8 +1,6 @@
 name: Strand
 options:
   bundleIdPrefix: com.noopapp
-  deploymentTarget:
-    macOS: "13.0"
   createIntermediateGroups: true
   groupSortPosition: top
   # Base/development language. The in-source UI strings are authored in English (US);
@@ -20,11 +18,11 @@ settings:
     SWIFT_STRICT_CONCURRENCY: minimal
     DEVELOPMENT_TEAM: "B7KRCF776Z"
     CODE_SIGN_STYLE: Automatic
-    # Build for both Apple Silicon and Intel so the release runs on every Mac.
+    # Standard archs (arm64 on iOS device / simulator).
     ARCHS: "$(ARCHS_STANDARD)"
   configs:
     Release:
-      # Distribution builds must produce a universal binary, not just the host arch.
+      # Release/archive builds every valid arch, not just the host's active one.
       ONLY_ACTIVE_ARCH: NO
 packages:
   WhoopProtocol:
@@ -38,67 +36,6 @@ packages:
   StrandDesign:
     path: Packages/StrandDesign
 targets:
-  Strand:
-    type: application
-    platform: macOS
-    deploymentTarget: "13.0"
-    sources:
-      - path: Strand
-        excludes:
-          - "Resources/Info.plist"
-          - "Resources/Strand.entitlements"
-    info:
-      path: Strand/Resources/Info.plist
-      properties:
-        CFBundleName: NOOP
-        CFBundleDisplayName: NOOP
-        CFBundleShortVersionString: "$(MARKETING_VERSION)"
-        CFBundleVersion: "57"
-        LSMinimumSystemVersion: "13.0"
-        LSApplicationCategoryType: public.app-category.healthcare-fitness
-        NSBluetoothAlwaysUsageDescription: "NOOP connects directly to your WHOOP strap over Bluetooth to read heart rate, R-R intervals, battery, and sensor data locally on your Mac. Nothing leaves your device."
-    entitlements:
-      path: Strand/Resources/Strand.entitlements
-      properties:
-        com.apple.security.app-sandbox: true
-        com.apple.security.device.bluetooth: true
-        com.apple.security.files.user-selected.read-write: true
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.noopapp.noop
-        PRODUCT_NAME: NOOP
-        SWIFT_MODULE_NAME: Strand
-        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        GENERATE_INFOPLIST_FILE: NO
-        # Hardened Runtime closes the DYLD_INSERT_LIBRARIES injection vector for the
-        # distributed (ad-hoc) build. The app uses no JIT / unsigned-exec memory, so it's safe.
-        ENABLE_HARDENED_RUNTIME: YES
-        COMBINE_HIDPI_IMAGES: YES
-    dependencies:
-      - package: WhoopProtocol
-      - package: WhoopStore
-      - package: StrandAnalytics
-      - package: StrandImport
-      - package: StrandDesign
-  StrandTests:
-    type: bundle.unit-test
-    platform: macOS
-    deploymentTarget: "13.0"
-    sources:
-      - StrandTests
-    dependencies:
-      - target: Strand
-      - package: WhoopProtocol
-      - package: WhoopStore
-      - package: StrandAnalytics
-    settings:
-      base:
-        GENERATE_INFOPLIST_FILE: YES
-        PRODUCT_BUNDLE_IDENTIFIER: com.noopapp.strandtests
-        # The macOS app PRODUCT_NAME is NOOP (not Strand), so xcodegen's auto TEST_HOST is wrong.
-        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/NOOP.app/Contents/MacOS/NOOP"
-        BUNDLE_LOADER: "$(TEST_HOST)"
-
   # ---------------------------------------------------------------------------
   # iOS app target. Reuses the five shared packages and almost all of Strand/
   # (the SwiftUI screens, BLE engine, collector, data layer) unchanged; only the
@@ -114,14 +51,6 @@ targets:
           - "Resources/Info.plist"
           - "Resources/Strand.entitlements"
           - "Resources/Assets.xcassets"
-          - "App/StrandApp.swift"
-          - "App/RootView.swift"
-          - "MenuBar"
-          - "Data/NotificationSettingsStore.swift"
-          - "Screens/NotificationSettingsView.swift"
-          # macOS-only AppIntents (BuzzStrap/MarkMoment) — iOS uses StrandiOS/System/NOOPAppIntents.swift.
-          # Without this exclude, both files compile into the iOS target and collide on NOOPAppIntents.stringsdata.
-          - "System/NOOPAppIntents.swift"
       - path: StrandiOS
         excludes:
           - "Resources/Info.plist"
@@ -171,6 +100,7 @@ targets:
         CURRENT_PROJECT_VERSION: "25"
         PRODUCT_BUNDLE_IDENTIFIER: com.feriracheta.noop
         PRODUCT_NAME: NOOP
+        SWIFT_MODULE_NAME: NOOP
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: NO
         TARGETED_DEVICE_FAMILY: "1,2"
@@ -234,29 +164,42 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         PRODUCT_BUNDLE_IDENTIFIER: com.feriracheta.noop.uitests
 
+  # ---------------------------------------------------------------------------
+  # Unit-test bundle for the iOS app target. Runs the app-layer logic tests
+  # (migrated from the retired macOS StrandTests) against the NOOP module in the
+  # simulator. PRODUCT_NAME is NOOP (≠ the target name), so the auto TEST_HOST is
+  # wrong — set it explicitly to the iOS bundle's binary.
+  NOOPiOSUnitTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - StrandiOSUnitTests
+    dependencies:
+      - target: NOOPiOS
+      - package: WhoopStore
+      - package: StrandAnalytics
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.feriracheta.noop.unittests
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/NOOP.app/NOOP"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+
 # Explicit shared schemes so `xcodebuild -scheme …` works straight after
 # `xcodegen generate` — without these, schemes only exist after Xcode's GUI
 # auto-creates them, which a CLI/CI build can't rely on.
 schemes:
-  Strand:
-    build:
-      targets:
-        Strand: all
-        StrandTests: [testing]
-    run:
-      config: Debug
-    test:
-      config: Debug
-      targets:
-        - StrandTests
   NOOPiOS:
     build:
       targets:
         NOOPiOS: all
         NOOPiOSUITests: [testing]
+        NOOPiOSUnitTests: [testing]
     run:
       config: Debug
     test:
       config: Debug
       targets:
+        - NOOPiOSUnitTests
         - NOOPiOSUITests

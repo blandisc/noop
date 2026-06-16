@@ -18,7 +18,7 @@ involved in any of the exchanges described here.
 
 The protocol decoder is platform-pure Swift in the `WhoopProtocol` package
 (`Packages/WhoopProtocol/`); it never imports CoreBluetooth, so it runs unchanged in tests and
-CLI tools. The CoreBluetooth transport lives in the macOS app target under `Strand/BLE/`.
+CLI tools. The CoreBluetooth transport lives in the app target (NOOPiOS) under `Strand/BLE/`.
 
 This work builds on two community reverse-engineering efforts:
 

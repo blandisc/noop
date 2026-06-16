@@ -310,8 +310,8 @@ body {
 
 <div id="toolbar">
   <h1>NOOP iOS · Mapa de Pantallas</h1>
-  <span class="chip">20 pantallas</span>
-  <span class="chip">~74 estados</span>
+  <span class="chip">19 pantallas</span>
+  <span class="chip">~71 estados</span>
   <div class="sep"></div>
   <div class="legend">
     <div class="leg"><div class="leg-dot" style="background:#2e2e2e"></div>Vacío</div>
@@ -375,7 +375,7 @@ const SCREENS = [
       { to: 'why-verdict', label: '¿Por qué {veredicto}?', type: 'sheet' },
       { to: 'support', label: 'Toolbar ❤', type: 'toolbar' },
     ],
-    components: ['HealthAlertBanner', 'CalibrationProgressCard', 'LiveHeartbeatRow', 'WhyVerdictSheet (héroe dos-verdades · FER-113)', 'RecoveryRing', 'MetricRow (Métricas clave · incl. Frecuencia cardiaca → sheet curva 24h, FER-137)', 'SourcesSummaryCard (Sources · macOS Today / iOS Data Sources, FER-137)', 'StatTile ×10 (macOS)', 'ChartCard (HR Trend · macOS)', 'ReadinessGaugeBar (solo macOS)'],
+    components: ['HealthAlertBanner', 'CalibrationProgressCard', 'LiveHeartbeatRow', 'WhyVerdictSheet (héroe dos-verdades · FER-113)', 'RecoveryRing', 'MetricRow (Métricas clave · incl. Frecuencia cardiaca → sheet curva 24h, FER-137)', 'SourcesSummaryCard (Sources · en Data Sources, FER-137)'],
   },
   {
     id: 'health', x: 284, y: 60,
@@ -604,7 +604,6 @@ const SCREENS = [
     ],
     nav: [
       { to: 'whats-new', label: 'What\'s New', type: 'sheet' },
-      { to: 'notif-settings', label: 'Notification Settings', type: 'push' },
     ],
     components: ['SettingsSection cards', 'FormRow (age/sex/weight/height)', 'Units toggles (metric/imperial/°C/°F)', 'Strap card', 'Experimental toggle (Puffin)', 'Backup card (export/restore)', 'About card'],
   },
@@ -694,20 +693,6 @@ const SCREENS = [
     nav: [],
     components: ['Expectations Card', 'Release Cards (AppChangelog.releases)'],
   },
-  {
-    id: 'notif-settings', x: 792, y: 3310,
-    name: 'Notification Settings', desc: 'Alertas de muñeca via correa',
-    file: 'Strand/Screens/NotificationSettingsView.swift',
-    icon: '🔔', color: '#F5A623',
-    isSheet: false,
-    states: [
-      { label: 'Alertas desactivadas', type: 'empty' },
-      { label: 'Activado, sin apps', type: 'warn' },
-      { label: 'Activado, con apps', type: 'data' },
-    ],
-    nav: [],
-    components: ['Master Card (toggle + strap pill + test buzz)', 'Category Cards (per-app toggle + buzz pattern)', 'Behaviour Card (quiet hours)'],
-  },
 ];
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -719,7 +704,6 @@ const EDGES = [
   { from: 'today',    to: 'support',        label: 'toolbar ❤',        type: 'toolbar'    },
   { from: 'workouts', to: 'manual-workout', label: 'sheet',            type: 'sheet'      },
   { from: 'settings', to: 'whats-new',      label: 'sheet',            type: 'sheet'      },
-  { from: 'settings', to: 'notif-settings', label: 'push',             type: 'push'       },
 ];
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

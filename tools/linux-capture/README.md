@@ -9,7 +9,7 @@ no GUI. This is the workbench for mapping the WHOOP 5.0 ("puffin") biometric lay
    (bleak / BlueZ)     (shared format)   (WhoopProtocol decoder)
 ```
 
-The capture file format is **identical** to the macOS app's frame-export hook, so frames captured
+The capture file format is **identical** to the app's frame-export hook, so frames captured
 here and on a Mac are interchangeable, and both feed the one decoder of record (`WhoopProtocol`) —
 no second decoder to drift.
 
@@ -234,7 +234,7 @@ python3 whoop_sync.py decode --db captures/whoop.db --address AA:BB:.. --full   
 
 **It reuses the Swift `whoop-decode` as the one decoder of record — it does _not_ re-implement
 decoding in Python.** The bridge shells out to `whoop-decode --json`, maps the decoded fields into the
-tables below, and stores nothing the decoder didn't produce. So the iOS/macOS apps, the CLI,
+tables below, and stores nothing the decoder didn't produce. So the iOS app, the CLI,
 and this decode step can never drift on frame offsets: there is exactly one decoder, verified against
 real hardware. The decode cursor lives in `sync_state` (`last_decoded_frame_id`), so a run only decodes
 **new** frames; re-runs are **idempotent**.

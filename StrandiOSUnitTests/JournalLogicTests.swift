@@ -1,6 +1,6 @@
 import XCTest
 import WhoopStore
-@testable import Strand
+@testable import NOOP
 
 /// Pins the native-journal merge logic, mirroring the Android JournalLogTest value-for-value so the
 /// two platforms merge catalogs and entries identically — question strings are opaque exact-match

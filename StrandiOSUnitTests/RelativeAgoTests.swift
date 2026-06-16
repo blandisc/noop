@@ -1,5 +1,5 @@
 import XCTest
-@testable import Strand
+@testable import NOOP
 
 /// Unit tests for `relativeAgo`, the pure helper behind the "History synced N ago" sync-status
 /// line. Mirrors the Android RelativeAgoTest (ed6a31d) value-for-value so the two apps' labels

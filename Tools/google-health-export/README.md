@@ -34,7 +34,7 @@ system Python, not just 3.11+.)
 python3 export_google_health.py --days 14 --out export.zip
 ```
 
-Then in NOOP (Strand, macOS): **File → Import → select `export.zip`**.
+Then in NOOP: **Data Sources → Import → select `export.zip`**.
 
 ### Credentials
 
@@ -68,5 +68,5 @@ Health data unchanged — it just needs ~2 weeks of history to leave calibration
 
 This is the bridge (phase 1). A native Swift `GoogleHealthImporter` in
 `StrandImport` — OAuth + REST directly against `health.googleapis.com`, mapping to
-the same normalized models — would remove the Python step and let the macOS/iOS
+the same normalized models — would remove the Python step and let the iOS
 app connect a Google account in-app.

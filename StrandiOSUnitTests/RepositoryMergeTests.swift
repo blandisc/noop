@@ -1,6 +1,6 @@
 import XCTest
 import WhoopStore
-@testable import Strand
+@testable import NOOP
 
 /// Pins the FER-62 dashboard merge: Apple Health is the lowest-precedence base, on-device computed
 /// rows fill its gaps, and imported strap rows win over everything — so the strap always beats Apple

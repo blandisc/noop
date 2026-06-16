@@ -19,9 +19,9 @@ The persistence layer is the `WhoopStore` Swift package
 (`Packages/WhoopStore`), built on [GRDB](https://github.com/groue/GRDB.swift) over SQLite. Like
 every package in the repo, it declares both platforms — `.iOS(.v16)` and `.macOS(.v13)`
 (`Packages/WhoopStore/Package.swift`) — and is UI-framework agnostic, so the same schema and
-storage code back the macOS reference app today and the planned iOS app later.
+storage code back the `NOOPiOS` app from a single cross-platform core.
 
-The macOS app target opens the database at a fixed, per-user location
+The app target opens the database at a fixed, per-user location
 (`Strand/Collect/StorePaths.swift`):
 
 ```
@@ -40,8 +40,8 @@ static func defaultDatabasePath() throws -> String {
 }
 ```
 
-On a typical macOS install that resolves to
-`~/Library/Application Support/OpenWhoop/whoop.sqlite`. Tests use an in-memory database via
+On iOS that resolves inside the app's sandbox, to
+`<app sandbox>/Library/Application Support/OpenWhoop/whoop.sqlite`. Tests use an in-memory database via
 `WhoopStore.inMemory()`.
 
 ### Connection configuration

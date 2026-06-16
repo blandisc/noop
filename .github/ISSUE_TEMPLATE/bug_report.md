@@ -27,7 +27,7 @@ What you expected to happen instead.
 ## Environment
 
 - NOOP version (Settings → About, or the release tag):
-- Platform: iOS / macOS — and its version:
+- Platform: iOS — and its version:
 - WHOOP strap model: 4.0 / 5.0 / MG / not using a strap (imported data only):
 - Data source: live BLE / WHOOP CSV import / Apple Health import:
 

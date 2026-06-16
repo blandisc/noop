@@ -1,6 +1,6 @@
 import XCTest
 import WhoopStore
-@testable import Strand
+@testable import NOOP
 
 /// Pins the pure workout-editing logic: source classification (the macOS read model has no
 /// deviceId, so origin is recovered from `source`), the durable dismissed-span filter that keeps a

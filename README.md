@@ -7,7 +7,7 @@
 <p align="center"><b>Your strap. Your data. Your machine. Local-first, no cloud.</b></p>
 
 <p align="center">
-  <img alt="Platforms" src="https://img.shields.io/badge/platforms-macOS%20%C2%B7%20iOS-18C98B?style=flat-square">
+  <img alt="Platforms" src="https://img.shields.io/badge/platform-iOS-18C98B?style=flat-square">
   <img alt="Local first" src="https://img.shields.io/badge/local-first-18C98B?style=flat-square">
   <img alt="Account free" src="https://img.shields.io/badge/account-free-2FE6A8?style=flat-square">
   <img alt="WHOOP 4 and 5" src="https://img.shields.io/badge/works%20with-WHOOP%204.0%20%26%205.0-8B9690?style=flat-square">
@@ -55,28 +55,13 @@ Each address also has a scan-to-donate **QR code** in the app under **Support** 
 
 ## Download
 
-Pre-built apps you can run right now:
+NOOP is the iOS app — you build it from source:
 
 | Platform | Build | Notes |
 |---|---|---|
-| **macOS** | `NOOP.app` (see [Releases](../../releases)) | Apple Silicon + Intel. Drag to Applications. Not notarized — see **First launch on macOS** below. |
-| **iOS** | Build from source — see [PR #42](../../pull/42) | An experimental community port (app + widgets + HealthKit). **Not distributed as a download:** iOS has no anonymous install path — the App Store and TestFlight both require a real Apple Developer identity — so it's build-it-yourself in Xcode, not officially maintained. |
+| **iOS** | Build from source — see [`docs/BUILD.md`](docs/BUILD.md) | App + widgets + HealthKit. **Not distributed as a download:** iOS has no anonymous install path — the App Store and TestFlight both require a real Apple Developer identity — so it's build-it-yourself in Xcode. |
 
-> **First launch on macOS.** NOOP is **not notarized** by Apple — notarization needs a paid Apple
-> Developer ID tied to a real identity, which doesn't fit an anonymous, free project. The app *is*
-> sandboxed and ad-hoc code-signed, and the full source is here to inspect. Because it isn't notarized,
-> macOS Gatekeeper blocks it on first open (you may see *"damaged"* or *"unverified developer"* — that's
-> the download quarantine flag, not real damage). To open it, do one of these **once**:
->
-> - **Terminal (most reliable):** drag `NOOP.app` to Applications, then run
->   `xattr -dr com.apple.quarantine /Applications/NOOP.app` and open NOOP normally.
-> - **No Terminal:** double-click NOOP (it'll be blocked), then open **System Settings → Privacy &
->   Security**, scroll to the bottom, and click **"Open Anyway"** next to NOOP. (On macOS 14 and
->   earlier you can also right-click the app → **Open**.)
->
-> Prefer to avoid this entirely? Build from source — see [Quickstart](#quickstart-macos).
-
-Prefer to build it yourself? See [`docs/BUILD.md`](docs/BUILD.md).
+See [`docs/BUILD.md`](docs/BUILD.md) for the full build instructions.
 
 Everything runs **offline**. The only feature that ever uses the network is the optional **AI Coach**, and only with your own API key.
 
@@ -107,7 +92,7 @@ from **their own device**, on a machine **they** control.
 - [Features](#features)
 - [Platform status](#platform-status)
 - [Architecture](#architecture)
-- [Quickstart (macOS)](#quickstart-macos)
+- [Quickstart](#quickstart)
 - [How your data flows](#how-your-data-flows)
 - [Privacy](#privacy)
 - [Attribution](#attribution)
@@ -143,9 +128,8 @@ that premise:
 
 ## Features
 
-The macOS reference app organizes everything behind a single sidebar
-(`Strand/App/RootView.swift`). Each item below is a real screen in
-`Strand/Screens/`.
+The app organizes everything behind a single navigation surface. Each item below
+is a real screen in `Strand/Screens/`.
 
 | Screen | What it does |
 |---|---|
@@ -164,45 +148,26 @@ The macOS reference app organizes everything behind a single sidebar
 | **Stress** | Day-level stress / autonomic load visualization. |
 | **Apple Health** | Browse and reconcile data imported from your Apple Health export. |
 | **Data Sources** | One-tap import of a WHOOP CSV export or an Apple Health export, plus live-strap status. "Bring your history in once, then it's yours." |
-| **Notifications** | Configure local notifications and thresholds (`Strand/Data/NotificationSettingsStore.swift`). |
-| **Automations** | Turn the strap's physical inputs and live biometrics into Mac actions — all on-device (see below). |
 | **Coach** | An optional **AI Coach** you can ask about your data in plain language. It's the one feature that ever uses the network: off until you add your own OpenAI/Anthropic key, and it sends only a short text summary of recent metrics plus your question — never raw streams or identifiers. See [`docs/PRIVACY_SECURITY.md`](docs/PRIVACY_SECURITY.md). |
 | **Settings** | Profile, preferences, the in-app **What's new** changelog, and an opt-in **Experimental** section (WHOOP 5/MG protocol probes). |
 | **Support** | Attribution + **optional** crypto donations. The whole app works without them. |
 
-There is also a **menu-bar extra** (`Strand/MenuBar/MenuBarContent.swift`) with a
-glanceable live HR readout and a compact popover, a first-run **onboarding wizard**
-that sets expectations (independent/experimental, WHOOP 4.0 vs 5/MG, on-device only),
-and an in-app **"What's new"** changelog shown after each update.
-
-### Automations (on-device)
-
-`Strand/Screens/AutomationsView.swift` + `Strand/System/MacActions.swift`:
-
-- **Double-tap → Mac action.** Double-tap the strap to lock the Mac, buzz back to
-  confirm, mark a moment, do nothing, or run any macOS **Shortcut** by name (via
-  the `shortcuts://` URL scheme, so it's sandbox-friendly).
-- **Wear & presence.** Lock the Mac (or run a Shortcut) the moment the strap
-  leaves your wrist; run a Shortcut when it goes back on. *(macOS reserves true
-  auto-**unlock** for Apple Watch — NOOP can lock, not unlock.)*
-- **Haptic coaching.** HR-zone coaching and an experimental resting-stress nudge —
-  the strap buzzes so you don't have to watch a screen.
-- **Smart alarm.** Arms the strap's own **firmware** alarm to buzz at your wake
-  time (still fires if the Mac is asleep or NOOP is closed), with an optional
-  light-sleep wake window when the Mac stays awake and connected.
+There is also a first-run **onboarding wizard** that sets expectations
+(independent/experimental, WHOOP 4.0 vs 5/MG, on-device only), and an in-app
+**"What's new"** changelog shown after each update.
 
 ---
 
 ## Platform status
 
-NOOP's logic lives in cross-platform Swift packages. The macOS app pairs
+NOOP's logic lives in cross-platform Swift packages. The iOS app pairs
 with the strap and **scores recovery, strain and sleep on your own device** — no
 import required.
 
 | Platform | Status |
 |---|---|
-| **macOS** | ✅ Full app (`Strand/`, SwiftUI, macOS 13+). Pairs over BLE, offloads the strap's history, and scores recovery / strain / sleep on-device. The complete feature set above runs here. |
-| **iOS** | 🧪 Experimental community port in [PR #42](../../pull/42) — app target + widgets + Live Activity + HealthKit, builds for the iOS simulator. **Build-from-source only, not officially maintained or distributed:** iOS has no anonymous distribution path (App Store and TestFlight both require a real Apple Developer identity), which is fundamentally at odds with this project staying anonymous. The shared packages already declare `.iOS(.v16)` and UI-framework code is guarded with `#if canImport(UIKit)` / `AppKit`. |
+| **iOS** | ✅ The app (`NOOPiOS`, SwiftUI, iOS 16+) — app target + widgets + Live Activity + HealthKit. Pairs over BLE, offloads the strap's history, and scores recovery / strain / sleep on-device. **Build-from-source only, not distributed:** iOS has no anonymous distribution path (App Store and TestFlight both require a real Apple Developer identity), which is fundamentally at odds with this project staying anonymous. |
+| **Windows** | 🗺️ Planned. The protocol facts and framing/CRC rules are language-agnostic, so the wire behavior is portable; the work is a Windows BLE stack + UI re-implementation. |
 
 ### Strap support
 
@@ -260,12 +225,12 @@ needs a little data before everything fills in:
 
 ## Architecture
 
-The repository is split into platform-pure Swift packages plus a macOS app target.
-All packages declare both `.iOS(.v16)` and `.macOS(.v13)`; framework-specific UI is
-guarded with `#if canImport(UIKit)` / `#if canImport(AppKit)`.
+The repository is split into platform-pure Swift packages plus the iOS app target
+(`NOOPiOS`). All packages declare both `.iOS(.v16)` and `.macOS(.v13)`;
+framework-specific UI is guarded with `#if canImport(UIKit)` / `#if canImport(AppKit)`.
 
 ```
-Strand/                  macOS SwiftUI reference app (this is what you build)
+Strand/                  Shared SwiftUI app layer (BLE/Collect/Data/Screens/System) — built by NOOPiOS
 Packages/
   WhoopProtocol/         BLE frame parsing, CRC, command/event/packet decode
   WhoopStore/            GRDB/SQLite persistence (migrations, streams, caches)
@@ -345,9 +310,9 @@ Palette, typography, motion, and reusable components/charts (`RecoveryRing`,
 
 ---
 
-## Quickstart (macOS)
+## Quickstart
 
-**Requirements:** macOS 13+, Xcode 15+ (Swift 5.9), and a Mac with Bluetooth. To
+**Requirements:** Xcode 15+ (Swift 5.9) and an iPhone (iOS 16+) to install on. To
 pair live, you need your own WHOOP strap; to just explore, you can import a CSV /
 Apple Health export instead.
 
@@ -363,18 +328,15 @@ cd NOOP
 brew install xcodegen   # if you don't have it
 xcodegen generate
 
-# 3. Open and run
-open Strand.xcodeproj
-# Select the "Strand" scheme → Run (⌘R). The built app is named NOOP.
+# 3. Open in Xcode, then select the NOOPiOS scheme and run on your iPhone.
 ```
 
 Notes:
 
-- Bundle id `com.noopapp.noop`, product name **NOOP**, sandboxed with the
-  Bluetooth and user-selected-files entitlements.
+- Bundle id `com.noopapp.noop`, product name **NOOP**.
 - Swift Package Manager resolves the only third-party dependencies automatically:
   **GRDB.swift** (SQLite) and **ZIPFoundation** (export unzip).
-- Run the tests from Xcode (the `StrandTests` target + each package's test target),
+- Run the tests from Xcode (the app's test target + each package's test target),
   or per-package with `swift test` inside `Packages/<Name>/`.
 
 To explore without an Xcode project, the packages build on their own:
@@ -382,6 +344,8 @@ To explore without an Xcode project, the packages build on their own:
 ```bash
 cd Packages/WhoopProtocol && swift build && swift test
 ```
+
+See [`docs/BUILD.md`](docs/BUILD.md) for the full build guide.
 
 ---
 
