@@ -1240,16 +1240,17 @@ struct TodayView: View {
 
     // MARK: - 14-day trend loader (all platforms)
 
-    /// Builds the trailing 14-day trend from the MERGED dashboard rows (`repo.days`) — the same
+    /// Builds the trailing 14-day trend from the DISPLAY dashboard rows (`repo.displayDays`) — the same
     /// layered source the Key Metrics tiles draw from (`measuredSpark`): Apple Health is the base,
-    /// on-device computed scores (`my-whoop-noop`) fill the strap's days, imported strap rows win.
+    /// on-device computed scores (`my-whoop-noop`) fill the strap's days, imported strap rows win, and a
+    /// strap-covered day with a nil field back-fills from Apple Health so the line has no gap (FER-149).
     /// Reading `repo.series(source: "my-whoop")` instead returned EMPTY for a BLE + Apple Health user,
     /// because the computed recovery/HRV/RHR/strain/sleep live in the daily-metrics table under
     /// `my-whoop-noop`, never in the `metricSeries` table that `series()` queries — that was the
     /// empty-chart bug. Noon UTC anchors each day so points sit at consistent x-positions.
     private func loadTrend(pick: @escaping (DailyMetric) -> Double?, window: Int = 14) async -> [TrendPoint] {
         let cutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -(window - 1), to: Date()) ?? Date())
-        return repo.days.compactMap { row -> TrendPoint? in
+        return repo.displayDays.compactMap { row -> TrendPoint? in
             guard row.day >= cutoff,
                   let value = pick(row),
                   let date = Self.dayParser.date(from: row.day) else { return nil }
@@ -1441,11 +1442,14 @@ struct TodayView: View {
     }
 
     /// Inline sparkline for a measured tile: the strap series when present (unchanged behaviour),
-    /// otherwise a 14-day series rebuilt from the merged daily rows so Apple-only history still draws.
+    /// otherwise a 14-day series rebuilt from the DISPLAY daily rows so Apple-only history still draws —
+    /// and so a strap-covered day whose field is nil (partial-connection day) back-fills from Apple
+    /// Health instead of leaving a gap, without touching the strap-only `repo.days` the baseline reads
+    /// (FER-149).
     private func measuredSpark(_ key: String, _ pick: (DailyMetric) -> Double?) -> [Double]? {
         if let s = sparks[key], s.count > 1 { return s }
         let cutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -13, to: Date()) ?? Date())
-        let apple = repo.days.filter { $0.day >= cutoff }.compactMap(pick)
+        let apple = repo.displayDays.filter { $0.day >= cutoff }.compactMap(pick)
         return apple.count > 1 ? apple : sparks[key]
     }
 
