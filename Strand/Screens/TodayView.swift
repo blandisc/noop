@@ -1194,7 +1194,7 @@ struct TodayView: View {
 
         let showsSync = !live.backfilling && hasSync
 
-        if hasData || hasSync {
+        if hasData || showsSync {
             NoopCard {
                 VStack(alignment: .leading, spacing: NoopMetrics.gap) {
                     Text("Sources").strandOverline()
