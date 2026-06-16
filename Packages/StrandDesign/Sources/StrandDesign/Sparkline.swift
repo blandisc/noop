@@ -13,6 +13,12 @@ public struct Sparkline: View {
     public var gradient: Gradient
     /// Optional explicit value range; otherwise auto-fit with padding.
     public var range: ClosedRange<Double>?
+    /// Optional reference band (e.g. p25–p75 typical range) drawn faintly BEHIND the
+    /// line so today's value reads in context. Ink, never a data hue (FER-155).
+    public var referenceBand: ClosedRange<Double>?
+    /// Color of the reference band — a quiet ink tone, NOT a metric color. Callers pass
+    /// the theme's `hairlineStrong` (or `ink` at low opacity) for «Instrumento diurno».
+    public var bandColor: Color
     public var lineWidth: CGFloat
     public var showsArea: Bool
     public var showsHead: Bool
@@ -28,6 +34,8 @@ public struct Sparkline: View {
         values: [Double],
         gradient: Gradient = StrandPalette.recoveryGradient,
         range: ClosedRange<Double>? = nil,
+        referenceBand: ClosedRange<Double>? = nil,
+        bandColor: Color = StrandPalette.hairlineStrong,
         lineWidth: CGFloat = 2,
         showsArea: Bool = true,
         showsHead: Bool = true,
@@ -38,6 +46,8 @@ public struct Sparkline: View {
         self.values = values
         self.gradient = gradient
         self.range = range
+        self.referenceBand = referenceBand
+        self.bandColor = bandColor
         self.lineWidth = lineWidth
         self.showsArea = showsArea
         self.showsHead = showsHead
@@ -56,7 +66,15 @@ public struct Sparkline: View {
 
     private var bounds: (min: Double, max: Double) {
         if let range { return (range.lowerBound, range.upperBound) }
-        guard let lo = values.min(), let hi = values.max() else { return (0, 1) }
+        // Fold the reference band into the auto-fit extent so it never clips and today's
+        // point still reads inside / above / below it.
+        var lo = values.min()
+        var hi = values.max()
+        if let b = referenceBand {
+            lo = Swift.min(lo ?? b.lowerBound, b.lowerBound)
+            hi = Swift.max(hi ?? b.upperBound, b.upperBound)
+        }
+        guard let lo, let hi else { return (0, 1) }
         if lo == hi { return (lo - 1, hi + 1) }
         let pad = (hi - lo) * 0.12
         return (lo - pad, hi + pad)
@@ -66,6 +84,16 @@ public struct Sparkline: View {
         GeometryReader { geo in
             let pts = points(in: geo.size)
             ZStack {
+                // Reference band (p25–p75 "typical range") behind everything, in ink — not
+                // a data hue. The line's color carries the metric; the band is context.
+                if let b = referenceBand {
+                    let yTop = yFor(b.upperBound, height: geo.size.height)
+                    let yBot = yFor(b.lowerBound, height: geo.size.height)
+                    Rectangle()
+                        .fill(bandColor.opacity(0.18))
+                        .frame(height: Swift.max(1, yBot - yTop))
+                        .position(x: geo.size.width / 2, y: (yTop + yBot) / 2)
+                }
                 if showsArea, pts.count > 1 {
                     areaPath(pts, in: geo.size)
                         .fill(
@@ -145,6 +173,15 @@ public struct Sparkline: View {
         }
     }
 
+    /// Y-coordinate for a value on the same axis as `points` — places the reference
+    /// band so it shares the line's vertical scale.
+    private func yFor(_ v: Double, height: CGFloat) -> CGFloat {
+        let (lo, hi) = bounds
+        let span = max(hi - lo, 0.0001)
+        let norm = (v - lo) / span
+        return height - CGFloat(norm) * height
+    }
+
     private func linePath(_ pts: [CGPoint]) -> Path {
         var path = Path()
         guard let first = pts.first else { return path }
@@ -188,7 +225,11 @@ private func sampleHR() -> [Double] {
         }
         Sparkline(values: sampleHR(), gradient: StrandPalette.strainGradient)
             .frame(height: 60)
-        Text("Hover any sparkline to read the exact sample under the cursor.")
+        Sparkline(values: sampleHR(),
+                  referenceBand: ReferenceRange.interquartile(sampleHR()),
+                  bandColor: StrandPalette.hairlineStrong)
+            .frame(height: 60)
+        Text("Hover any sparkline to read the exact sample under the cursor. The third shows the p25–p75 reference band.")
             .font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
     }
     .padding(24)
