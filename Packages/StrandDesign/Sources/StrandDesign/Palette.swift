@@ -44,7 +44,10 @@ public enum StrandPalette {
     // MARK: Text (§9.1)
     public static let textPrimary    = Color(hex: "#F4F7F5")
     public static let textSecondary  = Color(hex: "#8B9690")
-    public static let textTertiary   = Color(hex: "#6F7A74")
+    // FER-46: lifted #6F7A74 → #7A857F so overlines/captions clear WCAG AA on the
+    // surface they actually sit on — cards (surface.raised) were the binding case
+    // (4.16:1 → 4.84:1; base 4.47:1 → 5.20:1). Still clearly below textSecondary.
+    public static let textTertiary   = Color(hex: "#7A857F")
 
     // MARK: Glow (§9.1)
     public static let glowAmbient    = Color(hex: "#1B2A3A")

@@ -5,6 +5,11 @@
 > motion (breathe / pulse / flow — no cartoon bounce), and a locked component set
 > that guarantees a uniform look.
 
+> **Two languages, one package.** The system above is the **legacy** one — dark, and
+> what every *shipped* screen still uses. A second language, **«Instrumento diurno»**
+> (light, warm paper, one dominant number) is being built for the redesign and lives
+> *alongside* it, not replacing it — see [§8](#8-instrumento-diurno--the-daytime-language-fer-131).
+
 - **Source of truth:** the `StrandDesign` Swift package — `Packages/StrandDesign/Sources/StrandDesign/`
 - **Package version:** `0.1.0` (`StrandDesign.version`)
 - **Token entry points:** `StrandPalette` (color), `StrandFont` (type), `StrandMotion` (motion), `NoopMetrics` (spacing/sizing)
@@ -263,3 +268,81 @@ See [`assets/`](assets/) (and its [README](assets/README.md)):
 - **Numerics are tabular.** Any live value uses a `*Number` font or `StrandFont.number(...)` so digits don't shift.
 - **Compose from the locked set.** New cards = `NoopCard` + the components above, not bespoke surfaces.
 - **Regenerating tokens:** this doc and [`tokens/design-tokens.json`](tokens/design-tokens.json) are derived from the Swift package; re-derive them when `Palette` / `Typography` / `Motion` / `Components` change.
+
+---
+
+## 8. «Instrumento diurno» — the daytime language (FER-131)
+
+The redesign language. It reads like a precision instrument printed on **warm paper**:
+light mode, **one dominant number**, **color only in the datum**, hierarchy by space.
+It lives **alongside** the dark system (§1–§7) — no shipped screen changes in FER-131.
+
+> **Source of truth:** `Instrumento.swift` (theme + type) and `InstrumentoStates.swift`
+> (scaffold + states) in the `StrandDesign` package. Renderable proof of every state:
+> `InstrumentoSnapshotTests` (`swift test --filter InstrumentoSnapshotTests` → `/tmp/noop-fer131/`).
+
+### 8.1 Why a `struct`, not static tokens
+
+The roles are an **instance** (`InstrumentoTheme`), not statics like `StrandPalette`,
+on purpose: the by-the-hour theme engine (**FER-132**) produces dawn/day/dusk/night
+variants by interpolating these same roles. `.base` is the neutral **daytime anchor**.
+Inject with `.instrumentoTheme(_:)`; read with `@Environment(\.instrumentoTheme)`. Every
+screen reads it from the environment, so recoloring by the hour is free.
+
+### 8.2 Color roles — `.base` (daytime anchor)
+
+Warm paper surfaces, warm-gray ink, saturated hue reserved for the measured value.
+Every pair clears **WCAG AA** (large-text 3:1 for the data numerals, normal 4.5:1 for ink).
+
+| Role | Hex | On paper | Use |
+|---|---|---|---|
+| `paper` | `#F4F1E8` | — | App canvas — warm bone (never pure white) |
+| `surface` | `#FBF9F2` | — | A *sparingly*-used raised surface; never nested |
+| `hairline` / `hairlineStrong` | `#E6E0D2` / `#D8D0BD` | — | Faint warm rule / on emphasis |
+| `ink` | `#221D16` | 14.8:1 | Primary text & the hero numeral |
+| `inkSecondary` | `#5C5648` | 6.5:1 | Supporting copy, labels |
+| `inkTertiary` | `#6F6857` | 4.9:1 | Overlines, captions, axis |
+| `dataRecovery` | `#0C8F62` | 3.6:1¹ | Recovery / "good" datum |
+| `dataStrain` | `#C4631F` | 3.6:1¹ | Strain / "output" datum |
+| `verdict` | `#0C8F62` | 3.6:1¹ | The day's verdict accent (positive green) |
+| `warning` | `#9C5E10` | 4.6:1 | Caution / "strained" |
+| `critical` | `#BC3A34` | 4.9:1 | Depleted / error — contained brick red |
+
+¹ Data accents carry color **only on a large numeral** (≥24pt), where AA-large is 3:1.
+They are never used on label-size or body text.
+
+### 8.3 Type voice (`InstrumentoType`)
+
+Reuses SF Pro tabular digits (`StrandFont`); adds only the two opinionated moves:
+
+- **The protagonist numeral** — `Text(...).instrumentoHero(size)` = tabular hero font +
+  size-aware **negative tracking** (~-1.6pt at 72), so a big figure reads as one machined
+  object, not loose digits. Color it with a *data* role; everything else stays ink.
+- **A moderate overline** — `Text(...).instrumentoOverline()` = medium weight (not semibold),
+  gentler `0.6` tracking, uppercased. Loud enough to label, quiet enough not to compete.
+
+### 8.4 Hierarchy rules
+
+Not tokens — how the tokens are allowed to combine. `/qa` checks screens against them.
+
+1. **One dominant element.** Each screen has a single hero (usually the recovery/strain
+   numeral). Nothing else matches its size/weight.
+2. **Color only in the datum.** Saturated hue appears on a *measured value*, never on
+   chrome, labels, decorative icons, or backgrounds.
+3. **Hierarchy by space, not boxes.** Group with whitespace + hairlines. No card-in-card;
+   `surface` is the exception, used sparingly and never nested.
+4. **Moderate overline.** Labels are quiet (tertiary ink). They orient; they don't announce.
+
+### 8.5 Components & states
+
+| Component | Purpose | Key API |
+|---|---|---|
+| `ScreenScaffold` | The base shell — warm-paper canvas, screen padding, optional quiet header (overline + one title). Doesn't scroll; a screen wraps its own `ScrollView`. | `title:`, `overline:`, `@ViewBuilder content` |
+| `LoadingStateView` | Calm loading — three ink dots that breathe (no spinner, no color), optional line. Renders cleanly in `ImageRenderer`. | `(_ message:)` |
+| `EmptyStateView` | Empty — optional glyph, one title, supporting line, optional quiet action. All ink (no datum → no color). | `systemImage:`, `title:`, `message:`, `actionTitle:`, `action:` |
+| `ErrorStateView` | Error — same shape; glyph carries the one allowed color (`critical`), because an error is a genuine alert. Optional retry. | `title:`, `message:`, `retryTitle:`, `retry:` |
+| `QuietButton` | Sober action — ink label on a hairline-bordered surface. No color: chrome stays quiet. | `(_ title:, action:)` |
+
+> **Data-state family is out of scope for FER-131.** "No recent data / N days unsynced",
+> partial 14-day trends, and gaps in charts are *data* states (of a chart or metric, not a
+> whole screen). They get their own requirement, designed with real data in front of them.

@@ -1,6 +1,6 @@
 {
   "$schema": "https://design-tokens.github.io/community-group/format/",
-  "$description": "Strand / NOOP design tokens — dark-only, instrument-grade. Extracted from the StrandDesign Swift package (v0.1.0). Hex values are exact per design spec §9.1; do not substitute.",
+  "$description": "Strand / NOOP design tokens. Two languages coexist: the legacy dark, instrument-grade system (every shipped screen) and «Instrumento diurno» (FER-131) — the light, warm-paper redesign language under color.instrumento, whose instance roles the by-the-hour theme engine (FER-132) varies. Extracted from the StrandDesign Swift package. Hex values are exact; do not substitute.",
   "color": {
     "$type": "color",
     "surface": {
@@ -14,7 +14,7 @@
     "text": {
       "primary":   { "$value": "#F4F7F5" },
       "secondary": { "$value": "#8B9690" },
-      "tertiary":  { "$value": "#6F7A74" }
+      "tertiary":  { "$value": "#7A857F", "$description": "FER-46: lifted from #6F7A74 to clear WCAG AA on surface.raised (4.84:1)" }
     },
     "glow": {
       "ambient": { "$value": "#1B2A3A" }
@@ -63,6 +63,21 @@
       "s033": { "$value": "#E8743B", "$description": "0.33 — orange" },
       "s066": { "$value": "#E0476B", "$description": "0.66 — rose-red" },
       "s100": { "$value": "#C13AC1", "$description": "1.00 — magenta" }
+    },
+    "instrumento": {
+      "$description": "«Instrumento diurno» (FER-131) — the light, warm-paper language. Instance roles the by-the-hour theme engine (FER-132) varies; .base is the daytime anchor. Every text/background pair clears WCAG AA.",
+      "paper":          { "$value": "#F4F1E8", "$description": "canvas — warm bone paper (never pure white)" },
+      "surface":        { "$value": "#FBF9F2", "$description": "sparingly-used raised surface" },
+      "hairline":       { "$value": "#E6E0D2", "$description": "faint warm 1px rule" },
+      "hairlineStrong": { "$value": "#D8D0BD", "$description": "rule on emphasis" },
+      "ink":            { "$value": "#221D16", "$description": "primary text & hero numeral — 14.8:1 on paper" },
+      "inkSecondary":   { "$value": "#5C5648", "$description": "supporting copy — 6.5:1 on paper" },
+      "inkTertiary":    { "$value": "#6F6857", "$description": "overlines / captions — 4.9:1 on paper" },
+      "dataRecovery":   { "$value": "#0C8F62", "$description": "recovery datum, color on the numeral — 3.6:1 (AA-large)" },
+      "dataStrain":     { "$value": "#C4631F", "$description": "strain datum, color on the numeral — 3.6:1 (AA-large)" },
+      "verdict":        { "$value": "#0C8F62", "$description": "day verdict accent — positive green" },
+      "warning":        { "$value": "#9C5E10", "$description": "strained — 4.6:1" },
+      "critical":       { "$value": "#BC3A34", "$description": "depleted / error — 4.9:1" }
     }
   },
   "gradient": {
