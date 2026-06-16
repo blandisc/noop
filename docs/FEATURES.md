@@ -25,9 +25,11 @@ NOOP is built on community reverse-engineering work, with thanks to:
 
 ## At a glance
 
-NOOP is a `NavigationSplitView`: a left sidebar of screens, a live connection status pill
-pinned to the sidebar's bottom (bonded / connecting / disconnected, with battery %), and a
-detail pane. The whole UI is dark, and a first-run wizard walks you through pairing.
+NOOP is a **tab bar** app. Five tabs sit along the bottom — **Today**, **Trends**, **Live**
+and **Sleep**, plus a **More** tab that opens a grouped list of every remaining screen
+(*Insights*, *Body*, *Data*, *App*). The live connection state and battery % (bonded /
+connecting / disconnected) surface inside the **Today** and **Live** screens, not in a global
+chrome. The whole UI is dark, and a first-run wizard walks you through pairing.
 
 Screens are grouped below by whether they need a connected strap:
 
@@ -83,7 +85,7 @@ You can revisit pairing and profile any time from **Settings**.
 
 ## Control Center
 
-**Sidebar: Today · works from imported data; live status shown in the sidebar.**
+**Tab: Today · works from imported data; live connection status shows on this screen.**
 
 The home dashboard (`TodayView.swift`, titled "Control Center"). A tight, gapless grid:
 
@@ -105,7 +107,7 @@ The home dashboard (`TodayView.swift`, titled "Control Center"). A tight, gaples
 
 ## Live
 
-**Sidebar: Live · needs a bonded strap for HR; the hardware-test surface.**
+**Tab: Live · needs a bonded strap for HR; the hardware-test surface.**
 
 `LiveView.swift` is the real-time heart-rate screen and the pairing/diagnostics surface:
 
@@ -127,7 +129,7 @@ stops the realtime stream (the lightweight standard HR keeps recording).
 
 ## Breathe
 
-**Sidebar: Breathe · works visually without a strap; needs a bonded strap for haptic cues.**
+**More › Body: Breathe · works visually without a strap; needs a bonded strap for haptic cues.**
 
 `BreathingView.swift` — an **HRV haptic breathing biofeedback** trainer, and NOOP's flagship
 novel feature. Because the strap both *measures* HRV (from R-R intervals) and *buzzes*, NOOP can
@@ -151,7 +153,7 @@ A "Test buzz" button fires a single pulse (bonded only).
 
 ## Intervals
 
-**Sidebar: Intervals · works visually without a strap; needs a bonded strap for haptic cues.**
+**More › Body: Intervals · works visually without a strap; needs a bonded strap for haptic cues.**
 
 `IntervalTimerView.swift` — a **silent haptic HIIT interval timer**. Train hands-free: the strap
 buzzes every transition so you never look at the screen.
@@ -171,7 +173,7 @@ bond on the Live screen.
 
 ## Explore (Metric Explorer)
 
-**Sidebar: Explore · works from imported data.**
+**More › Insights: Explore · works from imported data.**
 
 `MetricExplorerView.swift` — a catalog of every signal, one tap deep. The root is a grouped list
 (by `MetricCatalog` category); a faint trailing dot marks metrics with no recorded data. Tapping a
@@ -191,7 +193,7 @@ and flag that they did, so you always see real data instead of an empty state.
 
 ## Compare
 
-**Sidebar: Compare · works from imported data.**
+**More › Insights: Compare · works from imported data.**
 
 `CompareView.swift` — overlay **2–4 metrics** from the catalog and read how they move together:
 
@@ -209,7 +211,7 @@ Sparse series auto-widen so they still overlay against dense ones.
 
 ## Insights
 
-**Sidebar: Insights · works from imported data (needs WHOOP journal answers for behaviour effects).**
+**More › Insights: Insights · works from imported data (needs WHOOP journal answers for behaviour effects).**
 
 `InsightsView.swift` — "interrogate what affects what", in two halves:
 
@@ -228,7 +230,7 @@ Sparse series auto-widen so they still overlay against dense ones.
 
 ## Sleep
 
-**Sidebar: Sleep · works from imported WHOOP data.**
+**Tab: Sleep · works from imported WHOOP data.**
 
 `SleepView.swift` — last night, read in two seconds:
 
@@ -248,7 +250,7 @@ If no sleep sessions are imported, NOOP points you to Data Sources.
 
 ## Trends
 
-**Sidebar: Trends · works from imported WHOOP data.**
+**Tab: Trends · works from imported WHOOP data.**
 
 `TrendsView.swift` — the longitudinal view ("the thread of you over time"):
 
@@ -265,7 +267,7 @@ Windows are taken relative to your latest recorded day and auto-widen on sparse 
 
 ## Workouts
 
-**Sidebar: Workouts · works from imported WHOOP and Apple Health data.**
+**More › Body: Workouts · works from imported WHOOP and Apple Health data.**
 
 `WorkoutsView.swift` — the activity log, threaded together:
 
@@ -280,7 +282,7 @@ Windows are taken relative to your latest recorded day and auto-widen on sparse 
 
 ## Health Monitor
 
-**Sidebar: Health · live HR needs a bonded strap; vitals come from imported WHOOP data.**
+**More › Body: Health · live HR needs a bonded strap; vitals come from imported WHOOP data.**
 
 `HealthView.swift` — live vitals:
 
@@ -297,7 +299,7 @@ With no live HR and no imported day, NOOP prompts you to connect or import.
 
 ## Stress
 
-**Sidebar: Stress · works from imported WHOOP data.**
+**More › Body: Stress · works from imported WHOOP data.**
 
 `StressView.swift` — a clear, single-number **Stress Monitor** (0–3) with a LOW / MEDIUM / HIGH
 band and one plain-English line on *why*:
@@ -317,7 +319,7 @@ band and one plain-English line on *why*:
 
 ## Apple Health
 
-**Sidebar: Apple Health · works from imported Apple Health data.**
+**More › Data: Apple Health · works from imported Apple Health data.**
 
 `AppleHealthView.swift` — the per-source page for everything imported from the `apple-health`
 source, read locally on your device:
@@ -335,7 +337,7 @@ a single reading is shown as a "Latest reading" value rather than an empty chart
 
 ## Data Sources
 
-**Sidebar: Data Sources · the import hub. Everything stays on your device.**
+**More › Data: Data Sources · the import hub. Everything stays on your device.**
 
 `DataSourcesView.swift` — bring your history in once, then it's yours:
 
@@ -361,7 +363,7 @@ and Apple Health under `apple-health`, so per-source pages and cross-source cons
 
 ## Automations
 
-**Sidebar: Automations · needs a bonded strap to act/buzz; settings save without one.**
+**More › App: Automations · needs a bonded strap to act/buzz; settings save without one.**
 
 `AutomationsView.swift` — turn the strap's physical inputs and live biometrics into on-device
 strap actions and haptic coaching.
@@ -409,7 +411,7 @@ of history. On-device and approximate — informational only, **not** a diagnosi
 
 ## Settings
 
-**Sidebar: Settings · always available.**
+**More › App: Settings · always available.**
 
 `SettingsView.swift`:
 
@@ -423,7 +425,7 @@ of history. On-device and approximate — informational only, **not** a diagnosi
 
 ## Support
 
-**Sidebar: Support · always available. NOOP is free and always will be.**
+**More › App: Support · always available. NOOP is free and always will be.**
 
 `SupportView.swift`:
 
