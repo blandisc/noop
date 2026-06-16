@@ -347,6 +347,36 @@ Per-second blend of **Keytel (2005)** active expenditure and **revised Harris–
 
 ---
 
+## `FitnessAgeEngine` — on-device "Fitness Age" (Nes/HUNT)
+
+Source: `FitnessAgeEngine.swift`. A pure, **independent** implementation of the **Nes et al. 2011** HUNT non-exercise VO₂max model (waist-circumference variant), inverted into a **"Fitness Age"**. It is a *fitness comparison, never a biological or clinical age*. Engine only — orchestration (feeding it from `Repository.days`) and UI are tracked separately (FER-141).
+
+### The model
+
+- **VO₂max (ml/kg/min), Nes 2011 waist variant** — coefficients verified verbatim against Ball State / JAHA 2020 ([PMC7428991](https://pmc.ncbi.nlm.nih.gov/articles/PMC7428991/)); SEE ≈ 5.70 (men) / 5.14 (women):
+
+```
+men:    100.27  − 0.296·age + 0.226·PA − 0.369·waist − 0.155·RHRseated
+women:   74.736 − 0.247·age + 0.198·PA − 0.259·waist − 0.114·RHRseated
+```
+
+- **PA-index (0–15)** — the HUNT1 PA-Q (Kurtze 2008): `frequency(0–5) × intensity(1–3) × duration(0.10–1.0)`, reconstructed from weekly signals since NOOP has no questionnaire.
+- **Fitness Age** — invert the *same* Nes equation against a reference-fit peer: `FA = age + (rhrC·(RHR − RHRref) − paiC·(PA − PAref)) / ageC`. The waist term appears in both the user's estimate and the reference curve, so it **cancels** — the headline needs no body measurement, and an average-fitness person maps to their own chronological age by construction.
+
+### NOOP domain-transfer corrections (FER-122)
+
+The Nes model was calibrated on HUNT questionnaire inputs; NOOP feeds it wearable signals from a different domain. Three documented corrections (each verified by a test), after an expert review of the model's assumptions:
+
+1. **Resting-HR domain.** Nes/CERG use **seated** resting HR ("sit 10 min, count your pulse"); WHOOP reports **nocturnal** RHR, ≈7 bpm lower (nocturnal dip; [Dial 2025](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC12367097/) confirms WHOOP tracks nocturnal RHR accurately vs ECG — the gap is the *domain*, not the device). Feeding nocturnal RHR against a seated reference would read everyone ≈0.52 yr/bpm × 7 ≈ **3.7 yr too young**. Fix: the engine's RHR contract is **nocturnal throughout**; `restingHRReference = 58` (the validated seated anchor 65 minus the 7-bpm dip); the absolute VO₂max converts nocturnal → seated-equivalent internally. The Fitness Age uses `(RHR − RHRref)` with both terms nocturnal, so the dip cancels and the delta is unbiased.
+2. **Activity scale.** `physicalActivityIndexFromStrain` is recalibrated to **this repo's 0–21 strain scale** (the upstream engine assumed 0–100, where a real workout would read as sedentary here). The strain→PA-index bridge is an **unvalidated heuristic** in any scale, so activity is a *soft* input: resting HR drives the headline, and sparse activity coverage caps confidence at `.estimate`.
+3. **Uncertainty band.** The per-reading Nes SEE (≈5.70 ml/kg/min over the ~0.3/yr age slope ≈ **±19 yr**) is far wider than the displayed ±5. The ±5 band is defensible **only for the age delta** (the shared structural SEE of the same model cancels between user and reference); it does **not** apply to the absolute VO₂max, which is presented as a coarse estimate.
+
+### Readiness & honesty
+
+`assessReadiness` returns `.ready` / `.estimate` / `.notReady` from profile completeness + 7-day coverage. RHR (the validated driver) gates confidence: `.ready` needs a well-covered RHR week; sparse activity never promotes to `.ready`. Body metrics (height/weight/waist) only power the separate VO₂max and never block the headline. References: **Nes 2011** (Med Sci Sports Exerc 43(11):2024-30), **Kurtze 2008** (HUNT1 PA-Q), **Dial 2025** (nocturnal RHR validation).
+
+---
+
 ## Interactive engines (wired into screens)
 
 These are the **live** data-interrogation engines, used by `InsightsView`, `CompareView`, and `MetricExplorerView`.
