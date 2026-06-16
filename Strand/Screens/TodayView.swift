@@ -269,6 +269,12 @@ struct TodayView: View {
         // se recolorea según la hora del día gratis.
         .background(PaperBackground())
         .instrumentoThemeByHour(solar: solarWindow)
+        // La app corre en `.dark` global (StrandiOSApp/RootTabView), lo que pinta la barra de estado
+        // (hora, señal, batería) en CLARO — casi invisible sobre el papel de «Instrumento diurno».
+        // Hoy es una pantalla de papel claro, así que forzamos `.light` SOLO en su cuerpo: los íconos
+        // del sistema pasan a negro y ganan contraste. Los sheets/covers de abajo fijan su propio
+        // `.preferredColorScheme(.dark)`, así que conservan su apariencia oscura.
+        .preferredColorScheme(.light)
         .fullScreenCover(isPresented: $showLiveMonitor) {
             // No NavigationStack: its nav-bar scroll-edge background painted a bar over the monitor on
             // the slightest scroll. A floating "Done" pill overlays the content and never blocks it.
@@ -476,7 +482,7 @@ struct TodayView: View {
 
         var body: some View {
             VStack(spacing: 0) {
-                Rectangle().fill(theme.hairline).frame(height: 0.5)
+                Rectangle().fill(theme.hairlineStrong).frame(height: 1)
                     .padding(.top, 3).padding(.bottom, 6)
                 Button(action: onTap) {
                     HStack(spacing: 9) {
@@ -828,7 +834,14 @@ struct TodayView: View {
         let spo2Spark   = measuredSpark("spo2") { $0.spo2Pct }
         let stepsSpark  = sparks["steps"]
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-            SectionHeader("Métricas clave", overline: "Hoy", trailing: String(localized: "Tendencia 14 días"))
+            // Encabezado en TINTA del tema (no el `SectionHeader` compartido: su título usa
+            // `StrandPalette.textPrimary`, casi blanco, que desaparece sobre el papel claro de
+            // «Instrumento diurno»). Mismo patrón overline+título+trailing, recoloreado al tema.
+            HStack(alignment: .firstTextBaseline) {
+                Text("Métricas clave").font(StrandFont.title2).foregroundStyle(theme.ink)
+                Spacer()
+                Text("Tendencia 14 días").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            }
             VStack(spacing: 0) {
                 Button { metricDetail = .strain(d?.strain) } label: {
                     MetricRow(label: "Esfuerzo del día",
@@ -923,9 +936,11 @@ struct TodayView: View {
         }
     }
 
-    /// Hairline between metric rows (not above the first — the section header already caps the list).
+    /// Rule between metric rows (not above the first — the section header already caps the list).
+    /// Un poco más gruesa que el hairline por defecto (1pt vs ~0.5) y en `hairlineStrong` para que la
+    /// separación entre métricas se lea con más presencia sobre el papel claro.
     private var metricSeparator: some View {
-        Divider().overlay(theme.hairline)
+        Rectangle().fill(theme.hairlineStrong).frame(height: 1)
     }
 
     /// On-device readiness for the verdict hero (same engine the macOS `readinessSection` uses).

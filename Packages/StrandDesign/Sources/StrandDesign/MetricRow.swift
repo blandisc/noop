@@ -54,7 +54,7 @@ public struct MetricRow: View {
         HStack(spacing: 12) {
             HStack(spacing: 6) {
                 Text(label)
-                    .font(StrandFont.subhead)
+                    .font(StrandFont.body)
                     .foregroundStyle(labelColor)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
@@ -74,16 +74,16 @@ public struct MetricRow: View {
                 }
             }
             .frame(width: 50, height: 16)
-            HStack(alignment: .firstTextBaseline, spacing: 1) {
-                Text(value).font(StrandFont.number(15)).foregroundStyle(valueColor)
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text(value).font(StrandFont.number(18)).foregroundStyle(valueColor)
                 if let unit {
-                    Text(unit).font(.system(size: 10)).foregroundStyle(unitColor)
+                    Text(unit).font(.system(size: 11)).foregroundStyle(unitColor)
                 }
             }
             .lineLimit(1)
-            .frame(width: 78, alignment: .trailing)
+            .frame(width: 90, alignment: .trailing)
         }
-        .padding(.vertical, 11)
+        .padding(.vertical, 12)
         .frame(maxWidth: .infinity)
     }
 }
