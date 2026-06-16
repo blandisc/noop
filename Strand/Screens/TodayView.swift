@@ -222,7 +222,11 @@ struct TodayView: View {
                 iosHeartRateSection
                 sourcesSection
             }
-            .padding(NoopMetrics.screenPadding)
+            // Lift the whole column toward the top: trim the screen's TOP inset (24 → 16) while keeping
+            // the standard horizontal/bottom margins, so the verdict card sits a bit higher (owner ask).
+            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.top, 16)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(StrandPalette.surfaceBase)
@@ -357,7 +361,7 @@ struct TodayView: View {
         var body: some View {
             VStack(spacing: 0) {
                 Rectangle().fill(StrandPalette.hairline).frame(height: 0.5)
-                    .padding(.top, 8).padding(.bottom, 10)
+                    .padding(.top, 3).padding(.bottom, 6)
                 Button(action: onTap) {
                     HStack(spacing: 9) {
                         Image(systemName: "waveform.path.ecg")
@@ -370,7 +374,10 @@ struct TodayView: View {
                         Image(systemName: "chevron.right")
                             .font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
                     }
-                    .frame(minHeight: 44)
+                    // Compact tap target (34, below the 44 HIG ideal): this is a full-width row (wide
+                    // horizontal target) and a secondary affordance, traded down to kill the dead space
+                    // above/below the text the owner flagged. Reversible to 44 if accessibility wins out.
+                    .frame(minHeight: 34)
                 }
                 .buttonStyle(.plain)
                 .accessibilityElement(children: .ignore)
@@ -569,9 +576,9 @@ struct TodayView: View {
                 // Live pulse + beat-to-beat monitor, anchored to the foot of the verdict.
                 LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
             }
-            // Trim the bottom inset: the live-heartbeat row (a 44pt tap target) is the last element, so
-            // 16pt below it read as dead space against the card edge. Keep the standard 16 elsewhere.
-            .padding([.horizontal, .top], 16).padding(.bottom, 12)
+            // Trim the bottom inset: the live-heartbeat row (the last element) leaves dead space against
+            // the card edge, so the bottom runs tighter (8) than the horizontal/top margins (16).
+            .padding([.horizontal, .top], 16).padding(.bottom, 8)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(lc.opacity(0.08), in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
