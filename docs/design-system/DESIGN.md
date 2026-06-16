@@ -304,6 +304,11 @@ Every pair clears **WCAG AA** (large-text 3:1 for the data numerals, normal 4.5:
 | `inkTertiary` | `#6F6857` | 4.9:1 | Overlines, captions, axis |
 | `dataRecovery` | `#0C8F62` | 3.6:1¹ | Recovery / "good" datum |
 | `dataStrain` | `#C4631F` | 3.6:1¹ | Strain / "output" datum |
+| `dataSleep` | `#5D5A9E` | 5.4:1 | Sleep trend hue (per-metric chart) — FER-147 |
+| `dataHrv` | `#2E7D6B` | 4.4:1 | HRV trend hue — FER-147 |
+| `dataHeart` | `#B85068` | 4.2:1 | Heart-rate trend hue (HR & resting HR) — FER-147 |
+| `dataSpO2` | `#3B6FA0` | 4.7:1 | Blood-oxygen trend hue — FER-147 |
+| `dataSteps` | `#4C8998` | 3.5:1 | Steps trend hue — FER-147 |
 | `verdict` | `#0C8F62` | 3.6:1¹ | The day's verdict accent (positive green) |
 | `warning` | `#9C5E10` | 4.6:1 | Caution / "strained" |
 | `critical` | `#BC3A34` | 4.9:1 | Depleted / error — contained brick red |

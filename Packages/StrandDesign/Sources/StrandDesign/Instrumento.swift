@@ -50,6 +50,16 @@ public struct InstrumentoTheme: Equatable {
     public let dataRecovery: Color
     /// Strain / "output" data hue (deep ember-orange).
     public let dataStrain: Color
+    /// Sleep trend hue (per-metric chart color). FER-147.
+    public let dataSleep: Color
+    /// HRV trend hue. FER-147.
+    public let dataHrv: Color
+    /// Heart-rate trend hue — shared by Heart Rate and Resting HR. FER-147.
+    public let dataHeart: Color
+    /// Blood-oxygen trend hue. FER-147.
+    public let dataSpO2: Color
+    /// Steps trend hue. FER-147.
+    public let dataSteps: Color
 
     // MARK: Verdict / state
     /// The day's verdict accent (defaults to the positive green).
@@ -64,12 +74,15 @@ public struct InstrumentoTheme: Equatable {
         paper: Color, surface: Color, hairline: Color, hairlineStrong: Color,
         ink: Color, inkSecondary: Color, inkTertiary: Color,
         dataRecovery: Color, dataStrain: Color,
+        dataSleep: Color, dataHrv: Color, dataHeart: Color, dataSpO2: Color, dataSteps: Color,
         verdict: Color, warning: Color, critical: Color
     ) {
         self.paper = paper; self.surface = surface
         self.hairline = hairline; self.hairlineStrong = hairlineStrong
         self.ink = ink; self.inkSecondary = inkSecondary; self.inkTertiary = inkTertiary
         self.dataRecovery = dataRecovery; self.dataStrain = dataStrain
+        self.dataSleep = dataSleep; self.dataHrv = dataHrv; self.dataHeart = dataHeart
+        self.dataSpO2 = dataSpO2; self.dataSteps = dataSteps
         self.verdict = verdict; self.warning = warning; self.critical = critical
     }
 
@@ -87,6 +100,11 @@ public struct InstrumentoTheme: Equatable {
         inkTertiary:    Color(hex: "#6F6857"),
         dataRecovery:   Color(hex: "#0C8F62"),
         dataStrain:     Color(hex: "#C4631F"),
+        dataSleep:      Color(hex: "#5D5A9E"),
+        dataHrv:        Color(hex: "#2E7D6B"),
+        dataHeart:      Color(hex: "#B85068"),
+        dataSpO2:       Color(hex: "#3B6FA0"),
+        dataSteps:      Color(hex: "#4C8998"),
         verdict:        Color(hex: "#0C8F62"),
         warning:        Color(hex: "#9C5E10"),
         critical:       Color(hex: "#BC3A34")
@@ -196,6 +214,7 @@ public extension Text {
             swatches("Papel", [("paper", t.paper), ("surface", t.surface), ("hairline", t.hairline), ("strong", t.hairlineStrong)], t)
             swatches("Tinta", [("ink", t.ink), ("secondary", t.inkSecondary), ("tertiary", t.inkTertiary)], t)
             swatches("Dato / estado", [("recovery", t.dataRecovery), ("strain", t.dataStrain), ("warning", t.warning), ("critical", t.critical)], t)
+            swatches("Métricas", [("sleep", t.dataSleep), ("hrv", t.dataHrv), ("heart", t.dataHeart), ("spo2", t.dataSpO2), ("steps", t.dataSteps)], t)
         }
         .padding(28)
         .frame(maxWidth: .infinity, alignment: .leading)

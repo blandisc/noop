@@ -75,6 +75,11 @@
       "inkTertiary":    { "$value": "#6F6857", "$description": "overlines / captions — 4.9:1 on paper" },
       "dataRecovery":   { "$value": "#0C8F62", "$description": "recovery datum, color on the numeral — 3.6:1 (AA-large)" },
       "dataStrain":     { "$value": "#C4631F", "$description": "strain datum, color on the numeral — 3.6:1 (AA-large)" },
+      "dataSleep":      { "$value": "#5D5A9E", "$description": "sleep trend hue (FER-147) — 5.4:1" },
+      "dataHrv":        { "$value": "#2E7D6B", "$description": "HRV trend hue (FER-147) — 4.4:1" },
+      "dataHeart":      { "$value": "#B85068", "$description": "heart-rate trend hue, shared by HR & resting HR (FER-147) — 4.2:1" },
+      "dataSpO2":       { "$value": "#3B6FA0", "$description": "blood-oxygen trend hue (FER-147) — 4.7:1" },
+      "dataSteps":      { "$value": "#4C8998", "$description": "steps trend hue (FER-147) — 3.5:1" },
       "verdict":        { "$value": "#0C8F62", "$description": "day verdict accent — positive green" },
       "warning":        { "$value": "#9C5E10", "$description": "strained — 4.6:1" },
       "critical":       { "$value": "#BC3A34", "$description": "depleted / error — 4.9:1" }

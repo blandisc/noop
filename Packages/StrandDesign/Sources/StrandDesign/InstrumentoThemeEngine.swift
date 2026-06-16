@@ -8,7 +8,7 @@ import Combine
 // FER-131 shipped the `InstrumentoTheme` role struct and its `.base` daytime
 // anchor, plus the `\.instrumentoTheme` Environment channel (default `.base`) that
 // `ScreenScaffold` and the loading/empty/error states already read. This file adds
-// the *engine* that varies that theme across the day: it interpolates ALL twelve
+// the *engine* that varies that theme across the day: it interpolates ALL seventeen
 // roles between four anchors (dawn / day / dusk / night) in the perceptual OKLab
 // space and overrides `\.instrumentoTheme` app-wide by the device clock.
 //
@@ -61,6 +61,11 @@ public enum InstrumentoThemeEngine {
         inkTertiary:    Color(hex: "#6E6253"),
         dataRecovery:   Color(hex: "#0B8A5F"),
         dataStrain:     Color(hex: "#BE5A1B"),
+        dataSleep:      Color(hex: "#5D5A9E"),
+        dataHrv:        Color(hex: "#2E7D6B"),
+        dataHeart:      Color(hex: "#B85068"),
+        dataSpO2:       Color(hex: "#3B6FA0"),
+        dataSteps:      Color(hex: "#4C8998"),
         verdict:        Color(hex: "#0B8A5F"),
         warning:        Color(hex: "#985910"),
         critical:       Color(hex: "#BA382F")
@@ -80,26 +85,38 @@ public enum InstrumentoThemeEngine {
         inkTertiary:    Color(hex: "#6B5F4C"),
         dataRecovery:   Color(hex: "#0B7E59"),
         dataStrain:     Color(hex: "#B65216"),
+        dataSleep:      Color(hex: "#5D5A9E"),
+        dataHrv:        Color(hex: "#2E7D6B"),
+        dataHeart:      Color(hex: "#B85068"),
+        dataSpO2:       Color(hex: "#3B6FA0"),
+        dataSteps:      Color(hex: "#4C8998"),
         verdict:        Color(hex: "#0B7E59"),
         warning:        Color(hex: "#8E540D"),
         critical:       Color(hex: "#B2342B")
     )
 
-    /// Night anchor — dimmed warm parchment, near-black ink, accents kept legible
-    /// (≥3:1 at numeral size) so the datum doesn't go dead in the dark.
+    /// Night anchor — a darker, greyer warm parchment (FER-147; paper #A39C8F, was
+    /// #CDBE9F) with near-black ink, never inverted. Ink and every data accent are
+    /// darkened so each pair clears WCAG AA on the dimmer paper (text ≥4.5, datum
+    /// ≥3:1); verified across the 24h sweep in `InstrumentoThemeEngineTests`.
     public static let night = InstrumentoTheme(
-        paper:          Color(hex: "#CDBE9F"),
-        surface:        Color(hex: "#D6C8AB"),
-        hairline:       Color(hex: "#B6A684"),
-        hairlineStrong: Color(hex: "#A8966F"),
+        paper:          Color(hex: "#A39C8F"),
+        surface:        Color(hex: "#B0AB99"),
+        hairline:       Color(hex: "#8C8474"),
+        hairlineStrong: Color(hex: "#7E7665"),
         ink:            Color(hex: "#191309"),
         inkSecondary:   Color(hex: "#352B1A"),
-        inkTertiary:    Color(hex: "#473A24"),
-        dataRecovery:   Color(hex: "#0A5C3F"),
-        dataStrain:     Color(hex: "#8A3C0E"),
-        verdict:        Color(hex: "#0A5C3F"),
-        warning:        Color(hex: "#6E3F08"),
-        critical:       Color(hex: "#8C271F")
+        inkTertiary:    Color(hex: "#3D321F"),
+        dataRecovery:   Color(hex: "#09563B"),
+        dataStrain:     Color(hex: "#7C360D"),
+        dataSleep:      Color(hex: "#48457A"),
+        dataHrv:        Color(hex: "#1E5247"),
+        dataHeart:      Color(hex: "#793545"),
+        dataSpO2:       Color(hex: "#294D6E"),
+        dataSteps:      Color(hex: "#2C4F58"),
+        verdict:        Color(hex: "#09563B"),
+        warning:        Color(hex: "#4C2B06"),
+        critical:       Color(hex: "#611B15")
     )
 
     /// Fixed-hour anchor positions used when no solar window is injected.
@@ -180,6 +197,11 @@ extension InstrumentoTheme {
             inkTertiary:    mix(inkTertiary, other.inkTertiary),
             dataRecovery:   mix(dataRecovery, other.dataRecovery),
             dataStrain:     mix(dataStrain, other.dataStrain),
+            dataSleep:      mix(dataSleep, other.dataSleep),
+            dataHrv:        mix(dataHrv, other.dataHrv),
+            dataHeart:      mix(dataHeart, other.dataHeart),
+            dataSpO2:       mix(dataSpO2, other.dataSpO2),
+            dataSteps:      mix(dataSteps, other.dataSteps),
             verdict:        mix(verdict, other.verdict),
             warning:        mix(warning, other.warning),
             critical:       mix(critical, other.critical)
