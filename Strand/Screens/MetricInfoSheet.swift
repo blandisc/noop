@@ -166,12 +166,12 @@ extension MetricInfo {
         return MetricInfo(
             id: "rhr",
             name: "Resting HR",
-            headline: "Your heart rate when your body is fully at rest — how hard your heart has to work doing nothing. Lower generally means a stronger, more efficient cardiovascular system. NOOP uses it as ~20% of your recovery score; a rise from your norm signals fatigue or illness.",
+            headline: "Your heart rate when your body is fully at rest — how hard your heart has to work doing nothing. Lower generally means a stronger, more efficient cardiovascular system. Cénit uses it as ~20% of your recovery score; a rise from your norm signals fatigue or illness.",
             displayValue: value.map { "\($0)" } ?? "—",
             unit: "bpm",
             currentColor: StrandPalette.metricRose,
             bands: bands,
-            note: "Measured overnight from your strap; when the strap isn't worn, NOOP uses Apple Health's resting heart rate instead."
+            note: "Measured overnight from your strap; when the strap isn't worn, Cénit uses Apple Health's resting heart rate instead."
         )
     }
 

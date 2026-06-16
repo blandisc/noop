@@ -103,7 +103,7 @@ enum CsvExport {
             #if os(macOS)
             // Save panel — DataBackup.runExport precedent (NSSavePanel + .zip content type).
             let panel = NSSavePanel()
-            panel.title = "Export NOOP data as CSV"
+            panel.title = "Export Cénit data as CSV"
             panel.nameFieldStringValue = defaultName()
             panel.allowedContentTypes = [.zip]
             panel.canCreateDirectories = true

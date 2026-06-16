@@ -182,7 +182,7 @@ final class Backfiller {
                       p.parsed["heart_rate"] == nil,            // decoded nothing → unmapped layout
                       !loggedUnmappedVersions.contains(v) else { continue }
                 loggedUnmappedVersions.insert(v)
-                log?("Historical records use firmware layout v\(v), which NOOP doesn't decode yet — no motion data, so sleep can't be computed from the strap. Please report this (issue #30).")
+                log?("Historical records use firmware layout v\(v), which Cénit doesn't decode yet — no motion data, so sleep can't be computed from the strap. Please report this (issue #30).")
             }
             let decoded = extract(parsed, ref.device, ref.wall)
             // Diagnostic (#77): the AGGREGATE silent-loss case — frames arrived but produced no rows at

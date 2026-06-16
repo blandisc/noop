@@ -55,10 +55,10 @@ for educational and security-research purposes.
 
 ## 4. Licensing, non-commercial use, and no warranty
 
-NOOP's own source code and documentation are made available under the **PolyForm Noncommercial
+Cénit's own source code and documentation are made available under the **PolyForm Noncommercial
 License 1.0.0** (see [`LICENSE`](LICENSE)): free for personal and other **non-commercial** use —
 you may read, run, fork, and contribute, but commercial use is not granted. The license covers
-NOOP's original work only; protocol facts are uncopyrightable, and bundled dependencies keep their
+Cénit's original work only; protocol facts are uncopyrightable, and bundled dependencies keep their
 own licenses (see [`NOTICE`](NOTICE)).
 
 The software is provided **as-is**, with **no warranty of any kind**, express or implied. You use it

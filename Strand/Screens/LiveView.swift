@@ -679,7 +679,7 @@ struct LiveView: View {
         #else
         let osName = "macOS"
         #endif
-        let header = "NOOP strap log — \(osName)\nApp: \(v)\n\(osName): "
+        let header = "Cénit strap log — \(osName)\nApp: \(v)\n\(osName): "
             + ProcessInfo.processInfo.operatingSystemVersionString + "\n"
             + String(repeating: "-", count: 40) + "\n"
         return header + live.log.joined(separator: "\n")

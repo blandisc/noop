@@ -48,11 +48,11 @@ enum DataBackup {
     static func runExport(checkpoint: @escaping () async -> Bool) async -> BackupResult {
         let dbPath: String
         do { dbPath = try StorePaths.defaultDatabasePath() }
-        catch { return .failure("Couldn't locate the NOOP database. \(error.localizedDescription)") }
+        catch { return .failure("Couldn't locate the Cénit database. \(error.localizedDescription)") }
 
         let dbURL = URL(fileURLWithPath: dbPath)
         guard FileManager.default.fileExists(atPath: dbPath) else {
-            return .failure("There's no NOOP data to export yet. Import or record some first.")
+            return .failure("There's no Cénit data to export yet. Import or record some first.")
         }
 
         // Flush the WAL so the single .sqlite carries everything. Best-effort.
@@ -61,7 +61,7 @@ enum DataBackup {
         #if os(macOS)
         // Ask where to save.
         let panel = NSSavePanel()
-        panel.title = "Export NOOP backup"
+        panel.title = "Export Cénit backup"
         panel.prompt = "Export"
         panel.canCreateDirectories = true
         panel.nameFieldStringValue = defaultBackupName()
@@ -121,11 +121,11 @@ enum DataBackup {
     static func runImport() async -> BackupResult {
         let dbPath: String
         do { dbPath = try StorePaths.defaultDatabasePath() }
-        catch { return .failure("Couldn't locate the NOOP database. \(error.localizedDescription)") }
+        catch { return .failure("Couldn't locate the Cénit database. \(error.localizedDescription)") }
 
         #if os(macOS)
         let panel = NSOpenPanel()
-        panel.title = "Import NOOP backup"
+        panel.title = "Import Cénit backup"
         panel.prompt = "Import"
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
@@ -144,7 +144,7 @@ enum DataBackup {
 
         // Validate: must be a real SQLite database (magic header "SQLite format 3\0").
         guard isSQLiteFile(at: source) else {
-            return .failure("That file isn't a NOOP backup — it doesn't look like a SQLite database.")
+            return .failure("That file isn't a Cénit backup — it doesn't look like a SQLite database.")
         }
 
         let fm = FileManager.default
@@ -176,12 +176,12 @@ enum DataBackup {
 
     // MARK: - Helpers
 
-    /// "NOOP-backup-2026-06-07.sqlite"
+    /// "Cénit-backup-2026-06-07.sqlite"
     private static func defaultBackupName() -> String {
         let f = DateFormatter()
         f.locale = Locale(identifier: "en_US_POSIX")
         f.dateFormat = "yyyy-MM-dd"
-        return "NOOP-backup-\(f.string(from: Date())).sqlite"
+        return "Cénit-backup-\(f.string(from: Date())).sqlite"
     }
 
     private static func timestamp() -> String {
@@ -266,6 +266,10 @@ final class AutoBackup: ObservableObject {
     private let lastKey = "noop.autoBackup.lastDate"
     /// At most one automatic backup per ~day; the manual "Back up now" ignores this.
     private let minInterval: TimeInterval = 23 * 3_600
+    /// Fixed iCloud auto-backup filename. Deliberately keeps the legacy "NOOP-" stem (not a visible
+    /// in-app string): renaming it would orphan the existing backup already in a user's iCloud Drive —
+    /// the one irreplaceable copy of their strap history. Restore is filename-agnostic (validates the
+    /// SQLite header, picked by hand), so legacy and new backups both restore. (FER-158)
     private let fileName = "NOOP-backup.sqlite"
 
     init() {
@@ -334,7 +338,7 @@ final class AutoBackup: ObservableObject {
 
         let dbPath: String
         do { dbPath = try StorePaths.defaultDatabasePath() }
-        catch { lastError = String(localized: "Couldn't locate the NOOP database."); return }
+        catch { lastError = String(localized: "Couldn't locate the Cénit database."); return }
         let dbURL = URL(fileURLWithPath: dbPath)
         guard FileManager.default.fileExists(atPath: dbPath) else {
             lastError = String(localized: "No database to back up yet.")

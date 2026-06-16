@@ -138,8 +138,8 @@ struct TodayView: View {
                             .foregroundStyle(StrandPalette.metricRose)
                             .attentionWiggle(period: 4)
                     }
-                    .help("Support NOOP — donate or get in touch")
-                    .accessibilityLabel("Support NOOP — donate or get in touch")
+                    .help("Support Cénit — donate or get in touch")
+                    .accessibilityLabel("Support Cénit — donate or get in touch")
                 }
             }
             .overlay {
