@@ -60,9 +60,9 @@ A few principles run through the whole codebase. Internalize them before opening
 ## Repository layout
 
 The codebase is split into reusable, cross-platform Swift packages plus a thin platform-specific app
-layer. The **macOS app is the reference implementation**; **Android ships as a full app** under
-`android/`, and **iOS is an experimental, build-from-source community port** (see
-[PR #42](../../../pull/42)). All reuse the same packages where they can.
+layer. The **macOS app is the reference implementation** and **iOS is an experimental,
+build-from-source community port** (see [PR #42](../../../pull/42)). Both reuse the same packages
+where they can.
 
 ```
 Strand/
@@ -89,8 +89,7 @@ Strand/
 │   └── Backfill/               # `swift run backfill` — re-runs importers into the on-device DB
 ├── tools/
 │   └── linux-capture/          # Headless Linux capture workbench (Python/bleak + whoop-decode)
-├── Fixtures/                   # Sample WHOOP export used by tests
-└── android/                    # Android client — full shipped app (Kotlin/Gradle, separate module)
+└── Fixtures/                   # Sample WHOOP export used by tests
 ```
 
 ### Where logic belongs
@@ -487,8 +486,8 @@ Schema lives in `Packages/WhoopStore/Sources/WhoopStore/Database.swift` as a **v
 ## Roadmap
 
 NOOP's logic already lives in cross-platform packages, so most platform work is app-layer wiring
-rather than rewrites of the core. Today the **macOS app is the working reference implementation**
-and **Android ships as a full app**; the items below are planned, experimental, or deferred.
+rather than rewrites of the core. Today the **macOS app is the working reference implementation**;
+the items below are planned, experimental, or deferred.
 Contributions toward these are welcome — open an issue to coordinate first.
 
 ### Other platforms
@@ -497,11 +496,6 @@ Contributions toward these are welcome — open an issue to coordinate first.
   `WhoopProtocol/Resources/whoop_protocol.json` and the framing/CRC rules are language-agnostic, so
   the wire behavior is portable; the work is a Windows BLE stack + UI re-implementation that matches
   the shared packages' behavior.
-- **Android (shipped).** A full, native Kotlin/Gradle client lives under `android/`, re-implementing
-  the same wire protocol against Android's BLE stack — it pairs, offloads, persists and scores
-  on-device, and imports WHOOP / Apple Health / Health Connect. Pre-built APKs are in
-  [Releases](../../../releases). Continued real-hardware testing across more devices is always welcome
-  (an emulator can't reach a physical strap).
 - **iOS (experimental community port).** An experimental, build-from-source port lives in
   [PR #42](../../../pull/42) — an app target plus widgets, a Live Activity, and HealthKit that builds
   for the iOS simulator. It is **build-it-yourself only, not officially maintained or distributed:**

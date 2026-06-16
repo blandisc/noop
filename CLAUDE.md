@@ -18,7 +18,7 @@ Cross-platform **Swift packages do the real work**; thin platform apps wrap them
 - `Packages/StrandImport` — WHOOP CSV + Apple Health importers.
 - `Packages/StrandDesign` — the SwiftUI design system (single source of visual truth).
 - `Strand/` — macOS app (the **reference implementation**); CoreBluetooth lives only here (`Strand/BLE`, `Strand/Collect`).
-- `StrandiOS*/` — experimental iOS app target + widgets. `android/` — full shipped Kotlin app.
+- `StrandiOS*/` — experimental iOS app target + widgets.
 
 **Rule of thumb:** the more wire-level or math-level a change is, the deeper into `Packages/` it belongs, and the more it must be covered by a `swift test` that needs no app, strap, or CoreBluetooth. Every package targets both iOS and macOS and **must not** `import AppKit/UIKit/CoreBluetooth` — guard framework code with `#if canImport(...)`. See the "where logic belongs" table in CONTRIBUTING.
 
@@ -41,15 +41,7 @@ xcodebuild -project Strand.xcodeproj -scheme Strand -destination 'platform=macOS
 xcodebuild -project Strand.xcodeproj -scheme Strand -destination 'platform=macOS' test
 ```
 
-Android:
-
-```bash
-cd android && ./gradlew assembleFullDebug          # real app (JDK 17)
-./gradlew testFullDebugUnitTest                     # unit tests
-./gradlew assembleDemoDebug                         # 120 days of synthetic data, no strap
-```
-
-CI runs `swift build`/`swift test` only on `Packages/**` changes, and the Android unit tests only on `android/**` changes. (If `swift`/`xcodebuild` fail while fetching SwiftPM dependencies, a local `GIT_CONFIG` override is the known workaround.)
+CI runs `swift build`/`swift test` only on `Packages/**` changes. (If `swift`/`xcodebuild` fail while fetching SwiftPM dependencies, a local `GIT_CONFIG` override is the known workaround.)
 
 ## Rules that will get a change rejected
 

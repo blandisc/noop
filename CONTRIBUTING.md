@@ -19,8 +19,8 @@ non-trivial PR.
 ## Quick start
 
 The codebase is reusable Swift packages (`Packages/`) plus a thin macOS app
-(`Strand/`) and a full Android app (`android/`). The fastest feedback loop is the
-packages — they build and test on their own, no Xcode project and no strap needed.
+(`Strand/`). The fastest feedback loop is the packages — they build and test on
+their own, no Xcode project and no strap needed.
 
 ### Swift packages
 
@@ -47,26 +47,17 @@ open Strand.xcodeproj     # build and run from Xcode
 For a runnable, ad-hoc-signed `NOOP.app` without an Apple ID, see
 [`docs/BUILD.md`](docs/BUILD.md).
 
-### Android app
-
-```bash
-cd android
-./gradlew assembleFullDebug      # the real app (full flavour); JDK 17 required
-./gradlew assembleDemoDebug      # demo flavour — 120 days of synthetic data, no strap
-./gradlew testFullDebugUnitTest  # unit tests
-```
-
 ---
 
 ## What CI checks
 
-Two GitHub Actions workflows run on every PR and push to `main`. They compile and
-run unit tests only — no code signing, no secrets, no release.
+The **Swift Packages CI** workflow runs on every PR and push to `main` that
+touches `Packages/**`. It compiles and runs unit tests only — no code signing, no
+secrets, no release.
 
 | Workflow | Trigger | What it does |
 |---|---|---|
 | **Swift Packages CI** (`.github/workflows/swift-packages.yml`) | changes under `Packages/**` | `swift build` + `swift test` for each package |
-| **Android CI** (`.github/workflows/android.yml`) | changes under `android/**` | `assembleFullDebug` + `testFullDebugUnitTest` (JDK 17) |
 
 If CI fails on your PR, fix the cause rather than working around it. Never commit
 generated output (`Strand.xcodeproj/`) or any secrets, keystores, or `local.properties`.
@@ -75,8 +66,8 @@ generated output (`Strand.xcodeproj/`) or any secrets, keystores, or `local.prop
 
 ## Submitting a PR
 
-1. One concern per PR where practical (keep protocol, schema, UI, and Android
-   changes separate).
+1. One concern per PR where practical (keep protocol, schema, and UI changes
+   separate).
 2. Fill in the [PR template](.github/PULL_REQUEST_TEMPLATE.md).
 3. For anything on the BLE path, state what you tested **on real hardware** and on
    which strap. A green build is not proof a command behaves correctly.

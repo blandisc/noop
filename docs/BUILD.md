@@ -16,9 +16,9 @@ works only with **your own data**.
 ## Repository layout
 
 The codebase is split into reusable, cross-platform Swift packages plus a thin platform-specific
-app layer. The **macOS app is the reference implementation**; **Android ships as a full app** under
-`android/`, and **iOS is an experimental, build-from-source community port** (see
-[PR #42](../../../pull/42)). All reuse the same packages where they can.
+app layer. The **macOS app is the reference implementation**, and **iOS is an experimental,
+build-from-source community port** (see [PR #42](../../../pull/42)). Both reuse the same packages
+where they can.
 
 ```
 Strand/
@@ -273,30 +273,6 @@ compiles for iOS today**; the rest is the app-layer wiring captured in that PR a
    Because the design system (`StrandDesign`) already bridges `NSColor`/`UIColor` behind
    `#if canImport(AppKit) / #elseif canImport(UIKit)`, the palette, fonts, and most components carry
    over without edits.
-
----
-
-## Android (shipped)
-
-Android ships as a **full, native client** — a separate Kotlin/Gradle module rather than a port of
-the Swift app. It lives under **`android/`** with its own `README`, and pre-built APKs
-(`NOOP-full.apk` plus a sample-data `NOOP-demo.apk`) are published in [Releases](../../../releases).
-
-Toolchain:
-
-| Tool            | Version |
-|-----------------|---------|
-| JDK             | 17      |
-| Android Studio  | current stable (with Android SDK) |
-| Build system    | Gradle (Android Gradle Plugin) |
-
-The Android app re-implements the same wire protocol against Android's BLE stack (the protocol
-facts in `WhoopProtocol/Resources/whoop_protocol.json` are language-agnostic). Build and run
-instructions live in **`android/README.md`** — open the `android/` directory in Android Studio, let
-Gradle sync, and run on a device with Bluetooth (an emulator cannot reach a physical strap).
-
-> The macOS app remains the reference implementation; the shared packages define the protocol,
-> storage, analytics, and import behavior every client matches.
 
 ---
 

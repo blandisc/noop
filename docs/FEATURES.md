@@ -4,8 +4,8 @@ NOOP is a standalone, fully **offline** companion app for WHOOP straps (4.0 and 
 directly with the strap over Bluetooth Low Energy — **no WHOOP account, no
 cloud** — stores everything on-device in SQLite, imports your WHOOP and Apple Health exports,
 and computes recovery, strain, HRV and sleep locally. The macOS app (in `Strand/`) is the
-reference implementation; Android (in `android/`) is a full, shipped app, and iOS is an
-experimental, build-from-source community port ([PR #42](../../../pull/42)).
+reference implementation, and iOS is an experimental, build-from-source community port
+([PR #42](../../../pull/42)).
 
 > **Not affiliated with WHOOP.** NOOP is independent interoperability software for *your own*
 > device and *your own* data. "WHOOP" is used only to identify the hardware NOOP talks to.
@@ -439,9 +439,8 @@ HRV down ≥20%, skin temp up ≥0.6 °C, respiration up — a banner appears on
 
 On a banner transition from clear to raised, NOOP also posts a **system notification** (at most
 once per local day) so the warning reaches you when the window is closed. The toggle lives in
-**Automations → Illness early-warning**. The defaults differ by platform on purpose: macOS is
-**opt-in** (off by default — enabling it triggers the notification-permission prompt), while
-Android is **opt-out** (on by default — the watch has always run there). Needs at least 14 days
+**Automations → Illness early-warning** and is **opt-in** (off by default — enabling it triggers
+the notification-permission prompt). Needs at least 14 days
 of history. On-device and approximate — informational only, **not** a diagnosis.
 
 ---
