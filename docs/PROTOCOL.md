@@ -388,6 +388,20 @@ data, brick, or power-cycle the strap. NOOP must never send them.
 | 45 | `ENTER_BLE_DFU` | enters DFU bootloader |
 | 99 | `RESET_FUEL_GAUGE` | resets battery fuel gauge |
 
+**Payload forms** (decoded from the official app's command builders — recorded here only so the
+wire format is *known and avoidable*, not so it can be sent). The opcodes are shared across WHOOP 4
+(harvard) and WHOOP 5/MG (puffin): the app's unified command enum (`EnumC58479e`) uses the same
+`25`/`29`/`32` on both transports — unlike haptics, which has a maverick-specific `0x13`.
+
+- `FORCE_TRIM` (25) — body is **two little-endian int32 range args**. The app's "erase everything"
+  form sets both to `-16843010` (`0xFEFEFEFE`), an 8-byte sentinel that trims the entire stored
+  range (builder `rh0.C45484g`: `new C45484g(-16843010, -16843010)`). It is **not** an empty/`[0x00]`
+  payload. This wipes the rolling ~14-day flash history — anything not already offloaded is gone.
+- `REBOOT_STRAP` (29) — **empty body** (builder `rh0.C45476d0` passes a null payload). The strap drops
+  the BLE link and re-advertises after boot; stored data is kept. Non-destructive, but interrupts any
+  in-flight offload. 5/MG framing is not hardware-confirmed (haptics already showed 5/MG can diverge on
+  both opcode and payload), so treat the puffin form as unverified until a real wire capture exists.
+
 ---
 
 ## 7. Historical-data offload (backfill)
