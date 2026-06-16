@@ -11,6 +11,7 @@ public enum NoopMetrics {
     public static let gap: CGFloat = 12          // gap between cards
     public static let sectionGap: CGFloat = 28   // gap between sections
     public static let screenPadding: CGFloat = 24
+    public static let sourceGlyph: CGFloat = 13  // point size of a data-source SF Symbol glyph
     public static let tileHeight: CGFloat = 104  // every metric tile is this tall
     public static let chartHeight: CGFloat = 220
     /// Clean band reserved below the area fill (via the Y-scale's bottom padding) so the X-axis

@@ -1192,42 +1192,58 @@ struct TodayView: View {
         let hasData    = whoopDays > 0 || ahDays > 0
         let hasSync    = live.lastSyncError != nil || live.lastSyncedAt != nil
 
+        let showsSync = !live.backfilling && hasSync
+
         if hasData || hasSync {
-            VStack(alignment: .leading, spacing: 4) {
-                if hasData {
-                    HStack(alignment: .top, spacing: 16) {
+            NoopCard {
+                VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+                    Text("Sources").strandOverline()
+                    if hasData {
                         if whoopDays > 0 {
-                            VStack(alignment: .leading, spacing: 3) {
-                                SourceBadge("Whoop", tint: StrandPalette.accent)
-                                Text(String(localized: "\(whoopDays) days · \(repo.sleeps.count) sleeps"))
-                                    .font(StrandFont.footnote)
-                                    .foregroundStyle(StrandPalette.textTertiary)
-                            }
+                            sourceRow(symbol: "bolt.heart.fill", name: "WHOOP",
+                                      count: String(localized: "\(whoopDays) days · \(repo.sleeps.count) sleeps"),
+                                      tint: StrandPalette.accent)
                         }
                         if ahDays > 0 {
-                            VStack(alignment: .leading, spacing: 3) {
-                                SourceBadge("Apple Health", tint: StrandPalette.metricCyan)
-                                Text(String(localized: "\(ahDays) days · \(ahWorkouts) workouts"))
-                                    .font(StrandFont.footnote)
-                                    .foregroundStyle(StrandPalette.textTertiary)
-                            }
+                            sourceRow(symbol: "heart.fill", name: "Apple Health",
+                                      count: String(localized: "\(ahDays) days · \(ahWorkouts) workouts"),
+                                      tint: StrandPalette.metricCyan)
                         }
                     }
-                }
-                if !live.backfilling && hasSync {
-                    TimelineView(.periodic(from: .now, by: 60)) { context in
-                        if let error = live.lastSyncError {
-                            Text(error)
-                                .font(StrandFont.footnote)
-                                .foregroundStyle(StrandPalette.statusWarning)
-                        } else if let at = live.lastSyncedAt {
-                            Text("History synced \(relativeAgo(at, now: context.date.timeIntervalSince1970))")
-                                .font(StrandFont.footnote)
-                                .foregroundStyle(StrandPalette.textTertiary)
+                    if showsSync {
+                        if hasData { Divider().overlay(StrandPalette.hairline) }
+                        TimelineView(.periodic(from: .now, by: 60)) { context in
+                            if let error = live.lastSyncError {
+                                syncLine(text: error, tone: .warning, color: StrandPalette.statusWarning)
+                            } else if let at = live.lastSyncedAt {
+                                syncLine(text: String(localized: "History synced \(relativeAgo(at, now: context.date.timeIntervalSince1970))"),
+                                         tone: .neutral, color: StrandPalette.textTertiary)
+                            }
                         }
                     }
                 }
             }
+        }
+    }
+
+    /// One data-source row: tinted glyph + brand name on the left, tabular count flush right.
+    private func sourceRow(symbol: String, name: LocalizedStringKey, count: String, tint: Color) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: symbol)
+                .font(.system(size: NoopMetrics.sourceGlyph, weight: .semibold))
+                .foregroundStyle(tint)
+                .frame(width: 18)
+            Text(name).font(StrandFont.subhead).foregroundStyle(StrandPalette.textPrimary)
+            Spacer(minLength: 8)
+            Text(count).font(StrandFont.captionNumber).foregroundStyle(StrandPalette.textSecondary)
+        }
+    }
+
+    /// The sync footer line: a small status dot + footnote text.
+    private func syncLine(text: String, tone: StrandTone, color: Color) -> some View {
+        HStack(spacing: 6) {
+            ConnectionDot(tone: tone, size: 6)
+            Text(text).font(StrandFont.footnote).foregroundStyle(color)
         }
     }
 
