@@ -43,7 +43,7 @@ struct IntelligenceView: View {
         .task { if intelligence.results.isEmpty { await intelligence.analyzeRecent() } }
         .toolbar {
             ToolbarItem {
-                Button { Task { await intelligence.analyzeRecent() } } label: {
+                Button { Task { await intelligence.analyzeRecent(force: true) } } label: {
                     Label("Recompute", systemImage: "arrow.clockwise")
                 }
                 .disabled(intelligence.computing)

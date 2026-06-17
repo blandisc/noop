@@ -92,6 +92,13 @@ final class AppModel: ObservableObject {
     /// the importers poll cancellation cooperatively so the work actually stops (FER-33).
     private var importTask: Task<Void, Never>?
 
+    /// The periodic on-device analysis loop, retained so it can be cancelled. It used to be a
+    /// fire-and-forget `Task` that lived for the whole process, re-reading ~21 days × 8 streams every
+    /// 15 min and competing with BLE keep-alive / backfill / HR sinks on the main actor even while the
+    /// app sat in the background. Now it's cancelled on background and resumed on foreground, and each
+    /// tick skips the heavy pass while a backfill/import is writing (FER-177).
+    private var analysisTask: Task<Void, Never>?
+
     /// True while any data-source import is writing to the local store.
     var hasActiveImport: Bool { activeImportSource != nil }
 
@@ -179,15 +186,39 @@ final class AppModel: ObservableObject {
         // Turn the strap's offloaded raw data into dashboard scores on launch and every 15
         // minutes, so recovery / strain / sleep populate from the strap itself with no import.
         // IntelligenceEngine computes, persists under "my-whoop-noop", and refreshes the dashboard.
-        Task { [weak self] in
+        startAnalysisLoop()
+    }
+
+    /// Start (or resume) the periodic on-device analysis loop. Idempotent — a call while the loop is
+    /// already running is a no-op, so the launch path and the scene-phase `.active` hook don't
+    /// double-start it. The loop refreshes the dashboard once, waits for the first offload, then every
+    /// 15 min runs `analyzeRecent()` UNLESS a backfill or import is writing (it would compete with BLE
+    /// on the main actor and could score fresh raw rows against a stale baseline). Cancelled in
+    /// `stopAnalysisLoop()` when the app backgrounds (FER-177).
+    func startAnalysisLoop() {
+        guard analysisTask == nil else { return }
+        #if DEBUG
+        // Screenshot fixtures seed a synthetic dashboard; the production loop would overwrite it.
+        if ScreenshotFixtures.activeState() != nil { return }
+        #endif
+        analysisTask = Task { [weak self] in
             guard let self else { return }
             await self.repo.refresh()                          // surface any imported data at once
             try? await Task.sleep(nanoseconds: 6_000_000_000)  // give the first offload a moment
             while !Task.isCancelled {
-                await self.intelligence.analyzeRecent()
+                if !self.live.backfilling, !self.hasActiveImport {
+                    await self.intelligence.analyzeRecent()
+                }
                 try? await Task.sleep(nanoseconds: 900_000_000_000)  // 15 min, matches the offload cadence
             }
         }
+    }
+
+    /// Cancel the periodic analysis loop (app backgrounded / teardown). Any in-flight `analyzeRecent`
+    /// finishes its current pass, then the loop exits; the next `startAnalysisLoop()` begins fresh.
+    func stopAnalysisLoop() {
+        analysisTask?.cancel()
+        analysisTask = nil
     }
 
     private func refreshAfterCompletedBackfill() async {
