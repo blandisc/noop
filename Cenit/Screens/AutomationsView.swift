@@ -139,8 +139,8 @@ struct AutomationsView: View {
                         .padding(.top, 6)
                 }
             }
-            .onChange(of: behavior.smartAlarmEnabled) { _ in model.applySmartAlarm() }
-            .onChange(of: behavior.smartAlarmMinutes) { _ in model.applySmartAlarm() }
+            .onChange(of: behavior.smartAlarmEnabled) { model.applySmartAlarm() }
+            .onChange(of: behavior.smartAlarmMinutes) { model.applySmartAlarm() }
         }
     }
 
@@ -152,7 +152,7 @@ struct AutomationsView: View {
             ToggleRow(label: "Watch for early-illness signs",
                       help: "Needs at least 14 days of history. When two or more signals drift together you get a banner on Control Center and a notification — at most once a day.",
                       isOn: $behavior.illnessWatch)
-                .onChange(of: behavior.illnessWatch) { _ in
+                .onChange(of: behavior.illnessWatch) {
                     model.reevaluateIllness()
                     if behavior.illnessWatch { IllnessNotifier.requestAuthorization() }
                 }

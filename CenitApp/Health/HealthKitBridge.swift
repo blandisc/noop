@@ -480,7 +480,7 @@ final class HealthKitBridge: ObservableObject {
 
     /// Convert an HKWorkoutActivityType to the camelCase string that matches what the XML export
     /// importer stores (e.g. "TraditionalStrengthTraining"). displaySport() then inserts spaces.
-    static func activityTypeName(_ type: HKWorkoutActivityType) -> String {
+    nonisolated static func activityTypeName(_ type: HKWorkoutActivityType) -> String {
         switch type {
         case .americanFootball:             return "AmericanFootball"
         case .archery:                      return "Archery"
@@ -568,11 +568,14 @@ final class HealthKitBridge: ObservableObject {
     // UTC: the rest of the store keys days by UTC (Repository's compareDayParser, the
     // dailyMetric primary key). Using .current here would split the same physical day across
     // two `yyyy-MM-dd` keys when the user crosses a time zone, causing duplicate daily rows.
-    private static let dayFormatter: DateFormatter = {
+    // These helpers are `nonisolated` so they can run on HealthKit's query-callback queue without
+    // hopping to the main actor (`HealthKitBridge` is `@MainActor`); the formatter is an immutable,
+    // Sendable constant, safe to read from any context.
+    nonisolated private static let dayFormatter: DateFormatter = {
         let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX")
         f.dateFormat = "yyyy-MM-dd"; f.timeZone = TimeZone(identifier: "UTC")!; return f
     }()
-    private static func dayString(_ date: Date) -> String { dayFormatter.string(from: date) }
-    private static func date(from day: String) -> Date? { dayFormatter.date(from: day) }
+    nonisolated private static func dayString(_ date: Date) -> String { dayFormatter.string(from: date) }
+    nonisolated private static func date(from day: String) -> Date? { dayFormatter.date(from: day) }
 }
 #endif

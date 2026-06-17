@@ -60,7 +60,7 @@ struct SleepView: View {
             // Persist the freshly-built model so subsequent renders with the same inputs hit
             // the cache. Writing State during body is not allowed, so commit it after layout;
             // `resolved` already drives THIS frame, so there is no flash and no extra rebuild.
-            .onChange(of: key) { newKey in
+            .onChange(of: key) { _, newKey in
                 modelKey = newKey
                 model = buildModel()
             }

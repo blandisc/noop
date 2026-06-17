@@ -94,9 +94,9 @@ struct IntervalTimerView: View {
             }
         }
         .onReceive(ticker) { _ in tick() }
-        .onChange(of: workSeconds) { _ in if !running { resetToStart() } }
-        .onChange(of: restSeconds) { _ in if !running { resetToStart() } }
-        .onChange(of: rounds) { _ in
+        .onChange(of: workSeconds) { if !running { resetToStart() } }
+        .onChange(of: restSeconds) { if !running { resetToStart() } }
+        .onChange(of: rounds) {
             if currentRound > rounds { currentRound = rounds }
             if !running { resetToStart() }
         }

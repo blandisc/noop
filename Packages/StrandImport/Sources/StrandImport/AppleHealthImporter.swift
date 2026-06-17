@@ -398,7 +398,6 @@ final class HealthXMLDelegate: NSObject, XMLParserDelegate {
             let (end, endOffset) = dateParser.parse(endStr)
         else { return }
 
-        let source = attrs["sourceName"]
         let unit = attrs["unit"]
         let rawValue = attrs["value"]
 

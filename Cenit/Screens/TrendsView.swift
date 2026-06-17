@@ -266,7 +266,7 @@ struct TrendsView: View {
             }
             // Commit the freshly-built model after layout (writing @State during body is not
             // allowed); `resolved` already drives THIS frame, so there is no flash.
-            .onChange(of: key) { newKey in
+            .onChange(of: key) { _, newKey in
                 modelKey = newKey
                 model = buildModel()
             }
