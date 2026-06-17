@@ -32,7 +32,8 @@ struct BlockSet: OptionSet {
     static let consistency = BlockSet(rawValue: 1 << 5)
     /// "Vitales de la noche" — respiration + resting HR read together.
     static let nightVitals = BlockSet(rawValue: 1 << 6)
-    // "Qué la mueve" → FER-209 (correlación real + gate de datos)
+    /// "Qué la mueve" — a documented, DIRECTIONAL tendency (never a coefficient or cause). FER-209.
+    static let whatMovesIt = BlockSet(rawValue: 1 << 7)
 }
 
 /// How the hero numeral reads.
@@ -64,27 +65,28 @@ struct MetricDetailSpec: Identifiable {
     // MARK: - Factories (wrap + reuse the MetricInfo factories — no copy duplicated here)
 
     /// HRV detail. Full block set (it's the protagonist vital): selector, chart+band, normal range,
-    /// consistency, trend, night vitals, method. Hero = 7-day moving average.
-    /// ("Qué la mueve" → FER-209: correlación real + gate de datos.)
+    /// consistency, trend, night vitals, what-moves-it, method. Hero = 7-day moving average.
     static func hrv(_ value: Double?) -> MetricDetailSpec {
         MetricDetailSpec(
             descriptor: Self.catalog("hrv"),
             info: .hrv(value),
             blocks: [.periodSelector, .seriesChartBand, .normalRange, .consistency,
-                     .trend, .nightVitals, .method],
+                     .trend, .nightVitals, .whatMovesIt, .method],
             hero: .movingAverage7,
             baselineCfg: Baselines.hrvCfg,
             populationRange: 20...120
         )
     }
 
-    /// Resting-HR detail. Simpler than HRV — no consistency / night vitals / what-moves-it. Hero =
-    /// 7-day moving average. Its bands ("lower is better") live in the reused `MetricInfo.restingHR`.
+    /// Resting-HR detail. Simpler than HRV — no consistency / night vitals — but it DOES carry
+    /// "Qué la mueve" (FER-209: same-night sleep + prior-day strain, mirrored from HRV with the
+    /// opposite sign). Hero = 7-day moving average. Its bands ("lower is better") live in the reused
+    /// `MetricInfo.restingHR`.
     static func restingHR(_ value: Int?) -> MetricDetailSpec {
         MetricDetailSpec(
             descriptor: Self.catalog("rhr"),
             info: .restingHR(value),
-            blocks: [.periodSelector, .seriesChartBand, .normalRange, .trend, .method],
+            blocks: [.periodSelector, .seriesChartBand, .normalRange, .trend, .whatMovesIt, .method],
             hero: .movingAverage7,
             baselineCfg: Baselines.restingHRCfg,
             populationRange: 40...85
