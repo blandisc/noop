@@ -31,17 +31,22 @@ public enum VitalityInputsBuilder {
         public var nightlyRMSSD: [Double]       // ms, nocturnal HRV
         public var nightlySleepHours: [Double]  // hours per night
         public var dailySteps: [Double]         // steps per day
+        /// A real Sleep Regularity Index on 0–1 (SRI/100, FER-214); when present it OVERRIDES the
+        /// duration proxy below. nil → fall back to the `1 − CV` proxy.
+        public var sleepRegularity: Double?
 
         public init(chronoAge: Double,
                     nightlyRestingHR: [Double] = [],
                     nightlyRMSSD: [Double] = [],
                     nightlySleepHours: [Double] = [],
-                    dailySteps: [Double] = []) {
+                    dailySteps: [Double] = [],
+                    sleepRegularity: Double? = nil) {
             self.chronoAge = chronoAge
             self.nightlyRestingHR = nightlyRestingHR
             self.nightlyRMSSD = nightlyRMSSD
             self.nightlySleepHours = nightlySleepHours
             self.dailySteps = dailySteps
+            self.sleepRegularity = sleepRegularity
         }
     }
 
@@ -55,7 +60,8 @@ public enum VitalityInputsBuilder {
         let rmssdNorm = rmssd != nil ? VitalityEngine.rmssdNorm(forAge: s.chronoAge) : nil
 
         let sleepHours = median(s.nightlySleepHours.filter { $0 > 0 })
-        let consistency = VitalityEngine.sleepConsistency(nightlyHours: s.nightlySleepHours)
+        // A real SRI (FER-214) wins when present; otherwise the documented duration proxy.
+        let consistency = s.sleepRegularity ?? VitalityEngine.sleepConsistency(nightlyHours: s.nightlySleepHours)
 
         let steps = mean(s.dailySteps.filter { $0 >= 0 })
 
