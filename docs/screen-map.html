@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-17 · FER-194</span>
+  <span class="tb-updated">Actualizado 2026-06-17 · FER-195</span>
 </div>
 
 <div id="wrapper">
@@ -531,12 +531,13 @@ const SCREENS = [
   // ── ROW 3: Dispositivo (y = 2010) ─────────
   {
     id: 'live', x: 30, y: 2010,
-    name: 'Live', desc: 'Hoja única «Instrumento» · señales unificadas · sin scroll',
+    name: 'Live', desc: 'Hoja única «Instrumento» · señales unificadas · reconexión pausada · sin scroll',
     file: 'Cenit/Screens/LiveView.swift',
     icon: '📡', color: '#0C8F62',
     states: [
       { label: 'Conectada · transmitiendo', type: 'live' },
       { label: 'Conectada · idle (no puesta)', type: 'data' },
+      { label: 'Reconectando (caída corta · pausado)', type: 'data' },
       { label: 'Desconectada → CTA Conectar', type: 'empty' },
       { label: 'monitorOnly (cover de Hoy)', type: 'data' },
     ],
