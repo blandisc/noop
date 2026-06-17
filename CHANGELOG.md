@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Detalle de métrica con tu contexto personal / Per-metric detail with your personal context.**
+  **ES** — Toca HRV, frecuencia cardiaca en reposo o frecuencia respiratoria en Cuerpo (o en Hoy) y se abre una pantalla con tu media de 7 días, tu rango normal personal, la tendencia del periodo que elijas (de semana a año) y cómo se calcula — mucho más que el número de un solo día.
+  **EN** — Tap HRV, resting heart rate, or respiratory rate in Body (or Today) to open a screen with your 7-day average, your personal normal range, the trend over the period you pick (week to year), and how it's computed — far more than just today's number.
+  ([Cenit/Screens/MetricDetailScreen.swift](Cenit/Screens/MetricDetailScreen.swift))
+
 - **Sincroniza tu correa jalando la pantalla de Hoy hacia abajo / Sync your strap by pulling Today down.**
   **ES** — Ahora puedes **jalar la pantalla de Hoy hacia abajo** para forzar una sincronización con tu correa, igual que en las apps que ya conoces. Sientes una **pequeña vibración** al provocarlo y aparece el indicador de carga de siempre; en cuanto arranca la sincronización el indicador se retira (no se queda girando), y la descarga del historial sigue marcándose abajo con «Sincronizando historial…». Si tu correa estaba desconectada, el jalón **intenta reconectarla** y sincroniza sola; si nunca has emparejado una correa, solo refresca lo que ya está en el teléfono. Tus números se actualizan solos cuando llegan datos nuevos.
   **EN** — You can now **pull the Today screen down** to force a sync with your strap, just like the apps you already know. You feel a **little vibration** when you trigger it and the usual loading indicator appears; the moment the sync starts the indicator goes away (it doesn't keep spinning), and the history download keeps showing below as "Syncing strap history…". If your strap was disconnected, the pull **tries to reconnect** and syncs on its own; if you've never paired a strap, it just refreshes what's already on your phone. Your numbers update on their own as new data arrives.

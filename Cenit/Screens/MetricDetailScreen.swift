@@ -102,7 +102,7 @@ struct MetricDetailScreen: View {
         if visibleBlocks.contains(.consistency) { consistencyBlock }
         if visibleBlocks.contains(.trend) { trendBlock }
         if visibleBlocks.contains(.nightVitals) { nightVitalsBlock }
-        if visibleBlocks.contains(.whatMovesIt) { whatMovesItBlock }
+        // "Qué la mueve" → FER-209 (correlación real + gate de datos)
         if visibleBlocks.contains(.method), let method = spec.info.method { methodDisclosure(method) }
     }
 
@@ -403,20 +403,6 @@ struct MetricDetailScreen: View {
         let resp = nightVitals.respiration.map { String(format: "%.1f", $0) } ?? "—"
         let rhr = nightVitals.restingHR.map { "\(Int($0.rounded()))" } ?? "—"
         return "Respiration \(resp) · Resting HR \(rhr)"
-    }
-
-    // MARK: - What moves it
-
-    private var whatMovesItBlock: some View {
-        block(title: "What moves it") {
-            VStack(alignment: .leading, spacing: 8) {
-                InlineFlagChip("trend, not cause", color: theme.inkTertiary)
-                Text("Tends to dip on nights with less than 7 h of sleep.")
-                    .font(StrandFont.caption)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
     }
 
     // MARK: - Method disclosure (ported from MetricInfoSheet)

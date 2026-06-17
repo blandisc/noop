@@ -15827,23 +15827,6 @@
         }
       }
     },
-    "Tends to dip on nights with less than 7 h of sleep.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tends to dip on nights with less than 7 h of sleep."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tiende a bajar las noches con menos de 7 h de sueño."
-          }
-        }
-      }
-    },
     "Test %@ buzz": {
       "localizations": {
         "de": {
@@ -17507,23 +17490,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Was jede Farbe bedeutet"
-          }
-        }
-      }
-    },
-    "What moves it": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "What moves it"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Qué la mueve"
           }
         }
       }
@@ -20201,23 +20167,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "hoy"
-          }
-        }
-      }
-    },
-    "trend, not cause": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "trend, not cause"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "tendencia, no causa"
           }
         }
       }

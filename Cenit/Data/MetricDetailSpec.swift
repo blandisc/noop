@@ -32,8 +32,7 @@ struct BlockSet: OptionSet {
     static let consistency = BlockSet(rawValue: 1 << 5)
     /// "Vitales de la noche" — respiration + resting HR read together.
     static let nightVitals = BlockSet(rawValue: 1 << 6)
-    /// "Qué la mueve" — a documented tendency (not causation) line.
-    static let whatMovesIt = BlockSet(rawValue: 1 << 7)
+    // "Qué la mueve" → FER-209 (correlación real + gate de datos)
 }
 
 /// How the hero numeral reads.
@@ -65,13 +64,14 @@ struct MetricDetailSpec: Identifiable {
     // MARK: - Factories (wrap + reuse the MetricInfo factories — no copy duplicated here)
 
     /// HRV detail. Full block set (it's the protagonist vital): selector, chart+band, normal range,
-    /// consistency, trend, night vitals, what-moves-it, method. Hero = 7-day moving average.
+    /// consistency, trend, night vitals, method. Hero = 7-day moving average.
+    /// ("Qué la mueve" → FER-209: correlación real + gate de datos.)
     static func hrv(_ value: Double?) -> MetricDetailSpec {
         MetricDetailSpec(
             descriptor: Self.catalog("hrv"),
             info: .hrv(value),
             blocks: [.periodSelector, .seriesChartBand, .normalRange, .consistency,
-                     .trend, .nightVitals, .whatMovesIt, .method],
+                     .trend, .nightVitals, .method],
             hero: .movingAverage7,
             baselineCfg: Baselines.hrvCfg,
             populationRange: 20...120
