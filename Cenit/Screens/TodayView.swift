@@ -260,12 +260,19 @@ struct TodayView: View {
                 // lleva el numeral, su color (regla «color = listo / tinta = en espera») y el pie. Ver
                 // `heroInstrument` + `heroState`.
                 heroInstrument
-                // Sube «Métricas clave» pegándola más al pie del héroe («Verlo latido a latido»): recorta
-                // el `sectionGap` (28) de esta sección a ~12 con un inset negativo, sin tocar los gaps del
-                // héroe ni de Fuentes.
+                // Sube «Métricas de hoy» pegándola al pie del héroe: recorta el `sectionGap` (28) de esta
+                // sección a ~12 con un inset negativo, sin tocar los gaps del héroe.
                 iosMetricsSection
                     .padding(.top, -16)
-                iosSourcesSection
+                // «Verlo latido a latido» (acceso al monitor en vivo) baja al PIE de Hoy (FER-189): sale
+                // del pie del héroe —que queda limpio: número + veredicto— y cierra la pantalla. Solo
+                // cuando ya se vio un strap (si no, el héroe muestra el CTA «Buscar strap»). La sección
+                // «Fuentes» se retiró de Hoy (vive en Fuentes de datos / Ajustes) para que todo quepa en
+                // una pantalla.
+                if strapSeen {
+                    LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
+                        .padding(.top, -10)
+                }
             }
             // Inset superior 20: el héroe queda alto pero respira; márgenes horizontal/inferior estándar.
             .padding(.horizontal, NoopMetrics.screenPadding)
@@ -571,21 +578,18 @@ struct TodayView: View {
         }
     }
 
-    /// El pie adaptable: pulso vivo (veredicto y modos con strap), atajo Apple Health + pulso (calibrando),
-    /// o el CTA «Buscar strap» cuando nunca se ha visto uno.
+    /// El pie del héroe — solo afordancias de onboarding (FER-189): el CTA «Buscar strap» cuando nunca se
+    /// ha visto uno, o el atajo «¿Tienes historial en Apple Salud?…» mientras calibra. El renglón de pulso
+    /// vivo «Verlo latido a latido» se MUDÓ al pie de la pantalla (`iosBody`), así que el héroe queda
+    /// limpio: número + veredicto. En veredicto / espera-con-strap el pie del héroe no muestra nada.
     @ViewBuilder private func heroFooter(_ s: HeroState) -> some View {
         switch s {
         case .verdict:
-            LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
+            EmptyView()
         case .calibrating:
             appleHealthShortcut { showDataSources = true }
-            LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
         case .importedBaseline, .waiting:
-            if strapSeen {
-                LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
-            } else {
-                scanButton
-            }
+            if !strapSeen { scanButton }
         }
     }
 
@@ -1031,25 +1035,26 @@ struct TodayView: View {
 
         var body: some View {
             VStack(alignment: .leading, spacing: 0) {
+                // Etiqueta a UNA línea (FER-189): mantiene el tile bajo y parejo; un nombre largo
+                // (Frecuencia cardíaca) se encoge un poco en vez de envolver a 2 líneas y crecer el alto.
                 Text(label).instrumentoOverline()
                     .foregroundStyle(theme.inkSecondary)
-                    .lineLimit(2).minimumScaleFactor(0.85)
-                    .multilineTextAlignment(.leading)
-                Spacer(minLength: 4)
+                    .lineLimit(1).minimumScaleFactor(0.7)
+                Spacer(minLength: 2)
                 HStack(alignment: .firstTextBaseline, spacing: 3) {
-                    Text(value).font(StrandFont.number(24)).foregroundStyle(valueColor)
+                    Text(value).font(StrandFont.number(22)).foregroundStyle(valueColor)
                         .lineLimit(1).minimumScaleFactor(0.6)
                     if let unit {
                         Text(unit).font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
                     }
                 }
-                Spacer(minLength: 4)
+                Spacer(minLength: 2)
                 footer
             }
-            .padding(14)
-            // `maxHeight: .infinity` hace que cada tile rellene la altura del renglón (la marca el tile
-            // más alto del par): una etiqueta que envuelve a 2 líneas no deja un card más bajo al lado.
-            .frame(maxWidth: .infinity, minHeight: NoopMetrics.tileHeight, maxHeight: .infinity, alignment: .topLeading)
+            .padding(10)
+            // Alto fijo compacto (FER-189): sin sparkline las tiles ya no necesitan los 104pt heredados;
+            // 76 deja la rejilla 2×4 pareta y ayuda a que Hoy quepa en una pantalla.
+            .frame(maxWidth: .infinity, minHeight: 76, maxHeight: 76, alignment: .topLeading)
             .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
                 .strokeBorder(theme.hairline, lineWidth: 1))
@@ -1104,58 +1109,6 @@ struct TodayView: View {
                     .fill(configuration.isPressed ? pressedFill : Color.clear))
                 .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
         }
-    }
-
-    /// Rule between metric rows (not above the first — the section header already caps the list).
-    /// Un poco más gruesa que el hairline por defecto (1pt vs ~0.5) y en `hairlineStrong` para que la
-    /// separación entre métricas se lea con más presencia sobre el papel claro.
-    private var metricSeparator: some View {
-        Rectangle().fill(theme.hairlineStrong).frame(height: 1)
-    }
-
-    /// Carta de Fuentes traída a Hoy (FER-164) en lenguaje «Instrumento diurno»: jerarquía REDUCIDA —
-    /// un overline callado «FUENTES» (no un título como Métricas clave) — y una fila por fuente con el
-    /// glifo en color del dato (verde WHOOP / azul Apple Salud), nombre en tinta y conteo tabular,
-    /// divididas por la misma hairline. SIN la línea de sincronización (ya vive en el header de arriba).
-    /// La `SourcesSummaryCard` compartida (macOS Today / Fuentes de datos) queda intacta. Renderiza nada
-    /// hasta que haya al menos una fuente con datos.
-    @ViewBuilder private var iosSourcesSection: some View {
-        let whoopDays = repo.days.count - repo.appleHealthDays.count
-        let ahDays    = repo.appleHealthDays.count
-        let appleWk   = workouts.filter { $0.source == "apple-health" }.count
-        if whoopDays > 0 || ahDays > 0 {
-            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-                Text("Fuentes").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                VStack(spacing: 0) {
-                    if whoopDays > 0 {
-                        sourceRow(symbol: "bolt.heart.fill", name: "WHOOP",
-                                  detail: String(localized: "\(whoopDays) días · \(repo.sleeps.count) sueños"),
-                                  tint: theme.dataRecovery)
-                    }
-                    if whoopDays > 0 && ahDays > 0 { metricSeparator }
-                    if ahDays > 0 {
-                        sourceRow(symbol: "heart.fill", name: "Apple Salud",
-                                  detail: String(localized: "\(ahDays) días · \(appleWk) entrenamientos"),
-                                  tint: theme.dataSpO2)
-                    }
-                }
-            }
-        }
-    }
-
-    /// Una fila de fuente: glifo tintado (la identidad de la fuente, único color de la fila) + nombre
-    /// en tinta + conteo tabular a la derecha. Quieta a propósito — es un pie, no compite con las métricas.
-    private func sourceRow(symbol: String, name: LocalizedStringKey, detail: String, tint: Color) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: symbol)
-                .font(StrandFont.headline)
-                .foregroundStyle(tint)
-                .frame(width: 22)
-            Text(name).font(StrandFont.body).foregroundStyle(theme.ink)
-            Spacer(minLength: 8)
-            Text(detail).font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
-        }
-        .padding(.vertical, 12)
     }
 
     /// On-device readiness for the verdict hero (same engine the macOS `readinessSection` uses).
