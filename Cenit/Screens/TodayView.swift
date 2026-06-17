@@ -262,17 +262,11 @@ struct TodayView: View {
                 heroInstrument
                 // Sube «Métricas de hoy» pegándola al pie del héroe: recorta el `sectionGap` (28) de esta
                 // sección a ~12 con un inset negativo, sin tocar los gaps del héroe.
+                // El acceso al monitor en vivo «latido a latido» ya no es una fila al pie (FER-189): vive
+                // como una pastilla de pulso en el encabezado de «Métricas de hoy» (FER-194), así el pie de
+                // Hoy queda limpio y la pantalla cabe completa. Ver `iosMetricsSection` + `LivePulsePill`.
                 iosMetricsSection
                     .padding(.top, -16)
-                // «Verlo latido a latido» (acceso al monitor en vivo) baja al PIE de Hoy (FER-189): sale
-                // del pie del héroe —que queda limpio: número + veredicto— y cierra la pantalla. Solo
-                // cuando ya se vio un strap (si no, el héroe muestra el CTA «Buscar strap»). La sección
-                // «Fuentes» se retiró de Hoy (vive en Fuentes de datos / Ajustes) para que todo quepa en
-                // una pantalla.
-                if strapSeen {
-                    LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
-                        .padding(.top, -10)
-                }
             }
             // Inset superior 20: el héroe queda alto pero respira; márgenes horizontal/inferior estándar.
             .padding(.horizontal, NoopMetrics.screenPadding)
@@ -637,8 +631,8 @@ struct TodayView: View {
     }
 
     /// Atajo de adelanto por Apple Health (solo en calibración): un usuario con historial puede sembrar la
-    /// base ahora en vez de esperar las 0→seed noches. Renglón full-width con hairline (mismo chrome que
-    /// LiveHeartbeatRow) que abre Fuentes de datos.
+    /// base ahora en vez de esperar las 0→seed noches. Renglón full-width con hairline que abre Fuentes de
+    /// datos.
     private func appleHealthShortcut(onTap: @escaping () -> Void) -> some View {
         VStack(spacing: 0) {
             Rectangle().fill(theme.hairline).frame(height: 0.5)
@@ -666,64 +660,43 @@ struct TodayView: View {
         }
     }
 
-    /// El renglón de pulso vivo: el glifo de onda + «Verlo latido a latido», la pastilla de bpm vivo (o
-    /// una insignia callada «Sin lectura»), y un chevron — un Button que abre el monitor latido a latido.
-    /// Anclado al pie de cada héroe con strap (calibración, veredicto, vacío-con-strap). Recoloreado a
-    /// TINTA del tema: solo el punto de pulso vivo lleva color (`dataHeart`), el resto es tinta.
-    private struct LiveHeartbeatRow: View {
+    /// La pastilla de pulso vivo del encabezado de «Métricas de hoy» (FER-194): corazón en tinta + punto
+    /// de pulso + bpm + «bpm», en una cápsula `surface` con hairline. Reemplaza la fila «Verlo latido a
+    /// latido» del pie (FER-189); es un Button compacto que abre el monitor latido a latido. Regla «color
+    /// solo en el dato»: únicamente el punto lleva color (`dataHeart` al transmitir), el resto va en tinta.
+    /// Sin lectura del strap → muestra «—» y el punto en tinta, pero sigue tappable.
+    private struct LivePulsePill: View {
         var liveBpm: Int?
         var isLiveHR: Bool
         let onTap: () -> Void
         @Environment(\.instrumentoTheme) private var theme
 
         var body: some View {
-            VStack(spacing: 0) {
-                Rectangle().fill(theme.hairlineStrong).frame(height: 1)
-                    .padding(.top, 3).padding(.bottom, 6)
-                Button(action: onTap) {
-                    HStack(spacing: 9) {
-                        Image(systemName: "waveform.path.ecg")
-                            .font(StrandFont.headline).foregroundStyle(theme.inkSecondary)
-                        Text("Verlo latido a latido")
-                            .font(StrandFont.body).fontWeight(.medium)
-                            .foregroundStyle(theme.ink)
-                        Spacer(minLength: 0)
-                        badge
-                        Image(systemName: "chevron.right")
-                            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                    }
-                    // Objetivo táctil compacto (34, bajo el ideal HIG de 44): es un renglón full-width
-                    // (objetivo horizontal amplio) y una acción secundaria, recortado para matar el
-                    // espacio muerto. Reversible a 44 si la accesibilidad lo pide.
-                    .frame(minHeight: 34)
-                }
-                .buttonStyle(.plain)
-                .accessibilityElement(children: .ignore)
-                .accessibilityAddTraits(.isButton)
-                .accessibilityLabel(Text(isLiveHR ? "Frecuencia cardiaca en vivo" : "Frecuencia cardiaca"))
-                .accessibilityValue(Text(liveBpm.map { "\($0) bpm" } ?? "Sin lectura"))
-                .accessibilityHint(Text("Abre el monitor latido a latido"))
-            }
-        }
-
-        /// La pastilla de bpm vivo (punto en `dataHeart` cuando transmite), o una insignia callada
-        /// «Sin lectura» en tinta cuando el strap no está transmitiendo.
-        @ViewBuilder private var badge: some View {
-            if let bpm = liveBpm {
-                // `.center`: el punto se centra ópticamente con el número (antes colgaba bajo la baseline).
+            Button(action: onTap) {
                 HStack(alignment: .center, spacing: 6) {
+                    Image(systemName: "heart.fill")
+                        .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                     Circle().fill(isLiveHR ? theme.dataHeart : theme.inkTertiary)
                         .frame(width: 7, height: 7)
-                    Text("\(bpm)").font(StrandFont.number(15, weight: .semibold))
-                        .foregroundStyle(theme.ink)
+                    if let bpm = liveBpm {
+                        Text("\(bpm)").font(StrandFont.number(15, weight: .semibold))
+                            .foregroundStyle(theme.ink)
+                    } else {
+                        Text("—").font(StrandFont.number(15, weight: .semibold))
+                            .foregroundStyle(theme.inkTertiary)
+                    }
                     Text("bpm").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                 }
-            } else {
-                HStack(alignment: .center, spacing: 6) {
-                    Circle().fill(theme.inkTertiary).frame(width: 7, height: 7)
-                    Text("Sin lectura").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
-                }
+                .padding(.horizontal, 11).padding(.vertical, 5)
+                .background(theme.surface, in: Capsule())
+                .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
             }
+            .buttonStyle(.plain)
+            .accessibilityElement(children: .ignore)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityLabel(Text(isLiveHR ? "Frecuencia cardiaca en vivo" : "Frecuencia cardiaca"))
+            .accessibilityValue(Text(liveBpm.map { "\($0) bpm" } ?? "Sin lectura"))
+            .accessibilityHint(Text("Abre el monitor latido a latido"))
         }
     }
 
@@ -850,8 +823,17 @@ struct TodayView: View {
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
             // Encabezado en TINTA del tema (no el `SectionHeader` compartido, casi blanco sobre el papel
             // claro). Sin trailing "Tendencia 14 días": esta sección ya no es tendencia. Clave en inglés
-            // (es-MX/de en el catálogo) — mismo patrón que los nombres de las hojas de métrica.
-            Text("Today's metrics").font(StrandFont.title1).foregroundStyle(theme.ink)
+            // (es-MX/de en el catálogo) — mismo patrón que los nombres de las hojas de métrica. Al trailing
+            // lleva la pastilla de pulso vivo (FER-194): el acceso al monitor latido a latido se mudó aquí
+            // desde la fila del pie (FER-189), liberando el pie de Hoy. Solo aparece cuando ya se vio un
+            // strap; si no, el encabezado queda solo con el título (el héroe ofrece «Buscar strap»).
+            HStack {
+                Text("Today's metrics").font(StrandFont.title1).foregroundStyle(theme.ink)
+                Spacer(minLength: 8)
+                if strapSeen {
+                    LivePulsePill(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
+                }
+            }
             // Rejilla fija 2×8 (2 columnas, 8 tiles → 4 renglones), separación `NoopMetrics.gap`.
             LazyVGrid(columns: tileGrid, alignment: .leading, spacing: NoopMetrics.gap) {
                 // Esfuerzo del día — carga del día, sin valencia (Δ en tinta neutra).
