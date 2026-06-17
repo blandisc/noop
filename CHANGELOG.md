@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **La gráfica de Pasos ya aparece al abrir su detalle / Steps now shows its 14-day chart.**
+  **ES** — Al tocar el tile de **Pasos** en Hoy, el detalle mostraba el aviso de «sin datos» en lugar de la gráfica de tendencia, aunque el número de hoy sí salía. Pasaba cuando tus pasos venían del **sync en vivo de Apple Health** (no de una importación ni de la correa): ese sync guardaba los pasos para la cifra de hoy, pero se le olvidaba escribirlos en la tabla que alimenta la gráfica de 14 días. Ahora los guarda en ambos lados —igual que ya lo hacían la importación y la correa—, así que la gráfica se llena sola en la próxima sincronización (retroactiva a 30 días).
+  **EN** — Tapping the **Steps** tile on Today showed the "no data" notice instead of the trend chart, even though today's number was there. It happened when your steps came from the **live Apple Health sync** (not an import or the strap): that sync stored steps for today's figure but forgot to write them to the table that feeds the 14-day chart. Now it writes them to both — like the import and the strap already did — so the chart fills in on the next sync (retroactive to 30 days).
+  ([CenitApp/Health/HealthKitBridge.swift](CenitApp/Health/HealthKitBridge.swift))
+
 - **Estrés: la gráfica de tendencia ya aparece / Stress: the trend chart shows up.**
   **ES** — Al tocar **Estrés** en «Métricas de hoy», la hoja de detalle se abría **sin ninguna gráfica** — era la única métrica sin una. Ahora muestra la tendencia de **«Últimos 14 días»** con la curva 0–3 (leída con un decimal), igual que recuperación, sueño, HRV y las demás. Reutiliza el mismo histórico diario que ya alimentaba el mini-sparkline del cuadro, así que no calcula nada nuevo.
   **EN** — Tapping **Stress** in "Today's metrics" opened a detail sheet with **no chart at all** — the only metric missing one. It now shows the **"Last 14 days"** trend with the 0–3 curve (read to one decimal), just like recovery, sleep, HRV and the rest. It reuses the same daily history that already fed the tile's sparkline, so nothing new is computed.
