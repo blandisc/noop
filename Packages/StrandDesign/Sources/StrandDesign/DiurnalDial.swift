@@ -15,9 +15,10 @@ import SwiftUI
 //     read like the «A color» app icon: the day arc is `dataStrain` amber, the
 //     sleep band `dataSleep` indigo, the now-dot `dataRecovery` green, the noon
 //     tick ink. This is CONTEXT (sun, sleep, time of day), NOT the health datum —
-//     that still belongs to the hero numeral TodayView lays beside the dial, which
-//     is why the centre is intentionally left empty here. (This deliberately
-//     supersedes the earlier "color only in the datum" rule for the dial.)
+//     that still belongs to the hero numeral TodayView overlays at the dial's
+//     centre (FER-169) — which is why the face itself draws nothing in the middle.
+//     (This deliberately supersedes the earlier "color only in the datum" rule for
+//     the dial.)
 //
 // Dependency-free, like the rest of StrandDesign: the sun and sleep windows are
 // INJECTED (`SolarWindow` / `SleepWindow`), never imported. The app computes them
