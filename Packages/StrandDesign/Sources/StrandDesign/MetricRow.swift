@@ -25,6 +25,12 @@ public struct MetricRow: View {
     var bandColor: Color
     /// When there's no data yet: shows a faint skeleton in the sparkline slot (honest empty state).
     var isPlaceholder: Bool
+    /// When `true`, draws a faint trailing `chevron.right` so the row reads as tappable (opens a
+    /// detail sheet). The whole row stays the tap target — the chevron is only the affordance. (FER-161)
+    var showsChevron: Bool
+    /// Chevron ink — pass the by-hour theme's faint ink (`theme.inkTertiary`) so it recolors with
+    /// the rest of the row. Ignored unless `showsChevron`.
+    var chevronColor: Color
 
     public init(label: LocalizedStringKey, value: String, unit: String? = nil,
                 valueColor: Color = StrandPalette.textPrimary,
@@ -34,7 +40,9 @@ public struct MetricRow: View {
                 sparkline: [Double]? = nil, sparkColor: Color = StrandPalette.textSecondary,
                 referenceBand: ClosedRange<Double>? = nil,
                 bandColor: Color = StrandPalette.hairlineStrong,
-                isPlaceholder: Bool = false) {
+                isPlaceholder: Bool = false,
+                showsChevron: Bool = false,
+                chevronColor: Color = StrandPalette.textTertiary) {
         self.label = label
         self.value = value
         self.unit = unit
@@ -48,6 +56,8 @@ public struct MetricRow: View {
         self.referenceBand = referenceBand
         self.bandColor = bandColor
         self.isPlaceholder = isPlaceholder
+        self.showsChevron = showsChevron
+        self.chevronColor = chevronColor
     }
 
     public var body: some View {
@@ -82,15 +92,47 @@ public struct MetricRow: View {
             .frame(width: 60, height: 26)
             HStack(alignment: .firstTextBaseline, spacing: 2) {
                 Text(value).font(StrandFont.number(20)).foregroundStyle(valueColor)
+                    // VoiceOver reads "—" as "guion" / "dash". When there's no reading yet, say it
+                    // plainly instead — the detail still exists. (FER-161)
+                    .accessibilityLabel(isPlaceholder ? Text("sin dato de hoy") : Text(value))
                 if let unit {
                     Text(unit).font(StrandFont.unit).foregroundStyle(unitColor)
+                        // Don't append a unit to "sin dato de hoy".
+                        .accessibilityHidden(isPlaceholder)
                 }
             }
             .lineLimit(1)
             .frame(width: 88, alignment: .trailing)
+            if showsChevron {
+                // Quiet tappable affordance: its own gap (the HStack's 12pt) keeps it off the number,
+                // and `firstTextBaseline` alignment on the row sits it with the value. Decorative — the
+                // whole row is the button, so it's hidden from VoiceOver.
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(chevronColor)
+                    .accessibilityHidden(true)
+            }
         }
         .padding(.vertical, 15)
         .frame(maxWidth: .infinity)
+        // Read each row as one element: "label, value" (or "label, sin dato de hoy"), keeping any flag.
+        .accessibilityElement(children: .combine)
+    }
+}
+
+// MARK: - Metric row button style
+
+/// Wraps a `MetricRow` inside a `Button` so the *whole* row is the tap target and a subtle background
+/// tint appears while pressed — the touch feedback the flat `.plain` style lacks. Pass the by-hour
+/// theme's faint fill (e.g. `theme.ink.opacity(0.05)`) so the press reads on warm paper. (FER-161)
+public struct MetricRowButtonStyle: ButtonStyle {
+    var pressedFill: Color
+    public init(pressedFill: Color) { self.pressedFill = pressedFill }
+    public func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(configuration.isPressed ? pressedFill : Color.clear)
+            .contentShape(Rectangle())
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
 
@@ -120,15 +162,32 @@ public struct InlineFlagChip: View {
 #Preview("MetricRow") {
     VStack(spacing: 0) {
         MetricRow(label: "Day Strain", value: "8.5",
-                  sparkline: [6, 9, 7, 11, 8, 10, 8.5], sparkColor: StrandPalette.strain066)
+                  sparkline: [6, 9, 7, 11, 8, 10, 8.5], sparkColor: StrandPalette.strain066,
+                  showsChevron: true)
         Divider().overlay(StrandPalette.hairline)
         MetricRow(label: "HRV", value: "41", unit: "ms", valueColor: StrandPalette.metricPurple,
-                  flag: "Low conf", sparkline: [58, 55, 52, 49, 46, 43, 41], sparkColor: StrandPalette.statusWarning)
+                  flag: "Low conf", sparkline: [58, 55, 52, 49, 46, 43, 41], sparkColor: StrandPalette.statusWarning,
+                  showsChevron: true)
         Divider().overlay(StrandPalette.hairline)
-        MetricRow(label: "Blood Oxygen", value: "—", isPlaceholder: true)
+        // No data: chevron still shows — the detail exists even without a reading today.
+        MetricRow(label: "Blood Oxygen", value: "—", isPlaceholder: true, showsChevron: true)
     }
     .padding(.horizontal, 18)
     .frame(width: 340, height: 220)
+    .background(StrandPalette.surfaceBase)
+    .preferredColorScheme(.dark)
+}
+
+#Preview("MetricRow · pressed") {
+    // The pressed background tint the row shows mid-tap (rendered statically here).
+    Button {} label: {
+        MetricRow(label: "Esfuerzo del día", value: "8.5",
+                  sparkline: [6, 9, 7, 11, 8, 10, 8.5], sparkColor: StrandPalette.strain066,
+                  showsChevron: true)
+    }
+    .buttonStyle(MetricRowButtonStyle(pressedFill: StrandPalette.textPrimary.opacity(0.06)))
+    .padding(.horizontal, 18)
+    .frame(width: 340, height: 80)
     .background(StrandPalette.surfaceBase)
     .preferredColorScheme(.dark)
 }
