@@ -63,6 +63,10 @@ ES: dict[str, str] = {
     "What we need": "Qué necesitamos",
     "%lld of 4 nights needed": "%lld de 4 noches necesarias",
     "Keep wearing your band overnight and this fills in on its own.": "Sigue usando tu banda por las noches y esto se completa solo.",
+    # VO₂max de Apple Salud en el detalle de Edad física (FER-215).
+    "Measured by your Apple Watch during exercise.": "Medido por tu Apple Watch durante el ejercicio.",
+    "The average for your age is around %lld.": "El promedio para tu edad ronda %lld.",
+    "Connect Apple Health to see your VO₂max.": "Conecta Apple Salud para ver tu VO₂max.",
 
     # WhyVerdictSheet — color name for the red/rundown level (FER-167).
     "red": "rojo",

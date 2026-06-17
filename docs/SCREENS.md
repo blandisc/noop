@@ -234,16 +234,17 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 
 ### FitnessAgeDetailView
 **Archivo:** `Cenit/Screens/FitnessAgeDetailView.swift`  
-**Descripción:** Detalle de **Edad física** (Fitness Age, modelo Nes/HUNT — FER-122/141), abierto al tocar la fila «Edad física» en Cuerpo › Longevidad. Hoja clara «Instrumento» con el tema pasado explícito (no se propaga por `.sheet`). El número es el dato dominante, teñido por **dirección** (verde = más joven, ámbar = mayor, tinta = igual). VO₂max queda fuera de alcance (requiere cintura — otro issue).
+**Descripción:** Detalle de **Edad física** (Fitness Age, modelo Nes/HUNT — FER-122/141), abierto al tocar la fila «Edad física» en Cuerpo › Longevidad. Hoja clara «Instrumento» con el tema pasado explícito (no se propaga por `.sheet`). El número es el dato dominante, teñido por **dirección** (verde = más joven, ámbar = mayor, tinta = igual). Debajo, un bloque **VO₂max** muestra el dato **medido por Apple Salud** (etiquetado por fuente, FER-215) con una referencia del promedio por edad/sexo; **no** alimenta la Edad física (es complementario).
 
 | Estado | Qué muestra |
 |--------|-------------|
 | `ready` / `estimate` | Numeral héroe (`instrumentoHero(64)`) + «años» · delta vs edad cronológica · banda «±5 años» · tirita de **descargo** («comparación de fitness, no edad biológica ni diagnóstico») · **Qué la mueve** (FC en reposo `dataHeart` · Actividad `dataStrain`) · **Qué estamos usando** (checklist de cobertura) · método Nes/HUNT al pie. `estimate` añade el chip «Estimado». |
 | `notReady` | Sin numeral: pozo vacío honesto («Todavía no podemos calcular…») + checklist de **qué falta** (FC en reposo N/4 noches) + descargo. |
+| Bloque **VO₂max** (FER-215) | Independiente de la edad: *con dato Apple* → «N ml/kg/min» + badge «Apple Salud» + «el promedio para tu edad ronda M» (`VO2maxReference`); *sin dato + Apple no conectado* → nudge a conectar; *sin dato + conectado* → oculto. |
 
-**Origen de datos:** `FitnessAgeEngine.snapshot(...)` (orquestación pura en `StrandAnalytics`, FER-141) sobre la ventana de 7 días de `repo.displayDays` (FC nocturna + días activos + strain medio 0–21) + edad/sexo de `ProfileStore`.
+**Origen de datos:** `FitnessAgeEngine.snapshot(...)` (orquestación pura en `StrandAnalytics`, FER-141) sobre la ventana de 7 días de `repo.displayDays` (FC nocturna + días activos + strain medio 0–21) + edad/sexo de `ProfileStore`. El **VO₂max** viene de Apple Salud (`AppleDaily.vo2max`, ya en el live sync de `HealthKitBridge`), contextualizado con `VO2maxReference.expected(age:sex:)` (aprox. FRIEND p50).
 
-**Componentes:** `InstrumentoTheme`, `InlineFlagChip`, `StrandFont`; patrones visuales de `MetricInfoSheet` (tirita y secciones en `surface`).
+**Componentes:** `InstrumentoTheme`, `InlineFlagChip`, `StrandFont`, `VO2maxReference` (StrandAnalytics · FER-215); patrones visuales de `MetricInfoSheet` (tirita y secciones en `surface`).
 
 ---
 
