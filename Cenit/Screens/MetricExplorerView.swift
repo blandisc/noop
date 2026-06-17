@@ -32,13 +32,14 @@ private func parseDay(_ day: String) -> Date? { strandDayParser.date(from: day) 
 
 /// "9 Jun 2026" — long date for the hero "as of" line, in the user's language
 /// (days are UTC-keyed, so the zone stays pinned).
-private func longDate(_ d: Date) -> String {
+private let longDateFmt: DateFormatter = {
     let f = DateFormatter()
-    f.locale = Locale.current
+    f.locale = .autoupdatingCurrent
     f.timeZone = TimeZone(identifier: "UTC")
     f.setLocalizedDateFormatFromTemplate("d MMM y")
-    return f.string(from: d)
-}
+    return f
+}()
+private func longDate(_ d: Date) -> String { longDateFmt.string(from: d) }
 
 /// The category accent (colour communicates category only — never decoration).
 private func metricAccent(_ m: MetricDescriptor) -> Color {

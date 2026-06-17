@@ -606,13 +606,16 @@ struct AppleHealthView: View {
         return (lo - span * pad)...(hi + span * pad)
     }
 
+    private static let intFmt: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        f.maximumFractionDigits = 0
+        return f
+    }()
     private func intString(_ v: Double) -> String {
         let n = Int(v.rounded())
         if abs(n) >= 1000 {
-            let f = NumberFormatter()
-            f.numberStyle = .decimal
-            f.maximumFractionDigits = 0
-            return f.string(from: NSNumber(value: n)) ?? "\(n)"
+            return Self.intFmt.string(from: NSNumber(value: n)) ?? "\(n)"
         }
         return "\(n)"
     }

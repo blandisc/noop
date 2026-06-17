@@ -1066,13 +1066,16 @@ struct TodayView: View {
     }
 
     /// Compact localized date for the utility row, e.g. "THU 12 JUN" — context without the greeting.
-    private var shortDate: String {
+    private static let shortDateFmt: DateFormatter = {
         let f = DateFormatter()
         f.locale = .autoupdatingCurrent
         f.setLocalizedDateFormatFromTemplate("EEEdMMM")
+        return f
+    }()
+    private var shortDate: String {
         // Always the real calendar day — never the last data row's day, or the header
         // looks "stuck" on yesterday until today's row exists (FER-151).
-        return f.string(from: Date()).uppercased()
+        Self.shortDateFmt.string(from: Date()).uppercased()
     }
 
     // MARK: Readiness — on-device training-readiness synthesis (HRV / resting-HR / load).
@@ -1647,21 +1650,27 @@ struct TodayView: View {
         return "\(mins)m"
     }
 
-    private func workoutCaption(_ w: WorkoutRow) -> String {
+    private static let workoutDateFmt: DateFormatter = {
         let f = DateFormatter()
         f.locale = .autoupdatingCurrent
         f.setLocalizedDateFormatFromTemplate("dMMM")
-        let date = f.string(from: Date(timeIntervalSince1970: TimeInterval(w.startTs)))
+        return f
+    }()
+    private func workoutCaption(_ w: WorkoutRow) -> String {
+        let date = Self.workoutDateFmt.string(from: Date(timeIntervalSince1970: TimeInterval(w.startTs)))
         if let hr = w.avgHr { return "\(date) · \(hr) bpm" }
         return date
     }
 
     /// Thousands-grouped integer string (steps / calories).
-    private func intString(_ v: Double) -> String {
+    private static let intFmt: NumberFormatter = {
         let f = NumberFormatter()
         f.numberStyle = .decimal
         f.maximumFractionDigits = 0
-        return f.string(from: NSNumber(value: v)) ?? "\(Int(v.rounded()))"
+        return f
+    }()
+    private func intString(_ v: Double) -> String {
+        Self.intFmt.string(from: NSNumber(value: v)) ?? "\(Int(v.rounded()))"
     }
 
     // MARK: - Date parsing (yyyy-MM-dd, en_US_POSIX, UTC)
