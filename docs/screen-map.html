@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-17 · FER-205</span>
+  <span class="tb-updated">Actualizado 2026-06-17 · FER-185</span>
 </div>
 
 <div id="wrapper">
@@ -378,7 +378,8 @@ const SCREENS = [
     ],
     nav: [
       { to: 'live', label: 'beat by beat (hoja · FER-190)', type: 'sheet' },
-      { to: 'metric-info', label: 'Tap tile de «Métricas de hoy» (incl. variante stress · FER-180)', type: 'sheet' },
+      { to: 'metric-info', label: 'Tap tile de «Métricas de hoy» (Esfuerzo/Sueño/FC/SpO₂/Pasos/Estrés · FER-180)', type: 'sheet' },
+      { to: 'metric-detail-screen', label: 'Tap tile HRV / FC reposo → MetricDetailScreen unificado (.focus · FER-185)', type: 'sheet' },
       { to: 'metric-info', label: 'Tap número de recuperación (héroe) → cómo se calcula', type: 'sheet' },
       { to: 'why-verdict', label: '«i» junto a la palabra del veredicto', type: 'sheet' },
       { to: 'support', label: 'Toolbar ❤', type: 'toolbar' },
@@ -457,14 +458,15 @@ const SCREENS = [
       { label: 'Longevidad → «Próximamente» hasta orquestar FER-141 (Fitness Age) / FER-145 (Vitality)', type: 'warn' },
     ],
     nav: [
-      { to: 'metric-info', label: 'Tap fila con hoja clara (Recuperación/Esfuerzo/HRV/FC reposo/SpO₂/FC/Pasos/Estrés)', type: 'sheet' },
+      { to: 'metric-info', label: 'Tap fila con hoja clara (Recuperación/Esfuerzo/SpO₂/FC/Pasos/Estrés)', type: 'sheet' },
+      { to: 'metric-detail-screen', label: 'HRV / FC reposo / Respiración → MetricDetailScreen unificado (.full, sheet claro — FER-185)', type: 'sheet' },
       { to: 'sleep', label: 'Sueño → SleepView (sheet oscuro .dark)', type: 'sheet' },
       { to: 'workouts', label: 'Entrenamientos → WorkoutsView (sheet oscuro)', type: 'sheet' },
-      { to: 'metricdetail', label: 'Respiración / Temp. piel → MetricDetailView (sheet oscuro)', type: 'sheet' },
+      { to: 'metricdetail', label: 'Temp. piel → MetricDetailView (sheet oscuro)', type: 'sheet' },
       { to: 'compare', label: 'Comparar (sheet oscuro)', type: 'sheet' },
       { to: 'explore', label: 'Ver todas las métricas → MetricExplorerView (sheet oscuro)', type: 'sheet' },
     ],
-    components: ['MetricRow (label · sparkline 14d + banda p25–p75 · valor en color de dato · chevron)', 'Sparkline + ReferenceRange.interquartile', 'fila héroe Recuperación (surface)', 'MetricInfoSheet (puente claro hasta FER-185)', 'InstrumentoTheme (instrumentoThemeByHour)'],
+    components: ['MetricRow (label · sparkline 14d + banda p25–p75 · valor en color de dato · chevron)', 'Sparkline + ReferenceRange.interquartile', 'fila héroe Recuperación (surface)', 'MetricInfoSheet + MetricDetailScreen (Detalle unificado FER-185)', 'InstrumentoTheme (instrumentoThemeByHour)'],
   },
   {
     id: 'insights', x: 538, y: 710,
@@ -698,6 +700,25 @@ const SCREENS = [
     ],
     nav: [],
     components: ['Metric name + headline', 'Valor actual (color de métrica / tinta)', 'Bands (3–4 rangos · activo en color de métrica)', 'Nota · o línea de conexión a Apple Salud (FER-162)', 'TrendChart esfuerzo acumulado / 14 días / HR 24h en tema claro', 'Weight breakdown + «Ver el método» disclosure + calibration card (solo Recovery)'],
+  },
+  {
+    id: 'metric-detail-screen', x: 538, y: 3310,
+    name: 'Detalle de Métrica', desc: 'Sheet: Detalle de Métrica unificado y reutilizable (HRV/FC reposo/Respiración · tema claro «Instrumento» · FER-185)',
+    file: 'Cenit/Screens/MetricDetailScreen.swift',
+    icon: '📈', color: '#2E7D6B',
+    isSheet: true,
+    states: [
+      { label: 'Con datos (≥2 pts): media móvil 7d (Sparkline) + banda p25–p75; rango normal (Baselines.rollingMeanSD ± σ); tendencia (monthOverMonth + Prom/Mediana/Mín/Máx/σ); consistencia (CV)', type: 'data' },
+      { label: 'depth .focus (desde Hoy): foto del día — rango corto + [gráfica+banda, rango normal, método, vitales noche]', type: 'data' },
+      { label: 'depth .full (desde Cuerpo): todos los bloques del spec', type: 'data' },
+      { label: 'Cargando: well con spinner mientras se inyecta la serie', type: 'loading' },
+      { label: 'Ventana vacía: auto-ensancha al siguiente rango con datos + «Mostrando los últimos N días»', type: 'warn' },
+      { label: 'Un solo punto: valor sin línea + nota', type: 'warn' },
+      { label: 'Sin suficiente historial (<2): bloque de calibración «N / 7 noches»', type: 'empty' },
+      { label: 'Sin permiso / offline: muestra lo guardado (repo.displayDays; origen inyectado)', type: 'empty' },
+    ],
+    nav: [],
+    components: ['Héroe = media móvil 7d (SeriesShape.latestMovingAverage), hoy como contexto', 'SegmentedPillControl (ExploreRange → Cenit/Data/ExploreRange.swift)', 'Sparkline + ReferenceRange.interquartile (banda)', 'MetricDetailSpec (BlockSet/HeroKind/baselineCfg) reutiliza MetricInfo', 'SeriesShape (StrandAnalytics: SMA/CV) + Baselines + ComparisonEngine', 'InstrumentoTheme (explícito · sin NavigationStack anidado FER-171)'],
   },
   {
     id: 'why-verdict', x: 30, y: 3310,

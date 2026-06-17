@@ -69,6 +69,9 @@ private struct CuerpoLanding: View {
 
     /// Light metric sheet (the same one Today opens), for metrics that have a `MetricInfo` factory.
     @State private var metricInfo: MetricInfo? = nil
+    /// Unified Detalle de Métrica (FER-185): the three vitals (HRV / FC reposo / Respiración) open this
+    /// at `.full` depth instead of the legacy `MetricInfoSheet` / dark `MetricDetailView` bridge.
+    @State private var metricSpec: MetricDetailSpec? = nil
     /// Dark screen / catalog-detail sheet, for everything without a light sheet yet.
     @State private var darkSheet: CuerpoSheet? = nil
 
@@ -134,6 +137,15 @@ private struct CuerpoLanding: View {
         .background(PaperBackground())
         .task(id: repo.refreshSeq) { await loadAll() }
         .sheet(item: $metricInfo) { info in metricSheet(for: info) }
+        .sheet(item: $metricSpec) { spec in
+            MetricDetailScreen(
+                spec: spec,
+                depth: .full,
+                theme: theme,
+                seriesLoader: { vitalSeries(for: spec.descriptor.key) },
+                nightVitalsLoader: spec.blocks.contains(.nightVitals) ? { await loadNightVitals() } : nil
+            )
+        }
         .sheet(item: $darkSheet) { sheet in darkSheetContent(sheet) }
     }
 
@@ -279,7 +291,7 @@ private struct CuerpoLanding: View {
         let r = resolveMeasured { $0.avgHrv }
         return metricRow("HRV", value: r.map { "\(Int($0.value.rounded()))" }, unit: "ms",
                          color: theme.dataHrv, sparkKey: "hrv", fromApple: r?.fromApple == true) {
-            metricInfo = .hrv(r?.value)
+            metricSpec = .hrv(r?.value)
         }
     }
 
@@ -287,7 +299,7 @@ private struct CuerpoLanding: View {
         let r = resolveMeasured { $0.restingHr.map(Double.init) }
         return metricRow("Resting HR", value: r.map { "\(Int($0.value.rounded()))" }, unit: "bpm",
                          color: theme.dataHeart, sparkKey: "rhr", fromApple: r?.fromApple == true) {
-            metricInfo = .restingHR(r.map { Int($0.value.rounded()) })
+            metricSpec = .restingHR(r.map { Int($0.value.rounded()) })
         }
     }
 
@@ -311,7 +323,7 @@ private struct CuerpoLanding: View {
         let r = resolveMeasured { $0.respRateBpm }
         return metricRow("Respiratory Rate", value: r.map { String(format: "%.1f", $0.value) }, unit: "rpm",
                          color: theme.dataSpO2, sparkKey: "resp_rate", fromApple: r?.fromApple == true) {
-            if let m = Self.descriptor("resp_rate") { darkSheet = .metric(m) }
+            metricSpec = .respiratory(r?.value)
         }
     }
 
@@ -497,6 +509,30 @@ private struct CuerpoLanding: View {
                   let date = Self.dayParser.date(from: row.day) else { return nil }
             return TrendPoint(date: date.addingTimeInterval(12 * 3600), value: value)
         }
+    }
+
+    /// The FULL daily series (oldest → newest) for a vital, from `repo.displayDays` — the unified
+    /// Detalle de Métrica (FER-185) carries its own range selector, so it needs all history. Same
+    /// layered source the rows draw from (resolves for both import and BLE users; FER-149).
+    private func vitalSeries(for key: String) -> [(day: String, value: Double)] {
+        let pick: (DailyMetric) -> Double?
+        switch key {
+        case "hrv":       pick = { $0.avgHrv }
+        case "rhr":       pick = { $0.restingHr.map(Double.init) }
+        case "resp_rate": pick = { $0.respRateBpm }
+        default:          return []
+        }
+        return repo.displayDays
+            .compactMap { row in pick(row).map { (row.day, $0) } }
+            .sorted { $0.day < $1.day }
+    }
+
+    /// Last night's companion vitals (respiration + resting HR) for the detail's "Vitales de la noche"
+    /// block. Reuses `resolveMeasured` (today wins, else most recent within today/yesterday).
+    private func loadNightVitals() async -> MetricDetailScreen.NightVitals {
+        MetricDetailScreen.NightVitals(
+            respiration: resolveMeasured { $0.respRateBpm }?.value,
+            restingHR: resolveMeasured { $0.restingHr.map(Double.init) }?.value)
     }
 
     /// The 14-day trend loader the `MetricInfoSheet` runs lazily. Strain returns nil (it has its own

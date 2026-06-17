@@ -39,10 +39,11 @@ Tab shell (FER-182) → 5 pestañas: Hoy · Cuerpo · Coach · Entrenar · Ajust
              WorkoutsView · AppleHealthView · DataSourcesView · AutomationsView · SupportView
              (Sueño · Health · Stress se mudaron a «Cuerpo» como métricas — FER-186)
 SettingsView → WhatsNewView (sheet)
-TodayView   → LiveView (sheet, detente grande) · MetricInfoSheet (sheet) · WhyVerdictSheet (sheet) · SupportView (toolbar)
-CuerpoView  → MetricInfoSheet (sheet claro: Recuperación/Esfuerzo/HRV/FC reposo/SpO₂/FC/Pasos/Estrés) ·
+TodayView   → LiveView (sheet, detente grande) · MetricInfoSheet (sheet) · MetricDetailScreen (sheet, .focus: HRV/FC reposo — FER-185) · WhyVerdictSheet (sheet) · SupportView (toolbar)
+CuerpoView  → MetricInfoSheet (sheet claro: Recuperación/Esfuerzo/SpO₂/FC/Pasos/Estrés) ·
+             MetricDetailScreen (sheet claro, .full: HRV/FC reposo/Respiración — FER-185) ·
              SleepView · WorkoutsView · CompareView · MetricExplorerView · DataSourcesView ·
-             MetricDetailView (Respiración/Temp. piel) — todos como sheet oscuro fijado a .dark (FER-186)
+             MetricDetailView (Temp. piel) — los oscuros como sheet fijado a .dark (FER-186)
 WorkoutsView → ManualWorkoutSheet (sheet: add / edit)
 LiveWorkoutHubRow → LiveWorkoutSheet (sheet, detente medio — grabación en vivo, FER-197)
 MetricExplorerView → MetricDetailView (NavigationLink push, sobre el stack de la pestaña «Ajustes» — FER-171)
@@ -199,9 +200,31 @@ de En vivo en FER-184; **no toca `LiveView`**.
 | Calibrando | Recuperación muestra «N/4» + «Calibrando tu base»; el resto en «—» con esqueleto |
 | Sin permiso / offline | Muestra lo guardado; las métricas solo-Apple (Pasos) invitan a conectar sin prometer datos |
 
-**Apertura del detalle (puente hasta el Detalle unificado, FER-185):** la mayoría abren el `MetricInfoSheet` claro (igual que Hoy); Sueño→`SleepView`, Entrenamientos→`WorkoutsView`, Respiración/Temp. piel→`MetricDetailView` del catálogo, Comparar→`CompareView`, Ver todas→`MetricExplorerView` — estos como **sheet oscuro fijado a `.dark`** (un tab claro no puede empujar una pantalla oscura sin romper la barra de estado).
+**Apertura del detalle (FER-185 ya aterrizó para los 3 vitales):** **HRV · FC en reposo · Respiración** abren el **`MetricDetailScreen`** unificado (sheet claro «Instrumento», `depth: .full`, tema explícito, sin `NavigationStack` anidado). El resto sigue su puente: Recuperación/Esfuerzo/SpO₂/FC/Pasos/Estrés→`MetricInfoSheet` claro; Sueño→`SleepView`, Entrenamientos→`WorkoutsView`, Temp. piel→`MetricDetailView` del catálogo, Comparar→`CompareView`, Ver todas→`MetricExplorerView` — estos últimos como **sheet oscuro fijado a `.dark`** (un tab claro no puede empujar una pantalla oscura sin romper la barra de estado).
 
-**Componentes:** `MetricRow`, `Sparkline` (+ `ReferenceRange.interquartile`), `MetricInfoSheet`, `InstrumentoTheme` (`instrumentoThemeByHour`).
+**Componentes:** `MetricRow`, `Sparkline` (+ `ReferenceRange.interquartile`), `MetricInfoSheet`, `MetricDetailScreen` (+ `MetricDetailSpec`), `InstrumentoTheme` (`instrumentoThemeByHour`).
+
+---
+
+### MetricDetailScreen
+**Archivo:** `Cenit/Screens/MetricDetailScreen.swift`  
+**Descripción:** El **Detalle de Métrica unificado y reutilizable** (FER-185). Una sola pantalla «Instrumento» clara, parametrizada por un `MetricDetailSpec` (`Cenit/Data/MetricDetailSpec.swift`: descriptor + `MetricInfo` reutilizado + `BlockSet` + `HeroKind` + config de base) y un `Depth`. Reemplaza —solo para los 3 vitales **HRV · FC en reposo · Frecuencia respiratoria**— los dos caminos previos (`MetricInfoSheet` y el `MetricDetailView` oscuro). Se presenta vía `.sheet(item:)`, **sin `NavigationStack` anidado** (evita el crash FER-171) y con el `InstrumentoTheme` **explícito** (no se propaga por `.sheet`). Héroe = **media móvil de 7 días** (`SeriesShape.latestMovingAverage`), no el dato del día; «hoy» va como contexto secundario.
+
+**Profundidad (un solo árbol de vistas filtrado, nunca dos pantallas):**
+- `.focus` (desde **Hoy**, tile HRV/FC reposo) → foto del día: rango corto + intersección `[seriesChartBand, normalRange, method, nightVitals]`.
+- `.full` (desde **Cuerpo**) → todos los bloques que declara el spec.
+
+**Bloques por métrica (`BlockSet`):** HRV = selector · gráfica+banda · rango normal · consistencia (CV) · tendencia · vitales de la noche · qué la mueve · método (héroe = media 7d). FC en reposo = selector · gráfica+banda · rango normal · tendencia · método (más simple). Respiración = selector · gráfica+banda · rango normal · tendencia · vitales de la noche · método.
+
+| Estado | Condición |
+|--------|-----------|
+| Con datos (≥2 pts) | Media móvil 7d (`Sparkline`) + banda p25–p75 (`ReferenceRange.interquartile`); rango normal (`Baselines.rollingMeanSD` ± σ, nº noches); tendencia (`ComparisonEngine.monthOverMonth` + tira Prom/Mediana/Mín/Máx/σ); consistencia (`SeriesShape.coefficientOfVariation`) |
+| Ventana vacía | Auto-ensancha al siguiente rango con datos + aviso «Mostrando los últimos N días» |
+| Un solo punto | Valor sin línea + nota |
+| Sin suficiente historial (<2) | Bloque de calibración «N / 7 noches» |
+| Sin permiso / offline | Muestra lo guardado (`repo.displayDays`); el origen lo inyecta el llamador |
+
+**Datos:** series de los 3 vitales desde `repo.displayDays` (no `series("my-whoop")`, vacío para BLE); loaders inyectados (serie completa por clave; vitales de la noche). **Componentes:** `SegmentedPillControl` (`ExploreRange`, extraído a `Cenit/Data/ExploreRange.swift`), `Sparkline`, `ReferenceRange`, `MetricInfo`/`MetricInfoSheet` (método/bandas/copy reutilizados), `SeriesShape` (StrandAnalytics), `Baselines`/`ComparisonEngine`, `InstrumentoTheme`.
 
 ---
 

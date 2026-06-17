@@ -73,6 +73,10 @@ struct TodayView: View {
 
     // Metric-info sheet — tapping any Key Metrics row presents this.
     @State private var metricDetail: MetricInfo? = nil
+    // Unified Detalle de Métrica (FER-185) — the three vitals (HRV / FC reposo / Respiración) route
+    // here instead of `metricDetail`, opening `MetricDetailScreen` at `.focus` depth. The other tiles
+    // keep the legacy `MetricInfoSheet`.
+    @State private var metricSpec: MetricDetailSpec? = nil
     @State private var showWhyVerdict = false
 
     // THE single grid definition — every tile group reuses it so margins line up.
@@ -208,6 +212,15 @@ struct TodayView: View {
             .animation(.easeOut(duration: 0.18), value: showingSupport)
             .sheet(item: $metricDetail) { info in
                 metricSheet(for: info)
+            }
+            .sheet(item: $metricSpec) { spec in
+                MetricDetailScreen(
+                    spec: spec,
+                    depth: .focus,
+                    theme: theme,
+                    seriesLoader: { vitalSeries(for: spec.descriptor.key) },
+                    nightVitalsLoader: spec.blocks.contains(.nightVitals) ? { await loadNightVitals() } : nil
+                )
             }
             .sheet(isPresented: $showWhyVerdict) {
                 WhyVerdictSheet(readiness: readiness, theme: theme)
@@ -898,7 +911,7 @@ struct TodayView: View {
                     fromApple: hrvR?.fromApple == true,
                     delta: tileDelta(today: hrvR?.value, yesterday: yesterdayValue { $0.avgHrv },
                                      betterHigher: true, deadband: 1) { "\(Int($0.rounded())) ms" }
-                )) { metricDetail = .hrv(hrvR?.value) }
+                )) { metricSpec = .hrv(hrvR?.value) }
                 // Frecuencia cardíaca — promedio continuo del día. Sin Δ: no se guarda un promedio diurno
                 // de "ayer" con qué comparar (decisión del dueño, FER-180).
                 metricTile(TodayMetricTile(
@@ -914,7 +927,7 @@ struct TodayView: View {
                     fromApple: rhrR?.fromApple == true,
                     delta: tileDelta(today: rhrR?.value, yesterday: yesterdayValue { $0.restingHr.map(Double.init) },
                                      betterHigher: false, deadband: 1) { "\(Int($0.rounded())) bpm" }
-                )) { metricDetail = .restingHR(rhrR.map { Int($0.value.rounded()) }) }
+                )) { metricSpec = .restingHR(rhrR.map { Int($0.value.rounded()) }) }
                 // Oxígeno en sangre — más alto es mejor.
                 metricTile(TodayMetricTile(
                     label: "Blood Oxygen",
@@ -1529,6 +1542,40 @@ struct TodayView: View {
                   let date = Self.dayParser.date(from: row.day) else { return nil }
             return TrendPoint(date: date.addingTimeInterval(12 * 3600), value: value)
         }
+    }
+
+    /// The FULL daily series (oldest → newest) for a vital, from `repo.displayDays` — the unified
+    /// Detalle de Métrica (FER-185) has its own range selector, so it needs all history, not a 14-day
+    /// slice. `series("my-whoop")` is empty for a BLE user (computed scores live under `my-whoop-noop`),
+    /// so `displayDays` is the right source for both import and strap users (FER-149).
+    private func vitalSeries(for key: String) -> [(day: String, value: Double)] {
+        let pick: (DailyMetric) -> Double?
+        switch key {
+        case "hrv":       pick = { $0.avgHrv }
+        case "rhr":       pick = { $0.restingHr.map(Double.init) }
+        case "resp_rate": pick = { $0.respRateBpm }
+        default:          return []
+        }
+        return repo.displayDays
+            .compactMap { row in pick(row).map { (row.day, $0) } }
+            .sorted { $0.day < $1.day }
+    }
+
+    /// Last night's companion vitals (respiration + resting HR) for the detail's "Vitales de la noche"
+    /// block — today's row wins, else the most recent within today/yesterday (same freshness window the
+    /// tiles use). Read from `repo.displayDays` so it resolves for BLE users.
+    private func loadNightVitals() async -> MetricDetailScreen.NightVitals {
+        MetricDetailScreen.NightVitals(respiration: freshVital { $0.respRateBpm },
+                                       restingHR: freshVital { $0.restingHr.map(Double.init) })
+    }
+
+    /// Most recent value of a picked field within today/yesterday from the display dashboard.
+    private func freshVital(_ pick: (DailyMetric) -> Double?) -> Double? {
+        let cutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date())
+        for row in repo.displayDays.reversed() where row.day >= cutoff {
+            if let v = pick(row) { return v }
+        }
+        return nil
     }
 
     /// Returns a loader closure for the given metric id, picking the matching `DailyMetric` field.
