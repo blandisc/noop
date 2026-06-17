@@ -30,20 +30,29 @@ git config core.hooksPath .githooks
 ## Estructura de navegación global
 
 ```
-Tab bar → 18 destinos principales
+Tab shell (FER-182) → 5 pestañas: Hoy · Cuerpo · Coach · Entrenar · Ajustes
+  Hoy      → TodayView
+  Cuerpo   → TrendsView (interino; el Detalle de Métrica llega en el issue de Cuerpo)
+  Coach    → hub-lista → IntelligenceView · InsightsView · CoachView
+  Entrenar → hub-lista → BreathingView · IntervalTimerView
+  Ajustes  → SettingsView + sección «Más» → SleepView · MetricExplorerView · CompareView ·
+             WorkoutsView · HealthView · StressView · AppleHealthView · DataSourcesView ·
+             AutomationsView · SupportView
 SettingsView → WhatsNewView (sheet)
-TodayView   → LiveView (fullScreenCover) · MetricInfoSheet (sheet) · WhyVerdictSheet (sheet) · SupportView (toolbar)
+TodayView   → LiveView (fullScreenCover, "beat by beat") · MetricInfoSheet (sheet) · WhyVerdictSheet (sheet) · SupportView (toolbar)
 WorkoutsView → ManualWorkoutSheet (sheet: add / edit)
-MetricExplorerView → MetricDetailView (NavigationLink push, sobre el stack de la pestaña «Más» — FER-171)
+MetricExplorerView → MetricDetailView (NavigationLink push, sobre el stack de la pestaña «Ajustes» — FER-171)
 ```
 
-**Barra de pestañas — «Barra de instrumento»** (`CenitApp/App/InstrumentTabBar.swift`, FER-163). Barra inferior
-custom (la nativa va oculta con `.toolbar(.hidden, for: .tabBar)`, montada vía `safeAreaInset`) que **adapta su
-tratamiento a la pestaña activa**: bajo **Hoy** y **En vivo** (papel «Instrumento diurno» desde FER-181) viste el
-papel y respira con la hora (`instrumentoThemeByHour`); bajo Tendencias / Sueño / Más usa el `StrandPalette` oscuro.
-El color scheme (barra de estado) sigue la pestaña: Hoy y En vivo son claras (`isLightTab` en `RootTabView`). La pestaña activa
-se marca con tinta + un punto de «ahora» (verde recovery en claro, `accent` en oscuro), nunca con relleno verde.
-Íconos de trazo fino: **Hoy** = glifo de dial 24h (`DialTabGlyph`, StrandDesign), **Sueño** = luna, el resto líneas.
+**Barra de pestañas — «Barra de instrumento»** (`CenitApp/App/InstrumentTabBar.swift`, FER-163; reorganizada a
+5 tabs en FER-182). Barra inferior custom (la nativa va oculta con `.toolbar(.hidden, for: .tabBar)`, montada vía
+`safeAreaInset`) que **adapta su tratamiento a la pestaña activa**: bajo **Hoy** (papel «Instrumento diurno») viste
+el papel y respira con la hora (`instrumentoThemeByHour`); bajo Cuerpo / Coach / Entrenar / Ajustes usa el
+`StrandPalette` oscuro. El color scheme (barra de estado) sigue la pestaña: solo Hoy es clara (`isLightTab` en
+`RootTabView`); En vivo es papel claro pero vive en un cover sobre Hoy, no es pestaña. La pestaña activa se marca
+con tinta + un punto de «ahora» (verde recovery en claro, `accent` en oscuro), nunca con relleno verde. Íconos de
+trazo fino: **Hoy** = glifo de dial 24h (`DialTabGlyph`, StrandDesign), el resto glifos de línea (Cuerpo
+`chart.xyaxis.line` · Coach `sparkles` · Entrenar `figure.strengthtraining.functional` · Ajustes `gearshape`).
 
 ---
 
@@ -198,7 +207,7 @@ se marca con tinta + un punto de «ahora» (verde recovery en claro, `accent` en
 | Detalle · tendencia | ≥ 2 puntos; muestra gráfica |
 
 **Componentes:** `MetricCatalog grouped list`, `Hero StatTile`, `ChartCard (tendencia)`, `Avg/Min/Max footer`, `Banding vs baseline`  
-**Navegación:** → `MetricDetailView` (NavigationLink push; cuelga del único `NavigationStack` de la pestaña «Más», sin stack anidado — FER-171)
+**Navegación:** → `MetricDetailView` (NavigationLink push; cuelga del único `NavigationStack` de la pestaña «Ajustes» —Explore vive en su sección «Más» desde FER-182—, sin stack anidado — FER-171)
 
 ---
 

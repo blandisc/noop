@@ -73,37 +73,46 @@ final class NOOPScreenshotTests: XCTestCase {
     func test_captureAllScreens() throws {
         continueAfterFailure = true
 
-        // ── Main tabs ─────────────────────────────────────────────────────────
+        // 5-tab shell (FER-182): Hoy · Cuerpo · Coach · Entrenar · Ajustes. Tab labels are the
+        // English `tabItem` titles (the hidden native bar still exposes them to XCUI). En vivo is no
+        // longer a tab — it opens as a cover from Today's "beat by beat", so it's not swept here.
         wait(1);  snap("today")
-        tap(tab: "Trends"); wait(2); snap("trends")
-        tap(tab: "Live");   wait(2); snap("live")
-        tap(tab: "Sleep");  wait(2); snap("sleep")
-        tap(tab: "More");   wait(1) // list — not captured as its own screen
+        tap(tab: "Body"); wait(2); snap("trends")   // Cuerpo → TrendsView (interim)
 
-        // ── Screens inside the More list ──────────────────────────────────────
-        // "Explore" (MetricExplorer) used to crash the app on exit (nested
-        // NavigationStack — fixed in FER-171). It's kept last so the capture order
-        // stays stable; the defensive relaunch below still guards every screen.
-        let moreScreens: [(cell: String, id: String)] = [
+        // Coach hub → its three insight surfaces.
+        captureHub(tab: "Coach", screens: [
             ("Intelligence", "intelligence"),
-            ("Coach",        "coach"),
             ("Insights",     "insights"),
+            ("Coach",        "coach"),
+        ])
+
+        // Entrenar hub → the active-session tools.
+        captureHub(tab: "Train", screens: [
+            ("Breathe",   "breathing"),
+            ("Intervals", "interval"),
+        ])
+
+        // Ajustes → Settings + the temporary «Más» orphans. "Explore" (MetricExplorer) is kept last
+        // (it used to crash on exit via a nested NavigationStack — fixed in FER-171).
+        captureHub(tab: "Settings", screens: [
+            ("Settings",     "settings"),
+            ("Sleep",        "sleep"),
             ("Compare",      "compare"),
             ("Workouts",     "workouts"),
             ("Health",       "health"),
             ("Stress",       "stress"),
-            ("Breathe",      "breathing"),
-            ("Intervals",    "interval"),
             ("Apple Health", "apple-health"),
             ("Data Sources", "data-sources"),
             ("Automations",  "automations"),
-            ("Settings",     "settings"),
             ("Support",      "support"),
             ("Explore",      "explore"),   // last (FER-171 fixed the old exit crash)
-        ]
+        ])
+    }
 
-        for (cell, id) in moreScreens {
-            // Re-launch if the app crashed or backgrounded during a previous screen
+    /// Walks a hub tab's list, tapping each row and snapping the pushed screen. Relaunches defensively
+    /// if the app dropped out of the foreground on a previous screen.
+    private func captureHub(tab: String, screens: [(cell: String, id: String)]) {
+        for (cell, id) in screens {
             if app.state != .runningForeground {
                 app.launch()
                 guard app.tabBars.firstMatch.waitForExistence(timeout: 8) else {
@@ -111,11 +120,11 @@ final class NOOPScreenshotTests: XCTestCase {
                 }
                 wait(1)
             }
-            returnToMoreList()
+            returnToHub(tab)
             // Use cells to avoid ambiguity when the label appears in multiple elements
             let row = app.cells.containing(.staticText, identifier: cell).firstMatch
             guard row.waitForExistence(timeout: 3) else {
-                XCTFail("Cell '\(cell)' not found"); continue
+                XCTFail("Cell '\(cell)' not found in '\(tab)'"); continue
             }
             row.tap()
             wait(2)
@@ -153,7 +162,7 @@ final class NOOPScreenshotTests: XCTestCase {
 
     private func tap(tab: String) { app.tabBars.buttons[tab].tap() }
 
-    private func returnToMoreList() {
+    private func returnToHub(_ tab: String) {
         guard app.state == .runningForeground else { return }
         // Pop back through any pushed views (max 3 levels)
         for _ in 0..<3 {
@@ -161,7 +170,7 @@ final class NOOPScreenshotTests: XCTestCase {
             guard back.exists && back.isHittable else { break }
             back.tap(); wait(1)
         }
-        if !app.navigationBars["More"].exists { tap(tab: "More"); wait(1) }
+        tap(tab: tab); wait(1)
     }
 
     private func wait(_ seconds: TimeInterval) {

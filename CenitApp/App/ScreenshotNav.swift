@@ -8,10 +8,12 @@ import SwiftUI
 ///   1. Darwin notifications (no dialog): notifyutil -p noop.nav.<screen>
 ///   2. URL scheme (backup):              xcrun simctl openurl booted "noopdev://<screen>"
 ///
-/// Supported screen keys: today · trends · live · sleep · more ·
-///   intelligence · coach · insights · explore · compare ·
-///   workouts · health · stress · breathe · intervals ·
-///   applehealth · datasources · automations · settings · support
+/// Supported screen keys (FER-182 — 5-tab shell):
+///   Tabs: today · body (alias: trends) · coach · train (alias: entrenar) · settings (aliases: ajustes, more)
+///   Pushed onto a hub: intelligence · insights · breathe · intervals ·
+///     sleep · explore · compare · workouts · health · stress ·
+///     applehealth · datasources · automations · support
+///   (En vivo is no longer a key — it opens as a cover from Today's "beat by beat".)
 extension Notification.Name {
     static let noopDebugNav = Notification.Name("noop.debugNav")
 }
@@ -35,10 +37,10 @@ final class DebugNavWatcher {
 
     private static let prefix = "noop.nav."
     private static let screens = [
-        "today", "trends", "live", "sleep", "more",
-        "intelligence", "coach", "insights", "explore", "compare",
-        "workouts", "health", "stress", "breathe", "intervals",
-        "applehealth", "datasources", "automations", "settings", "support",
+        "today", "body", "trends", "coach", "train", "entrenar", "settings", "ajustes", "more",
+        "intelligence", "insights", "breathe", "intervals",
+        "sleep", "explore", "compare", "workouts", "health", "stress",
+        "applehealth", "datasources", "automations", "support",
     ]
 
     func start() {
