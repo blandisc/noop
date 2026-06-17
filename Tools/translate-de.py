@@ -62,6 +62,10 @@ DE: dict[str, str] = {
     "What we need": "Was wir brauchen",
     "%lld of 4 nights needed": "%lld von 4 Nächten nötig",
     "Keep wearing your band overnight and this fills in on its own.": "Trage deine Band weiter über Nacht, dann füllt sich das von selbst.",
+    # VO₂max de Apple Salud en el detalle de Edad física (FER-215).
+    "Measured by your Apple Watch during exercise.": "Von deiner Apple Watch beim Training gemessen.",
+    "The average for your age is around %lld.": "Der Durchschnitt für dein Alter liegt bei etwa %lld.",
+    "Connect Apple Health to see your VO₂max.": "Verbinde Apple Health, um deinen VO₂max zu sehen.",
 
     # WhyVerdictSheet — de copy: level names (es existed) + red color name (FER-167).
     "Primed": "Bereit",

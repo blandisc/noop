@@ -22207,6 +22207,75 @@
           }
         }
       }
+    },
+    "Measured by your Apple Watch during exercise.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Measured by your Apple Watch during exercise."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medido por tu Apple Watch durante el ejercicio."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Von deiner Apple Watch beim Training gemessen."
+          }
+        }
+      }
+    },
+    "The average for your age is around %lld.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The average for your age is around %lld."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El promedio para tu edad ronda %lld."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Durchschnitt für dein Alter liegt bei etwa %lld."
+          }
+        }
+      }
+    },
+    "Connect Apple Health to see your VO₂max.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect Apple Health to see your VO₂max."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conecta Apple Salud para ver tu VO₂max."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbinde Apple Health, um deinen VO₂max zu sehen."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

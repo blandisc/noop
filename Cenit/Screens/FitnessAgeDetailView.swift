@@ -16,13 +16,20 @@ import StrandAnalytics
 //
 // Visual vocabulary mirrors `MetricInfoSheet` (surface blocks separated by space, color only on the
 // datum, paper background). The theme is passed EXPLICITLY — it does not propagate through `.sheet`.
-// VO₂max is deliberately out of scope here (needs a waist field the profile doesn't have yet).
+// The VO₂max block (FER-215) shows Apple Health's MEASURED VO₂max (when present) as a complementary,
+// source-labeled datum — it does NOT feed the Nes Fitness Age (that stays the model's own comparison).
 
 struct FitnessAgeDetailView: View {
     let snapshot: FitnessAgeSnapshot
     /// Chronological age + sex from the profile (the snapshot carries the derived values, not these).
     let chronoAge: Int
     let sex: String
+    /// VO₂max measured by Apple Health (ml/kg/min), `nil` if none. Independent of the Nes Fitness Age —
+    /// a complementary, source-labeled datum. (FER-215)
+    var appleVO2max: Double? = nil
+    /// When there's no Apple VO₂max AND Apple Health isn't connected → show a quiet connect nudge;
+    /// when connected-but-no-reading, the block hides entirely. (FER-215)
+    var appleConnectHint: Bool = false
     /// The active «Instrumento» theme, passed explicitly (does NOT propagate through `.sheet`).
     var theme: InstrumentoTheme = .base
 
@@ -57,6 +64,7 @@ struct FitnessAgeDetailView: View {
         overline(estimate: estimate)
         hero(result)
         disclaimerStrip
+        vo2maxSection
         leversSection
         usingSection
         methodFootnote
@@ -208,6 +216,77 @@ struct FitnessAgeDetailView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         disclaimerStrip
+        vo2maxSection
+    }
+
+    // MARK: - VO₂max (Apple Health, measured · FER-215)
+
+    /// Apple's MEASURED VO₂max, as a complementary source-labeled block. Independent of the Nes Fitness
+    /// Age. Hidden entirely when there's no reading and Apple Health is already connected.
+    @ViewBuilder private var vo2maxSection: some View {
+        if let vo2 = appleVO2max {
+            vo2maxCard(vo2)
+        } else if appleConnectHint {
+            vo2maxConnectNudge
+        }
+    }
+
+    private func vo2maxCard(_ vo2: Double) -> some View {
+        let expected = Int(VO2maxReference.expected(age: chronoAge, sex: sex).rounded())
+        return VStack(alignment: .leading, spacing: 7) {
+            HStack(spacing: 7) {
+                Text(verbatim: "VO₂max").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                appleSourceBadge
+            }
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(verbatim: "\(Int(vo2.rounded()))")
+                    .font(StrandFont.number(28)).foregroundStyle(theme.dataSpO2)
+                Text(verbatim: "ml/kg/min").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            }
+            Text("Measured by your Apple Watch during exercise.")
+                .font(StrandFont.subhead).foregroundStyle(theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("The average for your age is around \(expected).")
+                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .strokeBorder(theme.hairline, lineWidth: 0.5))
+        .accessibilityElement(children: .combine)
+    }
+
+    /// Tiny "Apple Health" source chip (heart glyph + label), mirroring the fromApple flag elsewhere.
+    private var appleSourceBadge: some View {
+        HStack(spacing: 3) {
+            Image(systemName: "heart.fill").font(.system(size: 8))
+            Text("Apple Health").textCase(.uppercase)
+        }
+        .font(.system(size: 8.5, weight: .semibold)).tracking(0.3)
+        .foregroundStyle(theme.dataHeart)
+        .padding(.horizontal, 4).padding(.vertical, 1)
+        .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(theme.dataHeart.opacity(0.4), lineWidth: 1))
+    }
+
+    /// No Apple reading + not connected: a quiet, no-number invite (mirrors MetricInfoSheet's
+    /// appleConnectLine). No action button — connecting lives in Today / Settings.
+    private var vo2maxConnectNudge: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(verbatim: "VO₂max").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Image(systemName: "heart.fill").font(.system(size: 12)).foregroundStyle(theme.dataHeart)
+                Text("Connect Apple Health to see your VO₂max.")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(theme.hairline, lineWidth: 0.5))
+        }
     }
 
     // MARK: - Direction + copy

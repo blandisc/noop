@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Tu VO₂max de Apple aparece junto a tu Edad física / Your Apple VO₂max now shows next to your Physical age.**
+  **ES** — Si tu Apple Watch mide tu VO₂max (lo que Apple llama «Capacidad cardio»), ahora aparece **dentro del detalle de Edad física** (Cuerpo › Longevidad › Edad física): el número en ml/kg/min, **etiquetado como dato de Apple Salud**, con el promedio típico para tu edad como referencia para saber si vas por encima o por debajo. Es el dato que tu reloj **mide durante el ejercicio** — no te pedimos nada extra (ni la cintura). Si no usas Apple Watch, simplemente no aparece. Tu Edad física **no cambia**: el VO₂max es un dato complementario, no recalcula nada.
+  **EN** — If your Apple Watch measures your VO₂max (what Apple calls "Cardio Fitness"), it now appears **inside the Physical age detail** (Body › Longevity › Physical age): the number in ml/kg/min, **labeled as Apple Health data**, with the typical average for your age as a reference so you know if you're above or below. It's the value your watch **measures during exercise** — we ask you for nothing extra (no waist). If you don't use Apple Watch, it simply doesn't show. Your Physical age **doesn't change**: VO₂max is a complementary datum, it recomputes nothing.
+  ([Cenit/Screens/FitnessAgeDetailView.swift](Cenit/Screens/FitnessAgeDetailView.swift), [Packages/StrandAnalytics/Sources/StrandAnalytics/VO2maxReference.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/VO2maxReference.swift), [Cenit/Screens/CuerpoView.swift](Cenit/Screens/CuerpoView.swift))
+
 - **Las tarjetas de Hoy se elevan al tocarlas / Today's cards lift when you tap them.**
   **ES** — Al tocar una tarjeta de «Métricas de hoy», ahora **se eleva** un instante hacia tu dedo (una pizca de escala y el borde más marcado), en vez del oscurecido de antes. Es solo el realce al pulsar; el detalle sigue abriéndose como siempre, desde abajo.
   **EN** — Tapping a "Today's metrics" card now makes it **lift** toward your finger for an instant (a touch of scale and a stronger edge), instead of the previous dimming. It's just the press feedback; the detail still opens as before, from the bottom.

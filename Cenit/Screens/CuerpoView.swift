@@ -162,7 +162,11 @@ private struct CuerpoLanding: View {
             // Light «Instrumento» sheet — pass the resolved theme explicitly (it doesn't propagate
             // through `.sheet`), same as the metric sheet above.
             FitnessAgeDetailView(snapshot: fitnessAge ?? computeFitnessAge(),
-                                 chronoAge: model.profile.age, sex: model.profile.sex, theme: theme)
+                                 chronoAge: model.profile.age, sex: model.profile.sex,
+                                 appleVO2max: latestAppleVO2max,
+                                 appleConnectHint: health.auth != .authorized && health.auth != .unavailable
+                                     && latestAppleVO2max == nil,
+                                 theme: theme)
         }
     }
 
@@ -771,6 +775,12 @@ private struct CuerpoLanding: View {
     private var freshSteps: Int? {
         let cutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date())
         return appleDays.last(where: { $0.day >= cutoff })?.steps
+    }
+
+    /// Most recent Apple Health VO₂max (ml/kg/min) — NOT a daily metric (Apple updates it occasionally
+    /// after outdoor workouts), so the latest available reading wins, no today/yesterday freshness gate.
+    private var latestAppleVO2max: Double? {
+        appleDays.last(where: { $0.vo2max != nil })?.vo2max
     }
 
     /// Today's mean HR from the 5-minute buckets (nil when there are no readings).
