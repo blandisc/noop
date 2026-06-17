@@ -9,7 +9,7 @@ import Charts
 // any gradient + value-range can be supplied for HRV/RHR/etc.
 
 /// One point on a trend line.
-public struct TrendPoint: Identifiable, Sendable {
+public struct TrendPoint: Identifiable, Sendable, Equatable {
     public let id = UUID()
     public var date: Date
     public var value: Double
@@ -145,15 +145,24 @@ public struct TrendChart: View {
                 .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
                 .foregroundStyle(valueGradient)
             }
-            ForEach(points) { p in
-                PointMark(
-                    x: .value("Date", p.date),
-                    y: .value("Value", p.value)
-                )
-                .symbolSize(18)
-                .foregroundStyle(StrandPalette.sample(stops: gradient.toStops(), at: unit(p.value)))
+            // Per-point dots only on short series. On a dense line (a long range — months/year, up to
+            // ~365 days) a mark per point both clutters the line and costs Charts a draw per sample, so
+            // long ranges show line + area only. Short ranges (week/month) keep the dots unchanged. (FER-219)
+            if points.count <= 60 {
+                ForEach(points) { p in
+                    PointMark(
+                        x: .value("Date", p.date),
+                        y: .value("Value", p.value)
+                    )
+                    .symbolSize(18)
+                    .foregroundStyle(StrandPalette.sample(stops: gradient.toStops(), at: unit(p.value)))
+                }
             }
         }
+        // No draw-on / interpolation animation when the data changes (switching period rebuilds the
+        // whole series): the new range should snap in, not morph point-by-point — that interpolation is
+        // what made the chart "stick" while it rebuilt long ranges. (FER-219)
+        .animation(.none, value: points)
         // Reserve a clean band below the fill for the X-axis labels (startPadding on the Y-scale's
         // bottom), and inset the X-scale's trailing edge so the last label isn't clipped. (FER-82)
         .chartYScale(domain: valueRange, range: .plotDimension(startPadding: NoopMetrics.chartXLabelBand, endPadding: 0))

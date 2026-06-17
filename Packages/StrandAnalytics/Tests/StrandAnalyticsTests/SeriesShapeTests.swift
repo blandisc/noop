@@ -67,6 +67,56 @@ final class SeriesShapeTests: XCTestCase {
         XCTAssertEqual(SeriesShape.latestMovingAverage(v, window: 7)!, full.last!, accuracy: 1e-9)
     }
 
+    // MARK: - decimate
+
+    func testDecimatePassthroughWhenShortOrEqual() {
+        // count < maxPoints and count == maxPoints both return the input untouched.
+        XCTAssertEqual(SeriesShape.decimate([1, 2, 3], maxPoints: 80), [1, 2, 3])
+        XCTAssertEqual(SeriesShape.decimate([1, 2, 3, 4], maxPoints: 4), [1, 2, 3, 4])
+    }
+
+    func testDecimateLengthNeverExceedsMaxPoints() {
+        let v = (0..<365).map(Double.init)
+        let out = SeriesShape.decimate(v, maxPoints: 80)
+        XCTAssertLessThanOrEqual(out.count, 80)
+        XCTAssertEqual(out.count, 80)   // 365 > 80 → exactly 80 buckets
+    }
+
+    func testDecimateBucketAveragesHandComputed() {
+        // [0,1,2,3,4,5,6,7] into 4 buckets → contiguous pairs, mean of each:
+        //  bucket0 = mean[0,1] = 0.5
+        //  bucket1 = mean[2,3] = 2.5
+        //  bucket2 = mean[4,5] = 4.5
+        //  bucket3 = mean[6,7] = 6.5
+        let out = SeriesShape.decimate([0, 1, 2, 3, 4, 5, 6, 7], maxPoints: 4)
+        let expected = [0.5, 2.5, 4.5, 6.5]
+        XCTAssertEqual(out.count, expected.count)
+        for (a, b) in zip(out, expected) { XCTAssertEqual(a, b, accuracy: 1e-9) }
+    }
+
+    func testDecimateUnevenBucketsCoverEveryValueOnce() {
+        // 7 values into 3 buckets: near-equal partition is [0,1] [2,3] [4,5,6] (sizes 2,2,3),
+        // so every value lands in exactly one bucket and the means follow.
+        let out = SeriesShape.decimate([1, 2, 3, 4, 5, 6, 7], maxPoints: 3)
+        let expected = [1.5, 3.5, 6.0]   // mean[1,2], mean[3,4], mean[5,6,7]
+        XCTAssertEqual(out.count, expected.count)
+        for (a, b) in zip(out, expected) { XCTAssertEqual(a, b, accuracy: 1e-9) }
+    }
+
+    func testDecimateDoesNotCrashOnEmptyOrSingle() {
+        XCTAssertEqual(SeriesShape.decimate([], maxPoints: 80), [])
+        XCTAssertEqual(SeriesShape.decimate([42], maxPoints: 80), [42])
+        // Degenerate maxPoints returns the input unchanged (no division by an empty bucket).
+        XCTAssertEqual(SeriesShape.decimate([1, 2, 3], maxPoints: 1), [1, 2, 3])
+        XCTAssertEqual(SeriesShape.decimate([1, 2, 3], maxPoints: 0), [1, 2, 3])
+    }
+
+    func testDecimateConstantSeriesStaysConstant() {
+        let out = SeriesShape.decimate(Array(repeating: 9.0, count: 200), maxPoints: 80)
+        XCTAssertEqual(out.count, 80)
+        for v in out { XCTAssertEqual(v, 9.0, accuracy: 1e-9) }
+    }
+
     // MARK: - coefficientOfVariation
 
     func testCoefficientOfVariationHandComputed() {
