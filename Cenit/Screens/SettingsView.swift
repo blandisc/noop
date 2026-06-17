@@ -445,7 +445,7 @@ struct SettingsView: View {
                         .foregroundStyle(StrandPalette.textTertiary)
                         .font(.system(size: 13))
                         .accessibilityHidden(true)
-                    Text("Importing overwrites everything currently on this Mac. Your old data is kept in a side file just in case. Cénit needs a relaunch for an import to take effect. Export CSV writes a WHOOP-format zip of your days, sleeps, workouts and journal that re-imports into Cénit on Mac or Android — on-device computed rows are marked APPROXIMATE in its Source column; the full backup stays the lossless restore path.")
+                    Text("Importing overwrites everything currently in Cénit. Your old data is kept in a side file just in case. Cénit needs a relaunch for an import to take effect. Export CSV writes a WHOOP-format zip of your days, sleeps, workouts and journal that re-imports into Cénit — on-device computed rows are marked APPROXIMATE in its Source column; the full backup stays the lossless restore path.")
                         .font(StrandFont.footnote)
                         .foregroundStyle(StrandPalette.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -580,7 +580,7 @@ struct SettingsView: View {
                 return
             case .exported(let url):
                 backupAlertTitle = "CSV exported"
-                backupAlertMessage = "Saved to \(url.lastPathComponent). The zip re-imports into Cénit (Data Sources → WHOOP Export) on any Mac or Android device."
+                backupAlertMessage = "Saved to \(url.lastPathComponent). The zip re-imports into Cénit (Data Sources → WHOOP Export)."
                 showBackupAlert = true
             case .failure(let message):
                 backupAlertTitle = "Export problem"

@@ -64,7 +64,7 @@ struct SupportView: View {
                     Text("Support the build").font(StrandFont.headline).foregroundStyle(StrandPalette.textPrimary)
                     Spacer()
                 }
-                Text("Cénit is free and always will be, nothing is locked. It cost real money and a lot of unpaid hours to build, and there's a Windows app, an Android app and an iOS app I want to ship next. If it's useful to you and you want to help with the development and testing costs, even a few quid in crypto genuinely keeps it moving, and honestly it keeps me motivated to keep building.")
+                Text("Cénit is free and always will be, nothing is locked. It cost real money and a lot of unpaid hours to build, and there's a Windows app and an iOS app I want to ship next. If it's useful to you and you want to help with the development and testing costs, even a few quid in crypto genuinely keeps it moving, and honestly it keeps me motivated to keep building.")
                     .font(StrandFont.subhead).foregroundStyle(StrandPalette.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
 
