@@ -211,8 +211,14 @@ public struct SegmentedPillControl<T: Hashable>: View {
     let items: [T]
     let label: (T) -> String
     @Binding var selection: T
-    public init(_ items: [T], selection: Binding<T>, label: @escaping (T) -> String) {
-        self.items = items; self._selection = selection; self.label = label
+    /// Optional «Instrumento diurno» theme. When `nil` (the default) the control renders the
+    /// legacy dark `StrandPalette` look used by the 9 shipped screens — UNCHANGED. When a theme
+    /// is passed (the light Detalle de Métrica, FER-211), it renders an iOS-native segmented look
+    /// on warm paper: a quiet track, an active segment that's a subtle ink-tinted capsule (no
+    /// bright green), and ink labels. (FER-211)
+    var theme: InstrumentoTheme?
+    public init(_ items: [T], selection: Binding<T>, theme: InstrumentoTheme? = nil, label: @escaping (T) -> String) {
+        self.items = items; self._selection = selection; self.theme = theme; self.label = label
     }
     public var body: some View {
         HStack(spacing: 4) {
@@ -221,18 +227,31 @@ public struct SegmentedPillControl<T: Hashable>: View {
                 Button { withAnimation(StrandMotion.interactive) { selection = item } } label: {
                     Text(label(item))
                         .font(StrandFont.captionNumber)
-                        .foregroundStyle(sel ? StrandPalette.surfaceBase : StrandPalette.textSecondary)
-                        .frame(minWidth: 32)
+                        .foregroundStyle(segmentText(sel))
+                        .frame(minWidth: 32, maxWidth: theme == nil ? nil : .infinity)
                         .padding(.vertical, 6).padding(.horizontal, 11)
-                        .background(Capsule(style: .continuous).fill(sel ? StrandPalette.accent : Color.clear))
+                        .background(Capsule(style: .continuous).fill(segmentFill(sel)))
                 }
                 .buttonStyle(.plain)
             }
         }
         .padding(3)
-        .background(StrandPalette.surfaceInset, in: Capsule(style: .continuous))
-        .overlay(Capsule(style: .continuous).strokeBorder(StrandPalette.hairline, lineWidth: 1))
+        .background(trackFill, in: Capsule(style: .continuous))
+        .overlay(Capsule(style: .continuous).strokeBorder(trackStroke, lineWidth: 1))
     }
+
+    // Legacy (theme == nil) keeps the exact dark-palette values; the Instrumento variant maps to
+    // paper-friendly tokens — active = subtle ink tint, never the bright accent.
+    private func segmentText(_ sel: Bool) -> Color {
+        guard let theme else { return sel ? StrandPalette.surfaceBase : StrandPalette.textSecondary }
+        return sel ? theme.ink : theme.inkSecondary
+    }
+    private func segmentFill(_ sel: Bool) -> Color {
+        guard let theme else { return sel ? StrandPalette.accent : Color.clear }
+        return sel ? theme.ink.opacity(0.08) : Color.clear
+    }
+    private var trackFill: Color { theme?.surface ?? StrandPalette.surfaceInset }
+    private var trackStroke: Color { theme?.hairlineStrong ?? StrandPalette.hairline }
 }
 
 // MARK: - Badges
