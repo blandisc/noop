@@ -65,8 +65,9 @@ struct RootTabView: View {
                 }
             }
 
-            // Entrenar — interim hub: the active-session tools.
+            // Entrenar — interim hub: live workout (FER-197) + the active-session tools.
             hubTab(.train, "Train", "figure.strengthtraining.functional", path: $trainStack) {
+                LiveWorkoutHubRow(solar: barSolar)
                 Section {
                     row(.breathe,   "Breathe",   "wind")
                     row(.intervals, "Intervals", "timer")

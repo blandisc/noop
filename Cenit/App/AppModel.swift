@@ -50,8 +50,12 @@ final class AppModel: ObservableObject {
     /// "manual"), which then shows in the Workouts view. The day's strain already counts this HR (it's
     /// the same live stream the store persists), so this is a per-session annotation, not a double-count.
     @Published var activeWorkout: ActiveWorkout?
-    /// The just-ended workout, for a brief inline confirmation on Live (cleared on the next start).
+    /// The just-ended workout, for a brief inline confirmation in the Train hub (cleared on the next start).
     @Published var lastWorkout: WorkoutRow?
+    /// True when the just-ended session was discarded because no HR ever arrived (<2 samples), so the
+    /// Train hub can show an honest "not saved" notice instead of silently dropping it (FER-197).
+    /// Cleared on the next start and on acknowledge.
+    @Published var lastWorkoutDiscarded = false
 
     /// A manual workout in progress. `samples` accumulate from the smoothed live `bpm`; `liveStrain`
     /// is recomputed as the window grows so the active card can show strain building in real time.
@@ -255,6 +259,7 @@ final class AppModel: ObservableObject {
     func startWorkout() {
         guard activeWorkout == nil else { return }
         lastWorkout = nil
+        lastWorkoutDiscarded = false
         activeWorkout = ActiveWorkout(start: Date())
         buzz(loops: 1)
     }
@@ -265,7 +270,7 @@ final class AppModel: ObservableObject {
         guard let w = activeWorkout else { return }
         activeWorkout = nil
         let samples = w.samples
-        guard samples.count >= 2 else { lastWorkout = nil; return }
+        guard samples.count >= 2 else { lastWorkout = nil; lastWorkoutDiscarded = true; return }
         let end = Date()
         let avg = Int((Double(samples.map(\.bpm).reduce(0, +)) / Double(samples.count)).rounded())
         let peak = samples.map(\.bpm).max() ?? 0
@@ -276,6 +281,7 @@ final class AppModel: ObservableObject {
             energyKcal: nil, avgHr: avg, maxHr: peak, strain: strain,
             distanceM: nil, zonesJSON: nil, notes: nil)
         lastWorkout = row
+        lastWorkoutDiscarded = false
         buzz(loops: 2)
         Task { [weak self] in
             guard let self else { return }
@@ -284,6 +290,13 @@ final class AppModel: ObservableObject {
                 await self.repo.refresh()
             }
         }
+    }
+
+    /// Dismiss the just-ended confirmation / discard notice shown in the Train hub once the user has
+    /// seen it (FER-197) — the hub auto-acknowledges after a few seconds so the row returns to idle.
+    func acknowledgeLastWorkout() {
+        lastWorkout = nil
+        lastWorkoutDiscarded = false
     }
 
     /// Append the current smoothed `bpm` to the active workout and recompute its running strain. Called
