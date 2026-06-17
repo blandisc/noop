@@ -90,6 +90,10 @@ private struct CuerpoLanding: View {
     /// Recovery cold-start: nights banked toward the seed gate while the baseline calibrates; nil once
     /// recovery is scored. Drives the hero's "N/4" + "Calibrating" copy instead of a fake number.
     @State private var recoveryCalibration: Int? = nil
+    /// Fitness Age (FER-141): the 7-day orchestration snapshot, memoized once per refresh in `loadAll`.
+    @State private var fitnessAge: FitnessAgeSnapshot? = nil
+    /// Drives the Fitness Age detail sheet (the light «Instrumento» sheet for «Edad física»).
+    @State private var showFitnessAge = false
 
     private static let recoverySeed = Baselines.minNightsSeed
 
@@ -127,7 +131,7 @@ private struct CuerpoLanding: View {
                 activityCostBlock
 
                 section("Longevity") {
-                    comingSoonRow("Physical age")
+                    physicalAgeRow
                     divider
                     comingSoonRow("Vitality")
                 }
@@ -154,6 +158,12 @@ private struct CuerpoLanding: View {
         }
         .sheet(item: $darkSheet) { sheet in darkSheetContent(sheet) }
         .sheet(isPresented: $showActivityCost) { activityRecoverySheet }
+        .sheet(isPresented: $showFitnessAge) {
+            // Light «Instrumento» sheet — pass the resolved theme explicitly (it doesn't propagate
+            // through `.sheet`), same as the metric sheet above.
+            FitnessAgeDetailView(snapshot: fitnessAge ?? computeFitnessAge(),
+                                 chronoAge: model.profile.age, sex: model.profile.sex, theme: theme)
+        }
     }
 
     /// The canvas — read inside the themed subtree so it recolors by hour too.
@@ -356,7 +366,92 @@ private struct CuerpoLanding: View {
         }
     }
 
-    /// A reserved-section row: no datum yet, the engine isn't orchestrated here (Longevity = FER-141/145).
+    // MARK: - Physical age (Fitness Age, FER-141)
+
+    /// The Longevity row that opens the Fitness Age detail. Custom (not `MetricRow`): the delta lives
+    /// UNDER the label and there's no sparkline — the number is tinted by DIRECTION (verde younger /
+    /// ámbar older / ink even / faint when there's no reading yet). The whole row taps into the detail.
+    private var physicalAgeRow: some View {
+        let snap = fitnessAge
+        let estimate = snap?.readiness.confidence == .estimate
+        return Button {
+            showFitnessAge = true
+        } label: {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 6) {
+                        Text("Physical age").font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                        if estimate { InlineFlagChip("Estimate", color: theme.warning) }
+                    }
+                    Text(physicalAgeSubtitle(snap))
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 8)
+                physicalAgeValue(snap)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    .accessibilityHidden(true)   // decorative — the whole row is the button
+            }
+            .padding(.vertical, 15)
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05)))
+        .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder private func physicalAgeValue(_ snap: FitnessAgeSnapshot?) -> some View {
+        if let result = snap?.result {
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text("\(Int(result.fitnessAge.rounded()))")
+                    .font(StrandFont.number(20)).foregroundStyle(physicalAgeColor(result))
+                Text("years").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
+            }
+        } else {
+            // Honest "no reading yet" — VoiceOver says it plainly, not "dash" (mirrors MetricRow).
+            Text("—").font(StrandFont.number(20)).foregroundStyle(theme.inkTertiary)
+                .accessibilityLabel(Text("sin dato de hoy"))
+        }
+    }
+
+    /// Direction hue: younger → recovery green, older → warning amber, even → ink. The ±0.5-yr
+    /// deadband lives on `FitnessAgeResult.direction` (StrandAnalytics) so the row and the sheet agree.
+    private func physicalAgeColor(_ result: FitnessAgeResult) -> Color {
+        switch result.direction {
+        case .younger: return theme.dataRecovery
+        case .older:   return theme.warning
+        case .even:    return theme.ink
+        }
+    }
+
+    private func physicalAgeSubtitle(_ snap: FitnessAgeSnapshot?) -> LocalizedStringKey {
+        guard let snap else { return " " }   // still loading: keep the row's height stable
+        if let result = snap.result {
+            let yrs = Int(abs(result.deltaYears).rounded())
+            let chrono = Int(result.chronoAge.rounded())
+            switch result.direction {
+            case .younger: return "\(yrs) years younger than your \(chrono)"
+            case .older:   return "\(yrs) years above your \(chrono)"
+            case .even:    return "Right at your \(chrono)"
+            }
+        }
+        // notReady — RHR coverage is the real blocker (age/sex come from the profile defaults).
+        return "Missing resting-HR nights (\(snap.rhrNights) of 4)"
+    }
+
+    /// Build the Fitness Age snapshot from the trailing 7-day display window + profile. Pure + cheap;
+    /// memoized into `fitnessAge` by `loadAll`, recomputed on demand as the sheet's fallback.
+    private func computeFitnessAge() -> FitnessAgeSnapshot {
+        let last7 = trailingDisplay(7)
+        return FitnessAgeEngine.snapshot(
+            rhrLast7: last7.map { $0.restingHr },
+            strainLast7: last7.map { $0.strain },
+            age: model.profile.age, sex: model.profile.sex,
+            hasHeightWeight: true)
+    }
+
+    /// A reserved-section row: no datum yet (Vitality = FER-145, still without UI).
     private func comingSoonRow(_ label: LocalizedStringKey) -> some View {
         HStack {
             Text(label).font(StrandFont.body).foregroundStyle(theme.inkSecondary)
@@ -575,6 +670,8 @@ private struct CuerpoLanding: View {
         let stress = StressModel(days: repo.days, stored: await stressRows)
         stressScore = stress?.score
         sparks["stress"] = stress.map { Array($0.fullTrend.suffix(14).map(\.value)) } ?? []
+
+        fitnessAge = computeFitnessAge()
     }
 
     // MARK: - Trend / curve loaders for the light sheet (mirror Today)

@@ -192,7 +192,9 @@ de En vivo en FER-184; **no toca `LiveView`**.
 **Archivo:** `Cenit/Screens/CuerpoView.swift`  
 **Descripción:** Landing curado de la capa «historia / entre-días» (pestaña **Cuerpo**, FER-186). Estilo Apple Salud (Resumen) en papel claro «Instrumento» (color solo en el dato): una columna de secciones, cada fila un `MetricRow` (label · sparkline 14d + banda p25–p75 · valor en su color de dato · chevron) que abre un detalle.
 
-**Secciones:** Recuperación (fila héroe destacada, en `surface`) · Descanso & carga (Sueño · Esfuerzo del día · Estrés) · Vitales (HRV · FC en reposo · SpO₂ · Frecuencia cardíaca · Respiración · Temp. de piel) · Actividad (Pasos · Entrenamientos · **«Cómo amaneces tras cada deporte»** — mini-bloque Activity Cost, FER-139) · Longevidad (Edad física · Vitalidad → «Próximamente», FER-141/145) · acciones al pie (Comparar · Ver todas las métricas).
+**Secciones:** Recuperación (fila héroe destacada, en `surface`) · Descanso & carga (Sueño · Esfuerzo del día · Estrés) · Vitales (HRV · FC en reposo · SpO₂ · Frecuencia cardíaca · Respiración · Temp. de piel) · Actividad (Pasos · Entrenamientos · **«Cómo amaneces tras cada deporte»** — mini-bloque Activity Cost, FER-139) · Longevidad (**Edad física** activa — número + delta vs edad, FER-141 · Vitalidad → «Próximamente», FER-145) · acciones al pie (Comparar · Ver todas las métricas).
+
+La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqueta, sin sparkline, y el número se tiñe por **dirección** (verde más joven / ámbar mayor / tinta igual / `—` sin dato); en cobertura parcial lleva el chip «Estimado». Toca → `FitnessAgeDetailView`.
 
 | Estado | Condición de entrada |
 |--------|---------------------|
@@ -202,7 +204,7 @@ de En vivo en FER-184; **no toca `LiveView`**.
 
 **Apertura del detalle (FER-185 ya aterrizó para los 3 vitales):** **HRV · FC en reposo · Respiración** abren el **`MetricDetailScreen`** unificado (sheet claro «Instrumento», `depth: .full`, tema explícito, sin `NavigationStack` anidado). El resto sigue su puente: Recuperación/Esfuerzo/SpO₂/FC/Pasos/Estrés→`MetricInfoSheet` claro; Sueño→`SleepView`, Entrenamientos→`WorkoutsView`, Temp. piel→`MetricDetailView` del catálogo, Comparar→`CompareView`, Ver todas→`MetricExplorerView` — estos últimos como **sheet oscuro fijado a `.dark`** (un tab claro no puede empujar una pantalla oscura sin romper la barra de estado). El mini-bloque **«Cómo amaneces tras cada deporte»** (Activity Cost, FER-139) en «Actividad» abre su propia **hoja clara** `ActivityRecoverySheet` (hermana de `MetricInfoSheet`, tema explícito): una tarjeta por deporte —en el orden del motor— con la frase de **asociación** (no causa), badge de confianza (`Sólido`/`Juntando datos`) y «n sesiones», más «Ver el método» con los confusores; sin datos suficientes → estado «Juntando datos».
 
-**Componentes:** `MetricRow`, `Sparkline` (+ `ReferenceRange.interquartile`), `MetricInfoSheet`, `MetricDetailScreen` (+ `MetricDetailSpec`), `ActivityRecoverySheet` (FER-139), `InstrumentoTheme` (`instrumentoThemeByHour`). **Analytics:** `ActivityCostEngine` + `ActivityCostInputs` (StrandAnalytics, vía `Repository.activityCosts()`).
+**Componentes:** `MetricRow`, `Sparkline` (+ `ReferenceRange.interquartile`), `MetricInfoSheet`, `MetricDetailScreen` (+ `MetricDetailSpec`), `ActivityRecoverySheet` (FER-139), `FitnessAgeDetailView`, `InlineFlagChip`, `InstrumentoTheme` (`instrumentoThemeByHour`). **Analytics:** `ActivityCostEngine` + `ActivityCostInputs` (StrandAnalytics, vía `Repository.activityCosts()`).
 
 ---
 
@@ -225,6 +227,21 @@ de En vivo en FER-184; **no toca `LiveView`**.
 | Sin permiso / offline | Muestra lo guardado (`repo.displayDays`); el origen lo inyecta el llamador |
 
 **Datos:** series de los 3 vitales desde `repo.displayDays` (no `series("my-whoop")`, vacío para BLE); loaders inyectados (serie completa por clave; vitales de la noche). **Componentes:** `SegmentedPillControl` (`ExploreRange`, extraído a `Cenit/Data/ExploreRange.swift`), `Sparkline`, `ReferenceRange`, `MetricInfo`/`MetricInfoSheet` (método/bandas/copy reutilizados), `SeriesShape` (StrandAnalytics), `Baselines`/`ComparisonEngine`, `InstrumentoTheme`.
+
+---
+
+### FitnessAgeDetailView
+**Archivo:** `Cenit/Screens/FitnessAgeDetailView.swift`  
+**Descripción:** Detalle de **Edad física** (Fitness Age, modelo Nes/HUNT — FER-122/141), abierto al tocar la fila «Edad física» en Cuerpo › Longevidad. Hoja clara «Instrumento» con el tema pasado explícito (no se propaga por `.sheet`). El número es el dato dominante, teñido por **dirección** (verde = más joven, ámbar = mayor, tinta = igual). VO₂max queda fuera de alcance (requiere cintura — otro issue).
+
+| Estado | Qué muestra |
+|--------|-------------|
+| `ready` / `estimate` | Numeral héroe (`instrumentoHero(64)`) + «años» · delta vs edad cronológica · banda «±5 años» · tirita de **descargo** («comparación de fitness, no edad biológica ni diagnóstico») · **Qué la mueve** (FC en reposo `dataHeart` · Actividad `dataStrain`) · **Qué estamos usando** (checklist de cobertura) · método Nes/HUNT al pie. `estimate` añade el chip «Estimado». |
+| `notReady` | Sin numeral: pozo vacío honesto («Todavía no podemos calcular…») + checklist de **qué falta** (FC en reposo N/4 noches) + descargo. |
+
+**Origen de datos:** `FitnessAgeEngine.snapshot(...)` (orquestación pura en `StrandAnalytics`, FER-141) sobre la ventana de 7 días de `repo.displayDays` (FC nocturna + días activos + strain medio 0–21) + edad/sexo de `ProfileStore`.
+
+**Componentes:** `InstrumentoTheme`, `InlineFlagChip`, `StrandFont`; patrones visuales de `MetricInfoSheet` (tirita y secciones en `surface`).
 
 ---
 
