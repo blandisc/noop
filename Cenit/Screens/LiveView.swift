@@ -2,6 +2,12 @@ import SwiftUI
 import StrandDesign
 import WhoopStore
 
+/// Reports the live monitor's measured content height up so the sheet detent can fit it (FER-196).
+private struct SheetContentHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+
 /// Live — the connected strap in real time, in the light «Instrumento diurno» language. Designed to
 /// read as a single **sheet** (FER-190): everything fits one view, no scrolling on a standard iPhone
 /// (a `ScrollView` only graceful-degrades on small screens / large Dynamic Type). Warm paper, ink
@@ -58,10 +64,9 @@ struct LiveView: View {
     @State private var isReconnecting = false
     /// Times out the grace window; cancelled if the link returns (or the view disappears) first.
     @State private var reconnectTimeout: Task<Void, Never>? = nil
-    /// Day-key parser for the coverage strip, en_US_POSIX so it matches `DailyMetric.day`.
-    private static let dayFmt: DateFormatter = {
-        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; f.locale = Locale(identifier: "en_US_POSIX"); return f
-    }()
+    /// Measured content height → the sheet detent, so the sheet opens exactly as tall as the content
+    /// instead of full-screen with empty space below (FER-196).
+    @State private var sheetHeight: CGFloat = 0
     /// How many recent calendar days the coverage strip shows.
     private static let coverageWindow = 28
     /// Fixed widths for the two right-hand signal columns so rows AND the per-group column headers
@@ -104,9 +109,17 @@ struct LiveView: View {
             .padding(.top, monitorOnly ? 28 : 18)
             .padding(.bottom, NoopMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
+            // Measure the content height so the sheet detent fits it exactly (FER-196).
+            .background(GeometryReader { proxy in
+                Color.clear.preference(key: SheetContentHeightKey.self, value: proxy.size.height)
+            })
         }
         .background(theme.paper.ignoresSafeArea())
         .instrumentoTheme(theme)
+        // Open the sheet exactly as tall as the content (falls back to a sane height before the first
+        // measurement; the system caps at the screen and the ScrollView scrolls if content overflows).
+        .onPreferenceChange(SheetContentHeightKey.self) { sheetHeight = $0 }
+        .presentationDetents([.height(sheetHeight > 0 ? sheetHeight : 640)])
         .onAppear { refreshLiveSession() }
         .onDisappear { model.stopRealtimeHR(); reconnectTimeout?.cancel() }
         .onChange(of: live.bonded) { refreshLiveSession() }
@@ -172,15 +185,15 @@ struct LiveView: View {
                     .contentTransition(.numericText())
                     .animation(.snappy, value: displayHR)
                 Text("bpm").font(StrandFont.headline).foregroundStyle(theme.inkSecondary)
-                Spacer(minLength: 0)
+                // The "live" indicator sits right next to the unit, not floating far right (FER-196).
                 if isLiveHR {
                     HStack(spacing: 4) {
                         Circle().fill(theme.dataRecovery).frame(width: 6, height: 6)
                         Text("live").font(StrandFont.caption).foregroundStyle(theme.dataRecovery)
                     }
-                } else {
-                    Text("—").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .padding(.leading, 3)
                 }
+                Spacer(minLength: 0)
             }
             // Session beats (accruing) + the beat-to-beat tachogram, in one compact line.
             HStack(spacing: 10) {
@@ -230,19 +243,18 @@ struct LiveView: View {
     private var signalsSection: some View {
         let c = receipt?.counts
         let ago = live.lastSyncedAt.map { relativeAgo($0) }
+        let bpm = String(localized: "bpm")   // unit localizes to "lpm" in Spanish (FER-196)
         return VStack(alignment: .leading, spacing: 0) {
-            // Live group: the value column explains itself (84 bpm); only the count column needs a key.
-            groupHeader("Capturing live", statusKey: nil, countKey: "records")
+            // Only the count column carries a header ("records"); the value/time column explains itself.
+            groupHeader("Capturing live")
             signalRow(icon: "heart.fill", name: "Heart rate",
-                      status: displayHR.map { "\($0) bpm" } ?? "—", stored: c?.hr ?? 0, isLive: isLiveHR)
+                      status: displayHR.map { "\($0) \(bpm)" } ?? "—", stored: c?.hr ?? 0, isLive: isLiveHR)
             rowDivider
             signalRow(icon: "waveform.path.ecg", name: "Variability (R-R)",
                       status: showsReconnecting ? "—" : (rrHistory.last.map { "\($0) ms" } ?? "—"),
                       stored: c?.rr ?? 0, isLive: isLiveHR)
 
-            // Sync group: the group label already says these arrive on sync, so the time column needs
-            // no key; only the count column is keyed "records" (FER-193).
-            groupHeader("Completes on sync", statusKey: nil, countKey: "records").padding(.top, 12)
+            groupHeader("Completes on sync").padding(.top, 12)
             syncRow(icon: "drop.fill", name: "Blood oxygen (SpO₂)", stored: c?.spo2 ?? 0, ago: ago)
             rowDivider
             syncRow(icon: "thermometer", name: "Skin temperature", stored: c?.skinTemp ?? 0, ago: ago)
@@ -257,28 +269,20 @@ struct LiveView: View {
         Rectangle().fill(theme.hairline).frame(height: 0.5)
     }
 
-    /// A group's overline label plus right-aligned column keys, aligned over the fixed-width status and
-    /// count columns of the rows below. `statusKey` is nil for the live group (its value is self-evident).
-    private func groupHeader(_ label: LocalizedStringKey, statusKey: LocalizedStringKey?, countKey: LocalizedStringKey) -> some View {
+    /// A group's overline label plus the single "records" column key. The key is right-aligned over the
+    /// count column but allowed to span the (header-less) status column too, so "REGISTROS" never gets
+    /// truncated (FER-196).
+    private func groupHeader(_ label: LocalizedStringKey) -> some View {
         HStack(spacing: 9) {
             Text(label).font(StrandFont.overline).tracking(StrandFont.overlineTracking)
                 .foregroundStyle(theme.inkSecondary)
             Spacer(minLength: 6)
-            colKey(statusKey).frame(width: Self.statusColW, alignment: .trailing)
-            colKey(countKey).frame(width: Self.countColW, alignment: .trailing)
-            Color.clear.frame(width: 7, height: 1)   // aligns with the row's status dot
+            Text("records").font(.system(size: 10, weight: .medium)).tracking(0.4)
+                .textCase(.uppercase).foregroundStyle(theme.inkTertiary).lineLimit(1)
+                .frame(width: Self.statusColW + 9 + Self.countColW, alignment: .trailing)
+            Color.clear.frame(width: 7, height: 1)   // aligns with the row's trailing dot
         }
         .padding(.bottom, 5)
-    }
-
-    @ViewBuilder private func colKey(_ text: LocalizedStringKey?) -> some View {
-        if let text {
-            Text(text).font(.system(size: 10, weight: .medium)).tracking(0.4)
-                .textCase(.uppercase).foregroundStyle(theme.inkTertiary)
-                .lineLimit(1)
-        } else {
-            Color.clear.frame(height: 1)
-        }
     }
 
     /// A live signal (HR / R-R): name · live value · stored count · green-when-live dot.
@@ -334,36 +338,74 @@ struct LiveView: View {
         .frame(width: Self.countColW, alignment: .trailing)
     }
 
-    // MARK: - Coverage (recent day-by-day continuity)
+    // MARK: - Coverage (per-day, broken out by source — reuses the FER-115 classification)
+
+    /// A day's data source over the last `coverageWindow` days: from the strap, Apple-Health-only, or
+    /// nothing. Mirrors `DataSourcesView`'s coverage so the two screens agree (FER-196).
+    private struct Coverage { let perDay: [Source]; let strap: Int; let apple: Int; let none: Int
+        enum Source { case strap, apple, none } }
+
+    private var coverage: Coverage {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let allKeys = Set(repo.days.map(\.day))
+        let appleKeys = repo.appleHealthDays
+        let perDay: [Coverage.Source] = (0..<Self.coverageWindow).reversed().compactMap { offset in
+            cal.date(byAdding: .day, value: -offset, to: today).map { date in
+                let key = Repository.localDayKey(date)
+                if appleKeys.contains(key) { return .apple }
+                if allKeys.contains(key) { return .strap }
+                return .none
+            }
+        }
+        return Coverage(perDay: perDay,
+                        strap: perDay.filter { $0 == .strap }.count,
+                        apple: perDay.filter { $0 == .apple }.count,
+                        none: perDay.filter { $0 == .none }.count)
+    }
 
     @ViewBuilder private var coverageStrip: some View {
-        let cov = recentCoverage
-        if !cov.isEmpty {
-            let gaps = cov.filter { !$0 }.count
-            HStack(spacing: 10) {
-                HStack(alignment: .bottom, spacing: 1.5) {
-                    ForEach(Array(cov.enumerated()), id: \.offset) { _, has in
-                        Capsule().fill(has ? theme.dataRecovery : theme.hairline)
-                            .frame(maxWidth: .infinity).frame(height: 12)
+        let cov = coverage
+        // Only show once at least one day has data — no alarming all-grey strip on first use.
+        if cov.strap + cov.apple > 0 {
+            VStack(alignment: .leading, spacing: 7) {
+                Text("Daily coverage").font(StrandFont.overline).tracking(StrandFont.overlineTracking)
+                    .foregroundStyle(theme.inkTertiary)
+                HStack(spacing: 3) {
+                    ForEach(Array(cov.perDay.enumerated()), id: \.offset) { _, src in
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(src == .strap ? theme.dataRecovery
+                                  : src == .apple ? theme.dataSpO2 : theme.hairlineStrong)
+                            .frame(maxWidth: .infinity).frame(height: 10)
                     }
                 }
-                Text(gaps == 0 ? "Continuous · last \(cov.count) days"
-                               : "\(gaps) gaps · last \(cov.count) days")
-                    .font(StrandFont.caption)
-                    .foregroundStyle(gaps == 0 ? theme.inkTertiary : theme.warning)
-                    .fixedSize()
+                coverageLegend(cov)
             }
+            .accessibilityElement(children: .combine)
         }
     }
 
-    /// Present/absent flags for the last `coverageWindow` calendar days ending at the most recent
-    /// stored day — a missing night (one that never synced) shows as a gap. Bounded + cheap.
-    private var recentCoverage: [Bool] {
-        guard let lastKey = repo.days.last?.day, let last = Self.dayFmt.date(from: lastKey) else { return [] }
-        let keys = Set(repo.days.suffix(Self.coverageWindow * 2).map(\.day))
-        let cal = Calendar.current
-        return (0..<Self.coverageWindow).reversed().compactMap { offset in
-            cal.date(byAdding: .day, value: -offset, to: last).map { keys.contains(Self.dayFmt.string(from: $0)) }
+    @ViewBuilder private func coverageLegend(_ cov: Coverage) -> some View {
+        HStack(spacing: 14) {
+            if cov.strap > 0 { legendItem(theme.dataRecovery, "Strap", cov.strap) }
+            if cov.apple > 0 { legendItem(theme.dataSpO2, "Apple Health", cov.apple) }
+            if cov.none > 0 {
+                legendItem(theme.hairlineStrong, "No data", cov.none)
+            } else {
+                HStack(spacing: 5) {
+                    RoundedRectangle(cornerRadius: 2).fill(theme.hairlineStrong).frame(width: 9, height: 9)
+                    Text("No gaps").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func legendItem(_ color: Color, _ label: LocalizedStringKey, _ count: Int) -> some View {
+        HStack(spacing: 5) {
+            RoundedRectangle(cornerRadius: 2).fill(color).frame(width: 9, height: 9)
+            Text(label).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+            Text("\(count)").font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
         }
     }
 

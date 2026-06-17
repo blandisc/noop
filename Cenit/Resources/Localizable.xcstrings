@@ -3186,12 +3186,6 @@
     },
     "bpm": {
       "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "bpm"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
@@ -3199,6 +3193,12 @@
           }
         },
         "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lpm"
+          }
+        },
+        "de": {
           "stringUnit": {
             "state": "translated",
             "value": "bpm"
@@ -19534,6 +19534,50 @@
           "stringUnit": {
             "state": "translated",
             "value": "Datensätze"
+          }
+        }
+      }
+    },
+    "Daily coverage": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daily coverage"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cobertura diaria"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tägliche Abdeckung"
+          }
+        }
+      }
+    },
+    "No gaps": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No gaps"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin huecos"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Lücken"
           }
         }
       }
