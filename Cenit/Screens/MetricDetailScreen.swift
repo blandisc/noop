@@ -68,12 +68,16 @@ struct MetricDetailScreen: View {
     // MARK: - Body
 
     var body: some View {
-        ScrollView {
+        // Derive the window ONCE here, then hand it to every block — instead of each block
+        // re-deriving `effectiveRange`/`windowed`/`windowValues` and re-parsing the whole
+        // history on every redraw. (FER-216)
+        let window = makeWindow()
+        return ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 hero
                 if loaded {
                     if enoughHistory {
-                        content
+                        content(window)
                     } else {
                         calibrationBlock
                     }
@@ -90,20 +94,51 @@ struct MetricDetailScreen: View {
         .task {
             range = defaultRange
             series = await seriesLoader()
+            // Parse every day string to a Date ONCE per series (not per slice / per render). (FER-216)
+            parsedSeries = series.map { ($0.day, Self.dayParser.date(from: $0.day), $0.value) }
             if let loader = nightVitalsLoader { nightVitals = await loader() }
             loaded = true
         }
     }
 
-    @ViewBuilder private var content: some View {
-        if visibleBlocks.contains(.periodSelector) { periodSelector }
-        if visibleBlocks.contains(.seriesChartBand) { chartBlock }
-        if visibleBlocks.contains(.normalRange) { normalRangeBlock }
-        if visibleBlocks.contains(.consistency) { consistencyBlock }
-        if visibleBlocks.contains(.trend) { trendBlock }
-        if visibleBlocks.contains(.nightVitals) { nightVitalsBlock }
+    /// The blocks the spec declares, separated by a hairline divider so they don't read as one slab.
+    /// The window is computed once in `body` and threaded through. (FER-216)
+    @ViewBuilder private func content(_ window: Window) -> some View {
+        let hasMethod = visibleBlocks.contains(.method) && spec.info.method != nil
+        if visibleBlocks.contains(.periodSelector) {
+            blockDivider
+            periodSelector(window)
+        }
+        if visibleBlocks.contains(.seriesChartBand) {
+            blockDivider
+            chartBlock(window)
+        }
+        if visibleBlocks.contains(.normalRange) {
+            blockDivider
+            normalRangeBlock
+        }
+        if visibleBlocks.contains(.consistency) {
+            blockDivider
+            consistencyBlock
+        }
+        if visibleBlocks.contains(.trend) {
+            blockDivider
+            trendBlock(window)
+        }
+        if visibleBlocks.contains(.nightVitals) {
+            blockDivider
+            nightVitalsBlock
+        }
         // "Qué la mueve" → FER-209 (correlación real + gate de datos)
-        if visibleBlocks.contains(.method), let method = spec.info.method { methodDisclosure(method) }
+        if hasMethod, let method = spec.info.method {
+            blockDivider
+            methodDisclosure(method)
+        }
+    }
+
+    /// A subtle 1px rule between blocks (token-only, no hex). (FER-216)
+    private var blockDivider: some View {
+        Rectangle().fill(theme.hairline).frame(height: 1)
     }
 
     // MARK: - Derived series
@@ -112,28 +147,49 @@ struct MetricDetailScreen: View {
 
     private var allValues: [Double] { series.map(\.value) }
 
-    /// The effective window: the selected range when it holds ≥1 point, else the smallest larger range
-    /// that does (Explorer's auto-widen). Taken RELATIVE TO THE LATEST point, not "now".
-    private var effectiveRange: ExploreRange {
-        guard !series.isEmpty else { return range }
+    /// One render's worth of window derivation — the active range, its rows, their values and whether the
+    /// selection auto-widened — computed ONCE in `body` and handed to every block. Previously each block
+    /// re-derived `effectiveRange`/`windowed`/`windowValues` independently, and each re-ran `slice(for:)`,
+    /// which re-parsed every day string with a `DateFormatter` (thousands of parses per redraw on long
+    /// ranges). (FER-216)
+    struct Window {
+        let range: ExploreRange
+        let rows: [(day: String, value: Double)]
+        let values: [Double]
+        let fellBack: Bool
+    }
+
+    /// The series with each `day` string parsed to a `Date` exactly ONCE per series (not per slice,
+    /// not per render). The window math reads `date` straight from here instead of re-parsing. Built in
+    /// `.task` alongside `series`. (FER-216)
+    @State private var parsedSeries: [(day: String, date: Date?, value: Double)] = []
+
+    /// The effective range: the selected range when its window holds ≥1 point, else the smallest larger
+    /// range that does (Explorer's auto-widen). Taken RELATIVE TO THE LATEST point, not "now".
+    private func effectiveRange() -> ExploreRange {
+        guard !parsedSeries.isEmpty else { return range }
         for r in range.widening where !slice(for: r).isEmpty { return r }
         return .all
     }
 
-    private var windowFellBack: Bool { effectiveRange != range }
-
+    /// Trailing-N-days slice for `r`, taken relative to the latest point. Reads the memoized `date`
+    /// from `parsedSeries` — no `DateFormatter` work here.
     private func slice(for r: ExploreRange) -> [(day: String, value: Double)] {
-        guard let days = r.days else { return series }
-        guard let lastDay = series.last?.day, let last = Self.dayParser.date(from: lastDay) else { return [] }
+        guard let days = r.days else { return parsedSeries.map { ($0.day, $0.value) } }
+        guard let last = parsedSeries.last?.date else { return [] }
         let cutoff = last.addingTimeInterval(-Double(days - 1) * 86_400)
-        return series.filter { row in
-            guard let d = Self.dayParser.date(from: row.day) else { return false }
-            return d >= cutoff
+        return parsedSeries.compactMap { row in
+            guard let d = row.date, d >= cutoff else { return nil }
+            return (row.day, row.value)
         }
     }
 
-    private var windowed: [(day: String, value: Double)] { slice(for: effectiveRange) }
-    private var windowValues: [Double] { windowed.map(\.value) }
+    /// Compute the whole window ONCE per render and pass it to the blocks.
+    private func makeWindow() -> Window {
+        let eff = effectiveRange()
+        let rows = slice(for: eff)
+        return Window(range: eff, rows: rows, values: rows.map(\.value), fellBack: eff != range)
+    }
 
     /// The hero figure: the 7-day moving average over the FULL series (not just the window), so it
     /// reads as "your current 7-day level" regardless of the selected range. `.latest` falls back to
@@ -152,6 +208,52 @@ struct MetricDetailScreen: View {
     /// calibration block instead of charts.
     private var enoughHistory: Bool { series.count >= 2 }
 
+    // MARK: - Plain-language reading copy (FER-216)
+
+    /// The blocks that carry a plain-language "what this means" sentence under their datum.
+    enum BlockKind { case header, normalRange, consistency, trend, nightVitals }
+
+    /// One es-MX sentence in plain language under a block's datum (`inkSecondary`), per metric. Returns
+    /// `nil` when a block has no reading for this metric (e.g. RHR has no consistency block). The night-
+    /// vitals sentence is shared by HRV and respiration on purpose (it describes the same companion
+    /// signals), so it localizes from a single key. Source strings are English; the es values live in
+    /// `Localizable.xcstrings`. (FER-216)
+    private func readingCopy(for block: BlockKind) -> LocalizedStringKey? {
+        let nightVitals: LocalizedStringKey =
+            "Other signals from your body while you sleep. When they all rise together, something is taxing you (illness, alcohol, hard effort)."
+        switch (spec.descriptor.key, block) {
+        case ("hrv", .header):
+            return "It's the average of your heart rate variability over the last week. Higher usually goes hand in hand with better recovery."
+        case ("hrv", .normalRange):
+            return "Where your HRV usually lands when you're well. Only worth noting when a day falls outside it."
+        case ("hrv", .consistency):
+            return "How even it stays from one week to the next. Steadier usually means better rest; very uneven can be fatigue."
+        case ("hrv", .trend):
+            return "Where your HRV is headed this month compared with last month."
+        case ("hrv", .nightVitals):
+            return nightVitals
+
+        case ("rhr", .header):
+            return "It's your lowest heart rate while you sleep. Lower usually points to better fitness and rest."
+        case ("rhr", .normalRange):
+            return "Where your resting HR usually lands when you're well. Take note when a day falls outside it."
+        case ("rhr", .trend):
+            return "Where your resting HR is headed this month compared with last month."
+
+        case ("resp_rate", .header):
+            return "It's your average breathing rate while you sleep. It's usually very steady; if it rises above your normal, it can be an early sign that something is taxing you."
+        case ("resp_rate", .normalRange):
+            return "Where your nightly breathing usually lands. Take note when a day falls outside it."
+        case ("resp_rate", .trend):
+            return "Where your breathing is headed this month compared with last month."
+        case ("resp_rate", .nightVitals):
+            return nightVitals
+
+        default:
+            return nil
+        }
+    }
+
     // MARK: - Hero
 
     private var hero: some View {
@@ -168,6 +270,12 @@ struct MetricDetailScreen: View {
             if loaded, let today = todayValue {
                 Text(heroContext(today))
                     .font(StrandFont.subhead)
+                    .foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if let reading = readingCopy(for: .header) {
+                Text(reading)
+                    .font(StrandFont.caption)
                     .foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -196,14 +304,14 @@ struct MetricDetailScreen: View {
 
     // MARK: - Period selector
 
-    private var periodSelector: some View {
+    private func periodSelector(_ window: Window) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             // The selector owns its own full-width row (the night count lives in "Your normal range",
             // so no "N readings" label crowds it). (FER-211)
             SegmentedPillControl(ExploreRange.allCases, selection: $range, theme: theme) { $0.label }
-            if windowFellBack {
+            if window.fellBack {
                 // Only the auto-widen fallback survives, as a quiet caption in warning ink.
-                Text("Showing the last \(windowed.count) days")
+                Text("Showing the last \(window.rows.count) days")
                     .font(StrandFont.footnote)
                     .foregroundStyle(theme.warning)
             }
@@ -212,13 +320,13 @@ struct MetricDetailScreen: View {
 
     // MARK: - Chart (7-day moving average · area + date axes)
 
-    @ViewBuilder private var chartBlock: some View {
+    @ViewBuilder private func chartBlock(_ window: Window) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            if windowValues.count > 1 {
-                let smoothed = SeriesShape.movingAverage(windowValues, window: 7)
+            if window.values.count > 1 {
+                let smoothed = SeriesShape.movingAverage(window.values, window: 7)
                 // Map each smoothed value back to its day's date so TrendChart gets a real time axis
                 // (area + gradient + date grid), not the bare Sparkline with its grey band. (FER-211)
-                let points = zip(windowed, smoothed).compactMap { row, value in
+                let points = zip(window.rows, smoothed).compactMap { row, value in
                     Self.dayParser.date(from: row.day).map { TrendPoint(date: $0, value: value) }
                 }
                 TrendChart(
@@ -234,10 +342,10 @@ struct MetricDetailScreen: View {
                 )
                 .accessibilityElement()
                 .accessibilityLabel(Text("7-day moving average"))
-                Text(chartCaption)
+                Text(chartCaption(window.range))
                     .font(StrandFont.footnote)
                     .foregroundStyle(theme.inkTertiary)
-            } else if let only = windowValues.first {
+            } else if let only = window.values.first {
                 // A single point in the window: no line. Show the value plainly with a note.
                 VStack(alignment: .leading, spacing: 6) {
                     Text("\(fmt(only)) \(unit)")
@@ -268,7 +376,7 @@ struct MetricDetailScreen: View {
     /// The chart's caption: the 7-day-average note, suffixed with the window ("· last month") for a
     /// bounded range and left bare for ALL. The window name is already localized, so it's interpolated
     /// as a `String` (a `%@` placeholder), not re-localized as a key. (FER-211)
-    private var chartCaption: LocalizedStringKey {
+    private func chartCaption(_ effectiveRange: ExploreRange) -> LocalizedStringKey {
         effectiveRange == .all
             ? "7-day moving average."
             : "7-day moving average · last \(effectiveRange.name)."
@@ -285,10 +393,12 @@ struct MetricDetailScreen: View {
                     Text("\(fmt(lo))–\(fmt(hi)) \(unit) · \(baseline.nValid) nights")
                         .font(StrandFont.bodyNumber)
                         .foregroundStyle(theme.ink)
-                    Text("A change counts only when it leaves the band.")
-                        .font(StrandFont.caption)
-                        .foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    if let reading = readingCopy(for: .normalRange) {
+                        Text(reading)
+                            .font(StrandFont.caption)
+                            .foregroundStyle(theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
         }
@@ -324,10 +434,12 @@ struct MetricDetailScreen: View {
                     Text("±\(pct)% week to week · \(steady)")
                         .font(StrandFont.bodyNumber)
                         .foregroundStyle(theme.ink)
-                    Text("A high HRV that swings a lot can be fatigue, not rest.")
-                        .font(StrandFont.caption)
-                        .foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    if let reading = readingCopy(for: .consistency) {
+                        Text(reading)
+                            .font(StrandFont.caption)
+                            .foregroundStyle(theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
         }
@@ -335,9 +447,9 @@ struct MetricDetailScreen: View {
 
     // MARK: - Trend (month over month)
 
-    @ViewBuilder private var trendBlock: some View {
+    @ViewBuilder private func trendBlock(_ window: Window) -> some View {
         let mom = ComparisonEngine.monthOverMonth(byDay: series, referenceDay: series.last?.day ?? "")
-        let s = ComparisonEngine.stat(windowValues)
+        let s = ComparisonEngine.stat(window.values)
         if s.n > 0 {
             block(title: "Trend") {
                 VStack(alignment: .leading, spacing: 10) {
@@ -346,6 +458,12 @@ struct MetricDetailScreen: View {
                         .foregroundStyle(theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                     trendStrip(s)
+                    if let reading = readingCopy(for: .trend) {
+                        Text(reading)
+                            .font(StrandFont.caption)
+                            .foregroundStyle(theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
         }
@@ -378,17 +496,16 @@ struct MetricDetailScreen: View {
         return slopeIsFlat ? "Stable this month" : "\(slopeStr) \(unit)/day this month"
     }
 
+    /// Three plain-language statistics — Average · Lowest · Highest — instead of the old five
+    /// (Avg · Median · Min · Max · σ). Median and σ are still computed (the headline's slope reads
+    /// from the same stat), just no longer shown. (FER-216)
     private func trendStrip(_ s: SeriesStat) -> some View {
         HStack(alignment: .top) {
-            statCell("Avg", fmt(s.mean))
+            statCell("Average", fmt(s.mean))
             Spacer()
-            statCell("Median", fmt(s.median))
+            statCell("Lowest", fmt(s.min))
             Spacer()
-            statCell("Min", fmt(s.min))
-            Spacer()
-            statCell("Max", fmt(s.max))
-            Spacer()
-            statCell("σ", fmt(s.stdev))
+            statCell("Highest", fmt(s.max))
         }
     }
 
@@ -409,10 +526,12 @@ struct MetricDetailScreen: View {
                     Text(nightVitalsLine)
                         .font(StrandFont.bodyNumber)
                         .foregroundStyle(theme.ink)
-                    Text("When they rise together, your body is under load.")
-                        .font(StrandFont.caption)
-                        .foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    if let reading = readingCopy(for: .nightVitals) {
+                        Text(reading)
+                            .font(StrandFont.caption)
+                            .foregroundStyle(theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
         }

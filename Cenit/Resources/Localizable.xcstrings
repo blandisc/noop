@@ -21986,6 +21986,227 @@
           }
         }
       }
+    },
+    "Lowest": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lowest"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Más bajo"
+          }
+        }
+      }
+    },
+    "Highest": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Highest"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Más alto"
+          }
+        }
+      }
+    },
+    "It's the average of your heart rate variability over the last week. Higher usually goes hand in hand with better recovery.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It's the average of your heart rate variability over the last week. Higher usually goes hand in hand with better recovery."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Es el promedio de tu variabilidad cardiaca de la última semana. Más alta suele ir de la mano con mejor recuperación."
+          }
+        }
+      }
+    },
+    "Where your HRV usually lands when you're well. Only worth noting when a day falls outside it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where your HRV usually lands when you're well. Only worth noting when a day falls outside it."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Donde suele caer tu HRV cuando estás bien. Solo vale la pena fijarse si un día se sale de aquí."
+          }
+        }
+      }
+    },
+    "How even it stays from one week to the next. Steadier usually means better rest; very uneven can be fatigue.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How even it stays from one week to the next. Steadier usually means better rest; very uneven can be fatigue."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qué tan pareja está de una semana a otra. Más pareja suele ser mejor descanso; muy dispareja puede ser fatiga."
+          }
+        }
+      }
+    },
+    "Where your HRV is headed this month compared with last month.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where your HRV is headed this month compared with last month."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hacia dónde va tu HRV este mes comparado con el anterior."
+          }
+        }
+      }
+    },
+    "Other signals from your body while you sleep. When they all rise together, something is taxing you (illness, alcohol, hard effort).": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other signals from your body while you sleep. When they all rise together, something is taxing you (illness, alcohol, hard effort)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otras señales de tu cuerpo mientras duermes. Si suben todas juntas, algo te está exigiendo (enfermedad, alcohol, mucho esfuerzo)."
+          }
+        }
+      }
+    },
+    "It's your lowest heart rate while you sleep. Lower usually points to better fitness and rest.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It's your lowest heart rate while you sleep. Lower usually points to better fitness and rest."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Es tu frecuencia cardiaca más baja mientras duermes. Más baja suele indicar mejor forma y descanso."
+          }
+        }
+      }
+    },
+    "Where your resting HR usually lands when you're well. Take note when a day falls outside it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where your resting HR usually lands when you're well. Take note when a day falls outside it."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Donde suele caer tu FC en reposo cuando estás bien. Fíjate si un día se sale de aquí."
+          }
+        }
+      }
+    },
+    "Where your resting HR is headed this month compared with last month.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where your resting HR is headed this month compared with last month."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hacia dónde va tu FC en reposo este mes comparado con el anterior."
+          }
+        }
+      }
+    },
+    "It's your average breathing rate while you sleep. It's usually very steady; if it rises above your normal, it can be an early sign that something is taxing you.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It's your average breathing rate while you sleep. It's usually very steady; if it rises above your normal, it can be an early sign that something is taxing you."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Es tu ritmo de respiración promedio mientras duermes. Suele ser muy estable; si sube sobre tu normal, puede ser señal temprana de que algo te está exigiendo."
+          }
+        }
+      }
+    },
+    "Where your nightly breathing usually lands. Take note when a day falls outside it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where your nightly breathing usually lands. Take note when a day falls outside it."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Donde suele caer tu respiración nocturna. Fíjate si un día se sale de aquí."
+          }
+        }
+      }
+    },
+    "Where your breathing is headed this month compared with last month.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where your breathing is headed this month compared with last month."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hacia dónde va tu respiración este mes comparado con el anterior."
+          }
+        }
+      }
     }
   },
   "version": "1.1"
