@@ -885,6 +885,23 @@
         }
       }
     },
+    "%@ vs last month": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ vs last month"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ vs el mes pasado"
+          }
+        }
+      }
+    },
     "%@ versus %@, r equals %@, %lld days": {
       "localizations": {
         "de": {
@@ -2011,6 +2028,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "Media móvil de 7 días con banda de variación normal"
+          }
+        }
+      }
+    },
+    "7-day moving average": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7-day moving average"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Media móvil de 7 días"
+          }
+        }
+      }
+    },
+    "7-day moving average.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7-day moving average."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Media móvil de 7 días."
+          }
+        }
+      }
+    },
+    "7-day moving average · last %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7-day moving average · last %@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Media móvil de 7 días · últimos %@."
           }
         }
       }
@@ -15582,6 +15650,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Respiración cuadrada · enfoque estable"
+          }
+        }
+      }
+    },
+    "Stable this month": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stable this month"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estable este mes"
           }
         }
       }

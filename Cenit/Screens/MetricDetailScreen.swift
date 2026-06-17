@@ -197,47 +197,44 @@ struct MetricDetailScreen: View {
     // MARK: - Period selector
 
     private var periodSelector: some View {
-        HStack {
-            Text(rangeCaption)
-                .font(StrandFont.footnote)
-                .foregroundStyle(windowFellBack ? theme.warning : theme.inkTertiary)
-            Spacer(minLength: 8)
-            SegmentedPillControl(ExploreRange.allCases, selection: $range) { $0.label }
-                .tint(metricHue)
+        VStack(alignment: .leading, spacing: 8) {
+            // The selector owns its own full-width row (the night count lives in "Your normal range",
+            // so no "N readings" label crowds it). (FER-211)
+            SegmentedPillControl(ExploreRange.allCases, selection: $range, theme: theme) { $0.label }
+            if windowFellBack {
+                // Only the auto-widen fallback survives, as a quiet caption in warning ink.
+                Text("Showing the last \(windowed.count) days")
+                    .font(StrandFont.footnote)
+                    .foregroundStyle(theme.warning)
+            }
         }
     }
 
-    private var rangeCaption: LocalizedStringKey {
-        let n = windowed.count
-        if windowFellBack {
-            return "Showing the last \(n) days"
-        }
-        return n == 1 ? "1 reading" : "\(n) readings"
-    }
-
-    // MARK: - Chart + band (7-day moving average · normal-variation band)
+    // MARK: - Chart (7-day moving average · area + date axes)
 
     @ViewBuilder private var chartBlock: some View {
         VStack(alignment: .leading, spacing: 10) {
             if windowValues.count > 1 {
                 let smoothed = SeriesShape.movingAverage(windowValues, window: 7)
-                let band = ReferenceRange.interquartile(windowValues)
-                Sparkline(
-                    values: smoothed,
+                // Map each smoothed value back to its day's date so TrendChart gets a real time axis
+                // (area + gradient + date grid), not the bare Sparkline with its grey band. (FER-211)
+                let points = zip(windowed, smoothed).compactMap { row, value in
+                    Self.dayParser.date(from: row.day).map { TrendPoint(date: $0, value: value) }
+                }
+                TrendChart(
+                    points: points,
                     gradient: chartGradient,
-                    range: chartRange(smoothed, band: band),
-                    referenceBand: band,
-                    bandColor: theme.hairlineStrong,
-                    lineWidth: 2.5,
+                    valueRange: chartRange(smoothed),
                     showsArea: true,
-                    showsHead: true,
+                    height: 200,
                     showsHover: true,
-                    valueFormat: { "\(fmt($0)) \(unit)" }
+                    valueFormat: { "\(fmt($0)) \(unit)" },
+                    axisLabelColor: theme.inkTertiary,
+                    gridLineColor: theme.hairline
                 )
-                .frame(height: 132)
                 .accessibilityElement()
-                .accessibilityLabel(Text("7-day moving average with normal-variation band"))
-                Text("7-day moving average · normal-variation band.")
+                .accessibilityLabel(Text("7-day moving average"))
+                Text(chartCaption)
                     .font(StrandFont.footnote)
                     .foregroundStyle(theme.inkTertiary)
             } else if let only = windowValues.first {
@@ -259,17 +256,22 @@ struct MetricDetailScreen: View {
         }
     }
 
-    /// Auto-fit the chart's value axis to the smoothed line AND the band so neither clips.
-    private func chartRange(_ smoothed: [Double], band: ClosedRange<Double>?) -> ClosedRange<Double> {
-        var lo = smoothed.min() ?? 0
-        var hi = smoothed.max() ?? 1
-        if let band {
-            lo = Swift.min(lo, band.lowerBound)
-            hi = Swift.max(hi, band.upperBound)
-        }
+    /// Auto-fit the chart's value axis to the smoothed line, with a small margin so it doesn't clip.
+    private func chartRange(_ smoothed: [Double]) -> ClosedRange<Double> {
+        let lo = smoothed.min() ?? 0
+        let hi = smoothed.max() ?? 1
         if hi <= lo { return (lo - 1)...(hi + 1) }
         let pad = (hi - lo) * 0.15
         return (lo - pad)...(hi + pad)
+    }
+
+    /// The chart's caption: the 7-day-average note, suffixed with the window ("· last month") for a
+    /// bounded range and left bare for ALL. The window name is already localized, so it's interpolated
+    /// as a `String` (a `%@` placeholder), not re-localized as a key. (FER-211)
+    private var chartCaption: LocalizedStringKey {
+        effectiveRange == .all
+            ? "7-day moving average."
+            : "7-day moving average · last \(effectiveRange.name)."
     }
 
     // MARK: - Normal range (rolling mean ± SD)
@@ -351,12 +353,29 @@ struct MetricDetailScreen: View {
 
     private func trendHeadline(mom: PeriodComparison) -> LocalizedStringKey {
         let slope = mom.current.slopePerDay
-        let slopeStr = (slope >= 0 ? "+" : "−") + fmt(abs(slope))
+        // A slope that rounds to "0"/"0.0" at the metric's precision is no movement — say so in words
+        // instead of "+0 ms/day". Same for a sub-1% month-over-month change. (FER-211)
+        let slopeMagnitude = fmt(abs(slope))
+        let slopeIsFlat = Double(slopeMagnitude) == 0
+        let slopeStr = (slope >= 0 ? "+" : "−") + slopeMagnitude
+
         if let pct = mom.pctChange {
-            let pctStr = "\(pct >= 0 ? "+" : "−")\(String(format: "%.0f", abs(pct)))%"
-            return "\(slopeStr) \(unit)/day this month · \(pctStr) vs last month"
+            let pctIsFlat = abs(pct) < 1
+            switch (slopeIsFlat, pctIsFlat) {
+            case (true, true):
+                return "Stable this month"
+            case (true, false):
+                let pctStr = "\(pct >= 0 ? "+" : "−")\(String(format: "%.0f", abs(pct)))%"
+                return "\(pctStr) vs last month"
+            case (false, true):
+                return "\(slopeStr) \(unit)/day this month"
+            case (false, false):
+                let pctStr = "\(pct >= 0 ? "+" : "−")\(String(format: "%.0f", abs(pct)))%"
+                return "\(slopeStr) \(unit)/day this month · \(pctStr) vs last month"
+            }
         }
-        return "\(slopeStr) \(unit)/day this month"
+        // No month-over-month %: just the slope, or "Stable" when it's flat.
+        return slopeIsFlat ? "Stable this month" : "\(slopeStr) \(unit)/day this month"
     }
 
     private func trendStrip(_ s: SeriesStat) -> some View {
