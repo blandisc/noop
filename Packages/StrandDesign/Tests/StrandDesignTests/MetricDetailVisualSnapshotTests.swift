@@ -56,6 +56,37 @@ final class MetricDetailVisualSnapshotTests: XCTestCase {
         try write(view, to: "/tmp/fer211-chart.png")
     }
 
+    /// FER-219 — a DENSE TrendChart (~150 points, a long range) on paper. Confirms the perf fix's LOOK:
+    /// above the 60-point dot threshold the chart draws line + area ONLY — no per-point dots cluttering
+    /// the curve. (Runtime fluidity isn't measurable here; this only verifies the rendered look.)
+    @MainActor func test_themedTrendChartLongRange() throws {
+        let hue = theme.dataHrv
+        let points = sampleTrend(days: 150, base: 58, swing: 12)
+        let values = points.map(\.value)
+        let lo = values.min() ?? 0, hi = values.max() ?? 1
+        let pad = (hi - lo) * 0.15
+        let view = VStack(alignment: .leading, spacing: 10) {
+            TrendChart(
+                points: points,
+                gradient: Gradient(colors: [hue.opacity(0.5), hue]),
+                valueRange: (lo - pad)...(hi + pad),
+                showsArea: true,
+                height: 200,
+                showsHover: false,
+                valueFormat: { "\(Int($0.rounded())) ms" },
+                axisLabelColor: theme.inkTertiary,
+                gridLineColor: theme.hairline
+            )
+            Text("7-day moving average · last year.")
+                .font(StrandFont.footnote)
+                .foregroundStyle(theme.inkTertiary)
+        }
+        .padding(20)
+        .frame(width: 700, height: 460)
+        .background(theme.paper)
+        try write(view, to: "/tmp/fer219-chart-long.png")
+    }
+
     // MARK: harness
 
     @MainActor private func write<V: View>(_ content: V, to path: String) throws {

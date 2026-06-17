@@ -324,11 +324,11 @@ struct MetricDetailScreen: View {
         VStack(alignment: .leading, spacing: 10) {
             if window.values.count > 1 {
                 let smoothed = SeriesShape.movingAverage(window.values, window: 7)
-                // Map each smoothed value back to its day's date so TrendChart gets a real time axis
-                // (area + gradient + date grid), not the bare Sparkline with its grey band. (FER-211)
-                let points = zip(window.rows, smoothed).compactMap { row, value in
-                    Self.dayParser.date(from: row.day).map { TrendPoint(date: $0, value: value) }
-                }
+                // Decimate to ~80 points for DRAWING only (a year is 365 days → 365 marks Charts must
+                // stroke + animate, which is what made the chart stick on long ranges). The hero/stats
+                // above still read the FULL series; this only thins what the line draws. Short ranges
+                // (≤80 days: week/month) pass through untouched, so they look identical. (FER-219)
+                let points = Self.decimatedPoints(rows: window.rows, values: smoothed, maxPoints: 80)
                 TrendChart(
                     points: points,
                     gradient: chartGradient,
@@ -362,6 +362,35 @@ struct MetricDetailScreen: View {
                 emptyWell(text: "No readings in this range.")
             }
         }
+    }
+
+    /// Build the chart's `[TrendPoint]`, decimating long series to ≤`maxPoints` for DRAWING only. Both the
+    /// values and their dates are bucketed with the SAME contiguous `n*b/maxPoints` partition that
+    /// `SeriesShape.decimate` uses, so each averaged value keeps a representative date (the bucket's
+    /// CENTER day) and the date↔value pairing stays consistent. When `rows.count <= maxPoints` nothing is
+    /// thinned — every day maps to its own point exactly as before — so short ranges are unchanged. (FER-219)
+    private static func decimatedPoints(rows: [(day: String, value: Double)], values: [Double], maxPoints: Int) -> [TrendPoint] {
+        let n = min(rows.count, values.count)
+        guard n > maxPoints, maxPoints > 1 else {
+            // Short series (or degenerate maxPoints): one point per day, like before decimation existed.
+            return zip(rows, values).compactMap { row, value in
+                dayParser.date(from: row.day).map { TrendPoint(date: $0, value: value) }
+            }
+        }
+        let decimated = SeriesShape.decimate(Array(values.prefix(n)), maxPoints: maxPoints)
+        var out: [TrendPoint] = []
+        out.reserveCapacity(decimated.count)
+        for b in 0..<decimated.count {
+            // The SAME partition decimate uses: bucket b spans indices [lo, hi). Pick the bucket's center
+            // row for the representative date so the x-position sits in the middle of what it averages.
+            let lo = (n * b) / maxPoints
+            let hi = (n * (b + 1)) / maxPoints
+            let mid = min(lo + (hi - lo) / 2, n - 1)
+            if let date = dayParser.date(from: rows[mid].day) {
+                out.append(TrendPoint(date: date, value: decimated[b]))
+            }
+        }
+        return out
     }
 
     /// Auto-fit the chart's value axis to the smoothed line, with a small margin so it doesn't clip.

@@ -49,6 +49,33 @@ public enum SeriesShape {
         return tail.reduce(0, +) / Double(tail.count)
     }
 
+    /// Downsample `values` to at most `maxPoints` by bucket-averaging: split the input into
+    /// `maxPoints` contiguous buckets and return the mean of each. A pure DRAWING aid — it
+    /// shrinks a long series so a chart doesn't stroke a mark per raw sample — NOT for analysis;
+    /// the bucket means smooth the signal, so they preserve the broad shape but lose day-level
+    /// detail. Compute statistics (median, σ, trend) on the full series, never on this.
+    ///
+    /// Passes the input through unchanged when `values.count <= maxPoints` (nothing to shrink),
+    /// when `maxPoints <= 1`, or when the input is empty/degenerate. With more points than
+    /// buckets, contiguous index ranges of near-equal size partition the input (so every value
+    /// lands in exactly one bucket and order is preserved), and each bucket collapses to its mean.
+    public static func decimate(_ values: [Double], maxPoints: Int) -> [Double] {
+        guard maxPoints > 1 else { return values }
+        guard values.count > maxPoints else { return values }
+        let n = values.count
+        var out = [Double]()
+        out.reserveCapacity(maxPoints)
+        for b in 0..<maxPoints {
+            // Contiguous, near-equal partition: bucket b spans [lo, hi). Using n*b/maxPoints for
+            // both edges keeps every index covered exactly once with no rounding gaps.
+            let lo = (n * b) / maxPoints
+            let hi = (n * (b + 1)) / maxPoints
+            let slice = values[lo..<hi]
+            out.append(slice.reduce(0, +) / Double(slice.count))
+        }
+        return out
+    }
+
     /// Coefficient of variation over the trailing `window`: the sample standard
     /// deviation (ddof = 1) divided by the absolute mean, returned as a FRACTION.
     /// `nil` when fewer than 2 values are available in the tail or the absolute
