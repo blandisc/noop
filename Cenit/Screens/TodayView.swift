@@ -356,20 +356,22 @@ struct TodayView: View {
     /// derecha — incluso en espera — para que la pantalla nunca se vea a medio construir.
     @ViewBuilder private var heroInstrument: some View {
         let state = heroState
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(spacing: 14) {
             Text(heroOverline(state)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            HStack(alignment: .center, spacing: 18) {
+                .frame(maxWidth: .infinity, alignment: .center)
+            // Instrumento concéntrico (FER-169): el numeral domina el CENTRO del dial de 24h, no a su lado.
+            // Sin número que medir (em-dash) el dial es el protagonista; con número, el dato vive dentro del
+            // reloj. El dial preside SIEMPRE y centrado para que la pantalla nunca se vea a medio construir.
+            // `sleepWindow` ya es nil cuando anoche no hubo registro de strap, así que el dial omite la banda
+            // de sueño sola: contexto honesto en cada modo. Escala «L» (FER-164/169): dial 180, numeral 60.
+            ZStack {
+                DiurnalDial(now: Date(), solar: solarWindow, sleep: sleepWindow, diameter: 180)
                 heroNumeral(state)
-                Spacer(minLength: 8)
-                // `sleepWindow` ya es nil cuando anoche no hubo registro de strap, así que el dial omite
-                // la banda de sueño solo (no hay que decidirlo aquí): contexto honesto en cada modo.
-                // Escala sistémica «L» (FER-164): dial 104.
-                DiurnalDial(now: Date(), solar: solarWindow, sleep: sleepWindow, diameter: 104)
             }
             heroBody(state)
             heroFooter(state)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity)
     }
 
     private func heroOverline(_ s: HeroState) -> LocalizedStringKey {
@@ -388,13 +390,19 @@ struct TodayView: View {
         case .verdict:
             let score = recoveryScore
             let insufficient = readiness.level == .insufficient
-            HStack(alignment: .firstTextBaseline, spacing: 5) {
+            // Concéntrico (FER-169): el NÚMERO queda centrado en el eje del dial. El «/100» se conserva a la
+            // derecha; un «/100» espejo invisible a la izquierda balancea su ancho para que el número no se
+            // recorra. La escala también vive en el detalle de recuperación (al tocar).
+            Group {
                 if let score {
-                    Text("\(score)").instrumentoHero(88)
-                        .foregroundStyle(insufficient ? theme.ink : recoveryDataColor(score))
-                    Text("/100").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                    HStack(alignment: .firstTextBaseline, spacing: 5) {
+                        Text("/100").font(StrandFont.subhead).hidden()
+                        Text("\(score)").instrumentoHero(60)
+                            .foregroundStyle(insufficient ? theme.ink : recoveryDataColor(score))
+                        Text("/100").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                    }
                 } else {
-                    Text("—").instrumentoHero(88).foregroundStyle(theme.inkTertiary)
+                    Text("—").instrumentoHero(60).foregroundStyle(theme.inkTertiary)
                 }
             }
             // El número abre el detalle de recuperación (cómo se calcula, serie, fuente).
@@ -405,13 +413,15 @@ struct TodayView: View {
                                          nightsNeeded: Baselines.minNightsSeed)
             }
         case .calibrating(let nights):
+            // Mismo espejo invisible (FER-169) para centrar el «N» en el eje del dial sin perder el «/seed».
             HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text("\(nights)").instrumentoHero(88).foregroundStyle(theme.ink)
-                Text("/\(Baselines.minNightsSeed)").font(InstrumentoType.hero(40))
+                Text("/\(Baselines.minNightsSeed)").font(InstrumentoType.hero(26)).hidden()
+                Text("\(nights)").instrumentoHero(60).foregroundStyle(theme.ink)
+                Text("/\(Baselines.minNightsSeed)").font(InstrumentoType.hero(26))
                     .foregroundStyle(theme.inkTertiary)
             }
         case .importedBaseline, .waiting:
-            Text("—").instrumentoHero(88).foregroundStyle(theme.inkTertiary)
+            Text("—").instrumentoHero(60).foregroundStyle(theme.inkTertiary)
         }
     }
 
@@ -422,7 +432,7 @@ struct TodayView: View {
         case .verdict:
             verdictBody
         case .importedBaseline:
-            VStack(alignment: .leading, spacing: 9) {
+            VStack(alignment: .center, spacing: 9) {
                 appleBaseChip
                 Text("Falta la lectura de hoy")
                     .font(StrandFont.headline).foregroundStyle(theme.ink)
@@ -431,15 +441,19 @@ struct TodayView: View {
                     .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
         case .calibrating(let nights):
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .center, spacing: 10) {
                 calibrationDots(nights: nights)
                 Text(calibrationDetailCopy(nights: nights))
                     .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
         case .waiting:
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .center, spacing: 6) {
                 Text(strapSeen ? "Aún no hay lectura de hoy" : "Aún no hay lectura")
                     .font(StrandFont.headline).foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
@@ -449,6 +463,8 @@ struct TodayView: View {
                     .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
         }
     }
 
@@ -462,10 +478,10 @@ struct TodayView: View {
                 HStack(spacing: 6) {
                     Text(r.headline).font(StrandFont.title2).fontWeight(.semibold)
                         .foregroundStyle(verdictDataColor(r.level))
+                        .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
                     Image(systemName: "info.circle").font(.system(size: 15))
                         .foregroundStyle(theme.inkTertiary)
-                    Spacer(minLength: 0)
                 }
                 .contentShape(Rectangle())
             }
@@ -473,6 +489,7 @@ struct TodayView: View {
             .accessibilityHint(Text("Abre por qué el veredicto se lee así"))
             if let bridge = r.bridge {
                 Text(bridge).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
             if r.confidenceLow, let note = r.confidenceNote {
@@ -490,6 +507,7 @@ struct TodayView: View {
             // tinta; aquí, la razón honesta — nunca un veredicto pintado de color sin respaldo. (FER-160)
             Text("Aún sin contexto suficiente para un veredicto del día.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
