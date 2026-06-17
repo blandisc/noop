@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-17 · FER-171</span>
+  <span class="tb-updated">Actualizado 2026-06-17 · FER-181</span>
 </div>
 
 <div id="wrapper">
@@ -528,18 +528,17 @@ const SCREENS = [
   // ── ROW 3: Dispositivo (y = 2010) ─────────
   {
     id: 'live', x: 30, y: 2010,
-    name: 'Live', desc: 'ECG en vivo · gestión de correa',
+    name: 'Live', desc: 'Monitor puro «Instrumento» · sin strain · sin gestión',
     file: 'Cenit/Screens/LiveView.swift',
-    icon: '📡', color: '#18C98B',
+    icon: '📡', color: '#0C8F62',
     states: [
-      { label: 'No bonded', type: 'empty' },
-      { label: 'Bonded, sin conexión', type: 'warn' },
-      { label: 'Conectado, no puesto', type: 'data' },
-      { label: 'Puesto · Streaming', type: 'live' },
-      { label: 'monitorOnly mode', type: 'data' },
+      { label: 'Conectada · transmitiendo', type: 'live' },
+      { label: 'Conectada · idle (no puesta)', type: 'data' },
+      { label: 'Desconectada → CTA Conectar', type: 'empty' },
+      { label: 'monitorOnly (cover de Hoy)', type: 'data' },
     ],
     nav: [],
-    components: ['ECG Hero Sparkline', 'Session Tally', 'Live Signals (zone / %max)', 'Sync Signals (battery / last sync)', 'Data Receipt (frame counts)', 'Coverage Strip (28d heat map)', 'Strap Management (model picker / controls)'],
+    components: ['connectionPill (info)', 'ECG Hero (dataHeart/plano)', 'Session Tally + rrTachogram', 'Live Signals (Capturing live)', 'Sync Signals (Completes on sync)', 'savedFooter', 'Data Receipt + Coverage 28d', 'verifyRow', 'disconnectedState (CTA Conectar)', 'activeWorkoutCard (sin Strain · solo standalone)'],
   },
   {
     id: 'automations', x: 284, y: 2010,

@@ -19092,6 +19092,72 @@
           }
         }
       }
+    },
+    "Connect": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conectar"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbinden"
+          }
+        }
+      }
+    },
+    "Connect your strap to see it live": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect your strap to see it live"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conecta tu correa para ver en vivo"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbinde dein Band, um es live zu sehen"
+          }
+        }
+      }
+    },
+    "The monitor beats in real time when your WHOOP is nearby and worn.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The monitor beats in real time when your WHOOP is nearby and worn."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El monitor late en tiempo real cuando tu WHOOP está cerca y puesta."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Monitor schlägt in Echtzeit, wenn dein WHOOP in der Nähe und angelegt ist."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

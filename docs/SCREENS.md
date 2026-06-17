@@ -39,8 +39,9 @@ MetricExplorerView → MetricDetailView (NavigationLink push, sobre el stack de 
 
 **Barra de pestañas — «Barra de instrumento»** (`CenitApp/App/InstrumentTabBar.swift`, FER-163). Barra inferior
 custom (la nativa va oculta con `.toolbar(.hidden, for: .tabBar)`, montada vía `safeAreaInset`) que **adapta su
-tratamiento a la pestaña activa**: bajo **Hoy** viste el papel de «Instrumento diurno» y respira con la hora
-(`instrumentoThemeByHour`); bajo Tendencias / En vivo / Sueño / Más usa el `StrandPalette` oscuro. La pestaña activa
+tratamiento a la pestaña activa**: bajo **Hoy** y **En vivo** (papel «Instrumento diurno» desde FER-181) viste el
+papel y respira con la hora (`instrumentoThemeByHour`); bajo Tendencias / Sueño / Más usa el `StrandPalette` oscuro.
+El color scheme (barra de estado) sigue la pestaña: Hoy y En vivo son claras (`isLightTab` en `RootTabView`). La pestaña activa
 se marca con tinta + un punto de «ahora» (verde recovery en claro, `accent` en oscuro), nunca con relleno verde.
 Íconos de trazo fino: **Hoy** = glifo de dial 24h (`DialTabGlyph`, StrandDesign), **Sueño** = luna, el resto líneas.
 
@@ -243,17 +244,16 @@ se marca con tinta + un punto de «ahora» (verde recovery en claro, `accent` en
 
 ### LiveView
 **Archivo:** `Cenit/Screens/LiveView.swift`  
-**Descripción:** Monitor ECG en vivo + gestión de correa (pairing, model picker, workout logging, offload).
+**Descripción:** Monitor puro en tema claro «Instrumento diurno» (FER-181): papel cálido, etiquetas en tinta, color **solo en el dato** (FC/ECG/latidos en `dataHeart`; indicadores «en vivo»/guardado en `dataRecovery`). Sin strain (vive en Hoy) y **sin gestión de correa** (selector 4/5/MG, escanear/buzz/desconectar y el log se mudaron a Ajustes). La única acción que carga es un CTA «Conectar» en el estado desconectado. El tema se pasa **explícito** (no se propaga por `fullScreenCover`/`.sheet`).
 
 | Estado | Condición de entrada |
 |--------|---------------------|
-| No bonded | Sin strap vinculado |
-| Bonded, sin conexión | Strap conocido pero desconectado |
-| Conectado, no puesto | `state == .connected` + `worn == false` |
-| Puesto · Streaming | `worn == true` + HR en vivo |
-| monitorOnly mode | `monitorOnly: true` (desde TodayView "beat by beat") |
+| Conectada · transmitiendo | `live.connected` + HR en vivo (`worn` + heartRate) → monitor completo |
+| Conectada · idle (no puesta) | `live.connected` sin señal viva → monitor con «—»; recibo/cobertura visibles |
+| Desconectada / sin correa | `!live.connected` → pill «Desconectada» + ECG plano + mensaje + **CTA «Conectar»** (sin panel de gestión) |
+| monitorOnly mode | `monitorOnly: true` (cover de Hoy "beat by beat", esquema claro) — igual, sin tarjeta de workout |
 
-**Componentes:** `ECG Hero Sparkline`, `Session Tally`, `Live Signals (zone / %max)`, `Sync Signals (battery / last sync)`, `Data Receipt (frame counts)`, `Coverage Strip (28d heat map)`, `Strap Management (model picker / buzz / offload / forget)`
+**Componentes:** `connectionPill` (info, no tappable), `ECG Hero` (`dataHeart`/plano), `Session Tally` + `rrTachogram`, `Live Signals (Capturing live)`, `Sync Signals (Completes on sync)`, `savedFooter`, `Data Receipt (frame counts)` + `Coverage Strip (28d)`, `verifyRow` («Verify my data»), `disconnectedState` (CTA «Conectar»), `activeWorkoutCard` (solo standalone, **sin Strain**). Gestión de correa **removida** → Ajustes › Correa.
 
 ---
 

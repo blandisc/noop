@@ -281,7 +281,10 @@ struct TodayView: View {
         .fullScreenCover(isPresented: $showLiveMonitor) {
             // No NavigationStack: its nav-bar scroll-edge background painted a bar over the monitor on
             // the slightest scroll. A floating "Done" pill overlays the content and never blocks it.
-            LiveView(monitorOnly: true)
+            // The monitor is the light «Instrumento» language now (FER-181): hand the theme in
+            // explicitly (it does NOT propagate through the cover's fresh environment) and present in
+            // light so the paper canvas reads correctly.
+            LiveView(theme: theme, monitorOnly: true)
                 .environmentObject(model)
                 .environmentObject(live)
                 .environmentObject(repo)
@@ -289,13 +292,14 @@ struct TodayView: View {
                     Button { showLiveMonitor = false } label: {
                         Text("Done")
                             .font(StrandFont.subhead).fontWeight(.semibold)
-                            .foregroundStyle(StrandPalette.accent)
+                            .foregroundStyle(theme.ink)
                             .padding(.horizontal, 14).padding(.vertical, 7)
-                            .background(StrandPalette.surfaceRaised, in: Capsule())
+                            .background(theme.surface, in: Capsule())
+                            .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
                     }
                     .padding(.trailing, 16).padding(.top, 8)
                 }
-                .preferredColorScheme(.dark)
+                .preferredColorScheme(.light)
         }
         .sheet(isPresented: $showDataSources) {
             // Present Data Sources directly so the Key Metrics nudge connects Apple Health in one tap,

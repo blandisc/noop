@@ -64,7 +64,7 @@ struct RootTabView: View {
         // by ContentView via `isTodayActive` — FER-160; the bar uses explicit colors
         // either way.)
         .overlay(alignment: .bottom) {
-            InstrumentTabBar(items: barItems, selection: $selection, isLight: selection == .today)
+            InstrumentTabBar(items: barItems, selection: $selection, isLight: isLightTab(selection))
                 .instrumentoThemeByHour(solar: barSolar)
                 .background(
                     GeometryReader { proxy in
@@ -74,12 +74,13 @@ struct RootTabView: View {
         }
         .onPreferenceChange(BarHeightKey.self) { barHeight = $0 }
         // Color scheme lo decide ContentView (cercano a la raíz) según `isTodayActive`; aquí solo lo
-        // mantenemos sincronizado con la pestaña visible.
+        // mantenemos sincronizado con la pestaña visible. En vivo ahora es papel claro «Instrumento»
+        // (FER-181) igual que Hoy, así que cuenta como pestaña clara (barra de estado en tinta).
         .onChange(of: selection) { _, newValue in
             visited.insert(newValue)
-            isTodayActive = (newValue == .today)
+            isTodayActive = isLightTab(newValue)
         }
-        .onAppear { isTodayActive = (selection == .today) }
+        .onAppear { isTodayActive = isLightTab(selection) }
         #if DEBUG
         .onReceive(NotificationCenter.default.publisher(for: .noopDebugNav)) { note in
             guard let screen = note.object as? String else { return }
@@ -110,6 +111,11 @@ struct RootTabView: View {
         // `.task { repo.refresh() }` here ran a full-history load concurrently with that one at
         // launch — double DB work + an extra refreshSeq bump that re-fired TodayView.loadAll.
     }
+
+    /// Which tabs render in the light «Instrumento diurno» paper (drives the status-bar color scheme
+    /// via `isTodayActive` and the instrument bar's `isLight`). Today and — since FER-181 — Live, both
+    /// warm-paper screens. Every other tab is the dark instrument panel.
+    private func isLightTab(_ tab: Tab) -> Bool { tab == .today || tab == .live }
 
     /// A tab whose real content is built only once its tag has been visited (kept alive afterward),
     /// so non-selected screens don't construct their body or fire their launch `.task` at startup.
