@@ -13,6 +13,13 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> German value. Keys must match the catalog exactly.
 DE: dict[str, str] = {
+    # WhyVerdictSheet — de copy: level names (es existed) + red color name (FER-167).
+    "Primed": "Bereit",
+    "Balanced": "Ausgeglichen",
+    "Strained": "Beansprucht",
+    "Run down": "Erschöpft",
+    "red": "rot",
+
     # MetricInfoSheet — light-theme redesign + de copy (FER-162).
     # Headlines.
     "Cardiovascular load scored 0–21. Each second of the day your heart rate is recorded, it's assigned to a zone (1–5). Higher zones carry more weight. The total is compressed logarithmically so 21 represents a theoretical maximum — a full day at peak intensity.": "Die kardiovaskuläre Belastung auf einer Skala von 0 bis 21. Jede Sekunde, in der deine Herzfrequenz erfasst wird, fällt in eine Zone (1 bis 5); höhere Zonen zählen mehr. Die Summe wird logarithmisch verdichtet, sodass 21 ein theoretisches Maximum ist: ein ganzer Tag bei höchster Intensität.",

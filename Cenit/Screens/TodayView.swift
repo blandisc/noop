@@ -152,7 +152,7 @@ struct TodayView: View {
                 metricSheet(for: info)
             }
             .sheet(isPresented: $showWhyVerdict) {
-                WhyVerdictSheet(readiness: readiness)
+                WhyVerdictSheet(readiness: readiness, theme: theme)
             }
     }
 
