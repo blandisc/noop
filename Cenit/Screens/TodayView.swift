@@ -247,9 +247,9 @@ struct TodayView: View {
 
     private var iosBody: some View {
         ScrollView {
-            // Ritmo de sección estándar (`sectionGap` = 28): con la escala grande de «Instrumento
-            // diurno» las secciones respiran y llenan la columna sin que se lean fundidas ni apretadas.
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            // Ritmo de sección compacto (FER-202): el gap de sección baja de 28 a 18 para que Hoy quepa
+            // en una pantalla en estado calibrando, sin que las secciones se lean fundidas ni apretadas.
+            VStack(alignment: .leading, spacing: 18) {
                 headerBlock
                 HealthAlertBanner()
                 // Héroe unificado (FER-160): UN solo instrumento de estado adaptable cubre los cuatro
@@ -260,18 +260,18 @@ struct TodayView: View {
                 // lleva el numeral, su color (regla «color = listo / tinta = en espera») y el pie. Ver
                 // `heroInstrument` + `heroState`.
                 heroInstrument
-                // Sube «Métricas de hoy» pegándola al pie del héroe: recorta el `sectionGap` (28) de esta
-                // sección a ~12 con un inset negativo, sin tocar los gaps del héroe.
+                // Sube «Métricas de hoy» pegándola al pie del héroe: recorta el gap de sección (18) de esta
+                // sección a ~10 con un inset negativo, sin tocar los gaps del héroe.
                 // El acceso al monitor en vivo «latido a latido» ya no es una fila al pie (FER-189): vive
                 // como una pastilla de pulso en el encabezado de «Métricas de hoy» (FER-194), así el pie de
                 // Hoy queda limpio y la pantalla cabe completa. Ver `iosMetricsSection` + `LivePulsePill`.
                 iosMetricsSection
-                    .padding(.top, -16)
+                    .padding(.top, -8)
             }
-            // Inset superior 20: el héroe queda alto pero respira; márgenes horizontal/inferior estándar.
+            // Inset superior 12 (FER-202): el héroe queda alto pero respira; márgenes h/inferior estándar.
             .padding(.horizontal, NoopMetrics.screenPadding)
             .padding(.bottom, NoopMetrics.screenPadding)
-            .padding(.top, 20)
+            .padding(.top, 12)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         // El fondo es el papel del tema (`PaperBackground` lee `\.instrumentoTheme` DENTRO del subárbol
@@ -406,16 +406,17 @@ struct TodayView: View {
     /// derecha — incluso en espera — para que la pantalla nunca se vea a medio construir.
     @ViewBuilder private var heroInstrument: some View {
         let state = heroState
-        VStack(spacing: 14) {
+        VStack(spacing: 11) {
             Text(heroOverline(state)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 .frame(maxWidth: .infinity, alignment: .center)
             // Instrumento concéntrico (FER-169): el numeral domina el CENTRO del dial de 24h, no a su lado.
             // Sin número que medir (em-dash) el dial es el protagonista; con número, el dato vive dentro del
             // reloj. El dial preside SIEMPRE y centrado para que la pantalla nunca se vea a medio construir.
             // `sleepWindow` ya es nil cuando anoche no hubo registro de strap, así que el dial omite la banda
-            // de sueño sola: contexto honesto en cada modo. Escala «L» (FER-164/169): dial 180, numeral 60.
+            // de sueño sola: contexto honesto en cada modo. Escala (FER-202): dial 118 con el numeral 52 y el
+            // «/100» apilado debajo, para que Hoy quepa en una pantalla en estado calibrando.
             ZStack {
-                DiurnalDial(now: Date(), solar: solarWindow, sleep: sleepWindow, diameter: 180)
+                DiurnalDial(now: Date(), solar: solarWindow, sleep: sleepWindow, diameter: 118)
                 heroNumeral(state)
             }
             heroBody(state)
@@ -433,26 +434,25 @@ struct TodayView: View {
 
     /// El numeral dominante — lo único que “grita” el estado. Veredicto → recuperación en color de banda
     /// (o en TINTA si el nivel es `insufficient`: hay número, no hay contexto). Calibrando → «N/4» en
-    /// tinta (progreso, no dato). Espera/base Apple → em-dash «—» en tinta. Escala sistémica «L»
-    /// (FER-164): numeral 88.
+    /// tinta (progreso, no dato). Espera/base Apple → em-dash «—» en tinta. Numeral 52 con el denominador
+    /// («/100» o «/seed») apilado pequeño y centrado debajo (FER-202).
     @ViewBuilder private func heroNumeral(_ s: HeroState) -> some View {
         switch s {
         case .verdict:
             let score = recoveryScore
             let insufficient = readiness.level == .insufficient
-            // Concéntrico (FER-169): el NÚMERO queda centrado en el eje del dial. El «/100» se conserva a la
-            // derecha; un «/100» espejo invisible a la izquierda balancea su ancho para que el número no se
-            // recorra. La escala también vive en el detalle de recuperación (al tocar).
+            // Concéntrico (FER-169/202): el NÚMERO queda centrado en el eje del dial, con el «/100» apilado
+            // pequeño y centrado DEBAJO (antes flotaba a la derecha con un «/100» espejo invisible que lo
+            // descentraba y lo desbordaba del aro). La escala también vive en el detalle de recuperación.
             Group {
                 if let score {
-                    HStack(alignment: .firstTextBaseline, spacing: 5) {
-                        Text("/100").font(StrandFont.subhead).hidden()
-                        Text("\(score)").instrumentoHero(60)
+                    VStack(spacing: 1) {
+                        Text("\(score)").instrumentoHero(52)
                             .foregroundStyle(insufficient ? theme.ink : recoveryDataColor(score))
                         Text("/100").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
                     }
                 } else {
-                    Text("—").instrumentoHero(60).foregroundStyle(theme.inkTertiary)
+                    Text("—").instrumentoHero(52).foregroundStyle(theme.inkTertiary)
                 }
             }
             // El número abre el detalle de recuperación (cómo se calcula, serie, fuente).
@@ -463,15 +463,15 @@ struct TodayView: View {
                                          nightsNeeded: Baselines.minNightsSeed)
             }
         case .calibrating(let nights):
-            // Mismo espejo invisible (FER-169) para centrar el «N» en el eje del dial sin perder el «/seed».
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text("/\(Baselines.minNightsSeed)").font(InstrumentoType.hero(26)).hidden()
-                Text("\(nights)").instrumentoHero(60).foregroundStyle(theme.ink)
-                Text("/\(Baselines.minNightsSeed)").font(InstrumentoType.hero(26))
+            // Apilado (FER-202), igual que el veredicto: «N» centrado en el eje del dial con el «/seed»
+            // pequeño y centrado debajo (antes a un lado con un «/seed» espejo invisible).
+            VStack(spacing: 1) {
+                Text("\(nights)").instrumentoHero(52).foregroundStyle(theme.ink)
+                Text("/\(Baselines.minNightsSeed)").font(StrandFont.subhead)
                     .foregroundStyle(theme.inkTertiary)
             }
         case .importedBaseline, .waiting:
-            Text("—").instrumentoHero(60).foregroundStyle(theme.inkTertiary)
+            Text("—").instrumentoHero(52).foregroundStyle(theme.inkTertiary)
         }
     }
 
@@ -752,13 +752,21 @@ struct TodayView: View {
     /// nights" counter — so the two never read as the same thing twice. When Apple Health seeded the
     /// baseline, a tertiary note names the source so the early verdict never feels unexplained. (FER-105)
     private var calibrationConfidence: some View {
-        VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Image(systemName: "sparkles").font(.system(size: 10))
+                    // Compacto (FER-202): la procedencia «base Apple Salud» se pliega aquí, en la misma línea
+                    // de la etiqueta, en vez de un tercer renglón aparte — recorta alto para que Hoy quepa.
                     Text("Afinando con tu strap")
                         .font(StrandFont.caption)
                         .fixedSize(horizontal: false, vertical: true)   // wrap, never truncate, at large Dynamic Type
+                    if baselineFromApple {
+                        Text("· base Apple Salud")
+                            .font(StrandFont.caption)
+                            .foregroundStyle(theme.inkTertiary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 .foregroundStyle(theme.inkSecondary)
                 Spacer(minLength: 8)
@@ -770,21 +778,15 @@ struct TodayView: View {
             }
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(theme.ink.opacity(0.10)).frame(height: 6)
+                    Capsule().fill(theme.ink.opacity(0.10)).frame(height: 5)
                     Capsule().fill(theme.dataRecovery)
                         .frame(width: max(6, geo.size.width * CGFloat(ownNights) / CGFloat(Baselines.minNightsTrust)),
-                               height: 6)
+                               height: 5)
                 }
             }
-            .frame(height: 6)
-            if baselineFromApple {
-                Text("Tu base viene de Apple Salud.")
-                    .font(StrandFont.caption)
-                    .foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            .frame(height: 5)
         }
-        .padding(.top, 12)
+        .padding(.top, 10)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("Confianza de calibración"))
         .accessibilityValue(Text(baselineFromApple
@@ -1023,10 +1025,10 @@ struct TodayView: View {
                 Spacer(minLength: 2)
                 footer
             }
-            .padding(10)
-            // Alto fijo compacto (FER-189): sin sparkline las tiles ya no necesitan los 104pt heredados;
-            // 76 deja la rejilla 2×4 pareta y ayuda a que Hoy quepa en una pantalla.
-            .frame(maxWidth: .infinity, minHeight: 76, maxHeight: 76, alignment: .topLeading)
+            .padding(.horizontal, 10).padding(.vertical, 8)
+            // Alto fijo compacto (FER-189/202): 76 → 70 para que la rejilla 2×4 + el héroe quepan en una
+            // pantalla en estado calibrando; el contenido (label · valor · Δ) sigue cabiendo con su escala.
+            .frame(maxWidth: .infinity, minHeight: 70, maxHeight: 70, alignment: .topLeading)
             .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
                 .strokeBorder(theme.hairline, lineWidth: 1))
