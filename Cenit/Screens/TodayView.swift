@@ -193,7 +193,11 @@ struct TodayView: View {
                 // lleva el numeral, su color (regla «color = listo / tinta = en espera») y el pie. Ver
                 // `heroInstrument` + `heroState`.
                 heroInstrument
+                // Sube «Métricas clave» pegándola más al pie del héroe («Verlo latido a latido»): recorta
+                // el `sectionGap` (28) de esta sección a ~12 con un inset negativo, sin tocar los gaps del
+                // héroe ni de Fuentes.
                 iosMetricsSection
+                    .padding(.top, -16)
                 iosSourcesSection
             }
             // Inset superior 20: el héroe queda alto pero respira; márgenes horizontal/inferior estándar.
@@ -766,7 +770,9 @@ struct TodayView: View {
         let rhrSpark    = measuredSpark("rhr") { $0.restingHr.map(Double.init) }
         let spo2Spark   = measuredSpark("spo2") { $0.spo2Pct }
         let stepsSpark  = sparks["steps"]
-        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+        // Spacing interno corto (4 en vez de `NoopMetrics.gap` 12): pega la lista de métricas justo bajo
+        // el encabezado «Métricas clave».
+        VStack(alignment: .leading, spacing: 4) {
             // Encabezado en TINTA del tema (no el `SectionHeader` compartido: su título usa
             // `StrandPalette.textPrimary`, casi blanco, que desaparece sobre el papel claro de
             // «Instrumento diurno»). Mismo patrón overline+título+trailing, recoloreado al tema.
