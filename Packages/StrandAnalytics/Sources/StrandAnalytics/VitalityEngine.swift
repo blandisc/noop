@@ -114,6 +114,10 @@ public enum VitalityEngine {
         public init(key: String, label: String, lnHazard: Double) {
             self.key = key; self.label = label; self.lnHazard = lnHazard
         }
+        /// This factor's contribution expressed in YEARS (positive ages you, negative rejuvenates) — the
+        /// unshrunk per-factor view for the "what's driving this" breakdown. The displayed Body Age
+        /// applies the overlap shrink to the SUM, so these need not add up to the exact delta.
+        public var years: Double { lnHazard / VitalityEngine.lnHazardPerYear }
     }
 
     public struct Result: Equatable, Sendable {
