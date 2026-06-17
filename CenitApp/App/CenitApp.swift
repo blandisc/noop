@@ -52,7 +52,11 @@ struct CenitApp: App {
         // OnboardingWizard. HealthKitBridge.sync below guards on `auth == .authorized`, so the
         // scenePhase trigger is a safe no-op until the user opts in.
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active {
+            switch phase {
+            case .active:
+                // Resume the periodic on-device analysis loop (cancelled when we backgrounded). Idempotent,
+                // so the initial launch — where AppModel.init already started it — is a no-op here.
+                model.startAnalysisLoop()
                 model.drainPendingIntents()
                 Task {
                     await health.sync()
@@ -61,6 +65,14 @@ struct CenitApp: App {
                     await autoBackup.backupIfDue(checkpoint: { await model.repo.checkpointForBackup() })
                     WidgetSnapshot.publish(from: model)
                 }
+            case .background:
+                // Stop the heavy 15-min analysis while NOOP is off screen, so it doesn't compete with
+                // BLE keep-alive / backfill on the main actor (FER-177).
+                model.stopAnalysisLoop()
+            case .inactive:
+                break   // transient (app switcher, Control Center) — keep the loop alive
+            @unknown default:
+                break
             }
         }
     }

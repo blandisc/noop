@@ -161,4 +161,42 @@ final class AnalyticsEngineTests: XCTestCase {
         XCTAssertNil(result.daily.skinTempDevC)
         XCTAssertNil(result.nightlySkinTempC)
     }
+
+    func testAnalyzeDayIsDeterministicAcrossConcurrentRecompute() {
+        // FER-177: the periodic engine snapshots its inputs up front and skips re-running when nothing
+        // changed, so a refresh landing mid-pass can't drift a day's scores. The analytics core is what
+        // underwrites that — `analyzeDay` is a PURE function with no shared mutable state, so the SAME
+        // inputs always yield the SAME scores. Proven here by scoring one night, scoring an UNRELATED
+        // night with a DIFFERENT profile/baseline in between (modelling a concurrent recompute), then
+        // re-scoring the first night and asserting every persisted field is bit-for-bit identical.
+        let day = "2021-07-02"
+        let n = night(endDay: day, hours: 7)
+        let hrvBase = Baselines.foldHistory(Array(repeating: 10.0, count: 14), cfg: Baselines.hrvCfg)
+        let rhrBase = Baselines.foldHistory(Array(repeating: 50.0, count: 14), cfg: Baselines.restingHRCfg)
+        let baselines = AnalyticsEngine.ProfileBaselines(hrv: hrvBase, restingHR: rhrBase)
+        let profile = UserProfile(age: 30)
+
+        let first = AnalyticsEngine.analyzeDay(day: day, hr: n.hr, rr: n.rr, gravity: n.gravity,
+                                               profile: profile, baselines: baselines)
+        XCTAssertNotNil(first.recovery)   // a meaningful (non-cold-start) score, so the check has teeth
+
+        // Interleave an unrelated computation with different inputs — a stand-in for the concurrent
+        // refresh the engine guards against. If any global state leaked, it would taint the re-run below.
+        let other = night(endDay: "2021-07-03", hours: 8)
+        _ = AnalyticsEngine.analyzeDay(
+            day: "2021-07-03", hr: other.hr, rr: other.rr, gravity: other.gravity,
+            profile: UserProfile(age: 45),
+            baselines: AnalyticsEngine.ProfileBaselines(
+                hrv: Baselines.foldHistory(Array(repeating: 80.0, count: 14), cfg: Baselines.hrvCfg),
+                restingHR: Baselines.foldHistory(Array(repeating: 70.0, count: 14), cfg: Baselines.restingHRCfg)))
+
+        let again = AnalyticsEngine.analyzeDay(day: day, hr: n.hr, rr: n.rr, gravity: n.gravity,
+                                               profile: profile, baselines: baselines)
+
+        XCTAssertEqual(first.daily, again.daily)   // DailyMetric is Equatable — every persisted field
+        XCTAssertEqual(first.recovery, again.recovery)
+        XCTAssertEqual(first.strain, again.strain)
+        XCTAssertEqual(first.sleepSessions.count, again.sleepSessions.count)
+        XCTAssertEqual(first.workouts.count, again.workouts.count)
+    }
 }

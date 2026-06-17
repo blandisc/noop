@@ -19,6 +19,14 @@ final class IntelligenceEngine: ObservableObject {
     @Published var computing = false
     @Published var note: String?
 
+    // Idempotent-skip watermarks (FER-177): the periodic 15-min loop re-reads ~21 days × 8 streams
+    // every tick. When nothing new has landed since the last successful run — the HR frontier hasn't
+    // advanced and the imported history is unchanged — there is nothing to recompute, so the whole
+    // heavy load is skipped. Live wear, a completed backfill and an import all move one of these, so a
+    // genuinely-new tick still runs. The manual "re-analyze" button passes `force: true` to bypass it.
+    private var lastAnalyzedHRFrontier: Int?
+    private var lastAnalyzedHistKey: String?
+
     struct Computed: Identifiable {
         let day: String
         let recovery: Double?
@@ -36,13 +44,27 @@ final class IntelligenceEngine: ObservableObject {
     /// Compute on-device scores for each of the last `maxDays` that actually has raw HR data.
     /// Personal baselines (HRV / resting HR) are folded from the imported history, so even the first
     /// live night can be scored against your norm.
-    func analyzeRecent(maxDays: Int = 21) async {
+    func analyzeRecent(maxDays: Int = 21, force: Bool = false) async {
         guard !computing else { return }
         guard let store = await repo.storeHandle() else { note = String(localized: "No on-device store yet."); return }
         guard let hrvCfg = Baselines.metricCfg["hrv"],
               let rhrCfg = Baselines.metricCfg["resting_hr"],
               let respCfg = Baselines.metricCfg["resp"],
               let skinCfg = Baselines.metricCfg["skin_temp"] else { return }
+
+        // ── Snapshot ALL repo-derived inputs ONCE, up front, before any heavy await. `repo.days` is a
+        // value type (copy-on-write), so a concurrent `repo.refresh()` (e.g. a backfill completing
+        // mid-run) can't mutate this array out from under the ~21-await pass — every night is scored
+        // against the SAME baseline the run started with, so the scores can't drift. (FER-177 / #78)
+        let hist = repo.days
+
+        // ── Idempotent skip: if neither the raw HR frontier nor the imported history changed since the
+        // last successful run, re-reading 21 days would recompute identical scores — skip the balloon.
+        let frontier = (try? await store.latestHRSampleTs(deviceId: deviceId)) ?? nil
+        let histKey = "\(hist.count)|\(hist.first?.day ?? "")|\(hist.last?.day ?? "")"
+        if !force, frontier != nil, frontier == lastAnalyzedHRFrontier, histKey == lastAnalyzedHistKey {
+            return
+        }
 
         computing = true
         defer { computing = false }
@@ -62,8 +84,8 @@ final class IntelligenceEngine: ObservableObject {
         // user `repo.days` (imported) is empty, so the HRV baseline isn't usable yet and recovery is
         // null here — but each night's avgHrv/restingHr are computed baseline-INDEPENDENTLY, so we
         // harvest them to SEED the baseline and re-score in pass 2. foldHistory winsorizes outliers;
-        // repo.days is published oldest→newest, so the replay order is already chronological. (#78)
-        let hist = repo.days
+        // repo.days is published oldest→newest, so the replay order is already chronological. `hist` is
+        // the up-front snapshot taken above (so a concurrent refresh can't drift the baseline). (#78)
         let hrvBase1 = Baselines.foldHistory(hist.map { $0.avgHrv }, cfg: hrvCfg)
         let rhrBase1 = Baselines.foldHistory(hist.map { $0.restingHr.map(Double.init) }, cfg: rhrCfg)
         let baselines1 = AnalyticsEngine.ProfileBaselines(hrv: hrvBase1, restingHR: rhrBase1)
@@ -105,8 +127,12 @@ final class IntelligenceEngine: ObservableObject {
             // midnight floor is correct for any sign; the store range is inclusive, so end at -1 s.)
             let dayMid = dayStart - ((dayStart % 86_400) + 86_400) % 86_400
             let dayEnd = dayMid + 86_400 - 1
-            let dayHr = (try? await store.hrSamples(deviceId: deviceId, from: dayMid, to: dayEnd, limit: 200_000)) ?? []
-            let daySteps = (try? await store.stepSamples(deviceId: deviceId, from: dayMid, to: dayEnd, limit: 200_000)) ?? []
+            // These two reads cover EXACTLY one calendar day, which holds at most ~86_400 1 Hz samples,
+            // so the 200k night-window ceiling is wasteful headroom here. Cap at a true day ceiling
+            // (with the same ~33% margin the 42h night reads keep) — trims the per-iteration peak with
+            // no truncation risk, since one day physically can't exceed it (FER-177).
+            let dayHr = (try? await store.hrSamples(deviceId: deviceId, from: dayMid, to: dayEnd, limit: 120_000)) ?? []
+            let daySteps = (try? await store.stepSamples(deviceId: deviceId, from: dayMid, to: dayEnd, limit: 120_000)) ?? []
 
             let res = await Task.detached(priority: .utility) {
                 AnalyticsEngine.analyzeDay(day: day, hr: hr, rr: rr, resp: resp, gravity: grav,
@@ -256,6 +282,13 @@ final class IntelligenceEngine: ObservableObject {
 
         // Reload the dashboard caches so the freshly computed scores show up immediately.
         if !dailies.isEmpty { await repo.refresh() }
+
+        // Record the watermarks for the idempotent skip. The frontier is read from the START of the run
+        // (analysis writes daily-metrics/sleep/workouts, never hrSample, so it's still current); the
+        // history key is read AFTER the refresh so the next run's up-front snapshot — which sees these
+        // just-persisted computed days — matches and short-circuits when no new raw data arrived.
+        lastAnalyzedHRFrontier = frontier
+        lastAnalyzedHistKey = "\(repo.days.count)|\(repo.days.first?.day ?? "")|\(repo.days.last?.day ?? "")"
     }
 
     /// Re-score ONLY the recovery composite for a day against a (re-seeded) baseline. Every other field
