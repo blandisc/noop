@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-17 · FER-180</span>
+  <span class="tb-updated">Actualizado 2026-06-17 · FER-184</span>
 </div>
 
 <div id="wrapper">
@@ -529,7 +529,7 @@ const SCREENS = [
   // ── ROW 3: Dispositivo (y = 2010) ─────────
   {
     id: 'live', x: 30, y: 2010,
-    name: 'Live', desc: 'Monitor puro «Instrumento» · sin strain · sin gestión',
+    name: 'Live', desc: 'Monitor puro «Instrumento» · sin strain/gestión/batería/entrenamiento',
     file: 'Cenit/Screens/LiveView.swift',
     icon: '📡', color: '#0C8F62',
     states: [
@@ -539,7 +539,7 @@ const SCREENS = [
       { label: 'monitorOnly (cover de Hoy)', type: 'data' },
     ],
     nav: [],
-    components: ['connectionPill (info)', 'ECG Hero (dataHeart/plano)', 'Session Tally + rrTachogram', 'Live Signals (Capturing live)', 'Sync Signals (Completes on sync)', 'savedFooter', 'Data Receipt + Coverage 28d', 'verifyRow', 'disconnectedState (CTA Conectar)', 'activeWorkoutCard (sin Strain · solo standalone)'],
+    components: ['connectionPill (info · sin batería)', 'ECG Hero (dataHeart/plano)', 'Session Tally + rrTachogram', 'Live Signals (Capturing live)', 'Sync Signals (Completes on sync)', 'savedFooter', 'Data Receipt + Coverage 28d + respaldo iCloud', 'verifyRow', 'disconnectedState (CTA Conectar)'],
   },
   {
     id: 'automations', x: 284, y: 2010,
