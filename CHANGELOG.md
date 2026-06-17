@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Las tarjetas de Hoy se elevan al tocarlas / Today's cards lift when you tap them.**
+  **ES** — Al tocar una tarjeta de «Métricas de hoy», ahora **se eleva** un instante hacia tu dedo (una pizca de escala y el borde más marcado), en vez del oscurecido de antes. Es solo el realce al pulsar; el detalle sigue abriéndose como siempre, desde abajo.
+  **EN** — Tapping a "Today's metrics" card now makes it **lift** toward your finger for an instant (a touch of scale and a stronger edge), instead of the previous dimming. It's just the press feedback; the detail still opens as before, from the bottom.
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **«Cómo amaneces tras cada deporte» llega a Cuerpo / "How you wake after each sport" lands in Body.**
   **ES** — La pestaña **Cuerpo** estrena, en «Actividad», un bloque que resume **cómo suele verse tu recuperación la mañana después de cada deporte**, comparado con tus días de descanso. Al tocarlo abre un detalle por deporte con una frase clara («después de una sesión así, sueles amanecer unos X puntos más abajo, y vuelves a tu nivel en ~N días»), cuántas sesiones lo respaldan y qué tan confiable es. Está enmarcado con honestidad: es una **asociación observada en tu propio historial, no una relación de causa** — el «Ver el método» nombra los factores que pueden confundirla. Mientras junta datos —hacen falta unas 6 sesiones de un mismo deporte— el bloque lo dice en vez de inventar un número. Todo on-device.
   **EN** — The **Body** tab gains an "Activity" block summarizing **how your recovery tends to look the morning after each sport**, compared with your rest days. Tapping it opens a per-sport detail with a plain sentence ("after a session like this you tend to wake about X points lower, climbing back in ~N days"), how many sessions back it up, and how reliable it is. It's framed honestly: a **descriptive association in your own history, not a cause** — "See the method" names the confounders. While it's gathering data — about 6 sessions of the same sport are needed — the block says so instead of inventing a number. All on-device.
