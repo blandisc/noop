@@ -101,7 +101,7 @@ public struct InstrumentoTheme: Equatable {
         dataRecovery:   Color(hex: "#0C8F62"),
         dataStrain:     Color(hex: "#C4631F"),
         dataSleep:      Color(hex: "#5D5A9E"),
-        dataHrv:        Color(hex: "#2E7D6B"),
+        dataHrv:        Color(hex: "#147C8C"),   // FER-206: cian, distinguible del verde-veredicto (4.33:1 AA)
         dataHeart:      Color(hex: "#B85068"),
         dataSpO2:       Color(hex: "#3B6FA0"),
         dataSteps:      Color(hex: "#4C8998"),
@@ -135,16 +135,19 @@ public extension View {
 
 // MARK: - Type voice
 //
-// «Instrumento diurno» does NOT reinvent the type scale — it reuses SF Pro with
-// tabular digits (the legacy `StrandFont`). It adds only the two moves the
-// language is opinionated about: the protagonist numeral and a quieter overline.
+// «Instrumento diurno» mostly reuses SF Pro with tabular digits (the legacy
+// `StrandFont`). It adds only the two moves the language is opinionated about: the
+// protagonist numeral and a quieter overline. The hero numeral is set in SF Mono
+// (FER-206) so the dominant figure reads like an instrument's printed read-out, not
+// the system font blown up — the rest of the scale stays SF Pro.
 
 public enum InstrumentoType {
 
-    /// The protagonist numeral — large, semibold, tabular. Pair with
+    /// The protagonist numeral — large, semibold, monospaced (SF Mono, inherently
+    /// tabular) so the dominant figure reads like an instrument read-out. Pair with
     /// `heroTracking(_:)` so big figures read tight, not loose.
     public static func hero(_ size: CGFloat = 72) -> Font {
-        .system(size: size, weight: .semibold, design: .default).monospacedDigit()
+        .system(size: size, weight: .semibold, design: .monospaced)
     }
 
     /// Negative tracking for a hero numeral. Large type set at default spacing
