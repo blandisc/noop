@@ -221,7 +221,9 @@ the periodic **type-47 historical offload is the primary metric source**, not th
 
 1. `requestSync(_:)` gates every kick on connection state **and** `BackfillPolicy` (the rate
    limiter, persisted across relaunch). On a go it calls `beginBackfill()`, which sends
-   `SEND_HISTORICAL_DATA` and arms an idle watchdog.
+   `SEND_HISTORICAL_DATA` and arms **two** timers: an *idle watchdog* (`backfillIdleTimeoutSeconds`,
+   60s, re-armed on every offload frame) and an *absolute session cap*
+   (`backfillAbsoluteTimeoutSeconds`, 300s, armed **once**, never re-armed by frames).
 2. The strap streams `HISTORY_START → type-47 records → HISTORY_END (acked) … → HISTORY_COMPLETE`.
 3. `Backfiller.ingest` is a state machine driven by `classifyHistoricalMeta`. On each `HISTORY_END`
    it commits one chunk with a strict **local safe-trim invariant**:
@@ -234,8 +236,11 @@ the periodic **type-47 historical offload is the primary metric source**, not th
    ```
 
    A chunk is forgotten by the strap **only after** decoded data is locally durable and the ack is
-   link-layer confirmed. If the watchdog fires (strap went silent), nothing is acked and the durable
-   `strap_trim` cursor lets the next session resume exactly where it left off.
+   link-layer confirmed. If the idle watchdog fires (strap went silent) — or the absolute cap fires
+   (strap keeps streaming offload frames but never signals `HISTORY_COMPLETE`, the WHOOP 4.0 wedge in
+   FER-152/FER-174) — the session tears down, nothing in-flight is acked, and the durable `strap_trim`
+   cursor lets the next session resume exactly where it left off. The absolute cap is what guarantees
+   the "Sincronizando…" pill can never pin forever.
 
 Type-47 records carry their **own real-unix timestamps**, so the historical path does *not* depend on
 `GET_CLOCK`; if the clock correlation hasn't landed yet, `Backfiller` falls back to an identity

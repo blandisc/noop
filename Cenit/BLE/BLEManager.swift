@@ -95,11 +95,14 @@ public final class BLEManager: NSObject, ObservableObject {
     public let state: LiveState
     private let router: FrameRouter
     private var collector: Collector?
-    /// The single in-flight `bootstrapStore()` task, or nil when idle/done. Memoizes store creation so
-    /// two concurrent callers (e.g. `centralManagerDidUpdateState` firing twice, or a state restore
-    /// racing a poweredOn) join the same task instead of each building a `WhoopStore` and running the
-    /// DB migration twice. Mirrors the `Repository.ensureStore()` guard (FER-25).
-    private var bootstrapTask: Task<Void, Never>?
+    /// The single `bootstrapStore()` build task. Memoizes store creation so concurrent callers (e.g.
+    /// `centralManagerDidUpdateState` firing twice, or a state restore racing a poweredOn) join the
+    /// same task instead of each building a `WhoopStore` and running the DB migration twice. Mirrors
+    /// the `Repository.ensureStore()` guard (FER-25). The task's `Bool` result is its success: a
+    /// SUCCESS handle stays memoized (re-entry is short-circuited by `collector != nil`); a FAILURE
+    /// handle is cleared by its owner so the next trigger rebuilds — never left poisoned, so a joiner
+    /// can't mistake a dead build for a ready store (FER-174).
+    private var bootstrapTask: Task<Bool, Never>?
 
     // MARK: Upload / server sync — REMOVED for Strand (standalone, fully on-device).
 
@@ -115,6 +118,14 @@ public final class BLEManager: NSObject, ObservableObject {
     private var strapNewestTs: Int?
     /// Fires if the strap goes silent mid-offload; re-armed on every frame during backfill.
     private var backfillTimeout: DispatchWorkItem?
+    /// Absolute wall-clock cap on a single offload session, armed ONCE at `beginBackfill` and never
+    /// re-armed by frames. The idle watchdog above re-arms on every offload frame, so a strap that
+    /// keeps streaming genuine offload frames < `backfillIdleTimeoutSeconds` apart but never emits
+    /// HISTORY_COMPLETE (the WHOOP 4.0 failure behind FER-152) would otherwise keep the session alive
+    /// forever — "Sincronizando…" pinned. This cap always fires and tears the session down regardless
+    /// (FER-174). Non-destructive: the durable strap_trim cursor resumes the next session where this
+    /// one was cut.
+    private var backfillAbsoluteTimeout: DispatchWorkItem?
     /// Periodic opportunistic upload while connected. Without it, upload only fires at connect +
     /// backfill-exit, so during a long live session decoded rows pile up locally and the server
     /// (dashboard) lags. Started on bond, cancelled on disconnect.
@@ -281,10 +292,15 @@ public final class BLEManager: NSObject, ObservableObject {
     /// check-then-publish of `bootstrapTask` atomic across the first `await` (FER-25).
     func bootstrapStore() async {
         if collector != nil { return }
-        if let bootstrapTask { return await bootstrapTask.value }   // creation already in flight — join it
-        let task = Task { @MainActor in
-            guard let path = try? StorePaths.defaultDatabasePath() else { return }
-            guard let store = try? await WhoopStore(path: path) else { return }
+        // A build is already in flight (or just finished) — join it instead of starting a second one
+        // that would re-run the DB migration. We don't act on the result here: the task's OWNER clears
+        // a FAILED handle below, so the next external trigger (poweredOn / connect) rebuilds rather than
+        // re-joining a dead task. While the handle is non-nil no second build can start, so there's
+        // never more than one build task alive (FER-174).
+        if let bootstrapTask { _ = await bootstrapTask.value; return }
+        let task = Task { @MainActor () -> Bool in
+            guard let path = try? StorePaths.defaultDatabasePath() else { return false }
+            guard let store = try? await WhoopStore(path: path) else { return false }
             try? await store.upsertDevice(id: deviceId, mac: nil, name: "WHOOP 4.0")
             // Research toggle — OFF by default. When disabled the app is decoded-only and never
             // persists raw frames. Flip "enableRawCapture" in UserDefaults to capture raw again.
@@ -308,10 +324,15 @@ public final class BLEManager: NSObject, ObservableObject {
                                     log: { [weak self] s in self?.log(s) },
                                     onReceipt: { [weak self] r in self?.accumulateSyncReceipt(r) })
             // Strand: no server uploader/sync — all data stays on-device.
+            return true
         }
         bootstrapTask = task          // published synchronously (still on @MainActor) before the await below
-        await task.value
-        bootstrapTask = nil           // cleared so a failed bootstrap (nil collector) can be retried later
+        let ok = await task.value
+        // SUCCESS → keep the memoized task (re-entry is short-circuited by `collector != nil`; never
+        // rebuild over a live store). FAILURE → drop the handle so the next trigger rebuilds. Only this
+        // owner clears its own handle and no second build can start while it is non-nil, so this can't
+        // clobber a replacement task (FER-174).
+        if !ok { bootstrapTask = nil }
     }
 
     /// Designated initializer for testing and preview use: accepts a pre-built Collector.
@@ -574,6 +595,7 @@ public final class BLEManager: NSObject, ObservableObject {
         // strap streams HISTORY_START → type-47 records → HISTORY_END (acked) … → HISTORY_COMPLETE.
         send(.sendHistoricalData, payload: [0x00], writeType: .withResponse)
         armBackfillTimeout()
+        armBackfillAbsoluteTimeout()   // frame-independent backstop — see armBackfillAbsoluteTimeout (FER-174)
         log("Backfill: session started — historical offload requested")
         return true
     }
@@ -654,6 +676,26 @@ public final class BLEManager: NSObject, ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(BLEManager.backfillIdleTimeoutSeconds), execute: item)
     }
 
+    /// Absolute wall-clock cap for one offload session — armed ONCE per `beginBackfill`, never re-armed
+    /// by frames (unlike `armBackfillTimeout`). This is the backstop the idle watchdog can't be: a strap
+    /// that keeps streaming offload frames < `backfillIdleTimeoutSeconds` apart but never emits
+    /// HISTORY_COMPLETE re-arms the idle timer indefinitely, so only a frame-independent cap can break
+    /// the wedge. 300 s: generous enough that a healthy offload making real progress completes via
+    /// HISTORY_COMPLETE first, short enough to bound the "Sincronizando…" wedge, and well under the
+    /// 900 s periodic re-trigger so the next tick starts a clean session. Mirrors the idle path's
+    /// teardown — tell the Backfiller to stop, then exit (FER-174).
+    static let backfillAbsoluteTimeoutSeconds = 300
+    private func armBackfillAbsoluteTimeout() {
+        backfillAbsoluteTimeout?.cancel()
+        let item = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.backfiller?.timeoutFired()
+            self.exitBackfilling(reason: "session-cap")
+        }
+        backfillAbsoluteTimeout = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(BLEManager.backfillAbsoluteTimeoutSeconds), execute: item)
+    }
+
     /// Tear down the backfill session. Does NOT auto-start live HR: the periodic type-47 backfill
     /// is the primary metric source now, mirroring how WHOOP syncs. Live HR is opt-in only (the
     /// manual "Start HR" button in LiveView). Between backfills the Collector sees only the live
@@ -664,21 +706,56 @@ public final class BLEManager: NSObject, ObservableObject {
         state.backfilling = false
         backfillTimeout?.cancel()
         backfillTimeout = nil
+        backfillAbsoluteTimeout?.cancel()
+        backfillAbsoluteTimeout = nil
         backfillFrameQueue.removeAll()
         log("Backfill: session ended — reason=\(reason)")
-        // Honest sync outcome for a cloud-free user (mirrors Android exitBackfilling, ed6a31d):
-        // HISTORY_COMPLETE stamps lastSyncedAt + clears any error; the idle-watchdog timeout surfaces
-        // a non-silent error. A disconnect mid-sync bypasses this path (didDisconnectPeripheral resets
-        // the flags directly) — that's not a sync failure, and the next connect re-offloads.
-        if reason == "HISTORY_COMPLETE" {
+        // Honest sync outcome for a cloud-free user (mirrors Android exitBackfilling, ed6a31d). The
+        // reason→outcome policy is the pure `syncSessionOutcome` below so it's unit-testable without a
+        // strap. A disconnect mid-sync bypasses this path entirely (didDisconnectPeripheral resets the
+        // flags directly) — that's `.silent`, not a sync failure, and the next connect re-offloads.
+        switch BLEManager.syncSessionOutcome(reason: reason) {
+        case .completed:
             state.lastSyncedAt = Date().timeIntervalSince1970
             state.lastSyncError = nil
             state.syncCompletedThisSession = true   // unlocks the receipt + verdict (FER-83)
             UserDefaults.standard.set(state.lastSyncedAt, forKey: "lastSyncedAt")
-        } else if reason == "timeout" {
-            state.lastSyncError = "Sync interrupted — the strap went quiet. It will retry on the next sync."
+        case .interrupted(let message):
+            state.lastSyncError = message
+        case .silent:
+            break
         }
         checkStrapLiveness()         // safety-net: strap ahead of us AND our frontier frozen ⇒ stuck?
+    }
+
+    /// What a finished offload session means to the user, by teardown reason — pure, so the policy is
+    /// unit-testable without CoreBluetooth or a strap (FER-174).
+    enum SyncSessionOutcome: Equatable {
+        /// HISTORY_COMPLETE — the offload drained cleanly: stamp lastSyncedAt, clear the error, unlock
+        /// the receipt + verdict.
+        case completed
+        /// The idle watchdog OR the absolute session cap fired — surface a non-silent, honest error;
+        /// nothing is stamped as synced, so the durable strap_trim cursor resumes the next session.
+        case interrupted(message: String)
+        /// Any other teardown (e.g. a mid-sync disconnect) — leave the sync UI untouched.
+        case silent
+    }
+
+    /// Maps an `exitBackfilling` teardown reason to its user-visible outcome. The "session-cap" case is
+    /// the FER-174 fix: a strap that streams offload frames but never signals HISTORY_COMPLETE is ended
+    /// by the absolute cap with a non-silent message — never stamped as a successful sync. `nonisolated`:
+    /// it's a pure mapping over `reason` with no actor state, so it's callable (and testable) anywhere.
+    nonisolated static func syncSessionOutcome(reason: String) -> SyncSessionOutcome {
+        switch reason {
+        case "HISTORY_COMPLETE":
+            return .completed
+        case "timeout":
+            return .interrupted(message: "Sync interrupted — the strap went quiet. It will retry on the next sync.")
+        case "session-cap":
+            return .interrupted(message: "Sync ran long and was paused — it will continue on the next sync.")
+        default:
+            return .silent
+        }
     }
 
     /// After an offload, judge liveness: stuck = strap reports records newer than our frontier AND our
@@ -1068,6 +1145,8 @@ extension BLEManager: CBCentralManagerDelegate {
         state.syncChunksThisSession = 0
         backfillTimeout?.cancel()
         backfillTimeout = nil
+        backfillAbsoluteTimeout?.cancel()   // a dropped link mid-offload must not leave the cap armed (FER-174)
+        backfillAbsoluteTimeout = nil
         backfillFrameQueue.removeAll()
         // Cancel — don't nil — the in-flight drain: it owns `backfillDrainTask` and clears the handle
         // itself when it returns. Nil-ing it here would let the next frame spawn a SECOND drain that
