@@ -66,6 +66,16 @@ final class Backfiller {
     /// True while a historical offload session is active.
     private(set) var isBackfilling = false
 
+    /// Set true when the session ended because the offload caught up to the live edge (FER-201) rather
+    /// than via HISTORY_COMPLETE. BLEManager reads it to pick the teardown reason — both complete the
+    /// sync as success; this only distinguishes the honest log/diagnostic. Reset each `begin`.
+    private(set) var didCatchUp = false
+
+    /// Decides when the offload has drained its backlog (a sustained run of small HISTORY_END chunks =
+    /// only the live drip) so the session can complete as success even when the firmware never sends
+    /// HISTORY_COMPLETE (FER-201). Pure; reset per session.
+    private var caughtUpDetector = CaughtUpDetector()
+
     /// Buffered data frames for the current open chunk (between START and END).
     private var chunk: [[UInt8]] = []
     /// Whether a START has been received and we're accumulating a chunk.
@@ -108,6 +118,8 @@ final class Backfiller {
         isBackfilling = true
         chunk.removeAll(keepingCapacity: true)
         chunkOpen = true
+        caughtUpDetector.reset()
+        didCatchUp = false
     }
 
     /// Feed one raw BLE frame into the state machine. May trigger async store operations.
@@ -157,6 +169,9 @@ final class Backfiller {
         let frames = chunk
         chunk.removeAll(keepingCapacity: true)   // next records accumulate into the next chunk
 
+        // type-47 frame count for the caught-up detector (0 for an empty END). Fed only AFTER the
+        // safe-trim commit + ack below, so the triggering chunk is already durable (FER-201).
+        var biometricFramesThisEnd = 0
         if !frames.isEmpty {
             // type-47 HISTORICAL_DATA carries its OWN real-unix timestamp — extractHistoricalStreams
             // ignores the clock offset for it — so the historical offload does NOT need GET_CLOCK.
@@ -171,6 +186,7 @@ final class Backfiller {
             // (type 47) — the band narrating firmware errors instead of serving history. This count makes
             // that visible in the strap log (vs the opaque "decoded to 0 rows").
             let bio = parsed.filter { $0.typeName == "HISTORICAL_DATA" }.count
+            biometricFramesThisEnd = bio
             let logs = parsed.filter { $0.typeName == "CONSOLE_LOGS" }.count
             log?("Offload: \(frames.count) frames — \(bio) biometría (type-47), \(logs) console logs (type-50), \(parsed.count - bio - logs) otros")
             // Diagnostic (#30): a historical record whose firmware version we don't have a field map for
@@ -229,6 +245,17 @@ final class Backfiller {
         do { try await store.setCursor("strap_trim", Int(trim)) } catch { return }
 
         ackTrim(trim, endData)
+
+        // Caught-up completion (FER-201): once a sustained run of small ENDs proves the backlog is
+        // drained, end the session as SUCCESS. Some WHOOP 4.0 firmware never sends HISTORY_COMPLETE,
+        // so without this the session always wedges to the 300 s cap ("Sync ran long and was paused").
+        // Evaluated AFTER the commit + ack above, so the triggering chunk is durable; the durable
+        // strap_trim cursor + periodic re-sync make an early call self-healing (never loses data).
+        if isBackfilling, caughtUpDetector.observe(biometricFrames: biometricFramesThisEnd) {
+            isBackfilling = false
+            didCatchUp = true
+            chunkOpen = false
+        }
     }
 
     /// Called when a backfill watchdog timer fires (strap went silent mid-offload).
