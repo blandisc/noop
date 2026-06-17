@@ -79,6 +79,12 @@ struct TodayView: View {
     @State private var metricSpec: MetricDetailSpec? = nil
     @State private var showWhyVerdict = false
 
+    /// Namespace del zoom-morph de «las tarjetas que se abren» (FER-210): cada tile de «Métricas de hoy»
+    /// + el numeral del héroe son `matchedTransitionSource`; las DOS hojas de detalle de Hoy
+    /// (`MetricInfoSheet` y `MetricDetailScreen`) son el destino del zoom. Solo Hoy lo cablea — Cuerpo,
+    /// que abre el MISMO `MetricDetailScreen`, no se toca, así su apertura queda distinta.
+    @Namespace private var cardZoom
+
     // THE single grid definition — every tile group reuses it so margins line up.
     private let grid = [GridItem(.adaptive(minimum: 168), spacing: NoopMetrics.gap)]
 
@@ -211,7 +217,10 @@ struct TodayView: View {
             }
             .animation(.easeOut(duration: 0.18), value: showingSupport)
             .sheet(item: $metricDetail) { info in
+                // Destino del zoom-morph (FER-210): el id empata el `matchedTransitionSource` del tile
+                // (o del numeral del héroe) que la abrió. En iOS 17 es no-op → hoja normal.
                 metricSheet(for: info)
+                    .cardZoomDestination(info.id, in: cardZoom)
             }
             .sheet(item: $metricSpec) { spec in
                 MetricDetailScreen(
@@ -221,6 +230,7 @@ struct TodayView: View {
                     seriesLoader: { vitalSeries(for: spec.descriptor.key) },
                     nightVitalsLoader: spec.blocks.contains(.nightVitals) ? { await loadNightVitals() } : nil
                 )
+                .cardZoomDestination(spec.descriptor.key, in: cardZoom)
             }
             .sheet(isPresented: $showWhyVerdict) {
                 WhyVerdictSheet(readiness: readiness, theme: theme)
@@ -502,6 +512,8 @@ struct TodayView: View {
                                          calibrationNights: recoveryCalibration,
                                          nightsNeeded: Baselines.minNightsSeed)
             }
+            // Origen del zoom-morph del héroe (FER-210): el numeral «recovery» se expande en su detalle.
+            .cardZoomSource("recovery", in: cardZoom)
         case .calibrating(let nights):
             // Apilado (FER-202), igual que el veredicto: «N» centrado en el eje del dial con el «/seed»
             // pequeño y centrado debajo (antes a un lado con un «/seed» espejo invisible).
@@ -884,7 +896,7 @@ struct TodayView: View {
                     valueColor: theme.dataStrain,
                     delta: tileDelta(today: strainT, yesterday: yesterdayValue { $0.strain },
                                      betterHigher: nil, deadband: 0.3) { String(format: "%.1f", $0) }
-                )) { metricDetail = .strain(strainT) }
+                ), id: "strain") { metricDetail = .strain(strainT) }
                 // Sueño — dormir más es mejor.
                 metricTile(TodayMetricTile(
                     label: "Sleep",
@@ -893,7 +905,7 @@ struct TodayView: View {
                     fromApple: sleepR?.fromApple == true,
                     delta: tileDelta(today: sleepR?.value, yesterday: yesterdayValue { $0.totalSleepMin },
                                      betterHigher: true, deadband: 5) { sleepDeltaText($0) }
-                )) { metricDetail = .sleep(sleepR.map { Int($0.value.rounded()) }) }
+                ), id: "sleep") { metricDetail = .sleep(sleepR.map { Int($0.value.rounded()) }) }
                 // HRV — más alto es mejor.
                 metricTile(TodayMetricTile(
                     label: "HRV",
@@ -902,14 +914,14 @@ struct TodayView: View {
                     fromApple: hrvR?.fromApple == true,
                     delta: tileDelta(today: hrvR?.value, yesterday: yesterdayValue { $0.avgHrv },
                                      betterHigher: true, deadband: 1) { "\(Int($0.rounded())) ms" }
-                )) { metricSpec = .hrv(hrvR?.value) }
+                ), id: "hrv") { metricSpec = .hrv(hrvR?.value) }
                 // Frecuencia cardíaca — promedio continuo del día. Sin Δ: no se guarda un promedio diurno
                 // de "ayer" con qué comparar (decisión del dueño, FER-180).
                 metricTile(TodayMetricTile(
                     label: "Heart Rate",
                     value: hrTodayAvg.map { "\($0)" } ?? "—", unit: "bpm",
                     valueColor: theme.dataHeart, delta: nil
-                )) { metricDetail = .heartRate(avgBpm: hrTodayAvg) }
+                ), id: "heart_rate") { metricDetail = .heartRate(avgBpm: hrTodayAvg) }
                 // FC en reposo — más alta es PEOR.
                 metricTile(TodayMetricTile(
                     label: "Resting HR",
@@ -918,7 +930,7 @@ struct TodayView: View {
                     fromApple: rhrR?.fromApple == true,
                     delta: tileDelta(today: rhrR?.value, yesterday: yesterdayValue { $0.restingHr.map(Double.init) },
                                      betterHigher: false, deadband: 1) { "\(Int($0.rounded())) bpm" }
-                )) { metricSpec = .restingHR(rhrR.map { Int($0.value.rounded()) }) }
+                ), id: "rhr") { metricSpec = .restingHR(rhrR.map { Int($0.value.rounded()) }) }
                 // Oxígeno en sangre — más alto es mejor.
                 metricTile(TodayMetricTile(
                     label: "Blood Oxygen",
@@ -927,7 +939,7 @@ struct TodayView: View {
                     fromApple: spo2R?.fromApple == true,
                     delta: tileDelta(today: spo2R?.value, yesterday: yesterdayValue { $0.spo2Pct },
                                      betterHigher: true, deadband: 0.5) { "\(Int($0.rounded())) %" }
-                )) { metricDetail = .spo2(spo2R?.value) }
+                ), id: "spo2") { metricDetail = .spo2(spo2R?.value) }
                 // Pasos — sin meta (no existe en la app); más es mejor.
                 metricTile(TodayMetricTile(
                     label: "Steps",
@@ -935,7 +947,7 @@ struct TodayView: View {
                     valueColor: theme.dataSteps,
                     delta: tileDelta(today: stepsT, yesterday: yesterdayValue { $0.steps.map(Double.init) },
                                      betterHigher: true, deadband: 100) { intString($0) }
-                )) { metricDetail = .steps(stepsFresh) }
+                ), id: "steps") { metricDetail = .steps(stepsFresh) }
                 // Estrés — más alto es PEOR; valor bandeado por nivel 0–3 (verde/ámbar/rojo).
                 metricTile(TodayMetricTile(
                     label: "Stress",
@@ -944,7 +956,7 @@ struct TodayView: View {
                     valueColor: stressT.map(stressDataColor) ?? theme.inkTertiary,
                     delta: tileDelta(today: stressT, yesterday: stressYesterday,
                                      betterHigher: false, deadband: 0.1) { String(format: "%.1f", $0) }
-                )) { metricDetail = .stress(stressT) }
+                ), id: "stress") { metricDetail = .stress(stressT) }
             }
             if notConnected && anyMeasuredMissing {
                 Button { showDataSources = true } label: {
@@ -969,10 +981,12 @@ struct TodayView: View {
 
     /// Envuelve un tile en su `Button` tappable (todo el tile es objetivo) + feedback de pulsado, y abre
     /// el `MetricInfoSheet` de la métrica. El detalle trae la tendencia 14d (interino hasta «Cuerpo»).
-    private func metricTile(_ tile: TodayMetricTile, open: @escaping () -> Void) -> some View {
+    private func metricTile(_ tile: TodayMetricTile, id: String, open: @escaping () -> Void) -> some View {
         Button(action: open) { tile }
-            .buttonStyle(TileButtonStyle(pressedFill: theme.ink.opacity(0.05)))
+            .buttonStyle(TileButtonStyle(liftBorder: theme.hairlineStrong))
             .accessibilityHint(Text("Abre el detalle"))
+            // Origen del zoom-morph (FER-210): `id` empata el `sourceID` de la hoja que abre este tile.
+            .cardZoomSource(id, in: cardZoom)
     }
 
     /// El valor de una métrica para AYER (el día calendario anterior), leído del dashboard de display
@@ -1112,16 +1126,18 @@ struct TodayView: View {
         }
     }
 
-    /// Feedback de pulsado para un tile: una tinta tenue del tema sobre la forma redondeada del tile
-    /// (recortada al mismo radio para no asomar esquinas cuadradas, a diferencia de `MetricRowButtonStyle`
-    /// que es para renglones rectos). (FER-180)
+    /// Realce al pulsar (FER-210): la afordancia de «abrible» de los tiles de Hoy. En reposo el tile NO
+    /// lleva marca (sin chevron/arco/ícono); al pulsar se ELEVA hacia el toque —escala ~1.03 + el borde
+    /// pasa a `hairlineStrong`— que es el primer cuadro del zoom-morph que abre el detalle. Plano, sin
+    /// sombra (regla del idioma «Instrumento»). Reemplaza el darken anterior (FER-180).
     private struct TileButtonStyle: ButtonStyle {
-        let pressedFill: Color
+        let liftBorder: Color
         func makeBody(configuration: Configuration) -> some View {
             configuration.label
                 .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                    .fill(configuration.isPressed ? pressedFill : Color.clear))
-                .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+                    .strokeBorder(configuration.isPressed ? liftBorder : Color.clear, lineWidth: 1))
+                .scaleEffect(configuration.isPressed ? 1.03 : 1.0)
+                .animation(.spring(response: 0.3, dampingFraction: 0.72), value: configuration.isPressed)
         }
     }
 
@@ -1823,6 +1839,41 @@ struct TodayView: View {
         f.dateFormat = "HH:mm"
         return f
     }()
+}
+
+// MARK: - Zoom-morph de «las tarjetas que se abren» (FER-210)
+
+/// Gatean el zoom-morph de la apertura de las tarjetas de Hoy a iOS 18+, donde existe
+/// `.navigationTransition(.zoom)`. En iOS 17 y fuera de iOS son no-op → la hoja abre normal (sin morph),
+/// preservando el comportamiento actual. El `sourceID` del destino debe empatar el `id` del
+/// `matchedTransitionSource` del tile (o del numeral del héroe) que la originó. Solo lo usa `TodayView`,
+/// así Cuerpo —que abre el mismo `MetricDetailScreen`— conserva su apertura sin morph.
+private extension View {
+    @ViewBuilder
+    func cardZoomSource(_ id: String, in ns: Namespace.ID) -> some View {
+        #if os(iOS)
+        if #available(iOS 18.0, *) {
+            matchedTransitionSource(id: id, in: ns)
+        } else {
+            self
+        }
+        #else
+        self
+        #endif
+    }
+
+    @ViewBuilder
+    func cardZoomDestination(_ id: String, in ns: Namespace.ID) -> some View {
+        #if os(iOS)
+        if #available(iOS 18.0, *) {
+            navigationTransition(.zoom(sourceID: id, in: ns))
+        } else {
+            self
+        }
+        #else
+        self
+        #endif
+    }
 }
 
 // MARK: - Preview
