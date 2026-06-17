@@ -81,8 +81,9 @@ final class NOOPScreenshotTests: XCTestCase {
         tap(tab: "More");   wait(1) // list — not captured as its own screen
 
         // ── Screens inside the More list ──────────────────────────────────────
-        // "Explore" (MetricExplorer) is last: it sometimes crashes the app on exit.
-        // Putting it last means all other screens are captured even if Explore crashes.
+        // "Explore" (MetricExplorer) used to crash the app on exit (nested
+        // NavigationStack — fixed in FER-171). It's kept last so the capture order
+        // stays stable; the defensive relaunch below still guards every screen.
         let moreScreens: [(cell: String, id: String)] = [
             ("Intelligence", "intelligence"),
             ("Coach",        "coach"),
@@ -98,7 +99,7 @@ final class NOOPScreenshotTests: XCTestCase {
             ("Automations",  "automations"),
             ("Settings",     "settings"),
             ("Support",      "support"),
-            ("Explore",      "explore"),   // last — may crash app on exit
+            ("Explore",      "explore"),   // last (FER-171 fixed the old exit crash)
         ]
 
         for (cell, id) in moreScreens {
