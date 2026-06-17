@@ -19,8 +19,6 @@ public enum NoopMetrics {
     public static let space1: CGFloat = 4              // finest step (tight icon↔text, a unit hugging a numeral)
     public static let space2: CGFloat = 8              // tight step, below gap = 12
     public static let sectionGapCompact: CGFloat = 16  // compact section rhythm on iPhone Today (FER-202)
-    /// Negative inset that pins a section to the foot of the one above (replaces the ad-hoc `padding(.top, -8)`).
-    public static let sectionTight: CGFloat = -8
     public static let controlRadius: CGFloat = 12      // buttons / CTAs
     public static let chipRadius: CGFloat = 8          // small inline chips / pills
 
