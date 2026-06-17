@@ -60,8 +60,8 @@ escriben aquí, dirigen `/implement` y son la checklist literal del QA técnico.
 - Un cambio de **algoritmo** que cambie de dónde salen los datos o cómo fluyen.
 
 **NO (no te invocan):** un fix de UI, un copy, una sola pantalla, un bug
-localizado, un ajuste de tokens de diseño, un bump de dependencia. Eso va directo
-de `/pm` a `/implement`.
+localizado, un ajuste de tokens de diseño, un bump de dependencia. Eso es **carril
+ligero** y va directo de `/pm` a `/implement`.
 
 Si te disparan para algo que no es de fondo, dilo y manda el trabajo directo a
 `/implement`.

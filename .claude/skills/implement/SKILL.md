@@ -33,6 +33,26 @@ criterios del issue sin tu narrativa, y reproduce el QA por su cuenta. Solo
 entregas con su veredicto PASS. Es la mejor práctica de la industria: ojos frescos,
 con la rúbrica en mano, encuentran el hueco que el autor no ve.
 
+**Pero el gate independiente solo corre en el carril pesado.** No todo merece el
+mismo QA: ver "Carril" abajo.
+
+## Carril (cuánto QA corre depende del riesgo)
+
+Lee el campo **`Carril`** del issue (lo fija `/pm`). Si el issue no lo trae,
+derívalo: **pesado** si toca BLE/protocolo, una migración de DB, analítica/math,
+datos on-device difíciles de revertir, algo cross-paquete / concurrencia, o una
+feature con lógica real; **ligero** si es UI / copy / layout / i18n reversible.
+**En la duda, pesado** — y si lo marcaron ligero pero al codear ves que roza un
+disparador pesado, súbelo a pesado.
+
+- **Pesado:** el proceso completo de abajo, **incluido el verificador independiente
+  `/qa` (paso 8) y la pasada de `/simplify` (paso 8.5)**.
+- **Ligero:** implementas, corres tu propio build + verificas los criterios uno por
+  uno, apruebas lo visual con **preview HTML** si toca pantalla, y entregas —
+  **sin** el subagente `/qa`, sin el loop de 3 rondas, sin `/arquitecto`. Tu propio
+  QA + el preview es suficiente; el usuario lo confirma en su iPhone y rehacer un
+  cambio cosmético cuesta segundos.
+
 ## Estrategia de ramas (limpia, sin pisar a nadie)
 
 - **Una rama por issue.** Usa el nombre que Linear ya generó (`get_issue` → campo
@@ -54,27 +74,34 @@ con la rúbrica en mano, encuentran el hueco que el autor no ve.
 3. **In Progress.** Mueve el issue a `In Progress` y comenta que empezaste.
 4. **Rama limpia.** Aplica la estrategia de ramas de arriba (fetch, rama del issue
    desde `origin/iOS`, sin pisar).
-5. **Diseña la UI (Spec + PNG) — solo si toca pantalla.** Si el issue toca una
-   pantalla y no trae ya un spec de UI aprobado, corre la **pasada de UI antes de
-   codear**: invoca la skill `/ui` (o el subagente `ui`). Produce el mapeo a
-   tokens de `StrandDesign` y **renderiza un PNG por estado** con el harness de
-   `ImageRenderer`. **Muéstrale los PNG al usuario y espera su OK** (gate: ver lo
-   visual antes de construir). Iteras sobre el PNG, no sobre el iPhone. El spec
-   aprobado es lo que codificas en el siguiente paso. Para bug / analytics /
-   import / performance / i18n / chore, **sáltate este paso**.
+5. **Diseña la UI (Spec + preview HTML) — solo si toca pantalla.** Si el issue toca
+   una pantalla y no trae ya un spec de UI aprobado, corre la **pasada de UI antes
+   de codear**: invoca la skill `/ui` (o el subagente `ui`). Produce el mapeo a
+   tokens de `StrandDesign` y un **preview HTML por estado** con `show_widget`
+   (fiel a `StrandPalette`) — es lo que el usuario de verdad revisa, no un PNG.
+   **Muéstrale el preview y espera su OK** (gate: ver lo visual antes de construir).
+   Iteras sobre el preview, no sobre el iPhone. El spec aprobado es lo que codificas
+   en el siguiente paso. Para bug / analytics / import / performance / i18n / chore,
+   **sáltate este paso**.
 6. **Implementa el cambio mínimo** que cumpla el requerimiento (y el spec de UI
    aprobado, si lo hubo). "Fuera de alcance" es ley; un solo concern; lee el
    código que señalan las pistas técnicas antes de editar; no inventes símbolos.
 7. **QA propio (tu loop rápido de corrección).**
-   - Compila y corre los tests del área tocada (comandos en `CLAUDE.md`).
+   - Compila y corre los tests del área tocada (comandos en `CLAUDE.md`). Para
+     tests de la **app** (capa `Cenit/`), `-destination 'generic/platform=iOS'`
+     solo compila; para correrlos headless usa
+     `xcodebuild test-without-building -destination 'id=<simulador concreto>'`
+     (técnica de FER-149; `xcrun simctl list devices available` da un id).
    - Recorre los criterios de aceptación y el Definition of Done **uno por uno**.
    - Si hubo pasada de UI: verifica los **criterios de UI** (solo tokens
      StrandDesign, sin hex/spacing inline) y que **el render real coincida con el
-     PNG aprobado**.
-   - Arregla lo que encuentres. Esto es tu autocomprobación rápida — el gate real
-     lo da el verificador del paso 8. Si no puedes corregir o no puedes verificar
-     nada, ve a "Cuándo PARAR".
-8. **Verificación independiente (el gate de QA).** Antes de mergear, invoca al
+     preview aprobado**.
+   - Arregla lo que encuentres. En **carril ligero** esto es tu verificación final;
+     en **carril pesado** es solo tu loop rápido — el gate real lo da el verificador
+     del paso 8. Si no puedes corregir o no puedes verificar nada, ve a "Cuándo
+     PARAR".
+8. **Verificación independiente (el gate de QA) — solo carril pesado.** Antes de
+   mergear, invoca al
    **subagente `qa`** (o la skill `/qa`) y pásale **solo** el ID del issue
    (`FER-NN`) y la rama — **NO** tu resumen de lo que hiciste (esa narrativa
    contamina la verificación; él la reconstruye del diff). Él carga los criterios
@@ -87,7 +114,13 @@ con la rúbrica en mano, encuentran el hueco que el autor no ve.
    - **BLOCKED** (no pudo verificar algo) → no mergees; ve a "Cuándo PARAR".
    No mergees sin su PASS y no discutas su veredicto: o corriges, o escalas al
    usuario.
-9. **Entrega (solo si el verificador dio PASS).** Commit descriptivo + **entrada en
+8.5 **Simplifica (solo carril pesado, tras el PASS).** Corre la skill `/simplify`
+   sobre tu diff: los agentes tienden a sobre-construir (abstracciones de un solo
+   uso, duplicación, código de más). Aplica lo que recorte **sin cambiar el
+   comportamiento ya verificado**; si toca algo de fondo, vuelve a pasar el `/qa`.
+   No es cacería de bugs (eso fue el paso 8) — es dejar el mínimo que cumple.
+9. **Entrega (ligero: tras tu QA propio; pesado: solo si el verificador dio PASS).**
+   Commit descriptivo + **entrada en
    la bitácora de producto** (`CHANGELOG.md` — obligatoria si el cambio es visible
    para el usuario; ver "La bitácora de producto" abajo) → push → PR hacia `iOS`
    (`Closes FER-NN`, criterios verificados en "How it was tested") →
@@ -142,8 +175,8 @@ claro si:
 - El cambio es **de alto riesgo o difícil de revertir**: toca el camino BLE, una
   migración de base de datos, o algo destructivo. Abre el PR y pide confirmación
   antes de mergear.
-- **El usuario no aprobó el PNG** de la pasada de UI (o pidió ajustes): itera el
-  diseño con `/ui`, no codifiques la pantalla a ciegas.
+- **El usuario no aprobó el preview** de la pasada de UI (o pidió ajustes): itera
+  el diseño con `/ui`, no codifiques la pantalla a ciegas.
 
 ## Qué NO hacer
 
@@ -151,7 +184,8 @@ claro si:
 - No te salgas del alcance. Si encuentras otra cosa, créala como issue aparte (vía
   `/pm`), no la metas aquí.
 - No reuses ni pises la rama de otra sesión; no trabajes en `iOS`.
-- **No te saltes el verificador independiente ni mergees sin su PASS.** Tu propio
-  QA no autoriza el merge — el gate del paso 8 sí. No le pases tu narrativa.
+- **En carril pesado, no te saltes el verificador independiente ni mergees sin su
+  PASS.** Tu propio QA no autoriza el merge ahí — el gate del paso 8 sí. No le pases
+  tu narrativa. (En carril ligero no hay paso 8: tu QA propio es el gate.)
 - No mergees si el QA no pasó o si es de alto riesgo (ver "Cuándo PARAR").
 - No repitas ni contradigas `CLAUDE.md` / `docs/CONTRIBUTING.md`; síguelos.

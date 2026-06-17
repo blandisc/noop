@@ -59,11 +59,37 @@ la descripción y **confírmalo en una sola pregunta de opción** (puedes usar
 | **Mejora pequeña** | ajuste menor sin diseño nuevo | `Improvement` |
 | **Técnico / chore** | refactor, deps, tooling, migración DB | (sin label de producto) |
 
+### 2.5 Asigna el carril (ligero vs. pesado) — esto define cuánto proceso corre
+No todo merece el mismo ceremonial. Clasifica el trabajo en un carril; va como
+campo **`Carril`** del requerimiento y `/implement` lo lee para decidir cuánto QA
+corre.
+
+- **Pesado** si toca algo **difícil de revertir o de alto blast-radius**: el path
+  BLE/protocolo, una migración de DB, analítica/math, datos on-device
+  (persistencia/import) donde un error sea difícil de deshacer, algo cross-paquete
+  o un cambio de concurrencia, o una **feature nueva con lógica real**. Corre el
+  flujo completo: criterios estrictos, `/arquitecto` si es estructural, el
+  verificador `/qa` independiente como gate, y una pasada de `/simplify`.
+- **Ligero** si es **reversible y cosmético**: UI/copy/layout, i18n, un ajuste
+  visual de una pantalla existente, una mejora menor. `/implement` lo verifica con
+  su propio build + un preview HTML, **sin** el gate `/qa` independiente: rehacer
+  un cambio así cuesta segundos, y el gate independiente cuesta más de lo que
+  protege ahí.
+- **En la duda, o si roza un disparador del carril pesado, va a pesado.** La
+  seguridad le gana a la velocidad.
+
+Para el **carril ligero**, trabaja en **modo lean**: una o ninguna pregunta, un
+requerimiento corto (objetivo + comportamiento + 2–3 criterios verificables), sin
+la pasada de UX de subagente. Igual creas el issue en Linear y lo etiquetas
+(hygiene) — solo que barato.
+
 ### 3. Lee lo justo (no inventes)
 Antes de preguntar, mira el código relevante para no preguntar lo que el repo ya
 responde. Ej.: si es un cambio a `TodayView`, ábrela para entender el estado
 actual; si es un metric nuevo, revisa `MetricCatalog.swift`. **Lee para no
-preguntar de más, no para tardarte.** Nunca inventes nombres de archivo o
+preguntar de más, no para tardarte.** Carga contexto **al grano** —la sección o el
+archivo que toca el cambio—, no los docs completos (`SCREENS.md` / `CONTRIBUTING.md`
+enteros son caros y rara vez hacen falta). Nunca inventes nombres de archivo o
 símbolos: si no los confirmaste, di "archivo probable" o pregunta.
 
 ### 4. Haz pocas preguntas, las correctas
@@ -86,16 +112,18 @@ abiertas). Banco de preguntas por tipo — elige las que apliquen:
 - **Performance:** ¿métrica objetivo (ms, MB, fps)? ¿en qué dispositivo/pantalla
   se mide? ¿cuál es el número de hoy?
 
-### 4.5 Diseña la experiencia (UX) — solo si hay pantalla
-Si el trabajo toca UI (Feature con pantalla, Cambio de UI / Diseño), corre la
-**pasada de UX antes de redactar**: invoca la skill `/ux` (o delega en el
+### 4.5 Diseña la experiencia (UX) — solo carril pesado con pantalla
+Si el trabajo es **carril pesado** y toca UI (Feature con pantalla, o un flujo /
+estados nuevos), corre la **pasada de UX antes de redactar**: invoca la skill
+`/ux` (o delega en el
 subagente `ux`) con el contexto que llevas. La UX te devuelve el **flujo**, los
 **estados** (vacío, cargando, datos, error, **sin permiso HealthKit**,
 **offline/sin strap**), la **arquitectura de info**, el **copy es-MX** y la
 **accesibilidad**, más **criterios de aceptación de UX**. Inyecta todo eso en las
 secciones "Estados" y "Criterios de aceptación" del requerimiento — así el diseño
-de experiencia queda decidido aquí, no en el código. Para bug / analytics /
-import / performance / i18n / chore, **sáltate este paso**.
+de experiencia queda decidido aquí, no en el código. Para **carril ligero** (ajuste
+cosmético, copy, layout de una pantalla existente) y para bug / analytics / import
+/ performance / i18n / chore, **sáltate este paso**: resuelve estados y copy inline.
 
 ### 5. Redacta el requerimiento
 Usa la plantilla de abajo. Omite las secciones que no apliquen al tipo. El texto
@@ -120,6 +148,8 @@ Al aprobar, créalo y devuelve el link. Ver "Crear en Linear".
 
 ## Objetivo
 [Qué se logra, en una frase verificable.]
+
+**Carril:** ligero | pesado   ← cuánto QA corre (ver paso 2.5; en la duda, pesado)
 
 ## Comportamiento esperado
 [Qué debe pasar, paso a paso. Para bug: "Hoy pasa X / debería pasar Y" + Pasos
