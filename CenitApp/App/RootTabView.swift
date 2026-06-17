@@ -26,6 +26,11 @@ struct RootTabView: View {
     /// gap. The "More" list is already lazy (its destinations build on `NavigationLink` tap). FER-31.
     @State private var visited: Set<Tab> = [.today]
     @State private var moreStack: [MoreScreen] = []
+    /// Measured height of the «Barra de instrumento» (its button row, above the
+    /// home-indicator bleed). Each tab reserves exactly this much at its bottom so
+    /// the last component clears the bar — see `barReservation`. Starts 0 and is
+    /// filled on first layout via `BarHeightKey`.
+    @State private var barHeight: CGFloat = 0
 
     var body: some View {
         TabView(selection: $selection) {
@@ -40,16 +45,31 @@ struct RootTabView: View {
         // inside the screens — kept for those.
         .tint(StrandPalette.accent)
         // The «Barra de instrumento» (FER-163): the native bar is hidden per page
-        // (see `lazyTab`/`moreTab`) and this custom bar takes its place. It reserves
-        // its own space via `safeAreaInset`, and `instrumentoThemeByHour` drives
-        // `\.instrumentoTheme` so that — under Hoy — it warms with the clock exactly
-        // like TodayView. Under the dark screens it ignores the theme and uses
-        // `StrandPalette`. (Color scheme itself is owned by ContentView via
-        // `isTodayActive` — FER-160; the bar uses explicit colors either way.)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+        // (see `lazyTab`/`moreTab`) and this custom bar takes its place.
+        //
+        // It is mounted as an `overlay` (it floats, pinned to the bottom) rather
+        // than via `safeAreaInset` on the `TabView`: a bottom safe-area inset placed
+        // on a `TabView` whose native bar is hidden draws the bar but does NOT reach
+        // the safe area of each page's `ScrollView`, so the last component scrolled
+        // under the bar. Instead each tab reserves the bar's measured height at the
+        // CONTENT level (`barReservation`), where the inset does propagate to scroll
+        // views. The bar reports its height via `BarHeightKey`.
+        //
+        // `instrumentoThemeByHour` drives `\.instrumentoTheme` so that — under Hoy —
+        // the bar warms with the clock exactly like TodayView; under the dark screens
+        // it ignores the theme and uses `StrandPalette`. (Color scheme itself is owned
+        // by ContentView via `isTodayActive` — FER-160; the bar uses explicit colors
+        // either way.)
+        .overlay(alignment: .bottom) {
             InstrumentTabBar(items: barItems, selection: $selection, isLight: selection == .today)
                 .instrumentoThemeByHour(solar: barSolar)
+                .background(
+                    GeometryReader { proxy in
+                        Color.clear.preference(key: BarHeightKey.self, value: proxy.size.height)
+                    }
+                )
         }
+        .onPreferenceChange(BarHeightKey.self) { barHeight = $0 }
         // Color scheme lo decide ContentView (cercano a la raíz) según `isTodayActive`; aquí solo lo
         // mantenemos sincronizado con la pestaña visible.
         .onChange(of: selection) { _, newValue in
@@ -99,8 +119,12 @@ struct RootTabView: View {
             }
         }
         .background(StrandPalette.surfaceBase.ignoresSafeArea())
-        // Hide the native tab bar everywhere; the custom `InstrumentTabBar` (mounted
-        // on the TabView via safeAreaInset) is the visible bar. `tabItem` stays so
+        // Reserve the floating bar's height at the content level so the page's
+        // ScrollView stops above the bar (the inset reaches scroll views here; it
+        // would not from the TabView — see `body`).
+        .barReservation(barHeight)
+        // Hide the native tab bar everywhere; the custom `InstrumentTabBar` (the
+        // floating overlay on the TabView) is the visible bar. `tabItem` stays so
         // TabView keeps its tag/selection wiring — its label just never renders.
         .toolbar(.hidden, for: .tabBar)
         .tabItem { Label(title, systemImage: icon) }
@@ -137,10 +161,12 @@ struct RootTabView: View {
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
             .background(StrandPalette.surfaceBase.ignoresSafeArea())
+            .barReservation(barHeight)
             .navigationTitle("More")
             .navigationDestination(for: MoreScreen.self) { screen in
                 moreDestination(screen)
                     .background(StrandPalette.surfaceBase.ignoresSafeArea())
+                    .barReservation(barHeight)
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbarBackground(StrandPalette.surfaceBase, for: .navigationBar)
             }
@@ -191,6 +217,28 @@ struct RootTabView: View {
         case .automations:  AutomationsView()
         case .settings:     SettingsView()
         case .support:      SupportView()
+        }
+    }
+}
+
+/// The «Barra de instrumento»'s measured height, bubbled from the floating overlay
+/// bar up to `RootTabView` so each tab can reserve exactly that much. `max` keeps
+/// the real (non-zero) value if SwiftUI momentarily reports a 0-height pass.
+private struct BarHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
+private extension View {
+    /// Reserve `height` points of clear space at the bottom safe area, so a page's
+    /// scroll content clears the floating tab bar. Applied at the content level
+    /// (where the inset reaches scroll views), never on the `TabView` — see
+    /// `RootTabView.body`.
+    func barReservation(_ height: CGFloat) -> some View {
+        safeAreaInset(edge: .bottom, spacing: 0) {
+            Color.clear.frame(height: height)
         }
     }
 }
