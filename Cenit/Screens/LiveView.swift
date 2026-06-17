@@ -28,11 +28,21 @@ struct LiveView: View {
     /// grabber); the layout is otherwise identical to the standalone (tab) mount.
     var monitorOnly: Bool = false
 
-    /// Smoothed, spike-filtered live HR from AppModel (median over a short window).
-    private var displayHR: Int? { model.bpm }
+    /// Smoothed, spike-filtered live HR from AppModel (median over a short window). Blanked to "—"
+    /// while reconnecting so the paused monitor doesn't show the stale pre-drop value (FER-195): the
+    /// BLE layer doesn't clear `bpm`/`heartRate` on a drop, so the view must mask them itself.
+    private var displayHR: Int? { showsReconnecting ? nil : model.bpm }
     private var activeConnection: Bool { live.connected && live.bonded }
     /// True when a live HR is actually streaming from a worn strap — drives the ECG monitor sweep.
-    private var isLiveHR: Bool { live.heartRate != nil && live.worn }
+    /// False while reconnecting so the "live" dot + sweep don't animate over a dropped link (FER-195).
+    private var isLiveHR: Bool { !showsReconnecting && live.heartRate != nil && live.worn }
+    /// Inside the post-drop grace window AND no pairing-error guidance is up (FER-195): a live link we
+    /// were showing dropped and BLEManager is auto-reconnecting, so the monitor stays mounted-but-paused
+    /// under a "Reconnecting…" pill instead of collapsing to the "Connect your strap" CTA. A
+    /// reconnect-guide / pairing-hint means the honest disconnected state (with its banner) belongs.
+    private var showsReconnecting: Bool {
+        isReconnecting && live.reconnectGuide == nil && live.pairingHint == nil
+    }
     /// Rolling beat-to-beat buffer (last ~40 R-R intervals) so the tachogram builds as beats arrive.
     @State private var rrHistory: [Int] = []
     /// Stored raw-sample counts (on-disk proof), merged into the Signals rows. Re-queried as new data
@@ -42,6 +52,12 @@ struct LiveView: View {
     /// "Verify my data" (PRAGMA integrity_check) button state.
     @State private var verifying = false
     @State private var verifyOK: Bool? = nil
+    /// Post-drop "Reconnecting…" grace window is active (FER-195). Set when a live link we were showing
+    /// flips connected true→false; cleared on reconnect or after `reconnectGraceSeconds`. Drives the
+    /// paused monitor + "Reconnecting…" pill via `showsReconnecting`. Presentation-only.
+    @State private var isReconnecting = false
+    /// Times out the grace window; cancelled if the link returns (or the view disappears) first.
+    @State private var reconnectTimeout: Task<Void, Never>? = nil
     /// Day-key parser for the coverage strip, en_US_POSIX so it matches `DailyMetric.day`.
     private static let dayFmt: DateFormatter = {
         let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; f.locale = Locale(identifier: "en_US_POSIX"); return f
@@ -52,6 +68,11 @@ struct LiveView: View {
     /// line up (FER-192): the status/sync column and the stored-count column.
     private static let statusColW: CGFloat = 76
     private static let countColW: CGFloat = 58
+    /// How long to keep the monitor paused under "Reconnecting…" before falling back to the manual
+    /// "Connect" CTA (FER-195). A live link routinely drops for a few seconds as the strap duty-cycles;
+    /// BLEManager auto-reconnects in ~3s, so a short grace window hides the churn without stranding the
+    /// user on "Reconnecting…" forever if the strap is genuinely gone.
+    private static let reconnectGraceSeconds: UInt64 = 15
 
     var body: some View {
         ScrollView {
@@ -65,7 +86,10 @@ struct LiveView: View {
                 if let guide = live.reconnectGuide { reconnectGuideBanner(guide) }
                 // Bond-refused guidance: a 5/MG strap still bonded to the WHOOP app refuses pairing.
                 if let hint = live.pairingHint { pairingHintBanner(hint) }
-                if live.connected {
+                if live.connected || showsReconnecting {
+                    // Connected — or a live link we were showing just dropped and is mid-reconnect
+                    // (FER-195): keep the monitor mounted but paused (HR "—", flat ECG) instead of
+                    // flashing the empty "Connect" state on every few-second duty-cycle drop.
                     hero
                     signalsSection
                     coverageStrip
@@ -84,9 +108,12 @@ struct LiveView: View {
         .background(theme.paper.ignoresSafeArea())
         .instrumentoTheme(theme)
         .onAppear { refreshLiveSession() }
-        .onDisappear { model.stopRealtimeHR() }
+        .onDisappear { model.stopRealtimeHR(); reconnectTimeout?.cancel() }
         .onChange(of: live.bonded) { refreshLiveSession() }
-        .onChange(of: live.connected) { refreshLiveSession() }
+        .onChange(of: live.connected) { wasConnected, nowConnected in
+            refreshLiveSession()
+            updateReconnecting(was: wasConnected, now: nowConnected)
+        }
         .onChange(of: live.rr) { _, newRR in
             // LiveState.rr only holds the latest notification's intervals; keep a rolling buffer so the
             // tachogram builds up beat by beat as the user watches.
@@ -118,6 +145,7 @@ struct LiveView: View {
             (activeConnection && live.encryptedBond) ? (String(localized: "Bonded · streaming"), theme.dataRecovery)
             : activeConnection ? (String(localized: "Live HR (not fully paired)"), theme.warning)
             : live.connected ? (String(localized: "Connected"), theme.warning)
+            : showsReconnecting ? (String(localized: "Reconnecting…"), theme.warning)
             : live.encryptedBond ? (String(localized: "Paired · idle"), theme.warning)
             : (String(localized: "Disconnected"), theme.critical)
         return HStack(spacing: 7) {
@@ -209,7 +237,8 @@ struct LiveView: View {
                       status: displayHR.map { "\($0) bpm" } ?? "—", stored: c?.hr ?? 0, isLive: isLiveHR)
             rowDivider
             signalRow(icon: "waveform.path.ecg", name: "Variability (R-R)",
-                      status: rrHistory.last.map { "\($0) ms" } ?? "—", stored: c?.rr ?? 0, isLive: isLiveHR)
+                      status: showsReconnecting ? "—" : (rrHistory.last.map { "\($0) ms" } ?? "—"),
+                      stored: c?.rr ?? 0, isLive: isLiveHR)
 
             // Sync group: the group label already says these arrive on sync, so the time column needs
             // no key; only the count column is keyed "records" (FER-193).
@@ -508,5 +537,26 @@ struct LiveView: View {
         guard activeConnection else { return }
         model.startRealtimeHR()
         model.getBattery()
+    }
+
+    /// Drive the post-drop "Reconnecting…" grace window (FER-195). When a live link we were showing
+    /// drops, keep the monitor paused while BLEManager auto-reconnects — unless it's a genuine pairing
+    /// failure (a guide/hint is up), where the honest disconnected state belongs. The window self-clears
+    /// on reconnect or after `reconnectGraceSeconds`, falling back to the manual "Connect" CTA.
+    private func updateReconnecting(was: Bool, now: Bool) {
+        reconnectTimeout?.cancel()
+        reconnectTimeout = nil
+        if now {
+            isReconnecting = false                       // link is back — resume the live monitor
+        } else if was, live.reconnectGuide == nil, live.pairingHint == nil {
+            isReconnecting = true                        // a live link dropped — pause, don't collapse
+            reconnectTimeout = Task { @MainActor in
+                try? await Task.sleep(nanoseconds: Self.reconnectGraceSeconds * 1_000_000_000)
+                guard !Task.isCancelled else { return }
+                isReconnecting = false                   // gave up waiting — fall back to the CTA
+            }
+        } else {
+            isReconnecting = false                       // dropped with a pairing error — honest disconnect
+        }
     }
 }
