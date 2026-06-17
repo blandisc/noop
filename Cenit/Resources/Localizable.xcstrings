@@ -21619,6 +21619,125 @@
         }
       }
     },
+    "We line up this vital against your own sleep and the prior day's strain, night by night across your history, and read which way it leans (Pearson correlation). We only show a direction once there are enough paired nights (about six weeks) and the link is strong enough to be unlikely to be chance — never the number, and never as a cause. (Plews 2013)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We line up this vital against your own sleep and the prior day's strain, night by night across your history, and read which way it leans (Pearson correlation). We only show a direction once there are enough paired nights (about six weeks) and the link is strong enough to be unlikely to be chance — never the number, and never as a cause. (Plews 2013)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alineamos este vital con tu propio sueño y con el esfuerzo del día anterior, noche por noche a lo largo de tu historial, y leemos hacia dónde se inclina (correlación de Pearson). Solo mostramos una dirección cuando hay suficientes noches pareadas (unas seis semanas) y la relación es lo bastante fuerte como para que sea poco probable que sea azar — nunca el número, y nunca como causa. (Plews 2013)"
+          }
+        }
+      }
+    },
+    "Information about what moves it": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Information about what moves it"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Información sobre qué la mueve"
+          }
+        }
+      }
+    },
+    "trend, not cause": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "trend, not cause"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tendencia, no causa"
+          }
+        }
+      }
+    },
+    "Tends to dip the day after a hard effort.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tends to dip the day after a hard effort."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suele bajar el día después de un esfuerzo alto."
+          }
+        }
+      }
+    },
+    "Tends to rise the day after a hard effort.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tends to rise the day after a hard effort."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suele subir el día después de un esfuerzo alto."
+          }
+        }
+      }
+    },
+    "Tends to run higher on nights you sleep more.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tends to run higher on nights you sleep more."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suele ser más alta las noches que duermes más."
+          }
+        }
+      }
+    },
+    "Tends to run lower on nights you sleep more.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tends to run lower on nights you sleep more."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suele ser más baja las noches que duermes más."
+          }
+        }
+      }
+    },
     "The lower it is, the younger.": {
       "extractionState": "manual",
       "localizations": {

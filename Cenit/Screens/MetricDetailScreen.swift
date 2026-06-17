@@ -38,6 +38,9 @@ struct MetricDetailScreen: View {
     /// Loads last night's companion vitals for the "Vitales de la noche" block: respiration + resting HR.
     /// Only used when the spec declares `.nightVitals`.
     var nightVitalsLoader: (() async -> NightVitals)? = nil
+    /// Loads the gated directional findings for the "Qué la mueve" block (FER-209). Only used when the
+    /// spec declares `.whatMovesIt`; the caller computes them from `repo.displayDays` (DB-free here).
+    var whatMovesItLoader: (() async -> [WhatMovesItFinding])? = nil
 
     enum Depth { case focus, full }
 
@@ -50,6 +53,7 @@ struct MetricDetailScreen: View {
     @State private var range: ExploreRange = .month
     @State private var series: [(day: String, value: Double)] = []
     @State private var nightVitals: NightVitals = NightVitals(respiration: nil, restingHR: nil)
+    @State private var whatMovesItFindings: [WhatMovesItFinding] = []
     @State private var loaded = false
 
     // MARK: - Depth → visible blocks
@@ -97,6 +101,9 @@ struct MetricDetailScreen: View {
             // Parse every day string to a Date ONCE per series (not per slice / per render). (FER-216)
             parsedSeries = series.map { ($0.day, Self.dayParser.date(from: $0.day), $0.value) }
             if let loader = nightVitalsLoader { nightVitals = await loader() }
+            if visibleBlocks.contains(.whatMovesIt), let loader = whatMovesItLoader {
+                whatMovesItFindings = await loader()
+            }
             loaded = true
         }
     }
@@ -129,7 +136,10 @@ struct MetricDetailScreen: View {
             blockDivider
             nightVitalsBlock
         }
-        // "Qué la mueve" → FER-209 (correlación real + gate de datos)
+        if visibleBlocks.contains(.whatMovesIt), !whatMovesItFindings.isEmpty {
+            blockDivider
+            whatMovesItBlock
+        }
         if hasMethod, let method = spec.info.method {
             blockDivider
             methodDisclosure(method)
@@ -591,6 +601,46 @@ struct MetricDetailScreen: View {
         let resp = nightVitals.respiration.map { String(format: "%.1f", $0) } ?? "—"
         let rhr = nightVitals.restingHR.map { "\(Int($0.rounded()))" } ?? "—"
         return "Respiration \(resp) · Resting HR \(rhr)"
+    }
+
+    // MARK: - What moves it (FER-209)
+
+    /// A documented, DIRECTIONAL tendency between this vital and another signal (same-night sleep,
+    /// the prior day's strain), computed from the user's OWN history and degraded to a direction —
+    /// never a coefficient, never a causal claim (hence the "tendencia, no causa" chip). Rendered only
+    /// when at least one relationship clears the sufficiency gate (see `WhatMovesItEngine` /
+    /// `CorrelationEngine.trend`); otherwise the whole block is absent.
+    private var whatMovesItBlock: some View {
+        // The ⓘ discloses the correlation method + the sufficiency gate (FER-220 pattern); the chip and
+        // the directional sentences stay inside the accordion's content.
+        InfoAccordion(
+            title: "What moves it",
+            explanation: "We line up this vital against your own sleep and the prior day's strain, night by night across your history, and read which way it leans (Pearson correlation). We only show a direction once there are enough paired nights (about six weeks) and the link is strong enough to be unlikely to be chance — never the number, and never as a cause. (Plews 2013)",
+            accessibilityLabel: "Information about what moves it",
+            theme: theme
+        ) {
+            VStack(alignment: .leading, spacing: 10) {
+                InlineFlagChip("trend, not cause", color: theme.inkTertiary)
+                ForEach(whatMovesItFindings) { finding in
+                    Text(Self.whatMovesItPhrase(finding))
+                        .font(StrandFont.caption)
+                        .foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    /// The directional sentence for a finding. Shared by HRV and resting HR — both "la variabilidad"
+    /// and "la frecuencia" are feminine, so the same es-MX wording agrees in gender. The direction
+    /// comes from the user's data; no number is ever shown.
+    private static func whatMovesItPhrase(_ f: WhatMovesItFinding) -> LocalizedStringKey {
+        switch (f.relationship, f.trend) {
+        case (.sleepDuration, .rises): return "Tends to run higher on nights you sleep more."
+        case (.sleepDuration, .falls): return "Tends to run lower on nights you sleep more."
+        case (.priorStrain, .rises):   return "Tends to rise the day after a hard effort."
+        case (.priorStrain, .falls):   return "Tends to dip the day after a hard effort."
+        }
     }
 
     // MARK: - Method disclosure (ported from MetricInfoSheet)
