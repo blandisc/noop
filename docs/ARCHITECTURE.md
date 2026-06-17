@@ -385,6 +385,10 @@ reader so multi-hundred-MB files don't blow up memory.
 - **`WorkoutDetector`** segments exercise bouts from HR + motion.
 - **`Baselines`**, **`HRZones`**, **`CorrelationEngine`**, **`ComparisonEngine`**, and
   **`BehaviorInsights`** supply rolling baselines, zone math, and cross-metric/behaviour insights.
+- **`SleepRegularity`** (FER-218) scores schedule consistency from a rolling window of nights: the
+  circular standard deviation of the mid-sleep point (Roenneberg 2006; Mardia & Jupp 2000) plus the
+  weekend "social-jetlag" shift. Pure + DB-free like the rest; the app feeds it onset/wake out of
+  `repo.sleeps`. The SD (minutes) is the validated figure; the 0–100 score is presentation only.
 
 Because the engine never touches the database, the same code runs over live-collected streams,
 backfilled streams, or imported data interchangeably. **All derived values are approximate.**
