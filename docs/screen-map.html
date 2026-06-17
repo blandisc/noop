@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-17 · FER-160</span>
+  <span class="tb-updated">Actualizado 2026-06-17 · FER-167</span>
 </div>
 
 <div id="wrapper">
@@ -673,17 +673,18 @@ const SCREENS = [
   },
   {
     id: 'why-verdict', x: 30, y: 3310,
-    name: 'Why Verdict', desc: 'Sheet: por qué el veredicto de hoy (desde Today · FER-113)',
+    name: 'Why Verdict', desc: 'Sheet: por qué el veredicto de hoy, en tema claro «Instrumento» (desde Today · FER-113/167)',
     file: 'Cenit/Screens/WhyVerdictSheet.swift',
     icon: '❓', color: '#2FC7FF',
     isSheet: true,
     states: [
+      { label: 'Tema claro «Instrumento» · recibe theme explícito · colores de nivel = verdictDataColor (FER-167)', type: 'data' },
       { label: 'Divergencia (recuperación alta vs veredicto)', type: 'data' },
       { label: 'Alineado (primed/balanced)', type: 'data' },
       { label: 'Agotado / varias señales', type: 'warn' },
     ],
     nav: [],
-    components: ['Título "¿Por qué {veredicto}?"', 'Chip de color del día', 'Frase puente (Readiness.bridge)', 'Señales del día (Readiness.signals)', 'Leyenda de colores + marcador HOY'],
+    components: ['Título "¿Por qué {veredicto}?"', 'Chip de color del día (rol del tema)', 'Frase puente (Readiness.bridge)', 'Señales del día (Readiness.signals)', 'Leyenda de colores + marcador HOY'],
   },
   {
     id: 'whats-new', x: 538, y: 3310,

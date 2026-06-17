@@ -6,20 +6,26 @@ import StrandAnalytics
 /// the way it does: the day's color, the reconciliation line, the full driver signals (brought to iOS
 /// from the macOS-only readiness list), and a color legend that names the CONDITION behind each color
 /// and marks where today lands. Mirrors `MetricInfoSheet`'s scaffold so the two explainers feel like one.
+///
+/// FER-167 — migrated to the light «Instrumento» theme so it matches the Today screen it opens from.
+/// The theme is passed in explicitly (it does NOT propagate through `.sheet`'s fresh environment); the
+/// level colours mirror `TodayView.verdictDataColor` so the hero and this sheet never disagree.
 struct WhyVerdictSheet: View {
     let readiness: ReadinessEngine.Readiness
+    /// The active «Instrumento diurno» theme, passed from `TodayView` (does not propagate through `.sheet`).
+    var theme: InstrumentoTheme = .base
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 Text("Why \(readiness.headline.lowercased())?")
                     .font(StrandFont.title2)
-                    .foregroundStyle(StrandPalette.textPrimary)
+                    .foregroundStyle(theme.ink)
                 colorChip
                 if let bridge = readiness.bridge {
                     Text(bridge)
                         .font(StrandFont.subhead)
-                        .foregroundStyle(StrandPalette.textSecondary)
+                        .foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 if !readiness.signals.isEmpty { signalsSection }
@@ -28,10 +34,10 @@ struct WhyVerdictSheet: View {
             .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(StrandPalette.surfaceBase)
+        .background(theme.paper)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
-        .modifier(WhySheetBackground())
+        .modifier(WhySheetBackground(paper: theme.paper))
     }
 
     /// "Today your day is amber — Strained" — makes the color the explicit subject (the user's
@@ -42,7 +48,7 @@ struct WhyVerdictSheet: View {
             Circle().fill(c).frame(width: 11, height: 11)
             Text("Today your day is \(colorName(readiness.level)) — \(readiness.headline)")
                 .font(StrandFont.subhead)
-                .foregroundStyle(StrandPalette.textPrimary)
+                .foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal, 11).padding(.vertical, 9)
@@ -56,13 +62,13 @@ struct WhyVerdictSheet: View {
         VStack(alignment: .leading, spacing: 11) {
             Text("Your signals today")
                 .font(StrandFont.overline).tracking(StrandFont.overlineTracking)
-                .foregroundStyle(StrandPalette.textTertiary)
+                .foregroundStyle(theme.inkTertiary)
             ForEach(readiness.signals, id: \.key) { s in
                 HStack(alignment: .top, spacing: 8) {
                     Circle().fill(flagColor(s.flag)).frame(width: 7, height: 7).padding(.top, 4)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(s.label).font(StrandFont.caption).foregroundStyle(StrandPalette.textPrimary)
-                        Text(s.detail).font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
+                        Text(s.label).font(StrandFont.caption).foregroundStyle(theme.ink)
+                        Text(s.detail).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     Spacer(minLength: 0)
@@ -77,7 +83,7 @@ struct WhyVerdictSheet: View {
         VStack(alignment: .leading, spacing: 4) {
             Text("What each color means")
                 .font(StrandFont.overline).tracking(StrandFont.overlineTracking)
-                .foregroundStyle(StrandPalette.textTertiary)
+                .foregroundStyle(theme.inkTertiary)
                 .padding(.bottom, 6)
             legendRow(.primed, "Primed", "signals aligned, load supported")
             legendRow(.balanced, "Balanced", "nothing flagging")
@@ -92,10 +98,10 @@ struct WhyVerdictSheet: View {
         let c = levelColor(level)
         return HStack(spacing: 9) {
             Circle().fill(c).frame(width: 9, height: 9)
-            Text(name).font(StrandFont.caption).foregroundStyle(StrandPalette.textPrimary)
+            Text(name).font(StrandFont.caption).foregroundStyle(theme.ink)
                 .frame(width: 96, alignment: .leading)
             Text(condition).font(StrandFont.footnote)
-                .foregroundStyle(here ? c : StrandPalette.textTertiary)
+                .foregroundStyle(here ? c : theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
             if here {
@@ -108,42 +114,44 @@ struct WhyVerdictSheet: View {
         .background(here ? c.opacity(0.10) : .clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
-    // MARK: color maps (mirror TodayView so the hero and sheet never disagree)
+    // MARK: color maps (mirror TodayView.verdictDataColor so the hero and sheet never disagree, FER-167)
 
     private func levelColor(_ l: ReadinessEngine.Level) -> Color {
         switch l {
-        case .primed:       return StrandPalette.statusPrimed
-        case .balanced:     return StrandPalette.statusPositive
-        case .strained:     return StrandPalette.statusWarning
-        case .rundown:      return StrandPalette.metricRose
-        case .insufficient: return StrandPalette.textTertiary
+        case .primed, .balanced: return theme.verdict
+        case .strained:          return theme.warning
+        case .rundown:           return theme.critical
+        case .insufficient:      return theme.inkTertiary
         }
     }
 
     private func flagColor(_ f: ReadinessEngine.Flag) -> Color {
         switch f {
-        case .good:    return StrandPalette.accent
-        case .neutral: return StrandPalette.textTertiary
-        case .watch:   return StrandPalette.statusWarning
-        case .bad:     return StrandPalette.metricRose
+        case .good:    return theme.verdict
+        case .neutral: return theme.inkTertiary
+        case .watch:   return theme.warning
+        case .bad:     return theme.critical
         }
     }
 
+    /// The colour NAME shown in the chip — must track `levelColor` (which mirrors the theme's verdict
+    /// roles): primed & balanced both read green, strained amber, rundown red, insufficient gray. (FER-167)
     private func colorName(_ l: ReadinessEngine.Level) -> String {
         switch l {
-        case .primed:       return String(localized: "mint")
+        case .primed:       return String(localized: "green")
         case .balanced:     return String(localized: "green")
         case .strained:     return String(localized: "amber")
-        case .rundown:      return String(localized: "rose")
+        case .rundown:      return String(localized: "red")
         case .insufficient: return String(localized: "gray")
         }
     }
 }
 
 private struct WhySheetBackground: ViewModifier {
+    let paper: Color
     func body(content: Content) -> some View {
         if #available(macOS 13.3, iOS 16.4, *) {
-            content.presentationBackground(StrandPalette.surfaceBase)
+            content.presentationBackground(paper)
         } else { content }
     }
 }

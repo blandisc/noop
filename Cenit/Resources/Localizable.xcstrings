@@ -2822,6 +2822,12 @@
             "state": "translated",
             "value": "Equilibrado"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ausgeglichen"
+          }
         }
       }
     },
@@ -10131,6 +10137,12 @@
             "state": "translated",
             "value": "A punto"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bereit"
+          }
         }
       }
     },
@@ -11473,6 +11485,12 @@
             "state": "translated",
             "value": "Desgastado"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erschöpft"
+          }
         }
       }
     },
@@ -12669,6 +12687,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Exigido"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beansprucht"
           }
         }
       }
@@ -19042,6 +19066,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tus datos se restauraron. Vuelve a abrir NOOP para que surta efecto."
+          }
+        }
+      }
+    },
+    "red": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "red"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "rojo"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "rot"
           }
         }
       }
