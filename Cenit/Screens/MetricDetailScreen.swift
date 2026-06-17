@@ -417,7 +417,14 @@ struct MetricDetailScreen: View {
         if let baseline = baselineState, baseline.nValid >= 1 {
             let lo = baseline.baseline - sigma(baseline)
             let hi = baseline.baseline + sigma(baseline)
-            block(title: "Your normal range") {
+            // The ⓘ discloses the rolling-baseline math (FER-220); the block's overline + datum +
+            // plain-language reading (FER-216) stay exactly as before, inside the accordion's content.
+            InfoAccordion(
+                title: "Your normal range",
+                explanation: "Your personal baseline: a moving average of your recent nights (weighted toward the latest) ± a band of your own variation. A value outside the band is unusual for you, not for the population. It becomes reliable after about 14 nights. (Buchheit 2014)",
+                accessibilityLabel: "Information about your normal range",
+                theme: theme
+            ) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("\(fmt(lo))–\(fmt(hi)) \(unit) · \(baseline.nValid) nights")
                         .font(StrandFont.bodyNumber)
@@ -456,7 +463,14 @@ struct MetricDetailScreen: View {
         if let cv = SeriesShape.coefficientOfVariation(allValues, window: 7) {
             let pct = Int((cv * 100).rounded())
             let steady = cv <= 0.10 ? String(localized: "steady") : String(localized: "variable")
-            block(title: "Consistency (CV)") {
+            // The ⓘ discloses the coefficient-of-variation math (FER-220); the block's overline + datum +
+            // plain-language reading (FER-216) stay exactly as before, inside the accordion's content.
+            InfoAccordion(
+                title: "Consistency (CV)",
+                explanation: "Coefficient of variation = standard deviation ÷ the mean of your last few weeks. It measures how spread out your values are around your average. Low = steady. In HRV, a rising CV can precede fatigue even while the value still looks high. (Plews 2013)",
+                accessibilityLabel: "Information about consistency",
+                theme: theme
+            ) {
                 VStack(alignment: .leading, spacing: 6) {
                     // Resolve the steady/variable word to a String first so the nested phrase localizes
                     // (interpolating a LocalizedStringKey into another doesn't translate the inner key).
@@ -480,7 +494,14 @@ struct MetricDetailScreen: View {
         let mom = ComparisonEngine.monthOverMonth(byDay: series, referenceDay: series.last?.day ?? "")
         let s = ComparisonEngine.stat(window.values)
         if s.n > 0 {
-            block(title: "Trend") {
+            // The ⓘ discloses how the slope, the month-over-month % and the stats are computed (FER-220);
+            // the block's overline + headline + stat strip + plain-language reading (FER-216) are unchanged.
+            InfoAccordion(
+                title: "Trend",
+                explanation: "The slope is how much it rises or falls on average per day, by linear regression over the period. The percentage vs last month compares this month's average against the previous one. Average, Lowest and Highest are from the range you selected.",
+                accessibilityLabel: "Information about the trend",
+                theme: theme
+            ) {
                 VStack(alignment: .leading, spacing: 10) {
                     Text(trendHeadline(mom: mom))
                         .font(StrandFont.bodyNumber)
