@@ -23019,6 +23019,134 @@
         }
       }
     },
+    "Your personal baseline: a moving average of your recent nights (weighted toward the latest) ± a band of your own variation. A value outside the band is unusual for you, not for the population. It becomes reliable after about 14 nights. (Buchheit 2014)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your personal baseline: a moving average of your recent nights (weighted toward the latest) ± a band of your own variation. A value outside the band is unusual for you, not for the population. It becomes reliable after about 14 nights. (Buchheit 2014)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu línea base personal: una media móvil de tus noches recientes (con más peso en las últimas) ± una banda de tu propia variación. Un valor fuera de la banda es atípico para ti, no para la población. Se vuelve confiable tras unas 14 noches. (Buchheit 2014)"
+          }
+        }
+      }
+    },
+    "Coefficient of variation = standard deviation ÷ the mean of your last few weeks. It measures how spread out your values are around your average. Low = steady. In HRV, a rising CV can precede fatigue even while the value still looks high. (Plews 2013)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coefficient of variation = standard deviation ÷ the mean of your last few weeks. It measures how spread out your values are around your average. Low = steady. In HRV, a rising CV can precede fatigue even while the value still looks high. (Plews 2013)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coeficiente de variación = desviación estándar ÷ promedio de tus últimas semanas. Mide qué tan dispersos están tus valores respecto a tu media. Bajo = estable. En HRV, que el CV suba puede preceder a la fatiga, aunque el valor siga alto. (Plews 2013)"
+          }
+        }
+      }
+    },
+    "The slope is how much it rises or falls on average per day, by linear regression over the period. The percentage vs last month compares this month's average against the previous one. Average, Lowest and Highest are from the range you selected.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The slope is how much it rises or falls on average per day, by linear regression over the period. The percentage vs last month compares this month's average against the previous one. Average, Lowest and Highest are from the range you selected."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La pendiente es cuánto sube o baja en promedio por día, por regresión lineal sobre el periodo. El porcentaje vs el mes pasado compara el promedio de este mes contra el anterior. Promedio, Más bajo y Más alto son del periodo que elegiste."
+          }
+        }
+      }
+    },
+    "Information about your normal range": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Information about your normal range"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Información sobre tu rango normal"
+          }
+        }
+      }
+    },
+    "Information about consistency": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Information about consistency"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Información sobre la consistencia"
+          }
+        }
+      }
+    },
+    "Information about the trend": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Information about the trend"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Información sobre la tendencia"
+          }
+        }
+      }
+    },
+    "expanded": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "expanded"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "expandido"
+          }
+        }
+      }
+    },
+    "collapsed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "collapsed"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "colapsado"
+          }
+        }
+      }
+    },
     "h asleep": {
       "extractionState": "manual",
       "localizations": {
