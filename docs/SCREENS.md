@@ -246,16 +246,16 @@ se marca con tinta + un punto de «ahora» (verde recovery en claro, `accent` en
 
 ### LiveView
 **Archivo:** `Cenit/Screens/LiveView.swift`  
-**Descripción:** Monitor puro en tema claro «Instrumento diurno» (FER-181): papel cálido, etiquetas en tinta, color **solo en el dato** (FC/ECG/latidos en `dataHeart`; indicadores «en vivo»/guardado en `dataRecovery`). Sin strain (vive en Hoy) y **sin gestión de correa** (selector 4/5/MG, escanear/buzz/desconectar y el log se mudaron a Ajustes). La única acción que carga es un CTA «Conectar» en el estado desconectado. El tema se pasa **explícito** (no se propaga por `fullScreenCover`/`.sheet`).
+**Descripción:** Monitor puro en tema claro «Instrumento diurno» (FER-181/184): papel cálido, etiquetas en tinta, color **solo en el dato** (FC/ECG/latidos en `dataHeart`; indicadores «en vivo»/guardado en `dataRecovery`). Sin strain (vive en Hoy), **sin gestión de correa** (selector 4/5/MG, escanear/buzz/desconectar y el log → Ajustes), **sin batería del strap** (→ Ajustes) y **sin bloque de entrenamiento** (FER-184 — registrar entrenamientos vive en *Más › Workouts*). La única acción que carga es un CTA «Conectar» en el estado desconectado. El tema se pasa **explícito** (no se propaga por `fullScreenCover`/`.sheet`).
 
 | Estado | Condición de entrada |
 |--------|---------------------|
 | Conectada · transmitiendo | `live.connected` + HR en vivo (`worn` + heartRate) → monitor completo |
 | Conectada · idle (no puesta) | `live.connected` sin señal viva → monitor con «—»; recibo/cobertura visibles |
 | Desconectada / sin correa | `!live.connected` → pill «Desconectada» + ECG plano + mensaje + **CTA «Conectar»** (sin panel de gestión) |
-| monitorOnly mode | `monitorOnly: true` (cover de Hoy "beat by beat", esquema claro) — igual, sin tarjeta de workout |
+| monitorOnly mode | `monitorOnly: true` (cover de Hoy "beat by beat", esquema claro) |
 
-**Componentes:** `connectionPill` (info, no tappable), `ECG Hero` (`dataHeart`/plano), `Session Tally` + `rrTachogram`, `Live Signals (Capturing live)`, `Sync Signals (Completes on sync)`, `savedFooter`, `Data Receipt (frame counts)` + `Coverage Strip (28d)`, `verifyRow` («Verify my data»), `disconnectedState` (CTA «Conectar»), `activeWorkoutCard` (solo standalone, **sin Strain**). Gestión de correa **removida** → Ajustes › Correa.
+**Componentes:** `connectionPill` (info, no tappable; sin batería), `ECG Hero` (`dataHeart`/plano), `Session Tally` + `rrTachogram`, `Live Signals (Capturing live)`, `Sync Signals (Completes on sync)`, `savedFooter`, `Data Receipt (frame counts)` + `Coverage Strip (28d)` + respaldo iCloud (cuando aplica), `verifyRow` («Verify my data»), `disconnectedState` (CTA «Conectar»). Gestión de correa, batería del strap y bloque de entrenamiento **removidos** → Ajustes / *Más › Workouts*.
 
 ---
 

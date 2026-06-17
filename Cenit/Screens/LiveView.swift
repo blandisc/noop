@@ -71,9 +71,6 @@ struct LiveView: View {
                        r.counts.hr + r.counts.rr + r.counts.spo2 + r.counts.skinTemp + r.counts.resp + r.counts.gravity > 0 {
                         receiptSection(r)
                     }
-                    // The manual-workout card lives only on the standalone mount; the Today cover ends at
-                    // the receipt (monitorOnly).
-                    if !monitorOnly { workoutSection }
                 } else {
                     // No live connection: a single "Connect" CTA, not a management panel — no dead end.
                     disconnectedState
@@ -125,27 +122,12 @@ struct LiveView: View {
                 .strokeBorder(theme.hairline, lineWidth: 1))
     }
 
-    // MARK: - Connection (info only — management lives in Settings)
+    // MARK: - Connection (info only — management & battery live in Settings)
 
     private var connectionRow: some View {
         HStack(spacing: 10) {
             connectionPill
             Spacer()
-            if let b = live.batteryPct {
-                Label("\(Int(b))%", systemImage: batteryIcon(b))
-                    .labelStyle(.titleAndIcon)
-                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-            }
-        }
-    }
-
-    private func batteryIcon(_ pct: Double) -> String {
-        switch pct {
-        case ..<13: return "battery.0"
-        case ..<38: return "battery.25"
-        case ..<63: return "battery.50"
-        case ..<88: return "battery.75"
-        default:    return "battery.100"
         }
     }
 
@@ -385,20 +367,12 @@ struct LiveView: View {
                         .foregroundStyle(gaps == 0 ? theme.inkTertiary : theme.warning)
                 }
             }
-            // Storage + (if armed) iCloud backup.
-            VStack(alignment: .leading, spacing: 5) {
+            // iCloud backup, when armed. (The "nights stored" line moved out — it's shown elsewhere.)
+            if let backup = lastBackupText {
                 HStack(spacing: 8) {
-                    Image(systemName: "internaldrive.fill")
+                    Image(systemName: "checkmark.icloud")
                         .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    Text("\(repo.days.count) nights stored · on your iPhone, system-encrypted")
-                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                }
-                if let backup = lastBackupText {
-                    HStack(spacing: 8) {
-                        Image(systemName: "checkmark.icloud")
-                            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                        Text(backup).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    }
+                    Text(backup).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
             }
             verifyRow
@@ -517,81 +491,6 @@ struct LiveView: View {
                 .background(theme.ink, in: Capsule(style: .continuous))
         }
         .buttonStyle(.plain)
-    }
-
-    // MARK: - Manual workout (standalone mount only)
-
-    @ViewBuilder private var workoutSection: some View {
-        if let w = model.activeWorkout {
-            activeWorkoutCard(w)
-        } else {
-            if activeConnection {
-                Button { model.startWorkout() } label: {
-                    Label("Start workout", systemImage: "figure.run")
-                        .frame(maxWidth: .infinity).padding(.vertical, 8)
-                }
-                .buttonStyle(.bordered).tint(theme.ink)
-                .help("Track a workout manually — records heart rate until you end it.")
-            }
-            if let last = model.lastWorkout {
-                workoutSavedRow(last)
-            }
-        }
-    }
-
-    private func activeWorkoutCard(_ w: AppModel.ActiveWorkout) -> some View {
-        panel {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 8) {
-                    Circle().fill(theme.critical).frame(width: 8, height: 8)
-                    Text("RECORDING WORKOUT").font(StrandFont.overline)
-                        .tracking(StrandFont.overlineTracking).foregroundStyle(theme.critical)
-                    Spacer()
-                    // Re-render once a second so the elapsed clock ticks without a manual Timer.
-                    TimelineView(.periodic(from: .now, by: 1)) { _ in
-                        Text(Self.elapsed(since: w.start)).font(StrandFont.headline).monospacedDigit()
-                            .foregroundStyle(theme.ink)
-                    }
-                }
-                HStack(spacing: NoopMetrics.gap) {
-                    workoutStat("HR", model.bpm.map { "\($0)" } ?? "—")
-                    workoutStat("Avg", w.avgHr > 0 ? "\(w.avgHr)" : "—")
-                    workoutStat("Peak", w.peakHr > 0 ? "\(w.peakHr)" : "—")
-                }
-                Button(role: .destructive) { model.endWorkout() } label: {
-                    Label("End workout", systemImage: "stop.circle.fill")
-                        .frame(maxWidth: .infinity).padding(.vertical, 8)
-                }
-                .buttonStyle(.borderedProminent).tint(theme.critical)
-            }
-        }
-    }
-
-    private func workoutStat(_ title: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title.uppercased()).font(StrandFont.overline).tracking(StrandFont.overlineTracking)
-                .foregroundStyle(theme.inkSecondary)
-            Text(value).font(StrandFont.headline).monospacedDigit()
-                .foregroundStyle(theme.ink).lineLimit(1).minimumScaleFactor(0.6)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func workoutSavedRow(_ row: WorkoutRow) -> some View {
-        let mins = Int((row.durationS ?? 0) / 60)
-        let parts = ["\(mins) min", row.avgHr.map { "\($0) avg bpm" }].compactMap { $0 }
-        return HStack(spacing: 8) {
-            Image(systemName: "checkmark.circle.fill").foregroundStyle(theme.dataRecovery)
-            Text("Workout saved · \(parts.joined(separator: " · "))")
-                .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 4)
-    }
-
-    private static func elapsed(since start: Date) -> String {
-        let s = max(0, Int(Date().timeIntervalSince(start)))
-        return String(format: "%d:%02d", s / 60, s % 60)
     }
 
     // MARK: - Reconnect / pairing guidance banners
