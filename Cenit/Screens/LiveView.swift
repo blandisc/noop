@@ -211,8 +211,9 @@ struct LiveView: View {
             signalRow(icon: "waveform.path.ecg", name: "Variability (R-R)",
                       status: rrHistory.last.map { "\($0) ms" } ?? "—", stored: c?.rr ?? 0, isLive: isLiveHR)
 
-            // Sync group: the time column is "when last saved", so key it "saved"; count keyed "records".
-            groupHeader("Completes on sync", statusKey: "saved", countKey: "records").padding(.top, 12)
+            // Sync group: the group label already says these arrive on sync, so the time column needs
+            // no key; only the count column is keyed "records" (FER-193).
+            groupHeader("Completes on sync", statusKey: nil, countKey: "records").padding(.top, 12)
             syncRow(icon: "drop.fill", name: "Blood oxygen (SpO₂)", stored: c?.spo2 ?? 0, ago: ago)
             rowDivider
             syncRow(icon: "thermometer", name: "Skin temperature", stored: c?.skinTemp ?? 0, ago: ago)

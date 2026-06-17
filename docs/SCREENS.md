@@ -266,7 +266,7 @@ trazo fino: **Hoy** = glifo de dial 24h (`DialTabGlyph`, StrandDesign), el resto
 | Desconectada / sin correa | `!live.connected` → pill «Desconectada» + ECG plano + mensaje + **CTA «Conectar»** |
 | monitorOnly mode | `monitorOnly: true` (hoja de Hoy "beat by beat", esquema claro) |
 
-**Componentes:** `header` (título + `connectionPill`), `hero` (ECG `dataHeart`/plano + bpm + «en vivo» + latidos de sesión + `rrTachogram`), `signalsSection` (2 grupos: «Capturing live» FC·R-R / «Completes on sync» SpO₂·Temp·Resp·Movimiento, cada renglón con `storedCount`; columnas de ancho fijo con **encabezados por grupo** — «records» sobre conteos, «saved» sobre el tiempo del grupo de sync, FER-192), `coverageStrip` (28 d + Continuo/N huecos), `savedFooter` (chips iPhone + iCloud + `verifyButton` con escudo; o línea de aviso/última-sync según estado), `disconnectedState` (CTA «Conectar»). Gestión de correa, batería y entrenamiento **removidos** → Ajustes / *Más › Workouts*.
+**Componentes:** `header` (título + `connectionPill`), `hero` (ECG `dataHeart`/plano + bpm + «en vivo» + latidos de sesión + `rrTachogram`), `signalsSection` (2 grupos: «Capturing live» FC·R-R / «Completes on sync» SpO₂·Temp·Resp·Movimiento, cada renglón con `storedCount`; columnas de ancho fijo; único encabezado de columna **«records»** sobre los conteos en ambos grupos, FER-192/193), `coverageStrip` (28 d + Continuo/N huecos), `savedFooter` (chips iPhone + iCloud + `verifyButton` con escudo; o línea de aviso/última-sync según estado), `disconnectedState` (CTA «Conectar»). Gestión de correa, batería y entrenamiento **removidos** → Ajustes / *Más › Workouts*.
 
 ---
 
