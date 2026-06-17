@@ -289,27 +289,18 @@ struct TodayView: View {
         // El color scheme (y con él la barra de estado: Hoy = papel claro → tinta oscura) se decide
         // en ContentView según la pestaña activa, porque `preferredColorScheme` lo resuelve el
         // controlador raíz del WindowGroup y un valor puesto AQUÍ (dentro del TabView) no llega.
-        .fullScreenCover(isPresented: $showLiveMonitor) {
-            // No NavigationStack: its nav-bar scroll-edge background painted a bar over the monitor on
-            // the slightest scroll. A floating "Done" pill overlays the content and never blocks it.
-            // The monitor is the light «Instrumento» language now (FER-181): hand the theme in
-            // explicitly (it does NOT propagate through the cover's fresh environment) and present in
-            // light so the paper canvas reads correctly.
+        // En vivo se abre como HOJA (FER-190), no pantalla completa: un `.sheet` con detente grande y
+        // grabber, igual que las hojas de métrica. Todo el monitor cabe en una sola vista. El tema
+        // «Instrumento» se pasa explícito (no se propaga por el entorno fresco del sheet) y la hoja
+        // se presenta en claro con el papel del tema; se cierra con swipe/grabber (sin botón "Done").
+        .sheet(isPresented: $showLiveMonitor) {
             LiveView(theme: theme, monitorOnly: true)
                 .environmentObject(model)
                 .environmentObject(live)
                 .environmentObject(repo)
-                .overlay(alignment: .topTrailing) {
-                    Button { showLiveMonitor = false } label: {
-                        Text("Done")
-                            .font(StrandFont.subhead).fontWeight(.semibold)
-                            .foregroundStyle(theme.ink)
-                            .padding(.horizontal, 14).padding(.vertical, 7)
-                            .background(theme.surface, in: Capsule())
-                            .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
-                    }
-                    .padding(.trailing, 16).padding(.top, 8)
-                }
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(theme.paper)
                 .preferredColorScheme(.light)
         }
         .sheet(isPresented: $showDataSources) {
