@@ -224,7 +224,9 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 - `.focus` (desde **Hoy**, tile HRV/FC reposo) → foto del día: rango corto + intersección `[seriesChartBand, normalRange, method, nightVitals]`.
 - `.full` (desde **Cuerpo**) → todos los bloques que declara el spec.
 
-**Bloques por métrica (`BlockSet`):** HRV = selector · gráfica+banda · rango normal · consistencia (CV) · tendencia · vitales de la noche · qué la mueve · método (héroe = media 7d). FC en reposo = selector · gráfica+banda · rango normal · tendencia · método (más simple). Respiración = selector · gráfica+banda · rango normal · tendencia · vitales de la noche · método.
+**Bloques por métrica (`BlockSet`):** HRV = selector · gráfica+banda · rango normal · consistencia (CV) · tendencia · vitales de la noche · **qué la mueve** · método (héroe = media 7d). FC en reposo = selector · gráfica+banda · rango normal · tendencia · **qué la mueve** · método. Respiración = selector · gráfica+banda · rango normal · tendencia · vitales de la noche · método.
+
+**«Qué la mueve» (`whatMovesIt` · FER-209, solo HRV y FC en reposo):** una **tendencia direccional real** entre el vital y otra señal —**sueño de la misma noche** y **esfuerzo del día anterior** (lag +1)— calculada de `repo.displayDays` con `CorrelationEngine` (Pearson/lagged) y **degradada a dirección**: una frase es-MX (p. ej. «suele ser más alta las noches que duermes más»), **sin coeficiente y sin causa**, con el chip «tendencia, no causa». Gate de suficiencia/fuerza (`CorrelationEngine.trend`): **≥42 pares (~6 semanas)** + `|r| ≥ 0.20` + `p < 0.05`; si ningún par lo cruza, el bloque **se oculta** (no inventa). Orquestación en `Cenit/Data/WhatMovesIt.swift`; gate + traducción r→dirección en `StrandAnalytics/MetricTrend.swift` (con `swift test`).
 
 | Estado | Condición |
 |--------|-----------|

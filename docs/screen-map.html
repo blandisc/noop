@@ -716,6 +716,7 @@ const SCREENS = [
       { label: 'Con datos (≥2 pts): media móvil 7d (Sparkline) + banda p25–p75; rango normal (Baselines.rollingMeanSD ± σ); tendencia (monthOverMonth + Prom/Mediana/Mín/Máx/σ); consistencia (CV)', type: 'data' },
       { label: 'depth .focus (desde Hoy): foto del día — rango corto + [gráfica+banda, rango normal, método, vitales noche]', type: 'data' },
       { label: 'depth .full (desde Cuerpo): todos los bloques del spec', type: 'data' },
+      { label: '«Qué la mueve» (FER-209, solo HRV/FC reposo): tendencia direccional real (sueño misma noche · esfuerzo día anterior con lag) vía CorrelationEngine; sin r ni causa + chip «tendencia, no causa»; gate ≥42 pares (~6 sem)+|r|≥0.20+p<0.05, si no clarea se oculta', type: 'data' },
       { label: 'Cargando: well con spinner mientras se inyecta la serie', type: 'loading' },
       { label: 'Ventana vacía: auto-ensancha al siguiente rango con datos + «Mostrando los últimos N días»', type: 'warn' },
       { label: 'Un solo punto: valor sin línea + nota', type: 'warn' },
@@ -723,7 +724,7 @@ const SCREENS = [
       { label: 'Sin permiso / offline: muestra lo guardado (repo.displayDays; origen inyectado)', type: 'empty' },
     ],
     nav: [],
-    components: ['Héroe = media móvil 7d (SeriesShape.latestMovingAverage), hoy como contexto', 'SegmentedPillControl (ExploreRange → Cenit/Data/ExploreRange.swift)', 'Sparkline + ReferenceRange.interquartile (banda)', 'MetricDetailSpec (BlockSet/HeroKind/baselineCfg) reutiliza MetricInfo', 'SeriesShape (StrandAnalytics: SMA/CV) + Baselines + ComparisonEngine', 'InstrumentoTheme (explícito · sin NavigationStack anidado FER-171)'],
+    components: ['Héroe = media móvil 7d (SeriesShape.latestMovingAverage), hoy como contexto', 'SegmentedPillControl (ExploreRange → Cenit/Data/ExploreRange.swift)', 'Sparkline + ReferenceRange.interquartile (banda)', 'MetricDetailSpec (BlockSet/HeroKind/baselineCfg) reutiliza MetricInfo', 'SeriesShape (StrandAnalytics: SMA/CV) + Baselines + ComparisonEngine', 'WhatMovesItEngine (Cenit/Data/WhatMovesIt.swift) + CorrelationEngine.trend/MetricTrend (StrandAnalytics: gate r→dirección · FER-209) + InlineFlagChip', 'InstrumentoTheme (explícito · sin NavigationStack anidado FER-171)'],
   },
   {
     id: 'fitness-age', x: 284, y: 3310,
