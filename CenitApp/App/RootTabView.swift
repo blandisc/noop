@@ -12,8 +12,8 @@ import StrandAnalytics
 ///   • **Coach**    → Intelligence · Insights · Coach (seed of the unified Coach layer).
 ///   • **Entrenar** → Breathe · Intervals.
 ///   • **Ajustes**  → Settings + a temporary «Más» section listing the still-orphan screens
-///     (Sleep + Explore · Compare · Workouts · Health · Stress · Apple Health · Data Sources ·
-///     Automations · Support). Nothing from the old shell becomes unreachable in the meantime.
+///     (Explore · Compare · Workouts · Apple Health · Data Sources · Automations · Support). Sueño /
+///     Health / Stress now live in «Cuerpo». Nothing from the old shell becomes unreachable.
 struct RootTabView: View {
     private enum Tab: Hashable { case today, body, coach, train, settings }
 
@@ -23,7 +23,7 @@ struct RootTabView: View {
         case intelligence, insights, coach        // Coach hub
         case breathe, intervals                   // Entrenar hub
         case settings                             // Ajustes — primary
-        case sleep, explore, compare, workouts, health, stress
+        case explore, compare, workouts, health, stress
         case applehealth, datasources, automations, support   // Ajustes — «Más»
     }
 
@@ -80,9 +80,10 @@ struct RootTabView: View {
                 Section {
                     row(.settings, "Settings", "gearshape.fill")
                 }
-                // Sleep · Health · Stress moved to «Cuerpo» as métricas (FER-186) — Sueño opens
-                // SleepView from Cuerpo, and Health's vitals + Stress are rows there. The rest stay in
-                // this interim drawer until their sibling issues give them a home.
+                // Sleep · Health · Stress moved to «Cuerpo» as métricas (FER-186) — Sueño opens the
+                // light «Instrumento» Detalle de Sueño from Cuerpo (FER-212), and Health's vitals +
+                // Stress are rows there. The rest stay in this interim drawer until their sibling issues
+                // give them a home.
                 Section("More") {
                     row(.explore,     "Explore",      "square.grid.2x2.fill")
                     row(.compare,     "Compare",      "rectangle.split.2x1.fill")
@@ -138,7 +139,9 @@ struct RootTabView: View {
             // Tab-level keys land on a clean hub root. "trends" → Cuerpo, "more"/"ajustes" → Ajustes.
             let tab: Tab? = switch screen {
             case "today":              .today
-            case "body", "trends":     .body
+            // Sueño lost its own screen — it now lives as a row inside «Cuerpo» (FER-186/212), so the
+            // screenshot key lands on the Body tab (the screen that owns it) instead of a standalone push.
+            case "body", "trends", "sleep": .body
             case "coach":              .coach
             case "train", "entrenar":  .train
             case "settings", "ajustes", "more": .settings
@@ -271,7 +274,6 @@ struct RootTabView: View {
         case .breathe:      BreathingView()
         case .intervals:    IntervalTimerView()
         case .settings:     SettingsView()
-        case .sleep:        SleepView()
         case .explore:      MetricExplorerView()
         case .compare:      CompareView()
         case .workouts:     WorkoutsView()
