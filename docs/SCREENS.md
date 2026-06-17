@@ -37,6 +37,13 @@ WorkoutsView → ManualWorkoutSheet (sheet: add / edit)
 MetricExplorerView → MetricDetailView (NavigationLink push, interno)
 ```
 
+**Barra de pestañas — «Barra de instrumento»** (`CenitApp/App/InstrumentTabBar.swift`, FER-163). Barra inferior
+custom (la nativa va oculta con `.toolbar(.hidden, for: .tabBar)`, montada vía `safeAreaInset`) que **adapta su
+tratamiento a la pestaña activa**: bajo **Hoy** viste el papel de «Instrumento diurno» y respira con la hora
+(`instrumentoThemeByHour`); bajo Tendencias / En vivo / Sueño / Más usa el `StrandPalette` oscuro. La pestaña activa
+se marca con tinta + un punto de «ahora» (verde recovery en claro, `accent` en oscuro), nunca con relleno verde.
+Íconos de trazo fino: **Hoy** = glifo de dial 24h (`DialTabGlyph`, StrandDesign), **Sueño** = luna, el resto líneas.
+
 ---
 
 ## Dashboard
