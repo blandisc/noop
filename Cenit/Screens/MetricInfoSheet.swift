@@ -4,15 +4,17 @@ import StrandDesign
 // MARK: - MetricInfo
 
 /// Data model for the "tap a metric to learn more" bottom sheet.
-/// Each metric defines its bands (fixed ranges + colors) and which band is active
-/// for the user's current value.
+/// Each metric defines its bands (fixed ranges) and which band is active for the user's current
+/// value. Colour is NOT baked here — the sheet resolves every hue from the live «Instrumento»
+/// theme (FER-162), so the same model recolours by time of day on warm paper.
 struct MetricInfo: Identifiable {
     let id: String
     let name: LocalizedStringKey
     let headline: LocalizedStringKey
     let displayValue: String
     let unit: String?
-    let currentColor: Color
+    /// How the header numeral is tinted, resolved against the theme by the sheet.
+    let headerTint: Tint
     let bands: [Band]
     let note: LocalizedStringKey?
 
@@ -24,19 +26,22 @@ struct MetricInfo: Identifiable {
     var disclaimer: LocalizedStringKey? = nil
     var calibration: Calibration? = nil
 
+    /// A semantic tint for the header numeral, resolved against the «Instrumento» theme by the sheet.
+    /// `metric` = the metric's own data hue; `neutral` = quiet ink (used for the "—" no-data state);
+    /// `good`/`warn`/`bad` = the verdict/warning/critical roles (recovery's banded score). (FER-162)
+    enum Tint { case metric, neutral, good, warn, bad }
+
     struct Band {
         let label: LocalizedStringKey
         let range: String
-        let color: Color
         var isActive: Bool
     }
 
-    /// One driver in the recovery weight breakdown: a labeled bar whose fill length and tint
-    /// show how much it contributes to the score.
+    /// One driver in the recovery weight breakdown: a labeled bar whose fill length shows how much
+    /// it contributes to the score (the fill is tinted with the recovery hue by the sheet).
     struct WeightRow {
         let label: LocalizedStringKey
         let percent: Int
-        let color: Color
     }
 
     /// The "See the method" disclosure: plain-language prose plus an optional citation line.
@@ -60,16 +65,12 @@ extension MetricInfo {
     static func strain(_ value: Double?) -> MetricInfo {
         let bands: [Band] = [
             Band(label: "Rest / Light", range: "0 – 7",
-                 color: StrandPalette.strain000,
                  isActive: value.map { $0 < 7 } ?? false),
             Band(label: "Moderate", range: "7 – 14",
-                 color: StrandPalette.strain033,
                  isActive: value.map { $0 >= 7 && $0 < 14 } ?? false),
             Band(label: "Hard", range: "14 – 18",
-                 color: StrandPalette.strain066,
                  isActive: value.map { $0 >= 14 && $0 < 18 } ?? false),
             Band(label: "Extreme", range: "18 – 21",
-                 color: StrandPalette.strain100,
                  isActive: value.map { $0 >= 18 } ?? false),
         ]
         return MetricInfo(
@@ -78,7 +79,7 @@ extension MetricInfo {
             headline: "Cardiovascular load scored 0–21. Each second of the day your heart rate is recorded, it's assigned to a zone (1–5). Higher zones carry more weight. The total is compressed logarithmically so 21 represents a theoretical maximum — a full day at peak intensity.",
             displayValue: value.map { String(format: "%.1f", $0) } ?? "—",
             unit: nil,
-            currentColor: value.map { StrandPalette.strainColor($0) } ?? StrandPalette.textSecondary,
+            headerTint: value == nil ? .neutral : .metric,
             bands: bands,
             note: nil
         )
@@ -88,16 +89,12 @@ extension MetricInfo {
         let hours = totalMinutes.map { Double($0) / 60.0 }
         let bands: [Band] = [
             Band(label: "Short", range: "< 6 h",
-                 color: StrandPalette.metricRose,
                  isActive: hours.map { $0 < 6 } ?? false),
             Band(label: "Adequate", range: "6 – 7 h",
-                 color: StrandPalette.statusWarning,
                  isActive: hours.map { $0 >= 6 && $0 < 7 } ?? false),
             Band(label: "Optimal", range: "7 – 9 h",
-                 color: StrandPalette.accent,
                  isActive: hours.map { $0 >= 7 && $0 <= 9 } ?? false),
             Band(label: "Extended", range: "> 9 h",
-                 color: StrandPalette.textSecondary,
                  isActive: hours.map { $0 > 9 } ?? false),
         ]
         let display: String
@@ -113,14 +110,7 @@ extension MetricInfo {
             headline: "Total time asleep last night, estimated from movement and heart rate. Sleep contributes ~15% of your recovery score and feeds the strain-to-load balance (ACWR).",
             displayValue: display,
             unit: nil,
-            currentColor: hours.map { h -> Color in
-                switch h {
-                case ..<6:   return StrandPalette.metricRose
-                case ..<7:   return StrandPalette.statusWarning
-                case ...9:   return StrandPalette.accent
-                default:     return StrandPalette.textSecondary
-                }
-            } ?? StrandPalette.textSecondary,
+            headerTint: totalMinutes == nil ? .neutral : .metric,
             bands: bands,
             note: nil
         )
@@ -136,7 +126,7 @@ extension MetricInfo {
             headline: "HRV is how much the time between your heartbeats varies, in milliseconds, while you sleep. More variation usually means better recovery. What matters isn't the number itself, but how it compares with your own average.",
             displayValue: value.map { "\(Int($0.rounded()))" } ?? "—",
             unit: "ms",
-            currentColor: StrandPalette.metricPurple,
+            headerTint: value == nil ? .neutral : .metric,
             bands: [],
             note: value == nil
                 ? "No HRV from last night. That can happen if you didn't wear the strap, or the night was too short to gather 20 clean beats."
@@ -151,25 +141,21 @@ extension MetricInfo {
     static func restingHR(_ value: Int?) -> MetricInfo {
         let bands: [Band] = [
             Band(label: "Athlete", range: "< 50 bpm",
-                 color: StrandPalette.accent,
                  isActive: value.map { $0 < 50 } ?? false),
             Band(label: "Excellent", range: "50 – 60 bpm",
-                 color: StrandPalette.accent,
                  isActive: value.map { $0 >= 50 && $0 < 60 } ?? false),
             Band(label: "Normal", range: "60 – 80 bpm",
-                 color: StrandPalette.textSecondary,
                  isActive: value.map { $0 >= 60 && $0 < 80 } ?? false),
             Band(label: "Elevated", range: "> 80 bpm",
-                 color: StrandPalette.statusWarning,
                  isActive: value.map { $0 >= 80 } ?? false),
         ]
         return MetricInfo(
             id: "rhr",
             name: "Resting HR",
-            headline: "Your heart rate when your body is fully at rest — how hard your heart has to work doing nothing. Lower generally means a stronger, more efficient cardiovascular system. Cénit uses it as ~20% of your recovery score; a rise from your norm signals fatigue or illness.",
+            headline: "Your heart rate when your body is fully at rest — how hard your heart has to work doing nothing. Lower generally means a stronger, more efficient cardiovascular system. Cénit uses it as ~20% of your recovery score; a rise from your norm can signal fatigue or that something's coming on.",
             displayValue: value.map { "\($0)" } ?? "—",
             unit: "bpm",
-            currentColor: StrandPalette.metricRose,
+            headerTint: value == nil ? .neutral : .metric,
             bands: bands,
             note: "Measured overnight from your strap; when the strap isn't worn, Cénit uses Apple Health's resting heart rate instead."
         )
@@ -178,13 +164,10 @@ extension MetricInfo {
     static func spo2(_ value: Double?) -> MetricInfo {
         let bands: [Band] = [
             Band(label: "Normal", range: "95 – 100%",
-                 color: StrandPalette.metricCyan,
                  isActive: value.map { $0 >= 95 } ?? false),
             Band(label: "Borderline", range: "90 – 94%",
-                 color: StrandPalette.statusWarning,
                  isActive: value.map { $0 >= 90 && $0 < 95 } ?? false),
             Band(label: "Low", range: "< 90%",
-                 color: StrandPalette.metricRose,
                  isActive: value.map { $0 < 90 } ?? false),
         ]
         return MetricInfo(
@@ -193,7 +176,7 @@ extension MetricInfo {
             headline: "Percentage of haemoglobin carrying oxygen in your blood. Healthy adults typically stay above 95%. A drop can indicate altitude effects, sleep apnea, or respiratory illness.",
             displayValue: value.map { String(format: "%.0f", $0) } ?? "—",
             unit: "%",
-            currentColor: StrandPalette.metricCyan,
+            headerTint: value == nil ? .neutral : .metric,
             bands: bands,
             note: "Wrist-based sensors have lower accuracy than medical pulse oximeters — treat values as a trend, not a clinical reading."
         )
@@ -202,16 +185,12 @@ extension MetricInfo {
     static func steps(_ value: Int?) -> MetricInfo {
         let bands: [Band] = [
             Band(label: "Sedentary", range: "< 5 000",
-                 color: StrandPalette.textSecondary,
                  isActive: value.map { $0 < 5_000 } ?? false),
             Band(label: "Light", range: "5 000 – 8 000",
-                 color: StrandPalette.metricCyan.opacity(0.7),
                  isActive: value.map { $0 >= 5_000 && $0 < 8_000 } ?? false),
             Band(label: "Active", range: "8 000 – 10 000",
-                 color: StrandPalette.metricCyan,
                  isActive: value.map { $0 >= 8_000 && $0 < 10_000 } ?? false),
             Band(label: "Very active", range: "> 10 000",
-                 color: StrandPalette.accent,
                  isActive: value.map { $0 >= 10_000 } ?? false),
         ]
         return MetricInfo(
@@ -223,7 +202,7 @@ extension MetricInfo {
                 return f.string(from: NSNumber(value: v)) ?? "\(v)"
             } ?? "—",
             unit: nil,
-            currentColor: StrandPalette.metricCyan,
+            headerTint: value == nil ? .neutral : .metric,
             bands: bands,
             note: "Steps come from Apple Health and are not recorded by the WHOOP strap."
         )
@@ -240,7 +219,7 @@ extension MetricInfo {
             headline: "Your heart rate across the day, averaged in 5-minute buckets.",
             displayValue: avgBpm.map { "\($0)" } ?? "—",
             unit: "bpm",
-            currentColor: StrandPalette.metricRose,
+            headerTint: avgBpm == nil ? .neutral : .metric,
             bands: [],
             note: nil
         )
@@ -250,14 +229,16 @@ extension MetricInfo {
     /// a weight breakdown + a "See the method" disclosure. Weights mirror `RecoveryScorer`
     /// (HRV .60 · RHR .20 · sleep .15 · skin-temp .10 · resp .05); the bars normalize to the
     /// top driver so the row reads as relative contribution. While the baseline is still seeding
-    /// (`calibrationNights` non-nil) it shows honest progress instead of a made-up number. (FER-108)
+    /// (`calibrationNights` non-nil) it shows honest progress instead of a made-up number. The
+    /// header numeral is tinted by the WHOOP recovery band (green ≥67 · yellow 34–67 · red <34),
+    /// mirroring TodayView's `recoveryDataColor`. (FER-108 / FER-162)
     static func recovery(score: Int?, calibrationNights: Int?, nightsNeeded: Int) -> MetricInfo {
         let weights: [WeightRow] = [
-            WeightRow(label: "HRV",         percent: 60, color: StrandPalette.recoveryColor(92)),
-            WeightRow(label: "Resting HR",  percent: 20, color: StrandPalette.recoveryColor(74)),
-            WeightRow(label: "Sleep",       percent: 15, color: StrandPalette.recoveryColor(60)),
-            WeightRow(label: "Skin temp",   percent: 10, color: StrandPalette.recoveryColor(48)),
-            WeightRow(label: "Respiration", percent:  5, color: StrandPalette.recoveryColor(40)),
+            WeightRow(label: "HRV",         percent: 60),
+            WeightRow(label: "Resting HR",  percent: 20),
+            WeightRow(label: "Sleep",       percent: 15),
+            WeightRow(label: "Skin temp",   percent: 10),
+            WeightRow(label: "Respiration", percent:  5),
         ]
         let weightsNote: LocalizedStringKey =
             "If a signal is missing on a given night, its weight is shared among the others."
@@ -270,7 +251,7 @@ extension MetricInfo {
                 headline: "We can't score your recovery yet. We need at least \(nightsNeeded) nights with your strap to learn your baseline; you're at \(done) of \(nightsNeeded). We'd rather not show you a made-up number.",
                 displayValue: "\(done)/\(nightsNeeded)",
                 unit: nil,
-                currentColor: StrandPalette.textSecondary,
+                headerTint: .neutral,
                 bands: [],
                 note: nil,
                 weights: weights,
@@ -281,13 +262,23 @@ extension MetricInfo {
             )
         }
 
+        // WHOOP recovery bands → header tint (matches TodayView.recoveryDataColor): red <34,
+        // yellow 34–67, green ≥67.
+        let tint: Tint = score.map { s in
+            switch s {
+            case ..<34: return .bad
+            case ..<67: return .warn
+            default:    return .good
+            }
+        } ?? .neutral
+
         return MetricInfo(
             id: "recovery",
             name: "Recovery",
             headline: "Your recovery sums up how ready your body is today, from 0 to 100. It blends several signals from your night — your HRV above all — and compares them with your own average from recent weeks, not anyone else's.",
             displayValue: score.map { "\($0)" } ?? "—",
             unit: nil,
-            currentColor: score.map { StrandPalette.recoveryColor(Double($0)) } ?? StrandPalette.textTertiary,
+            headerTint: tint,
             bands: [],
             note: nil,
             weights: weights,
@@ -306,6 +297,16 @@ extension MetricInfo {
 
 struct MetricInfoSheet: View {
     let info: MetricInfo
+
+    /// The active «Instrumento diurno» theme. Passed explicitly (the theme does NOT propagate through
+    /// `.sheet`'s fresh environment), so the sheet renders on the same warm paper as Today, recoloured
+    /// by hour. (FER-162)
+    var theme: InstrumentoTheme = .base
+
+    /// When true, the metric can be sourced from Apple Health but it isn't connected and there's no
+    /// value yet — so the sheet shows a quiet "connect it from Today" line instead of a bare "—".
+    /// Strap-only metrics (strain, heart rate) never set this. (FER-162)
+    var appleConnectHint: Bool = false
 
     /// Loads today's accumulated-strain curve. Supplied only for the Day Strain sheet; nil for every
     /// other metric (and on macOS). Run lazily when the sheet appears. (FER-110)
@@ -331,13 +332,47 @@ struct MetricInfoSheet: View {
     /// "See the method" disclosure — collapsed each time the sheet opens. (FER-108)
     @State private var methodExpanded = false
 
+    // MARK: Colour resolution (against the live theme)
+
+    /// The metric's own data hue, from the «Instrumento» theme (the same per-metric colours the
+    /// Today rows use for their sparklines). (FER-147 / FER-162)
+    private var metricHue: Color {
+        switch info.id {
+        case "strain":              return theme.dataStrain
+        case "sleep":               return theme.dataSleep
+        case "hrv":                 return theme.dataHrv
+        case "heart_rate", "rhr":   return theme.dataHeart
+        case "spo2":                return theme.dataSpO2
+        case "steps":               return theme.dataSteps
+        case "recovery":            return theme.dataRecovery
+        default:                    return theme.dataRecovery
+        }
+    }
+
+    /// Resolve a semantic header tint to a concrete theme colour.
+    private func tintColor(_ tint: MetricInfo.Tint) -> Color {
+        switch tint {
+        case .metric:  return metricHue
+        case .neutral: return theme.inkSecondary
+        case .good:    return theme.verdict
+        case .warn:    return theme.warning
+        case .bad:     return theme.critical
+        }
+    }
+
+    /// Line/area gradient for this metric's charts — the metric hue, from translucent to solid, so the
+    /// curve reads clearly on warm paper.
+    private var chartGradient: Gradient {
+        Gradient(colors: [metricHue.opacity(0.5), metricHue])
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 header
                 Text(info.headline)
                     .font(StrandFont.subhead)
-                    .foregroundStyle(StrandPalette.textSecondary)
+                    .foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
                 if trendLoader != nil { trendSection }
                 // Day Strain's intraday "How today added up" curve sits in the SAME middle slot as
@@ -354,16 +389,18 @@ struct MetricInfoSheet: View {
                 }
                 if !info.bands.isEmpty { bandsTable }
                 if let method = info.method { methodDisclosure(method) }
-                if let note = info.note {
+                if appleConnectHint {
+                    appleConnectLine
+                } else if let note = info.note {
                     Text(note)
                         .font(StrandFont.caption)
-                        .foregroundStyle(StrandPalette.textTertiary)
+                        .foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 if let disclaimer = info.disclaimer {
                     Text(disclaimer)
                         .font(StrandFont.footnote)
-                        .foregroundStyle(StrandPalette.textTertiary)
+                        .foregroundStyle(theme.inkTertiary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -374,10 +411,10 @@ struct MetricInfoSheet: View {
             })
         }
         .onPreferenceChange(SheetContentHeightKey.self) { contentHeight = $0 }
-        .background(StrandPalette.surfaceBase)
+        .background(theme.paper)
         .presentationDetents(strainDetents)
         .presentationDragIndicator(.visible)
-        .modifier(PresentationBackgroundModifier())
+        .modifier(PresentationBackgroundModifier(paper: theme.paper))
         .task {
             guard info.id == "strain", let loader = strainCurveLoader else { return }
             strainLoading = true
@@ -410,19 +447,39 @@ struct MetricInfoSheet: View {
         HStack(alignment: .firstTextBaseline) {
             Text(info.name)
                 .font(StrandFont.title2)
-                .foregroundStyle(StrandPalette.textPrimary)
+                .foregroundStyle(theme.ink)
             Spacer()
             HStack(alignment: .firstTextBaseline, spacing: 3) {
                 Text(info.displayValue)
                     .font(StrandFont.number(28))
-                    .foregroundStyle(info.currentColor)
+                    .foregroundStyle(tintColor(info.headerTint))
                 if let unit = info.unit {
                     Text(unit)
                         .font(StrandFont.subhead)
-                        .foregroundStyle(StrandPalette.textTertiary)
+                        .foregroundStyle(theme.inkTertiary)
                 }
             }
         }
+    }
+
+    /// Quiet "this can come from Apple Health" line for an Apple-sourced metric that isn't connected
+    /// and has no value yet. No button — the connect action lives in Today (single source of truth);
+    /// closing the sheet leaves it one tap away. (FER-162)
+    private var appleConnectLine: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Image(systemName: "heart.fill")
+                .font(.system(size: 12))
+                .foregroundStyle(theme.dataHeart)
+            Text("This reading can come from Apple Health. Connect it from Today to see it here.")
+                .font(StrandFont.caption)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .strokeBorder(theme.hairline, lineWidth: 0.5))
     }
 
     private var bandsTable: some View {
@@ -430,30 +487,30 @@ struct MetricInfoSheet: View {
             ForEach(Array(info.bands.enumerated()), id: \.offset) { i, band in
                 bandRow(band)
                 if i < info.bands.count - 1 {
-                    Divider().overlay(StrandPalette.hairline).padding(.leading, 36)
+                    Divider().overlay(theme.hairline).padding(.leading, 36)
                 }
             }
         }
-        .background(StrandPalette.surfaceRaised, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private func bandRow(_ band: MetricInfo.Band) -> some View {
         HStack(spacing: 10) {
             Circle()
-                .fill(band.isActive ? band.color : band.color.opacity(0.35))
+                .fill(band.isActive ? metricHue : theme.inkTertiary.opacity(0.45))
                 .frame(width: 8, height: 8)
                 .padding(.leading, 14)
             Text(band.label)
                 .font(StrandFont.subhead)
-                .foregroundStyle(band.isActive ? StrandPalette.textPrimary : StrandPalette.textSecondary)
+                .foregroundStyle(band.isActive ? theme.ink : theme.inkSecondary)
             Spacer()
             Text(band.range)
                 .font(StrandFont.captionNumber)
-                .foregroundStyle(band.isActive ? band.color : StrandPalette.textTertiary)
+                .foregroundStyle(band.isActive ? metricHue : theme.inkTertiary)
             if band.isActive {
                 Image(systemName: "arrowshape.left.fill")
                     .font(.system(size: 9))
-                    .foregroundStyle(band.color)
+                    .foregroundStyle(metricHue)
                     .padding(.trailing, 14)
             } else {
                 Spacer().frame(width: 22)
@@ -461,59 +518,74 @@ struct MetricInfoSheet: View {
         }
         .padding(.vertical, 11)
         .frame(maxWidth: .infinity)
-        .background(band.isActive ? band.color.opacity(0.07) : Color.clear)
+        .background(band.isActive ? metricHue.opacity(0.12) : Color.clear)
     }
 
     // MARK: - Heart-rate 24h chart (FER-137)
 
-    /// Today's continuous HR curve, a bit taller than the standard chart. This is the old
-    /// `heartRateTrendSection` that used to sit on Today, now reached by tapping the Key-Metrics row.
-    /// Empty curve → an honest "no readings yet" well (a strap-only day with no wear).
+    /// Today's continuous HR curve, a bit taller than the standard chart. Built inline with theme
+    /// tokens (rather than the shared, dark `ChartCard`) so it reads on warm paper. Empty curve → an
+    /// honest "no readings yet" well (a strap-only day with no wear).
     @ViewBuilder private var heartRateSection: some View {
         if heartRateCurve.count > 1 {
             let v = heartRateCurve.map(\.value)
-            ChartCard(
-                title: "Beats per minute",
-                subtitle: String(localized: "5-minute average · since midnight"),
-                trailing: v.last.map { "\(Int($0.rounded())) bpm" },
-                height: 260
-            ) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Beats per minute")
+                            .font(StrandFont.headline)
+                            .foregroundStyle(theme.ink)
+                        Text("5-minute average · since midnight")
+                            .font(StrandFont.footnote)
+                            .foregroundStyle(theme.inkTertiary)
+                    }
+                    Spacer()
+                    if let last = v.last {
+                        Text("\(Int(last.rounded())) bpm")
+                            .font(StrandFont.bodyNumber)
+                            .foregroundStyle(theme.ink)
+                    }
+                }
                 TrendChart(
                     points: heartRateCurve,
-                    gradient: Gradient(colors: [StrandPalette.metricRose.opacity(0.55), StrandPalette.metricRose]),
+                    gradient: chartGradient,
                     valueRange: Self.hrRange(v),
                     showsArea: true,
                     height: 260,
                     showsHover: true,
                     valueFormat: { "\(Int($0.rounded())) bpm" },
-                    dateFormat: { Self.hrClock.string(from: $0) }
+                    dateFormat: { Self.hrClock.string(from: $0) },
+                    axisLabelColor: theme.inkTertiary,
+                    gridLineColor: theme.hairline
                 )
-            } footer: {
-                ChartFooter([
-                    ("Min", "\(Int((v.min() ?? 0).rounded()))"),
-                    ("Avg", "\(Int((v.reduce(0, +) / Double(v.count)).rounded()))"),
-                    ("Max", "\(Int((v.max() ?? 0).rounded()))"),
-                ])
+                hrFooter(v)
             }
         } else if heartRateLoading {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(StrandPalette.surfaceRaised)
-                .frame(height: 200)
-                .overlay { ProgressView().tint(StrandPalette.textTertiary) }
+            loadingWell(height: 200)
         } else {
-            VStack(spacing: 10) {
-                Image(systemName: "waveform.path.ecg")
-                    .font(.system(size: 22))
-                    .foregroundStyle(StrandPalette.textTertiary)
-                Text("No readings yet today.")
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(StrandPalette.textTertiary)
-                    .multilineTextAlignment(.center)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 28)
-            .background(StrandPalette.surfaceRaised,
-                        in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            emptyWell(icon: "waveform.path.ecg", text: "No readings yet today.")
+        }
+    }
+
+    private func hrFooter(_ v: [Double]) -> some View {
+        let lo = Int((v.min() ?? 0).rounded())
+        let avg = Int((v.reduce(0, +) / Double(max(v.count, 1))).rounded())
+        let hi = Int((v.max() ?? 0).rounded())
+        return HStack {
+            footerStat("Min", "\(lo)")
+            Spacer()
+            footerStat("Avg", "\(avg)")
+            Spacer()
+            footerStat("Max", "\(hi)")
+        }
+    }
+
+    private func footerStat(_ label: LocalizedStringKey, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label).textCase(.uppercase)
+                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            Text(value)
+                .font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
         }
     }
 
@@ -533,65 +605,33 @@ struct MetricInfoSheet: View {
 
     /// "Last 14 days" trend chart shown in the upper section of every key-metric sheet. The chart
     /// auto-scales to the metric's own range so a narrow RHR window (52–58 bpm) still reads as a
-    /// clear curve instead of a flat line pinned to 0–200. Gradient and tooltip format are keyed
-    /// to the metric id so each signal uses its established colour. (FER-115 follow-up)
+    /// clear curve instead of a flat line pinned to 0–200. Line/area use the metric hue. (FER-115 /
+    /// FER-162)
     @ViewBuilder private var trendSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Last 14 days")
                 .font(StrandFont.headline)
-                .foregroundStyle(StrandPalette.textPrimary)
+                .foregroundStyle(theme.ink)
             if trendData.count > 1 {
                 TrendChart(
                     points: trendData,
-                    gradient: trendGradient,
+                    gradient: chartGradient,
                     valueRange: trendValueRange,
                     showsArea: true,
                     height: 140,
                     showsHover: true,
                     valueFormat: trendValueFormat,
-                    dateFormat: Self.trendDayString
+                    dateFormat: Self.trendDayString,
+                    axisLabelColor: theme.inkTertiary,
+                    gridLineColor: theme.hairline
                 )
                 .accessibilityElement()
                 .accessibilityLabel(Text("14-day trend"))
             } else if trendLoading {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(StrandPalette.surfaceRaised)
-                    .frame(height: 140)
-                    .overlay { ProgressView().tint(StrandPalette.textTertiary) }
+                loadingWell(height: 140)
             } else {
-                VStack(spacing: 10) {
-                    Image(systemName: "chart.xyaxis.line")
-                        .font(.system(size: 22))
-                        .foregroundStyle(StrandPalette.textTertiary)
-                    Text("No data for the last 14 days.")
-                        .font(StrandFont.subhead)
-                        .foregroundStyle(StrandPalette.textTertiary)
-                        .multilineTextAlignment(.center)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 28)
-                .background(StrandPalette.surfaceRaised,
-                            in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                emptyWell(icon: "chart.xyaxis.line", text: "No data for the last 14 days.")
             }
-        }
-    }
-
-    private var trendGradient: Gradient {
-        switch info.id {
-        case "strain":  return StrandPalette.strainGradient
-        case "recovery", "hrv":
-            return StrandPalette.recoveryGradient
-        case "sleep":
-            return Gradient(colors: [StrandPalette.metricPurple.opacity(0.45),
-                                     StrandPalette.metricPurple])
-        case "rhr":
-            return Gradient(colors: [StrandPalette.metricRose.opacity(0.45),
-                                     StrandPalette.metricRose])
-        case "spo2", "steps":
-            return Gradient(colors: [StrandPalette.metricCyan.opacity(0.45),
-                                     StrandPalette.metricCyan])
-        default:
-            return StrandPalette.recoveryGradient
         }
     }
 
@@ -638,44 +678,28 @@ struct MetricInfoSheet: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("How today added up")
                 .font(StrandFont.headline)
-                .foregroundStyle(StrandPalette.textPrimary)
+                .foregroundStyle(theme.ink)
             if strainCurve.count > 1 {
                 TrendChart(
                     points: strainCurve,
-                    gradient: StrandPalette.strainGradient,
+                    gradient: chartGradient,
                     valueRange: strainCurveRange,
                     showsArea: true,
                     height: 132,
                     showsHover: true,
                     valueFormat: { String(format: "%.1f", $0) },
-                    dateFormat: { Self.hourString($0) }
+                    dateFormat: { Self.hourString($0) },
+                    axisLabelColor: theme.inkTertiary,
+                    gridLineColor: theme.hairline
                 )
                 .accessibilityElement()
                 .accessibilityLabel(Text("Accumulated day strain, rising through the day."))
             } else if strainLoading {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(StrandPalette.surfaceRaised)
-                    .frame(height: 132)
-                    .overlay { ProgressView().tint(StrandPalette.textTertiary) }
+                loadingWell(height: 132)
             } else {
-                strainEmpty
+                emptyWell(icon: "chart.xyaxis.line", text: "Not enough activity yet today to chart.")
             }
         }
-    }
-
-    private var strainEmpty: some View {
-        VStack(spacing: 10) {
-            Image(systemName: "chart.xyaxis.line")
-                .font(.system(size: 22))
-                .foregroundStyle(StrandPalette.textTertiary)
-            Text("Not enough activity yet today to chart.")
-                .font(StrandFont.subhead)
-                .foregroundStyle(StrandPalette.textTertiary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 30)
-        .background(StrandPalette.surfaceRaised, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     /// Auto-scale the Y axis to the day's own buildup (0 → a little above the peak) so a low-strain
@@ -692,23 +716,47 @@ struct MetricInfoSheet: View {
     }()
     private static func hourString(_ date: Date) -> String { hourFormatter.string(from: date) }
 
+    // MARK: - Shared chart wells (loading / empty), themed for warm paper
+
+    private func loadingWell(height: CGFloat) -> some View {
+        RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .fill(theme.surface)
+            .frame(height: height)
+            .overlay { ProgressView().tint(theme.inkTertiary) }
+    }
+
+    private func emptyWell(icon: String, text: LocalizedStringKey) -> some View {
+        VStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 22))
+                .foregroundStyle(theme.inkTertiary)
+            Text(text)
+                .font(StrandFont.subhead)
+                .foregroundStyle(theme.inkSecondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 28)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
     // MARK: - Recovery weight breakdown + method disclosure (FER-108)
 
-    /// Cold-start progress: "Calibrating baseline" over a thin accent track, shown instead of a
-    /// score while the recovery baseline is still seeding.
+    /// Cold-start progress: "Calibrating baseline" over a thin recovery-tinted track, shown instead of
+    /// a score while the recovery baseline is still seeding.
     private func calibrationCard(_ cal: MetricInfo.Calibration) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Calibrating baseline").strandOverline()
+                Text("Calibrating baseline").strandOverline().foregroundStyle(theme.inkTertiary)
                 Spacer()
                 Text("\(cal.done) of \(cal.needed) nights")
                     .font(StrandFont.captionNumber)
-                    .foregroundStyle(StrandPalette.textSecondary)
+                    .foregroundStyle(theme.inkSecondary)
             }
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(StrandPalette.surfaceInset).frame(height: 6)
-                    Capsule().fill(StrandPalette.accent)
+                    Capsule().fill(theme.hairline).frame(height: 6)
+                    Capsule().fill(theme.dataRecovery)
                         .frame(width: max(6, geo.size.width * CGFloat(cal.done) / CGFloat(max(cal.needed, 1))),
                                height: 6)
                 }
@@ -717,12 +765,12 @@ struct MetricInfoSheet: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(StrandPalette.surfaceRaised, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     /// The weight breakdown — one labeled bar per driver, longest = top contributor. A single
-    /// raised surface, no per-row rules: bar length already separates the rows (Tufte). Dimmed
-    /// while calibrating, since the method exists but doesn't apply yet.
+    /// surface, no per-row rules: bar length already separates the rows (Tufte). Dimmed while
+    /// calibrating, since the method exists but doesn't apply yet.
     private func weightsBlock(_ weights: [MetricInfo.WeightRow], note: LocalizedStringKey?, dimmed: Bool) -> some View {
         let maxPct = max(weights.map(\.percent).max() ?? 1, 1)
         return VStack(alignment: .leading, spacing: 12) {
@@ -732,13 +780,13 @@ struct MetricInfoSheet: View {
             if let note {
                 Text(note)
                     .font(StrandFont.caption)
-                    .foregroundStyle(StrandPalette.textTertiary)
+                    .foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(StrandPalette.surfaceRaised, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .opacity(dimmed ? StrandPalette.disabledOpacity : 1)
     }
 
@@ -746,13 +794,13 @@ struct MetricInfoSheet: View {
         HStack(spacing: 10) {
             Text(w.label)
                 .font(StrandFont.subhead)
-                .foregroundStyle(StrandPalette.textPrimary)
+                .foregroundStyle(theme.ink)
                 .lineLimit(1)
                 .frame(width: 96, alignment: .leading)
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(StrandPalette.surfaceInset).frame(height: 8)
-                    Capsule().fill(w.color)
+                    Capsule().fill(theme.hairline).frame(height: 8)
+                    Capsule().fill(theme.dataRecovery)
                         .frame(width: max(8, geo.size.width * CGFloat(fraction)), height: 8)
                 }
                 .frame(maxHeight: .infinity, alignment: .center)
@@ -760,7 +808,7 @@ struct MetricInfoSheet: View {
             .frame(height: 8)
             Text(verbatim: "\(w.percent)%")
                 .font(StrandFont.captionNumber)
-                .foregroundStyle(StrandPalette.textSecondary)
+                .foregroundStyle(theme.inkSecondary)
                 .frame(width: 40, alignment: .trailing)
         }
     }
@@ -769,15 +817,15 @@ struct MetricInfoSheet: View {
     private func methodDisclosure(_ method: MetricInfo.Method) -> some View {
         DisclosureGroup(isExpanded: $methodExpanded) {
             VStack(alignment: .leading, spacing: 10) {
-                Divider().overlay(StrandPalette.hairline)
+                Divider().overlay(theme.hairline)
                 Text(method.prose)
                     .font(StrandFont.subhead)
-                    .foregroundStyle(StrandPalette.textSecondary)
+                    .foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
                 if let citation = method.citation {
                     Text(citation)
                         .font(StrandFont.caption)
-                        .foregroundStyle(StrandPalette.textTertiary)
+                        .foregroundStyle(theme.inkTertiary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -786,11 +834,11 @@ struct MetricInfoSheet: View {
         } label: {
             Text("See the method")
                 .font(StrandFont.subhead)
-                .foregroundStyle(StrandPalette.textPrimary)
+                .foregroundStyle(theme.ink)
         }
-        .tint(StrandPalette.textTertiary)
+        .tint(theme.inkTertiary)
         .padding(14)
-        .background(StrandPalette.surfaceRaised, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 
@@ -803,9 +851,10 @@ private struct SheetContentHeightKey: PreferenceKey {
 }
 
 private struct PresentationBackgroundModifier: ViewModifier {
+    let paper: Color
     func body(content: Content) -> some View {
         if #available(macOS 13.3, iOS 16.4, *) {
-            content.presentationBackground(StrandPalette.surfaceBase)
+            content.presentationBackground(paper)
         } else {
             content
         }
@@ -832,48 +881,47 @@ private func sampleStrainCurve(score: Double) -> [TrendPoint] {
         MetricInfoSheet(info: .strain(11.5),
                         strainCurveLoader: { sampleStrainCurve(score: 11.5) })
     }
-    .preferredColorScheme(.dark)
 }
 
 #Preview("MetricInfoSheet — Strain (no data)") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricInfoSheet(info: .strain(3.9))
     }
-    .preferredColorScheme(.dark)
 }
 
 #Preview("MetricInfoSheet — HRV") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricInfoSheet(info: .hrv(66))
     }
-    .preferredColorScheme(.dark)
 }
 
 #Preview("MetricInfoSheet — HRV (no data)") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricInfoSheet(info: .hrv(nil))
     }
-    .preferredColorScheme(.dark)
+}
+
+#Preview("MetricInfoSheet — Steps (no permission)") {
+    Color.clear.sheet(isPresented: .constant(true)) {
+        MetricInfoSheet(info: .steps(nil), appleConnectHint: true)
+    }
 }
 
 #Preview("MetricInfoSheet — SpO₂") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricInfoSheet(info: .spo2(97))
     }
-    .preferredColorScheme(.dark)
 }
 
 #Preview("MetricInfoSheet — Recovery") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricInfoSheet(info: .recovery(score: 92, calibrationNights: nil, nightsNeeded: 4))
     }
-    .preferredColorScheme(.dark)
 }
 
 #Preview("MetricInfoSheet — Recovery (calibrating)") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricInfoSheet(info: .recovery(score: nil, calibrationNights: 2, nightsNeeded: 4))
     }
-    .preferredColorScheme(.dark)
 }
 #endif

@@ -18,6 +18,41 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
+    # MetricInfoSheet — light-theme redesign + full es-MX copy (FER-162).
+    # Headlines.
+    "Cardiovascular load scored 0–21. Each second of the day your heart rate is recorded, it's assigned to a zone (1–5). Higher zones carry more weight. The total is compressed logarithmically so 21 represents a theoretical maximum — a full day at peak intensity.": "La carga sobre tu corazón a lo largo del día, en una escala de 0 a 21. Cada segundo que se registra tu frecuencia cardíaca cae en una zona (1 a 5); las zonas más altas pesan más. El total se comprime de forma logarítmica, así que 21 es un máximo teórico: un día entero a intensidad máxima.",
+    "Total time asleep last night, estimated from movement and heart rate. Sleep contributes ~15% of your recovery score and feeds the strain-to-load balance (ACWR).": "El tiempo total que dormiste anoche, estimado a partir de tu movimiento y tu frecuencia cardíaca. El sueño aporta alrededor del 15% de tu recuperación y alimenta el balance entre esfuerzo y carga (ACWR).",
+    "Your heart rate when your body is fully at rest — how hard your heart has to work doing nothing. Lower generally means a stronger, more efficient cardiovascular system. Cénit uses it as ~20% of your recovery score; a rise from your norm can signal fatigue or that something's coming on.": "Tu frecuencia cardíaca cuando tu cuerpo está en reposo total: lo que le cuesta latir sin hacer nada. Más baja suele indicar un sistema cardiovascular más fuerte y eficiente. Cénit la usa como cerca del 20% de tu recuperación; una subida respecto a tu norma puede señalar fatiga o que algo se está gestando.",
+    "Percentage of haemoglobin carrying oxygen in your blood. Healthy adults typically stay above 95%. A drop can indicate altitude effects, sleep apnea, or respiratory illness.": "El porcentaje de tu hemoglobina que lleva oxígeno. En adultos sanos suele mantenerse por encima del 95%. Una baja puede reflejar el efecto de la altitud, apnea del sueño o una afección respiratoria.",
+    "Daily step count. Consistent activity — even a 30-minute walk — supports cardiovascular health, mood, and recovery quality.": "Tu conteo de pasos del día. La actividad constante —aunque sea una caminata de 30 minutos— apoya tu salud cardiovascular, tu ánimo y la calidad de tu recuperación.",
+    "Your heart rate across the day, averaged in 5-minute buckets.": "Tu frecuencia cardíaca a lo largo del día, promediada en intervalos de 5 minutos.",
+    # Notes.
+    "Measured overnight from your strap; when the strap isn't worn, Cénit uses Apple Health's resting heart rate instead.": "Se mide de noche con tu strap; cuando no lo traes, Cénit usa la frecuencia cardíaca en reposo de Apple Salud.",
+    "Wrist-based sensors have lower accuracy than medical pulse oximeters — treat values as a trend, not a clinical reading.": "Los sensores de muñeca son menos precisos que un oxímetro médico: tómalo como tendencia, no como una lectura clínica.",
+    "Steps come from Apple Health and are not recorded by the WHOOP strap.": "Los pasos vienen de Apple Salud; el strap WHOOP no los registra.",
+    # Zone labels.
+    "Rest / Light": "Reposo / ligero",
+    "Moderate": "Moderado",
+    "Hard": "Intenso",
+    "Extreme": "Extremo",
+    "Short": "Corto",
+    "Adequate": "Suficiente",
+    "Optimal": "Óptimo",
+    "Extended": "Extenso",
+    "Athlete": "Atleta",
+    "Excellent": "Excelente",
+    "Normal": "Normal",
+    "Elevated": "Elevada",
+    "Borderline": "Límite",
+    "Sedentary": "Sedentario",
+    "Active": "Activo",
+    "Very active": "Muy activo",
+    # Section titles / wells / connect hint.
+    "Last 14 days": "Últimos 14 días",
+    "No data for the last 14 days.": "Sin datos de los últimos 14 días.",
+    "This reading can come from Apple Health. Connect it from Today to see it here.": "Esta lectura puede venir de Apple Salud. Conéctala desde Hoy para verla aquí.",
+    "%lld of %lld nights": "%lld de %lld noches",
+
     # HRV "how it's calculated" explainer sheet (FER-109).
     "HRV is how much the time between your heartbeats varies, in milliseconds, while you sleep. More variation usually means better recovery. What matters isn't the number itself, but how it compares with your own average.": "La HRV es cuánto varían, en milisegundos, los tiempos entre tus latidos mientras duermes. Más variación suele indicar mejor recuperación. Lo que importa no es el número en sí, sino cómo se compara con tu propio promedio.",
     "HRV is personal. There are no universal good/bad thresholds — only your trend over time.": "La HRV es personal. No hay umbrales universales de bueno o malo —solo tu tendencia en el tiempo.",
@@ -235,7 +270,7 @@ ES: dict[str, str] = {
     "Day strain": "Esfuerzo del día",
     "Resting HR": "FC en reposo",
     "Resting heart rate": "Frecuencia cardiaca en reposo",
-    "Heart Rate": "Frecuencia cardiaca",
+    "Heart Rate": "Frecuencia cardíaca",
     "HEART RATE": "FRECUENCIA CARDIACA",
     "Heart rate variability": "Variabilidad de la frecuencia cardiaca",
     "Blood Oxygen": "Oxígeno en sangre",

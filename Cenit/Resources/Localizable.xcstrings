@@ -95,6 +95,12 @@
             "state": "translated",
             "value": "Respiración"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Atmung"
+          }
         }
       }
     },
@@ -1347,6 +1353,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Promedio de 5 min · desde medianoche"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5-Minuten-Mittel · seit Mitternacht"
           }
         }
       }
@@ -2898,6 +2910,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Latidos por minuto"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schläge pro Minute"
           }
         }
       }
@@ -5944,7 +5962,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Frecuencia cardiaca"
+            "value": "Frecuencia cardíaca"
           }
         }
       }
@@ -16497,6 +16515,12 @@
             "state": "translated",
             "value": "Tu recuperación resume qué tan listo está tu cuerpo hoy, del 0 al 100. Combina varias señales de tu noche —sobre todo tu HRV— y las compara con tu propio promedio de las últimas semanas, no con el de nadie más."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Erholung fasst zusammen, wie bereit dein Körper heute ist, von 0 bis 100. Sie verbindet mehrere Signale deiner Nacht — vor allem deine HRV — und vergleicht sie mit deinem eigenen Durchschnitt der letzten Wochen, nicht mit dem anderer."
+          }
         }
       }
     },
@@ -16513,6 +16537,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Si falta alguna señal esa noche, su peso se reparte entre las demás."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fehlt ein Signal in einer Nacht, wird sein Gewicht auf die anderen verteilt."
           }
         }
       }
@@ -16531,6 +16561,12 @@
             "state": "translated",
             "value": "Cada señal se vuelve un puntaje de qué tan arriba o abajo está de tu promedio personal; se promedian con los pesos de arriba y se ajustan a una escala 0–100, calibrada para que un día típico caiga cerca de 58."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jedes Signal wird zu einem Wert, wie weit es über oder unter deinem persönlichen Durchschnitt liegt; sie werden mit den obigen Gewichten gemittelt und auf eine Skala von 0–100 abgebildet, kalibriert so, dass ein typischer Tag nahe 58 landet."
+          }
         }
       }
     },
@@ -16547,6 +16583,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Un compuesto de z-scores con una curva logística. HRV vía RMSSD (Task Force, 1996)."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein Verbund aus z-Werten durch eine logistische Kurve. HRV über RMSSD (Task Force, 1996)."
           }
         }
       }
@@ -16565,6 +16607,12 @@
             "state": "translated",
             "value": "Ver el método"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Methode ansehen"
+          }
         }
       }
     },
@@ -16581,6 +16629,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Es una estimación, no un diagnóstico."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Es ist eine Schätzung, keine Diagnose."
           }
         }
       }
@@ -16599,6 +16653,12 @@
             "state": "translated",
             "value": "Aún no calculamos tu recuperación. Necesitamos al menos %lld noches con tu strap para conocer tu línea base; llevas %lld de %lld. Preferimos no darte un número inventado."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wir können deine Erholung noch nicht berechnen. Wir brauchen mindestens %lld Nächte mit deinem Strap, um deine Basislinie zu lernen; du bist bei %lld von %lld. Wir zeigen dir lieber keine erfundene Zahl."
+          }
         }
       }
     },
@@ -16616,6 +16676,12 @@
             "state": "translated",
             "value": "Calibrando línea base"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Basislinie wird kalibriert"
+          }
         }
       }
     },
@@ -16632,6 +16698,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Temp. de piel"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hauttemp."
           }
         }
       }
@@ -16667,6 +16739,12 @@
             "state": "translated",
             "value": "La HRV es cuánto varían, en milisegundos, los tiempos entre tus latidos mientras duermes. Más variación suele indicar mejor recuperación. Lo que importa no es el número en sí, sino cómo se compara con tu propio promedio."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die HRV ist, wie stark die Zeit zwischen deinen Herzschlägen im Schlaf schwankt, in Millisekunden. Mehr Schwankung bedeutet meist bessere Erholung. Wichtig ist nicht die Zahl selbst, sondern wie sie sich mit deinem eigenen Durchschnitt vergleicht."
+          }
         }
       }
     },
@@ -16683,6 +16761,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "La HRV es personal. No hay umbrales universales de bueno o malo —solo tu tendencia en el tiempo."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die HRV ist persönlich. Es gibt keine allgemeingültigen Gut-/Schlecht-Schwellen — nur deinen Trend über die Zeit."
           }
         }
       }
@@ -16701,6 +16785,12 @@
             "state": "translated",
             "value": "No hay HRV de anoche. Puede pasar si no usaste el strap o si la noche fue muy corta para reunir 20 latidos limpios."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine HRV aus der letzten Nacht. Das kann passieren, wenn du den Strap nicht getragen hast oder die Nacht zu kurz war, um 20 saubere Schläge zu sammeln."
+          }
         }
       }
     },
@@ -16718,6 +16808,12 @@
             "state": "translated",
             "value": "Tomamos los intervalos entre tus latidos durante la noche, descartamos los que quedan fuera de 300–2000 ms y los que se desvían más de 20% de sus vecinos (latidos ectópicos). Si quedan al menos 20 latidos limpios, calculamos el RMSSD."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wir nehmen die Intervalle zwischen deinen Herzschlägen über Nacht, verwerfen alle außerhalb von 300–2000 ms sowie solche, die mehr als 20% von ihren Nachbarn abweichen (ektope Schläge). Bleiben mindestens 20 saubere Schläge übrig, berechnen wir den RMSSD."
+          }
         }
       }
     },
@@ -16734,6 +16830,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "RMSSD (Task Force, 1996); rechazo de ectópicos con la regla de Malik. La HRV pesa cerca del 60% de tu recuperación."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RMSSD (Task Force, 1996); Ausschluss ektoper Schläge nach Maliks Regel. Die HRV macht etwa 60% deiner Erholung aus."
           }
         }
       }
@@ -17593,6 +17695,1353 @@
           "stringUnit": {
             "state": "translated",
             "value": "Öffnet Datenquellen, um deiner Basislinie einen Vorsprung zu geben"
+          }
+        }
+      }
+    },
+    "Cardiovascular load scored 0–21. Each second of the day your heart rate is recorded, it's assigned to a zone (1–5). Higher zones carry more weight. The total is compressed logarithmically so 21 represents a theoretical maximum — a full day at peak intensity.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardiovascular load scored 0–21. Each second of the day your heart rate is recorded, it's assigned to a zone (1–5). Higher zones carry more weight. The total is compressed logarithmically so 21 represents a theoretical maximum — a full day at peak intensity."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La carga sobre tu corazón a lo largo del día, en una escala de 0 a 21. Cada segundo que se registra tu frecuencia cardíaca cae en una zona (1 a 5); las zonas más altas pesan más. El total se comprime de forma logarítmica, así que 21 es un máximo teórico: un día entero a intensidad máxima."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die kardiovaskuläre Belastung auf einer Skala von 0 bis 21. Jede Sekunde, in der deine Herzfrequenz erfasst wird, fällt in eine Zone (1 bis 5); höhere Zonen zählen mehr. Die Summe wird logarithmisch verdichtet, sodass 21 ein theoretisches Maximum ist: ein ganzer Tag bei höchster Intensität."
+          }
+        }
+      }
+    },
+    "Total time asleep last night, estimated from movement and heart rate. Sleep contributes ~15% of your recovery score and feeds the strain-to-load balance (ACWR).": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total time asleep last night, estimated from movement and heart rate. Sleep contributes ~15% of your recovery score and feeds the strain-to-load balance (ACWR)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El tiempo total que dormiste anoche, estimado a partir de tu movimiento y tu frecuencia cardíaca. El sueño aporta alrededor del 15% de tu recuperación y alimenta el balance entre esfuerzo y carga (ACWR)."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die gesamte Schlafzeit der letzten Nacht, geschätzt aus Bewegung und Herzfrequenz. Schlaf macht etwa 15% deiner Erholung aus und fließt in das Verhältnis von Belastung zu Last (ACWR) ein."
+          }
+        }
+      }
+    },
+    "Your heart rate when your body is fully at rest — how hard your heart has to work doing nothing. Lower generally means a stronger, more efficient cardiovascular system. Cénit uses it as ~20% of your recovery score; a rise from your norm can signal fatigue or that something's coming on.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your heart rate when your body is fully at rest — how hard your heart has to work doing nothing. Lower generally means a stronger, more efficient cardiovascular system. Cénit uses it as ~20% of your recovery score; a rise from your norm can signal fatigue or that something's coming on."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu frecuencia cardíaca cuando tu cuerpo está en reposo total: lo que le cuesta latir sin hacer nada. Más baja suele indicar un sistema cardiovascular más fuerte y eficiente. Cénit la usa como cerca del 20% de tu recuperación; una subida respecto a tu norma puede señalar fatiga o que algo se está gestando."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Herzfrequenz, wenn dein Körper vollständig ruht — wie viel dein Herz im Nichtstun leisten muss. Niedriger bedeutet meist ein stärkeres, effizienteres Herz-Kreislauf-System. Cénit nutzt sie als etwa 20% deiner Erholung; ein Anstieg gegenüber deiner Norm kann auf Müdigkeit oder etwas Aufziehendes hindeuten."
+          }
+        }
+      }
+    },
+    "Percentage of haemoglobin carrying oxygen in your blood. Healthy adults typically stay above 95%. A drop can indicate altitude effects, sleep apnea, or respiratory illness.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Percentage of haemoglobin carrying oxygen in your blood. Healthy adults typically stay above 95%. A drop can indicate altitude effects, sleep apnea, or respiratory illness."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El porcentaje de tu hemoglobina que lleva oxígeno. En adultos sanos suele mantenerse por encima del 95%. Una baja puede reflejar el efecto de la altitud, apnea del sueño o una afección respiratoria."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Anteil deines Hämoglobins, der Sauerstoff transportiert. Bei gesunden Erwachsenen liegt er meist über 95%. Ein Abfall kann auf Höhe, Schlafapnoe oder eine Atemwegserkrankung hindeuten."
+          }
+        }
+      }
+    },
+    "Daily step count. Consistent activity — even a 30-minute walk — supports cardiovascular health, mood, and recovery quality.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daily step count. Consistent activity — even a 30-minute walk — supports cardiovascular health, mood, and recovery quality."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu conteo de pasos del día. La actividad constante —aunque sea una caminata de 30 minutos— apoya tu salud cardiovascular, tu ánimo y la calidad de tu recuperación."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Schrittzahl des Tages. Beständige Aktivität — schon ein 30-minütiger Spaziergang — unterstützt Herz-Kreislauf-Gesundheit, Stimmung und Erholungsqualität."
+          }
+        }
+      }
+    },
+    "Measured overnight from your strap; when the strap isn't worn, Cénit uses Apple Health's resting heart rate instead.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Measured overnight from your strap; when the strap isn't worn, Cénit uses Apple Health's resting heart rate instead."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se mide de noche con tu strap; cuando no lo traes, Cénit usa la frecuencia cardíaca en reposo de Apple Salud."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird nachts mit deinem Strap gemessen; wenn du ihn nicht trägst, nutzt Cénit die Ruhe-Herzfrequenz aus Apple Health."
+          }
+        }
+      }
+    },
+    "Wrist-based sensors have lower accuracy than medical pulse oximeters — treat values as a trend, not a clinical reading.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wrist-based sensors have lower accuracy than medical pulse oximeters — treat values as a trend, not a clinical reading."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los sensores de muñeca son menos precisos que un oxímetro médico: tómalo como tendencia, no como una lectura clínica."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sensoren am Handgelenk sind ungenauer als medizinische Pulsoximeter — sieh die Werte als Trend, nicht als klinische Messung."
+          }
+        }
+      }
+    },
+    "Steps come from Apple Health and are not recorded by the WHOOP strap.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Steps come from Apple Health and are not recorded by the WHOOP strap."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los pasos vienen de Apple Salud; el strap WHOOP no los registra."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schritte stammen aus Apple Health und werden vom WHOOP-Strap nicht erfasst."
+          }
+        }
+      }
+    },
+    "Rest / Light": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rest / Light"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reposo / ligero"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ruhe / leicht"
+          }
+        }
+      }
+    },
+    "Moderate": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moderate"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moderado"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moderat"
+          }
+        }
+      }
+    },
+    "Hard": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hard"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intenso"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hart"
+          }
+        }
+      }
+    },
+    "Extreme": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extreme"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extremo"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extrem"
+          }
+        }
+      }
+    },
+    "Short": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Short"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Corto"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kurz"
+          }
+        }
+      }
+    },
+    "Adequate": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adequate"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suficiente"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ausreichend"
+          }
+        }
+      }
+    },
+    "Optimal": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimal"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Óptimo"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimal"
+          }
+        }
+      }
+    },
+    "Extended": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extended"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extenso"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lang"
+          }
+        }
+      }
+    },
+    "Athlete": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Athlete"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Atleta"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Athlet"
+          }
+        }
+      }
+    },
+    "Excellent": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Excellent"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Excelente"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ausgezeichnet"
+          }
+        }
+      }
+    },
+    "Normal": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Normal"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Normal"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Normal"
+          }
+        }
+      }
+    },
+    "Elevated": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elevated"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elevada"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erhöht"
+          }
+        }
+      }
+    },
+    "Borderline": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Borderline"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Límite"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grenzwertig"
+          }
+        }
+      }
+    },
+    "Sedentary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sedentary"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sedentario"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sitzend"
+          }
+        }
+      }
+    },
+    "Active": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activo"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktiv"
+          }
+        }
+      }
+    },
+    "Very active": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Very active"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muy activo"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sehr aktiv"
+          }
+        }
+      }
+    },
+    "Last 14 days": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last 14 days"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Últimos 14 días"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Letzte 14 Tage"
+          }
+        }
+      }
+    },
+    "No data for the last 14 days.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No data for the last 14 days."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin datos de los últimos 14 días."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Daten der letzten 14 Tage."
+          }
+        }
+      }
+    },
+    "This reading can come from Apple Health. Connect it from Today to see it here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This reading can come from Apple Health. Connect it from Today to see it here."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta lectura puede venir de Apple Salud. Conéctala desde Hoy para verla aquí."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieser Wert kann aus Apple Health stammen. Verbinde ihn über Heute, um ihn hier zu sehen."
+          }
+        }
+      }
+    },
+    "NOOP": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NOOP"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NOOP"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NOOP"
+          }
+        }
+      }
+    },
+    "NOOP %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NOOP %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NOOP %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NOOP %@"
+          }
+        }
+      }
+    },
+    "A standalone companion for your WHOOP. Everything stays on this device — your history, your live stream, your numbers. Nothing is uploaded. NOOP is an independent, experimental project, not the WHOOP app.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A standalone companion for your WHOOP. Everything stays on this device — your history, your live stream, your numbers. Nothing is uploaded. NOOP is an independent, experimental project, not the WHOOP app."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un compañero independiente para tu WHOOP. Todo se queda en este dispositivo: tu historial, tu transmisión en vivo, tus números. Nada se sube a la nube. NOOP es un proyecto independiente y experimental; no es la app de WHOOP."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein eigenständiger Begleiter für dein WHOOP. Alles bleibt auf diesem Gerät — deine Historie, dein Live-Stream, deine Werte. Nichts wird hochgeladen. NOOP ist ein unabhängiges, experimentelles Projekt, nicht die WHOOP-App."
+          }
+        }
+      }
+    },
+    "NOOP — all your data, none of the cloud.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NOOP — all your data, none of the cloud."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NOOP — todos tus datos, nada de nube."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NOOP — all deine Daten, nichts in der Cloud."
+          }
+        }
+      }
+    },
+    "Every beat, every night, every day — woven into one quiet picture of you. Welcome to NOOP.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every beat, every night, every day — woven into one quiet picture of you. Welcome to NOOP."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada latido, cada noche, cada día — tejidos en un retrato silencioso de ti. Bienvenido a NOOP."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jeder Schlag, jede Nacht, jeder Tag — verwoben zu einem ruhigen Bild von dir. Willkommen bei NOOP."
+          }
+        }
+      }
+    },
+    "NOOP pairs directly with your WHOOP over Bluetooth — no WHOOP app, no cloud.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NOOP pairs directly with your WHOOP over Bluetooth — no WHOOP app, no cloud."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NOOP se empareja directamente con tu WHOOP por Bluetooth — sin la app de WHOOP, sin nube."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NOOP koppelt sich direkt über Bluetooth mit deinem WHOOP — keine WHOOP-App, keine Cloud."
+          }
+        }
+      }
+    },
+    "NOOP scores your recovery, strain and sleep itself — on-device, no cloud.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NOOP scores your recovery, strain and sleep itself — on-device, no cloud."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NOOP calcula por sí mismo tu recuperación, esfuerzo y sueño — en el dispositivo, sin nube."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NOOP berechnet deine Erholung, Belastung und deinen Schlaf selbst — auf dem Gerät, ohne Cloud."
+          }
+        }
+      }
+    },
+    "Your numbers, your strap, and how NOOP works. All on this Mac.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your numbers, your strap, and how NOOP works. All on this Mac."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus números, tu banda y cómo funciona NOOP. Todo en esta Mac."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Werte, dein Strap und wie NOOP funktioniert. Alles auf diesem Mac."
+          }
+        }
+      }
+    },
+    "When the system prompt appears, choose Allow so NOOP can find your strap.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When the system prompt appears, choose Allow so NOOP can find your strap."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuando aparezca el aviso del sistema, elige Permitir para que NOOP encuentre tu banda."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wenn die Systemabfrage erscheint, wähle „Erlauben“, damit NOOP deinen Strap finden kann."
+          }
+        }
+      }
+    },
+    "WHOOP straps don't appear in macOS System Settings → Bluetooth. They advertise on a custom profile that only apps like NOOP can find — so there's nothing to pair there, and you shouldn't try.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WHOOP straps don't appear in macOS System Settings → Bluetooth. They advertise on a custom profile that only apps like NOOP can find — so there's nothing to pair there, and you shouldn't try."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las bandas WHOOP no aparecen en Configuración del Sistema → Bluetooth de macOS. Se anuncian con un perfil personalizado que solo apps como NOOP pueden encontrar — así que no hay nada que emparejar ahí, y no deberías intentarlo."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WHOOP-Straps erscheinen nicht in den macOS-Systemeinstellungen → Bluetooth. Sie senden über ein eigenes Profil, das nur Apps wie NOOP finden können — dort gibt es also nichts zu koppeln, und du solltest es nicht versuchen."
+          }
+        }
+      }
+    },
+    "NOOP is not a medical device. It is for informational and personal-insight purposes only and is not intended to diagnose, treat, cure or prevent any condition. Talk to a clinician for medical advice.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NOOP is not a medical device. It is for informational and personal-insight purposes only and is not intended to diagnose, treat, cure or prevent any condition. Talk to a clinician for medical advice."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NOOP no es un dispositivo médico. Es solo para fines informativos y de conocimiento personal, y no está destinado a diagnosticar, tratar, curar ni prevenir ninguna condición. Consulta a un médico para recibir consejo médico."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NOOP ist kein medizinisches Gerät. Es dient nur zu Informations- und persönlichen Erkenntniszwecken und ist nicht dazu bestimmt, Erkrankungen zu diagnostizieren, zu behandeln, zu heilen oder zu verhindern. Wende dich für medizinischen Rat an eine Fachperson."
+          }
+        }
+      }
+    },
+    "Recovery weighs your HRV against your personal baseline (~60%), resting heart rate (~20%), sleep performance (~15%) and respiration (~5%). Day strain is a 0–21 cardiovascular load from time in heart-rate zones. Sleep is staged from movement and heart rate. Everything is computed here from the strap's raw data — it works for any day NOOP collected raw streams.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovery weighs your HRV against your personal baseline (~60%), resting heart rate (~20%), sleep performance (~15%) and respiration (~5%). Day strain is a 0–21 cardiovascular load from time in heart-rate zones. Sleep is staged from movement and heart rate. Everything is computed here from the strap's raw data — it works for any day NOOP collected raw streams."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La recuperación pondera tu HRV contra tu línea base personal (~60%), la frecuencia cardiaca en reposo (~20%), el rendimiento de sueño (~15%) y la respiración (~5%). El esfuerzo del día es una carga cardiovascular de 0 a 21 según el tiempo en zonas de frecuencia cardiaca. El sueño se clasifica por etapas a partir del movimiento y la frecuencia cardiaca. Todo se calcula aquí con los datos crudos de la banda — funciona para cualquier día en que NOOP haya recolectado datos."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Erholung gewichtet deine HRV gegenüber deiner persönlichen Basislinie (~60 %), die Ruheherzfrequenz (~20 %), die Schlafleistung (~15 %) und die Atmung (~5 %). Die Tagesbelastung ist eine kardiovaskuläre Last von 0–21 aus der Zeit in Herzfrequenzzonen. Der Schlaf wird aus Bewegung und Herzfrequenz in Phasen eingeteilt. Alles wird hier aus den Rohdaten des Straps berechnet — es funktioniert für jeden Tag, an dem NOOP Rohdaten erfasst hat."
+          }
+        }
+      }
+    },
+    "Record a timestamped moment in NOOP.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record a timestamped moment in NOOP."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registra un momento con marca de tiempo en NOOP."
+          }
+        }
+      }
+    },
+    "On a 5/MG connection NOOP will send a puffin realtime-stream request after the handshake, and log what comes back. If you have a 5/MG strap, turning this on and sharing your strap log helps map the protocol. No effect on WHOOP 4.0.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On a 5/MG connection NOOP will send a puffin realtime-stream request after the handshake, and log what comes back. If you have a 5/MG strap, turning this on and sharing your strap log helps map the protocol. No effect on WHOOP 4.0."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En una conexión 5/MG, NOOP enviará una solicitud de transmisión en tiempo real (puffin) después del handshake y registrará lo que regrese. Si tienes una banda 5/MG, activarlo y compartir tu registro de banda ayuda a mapear el protocolo. No afecta a WHOOP 4.0."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bei einer 5/MG-Verbindung sendet NOOP nach dem Handshake eine Puffin-Echtzeitstream-Anfrage und protokolliert die Antwort. Wenn du einen 5/MG-Strap hast, hilft das Aktivieren und Teilen deines Strap-Protokolls, das Protokoll zu kartieren. Keine Auswirkung auf WHOOP 4.0."
+          }
+        }
+      }
+    },
+    "NOOP-computed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NOOP-computed"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calculado por NOOP"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Von NOOP berechnet"
+          }
+        }
+      }
+    },
+    "Move all your NOOP data to another machine. Export saves everything — history, sleeps, workouts, settings — to a single file you can copy across; import replaces this Mac's data with a backup.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move all your NOOP data to another machine. Export saves everything — history, sleeps, workouts, settings — to a single file you can copy across; import replaces this Mac's data with a backup."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mueve todos tus datos de NOOP a otra máquina. Exportar guarda todo — historial, sueño, entrenamientos, ajustes — en un solo archivo que puedes copiar; importar reemplaza los datos de esta Mac con un respaldo."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Übertrage alle deine NOOP-Daten auf einen anderen Rechner. Der Export speichert alles — Historie, Schlafphasen, Workouts, Einstellungen — in einer einzelnen Datei, die du kopieren kannst; der Import ersetzt die Daten dieses Macs durch eine Sicherung."
+          }
+        }
+      }
+    },
+    "Importing overwrites everything currently on this Mac. Your old data is kept in a side file just in case. NOOP needs a relaunch for an import to take effect.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importing overwrites everything currently on this Mac. Your old data is kept in a side file just in case. NOOP needs a relaunch for an import to take effect."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importar sobrescribe todo lo que hay en esta Mac. Tus datos anteriores se guardan en un archivo aparte, por si acaso. NOOP necesita reiniciarse para que la importación surta efecto."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Import überschreibt alles, was sich derzeit auf diesem Mac befindet. Deine alten Daten werden sicherheitshalber in einer separaten Datei aufbewahrt. NOOP muss neu gestartet werden, damit ein Import wirksam wird."
+          }
+        }
+      }
+    },
+    "Support NOOP — donate or get in touch": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Support NOOP — donate or get in touch"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apoya a NOOP — dona o ponte en contacto"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NOOP unterstützen — spenden oder Kontakt aufnehmen"
+          }
+        }
+      }
+    },
+    "NOOP is free and always will be, nothing is locked. It cost real money and a lot of unpaid hours to build, and there's a Windows app, an Android app and an iOS app I want to ship next. If it's useful to you and you want to help with the development and testing costs, even a few quid in crypto genuinely keeps it moving, and honestly it keeps me motivated to keep building.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NOOP is free and always will be, nothing is locked. It cost real money and a lot of unpaid hours to build, and there's a Windows app, an Android app and an iOS app I want to ship next. If it's useful to you and you want to help with the development and testing costs, even a few quid in crypto genuinely keeps it moving, and honestly it keeps me motivated to keep building."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NOOP es gratis y siempre lo será; nada está bloqueado. Construirlo costó dinero real y muchas horas no pagadas, y quiero lanzar próximamente una app para Windows, otra para Android y otra para iOS. Si te resulta útil y quieres ayudar con los costos de desarrollo y pruebas, incluso unos cuantos pesos en cripto de verdad lo mantienen avanzando y, honestamente, me motivan a seguir construyendo."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NOOP ist kostenlos und bleibt es, nichts ist gesperrt. Es hat echtes Geld und viele unbezahlte Stunden gekostet, und es gibt eine Windows-App, eine Android-App und eine iOS-App, die ich als Nächstes veröffentlichen möchte. Wenn es dir nützt und du bei den Entwicklungs- und Testkosten helfen möchtest, hält es schon mit ein paar Euro in Krypto wirklich am Laufen — und ehrlich gesagt motiviert es mich, weiterzubauen."
+          }
+        }
+      }
+    },
+    "Connect your WHOOP strap in NOOP, then try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect your WHOOP strap in NOOP, then try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conecta tu banda WHOOP en NOOP y vuelve a intentarlo."
+          }
+        }
+      }
+    },
+    "Open NOOP first so it can reach your strap.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open NOOP first so it can reach your strap."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Primero abre NOOP para que pueda alcanzar tu banda."
+          }
+        }
+      }
+    },
+    "No scored nights yet. Wear the strap with NOOP connected overnight and the engine will score your recovery, strain and sleep itself, no WHOOP cloud required.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No scored nights yet. Wear the strap with NOOP connected overnight and the engine will score your recovery, strain and sleep itself, no WHOOP cloud required."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no hay noches calificadas. Duerme con la banda puesta y NOOP conectado, y el motor calculará por sí mismo tu recuperación, esfuerzo y sueño, sin la nube de WHOOP."
+          }
+        }
+      }
+    },
+    "NOOP Recovery": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NOOP Recovery"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuperación NOOP"
+          }
+        }
+      }
+    },
+    "Wear the strap tonight — the first of %lld nights your verdict needs.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wear the strap tonight — the first of %lld nights your verdict needs."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ponte la banda esta noche — la primera de %lld noches que tu veredicto necesita."
+          }
+        }
+      }
+    },
+    "The engine gets sharper every night — you already have %lld.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The engine gets sharper every night — you already have %lld."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El motor se afina cada noche — ya llevas %lld."
+          }
+        }
+      }
+    },
+    "Once NOOP has 14 nights of history, in-range compares each vital to your own baseline (approximate — not medical advice); until then, typical adult ranges apply.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Once NOOP has 14 nights of history, in-range compares each vital to your own baseline (approximate — not medical advice); until then, typical adult ranges apply."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una vez que NOOP tiene 14 noches de historial, «en rango» compara cada vital con tu propia línea base (aproximado — no es consejo médico); hasta entonces, aplican los rangos típicos de un adulto."
+          }
+        }
+      }
+    },
+    "Log behaviours above — after a few days of answers, NOOP ranks how each one moves your recovery, HRV and sleep. Importing a WHOOP export (which includes its journal) backfills history instantly.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log behaviours above — after a few days of answers, NOOP ranks how each one moves your recovery, HRV and sleep. Importing a WHOOP export (which includes its journal) backfills history instantly."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registra comportamientos arriba — tras unos días de respuestas, NOOP clasifica cómo cada uno mueve tu recuperación, HRV y sueño. Importar una exportación de WHOOP (que incluye su diario) rellena el historial al instante."
+          }
+        }
+      }
+    },
+    "Before you use NOOP": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Before you use NOOP"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antes de usar NOOP"
+          }
+        }
+      }
+    },
+    "I have read and accept these terms, and I'm using NOOP with my own device and my own data, at my own risk.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I have read and accept these terms, and I'm using NOOP with my own device and my own data, at my own risk."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "He leído y acepto estos términos, y uso NOOP con mi propio dispositivo y mis propios datos, bajo mi propio riesgo."
+          }
+        }
+      }
+    },
+    "The full terms are in TERMS.md, shipped with NOOP. This is not legal advice.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The full terms are in TERMS.md, shipped with NOOP. This is not legal advice."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los términos completos están en TERMS.md, incluido con NOOP. Esto no es asesoría legal."
+          }
+        }
+      }
+    },
+    "Opens the GitHub releases page in your browser. NOOP itself makes no network connections — the macOS sandbox has no network entitlement.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the GitHub releases page in your browser. NOOP itself makes no network connections — the macOS sandbox has no network entitlement."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre la página de versiones de GitHub en tu navegador. NOOP en sí no hace conexiones de red — el sandbox de macOS no tiene permiso de red."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffnet die GitHub-Releases-Seite in deinem Browser. NOOP selbst stellt keine Netzwerkverbindungen her — die macOS-Sandbox hat keine Netzwerk-Berechtigung."
+          }
+        }
+      }
+    },
+    "Importing overwrites everything currently on this Mac. Your old data is kept in a side file just in case. NOOP needs a relaunch for an import to take effect. Export CSV writes a WHOOP-format zip of your days, sleeps, workouts and journal that re-imports into NOOP on Mac or Android — on-device computed rows are marked APPROXIMATE in its Source column; the full backup stays the lossless restore path.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importing overwrites everything currently on this Mac. Your old data is kept in a side file just in case. NOOP needs a relaunch for an import to take effect. Export CSV writes a WHOOP-format zip of your days, sleeps, workouts and journal that re-imports into NOOP on Mac or Android — on-device computed rows are marked APPROXIMATE in its Source column; the full backup stays the lossless restore path."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importar sobrescribe todo lo que hay actualmente en esta Mac. Tus datos anteriores se guardan en un archivo aparte por si acaso. NOOP necesita reiniciarse para que una importación surta efecto. Exportar CSV genera un zip en formato WHOOP de tus días, noches, entrenamientos y diario que se vuelve a importar en NOOP en Mac o Android — las filas calculadas en el dispositivo se marcan como APROXIMADAS en su columna Origen; el respaldo completo sigue siendo la vía de restauración sin pérdidas."
+          }
+        }
+      }
+    },
+    "Pick a folder in iCloud Drive and NOOP keeps a fresh copy of all your data there. Your strap history lives only inside the app, so this is what protects it if you reinstall NOOP or switch phones. It uses your own iCloud Drive — a free Apple ID is enough.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick a folder in iCloud Drive and NOOP keeps a fresh copy of all your data there. Your strap history lives only inside the app, so this is what protects it if you reinstall NOOP or switch phones. It uses your own iCloud Drive — a free Apple ID is enough."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elige una carpeta en iCloud Drive y NOOP guarda ahí una copia fresca de todos tus datos. El historial de tu banda vive solo dentro de la app, así que esto es lo que lo protege si reinstalas NOOP o cambias de teléfono. Usa tu propio iCloud Drive — basta con un Apple ID gratis."
+          }
+        }
+      }
+    },
+    "Couldn't locate the NOOP database.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't locate the NOOP database."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo encontrar la base de datos de NOOP."
+          }
+        }
+      }
+    },
+    "It looks like there's no data on this device. If you've used NOOP before — on this phone or another — restore your strap history and settings from an iCloud Drive backup.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It looks like there's no data on this device. If you've used NOOP before — on this phone or another — restore your strap history and settings from an iCloud Drive backup."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parece que no hay datos en este dispositivo. Si ya usaste NOOP antes — en este teléfono u otro — restaura el historial de tu banda y tus ajustes desde un respaldo en iCloud Drive."
+          }
+        }
+      }
+    },
+    "Your data has been restored. Reopen NOOP for it to take effect.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your data has been restored. Reopen NOOP for it to take effect."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus datos se restauraron. Vuelve a abrir NOOP para que surta efecto."
           }
         }
       }

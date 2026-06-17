@@ -36,6 +36,12 @@ public struct TrendChart: View {
     public var valueFormat: (Double) -> String
     /// Formats a point's date for the tooltip's secondary line.
     public var dateFormat: (Date) -> String
+    /// Axis tick-label color. Defaults to the dark palette's tertiary text; light-theme callers
+    /// (the «Instrumento» metric sheet) pass a paper-legible ink so the labels clear contrast on
+    /// warm paper. (FER-162)
+    public var axisLabelColor: Color
+    /// Axis grid-line color (drawn at 0.4 opacity). Defaults to the dark hairline. (FER-162)
+    public var gridLineColor: Color
 
     public init(
         points: [TrendPoint],
@@ -45,7 +51,9 @@ public struct TrendChart: View {
         height: CGFloat = 220,
         showsHover: Bool = true,
         valueFormat: @escaping (Double) -> String = { String(Int($0.rounded())) },
-        dateFormat: @escaping (Date) -> String = { TrendChart.defaultDateString($0) }
+        dateFormat: @escaping (Date) -> String = { TrendChart.defaultDateString($0) },
+        axisLabelColor: Color = StrandPalette.textTertiary,
+        gridLineColor: Color = StrandPalette.hairline
     ) {
         self.points = points.sorted { $0.date < $1.date }
         self.gradient = gradient
@@ -55,6 +63,8 @@ public struct TrendChart: View {
         self.showsHover = showsHover
         self.valueFormat = valueFormat
         self.dateFormat = dateFormat
+        self.axisLabelColor = axisLabelColor
+        self.gridLineColor = gridLineColor
     }
 
     /// The x-position the cursor is hovering, in chart-local coordinates.
@@ -150,15 +160,15 @@ public struct TrendChart: View {
         .chartXScale(range: .plotDimension(startPadding: 0, endPadding: NoopMetrics.chartXTrailingInset))
         .chartXAxis {
             AxisMarks(values: .automatic(desiredCount: 5)) { _ in
-                AxisGridLine().foregroundStyle(StrandPalette.hairline.opacity(0.4))
-                AxisValueLabel().foregroundStyle(StrandPalette.textTertiary)
+                AxisGridLine().foregroundStyle(gridLineColor.opacity(0.4))
+                AxisValueLabel().foregroundStyle(axisLabelColor)
                     .font(StrandFont.footnote)
             }
         }
         .chartYAxis {
             AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { _ in
-                AxisGridLine().foregroundStyle(StrandPalette.hairline.opacity(0.4))
-                AxisValueLabel().foregroundStyle(StrandPalette.textTertiary)
+                AxisGridLine().foregroundStyle(gridLineColor.opacity(0.4))
+                AxisValueLabel().foregroundStyle(axisLabelColor)
                     .font(StrandFont.footnote)
             }
         }

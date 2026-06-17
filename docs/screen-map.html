@@ -653,12 +653,12 @@ const SCREENS = [
   },
   {
     id: 'metric-info', x: 284, y: 3310,
-    name: 'Metric Info', desc: 'Sheet: detalle de métrica (desde Today)',
+    name: 'Metric Info', desc: 'Sheet: detalle de métrica en tema claro «Instrumento» + copy es-MX (desde Today · FER-162)',
     file: 'Cenit/Screens/MetricInfoSheet.swift',
     icon: 'ℹ', color: '#4A9EFF',
     isSheet: true,
     states: [
-      { label: 'Estático por métrica', type: 'data' },
+      { label: 'Estático por métrica (tema claro «Instrumento» · copy es-MX · FER-162)', type: 'data' },
       { label: 'Esfuerzo · curva acumulada', type: 'data' },
       { label: 'Esfuerzo · cargando', type: 'loading' },
       { label: 'Esfuerzo · sin datos', type: 'empty' },
@@ -666,9 +666,10 @@ const SCREENS = [
       { label: 'Recuperación · calibrando (N/4, pesos atenuados)', type: 'loading' },
       { label: 'HRV · con dato (frase llana + «Ver el método»: RMSSD)', type: 'data' },
       { label: 'HRV · sin dato (la nota explica por qué)', type: 'empty' },
+      { label: 'Sin permiso Apple Salud (Sueño/HRV/FC reposo/Oxígeno/Pasos · línea «Conéctala desde Hoy» · FER-162)', type: 'empty' },
     ],
     nav: [],
-    components: ['Metric name + headline', 'Valor actual + color', 'Bands (3–4 rangos)', 'Nota opcional', 'TrendChart esfuerzo acumulado (solo Day Strain)', 'Weight breakdown + «Ver el método» disclosure + calibration card (solo Recovery)'],
+    components: ['Metric name + headline', 'Valor actual (color de métrica / tinta)', 'Bands (3–4 rangos · activo en color de métrica)', 'Nota · o línea de conexión a Apple Salud (FER-162)', 'TrendChart esfuerzo acumulado / 14 días / HR 24h en tema claro', 'Weight breakdown + «Ver el método» disclosure + calibration card (solo Recovery)'],
   },
   {
     id: 'why-verdict', x: 30, y: 3310,
