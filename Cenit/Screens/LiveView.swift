@@ -1,25 +1,28 @@
 import SwiftUI
 import StrandDesign
-import WhoopProtocol
 import WhoopStore
 
-/// Live — the connected strap in real time. Built on the shared design system
-/// (ScreenScaffold chrome, StrandPalette, StrandFont) so it lines up pixel-for-pixel
-/// with every other screen instead of the old standalone Milestone-1 layout.
+/// Live — the connected strap in real time, in the light «Instrumento diurno» language (FER-181):
+/// warm paper, ink labels, and colour ONLY in the datum (heart rate / ECG / beats in `dataHeart`;
+/// the "live" + "saved" indicators in `dataRecovery`). It is a pure monitor — strap management
+/// (model picker, scan/buzz/disconnect, the frame log) and the strain readout were removed; the
+/// only action it carries is a single "Connect" CTA in the disconnected state. Strap management
+/// lives in Settings; strain lives on Today.
+///
+/// The theme is passed in explicitly: it does NOT propagate through `.fullScreenCover`/`.sheet`'s
+/// fresh environment, so the caller (TodayView's beat-by-beat cover) hands its by-the-hour theme in.
 struct LiveView: View {
     @EnvironmentObject private var model: AppModel
     @EnvironmentObject private var live: LiveState
     @EnvironmentObject private var repo: Repository
 
-    /// When true, render only the live monitor (through the saved-data footer) and omit the strap-
-    /// management chrome — workout, model picker, controls, and the frame log. The Today calibration
-    /// card presents the monitor this way; the Live tab keeps the full chrome (default false).
-    var monitorOnly: Bool = false
+    /// The active «Instrumento diurno» theme, passed from the presenter (does not propagate through
+    /// `.fullScreenCover`/`.sheet`). Defaults to `.base` for the standalone (tab) mount.
+    var theme: InstrumentoTheme = .base
 
-    /// Which strap the user is pairing — persists across launches. Drives which
-    /// BLE service we scan for so a WHOOP 4.0 scan never hangs on a WHOOP 5 wrist.
-    @AppStorage("selectedWhoopModel") private var selectedModelRaw = WhoopModel.whoop4.rawValue
-    private var selectedModel: WhoopModel { WhoopModel(rawValue: selectedModelRaw) ?? .whoop4 }
+    /// When true, render only the live monitor (through the data receipt) and omit the manual-workout
+    /// card. The Today calibration cover presents the monitor this way; the standalone mount keeps it.
+    var monitorOnly: Bool = false
 
     /// Smoothed, spike-filtered live HR from AppModel (median over a short window).
     private var displayHR: Int? { model.bpm }
@@ -43,45 +46,44 @@ struct LiveView: View {
     private static let coverageWindow = 28
 
     var body: some View {
-        ScreenScaffold(title: "Live",
-                       subtitle: monitorOnly ? nil
-                                             : "Your strap in real time — heart rate and frames as they arrive.") {
+        ScrollView {
             // Tighter section rhythm in the monitor cover so the whole instrument fits one screen;
-            // the Live tab keeps the standard sectionGap.
+            // the standalone mount keeps the standard sectionGap.
             VStack(alignment: .leading, spacing: monitorOnly ? 16 : NoopMetrics.sectionGap) {
+                header
                 connectionRow
                 // Can't-connect-at-all guidance: the strap wiped its bond (firmware update / WHOOP app
                 // re-bond), so connects loop on "Peer removed pairing information". Show the re-pair steps
                 // right here instead of silently retrying. (5/MG firmware reset, 2026-06)
                 if let guide = live.reconnectGuide { reconnectGuideBanner(guide) }
-                // Bond-refused guidance, shown right here on Live where people actually connect (it
-                // also appears in Settings). A 5/MG strap still bonded to the WHOOP app refuses pairing
-                // with "Encryption is insufficient" — this tells the user to free it and re-pair.
+                // Bond-refused guidance: a 5/MG strap still bonded to the WHOOP app refuses pairing with
+                // "Encryption is insufficient" — this tells the user to free it and re-pair.
                 if let hint = live.pairingHint { pairingHintBanner(hint) }
-                ecgHero
-                sessionTally
-                liveSignals
-                syncSignals
-                savedFooter
-                // The data receipt — the strap's raw streams as stored counts you can watch climb,
-                // right under the "saved" footer as its proof. Only once something has actually landed.
-                if let r = receipt,
-                   r.counts.hr + r.counts.rr + r.counts.spo2 + r.counts.skinTemp + r.counts.resp + r.counts.gravity > 0 {
-                    receiptSection(r)
-                }
-                // Strap-management chrome lives only on the Live tab — the Today "see it beat by beat"
-                // monitor cover ends at the saved-data footer (monitorOnly).
-                if !monitorOnly {
-                    workoutSection
-                    // Show the strap picker whenever we're not actively streaming, so a user with both
-                    // a WHOOP 4 and a 5/MG can switch between them. (It used to hide once `bonded`, which
-                    // is sticky across disconnects — so after the first pairing the picker vanished.)
-                    if !activeConnection { modelPicker }
-                    controls
-                    logCard
+                if live.connected {
+                    ecgHero
+                    sessionTally
+                    liveSignals
+                    syncSignals
+                    savedFooter
+                    // The data receipt — the strap's raw streams as stored counts you can watch climb,
+                    // right under the "saved" footer as its proof. Only once something has actually landed.
+                    if let r = receipt,
+                       r.counts.hr + r.counts.rr + r.counts.spo2 + r.counts.skinTemp + r.counts.resp + r.counts.gravity > 0 {
+                        receiptSection(r)
+                    }
+                    // The manual-workout card lives only on the standalone mount; the Today cover ends at
+                    // the receipt (monitorOnly).
+                    if !monitorOnly { workoutSection }
+                } else {
+                    // No live connection: a single "Connect" CTA, not a management panel — no dead end.
+                    disconnectedState
                 }
             }
+            .padding(NoopMetrics.screenPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .background(theme.paper.ignoresSafeArea())
+        .instrumentoTheme(theme)
         .onAppear { refreshLiveSession() }
         .onDisappear { model.stopRealtimeHR() }
         .onChange(of: live.bonded) { _ in refreshLiveSession() }
@@ -99,7 +101,31 @@ struct LiveView: View {
         }
     }
 
-    // MARK: - Connection
+    // MARK: - Header
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Live").font(StrandFont.title1).foregroundStyle(theme.ink)
+            if !monitorOnly {
+                Text("Your strap in real time — heart rate and frames as they arrive.")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            }
+        }
+    }
+
+    /// The «Instrumento» surface panel — a quiet warm-paper card with a hairline rule. Replaces the
+    /// dark `NoopCard`; used sparingly for the few grouped instruments (ECG hero, session tally).
+    @ViewBuilder
+    private func panel<C: View>(@ViewBuilder _ content: () -> C) -> some View {
+        content()
+            .padding(NoopMetrics.cardPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                .strokeBorder(theme.hairline, lineWidth: 1))
+    }
+
+    // MARK: - Connection (info only — management lives in Settings)
 
     private var connectionRow: some View {
         HStack(spacing: 10) {
@@ -108,7 +134,7 @@ struct LiveView: View {
             if let b = live.batteryPct {
                 Label("\(Int(b))%", systemImage: batteryIcon(b))
                     .labelStyle(.titleAndIcon)
-                    .font(StrandFont.caption).foregroundStyle(StrandPalette.textSecondary)
+                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
             }
         }
     }
@@ -126,39 +152,46 @@ struct LiveView: View {
     private var connectionPill: some View {
         // Distinguish a GENUINE encrypted bond from the 5/MG live-HR shortcut that flips `bonded` true
         // over the unbonded standard profile (#69): green "Bonded · streaming" only when encryptedBond,
-        // amber "Live HR (not fully paired)" otherwise. The pairingHintBanner below gives the how-to.
+        // warning otherwise; brick-red when disconnected.
         let (label, color): (String, Color) =
-            (activeConnection && live.encryptedBond) ? (String(localized: "Bonded · streaming"), StrandPalette.accent)
-            : activeConnection ? (String(localized: "Live HR (not fully paired)"), StrandPalette.statusWarning)
-            : live.connected ? (String(localized: "Connected"), StrandPalette.statusWarning)
-            : live.encryptedBond ? (String(localized: "Paired · idle"), StrandPalette.statusWarning)
-            : (String(localized: "Disconnected"), StrandPalette.metricRose)
+            (activeConnection && live.encryptedBond) ? (String(localized: "Bonded · streaming"), theme.dataRecovery)
+            : activeConnection ? (String(localized: "Live HR (not fully paired)"), theme.warning)
+            : live.connected ? (String(localized: "Connected"), theme.warning)
+            : live.encryptedBond ? (String(localized: "Paired · idle"), theme.warning)
+            : (String(localized: "Disconnected"), theme.critical)
         return HStack(spacing: 8) {
             Circle().fill(color).frame(width: 9, height: 9)
-            Text(label).font(StrandFont.subhead).foregroundStyle(StrandPalette.textPrimary)
+            Text(label).font(StrandFont.subhead).foregroundStyle(theme.ink)
         }
         .padding(.horizontal, 14).padding(.vertical, 8)
-        .background(StrandPalette.surfaceRaised, in: Capsule())
+        .background(theme.surface, in: Capsule())
+        .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
     }
 
     // MARK: - Monitor hero (ECG sweep + live BPM)
 
     private var ecgHero: some View {
-        NoopCard {
+        panel {
             VStack(alignment: .leading, spacing: 14) {
-                ECGWave(color: isLiveHR ? StrandPalette.accent : StrandPalette.textTertiary,
+                ECGWave(color: isLiveHR ? theme.dataHeart : theme.inkTertiary,
                         flat: displayHR == nil, animate: isLiveHR, bpm: displayHR)
                     .frame(maxWidth: .infinity)
                 HStack(alignment: .firstTextBaseline, spacing: 7) {
                     Text(displayHR.map(String.init) ?? "—")
                         .font(.system(size: 64, weight: .semibold).monospacedDigit())
-                        .foregroundStyle(displayHR == nil ? StrandPalette.textTertiary : StrandPalette.accent)
+                        .foregroundStyle(displayHR == nil ? theme.inkTertiary : theme.dataHeart)
                         .contentTransition(.numericText())
                         .animation(.snappy, value: displayHR)
-                    Text("bpm").font(StrandFont.headline).foregroundStyle(StrandPalette.textSecondary)
+                    Text("bpm").font(StrandFont.headline).foregroundStyle(theme.inkSecondary)
                     Spacer(minLength: 0)
-                    Text(isLiveHR ? "live" : "—").font(StrandFont.caption)
-                        .foregroundStyle(StrandPalette.textTertiary)
+                    if isLiveHR {
+                        HStack(spacing: 4) {
+                            Circle().fill(theme.dataRecovery).frame(width: 6, height: 6)
+                            Text("live").font(StrandFont.caption).foregroundStyle(theme.dataRecovery)
+                        }
+                    } else {
+                        Text("—").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -169,29 +202,29 @@ struct LiveView: View {
     // MARK: - Session tally (beats accruing + beat-to-beat tachogram)
 
     private var sessionTally: some View {
-        NoopCard {
+        panel {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .firstTextBaseline) {
                     Text("Beats this session").font(StrandFont.subhead)
-                        .foregroundStyle(StrandPalette.textSecondary)
+                        .foregroundStyle(theme.inkSecondary)
                     Spacer()
                     HStack(spacing: 4) {
                         Text("\(live.beatsThisSession)")
                             .font(.system(size: 26, weight: .semibold).monospacedDigit())
-                            .foregroundStyle(StrandPalette.accent)
+                            .foregroundStyle(theme.dataHeart)
                             .contentTransition(.numericText())
                             .animation(.snappy, value: live.beatsThisSession)
                         Image(systemName: "arrow.up").font(StrandFont.caption)
-                            .foregroundStyle(StrandPalette.accent)
+                            .foregroundStyle(theme.dataHeart)
                     }
                 }
                 rrTachogram(rrHistory)
                 HStack {
                     Text("Beat to beat").font(StrandFont.caption)
-                        .foregroundStyle(StrandPalette.textTertiary)
+                        .foregroundStyle(theme.inkTertiary)
                     Spacer()
                     Text(rrHistory.last.map { "\($0) ms" } ?? "—")
-                        .font(StrandFont.captionNumber).foregroundStyle(StrandPalette.textPrimary)
+                        .font(StrandFont.captionNumber).foregroundStyle(theme.ink)
                 }
             }
         }
@@ -202,13 +235,13 @@ struct LiveView: View {
         return HStack(alignment: .bottom, spacing: 3) {
             if recent.isEmpty {
                 Text("Waiting for beats…").font(StrandFont.caption)
-                    .foregroundStyle(StrandPalette.textTertiary)
+                    .foregroundStyle(theme.inkTertiary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 ForEach(Array(recent.enumerated()), id: \.offset) { idx, ms in
                     Capsule()
-                        .fill(idx == recent.count - 1 ? StrandPalette.accent
-                                                       : StrandPalette.accent.opacity(0.45))
+                        .fill(idx == recent.count - 1 ? theme.dataHeart
+                                                       : theme.dataHeart.opacity(0.45))
                         .frame(maxWidth: .infinity)
                         .frame(height: rrBarHeight(ms))
                 }
@@ -253,23 +286,23 @@ struct LiveView: View {
     }
 
     private var rowDivider: some View {
-        Rectangle().fill(StrandPalette.hairline).frame(height: 0.5)
+        Rectangle().fill(theme.hairline).frame(height: 0.5)
     }
 
     private func sectionLabel(_ text: LocalizedStringKey) -> some View {
         Text(text).font(StrandFont.overline).tracking(StrandFont.overlineTracking)
-            .foregroundStyle(StrandPalette.textSecondary)
+            .foregroundStyle(theme.inkSecondary)
             .padding(.bottom, 6)
     }
 
     private func signalRow(icon: String, name: String, value: String, isLive: Bool) -> some View {
         HStack(spacing: 11) {
             Image(systemName: icon).font(StrandFont.subhead)
-                .foregroundStyle(StrandPalette.accent).frame(width: 22)
-            Text(name).font(StrandFont.subhead).foregroundStyle(StrandPalette.textPrimary)
+                .foregroundStyle(theme.inkTertiary).frame(width: 22)
+            Text(name).font(StrandFont.subhead).foregroundStyle(theme.ink)
             Spacer(minLength: 0)
-            Text(value).font(StrandFont.captionNumber).foregroundStyle(StrandPalette.textSecondary)
-            Circle().fill(isLive ? StrandPalette.accent : StrandPalette.textTertiary)
+            Text(value).font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
+            Circle().fill(isLive ? theme.dataRecovery : theme.inkTertiary)
                 .frame(width: 7, height: 7)
         }
         .padding(.vertical, 9)
@@ -281,11 +314,11 @@ struct LiveView: View {
         let syncedAgo = stored > 0 ? ago : nil
         return HStack(spacing: 11) {
             Image(systemName: icon).font(StrandFont.subhead)
-                .foregroundStyle(StrandPalette.textTertiary).frame(width: 22)
-            Text(name).font(StrandFont.subhead).foregroundStyle(StrandPalette.textSecondary)
+                .foregroundStyle(theme.inkTertiary).frame(width: 22)
+            Text(name).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             Spacer(minLength: 0)
             Text(syncedAgo.map { String(localized: "synced \($0)") } ?? String(localized: "not yet"))
-                .font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
+                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
         }
         .padding(.vertical, 9)
     }
@@ -294,15 +327,15 @@ struct LiveView: View {
 
     @ViewBuilder private var savedFooter: some View {
         if activeConnection && live.encryptedBond {
-            monitorFooterRow(icon: "checkmark.circle.fill", tint: StrandPalette.accent,
+            monitorFooterRow(icon: "checkmark.circle.fill", tint: theme.dataRecovery,
                              text: live.lastSyncedAt.map {
                                 String(localized: "Everything saved on your iPhone · synced \(relativeAgo($0))")
                              } ?? String(localized: "Everything saved on your iPhone"))
         } else if activeConnection {
-            monitorFooterRow(icon: "exclamationmark.triangle.fill", tint: StrandPalette.statusWarning,
+            monitorFooterRow(icon: "exclamationmark.triangle.fill", tint: theme.warning,
                              text: String(localized: "Live heart rate only — finish secure pairing to save the rest"))
         } else {
-            monitorFooterRow(icon: "clock", tint: StrandPalette.textTertiary,
+            monitorFooterRow(icon: "clock", tint: theme.inkTertiary,
                              text: live.lastSyncedAt.map {
                                 String(localized: "Last synced \(relativeAgo($0))")
                              } ?? String(localized: "Not synced yet"))
@@ -312,7 +345,7 @@ struct LiveView: View {
     private func monitorFooterRow(icon: String, tint: Color, text: String) -> some View {
         HStack(spacing: 9) {
             Image(systemName: icon).foregroundStyle(tint)
-            Text(text).font(StrandFont.footnote).foregroundStyle(StrandPalette.textSecondary)
+            Text(text).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
@@ -342,29 +375,29 @@ struct LiveView: View {
                     HStack(alignment: .bottom, spacing: 2) {
                         ForEach(Array(cov.enumerated()), id: \.offset) { _, has in
                             Capsule()
-                                .fill(has ? StrandPalette.accent : StrandPalette.hairline)
+                                .fill(has ? theme.dataRecovery : theme.hairline)
                                 .frame(maxWidth: .infinity).frame(height: 16)
                         }
                     }
                     Text(gaps == 0 ? "Continuous · last \(cov.count) days"
                                    : "\(gaps) gaps · last \(cov.count) days")
                         .font(StrandFont.caption)
-                        .foregroundStyle(gaps == 0 ? StrandPalette.textTertiary : StrandPalette.statusWarning)
+                        .foregroundStyle(gaps == 0 ? theme.inkTertiary : theme.warning)
                 }
             }
             // Storage + (if armed) iCloud backup.
             VStack(alignment: .leading, spacing: 5) {
                 HStack(spacing: 8) {
                     Image(systemName: "internaldrive.fill")
-                        .font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
+                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     Text("\(repo.days.count) nights stored · on your iPhone, system-encrypted")
-                        .font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
+                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
                 if let backup = lastBackupText {
                     HStack(spacing: 8) {
                         Image(systemName: "checkmark.icloud")
-                            .font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
-                        Text(backup).font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
+                            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        Text(backup).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     }
                 }
             }
@@ -375,24 +408,25 @@ struct LiveView: View {
     private func receiptCount(_ label: LocalizedStringKey, _ n: Int) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(label)
-                .font(StrandFont.caption).foregroundStyle(StrandPalette.textSecondary)
+                .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                 .lineLimit(1).minimumScaleFactor(0.8)
             if n > 0 {
                 Text(n, format: .number)
                     .font(StrandFont.number(19, weight: .semibold)).monospacedDigit()
-                    .foregroundStyle(StrandPalette.textPrimary)
+                    .foregroundStyle(theme.ink)
                     .contentTransition(.numericText()).animation(.snappy, value: n)
             } else {
                 // Nothing stored yet for this stream (e.g. an offload-only sensor before its first
                 // sync) — a muted "—" instead of an alarming "0".
                 Text("—")
                     .font(StrandFont.number(19, weight: .semibold)).monospacedDigit()
-                    .foregroundStyle(StrandPalette.textTertiary)
+                    .foregroundStyle(theme.inkTertiary)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(11)
-        .background(StrandPalette.surfaceRaised, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
     }
 
     /// Present/absent flags for the last `coverageWindow` calendar days ending at the most recent
@@ -427,28 +461,65 @@ struct LiveView: View {
                     Text("Verify my data")
                 }
                 .font(StrandFont.subhead).fontWeight(.medium)
-                .foregroundStyle(StrandPalette.accent)
+                .foregroundStyle(theme.ink)
                 .padding(.horizontal, 14).padding(.vertical, 8)
-                .background(StrandPalette.surfaceRaised, in: Capsule())
+                .background(theme.surface, in: Capsule())
+                .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
             }
             .buttonStyle(.plain)
             .disabled(verifying)
             if verifying {
                 ProgressView().controlSize(.small)
-                Text("Checking…").font(StrandFont.caption).foregroundStyle(StrandPalette.textSecondary)
+                Text("Checking…").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
             } else if let ok = verifyOK {
                 Image(systemName: ok ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
                     .font(StrandFont.caption)
-                    .foregroundStyle(ok ? StrandPalette.accent : StrandPalette.statusWarning)
+                    .foregroundStyle(ok ? theme.dataRecovery : theme.warning)
                 Text(ok ? "Everything checks out" : "Check failed — try a re-sync")
                     .font(StrandFont.caption)
-                    .foregroundStyle(ok ? StrandPalette.textSecondary : StrandPalette.statusWarning)
+                    .foregroundStyle(ok ? theme.inkSecondary : theme.warning)
             }
             Spacer(minLength: 0)
         }
     }
 
-    // MARK: - Manual workout
+    // MARK: - Disconnected state (single CTA, never a dead end)
+
+    private var disconnectedState: some View {
+        VStack(spacing: 18) {
+            ECGWave(color: theme.inkTertiary, flat: true, animate: false, bpm: nil)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 8)
+            VStack(spacing: 8) {
+                Text("Connect your strap to see it live")
+                    .font(StrandFont.title2).foregroundStyle(theme.ink)
+                    .multilineTextAlignment(.center)
+                Text("The monitor beats in real time when your WHOOP is nearby and worn.")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            connectButton
+                .padding(.top, 4)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 24)
+    }
+
+    /// The one action Live carries: connect using the strap model the user already picked (persisted
+    /// under "selectedWhoopModel"). Ink-filled — a strong but colourless primary (colour stays on data).
+    private var connectButton: some View {
+        Button { model.scan() } label: {
+            Label("Connect", systemImage: "antenna.radiowaves.left.and.right")
+                .font(StrandFont.headline)
+                .foregroundStyle(theme.paper)
+                .padding(.horizontal, 30).padding(.vertical, 13)
+                .background(theme.ink, in: Capsule(style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Manual workout (standalone mount only)
 
     @ViewBuilder private var workoutSection: some View {
         if let w = model.activeWorkout {
@@ -459,8 +530,8 @@ struct LiveView: View {
                     Label("Start workout", systemImage: "figure.run")
                         .frame(maxWidth: .infinity).padding(.vertical, 8)
                 }
-                .buttonStyle(.borderedProminent).tint(StrandPalette.accent)
-                .help("Track a workout manually — records heart rate and strain until you end it.")
+                .buttonStyle(.bordered).tint(theme.ink)
+                .help("Track a workout manually — records heart rate until you end it.")
             }
             if let last = model.lastWorkout {
                 workoutSavedRow(last)
@@ -469,30 +540,29 @@ struct LiveView: View {
     }
 
     private func activeWorkoutCard(_ w: AppModel.ActiveWorkout) -> some View {
-        NoopCard {
+        panel {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 8) {
-                    Circle().fill(StrandPalette.metricRose).frame(width: 8, height: 8)
+                    Circle().fill(theme.critical).frame(width: 8, height: 8)
                     Text("RECORDING WORKOUT").font(StrandFont.overline)
-                        .tracking(StrandFont.overlineTracking).foregroundStyle(StrandPalette.metricRose)
+                        .tracking(StrandFont.overlineTracking).foregroundStyle(theme.critical)
                     Spacer()
                     // Re-render once a second so the elapsed clock ticks without a manual Timer.
                     TimelineView(.periodic(from: .now, by: 1)) { _ in
                         Text(Self.elapsed(since: w.start)).font(StrandFont.headline).monospacedDigit()
-                            .foregroundStyle(StrandPalette.textPrimary)
+                            .foregroundStyle(theme.ink)
                     }
                 }
                 HStack(spacing: NoopMetrics.gap) {
                     workoutStat("HR", model.bpm.map { "\($0)" } ?? "—")
                     workoutStat("Avg", w.avgHr > 0 ? "\(w.avgHr)" : "—")
                     workoutStat("Peak", w.peakHr > 0 ? "\(w.peakHr)" : "—")
-                    workoutStat("Strain", String(format: "%.1f", w.liveStrain))
                 }
                 Button(role: .destructive) { model.endWorkout() } label: {
                     Label("End workout", systemImage: "stop.circle.fill")
                         .frame(maxWidth: .infinity).padding(.vertical, 8)
                 }
-                .buttonStyle(.borderedProminent).tint(StrandPalette.metricRose)
+                .buttonStyle(.borderedProminent).tint(theme.critical)
             }
         }
     }
@@ -500,21 +570,20 @@ struct LiveView: View {
     private func workoutStat(_ title: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title.uppercased()).font(StrandFont.overline).tracking(StrandFont.overlineTracking)
-                .foregroundStyle(StrandPalette.textSecondary)
+                .foregroundStyle(theme.inkSecondary)
             Text(value).font(StrandFont.headline).monospacedDigit()
-                .foregroundStyle(StrandPalette.textPrimary).lineLimit(1).minimumScaleFactor(0.6)
+                .foregroundStyle(theme.ink).lineLimit(1).minimumScaleFactor(0.6)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func workoutSavedRow(_ row: WorkoutRow) -> some View {
         let mins = Int((row.durationS ?? 0) / 60)
-        let parts = ["\(mins) min", row.avgHr.map { "\($0) avg bpm" },
-                     row.strain.map { String(format: "strain %.1f", $0) }].compactMap { $0 }
+        let parts = ["\(mins) min", row.avgHr.map { "\($0) avg bpm" }].compactMap { $0 }
         return HStack(spacing: 8) {
-            Image(systemName: "checkmark.circle.fill").foregroundStyle(StrandPalette.accent)
+            Image(systemName: "checkmark.circle.fill").foregroundStyle(theme.dataRecovery)
             Text("Workout saved · \(parts.joined(separator: " · "))")
-                .font(StrandFont.footnote).foregroundStyle(StrandPalette.textSecondary)
+                .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 4)
@@ -525,24 +594,26 @@ struct LiveView: View {
         return String(format: "%d:%02d", s / 60, s % 60)
     }
 
+    // MARK: - Reconnect / pairing guidance banners
+
     private func reconnectGuideBanner(_ guide: String) -> some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(StrandPalette.statusWarning)
+                .foregroundStyle(theme.warning)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
                 Text("Can't connect — your strap's pairing was reset")
-                    .font(StrandFont.subhead).foregroundStyle(StrandPalette.textPrimary)
+                    .font(StrandFont.subhead).foregroundStyle(theme.ink)
                 Text(guide)
-                    .font(StrandFont.footnote).foregroundStyle(StrandPalette.textSecondary)
+                    .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
         }
         .padding(12)
-        .background(StrandPalette.surfaceRaised, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .strokeBorder(StrandPalette.statusWarning.opacity(0.5), lineWidth: 1))
+            .strokeBorder(theme.warning.opacity(0.5), lineWidth: 1))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Reconnect help: \(guide)")
     }
@@ -550,139 +621,28 @@ struct LiveView: View {
     private func pairingHintBanner(_ hint: String) -> some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(StrandPalette.statusWarning)
+                .foregroundStyle(theme.warning)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
                 Text("Live HR works — free the strap to unlock buzz, alarms & sync")
-                    .font(StrandFont.subhead).foregroundStyle(StrandPalette.textPrimary)
+                    .font(StrandFont.subhead).foregroundStyle(theme.ink)
                 Text(hint)
-                    .font(StrandFont.footnote).foregroundStyle(StrandPalette.textSecondary)
+                    .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
         }
         .padding(12)
-        .background(StrandPalette.surfaceRaised, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .strokeBorder(StrandPalette.statusWarning.opacity(0.5), lineWidth: 1))
+            .strokeBorder(theme.warning.opacity(0.5), lineWidth: 1))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Pairing help: \(hint)")
-    }
-
-    // MARK: - Strap picker
-
-    /// Pick the strap family to scan for. Switching the selection drops the current strap's bond so the
-    /// newly-picked one connects fresh — letting a user move between a WHOOP 4 and a 5/MG.
-    private var modelPicker: some View {
-        HStack(spacing: 10) {
-            Text("Strap").font(StrandFont.caption).foregroundStyle(StrandPalette.textSecondary)
-            SegmentedPillControl(
-                WhoopModel.allCases,
-                selection: Binding(
-                    get: { selectedModel },
-                    set: { newModel in
-                        guard newModel.rawValue != selectedModelRaw else { return }
-                        selectedModelRaw = newModel.rawValue
-                        // Clear the previous strap's sticky bond/connection so the next scan targets the
-                        // new family's service and bonds it fresh.
-                        model.prepareStrapSwitch()
-                    }
-                ),
-                label: { $0.displayName }
-            )
-            Spacer()
-        }
-    }
-
-    // MARK: - Controls
-
-    private var controls: some View {
-        HStack(spacing: 12) {
-            Button { model.scan(model: selectedModel) } label: {
-                Label(live.connected ? "Re-scan" : "Scan & Connect",
-                      systemImage: "antenna.radiowaves.left.and.right")
-                    .lineLimit(1).minimumScaleFactor(0.7)
-                    .frame(maxWidth: .infinity).padding(.vertical, 8)
-            }
-            .buttonStyle(.borderedProminent).tint(StrandPalette.accent)
-
-            Button { model.buzz() } label: {
-                Label("Buzz strap", systemImage: "waveform.path")
-                    .lineLimit(1).minimumScaleFactor(0.7)
-                    .frame(maxWidth: .infinity).padding(.vertical, 8)
-            }
-            .buttonStyle(.bordered).tint(StrandPalette.accent)
-            .disabled(!activeConnection)
-            .help("Fire a test haptic buzz on the strap (requires an active strap connection)")
-
-            Button(role: .destructive) { model.disconnect() } label: {
-                Label("Disconnect", systemImage: "xmark.circle")
-                    .lineLimit(1).minimumScaleFactor(0.7)
-                    .frame(maxWidth: .infinity).padding(.vertical, 8)
-            }
-            .buttonStyle(.bordered)
-            .disabled(!live.connected)
-        }
     }
 
     private func refreshLiveSession() {
         guard activeConnection else { return }
         model.startRealtimeHR()
         model.getBattery()
-    }
-
-    // MARK: - Strap log
-
-    private var logCard: some View {
-        NoopCard {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 12) {
-                    Text("STRAP LOG").font(StrandFont.overline).tracking(StrandFont.overlineTracking)
-                        .foregroundStyle(StrandPalette.textSecondary)
-                    Spacer()
-                    // Export the log so people can attach it to a bug report (issue #17 — macOS users
-                    // had no way to share it). Copy → clipboard; Save… → a .txt file.
-                    Button("Copy") { copyStrapLog() }
-                        .buttonStyle(.plain).font(StrandFont.mono).foregroundStyle(StrandPalette.accent)
-                    Button("Save…") { saveStrapLog() }
-                        .buttonStyle(.plain).font(StrandFont.mono).foregroundStyle(StrandPalette.accent)
-                }
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 2) {
-                            ForEach(Array(live.log.enumerated()), id: \.offset) { idx, line in
-                                Text(line).font(StrandFont.mono)
-                                    .foregroundStyle(StrandPalette.textSecondary)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .id(idx)
-                            }
-                        }
-                    }
-                    .frame(height: 200)
-                    .onChange(of: live.log.count) { _ in
-                        if let last = live.log.indices.last { proxy.scrollTo(last, anchor: .bottom) }
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: - Strap-log export (issue #17 — let users share the log for bug reports)
-
-    private func strapLogText() -> String {
-        let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
-        let osName = "iOS"
-        let header = "Cénit strap log — \(osName)\nApp: \(v)\n\(osName): "
-            + ProcessInfo.processInfo.operatingSystemVersionString + "\n"
-            + String(repeating: "-", count: 40) + "\n"
-        return header + live.log.joined(separator: "\n")
-    }
-
-    private func copyStrapLog() {
-        PlatformPasteboard.copy(strapLogText())
-    }
-
-    private func saveStrapLog() {
-        FileExport.exportText(strapLogText(), suggestedName: "noop-strap-log.txt")
     }
 }
