@@ -109,9 +109,8 @@ targets:
       - target: CenitWidgets
 
   # ---------------------------------------------------------------------------
-  # WidgetKit extension. Renders the glanceable widget (the iOS analogue of the
-  # macOS menu-bar extra). Reads a tiny snapshot the app publishes into the
-  # shared App Group — never the DB.
+  # WidgetKit extension. Renders the glanceable Home Screen / Lock Screen widget.
+  # Reads a tiny snapshot the app publishes into the shared App Group — never the DB.
   CenitWidgets:
     type: app-extension
     platform: iOS

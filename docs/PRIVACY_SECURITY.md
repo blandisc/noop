@@ -104,11 +104,6 @@ only the import files you explicitly pick, plus its own container.
 This is the structural guarantee behind "offline by design": the privacy property holds
 because there is no network code to begin with, not merely by convention.
 
-> **Note on Hardened Runtime.** `project.yml` currently sets
-> `ENABLE_HARDENED_RUNTIME: NO` for local development builds. Distributable /
-> notarized builds should enable the Hardened Runtime; it composes with, and does
-> not weaken, the sandbox entitlements above.
-
 ---
 
 ## 2. Data at rest
@@ -122,9 +117,9 @@ opens it at (`Cenit/Collect/StorePaths.swift`):
 <Application Support>/OpenWhoop/whoop.sqlite
 ```
 
-Because the app is sandboxed, `<Application Support>` resolves **inside the app's
-sandbox container**, not the user's global `~/Library/Application Support`. Other
-apps cannot read it through normal filesystem access.
+On iOS every app is sandboxed by the OS, so `<Application Support>` resolves **inside
+the app's private data container** (under the app's home directory), not in any
+shared or user-global location. No other app can reach it through the filesystem.
 
 The schema is defined by a versioned `DatabaseMigrator` in
 `Packages/WhoopStore/Sources/WhoopStore/Database.swift` (currently schema version 9).
@@ -148,20 +143,25 @@ database — they live in the same container.
 The SQLite file is **not encrypted at rest by NOOP itself.** Confidentiality of the
 data on disk relies on the platform:
 
-- **FileVault** (full-disk encryption, on by default on modern Macs) protects the
-  database whenever the disk is at rest / the machine is powered off.
-- The **sandbox container** keeps other user-space apps from reading the file
-  directly.
+- **iOS Data Protection** — iOS encrypts every file with hardware-backed keys tied to
+  the device passcode. NOOP's database inherits the default protection class
+  (`NSFileProtectionCompleteUntilFirstUserAuthentication`): the file is encrypted and
+  unreadable until you first unlock the device after a reboot, after which the key
+  stays available so the app can keep recording in the background. Setting a device
+  passcode is what activates this — without one, the at-rest key isn't bound to a secret.
+- The **app sandbox** keeps other apps from reading the file directly.
 
-What this does **not** protect against: an attacker with your unlocked, logged-in
-session, or a backup/Time Machine copy of the container made while FileVault is
-unlocked. The data is plaintext SQLite once the volume is mounted.
+What this does **not** protect against: someone with your unlocked phone in hand (the
+data is plaintext to the running app once the device is unlocked), or an unencrypted
+backup of the container. Turn on **Encrypt iPhone Backup** (or rely on encrypted iCloud
+backups) so the database isn't readable inside a backup.
 
 > **Option: SQLCipher.** GRDB supports SQLCipher (an encrypted SQLite build) as a
 > drop-in. Wiring NOOP's `DatabaseQueue` to a SQLCipher build with a
-> Keychain-derived key would give at-rest encryption independent of FileVault. This
-> is not enabled in the current build, but the persistence layer is small and
-> centralized (one `WhoopStore.init(path:)`), so it is a contained change.
+> Keychain-derived key would give at-rest encryption independent of the OS Data
+> Protection class. This is not enabled in the current build, but the persistence
+> layer is small and centralized (one `WhoopStore.init(path:)`), so it is a
+> contained change.
 
 ### 2.3 Data minimization & pruning
 
@@ -360,7 +360,7 @@ bundle of CSV files, but the same defensive posture applies.
 | Surface | Risk | Mitigation | Where |
 |---------|------|------------|-------|
 | Process | Data exfiltration / network egress | Only the opt-in AI Coach networks (your key, to your chosen provider, a text summary — §1.1a) — nothing else makes a network call, and nothing is sent until you ask | `Cenit/AI/AICoach.swift` |
-| Filesystem | Broad disk access | Only `files.user-selected.read-write`; data stays in the sandbox container | `Strand.entitlements`, `Cenit/Collect/StorePaths.swift` |
+| Filesystem | Broad disk access | iOS app sandbox; imports read only the files you pick via the document picker; data stays in the app's private container | `CenitApp/Resources/NOOP.entitlements`, `Cenit/Collect/StorePaths.swift` |
 | BLE frames | Malformed / adversarial packets | CRC8 + CRC32 (+ CRC16 for v5) gating; reject on failure | `WhoopProtocol/Framing.swift`, `Cenit/BLE/FrameRouter.swift` |
 | BLE frames | Out-of-bounds reads from short/lying length | `nil`-returning bounds-checked readers; slice clamping; min-length guards | `WhoopProtocol/Interpreter.swift` |
 | BLE frames | Garbage / partial fragments | SOF-resync reassembler bounded by declared length | `WhoopProtocol/Framing.swift` (`Reassembler`) |
@@ -369,7 +369,7 @@ bundle of CSV files, but the same defensive posture applies.
 | Health import | Zip bomb | 8 GB decompressed ceiling, chunked to disk, hard abort | `StrandImport/AppleHealthImporter.swift` |
 | CSV import | Zip bomb / oversized entries | 256 MB per-entry cap (declared + running budget); CRC32 verify | `StrandImport/WhoopExportImporter.swift` |
 | CSV import | Arbitrary archive members | Filename allow-list; tolerant optional-column parsing | `StrandImport/WhoopExportImporter.swift` |
-| Data at rest | Disk theft / offline access | Relies on FileVault + sandbox container; SQLCipher available as an option | `WhoopStore/WhoopStore.swift` |
+| Data at rest | Device theft / offline access | Relies on iOS Data Protection (passcode-tied) + app sandbox; SQLCipher available as an option | `WhoopStore/WhoopStore.swift` |
 | Diagnostics log | Strap connection log leaking secrets | In-app ring buffer only; no biometric values / tokens logged (§2.4) | `Cenit/BLE/BLEManager.swift` |
 
 ---

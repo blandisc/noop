@@ -181,7 +181,7 @@ Physiological motion — **breathe / pulse / flow, no cartoon bounce.**
 
 | Preset | Params | Use |
 |---|---|---|
-| `interactive` | response 0.28, damping 0.82, blend 0.1 | Direct manipulation — hover, press, sidebar slide |
+| `interactive` | response 0.28, damping 0.82, blend 0.1 | Direct manipulation — press, drag, tab/sheet transitions |
 | `gentle` | response 0.5, damping 0.8 | House style for value changes — ring draw-in, gauges |
 | `hero` | response 0.85, damping 0.85 | Hero transitions — first ring materialize |
 
@@ -257,7 +257,7 @@ Reusable across every visualization so hover reads identically everywhere:
 
 See [`assets/`](assets/) (and its [README](assets/README.md)):
 
-- `assets/app-icon/` — full macOS icon set (`16…512 @1x/@2x`) + iOS marketing `icon_1024.png`.
+- `assets/app-icon/` — the iOS app icon (`icon_1024.png`); the older `16…512 @1x/@2x` PNGs are retired macOS leftovers (see the assets [README](assets/README.md)).
 - `assets/brand/` — `logo.svg`, `banner.svg`.
 
 ---

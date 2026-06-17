@@ -12,16 +12,18 @@ asset catalogs and `docs/assets/`.
 
 ## `app-icon/`
 
+NOOP ships on **iOS only**, where the app icon is a single 1024×1024 image (iOS renders
+every smaller size from it):
+
 | File | Size | Source |
 |---|---|---|
-| `icon_1024.png` | 1024×1024 | iOS marketing icon (`CenitApp` catalog) |
-| `icon_512x512.png` / `@2x` | 512 / 1024 | macOS (`Strand` catalog) |
-| `icon_256x256.png` / `@2x` | 256 / 512 | macOS |
-| `icon_128x128.png` / `@2x` | 128 / 256 | macOS |
-| `icon_32x32.png` / `@2x` | 32 / 64 | macOS |
-| `icon_16x16.png` / `@2x` | 16 / 32 | macOS |
+| `icon_1024.png` | 1024×1024 | iOS app icon (`CenitApp` catalog) |
 
-> **Canonical sources** (don't edit these copies — edit the catalog, then re-copy):
+> **Legacy macOS set.** The `icon_16x16…icon_512x512` (`@1x/@2x`) PNGs alongside it are
+> leftovers from the retired macOS app's multi-size icon set. The macOS app and its
+> asset catalog were removed (FER-143/FER-144); these PNGs are **not** the active icon
+> and survive only as stale copies in this folder.
+
+> **Canonical source** (don't edit this copy — edit the catalog, then re-copy):
 > - iOS icon: `CenitApp/Resources/Assets.xcassets/AppIcon.appiconset/`
-> - macOS icon: `Cenit/Resources/Assets.xcassets/AppIcon.appiconset/`
 > - Brand SVGs: `docs/assets/`
