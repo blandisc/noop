@@ -36,7 +36,10 @@ struct CenitApp: App {
                 .environmentObject(model.coach)
                 .environmentObject(health)
                 .environmentObject(autoBackup)
-                .preferredColorScheme(.dark)
+                // El color scheme ya NO se fuerza global aquí: lo decide ContentView según la pestaña
+                // activa (Hoy = papel claro → barra de estado en tinta oscura; resto = oscuro), con el
+                // gate de onboarding/terms en oscuro. Ponerlo aquí (lo más cercano a la raíz) ganaba
+                // siempre y dejaba la barra de estado clara sobre el papel de Hoy.
                 #if DEBUG
                 .modifier(DebugURLHandler())
                 .onAppear { DebugNavWatcher.shared.start() }

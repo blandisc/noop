@@ -7,6 +7,9 @@ struct ContentView: View {
     @AppStorage("noop.lastSeenChangelogVersion") private var lastSeenChangelog = ""
     @AppStorage("noop.acceptedTermsVersion") private var acceptedTerms = ""
     @State private var showWhatsNew = false
+    /// Whether Today is the active tab (RootTabView keeps this in sync). Drives the app's color scheme
+    /// so the status bar is dark on Today's light paper and light on the dark instrument tabs.
+    @State private var isTodayTab = true
 
     #if os(iOS)
     // One-time restore nudge: if NOOP launches with no data (a fresh install or a reinstall after a
@@ -22,7 +25,7 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            RootTabView()
+            RootTabView(isTodayActive: $isTodayTab)
             if !onboarded {
                 OnboardingWizard(onFinished: {
                     onboarded = true
@@ -43,11 +46,18 @@ struct ContentView: View {
         }
         .animation(.easeInOut(duration: 0.35), value: onboarded)
         .animation(.easeInOut(duration: 0.35), value: acceptedTerms)
+        // El color scheme se decide AQUÍ (lo más cercano a la raíz del WindowGroup, que es donde el
+        // controlador raíz lee `preferredColorScheme` para la barra de estado): mientras el gate
+        // (terms/onboarding) está arriba va en oscuro; ya dentro, Hoy es papel claro (barra de estado
+        // en tinta oscura) y el resto de pestañas en oscuro.
+        .preferredColorScheme(resolvedColorScheme)
         .sheet(isPresented: $showWhatsNew) {
             WhatsNewView(onClose: {
                 lastSeenChangelog = AppChangelog.currentVersion
                 showWhatsNew = false
             })
+            // La hoja vive fuera del árbol tematizado; la fijamos en oscuro como antes del cambio.
+            .preferredColorScheme(.dark)
         }
         .onAppear {
             // Existing users who updated: their last-seen version is behind the current one.
@@ -72,6 +82,14 @@ struct ContentView: View {
             Text(restoreMessage)
         }
         #endif
+    }
+
+    /// Gate screens (terms/onboarding) are dark-designed → `.dark`. Once inside the app the scheme
+    /// follows the active tab: Today is light paper (so the status bar renders in dark ink), every
+    /// other tab is the dark instrument panel.
+    private var resolvedColorScheme: ColorScheme {
+        guard onboarded, acceptedTerms == Terms.currentVersion else { return .dark }
+        return isTodayTab ? .light : .dark
     }
 
     #if os(iOS)

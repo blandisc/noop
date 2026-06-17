@@ -37,6 +37,10 @@ public enum StrandFont {
     /// Footnote 11.
     public static let footnote = Font.system(size: 11, weight: .regular)
 
+    /// Unit 13 — the small trailing unit next to a metric value (ms / bpm / %). Subordinate to the
+    /// value but a step above footnote so it reads as part of the datum, not chrome.
+    public static let unit = Font.system(size: 13, weight: .regular)
+
     /// Overline 11 / Semibold, +0.8 tracking (apply `.tracking(0.8)` at use site;
     /// `overlineText(_:)` does it for you). Sparing ALL-CAPS labels.
     public static let overline = Font.system(size: 11, weight: .semibold)

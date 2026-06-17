@@ -12,6 +12,10 @@ struct RootTabView: View {
         case applehealth, datasources, automations, settings, support
     }
 
+    /// Whether Today is the active tab — published up to ContentView, which owns the color scheme
+    /// (and with it the status bar): Today is light paper → dark status bar, the rest are dark.
+    @Binding var isTodayActive: Bool
+
     /// The visible tab. Starts on Today, the launch screen.
     @State private var selection: Tab = .today
     /// Tabs whose content has been shown at least once. Only Today is built at launch; the other
@@ -31,8 +35,13 @@ struct RootTabView: View {
             moreTab.tag(Tab.more)
         }
         .tint(StrandPalette.accent)
-        .preferredColorScheme(.dark)
-        .onChange(of: selection) { _, newValue in visited.insert(newValue) }
+        // Color scheme lo decide ContentView (cercano a la raíz) según `isTodayActive`; aquí solo lo
+        // mantenemos sincronizado con la pestaña visible.
+        .onChange(of: selection) { _, newValue in
+            visited.insert(newValue)
+            isTodayActive = (newValue == .today)
+        }
+        .onAppear { isTodayActive = (selection == .today) }
         #if DEBUG
         .onReceive(NotificationCenter.default.publisher(for: .noopDebugNav)) { note in
             guard let screen = note.object as? String else { return }
