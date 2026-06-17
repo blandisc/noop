@@ -357,13 +357,13 @@ trazo fino: **Hoy** = glifo de dial 24h (`DialTabGlyph`, StrandDesign), el resto
 
 ### SettingsView
 **Archivo:** `Cenit/Screens/SettingsView.swift`  
-**Descripción:** Configuración — perfil (edad, sexo, peso, altura), unidades, strap, experimental, backup, about.
+**Descripción:** Configuración — perfil (edad, sexo, peso, altura), unidades, strap (estado + controles + **registro del strap** embebido, restaurado en FER-199), experimental, backup, about.
 
 | Estado | Condición de entrada |
 |--------|---------------------|
 | Vista única (scrollable) | Siempre |
 
-**Componentes:** `SettingsSection cards`, `FormRow (age/sex/weight/height)`, `Units toggles (metric/imperial / °C/°F)`, `Strap card`, `Experimental toggle (Puffin)`, `Backup card (export/restore)`, `About card`  
+**Componentes:** `SettingsSection cards`, `FormRow (age/sex/weight/height)`, `Units toggles (metric/imperial / °C/°F)`, `Strap card (estado + Re-scan/Disconnect + registro del strap con Copiar/Guardar)`, `Experimental toggle (Puffin)`, `Backup card (export/restore)`, `About card`  
 **Navegación:** → `WhatsNewView` (sheet)
 
 ---
