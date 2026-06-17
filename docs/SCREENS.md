@@ -34,7 +34,7 @@ Tab shell (FER-182) → 5 pestañas: Hoy · Cuerpo · Coach · Entrenar · Ajust
   Hoy      → TodayView
   Cuerpo   → CuerpoView (landing curado de la capa «historia», FER-186)
   Coach    → hub-lista → IntelligenceView · InsightsView · CoachView
-  Entrenar → hub-lista → BreathingView · IntervalTimerView
+  Entrenar → hub-lista → «Iniciar en vivo» (LiveWorkoutHubRow) · BreathingView · IntervalTimerView
   Ajustes  → SettingsView + sección «Más» → MetricExplorerView · CompareView ·
              WorkoutsView · AppleHealthView · DataSourcesView · AutomationsView · SupportView
              (Sueño · Health · Stress se mudaron a «Cuerpo» como métricas — FER-186)
@@ -44,6 +44,7 @@ CuerpoView  → MetricInfoSheet (sheet claro: Recuperación/Esfuerzo/HRV/FC repo
              SleepView · WorkoutsView · CompareView · MetricExplorerView · DataSourcesView ·
              MetricDetailView (Respiración/Temp. piel) — todos como sheet oscuro fijado a .dark (FER-186)
 WorkoutsView → ManualWorkoutSheet (sheet: add / edit)
+LiveWorkoutHubRow → LiveWorkoutSheet (sheet, detente medio — grabación en vivo, FER-197)
 MetricExplorerView → MetricDetailView (NavigationLink push, sobre el stack de la pestaña «Ajustes» — FER-171)
 ```
 
@@ -56,6 +57,17 @@ el papel y respira con la hora (`instrumentoThemeByHour`); bajo Cuerpo / Coach /
 con tinta + un punto de «ahora» (verde recovery en claro, `accent` en oscuro), nunca con relleno verde. Íconos de
 trazo fino: **Hoy** = glifo de dial 24h (`DialTabGlyph`, StrandDesign), el resto glifos de línea (Cuerpo
 `chart.xyaxis.line` · Coach `sparkles` · Entrenar `figure.strengthtraining.functional` · Ajustes `gearshape`).
+
+**Nota — «Iniciar en vivo» en el hub Entrenar (FER-197):** el hub Entrenar suma, arriba de Breathe/Intervals, una
+fila **«Iniciar en vivo»** (`LiveWorkoutHubRow`, tema oscuro `StrandPalette` como las demás filas). Está
+**deshabilitada con un hint** cuando no hay HR en vivo (misma señal que `LiveView`: strap puesto + `bpm`); al
+tocarla arranca (`AppModel.startWorkout`) y abre `LiveWorkoutSheet`, una **hoja en «Instrumento» claro** (tema
+pasado **explícito** — no se hereda por `.sheet`) con overline **GRABANDO**, cronómetro, **Ritmo / Prom / Pico**
+(sin strain) y **Terminar** (`endWorkout`). La grabación vive en `AppModel` (global): cerrar la hoja o cambiar de
+pestaña no la detiene; mientras corre, la fila muestra **«Grabando m:ss»** y la reabre. Al terminar, una fila
+efímera confirma **«Sesión guardada …»** o avisa el **descarte** (terminó sin HR, `lastWorkoutDiscarded`); la
+sesión se guarda como `WorkoutRow` manual y aparece en Workouts (re-etiquetable). Restaura el tracker que se quitó
+de En vivo en FER-184; **no toca `LiveView`**.
 
 ---
 

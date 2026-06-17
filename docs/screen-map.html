@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-17 · FER-199</span>
+  <span class="tb-updated">Actualizado 2026-06-17 · FER-197</span>
 </div>
 
 <div id="wrapper">
@@ -564,6 +564,20 @@ const SCREENS = [
     ],
     nav: [],
     components: ['StatePill (bonded/not)', 'Action picker (None/App/Shortcut)', 'Shortcut name field', 'Test button', 'Moments list (últimos 5 taps)'],
+  },
+  {
+    id: 'live-workout', x: 284, y: 2010,
+    name: 'Live workout', desc: 'Iniciar en vivo (hub Entrenar) → hoja de grabación',
+    file: 'Cenit/Screens/LiveWorkoutSheet.swift',
+    icon: '⏺', color: '#18C98B',
+    states: [
+      { label: 'Sin HR · deshabilitado + hint', type: 'empty' },
+      { label: 'Con HR · listo', type: 'data' },
+      { label: 'Grabando · cronómetro + Ritmo/Prom/Pico', type: 'live' },
+      { label: 'Guardado / descarte', type: 'data' },
+    ],
+    nav: [],
+    components: ['LiveWorkoutHubRow (fila Entrenar, StrandPalette oscuro)', 'Hoja «Instrumento» claro (tema explícito)', 'Cronómetro (TimelineView)', 'Stats Rate/Avg/Peak', 'Botón Terminar (critical)'],
   },
   {
     id: 'breathing', x: 538, y: 2010,
