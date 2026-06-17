@@ -300,8 +300,73 @@ struct SettingsView: View {
                     .tint(StrandPalette.statusCritical)
                     .disabled(!live.connected && !live.bonded)
                 }
+                strapLogSection
             }
         }
+    }
+
+    // MARK: - Strap log (restored in Settings after the «En vivo» redesign — FER-199)
+
+    /// The raw BLE-session log (`live.log`), embedded under the strap controls. It used to live on the
+    /// «En vivo» screen; the redesign to a pure monitor (FER-181/190) left it without a home. It's the
+    /// diagnostic trail for connection/sync issues and the thing you attach to a bug report
+    /// (Copy / Save…). Shown only when there are lines; otherwise a short honest placeholder.
+    @ViewBuilder private var strapLogSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Divider().overlay(StrandPalette.hairline)
+            HStack(spacing: 12) {
+                Text("STRAP LOG").strandOverline()
+                Spacer()
+                if !live.log.isEmpty {
+                    Button("Copy") { copyStrapLog() }
+                        .buttonStyle(.plain).font(StrandFont.mono)
+                        .foregroundStyle(StrandPalette.accent)
+                    Button("Save…") { saveStrapLog() }
+                        .buttonStyle(.plain).font(StrandFont.mono)
+                        .foregroundStyle(StrandPalette.accent)
+                }
+            }
+            if live.log.isEmpty {
+                Text("No activity yet. The log fills in as your strap connects.")
+                    .font(StrandFont.footnote)
+                    .foregroundStyle(StrandPalette.textTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 2) {
+                            ForEach(Array(live.log.enumerated()), id: \.offset) { idx, line in
+                                Text(line).font(StrandFont.mono)
+                                    .foregroundStyle(StrandPalette.textSecondary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .id(idx)
+                            }
+                        }
+                    }
+                    .frame(height: 200)
+                    .onChange(of: live.log.count) {
+                        if let last = live.log.indices.last { proxy.scrollTo(last, anchor: .bottom) }
+                    }
+                }
+            }
+        }
+    }
+
+    /// The shareable strap log as text (header + lines), for Copy / Save… — to attach to a bug report.
+    private func strapLogText() -> String {
+        let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+        let osName = "iOS"
+        let header = "Cénit strap log — \(osName)\nApp: \(v)\n\(osName): "
+            + ProcessInfo.processInfo.operatingSystemVersionString + "\n"
+            + String(repeating: "-", count: 40) + "\n"
+        return header + live.log.joined(separator: "\n")
+    }
+
+    private func copyStrapLog() { PlatformPasteboard.copy(strapLogText()) }
+
+    private func saveStrapLog() {
+        FileExport.exportText(strapLogText(), suggestedName: "noop-strap-log.txt")
     }
 
     private var strapStatusTitle: String {

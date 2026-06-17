@@ -18,6 +18,8 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
+    # SettingsView — strap-log empty placeholder (FER-199).
+    "No activity yet. The log fills in as your strap connects.": "Aún no hay actividad. El registro aparece cuando conectas la banda.",
     # Cuerpo landing — the «historia / entre-días» tab (FER-186).
     "Rest & load": "Descanso y carga",
     "Vitals": "Vitales",

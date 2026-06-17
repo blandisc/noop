@@ -19875,6 +19875,28 @@
           }
         }
       }
+    },
+    "No activity yet. The log fills in as your strap connects.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Aktivität. Das Protokoll füllt sich, sobald sich dein Strap verbindet."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No activity yet. The log fills in as your strap connects."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no hay actividad. El registro aparece cuando conectas la banda."
+          }
+        }
+      }
     }
   },
   "version": "1.1"
