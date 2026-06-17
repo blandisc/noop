@@ -78,6 +78,12 @@ private struct CuerpoLanding: View {
     @State private var activityCosts: [ActivityCost] = []
     /// Presents the light Activity-recovery detail sheet.
     @State private var showActivityCost = false
+    /// Body Age + Vitality (FER-145): computed in `loadAll` from a window of nightly signals; nil until
+    /// ≥3 factors are present. `vitalityInputs` drives the detail's "what's built from" checklist.
+    @State private var vitalityResult: VitalityEngine.Result? = nil
+    @State private var vitalityInputs: VitalityEngine.Inputs? = nil
+    /// Presents the light Body-age detail sheet.
+    @State private var showBodyAge = false
 
     // Loaded once per refresh (memoized in `loadAll`) so the body never re-scans history per render.
     @State private var sparks: [String: [Double]] = [:]
@@ -133,7 +139,7 @@ private struct CuerpoLanding: View {
                 section("Longevity") {
                     physicalAgeRow
                     divider
-                    comingSoonRow("Vitality")
+                    bodyAgeRow
                 }
 
                 connectNudge
@@ -167,6 +173,12 @@ private struct CuerpoLanding: View {
                                  appleConnectHint: health.auth != .authorized && health.auth != .unavailable
                                      && latestAppleVO2max == nil,
                                  theme: theme)
+        }
+        .sheet(isPresented: $showBodyAge) {
+            BodyAgeSheet(
+                result: vitalityResult,
+                inputs: vitalityInputs ?? VitalityEngine.Inputs(chronoAge: Double(model.profile.age)),
+                theme: theme)
         }
     }
 
@@ -455,16 +467,17 @@ private struct CuerpoLanding: View {
             hasHeightWeight: true)
     }
 
-    /// A reserved-section row: no datum yet (Vitality = FER-145, still without UI).
-    private func comingSoonRow(_ label: LocalizedStringKey) -> some View {
-        HStack {
-            Text(label).font(StrandFont.body).foregroundStyle(theme.inkSecondary)
-            Spacer(minLength: 8)
-            Text("Coming soon").font(StrandFont.caption).italic().foregroundStyle(theme.inkTertiary)
+    /// «Body age» (Vitality/Body Age, FER-145): the years datum, tinted by the SIGN of the delta, opening
+    /// the longevity detail. No sparkline — Body Age isn't a daily-stored series (its trend lives in the
+    /// detail's ±5 band); the row still opens the detail with no reading yet (the honest checklist).
+    private var bodyAgeRow: some View {
+        let r = vitalityResult
+        let color = r.map { BodyAgeSheet.tint(forDelta: $0.deltaYears, theme: theme) } ?? theme.inkTertiary
+        return metricRow("Body age", value: r.map { "\(Int($0.bodyAge.rounded()))" },
+                         unit: r == nil ? nil : String(localized: "yrs"),
+                         color: color, sparkKey: "_none") {
+            showBodyAge = true
         }
-        .padding(.vertical, 15)
-        .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .combine)
     }
 
     // MARK: - Connect nudge + footer
@@ -676,6 +689,19 @@ private struct CuerpoLanding: View {
         sparks["stress"] = stress.map { Array($0.fullTrend.suffix(14).map(\.value)) } ?? []
 
         fitnessAge = computeFitnessAge()
+
+        // Longevity (FER-145): Body Age + Vitality from a 28-night window of nightly signals. Regularity
+        // uses the documented duration proxy (real SRI = FER-214); VO₂max needs a waist the profile
+        // doesn't collect, so the cardio signal flows through resting HR.
+        let recent = trailingDisplay(28)
+        let vInputs = VitalityInputsBuilder.build(.init(
+            chronoAge: Double(model.profile.age),
+            nightlyRestingHR: recent.compactMap { $0.restingHr.map(Double.init) },
+            nightlyRMSSD: recent.compactMap { $0.avgHrv },
+            nightlySleepHours: recent.compactMap { $0.totalSleepMin.map { $0 / 60 } },
+            dailySteps: recent.compactMap { $0.steps.map(Double.init) }))
+        vitalityInputs = vInputs
+        vitalityResult = VitalityEngine.compute(vInputs)
     }
 
     // MARK: - Trend / curve loaders for the light sheet (mirror Today)

@@ -42,6 +42,7 @@ SettingsView → WhatsNewView (sheet)
 TodayView   → LiveView (sheet, detente grande) · MetricInfoSheet (sheet) · MetricDetailScreen (sheet, .focus: HRV/FC reposo — FER-185) · WhyVerdictSheet (sheet) · SupportView (toolbar)
 CuerpoView  → MetricInfoSheet (sheet claro: Recuperación/Esfuerzo/SpO₂/FC/Pasos/Estrés) ·
              MetricDetailScreen (sheet claro, .full: HRV/FC reposo/Respiración — FER-185) ·
+             BodyAgeSheet (sheet claro: Edad corporal + Vitalidad — FER-145) ·
              SleepView · WorkoutsView · CompareView · MetricExplorerView · DataSourcesView ·
              MetricDetailView (Temp. piel) — los oscuros como sheet fijado a .dark (FER-186)
 WorkoutsView → ManualWorkoutSheet (sheet: add / edit)
