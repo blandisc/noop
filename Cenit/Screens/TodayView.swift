@@ -801,8 +801,11 @@ struct TodayView: View {
                               sparkline: strainSpark, sparkColor: theme.dataStrain,
                               referenceBand: strainSpark.flatMap { ReferenceRange.interquartile($0) },
                               bandColor: theme.hairlineStrong,
-                              isPlaceholder: d?.strain == nil)
-                }.buttonStyle(.plain)
+                              isPlaceholder: d?.strain == nil,
+                              showsChevron: true, chevronColor: theme.inkTertiary)
+                }
+                .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05)))
+                .accessibilityHint("Abre el detalle")
                 metricSeparator
                 Button { metricDetail = .sleep(sleepR.map { Int($0.value.rounded()) }) } label: {
                     MetricRow(label: "Sueño",
@@ -812,8 +815,11 @@ struct TodayView: View {
                               sparkline: sleepSpark, sparkColor: theme.dataSleep,
                               referenceBand: sleepSpark.flatMap { ReferenceRange.interquartile($0) },
                               bandColor: theme.hairlineStrong,
-                              isPlaceholder: sleepR == nil)
-                }.buttonStyle(.plain)
+                              isPlaceholder: sleepR == nil,
+                              showsChevron: true, chevronColor: theme.inkTertiary)
+                }
+                .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05)))
+                .accessibilityHint("Abre el detalle")
                 metricSeparator
                 Button { metricDetail = .hrv(hrvR?.value) } label: {
                     MetricRow(label: "HRV",
@@ -823,8 +829,11 @@ struct TodayView: View {
                               sparkline: hrvSpark, sparkColor: theme.dataHrv,
                               referenceBand: hrvSpark.flatMap { ReferenceRange.interquartile($0) },
                               bandColor: theme.hairlineStrong,
-                              isPlaceholder: hrvR == nil)
-                }.buttonStyle(.plain)
+                              isPlaceholder: hrvR == nil,
+                              showsChevron: true, chevronColor: theme.inkTertiary)
+                }
+                .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05)))
+                .accessibilityHint("Abre el detalle")
                 metricSeparator
                 // Frecuencia cardíaca — la curva continua de hoy, justo encima de "FC en reposo"
                 // (RHR nocturna) para que se lean como par. Tap → sheet con la gráfica 24h. (FER-137)
@@ -835,8 +844,11 @@ struct TodayView: View {
                               sparkline: hrSpark, sparkColor: theme.dataHeart,
                               referenceBand: hrSpark.flatMap { ReferenceRange.interquartile($0) },
                               bandColor: theme.hairlineStrong,
-                              isPlaceholder: hrTodayAvg == nil)
-                }.buttonStyle(.plain)
+                              isPlaceholder: hrTodayAvg == nil,
+                              showsChevron: true, chevronColor: theme.inkTertiary)
+                }
+                .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05)))
+                .accessibilityHint("Abre el detalle")
                 metricSeparator
                 Button { metricDetail = .restingHR(rhrR.map { Int($0.value.rounded()) }) } label: {
                     MetricRow(label: "FC en reposo",
@@ -846,8 +858,11 @@ struct TodayView: View {
                               sparkline: rhrSpark, sparkColor: theme.dataHeart,
                               referenceBand: rhrSpark.flatMap { ReferenceRange.interquartile($0) },
                               bandColor: theme.hairlineStrong,
-                              isPlaceholder: rhrR == nil)
-                }.buttonStyle(.plain)
+                              isPlaceholder: rhrR == nil,
+                              showsChevron: true, chevronColor: theme.inkTertiary)
+                }
+                .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05)))
+                .accessibilityHint("Abre el detalle")
                 metricSeparator
                 Button { metricDetail = .spo2(spo2R?.value) } label: {
                     MetricRow(label: "Oxígeno en sangre",
@@ -857,8 +872,11 @@ struct TodayView: View {
                               sparkline: spo2Spark, sparkColor: theme.dataSpO2,
                               referenceBand: spo2Spark.flatMap { ReferenceRange.interquartile($0) },
                               bandColor: theme.hairlineStrong,
-                              isPlaceholder: spo2R == nil)
-                }.buttonStyle(.plain)
+                              isPlaceholder: spo2R == nil,
+                              showsChevron: true, chevronColor: theme.inkTertiary)
+                }
+                .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05)))
+                .accessibilityHint("Abre el detalle")
                 metricSeparator
                 Button { metricDetail = .steps(stepsFresh) } label: {
                     MetricRow(label: "Pasos",
@@ -867,8 +885,11 @@ struct TodayView: View {
                               sparkline: stepsSpark, sparkColor: theme.dataSteps,
                               referenceBand: stepsSpark.flatMap { ReferenceRange.interquartile($0) },
                               bandColor: theme.hairlineStrong,
-                              isPlaceholder: stepsStr == "—")
-                }.buttonStyle(.plain)
+                              isPlaceholder: stepsStr == "—",
+                              showsChevron: true, chevronColor: theme.inkTertiary)
+                }
+                .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05)))
+                .accessibilityHint("Abre el detalle")
             }
             if notConnected && anyMeasuredMissing {
                 Button { showDataSources = true } label: {
