@@ -1498,6 +1498,13 @@ struct TodayView: View {
     /// returns nil: its sheet already carries a dedicated intraday "How today added up" curve, so a
     /// second 14-day line chart would be redundant.
     private func trendLoader(for id: String) -> (() async -> [TrendPoint])? {
+        // Stress isn't a stored `DailyMetric` field — it's the derived 0–3 proxy the tile's
+        // `StressModel` already computed. Reuse that history so its info sheet shows the same 14-day
+        // trend as every other metric; without this branch it fell through to `default → nil` and the
+        // sheet rendered no chart at all (stress has no dedicated curve like strain / heart rate do).
+        if id == "stress" {
+            return { self.stressTrend(window: 14) }
+        }
         let pick: (DailyMetric) -> Double?
         switch id {
         case "recovery": pick = { $0.recovery }
@@ -1509,6 +1516,17 @@ struct TodayView: View {
         default:         return nil   // strain (own intraday curve) and anything else: no 14-day trend
         }
         return { await self.loadTrend(pick: pick) }
+    }
+
+    /// Trailing-window slice of the derived 0–3 stress proxy the tile already computed
+    /// (`StressModel.fullTrend`). Stress has no stored `DailyMetric` field, so it can't go through
+    /// `loadTrend(pick:)`; we reuse the model's own daily history. Windowed by date (not just
+    /// `.suffix`) so a stale import doesn't render months-old points under the sheet's "Last 14 days"
+    /// label — the same trailing-window guard the other trends use (#23).
+    private func stressTrend(window: Int = 14) -> [TrendPoint] {
+        guard let trend = stress?.fullTrend else { return [] }
+        let cutoff = Calendar.current.date(byAdding: .day, value: -window, to: Date()) ?? Date()
+        return trend.filter { $0.date >= cutoff }
     }
 
     #if os(iOS)

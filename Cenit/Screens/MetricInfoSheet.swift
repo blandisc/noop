@@ -689,6 +689,7 @@ struct MetricInfoSheet: View {
     private var trendValueFormat: (Double) -> String {
         switch info.id {
         case "strain":  return { String(format: "%.1f", $0) }
+        case "stress":  return { String(format: "%.1f", $0) }   // 0–3 proxy reads with one decimal, not rounded to "2"
         case "sleep":   return { Self.formatSleep(Int($0.rounded())) }
         case "rhr":     return { "\(Int($0.rounded())) bpm" }
         case "spo2":    return { String(format: "%.0f%%", $0) }
