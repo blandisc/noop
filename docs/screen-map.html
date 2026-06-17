@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-17 · FER-202</span>
+  <span class="tb-updated">Actualizado 2026-06-17 · FER-204</span>
 </div>
 
 <div id="wrapper">
@@ -371,6 +371,7 @@ const SCREENS = [
       { label: 'Veredicto listo — modo verdict: recuperación en color de banda + palabra + «i»', type: 'live' },
       { label: 'Hay número, sin contexto (insufficient) — numeral en tinta + "aún sin contexto", ya no cae al anillo (FER-160)', type: 'warn' },
       { label: 'Sincronizando (transversal iOS) — syncMeta muestra "Sincronizando historial…" en utility row; sin pill', type: 'warn' },
+      { label: 'Pull-to-refresh (FER-204): jala hacia abajo para forzar el sync de la banda + háptica .medium al provocar; indicador nativo de .refreshable; reconecta si hay banda conocida (lastSyncedAt), spinner corto (~1.2s) sin esperar el offload', type: 'live' },
       { label: '«Métricas de hoy» (FER-180): rejilla 2×4 de 8 tiles intradía (valor en color de dato + Δ vs ayer), sin sparkline 14d; Recuperación NO es tile', type: 'live' },
       { label: 'Cabe en una pantalla (FER-189): sin sección Fuentes, tiles 76pt — sin scroll en 6.1"+', type: 'live' },
       { label: 'Pulso vivo en el encabezado (FER-194): pastilla heart.fill + punto + bpm en el trailing de «Métricas de hoy» (sólo si strapSeen), abre el monitor; la fila del pie se eliminó', type: 'live' },

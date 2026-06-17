@@ -43,6 +43,9 @@ struct TodayView: View {
     /// so they can connect in one tap instead of hunting through the More tab. (FER-94)
     @EnvironmentObject var health: HealthKitBridge
     @State private var showDataSources = false
+    /// Cuenta cada pull-to-refresh para disparar la háptica declarativa (`.sensoryFeedback`) al
+    /// provocar el gesto de sincronización (FER-204).
+    @State private var syncHaptic = 0
     #endif
 
     // Imperial/Metric display preference (D#103). Only the Weight tile carries a convertible unit here.
@@ -274,6 +277,12 @@ struct TodayView: View {
             .padding(.top, 12)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        // Pull-to-refresh (FER-204): jala hacia abajo para forzar una sincronización con la banda. El
+        // indicador es el nativo de `.refreshable` (estándar de la industria, no animación propia); la
+        // háptica al provocar la dispara `.sensoryFeedback` por el cambio de `syncHaptic`. El gesto
+        // retorna pronto (tope corto): el offload largo sigue en segundo plano, reflejado en `syncMeta`.
+        .refreshable { await pullToSync() }
+        .sensoryFeedback(.impact(weight: .medium), trigger: syncHaptic)
         // El fondo es el papel del tema (`PaperBackground` lee `\.instrumentoTheme` DENTRO del subárbol
         // tematizado, así que el lienzo también se recolorea por hora). El tema por hora se inyecta aquí,
         // acotado a TodayView (NUNCA en RootTabView): todo el árbol de abajo lee `\.instrumentoTheme` y
@@ -316,6 +325,32 @@ struct TodayView: View {
             .environmentObject(health)
             .preferredColorScheme(.dark)
         }
+    }
+
+    /// La acción del pull-to-refresh de `iosBody` (FER-204). Fuerza una sincronización con la banda
+    /// según su estado, SIN esperar al offload largo:
+    /// - Conectada → `syncNow()` (offload `.manual`, sin rate-limit).
+    /// - Banda conocida pero desconectada (hubo un sync previo: `lastSyncedAt != nil`) → `scan()`; el
+    ///   handshake de reconexión auto-dispara el sync (`requestSync(.connect)`), sin orquestarlo a mano.
+    /// - Sin banda conocida → solo el `repo.refresh()` de abajo (recálculo local), sin escaneo ni error.
+    /// `lastSyncedAt` es la señal honesta de "hay/hubo banda" (solo se fija tras un offload completo y
+    /// persiste entre lanzamientos); `selectedWhoopModel` no sirve aquí (su default pasa el onboarding
+    /// aunque el usuario no tenga banda).
+    /// El `repo.refresh()` final asegura que la pantalla refleje lo último (los scores se recalculan
+    /// solos vía `repo.refreshSeq` → `.task(id:)`). El `sleep` corto da sensación de trabajo y deja que
+    /// el spinner se retire pronto (~1.2 s); el offload sigue en segundo plano, visible en `syncMeta`.
+    @MainActor
+    private func pullToSync() async {
+        syncHaptic += 1                       // dispara la háptica `.medium` al provocar el gesto
+        if live.connected {
+            model.ble.syncNow()               // conectada → offload manual inmediato
+        } else if live.lastSyncedAt != nil {
+            model.scan()                      // banda conocida pero desconectada → reconecta; al
+                                              // conectar, el handshake sincroniza solo
+        }
+        // Sin banda conocida (`lastSyncedAt == nil`) no se escanea: cae directo al refresh local.
+        try? await Task.sleep(for: .seconds(1.2))
+        await repo.refresh()
     }
 
     /// Recovery score driving the hero numeral (0–100). nil while calibrating.
