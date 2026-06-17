@@ -159,7 +159,10 @@ private struct CuerpoLanding: View {
                 depth: .full,
                 theme: theme,
                 seriesLoader: { vitalSeries(for: spec.descriptor.key) },
-                nightVitalsLoader: spec.blocks.contains(.nightVitals) ? { await loadNightVitals() } : nil
+                nightVitalsLoader: spec.blocks.contains(.nightVitals) ? { await loadNightVitals() } : nil,
+                whatMovesItLoader: spec.blocks.contains(.whatMovesIt)
+                    ? { whatMovesItFindings(for: spec.descriptor.key) }
+                    : nil
             )
         }
         .sheet(item: $darkSheet) { sheet in darkSheetContent(sheet) }
@@ -739,6 +742,12 @@ private struct CuerpoLanding: View {
         return repo.displayDays
             .compactMap { row in pick(row).map { (row.day, $0) } }
             .sorted { $0.day < $1.day }
+    }
+
+    /// The gated, directional "Qué la mueve" findings (FER-209) for a vital, computed from the user's
+    /// own history (`repo.displayDays`). Empty → the detail screen hides the block.
+    private func whatMovesItFindings(for key: String) -> [WhatMovesItFinding] {
+        WhatMovesItEngine.findings(forMetricKey: key, days: repo.displayDays)
     }
 
     /// Last night's companion vitals (respiration + resting HR) for the detail's "Vitales de la noche"
