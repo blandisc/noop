@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **«Métricas de hoy» reparte el espacio en pantallas grandes / "Today's metrics" spreads to fill the screen.**
+  **ES** — En teléfonos donde la pantalla de Hoy no se llenaba, las «Métricas de hoy» quedaban pegadas al número grande y sobraba un hueco al fondo. Ahora ese aire **se reparte por igual arriba y abajo** del bloque de métricas, así la pantalla se ve equilibrada en cualquier tamaño de iPhone. En teléfonos chicos donde ya cabía justo, nada cambia: el reparto solo aparece cuando de verdad sobra espacio, y nunca desborda.
+  **EN** — On phones where the Today screen didn't fill up, "Today's metrics" sat glued to the big number with an empty gap at the bottom. That space is now **shared evenly above and below** the metrics block, so the screen looks balanced on any iPhone size. On small phones where it already fit snugly, nothing changes: the spread only appears when there's genuinely room to spare, and never overflows.
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **Tu VO₂max de Apple aparece junto a tu Edad física / Your Apple VO₂max now shows next to your Physical age.**
   **ES** — Si tu Apple Watch mide tu VO₂max (lo que Apple llama «Capacidad cardio»), ahora aparece **dentro del detalle de Edad física** (Cuerpo › Longevidad › Edad física): el número en ml/kg/min, **etiquetado como dato de Apple Salud**, con el promedio típico para tu edad como referencia para saber si vas por encima o por debajo. Es el dato que tu reloj **mide durante el ejercicio** — no te pedimos nada extra (ni la cintura). Si no usas Apple Watch, simplemente no aparece. Tu Edad física **no cambia**: el VO₂max es un dato complementario, no recalcula nada.
   **EN** — If your Apple Watch measures your VO₂max (what Apple calls "Cardio Fitness"), it now appears **inside the Physical age detail** (Body › Longevity › Physical age): the number in ml/kg/min, **labeled as Apple Health data**, with the typical average for your age as a reference so you know if you're above or below. It's the value your watch **measures during exercise** — we ask you for nothing extra (no waist). If you don't use Apple Watch, it simply doesn't show. Your Physical age **doesn't change**: VO₂max is a complementary datum, it recomputes nothing.
