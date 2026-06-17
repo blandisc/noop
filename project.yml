@@ -10,7 +10,11 @@ options:
 settings:
   base:
     MARKETING_VERSION: "1.81"
-    CURRENT_PROJECT_VERSION: "1"
+    # Single source for the build number, threaded into BOTH the app and the widget's
+    # CFBundleVersion via $(CURRENT_PROJECT_VERSION). An app extension's CFBundleVersion MUST match
+    # its parent app's, so this lives at base (not per-target) — bump it here once per TestFlight /
+    # App Store upload and both stay in lockstep (FER-178).
+    CURRENT_PROJECT_VERSION: "25"
     SWIFT_VERSION: "5.0"
     # Emit localizable strings so Xcode auto-extracts every LocalizedStringKey into the
     # String Catalog on build (the English (US) base entries).
@@ -90,9 +94,8 @@ targets:
           - group.com.feriracheta.noop
     settings:
       base:
-        # Build number for the iOS target; threaded into Info.plist's CFBundleVersion via
-        # $(CURRENT_PROJECT_VERSION). Bump on each TestFlight / App Store upload.
-        CURRENT_PROJECT_VERSION: "25"
+        # CURRENT_PROJECT_VERSION / MARKETING_VERSION are inherited from settings.base above so the
+        # app and the CenitWidgets extension always report the same version (FER-178).
         PRODUCT_BUNDLE_IDENTIFIER: com.feriracheta.noop
         PRODUCT_NAME: Cenit
         SWIFT_MODULE_NAME: Cenit
@@ -125,6 +128,11 @@ targets:
       path: CenitWidgets/Info.plist
       properties:
         CFBundleDisplayName: Cénit
+        # Match the parent app's version exactly (both derive from settings.base): an app extension's
+        # CFBundleVersion MUST equal its container's or install/validation fails. Without these,
+        # xcodegen falls back to its literal "1"/"1.0" defaults — the FER-178 mismatch.
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     entitlements:
