@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Adiós al rectángulo gris detrás de las gráficas en Cuerpo / No more grey box behind the Body charts.**
+  **ES** — En la pantalla **Cuerpo**, cada mini-gráfica de tendencia tenía detrás una banda gris (el «rango típico» de los últimos 14 días). En un espacio tan chico esa banda no se leía como contexto, sino como un **rectángulo oscuro pegado** detrás de la línea. La quitamos de esas gráficas: ahora cada línea respira sobre el papel, sin caja. El detalle de cada métrica no cambia.
+  **EN** — On the **Body** screen, each mini trend chart had a grey band behind it (the "typical range" of the last 14 days). At that small size the band didn't read as context — it looked like a **dark rectangle stuck** behind the line. We removed it from those charts: each line now breathes on the paper, no box. Each metric's detail is unchanged.
+  ([Cenit/Screens/CuerpoView.swift](Cenit/Screens/CuerpoView.swift))
+
 - **Tu HRV y tu frecuencia en reposo te dicen «qué las mueve» / Your HRV and resting heart rate now tell you "what moves them".**
   **ES** — En el detalle de **HRV** y de **Frecuencia cardíaca en reposo** (Cuerpo) aparece un bloque nuevo, **«Qué la mueve»**, que lee *tu propio historial* y te dice en una frase hacia dónde tiende tu número: por ejemplo, *«suele ser más alta las noches que duermes más»* o *«suele subir el día después de un esfuerzo alto»*. Es una **tendencia, no una causa** (lo aclara un sello), **nunca muestra un número técnico**, y **solo aparece cuando llevas suficientes semanas de datos** (unas 6): si no, simplemente no se muestra — preferimos callar antes que inventar. Todo on-device.
   **EN** — The **HRV** and **Resting heart rate** details (Body) gain a new **"What moves it"** block that reads *your own history* and tells you, in one sentence, which way your number tends to go — e.g. *"tends to run higher on nights you sleep more"* or *"tends to rise the day after a hard effort"*. It's a **trend, not a cause** (a chip says so), it **never shows a technical number**, and it **only appears once you have enough weeks of data** (about 6); otherwise it simply doesn't show — we'd rather stay quiet than invent. All on-device.
