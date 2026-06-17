@@ -71,35 +71,88 @@ struct TodayView: View {
     // THE single grid definition — every tile group reuses it so margins line up.
     private let grid = [GridItem(.adaptive(minimum: 168), spacing: NoopMetrics.gap)]
 
+    // MARK: - Memoización del veredicto + conteos derivados (FER-172)
+    //
+    // `ReadinessEngine.evaluate` y los conteos de noches de HRV ordenan/mapean los ~4000 días de
+    // historia. Antes eran computed properties que el `body` invocaba 3+ veces POR RENDER (héroe,
+    // verdictBody, métricas, sheet), así que corrían completos en CADA repintado —cada tick de HR en
+    // vivo, cada frame de animación—, congelando el hilo principal hasta el riesgo de watchdog. Ahora
+    // se calculan UNA vez por cambio de datos y se cachean en `@State`: `recomputeDerived()` los siembra
+    // desde el `.task(id: repo.refreshSeq)` (mismo patrón de memoización que StressView). El gate es
+    // `repo.refreshSeq` —un Int que sube en cada `refresh()`, mientras `days`/`today`/`appleHealthDays`
+    // viven en el MISMO valor publicado `dashboard`—, así que es O(1) por render en vez de comparar el
+    // arreglo completo. Los accesores caen a un cálculo en línea solo si el memo aún es nil (el primer
+    // body antes de que `.task` siembre), nunca en el camino caliente.
+
+    /// El veredicto de hoy, memoizado. nil hasta la primera siembra; el accesor `readiness` cae a un
+    /// cálculo en línea ese único frame para no parpadear.
+    @State private var memoReadiness: ReadinessEngine.Readiness?
+    /// Los conteos de noches derivados de HRV, memoizados (ver `DerivedHrvCounts`).
+    @State private var memoCounts: DerivedHrvCounts?
+
+    /// Los tres conteos de noches que el héroe/veredicto leen, agrupados para sembrarlos de una sola
+    /// pasada sobre `repo.days` (antes cada propiedad remapeaba la historia por su cuenta).
+    private struct DerivedHrvCounts: Equatable {
+        let recoveryCalibration: Int?
+        let ownNights: Int
+        let seededNights: Int
+        /// La base ya está sembrada (≥ `minNightsSeed` noches válidas) pero las noches PROPIAS del strap
+        /// aún no: la base vino de un import de Apple Health, no del strap (FER-106).
+        var hasImportedBaseline: Bool {
+            seededNights >= Baselines.minNightsSeed && ownNights < Baselines.minNightsSeed
+        }
+    }
+
+    /// Calcula los conteos de una sola pasada: `nightlyHrv` (toda la historia) se mapea UNA vez y se
+    /// reutiliza para `recoveryCalibration` y `seededNights`; `strapHrv` (sin los días de Apple Health)
+    /// para `ownNights`. Misma matemática que las propiedades previas, sin el remapeo triple.
+    private func computeHrvCounts() -> DerivedHrvCounts {
+        let nightlyHrv = repo.days.map(\.avgHrv)
+        let appleDays = repo.appleHealthDays
+        let strapHrv = repo.days.filter { !appleDays.contains($0.day) }.map(\.avgHrv)
+        return DerivedHrvCounts(
+            recoveryCalibration: RecoveryScorer.calibrationNights(nightlyHrv: nightlyHrv,
+                                                                  hasRecovery: repo.today?.recovery != nil),
+            ownNights: RecoveryScorer.calibrationNights(nightlyHrv: strapHrv, hasRecovery: false, seed: .max) ?? 0,
+            seededNights: RecoveryScorer.calibrationNights(nightlyHrv: nightlyHrv, hasRecovery: false, seed: .max) ?? 0)
+    }
+
+    /// Siembra el veredicto + los conteos UNA vez por refresh. La llama el `.task(id: repo.refreshSeq)`
+    /// (vía `loadAll()`), antes de cualquier `await`, así que el body deja de recalcular en cada frame.
+    private func recomputeDerived() {
+        memoReadiness = ReadinessEngine.evaluate(days: repo.days, today: Repository.localDayKey(Date()))
+        memoCounts = computeHrvCounts()
+        #if DEBUG
+        // FER-172: prueba de que el veredicto se recalcula UNA vez por refresh. En scroll/animación/
+        // ticks de HR esta línea NO debe reaparecer; solo sale una vez por `seq`. Compila fuera en release.
+        print("[FER-172] readiness recomputed · seq=\(repo.refreshSeq) · days=\(repo.days.count)")
+        #endif
+    }
+
+    /// Los conteos memoizados; cae a un cálculo en línea solo el primer frame (memo aún nil).
+    private var hrvCounts: DerivedHrvCounts { memoCounts ?? computeHrvCounts() }
+
     /// Recovery cold-start: recovery is nil until the HRV baseline crosses the seed gate
     /// (Baselines.minNightsSeed valid nights). While calibrating, this is the count of nights
     /// banked so far — it drives an honest "Calibrating — N of 4 nights" on the recovery ring,
     /// the synthesis card and the Key Metrics tile instead of a bare empty state. It self-clears
     /// the moment recovery populates, and never claims "calibrating" at/above the seed gate.
-    /// Mirrors Android TodayScreen.recoveryCalibrationNights (7b5f212).
-    private var recoveryCalibration: Int? {
-        RecoveryScorer.calibrationNights(nightlyHrv: repo.days.map(\.avgHrv),
-                                         hasRecovery: repo.today?.recovery != nil)
-    }
+    /// Mirrors Android TodayScreen.recoveryCalibrationNights (7b5f212). Memoizado vía `hrvCounts` (FER-172).
+    private var recoveryCalibration: Int? { hrvCounts.recoveryCalibration }
 
     /// Nights of the user's OWN strap data with usable HRV, 0… (drives the night-dots progress).
     /// Apple-Health days are deliberately EXCLUDED: Apple Health fills Trends/Sleep preliminarily but
     /// it's borrowed data — its rows carry `recovery: nil` and never seed the recovery baseline — so
     /// the dots keep counting toward the 4 nights of YOUR data the verdict actually needs. Reuses the
     /// same in-range HRV filter via a high seed; once this reaches the seed the baseline is genuinely
-    /// yours and the verdict path takes over.
-    private var ownNights: Int {
-        let appleDays = repo.appleHealthDays
-        let strapHrv = repo.days.filter { !appleDays.contains($0.day) }.map(\.avgHrv)
-        return RecoveryScorer.calibrationNights(nightlyHrv: strapHrv, hasRecovery: false, seed: .max) ?? 0
-    }
+    /// yours and the verdict path takes over. Memoizado vía `hrvCounts` (FER-172).
+    private var ownNights: Int { hrvCounts.ownNights }
 
     /// Nights of usable HRV across the WHOLE merged baseline (Apple Health + strap), 0… Reuses the
     /// same in-range HRV predicate as `ownNights` via a high seed, but over `repo.days` (not just
     /// strap rows), so a full Apple-Health import counts here even though it never counts in `ownNights`.
-    private var seededNights: Int {
-        RecoveryScorer.calibrationNights(nightlyHrv: repo.days.map(\.avgHrv), hasRecovery: false, seed: .max) ?? 0
-    }
+    /// Memoizado vía `hrvCounts` (FER-172).
+    private var seededNights: Int { hrvCounts.seededNights }
 
     /// True when the recovery baseline is already seeded (≥ `minNightsSeed` valid HRV nights) but the
     /// user's OWN strap nights are still below the seed — i.e. the base came from imported Apple Health
@@ -107,9 +160,7 @@ struct TodayView: View {
     /// narrative so the pre-verdict states never read "0 of 4" as if no base existed (FER-106). Pure
     /// read of existing signals — no engine math. Naturally false without an import (no permission, no
     /// history → `seededNights < minNightsSeed`), so no state can promise an Apple-Health base it lacks.
-    private var hasImportedBaseline: Bool {
-        seededNights >= Baselines.minNightsSeed && ownNights < Baselines.minNightsSeed
-    }
+    private var hasImportedBaseline: Bool { hrvCounts.hasImportedBaseline }
 
     /// Synthesis-card copy while the recovery baseline calibrates; nil otherwise. Built as
     /// LocalizedStringKey literals so the String Catalog picks up the %lld patterns.
@@ -979,8 +1030,10 @@ struct TodayView: View {
     }
 
     /// On-device readiness for the verdict hero (same engine the macOS `readinessSection` uses).
+    /// Memoizado en `memoReadiness` (FER-172): cae a un cálculo en línea solo si el memo aún es nil
+    /// (el primer body antes de que `.task` lo siembre), nunca en el camino caliente de cada render.
     private var readiness: ReadinessEngine.Readiness {
-        ReadinessEngine.evaluate(days: repo.days, today: Repository.localDayKey(Date()))
+        memoReadiness ?? ReadinessEngine.evaluate(days: repo.days, today: Repository.localDayKey(Date()))
     }
 
     /// True only when the strap is worn AND streaming live HR — gates the beating animation so a
@@ -1322,6 +1375,11 @@ struct TodayView: View {
     // MARK: - Loading
 
     private func loadAll() async {
+        // Siembra el veredicto + los conteos derivados de HRV una sola vez por refresh, ANTES de los
+        // awaits de abajo, para que el body deje de recalcular `ReadinessEngine.evaluate` en cada frame
+        // (FER-172). `recomputeDerived()` es síncrono y lee `repo.days`/`today`/`appleHealthDays`, ya
+        // disponibles sin esperar las consultas de sparklines.
+        recomputeDerived()
         // Issue every query concurrently, then collect — instead of 14 serial awaits that each
         // suspended back to the main actor before issuing the next. The store is a serial
         // DatabaseQueue so I/O still serializes, but the memoized ensureStore() makes the parallel
