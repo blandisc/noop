@@ -2,6 +2,7 @@ import Foundation
 import Combine
 import WhoopStore
 import WhoopProtocol
+import StrandAnalytics
 
 /// Per-day sleep figures the WHOOP export carried verbatim (metricSeries rows written by
 /// WhoopImporter under the imported deviceId). SleepView prefers these over its on-device
@@ -358,6 +359,31 @@ final class Repository: ObservableObject {
         let spans = WorkoutSource.parseDismissedSpans(dismissedDetectedSpans)
         return rows.filter { !WorkoutSource.isDismissed($0, spans: spans) }
             .sorted { $0.startTs > $1.startTs }
+    }
+
+    /// "How you wake the morning after each sport" — per sport, how far below your rest-day Charge
+    /// your next-morning Charge tends to sit, over your own history (FER-139). A descriptive
+    /// ASSOCIATION, never a causal cost; the engine and its narrative are framed accordingly.
+    ///
+    /// Takes the already-loaded workout `rows` (the caller has them in hand — Cuerpo loads them once
+    /// per refresh — so this never re-queries the store), builds the two engine inputs and runs
+    /// `ActivityCostEngine`:
+    ///  - Sessions: WHOOP + Apple Health + manual workouts. Auto-DETECTED bouts are excluded — they
+    ///    carry no real sport, so they'd pool into one meaningless "Activity" bucket (FER-139 scope).
+    ///  - Day-keying: each session's start maps to a day-key in the device's LOCAL zone — the same
+    ///    calendar `DailyMetric.day` uses — so the engine's UTC D→D+1 string arithmetic stays aligned.
+    ///  - Recovery: `days` (strap-derived on-device scores), NOT `displayDays`, so the rest-day
+    ///    baseline never mixes in Apple-Health back-fill (house rule, matches the recovery baseline).
+    func activityCosts(from rows: [WorkoutRow]) -> [ActivityCost] {
+        let sessions = rows
+            .filter { WorkoutSource.classify($0.source) != .detected }
+            .map { ActivityCostInputs.Session(startTs: $0.startTs,
+                                              sport: WorkoutSource.displaySport($0.sport)) }
+        let activityDaysBySport = ActivityCostInputs.activityDaysBySport(sessions, timeZone: .current)
+        var recoveryByDay: [String: Double] = [:]
+        for d in days { if let r = d.recovery { recoveryByDay[d.day] = r } }
+        return ActivityCostEngine.evaluate(activityDaysBySport: activityDaysBySport,
+                                           recoveryByDay: recoveryByDay)
     }
 
     // MARK: - Workout editing (manual add/edit · relabel · dismiss · delete)

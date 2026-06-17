@@ -74,6 +74,10 @@ private struct CuerpoLanding: View {
     @State private var metricSpec: MetricDetailSpec? = nil
     /// Dark screen / catalog-detail sheet, for everything without a light sheet yet.
     @State private var darkSheet: CuerpoSheet? = nil
+    /// «How you wake after each sport» — ranked ActivityCost per sport (FER-139); empty = "gathering data".
+    @State private var activityCosts: [ActivityCost] = []
+    /// Presents the light Activity-recovery detail sheet.
+    @State private var showActivityCost = false
 
     // Loaded once per refresh (memoized in `loadAll`) so the body never re-scans history per render.
     @State private var sparks: [String: [Double]] = [:]
@@ -120,6 +124,8 @@ private struct CuerpoLanding: View {
                     workoutsRow
                 }
 
+                activityCostBlock
+
                 section("Longevity") {
                     comingSoonRow("Physical age")
                     divider
@@ -147,6 +153,7 @@ private struct CuerpoLanding: View {
             )
         }
         .sheet(item: $darkSheet) { sheet in darkSheetContent(sheet) }
+        .sheet(isPresented: $showActivityCost) { activityRecoverySheet }
     }
 
     /// The canvas — read inside the themed subtree so it recolors by hour too.
@@ -409,6 +416,75 @@ private struct CuerpoLanding: View {
         .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05)))
     }
 
+    // MARK: - Activity recovery (FER-139)
+
+    /// «How you wake after each sport» — the Variant-C mini-block: a `theme.surface` card (same mold as
+    /// `recoveryHero` / `footerActions`, no card-in-card) holding up to three top sports from the
+    /// engine's ranking, each as `sport · N pts lower/higher` (colour only on the datum). A `delta < 3`
+    /// sport reads «no clear link». When the engine returns nothing the block stays, showing «Gathering
+    /// data» — it never hides. The whole block opens the detail.
+    private var activityCostBlock: some View {
+        Button { showActivityCost = true } label: {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 8) {
+                    Text("How you wake after each sport")
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    Spacer(minLength: 8)
+                    if activityCosts.isEmpty {
+                        Text("Gathering data").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    }
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                }
+                if !activityCosts.isEmpty {
+                    VStack(spacing: 10) {
+                        ForEach(Array(activityCosts.prefix(3).enumerated()), id: \.offset) { _, c in
+                            activityCostRow(c)
+                        }
+                    }
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                .strokeBorder(theme.hairline, lineWidth: 1))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05)))
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("Opens the per-sport detail.")
+    }
+
+    /// One summary row inside the block: sport name (ink) · its direction/points. Colour on the datum:
+    /// the gap is `dataStrain` when there's a real link, quiet ink when it's under the engine's noise
+    /// floor (then it reads «no clear link»). Localized; "pts" stays plural (a reported gap is ≥ 3).
+    private func activityCostRow(_ c: ActivityCost) -> some View {
+        let meaningful = abs(c.delta) >= ActivityCostEngine.barelyMovesPoints
+        let pts = Int(abs(c.delta).rounded())
+        let summary: LocalizedStringKey = !meaningful ? "no clear link"
+            : (c.delta >= 0 ? "\(pts) pts lower" : "\(pts) pts higher")
+        return HStack(spacing: 8) {
+            Text(verbatim: c.sport).font(StrandFont.body).foregroundStyle(theme.ink)
+            Spacer(minLength: 8)
+            Text(summary)
+                .font(StrandFont.subhead)
+                .foregroundStyle(meaningful ? theme.dataStrain : theme.inkTertiary)
+                .multilineTextAlignment(.trailing)
+        }
+    }
+
+    /// The light Activity-recovery detail (FER-139), theme passed explicitly (it doesn't cross the
+    /// `.sheet` boundary). The Apple-connect line appears only when nothing's connected and there are no
+    /// sessions to draw from.
+    private var activityRecoverySheet: some View {
+        ActivityRecoverySheet(
+            costs: activityCosts,
+            theme: theme,
+            appleConnectHint: health.auth != .authorized && health.auth != .unavailable && workoutCount == 0
+        )
+    }
+
     // MARK: - Detail sheets
 
     /// The light metric sheet (the same one Today opens), with the live theme passed explicitly (it
@@ -490,7 +566,9 @@ private struct CuerpoLanding: View {
         sparks["steps"] = await steps
         appleDays = await adRows
         appleMetricDays = (await amRows).sorted { $0.day < $1.day }
-        workoutCount = (await wkRows).count
+        let workouts = await wkRows
+        workoutCount = workouts.count
+        activityCosts = repo.activityCosts(from: workouts)   // reuses the rows above — no second query
         hrPoints = await hrRows.map {
             TrendPoint(date: Date(timeIntervalSince1970: TimeInterval($0.ts)), value: $0.bpm)
         }

@@ -192,7 +192,7 @@ de En vivo en FER-184; **no toca `LiveView`**.
 **Archivo:** `Cenit/Screens/CuerpoView.swift`  
 **Descripción:** Landing curado de la capa «historia / entre-días» (pestaña **Cuerpo**, FER-186). Estilo Apple Salud (Resumen) en papel claro «Instrumento» (color solo en el dato): una columna de secciones, cada fila un `MetricRow` (label · sparkline 14d + banda p25–p75 · valor en su color de dato · chevron) que abre un detalle.
 
-**Secciones:** Recuperación (fila héroe destacada, en `surface`) · Descanso & carga (Sueño · Esfuerzo del día · Estrés) · Vitales (HRV · FC en reposo · SpO₂ · Frecuencia cardíaca · Respiración · Temp. de piel) · Actividad (Pasos · Entrenamientos) · Longevidad (Edad física · Vitalidad → «Próximamente», FER-141/145) · acciones al pie (Comparar · Ver todas las métricas).
+**Secciones:** Recuperación (fila héroe destacada, en `surface`) · Descanso & carga (Sueño · Esfuerzo del día · Estrés) · Vitales (HRV · FC en reposo · SpO₂ · Frecuencia cardíaca · Respiración · Temp. de piel) · Actividad (Pasos · Entrenamientos · **«Cómo amaneces tras cada deporte»** — mini-bloque Activity Cost, FER-139) · Longevidad (Edad física · Vitalidad → «Próximamente», FER-141/145) · acciones al pie (Comparar · Ver todas las métricas).
 
 | Estado | Condición de entrada |
 |--------|---------------------|
@@ -200,9 +200,9 @@ de En vivo en FER-184; **no toca `LiveView`**.
 | Calibrando | Recuperación muestra «N/4» + «Calibrando tu base»; el resto en «—» con esqueleto |
 | Sin permiso / offline | Muestra lo guardado; las métricas solo-Apple (Pasos) invitan a conectar sin prometer datos |
 
-**Apertura del detalle (FER-185 ya aterrizó para los 3 vitales):** **HRV · FC en reposo · Respiración** abren el **`MetricDetailScreen`** unificado (sheet claro «Instrumento», `depth: .full`, tema explícito, sin `NavigationStack` anidado). El resto sigue su puente: Recuperación/Esfuerzo/SpO₂/FC/Pasos/Estrés→`MetricInfoSheet` claro; Sueño→`SleepView`, Entrenamientos→`WorkoutsView`, Temp. piel→`MetricDetailView` del catálogo, Comparar→`CompareView`, Ver todas→`MetricExplorerView` — estos últimos como **sheet oscuro fijado a `.dark`** (un tab claro no puede empujar una pantalla oscura sin romper la barra de estado).
+**Apertura del detalle (FER-185 ya aterrizó para los 3 vitales):** **HRV · FC en reposo · Respiración** abren el **`MetricDetailScreen`** unificado (sheet claro «Instrumento», `depth: .full`, tema explícito, sin `NavigationStack` anidado). El resto sigue su puente: Recuperación/Esfuerzo/SpO₂/FC/Pasos/Estrés→`MetricInfoSheet` claro; Sueño→`SleepView`, Entrenamientos→`WorkoutsView`, Temp. piel→`MetricDetailView` del catálogo, Comparar→`CompareView`, Ver todas→`MetricExplorerView` — estos últimos como **sheet oscuro fijado a `.dark`** (un tab claro no puede empujar una pantalla oscura sin romper la barra de estado). El mini-bloque **«Cómo amaneces tras cada deporte»** (Activity Cost, FER-139) en «Actividad» abre su propia **hoja clara** `ActivityRecoverySheet` (hermana de `MetricInfoSheet`, tema explícito): una tarjeta por deporte —en el orden del motor— con la frase de **asociación** (no causa), badge de confianza (`Sólido`/`Juntando datos`) y «n sesiones», más «Ver el método» con los confusores; sin datos suficientes → estado «Juntando datos».
 
-**Componentes:** `MetricRow`, `Sparkline` (+ `ReferenceRange.interquartile`), `MetricInfoSheet`, `MetricDetailScreen` (+ `MetricDetailSpec`), `InstrumentoTheme` (`instrumentoThemeByHour`).
+**Componentes:** `MetricRow`, `Sparkline` (+ `ReferenceRange.interquartile`), `MetricInfoSheet`, `MetricDetailScreen` (+ `MetricDetailSpec`), `ActivityRecoverySheet` (FER-139), `InstrumentoTheme` (`instrumentoThemeByHour`). **Analytics:** `ActivityCostEngine` + `ActivityCostInputs` (StrandAnalytics, vía `Repository.activityCosts()`).
 
 ---
 

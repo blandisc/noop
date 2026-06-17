@@ -2,6 +2,600 @@
   "sourceLanguage": "en",
   "strings": {
     "": {},
+    "%lld pts higher": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Pkt. höher"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld pts higher"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld pts más arriba"
+          }
+        }
+      }
+    },
+    "%lld pts lower": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Pkt. niedriger"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld pts lower"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld pts más abajo"
+          }
+        }
+      }
+    },
+    "%lld sessions": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Einheiten"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld sessions"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld sesiones"
+          }
+        }
+      }
+    },
+    "After each sport": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nach jeder Sportart"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After each sport"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tras cada deporte"
+          }
+        }
+      }
+    },
+    "Building data": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daten werden gesammelt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Building data"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Juntando datos"
+          }
+        }
+      }
+    },
+    "Confidence: building data": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Konfidenz: Daten werden gesammelt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confidence: building data"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confianza: juntando datos"
+          }
+        }
+      }
+    },
+    "Confidence: solid": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Konfidenz: belastbar"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confidence: solid"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confianza: sólida"
+          }
+        }
+      }
+    },
+    "Gathering data": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daten werden gesammelt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gathering data"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Juntando datos"
+          }
+        }
+      }
+    },
+    "Gathering your sessions": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wir sammeln deine Einheiten"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gathering your sessions"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estamos juntando tus sesiones"
+          }
+        }
+      }
+    },
+    "How you wake after each sport": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wie du nach jeder Sportart aufwachst"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How you wake after each sport"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cómo amaneces tras cada deporte"
+          }
+        }
+      }
+    },
+    "It's an association, not a cause. Things like training on the days you already wake up well (then drifting back down), resting when you're tired or sick, or which day of the week you train all play a part.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Es ist ein Zusammenhang, keine Ursache. Dinge wie Training an den Tagen, an denen du ohnehin gut aufwachst (und danach natürlich wieder absinkst), Ruhe, wenn du müde oder krank bist, oder der Wochentag, an dem du trainierst, spielen alle eine Rolle."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It's an association, not a cause. Things like training on the days you already wake up well (then drifting back down), resting when you're tired or sick, or which day of the week you train all play a part."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Es una asociación, no una causa. Influyen cosas como entrenar justo los días que amaneces bien (y luego «bajar» de forma natural), descansar cuando estás cansado o enfermo, o el día de la semana en que sueles entrenar."
+          }
+        }
+      }
+    },
+    "It's an estimate from your own history, not a diagnosis.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Es ist eine Schätzung aus deinem eigenen Verlauf, keine Diagnose."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It's an estimate from your own history, not a diagnosis."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Es una estimación a partir de tu propio historial, no un diagnóstico."
+          }
+        }
+      }
+    },
+    "Medians over your own history (Plews et al., 2013; HRV via RMSSD, Task Force 1996).": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mediane über deinen eigenen Verlauf (Plews et al., 2013; HRV via RMSSD, Task Force 1996)."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medians over your own history (Plews et al., 2013; HRV via RMSSD, Task Force 1996)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medianas sobre tu historial (Plews et al., 2013; HRV vía RMSSD, Task Force 1996)."
+          }
+        }
+      }
+    },
+    "Sessions like this are barely linked to any change in your next-day Charge (n=%lld).": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einheiten wie diese hängen kaum mit einer Veränderung deines Charge am nächsten Tag zusammen (n=%lld)."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sessions like this are barely linked to any change in your next-day Charge (n=%lld)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las sesiones de este deporte apenas se relacionan con un cambio en tu Charge del día siguiente (n=%lld)."
+          }
+        }
+      }
+    },
+    "Sessions like this are typically followed by a Charge about %lld points higher the next morning (n=%lld).": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nach so einer Einheit wachst du am nächsten Morgen meist mit einem Charge auf, der etwa %lld Punkte höher liegt (n=%lld)."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sessions like this are typically followed by a Charge about %lld points higher the next morning (n=%lld)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Después de una sesión así, sueles amanecer con un Charge unos %lld puntos más arriba (n=%lld)."
+          }
+        }
+      }
+    },
+    "Sessions like this are typically followed by a Charge about %lld points higher the next morning, climbing back in about %lld days (n=%lld).": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nach so einer Einheit wachst du am nächsten Morgen meist mit einem Charge auf, der etwa %lld Punkte höher liegt, und nach etwa %lld Tagen erreichst du dein Niveau wieder (n=%lld)."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sessions like this are typically followed by a Charge about %lld points higher the next morning, climbing back in about %lld days (n=%lld)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Después de una sesión así, sueles amanecer con un Charge unos %lld puntos más arriba, y vuelves a tu nivel en unos %lld días (n=%lld)."
+          }
+        }
+      }
+    },
+    "Sessions like this are typically followed by a Charge about %lld points higher the next morning, climbing back in about 1 day (n=%lld).": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nach so einer Einheit wachst du am nächsten Morgen meist mit einem Charge auf, der etwa %lld Punkte höher liegt, und nach etwa einem Tag erreichst du dein Niveau wieder (n=%lld)."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sessions like this are typically followed by a Charge about %lld points higher the next morning, climbing back in about 1 day (n=%lld)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Después de una sesión así, sueles amanecer con un Charge unos %lld puntos más arriba, y vuelves a tu nivel en un día (n=%lld)."
+          }
+        }
+      }
+    },
+    "Sessions like this are typically followed by a Charge about %lld points lower the next morning (n=%lld).": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nach so einer Einheit wachst du am nächsten Morgen meist mit einem Charge auf, der etwa %lld Punkte niedriger liegt (n=%lld)."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sessions like this are typically followed by a Charge about %lld points lower the next morning (n=%lld)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Después de una sesión así, sueles amanecer con un Charge unos %lld puntos más abajo (n=%lld)."
+          }
+        }
+      }
+    },
+    "Sessions like this are typically followed by a Charge about %lld points lower the next morning, climbing back in about %lld days (n=%lld).": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nach so einer Einheit wachst du am nächsten Morgen meist mit einem Charge auf, der etwa %lld Punkte niedriger liegt, und nach etwa %lld Tagen erreichst du dein Niveau wieder (n=%lld)."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sessions like this are typically followed by a Charge about %lld points lower the next morning, climbing back in about %lld days (n=%lld)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Después de una sesión así, sueles amanecer con un Charge unos %lld puntos más abajo, y vuelves a tu nivel en unos %lld días (n=%lld)."
+          }
+        }
+      }
+    },
+    "Sessions like this are typically followed by a Charge about %lld points lower the next morning, climbing back in about 1 day (n=%lld).": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nach so einer Einheit wachst du am nächsten Morgen meist mit einem Charge auf, der etwa %lld Punkte niedriger liegt, und nach etwa einem Tag erreichst du dein Niveau wieder (n=%lld)."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sessions like this are typically followed by a Charge about %lld points lower the next morning, climbing back in about 1 day (n=%lld)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Después de una sesión así, sueles amanecer con un Charge unos %lld puntos más abajo, y vuelves a tu nivel en un día (n=%lld)."
+          }
+        }
+      }
+    },
+    "Solid": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Belastbar"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solid"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sólido"
+          }
+        }
+      }
+    },
+    "This is how your Charge tends to look the morning after each sport, compared with your rest days. It's what we observe in your history, not a cause-and-effect link.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "So sieht dein Charge typischerweise am Morgen nach jeder Sportart aus, verglichen mit deinen Ruhetagen. Es ist das, was wir in deinem Verlauf beobachten, kein Ursache-Wirkungs-Zusammenhang."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is how your Charge tends to look the morning after each sport, compared with your rest days. It's what we observe in your history, not a cause-and-effect link."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Así suele verse tu Charge la mañana después de cada deporte, comparado con tus días de descanso. Es lo que observamos en tu historial, no una relación de causa."
+          }
+        }
+      }
+    },
+    "We compare the median of your Charge the morning after each sport against your “untouched” rest days (no workouts, and not the days right after a session). The difference is what you see here.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wir vergleichen den Median deines Charge am Morgen nach jeder Sportart mit deinen „unberührten“ Ruhetagen (ohne Training und nicht die Tage direkt nach einer Einheit). Der Unterschied ist das, was du hier siehst."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We compare the median of your Charge the morning after each sport against your “untouched” rest days (no workouts, and not the days right after a session). The difference is what you see here."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comparamos la mediana de tu Charge la mañana siguiente a cada deporte contra tus días de descanso «intactos» (sin entrenamientos y fuera de los días posteriores a una sesión). La diferencia es lo que ves aquí."
+          }
+        }
+      }
+    },
+    "We need about 6 sessions of the same sport to start showing how you wake afterward. Keep logging your workouts and this fills in on its own.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wir brauchen etwa 6 Einheiten derselben Sportart, um zu zeigen, wie du danach aufwachst. Trage deine Workouts weiter ein, dann füllt sich das von selbst."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We need about 6 sessions of the same sport to start showing how you wake afterward. Keep logging your workouts and this fills in on its own."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Necesitamos unas 6 sesiones de un mismo deporte para empezar a ver cómo amaneces después. Sigue registrando tus entrenamientos y esto se llena solo."
+          }
+        }
+      }
+    },
+    "Your workouts can come from Apple Health. Connect it from Today to add them here.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Workouts können aus Apple Health kommen. Verbinde es über „Heute“, um sie hier hinzuzufügen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your workouts can come from Apple Health. Connect it from Today to add them here."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus entrenamientos pueden venir de Apple Health. Conéctalo desde Hoy para sumarlos aquí."
+          }
+        }
+      }
+    },
+    "no clear link": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "kein klarer Zusammenhang"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "no clear link"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sin vínculo claro"
+          }
+        }
+      }
+    },
+    "Opens the per-sport detail.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffnet die Detailansicht pro Sportart."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the per-sport detail."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre el detalle por deporte."
+          }
+        }
+      }
+    },
     " No clear relationship — they move largely independently.": {
       "localizations": {
         "en": {
