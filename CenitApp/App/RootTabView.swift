@@ -34,7 +34,7 @@ struct RootTabView: View {
     /// The visible tab. Starts on Today, the launch screen.
     @State private var selection: Tab = .today
     /// Tabs whose content has been shown at least once. Only Today is built at launch; the one heavy
-    /// lazy tab — Cuerpo (`TrendsView` runs its own `.task` data load on appear) — is deferred until
+    /// lazy tab — Cuerpo (`CuerpoView` runs its own `.task` data load on appear) — is deferred until
     /// first selected, then kept in the set so switching back doesn't rebuild from scratch. The hub
     /// tabs (Coach/Entrenar/Ajustes) are plain lists whose destinations build on `NavigationLink` tap,
     /// so they stay eager (cheap). Avoids widening the launch gap — FER-31.
@@ -54,7 +54,7 @@ struct RootTabView: View {
     var body: some View {
         TabView(selection: $selection) {
             lazyTab(.today, "Today", "circle.hexagongrid.fill") { TodayView() }
-            lazyTab(.body,  "Body",  "chart.xyaxis.line") { TrendsView() }
+            lazyTab(.body,  "Body",  "chart.xyaxis.line") { CuerpoView() }
 
             // Coach — interim hub: the three insight surfaces, seed of the unified Coach layer.
             hubTab(.coach, "Coach", "sparkles", path: $coachStack) {
@@ -79,13 +79,13 @@ struct RootTabView: View {
                 Section {
                     row(.settings, "Settings", "gearshape.fill")
                 }
+                // Sleep · Health · Stress moved to «Cuerpo» as métricas (FER-186) — Sueño opens
+                // SleepView from Cuerpo, and Health's vitals + Stress are rows there. The rest stay in
+                // this interim drawer until their sibling issues give them a home.
                 Section("More") {
-                    row(.sleep,       "Sleep",        "bed.double.fill")
                     row(.explore,     "Explore",      "square.grid.2x2.fill")
                     row(.compare,     "Compare",      "rectangle.split.2x1.fill")
                     row(.workouts,    "Workouts",     "figure.run")
-                    row(.health,      "Health",       "heart.text.square.fill")
-                    row(.stress,      "Stress",       "bolt.heart.fill")
                     row(.applehealth, "Apple Health", "heart.fill")
                     row(.datasources, "Data Sources", "externaldrive.fill")
                     row(.automations, "Automations",  "wand.and.stars")
@@ -167,9 +167,10 @@ struct RootTabView: View {
     }
 
     /// Which tabs render in the light «Instrumento diurno» paper (drives the status-bar color scheme
-    /// via `isTodayActive` and the instrument bar's `isLight`). Only Hoy now — En vivo's light paper
-    /// (FER-181) lives in a cover over Hoy, not a tab; every other tab is the dark instrument panel.
-    private func isLightTab(_ tab: Tab) -> Bool { tab == .today }
+    /// via `isTodayActive` and the instrument bar's `isLight`). Hoy and Cuerpo — the «historia» landing
+    /// is warm paper too (FER-186), color only on the datum; every other tab is the dark instrument
+    /// panel. (En vivo's light paper lives in a cover over Hoy, not a tab.)
+    private func isLightTab(_ tab: Tab) -> Bool { tab == .today || tab == .body }
 
     /// The hub tab that owns a given secondary screen (for debug navigation).
     private func hub(for screen: SecondaryScreen) -> Tab {
