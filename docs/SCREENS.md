@@ -39,7 +39,7 @@ Tab shell (FER-182) → 5 pestañas: Hoy · Cuerpo · Coach · Entrenar · Ajust
              WorkoutsView · HealthView · StressView · AppleHealthView · DataSourcesView ·
              AutomationsView · SupportView
 SettingsView → WhatsNewView (sheet)
-TodayView   → LiveView (fullScreenCover, "beat by beat") · MetricInfoSheet (sheet) · WhyVerdictSheet (sheet) · SupportView (toolbar)
+TodayView   → LiveView (sheet, detente grande) · MetricInfoSheet (sheet) · WhyVerdictSheet (sheet) · SupportView (toolbar)
 WorkoutsView → ManualWorkoutSheet (sheet: add / edit)
 MetricExplorerView → MetricDetailView (NavigationLink push, sobre el stack de la pestaña «Ajustes» — FER-171)
 ```
@@ -49,7 +49,7 @@ MetricExplorerView → MetricDetailView (NavigationLink push, sobre el stack de 
 `safeAreaInset`) que **adapta su tratamiento a la pestaña activa**: bajo **Hoy** (papel «Instrumento diurno») viste
 el papel y respira con la hora (`instrumentoThemeByHour`); bajo Cuerpo / Coach / Entrenar / Ajustes usa el
 `StrandPalette` oscuro. El color scheme (barra de estado) sigue la pestaña: solo Hoy es clara (`isLightTab` en
-`RootTabView`); En vivo es papel claro pero vive en un cover sobre Hoy, no es pestaña. La pestaña activa se marca
+`RootTabView`); En vivo es papel claro pero vive en una **hoja** (`.sheet`) sobre Hoy, no es pestaña (FER-190). La pestaña activa se marca
 con tinta + un punto de «ahora» (verde recovery en claro, `accent` en oscuro), nunca con relleno verde. Íconos de
 trazo fino: **Hoy** = glifo de dial 24h (`DialTabGlyph`, StrandDesign), el resto glifos de línea (Cuerpo
 `chart.xyaxis.line` · Coach `sparkles` · Entrenar `figure.strengthtraining.functional` · Ajustes `gearshape`).
@@ -97,7 +97,7 @@ trazo fino: **Hoy** = glifo de dial 24h (`DialTabGlyph`, StrandDesign), el resto
 **Nota — Hoy cabe en una pantalla (iOS, FER-189 · sobre FER-180):** tres ajustes de composición para que Hoy (estado veredicto típico) entre sin scroll, sin tocar el héroe (dial 180 intacto). (1) **«Verlo latido a latido» (`LiveHeartbeatRow`) se mudó del pie del héroe al PIE de Hoy** (`iosBody`, tras las tiles, sólo si `strapSeen`): el héroe queda limpio —overline + dial-con-numeral + veredicto—; `heroFooter` ahora sólo lleva el CTA «Buscar strap» (sin strap) o el atajo Apple Salud (calibrando), nada en veredicto/espera-con-strap. (2) **Se retiró la sección «Fuentes»** de Hoy (`iosSourcesSection`/`sourceRow`/`metricSeparator` eliminados; vive en Fuentes de datos / Ajustes). (3) **Las tiles bajan de alto** (`TodayMetricTile`: 104 → **76pt fijo**, padding 14→10, valor `number(24→22)`, etiqueta a **una línea** con `minimumScaleFactor`), para una rejilla 2×4 compacta y pareja.
 
 **Componentes:** `HealthAlertBanner`, `PaperBackground` (lienzo de papel por hora, FER-135), `heroInstrument` (héroe unificado de 4 modos vía `HeroState`, FER-160), `DiurnalDial` (dial 24h del héroe, FER-135), `LiveHeartbeatRow` (al **pie** de Hoy desde FER-189), `WhyVerdictSheet`, `TodayMetricTile`/`TileButtonStyle` (rejilla «Métricas de hoy» 2×4, valor + Δ vs ayer, tiles 76pt, FER-180/189) · macOS (heredado): `MetricRow`, `RecoveryRing`, `StatTile ×10`, `ChartCard (HR Trend)`, `SourcesSummaryCard`, `ReadinessGaugeBar`, `readinessSection`  
-**Navegación:** → `LiveView` (fullScreenCover, "beat by beat") · → `MetricInfoSheet` (sheet, tap de cualquier **tile** de «Métricas de hoy» —incl. la variante **`stress`** nueva, FER-180— · tap del **número de recuperación** del héroe → explicador «cómo se calcula», FER-108/109) · → `WhyVerdictSheet` (sheet, **«i»** junto a la palabra del veredicto) · → `DataSourcesView` (sheet, «Conectar Apple Salud») · → `SupportView` (toolbar ❤)
+**Navegación:** → `LiveView` (sheet detente grande, "beat by beat" — FER-190) · → `MetricInfoSheet` (sheet, tap de cualquier **tile** de «Métricas de hoy» —incl. la variante **`stress`** nueva, FER-180— · tap del **número de recuperación** del héroe → explicador «cómo se calcula», FER-108/109) · → `WhyVerdictSheet` (sheet, **«i»** junto a la palabra del veredicto) · → `DataSourcesView` (sheet, «Conectar Apple Salud») · → `SupportView` (toolbar ❤)
 
 **Nota — `WhyVerdictSheet` en tema claro (FER-167):** el sheet «¿Por qué {veredicto}?» se migró del fondo oscuro `StrandPalette.surfaceBase` al **tema claro «Instrumento»** (igual que `MetricInfoSheet` en FER-162). `TodayView` le pasa el `InstrumentoTheme` **explícito** (no se propaga por `.sheet`); papel/tinta/superficies del tema. Los colores de nivel del chip y la leyenda **espejean `TodayView.verdictDataColor`** (primed/balanced → `verdict`, strained → `warning`, rundown → `critical`, insufficient → `inkTertiary`) para que el héroe y el sheet nunca discrepen; el `colorName` del chip sigue ese mapeo (verde/ámbar/rojo/gris). Copy es-MX + de (FER-113 ya tenía es; FER-167 añade el `de` de los nombres de nivel y el color «rojo»).
 
@@ -257,16 +257,16 @@ trazo fino: **Hoy** = glifo de dial 24h (`DialTabGlyph`, StrandDesign), el resto
 
 ### LiveView
 **Archivo:** `Cenit/Screens/LiveView.swift`  
-**Descripción:** Monitor puro en tema claro «Instrumento diurno» (FER-181/184): papel cálido, etiquetas en tinta, color **solo en el dato** (FC/ECG/latidos en `dataHeart`; indicadores «en vivo»/guardado en `dataRecovery`). Sin strain (vive en Hoy), **sin gestión de correa** (selector 4/5/MG, escanear/buzz/desconectar y el log → Ajustes), **sin batería del strap** (→ Ajustes) y **sin bloque de entrenamiento** (FER-184 — registrar entrenamientos vive en *Más › Workouts*). La única acción que carga es un CTA «Conectar» en el estado desconectado. El tema se pasa **explícito** (no se propaga por `fullScreenCover`/`.sheet`).
+**Descripción:** Monitor puro como **una sola hoja** (`.sheet` detente grande, FER-190) en tema claro «Instrumento diurno» (FER-181/184): todo cabe en una vista sin scroll (un `ScrollView` solo degrada en pantallas chicas / Dynamic Type grande). Papel cálido, etiquetas en tinta, color **solo en el dato** (FC/ECG/latidos en `dataHeart`; indicadores «en vivo»/guardado en `dataRecovery`). La **jugada clave de FER-190**: «Capturing live» + «Completes on sync» + el recibo de conteos se fusionan en **una lista de Señales** con dos sub-grupos etiquetados; cada renglón = estado vivo/sync **+ conteo guardado**. Sin strain (vive en Hoy), **sin gestión de correa** (→ Ajustes), **sin batería del strap** (→ Ajustes) y **sin bloque de entrenamiento** (→ *Más › Workouts*). La única acción es el CTA «Conectar» en desconectado. El tema se pasa **explícito** (no se propaga por `.sheet`).
 
 | Estado | Condición de entrada |
 |--------|---------------------|
-| Conectada · transmitiendo | `live.connected` + HR en vivo (`worn` + heartRate) → monitor completo |
-| Conectada · idle (no puesta) | `live.connected` sin señal viva → monitor con «—»; recibo/cobertura visibles |
-| Desconectada / sin correa | `!live.connected` → pill «Desconectada» + ECG plano + mensaje + **CTA «Conectar»** (sin panel de gestión) |
-| monitorOnly mode | `monitorOnly: true` (cover de Hoy "beat by beat", esquema claro) |
+| Conectada · transmitiendo | `live.connected` + HR en vivo (`worn` + heartRate) → hoja completa, FC/R-R con valor vivo + punto verde |
+| Conectada · idle (no puesta) | `live.connected` sin señal viva → «—» en los vivos; conteos/cobertura visibles |
+| Desconectada / sin correa | `!live.connected` → pill «Desconectada» + ECG plano + mensaje + **CTA «Conectar»** |
+| monitorOnly mode | `monitorOnly: true` (hoja de Hoy "beat by beat", esquema claro) |
 
-**Componentes:** `connectionPill` (info, no tappable; sin batería), `ECG Hero` (`dataHeart`/plano), `Session Tally` + `rrTachogram`, `Live Signals (Capturing live)`, `Sync Signals (Completes on sync)`, `savedFooter`, `Data Receipt (frame counts)` + `Coverage Strip (28d)` + respaldo iCloud (cuando aplica), `verifyRow` («Verify my data»), `disconnectedState` (CTA «Conectar»). Gestión de correa, batería del strap y bloque de entrenamiento **removidos** → Ajustes / *Más › Workouts*.
+**Componentes:** `header` (título + `connectionPill`), `hero` (ECG `dataHeart`/plano + bpm + «en vivo» + latidos de sesión + `rrTachogram`), `signalsSection` (2 grupos: «Capturing live» FC·R-R / «Completes on sync» SpO₂·Temp·Resp·Movimiento, cada renglón con `storedCount`), `coverageStrip` (28 d + Continuo/N huecos), `savedFooter` (chips iPhone + iCloud + `verifyButton` con escudo; o línea de aviso/última-sync según estado), `disconnectedState` (CTA «Conectar»). Gestión de correa, batería y entrenamiento **removidos** → Ajustes / *Más › Workouts*.
 
 ---
 

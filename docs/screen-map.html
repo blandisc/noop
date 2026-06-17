@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-17 · FER-182</span>
+  <span class="tb-updated">Actualizado 2026-06-17 · FER-190</span>
 </div>
 
 <div id="wrapper">
@@ -375,7 +375,7 @@ const SCREENS = [
       { label: 'Cabe en una pantalla (FER-189): latido a latido al PIE, sin sección Fuentes, tiles 76pt — sin scroll en 6.1"+', type: 'live' },
     ],
     nav: [
-      { to: 'live', label: 'beat by beat (pie de Hoy · FER-189)', type: 'fullscreen' },
+      { to: 'live', label: 'beat by beat (hoja · FER-190)', type: 'sheet' },
       { to: 'metric-info', label: 'Tap tile de «Métricas de hoy» (incl. variante stress · FER-180)', type: 'sheet' },
       { to: 'metric-info', label: 'Tap número de recuperación (héroe) → cómo se calcula', type: 'sheet' },
       { to: 'why-verdict', label: '«i» junto a la palabra del veredicto', type: 'sheet' },
@@ -530,7 +530,7 @@ const SCREENS = [
   // ── ROW 3: Dispositivo (y = 2010) ─────────
   {
     id: 'live', x: 30, y: 2010,
-    name: 'Live', desc: 'Monitor puro «Instrumento» · sin strain/gestión/batería/entrenamiento',
+    name: 'Live', desc: 'Hoja única «Instrumento» · señales unificadas · sin scroll',
     file: 'Cenit/Screens/LiveView.swift',
     icon: '📡', color: '#0C8F62',
     states: [
@@ -540,7 +540,7 @@ const SCREENS = [
       { label: 'monitorOnly (cover de Hoy)', type: 'data' },
     ],
     nav: [],
-    components: ['connectionPill (info · sin batería)', 'ECG Hero (dataHeart/plano)', 'Session Tally + rrTachogram', 'Live Signals (Capturing live)', 'Sync Signals (Completes on sync)', 'savedFooter', 'Data Receipt + Coverage 28d + respaldo iCloud', 'verifyRow', 'disconnectedState (CTA Conectar)'],
+    components: ['header (título + connectionPill)', 'hero (ECG + bpm + en vivo + latidos + rrTachogram)', 'signalsSection (2 grupos: Capturing live / Completes on sync · cada renglón con storedCount)', 'coverageStrip (28d + Continuo)', 'savedFooter (chips iPhone + iCloud + Verify escudo)', 'disconnectedState (CTA Conectar)'],
   },
   {
     id: 'automations', x: 284, y: 2010,
@@ -706,7 +706,7 @@ const SCREENS = [
 //  EDGES — navigation connections
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const EDGES = [
-  { from: 'today',    to: 'live',           label: 'fullScreenCover',  type: 'fullscreen' },
+  { from: 'today',    to: 'live',           label: 'sheet (hoja)',     type: 'sheet'      },
   { from: 'today',    to: 'metric-info',    label: 'sheet',            type: 'sheet'      },
   { from: 'today',    to: 'support',        label: 'toolbar ❤',        type: 'toolbar'    },
   { from: 'workouts', to: 'manual-workout', label: 'sheet',            type: 'sheet'      },
