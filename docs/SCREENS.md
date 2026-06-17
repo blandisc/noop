@@ -34,7 +34,7 @@ Tab bar → 18 destinos principales
 SettingsView → WhatsNewView (sheet)
 TodayView   → LiveView (fullScreenCover) · MetricInfoSheet (sheet) · WhyVerdictSheet (sheet) · SupportView (toolbar)
 WorkoutsView → ManualWorkoutSheet (sheet: add / edit)
-MetricExplorerView → MetricDetailView (NavigationLink push, interno)
+MetricExplorerView → MetricDetailView (NavigationLink push, sobre el stack de la pestaña «Más» — FER-171)
 ```
 
 **Barra de pestañas — «Barra de instrumento»** (`CenitApp/App/InstrumentTabBar.swift`, FER-163). Barra inferior
@@ -193,7 +193,7 @@ se marca con tinta + un punto de «ahora» (verde recovery en claro, `accent` en
 | Detalle · tendencia | ≥ 2 puntos; muestra gráfica |
 
 **Componentes:** `MetricCatalog grouped list`, `Hero StatTile`, `ChartCard (tendencia)`, `Avg/Min/Max footer`, `Banding vs baseline`  
-**Navegación:** → `MetricDetailView` (push interno, NavigationLink)
+**Navegación:** → `MetricDetailView` (NavigationLink push; cuelga del único `NavigationStack` de la pestaña «Más», sin stack anidado — FER-171)
 
 ---
 

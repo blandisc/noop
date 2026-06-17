@@ -25,7 +25,10 @@ struct RootTabView: View {
     /// Was eager: all five tab bodies + their launch `.task`s ran at startup, widening the launch
     /// gap. The "More" list is already lazy (its destinations build on `NavigationLink` tap). FER-31.
     @State private var visited: Set<Tab> = [.today]
-    @State private var moreStack: [MoreScreen] = []
+    /// Type-erased so the More tab's single stack can hold both `MoreScreen` (its
+    /// list rows) and the `MetricDescriptor` values Explore pushes. A homogeneous
+    /// `[MoreScreen]` path crossing a `MetricDescriptor` crashed SwiftUI — FER-171.
+    @State private var moreStack = NavigationPath()
     /// Measured height of the «Barra de instrumento» (its button row, above the
     /// home-indicator bleed). Each tab reserves exactly this much at its bottom so
     /// the last component clears the bar — see `barReservation`. Starts 0 and is
@@ -91,13 +94,15 @@ struct RootTabView: View {
             if let tab {
                 selection = tab
                 visited.insert(tab)
-                moreStack = []
+                moreStack = NavigationPath()
                 return
             }
             if let ms = MoreScreen(rawValue: screen) {
                 selection = .more
                 visited.insert(.more)
-                moreStack = [ms]
+                var path = NavigationPath()
+                path.append(ms)
+                moreStack = path
             }
         }
         #endif

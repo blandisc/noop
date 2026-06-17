@@ -112,38 +112,41 @@ struct MetricExplorerView: View {
     /// metric.id → whether its series is empty (loaded once, lazily).
     @State private var emptyByID: [String: Bool] = [:]
 
+    // No NavigationStack here: Explore is pushed inside the More tab's stack
+    // (RootTabView). A nested NavigationStack crossing this view's MetricDescriptor
+    // values with that tab's path crashed SwiftUI (`try! AnyNavigationPath`) — FER-171.
+    // The catalog list + its `.navigationDestination(for: MetricDescriptor.self)` now
+    // hang off the tab's single stack (whose path is type-erased `NavigationPath`).
     var body: some View {
-        NavigationStack {
-            ScreenScaffold(title: "Explore", subtitle: "Every signal, one tap deep.") {
-                ForEach(MetricCatalog.categories, id: \.self) { category in
-                    let metrics = MetricCatalog.inCategory(category)
-                    if !metrics.isEmpty {
-                        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-                            SectionHeader("\(MetricCatalog.localizedCategory(category))", overline: "Category",
-                                          trailing: "\(metrics.count)")
-                            NoopCard(padding: 0) {
-                                VStack(spacing: 0) {
-                                    ForEach(Array(metrics.enumerated()), id: \.element.id) { idx, metric in
-                                        NavigationLink(value: metric) {
-                                            MetricRow(metric: metric,
-                                                      isEmpty: emptyByID[metric.id] ?? false)
-                                        }
-                                        .buttonStyle(.plain)
-                                        if idx < metrics.count - 1 {
-                                            Divider().overlay(StrandPalette.hairline)
-                                                .padding(.leading, 56)
-                                        }
+        ScreenScaffold(title: "Explore", subtitle: "Every signal, one tap deep.") {
+            ForEach(MetricCatalog.categories, id: \.self) { category in
+                let metrics = MetricCatalog.inCategory(category)
+                if !metrics.isEmpty {
+                    VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+                        SectionHeader("\(MetricCatalog.localizedCategory(category))", overline: "Category",
+                                      trailing: "\(metrics.count)")
+                        NoopCard(padding: 0) {
+                            VStack(spacing: 0) {
+                                ForEach(Array(metrics.enumerated()), id: \.element.id) { idx, metric in
+                                    NavigationLink(value: metric) {
+                                        MetricRow(metric: metric,
+                                                  isEmpty: emptyByID[metric.id] ?? false)
+                                    }
+                                    .buttonStyle(.plain)
+                                    if idx < metrics.count - 1 {
+                                        Divider().overlay(StrandPalette.hairline)
+                                            .padding(.leading, 56)
                                     }
                                 }
                             }
                         }
-                        .padding(.bottom, NoopMetrics.sectionGap - 20)
                     }
+                    .padding(.bottom, NoopMetrics.sectionGap - 20)
                 }
             }
-            .navigationDestination(for: MetricDescriptor.self) { metric in
-                MetricDetailView(metric: metric)
-            }
+        }
+        .navigationDestination(for: MetricDescriptor.self) { metric in
+            MetricDetailView(metric: metric)
         }
         .task { await probeEmptiness() }
     }
@@ -641,10 +644,15 @@ private func explorerPreviewRepo() -> Repository {
 }
 
 #Preview("Explore") {
-    MetricExplorerView()
-        .environmentObject(explorerPreviewRepo())
-        .frame(width: 900, height: 820)
-        .preferredColorScheme(.dark)
+    // Wrapped in a NavigationStack: the view itself no longer provides one (FER-171),
+    // so the preview supplies the stack its `.navigationDestination` hangs off — the
+    // app gets this from the More tab's stack.
+    NavigationStack {
+        MetricExplorerView()
+    }
+    .environmentObject(explorerPreviewRepo())
+    .frame(width: 900, height: 820)
+    .preferredColorScheme(.dark)
 }
 
 #Preview("Metric Detail") {
