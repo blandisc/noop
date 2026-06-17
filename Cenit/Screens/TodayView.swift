@@ -250,9 +250,10 @@ struct TodayView: View {
 
     private var iosBody: some View {
         ScrollView {
-            // Ritmo de sección compacto (FER-202): el gap de sección baja de 28 a 18 para que Hoy quepa
-            // en una pantalla en estado calibrando, sin que las secciones se lean fundidas ni apretadas.
-            VStack(alignment: .leading, spacing: 18) {
+            // Ritmo de sección compacto (FER-202): el gap de sección baja de 28 a 16
+            // (`NoopMetrics.sectionGapCompact`) para que Hoy quepa en una pantalla en estado calibrando,
+            // sin que las secciones se lean fundidas ni apretadas.
+            VStack(alignment: .leading, spacing: NoopMetrics.sectionGapCompact) {
                 headerBlock
                 HealthAlertBanner()
                 // Héroe unificado (FER-160): UN solo instrumento de estado adaptable cubre los cuatro
@@ -263,18 +264,19 @@ struct TodayView: View {
                 // lleva el numeral, su color (regla «color = listo / tinta = en espera») y el pie. Ver
                 // `heroInstrument` + `heroState`.
                 heroInstrument
-                // Sube «Métricas de hoy» pegándola al pie del héroe: recorta el gap de sección (18) de esta
-                // sección a ~10 con un inset negativo, sin tocar los gaps del héroe.
+                // Sube «Métricas de hoy» pegándola al pie del héroe: recorta el gap de sección (16) de esta
+                // sección a ~8 con un inset negativo nombrado (`NoopMetrics.sectionTight`), sin tocar los
+                // gaps del héroe.
                 // El acceso al monitor en vivo «latido a latido» ya no es una fila al pie (FER-189): vive
                 // como una pastilla de pulso en el encabezado de «Métricas de hoy» (FER-194), así el pie de
                 // Hoy queda limpio y la pantalla cabe completa. Ver `iosMetricsSection` + `LivePulsePill`.
                 iosMetricsSection
-                    .padding(.top, -8)
+                    .padding(.top, NoopMetrics.sectionTight)
             }
-            // Inset superior 12 (FER-202): el héroe queda alto pero respira; márgenes h/inferior estándar.
+            // Inset superior `gap` (FER-202): el héroe queda alto pero respira; márgenes h/inferior estándar.
             .padding(.horizontal, NoopMetrics.screenPadding)
             .padding(.bottom, NoopMetrics.screenPadding)
-            .padding(.top, 12)
+            .padding(.top, NoopMetrics.gap)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         // Pull-to-refresh (FER-204): jala hacia abajo para forzar una sincronización con la banda. El
@@ -380,18 +382,6 @@ struct TodayView: View {
         return SleepWindow(bedtime: s.bedtime, wake: s.wake)
     }
 
-    /// El color del DATO de recuperación por banda, en roles del tema (regla dura: color saturado solo
-    /// en el número de recuperación). Verde → `dataRecovery`, amarillo → `warning`, rojo → `critical`,
-    /// reusando el umbral de banda WHOOP que ya usa el resto de la app (`RecoveryScorer.band`: rojo <34,
-    /// amarillo 34–67, verde ≥67).
-    private func recoveryDataColor(_ score: Int) -> Color {
-        switch RecoveryScorer.band(Double(score)) {
-        case "green":  return theme.dataRecovery
-        case "yellow": return theme.warning
-        default:       return theme.critical   // "red"
-        }
-    }
-
     /// El color del DATO del veredicto por nivel, en roles del tema (color saturado solo en la palabra
     /// del veredicto). primed/balanced → `verdict`, strained → `warning`, rundown → `critical`.
     private func verdictDataColor(_ level: ReadinessEngine.Level) -> Color {
@@ -441,7 +431,7 @@ struct TodayView: View {
     /// derecha — incluso en espera — para que la pantalla nunca se vea a medio construir.
     @ViewBuilder private var heroInstrument: some View {
         let state = heroState
-        VStack(spacing: 11) {
+        VStack(spacing: NoopMetrics.gap) {
             Text(heroOverline(state)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 .frame(maxWidth: .infinity, alignment: .center)
             // Instrumento concéntrico (FER-169): el numeral domina el CENTRO del dial de 24h, no a su lado.
@@ -468,23 +458,24 @@ struct TodayView: View {
         }
     }
 
-    /// El numeral dominante — lo único que “grita” el estado. Veredicto → recuperación en color de banda
-    /// (o en TINTA si el nivel es `insufficient`: hay número, no hay contexto). Calibrando → «N/4» en
-    /// tinta (progreso, no dato). Espera/base Apple → em-dash «—» en tinta. Numeral 60 con el denominador
-    /// («/100» o «/seed») apilado pequeño y centrado debajo (FER-202).
+    /// El numeral dominante — lo único que “grita” el estado. Veredicto → recuperación SIEMPRE en TINTA:
+    /// el color por nivel lo lleva la PALABRA del veredicto, no el número, así nunca se contradicen
+    /// (FER-206; antes el número iba en color de banda y podía pelearse con la palabra, p. ej. «66» ámbar
+    /// bajo «Equilibrado» verde). Calibrando → «N/4» en tinta (progreso, no dato). Espera/base Apple →
+    /// em-dash «—» en tinta. Numeral 60 con el denominador («/100» o «/seed») apilado pequeño y centrado
+    /// debajo (FER-202).
     @ViewBuilder private func heroNumeral(_ s: HeroState) -> some View {
         switch s {
         case .verdict:
             let score = recoveryScore
-            let insufficient = readiness.level == .insufficient
             // Concéntrico (FER-169/202): el NÚMERO queda centrado en el eje del dial, con el «/100» apilado
             // pequeño y centrado DEBAJO (antes flotaba a la derecha con un «/100» espejo invisible que lo
             // descentraba y lo desbordaba del aro). La escala también vive en el detalle de recuperación.
             Group {
                 if let score {
-                    VStack(spacing: 1) {
+                    VStack(spacing: NoopMetrics.space1) {
                         Text("\(score)").instrumentoHero(60)
-                            .foregroundStyle(insufficient ? theme.ink : recoveryDataColor(score))
+                            .foregroundStyle(theme.ink)
                         Text("/100").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
                     }
                 } else {
@@ -501,7 +492,7 @@ struct TodayView: View {
         case .calibrating(let nights):
             // Apilado (FER-202), igual que el veredicto: «N» centrado en el eje del dial con el «/seed»
             // pequeño y centrado debajo (antes a un lado con un «/seed» espejo invisible).
-            VStack(spacing: 1) {
+            VStack(spacing: NoopMetrics.space1) {
                 Text("\(nights)").instrumentoHero(60).foregroundStyle(theme.ink)
                 Text("/\(Baselines.minNightsSeed)").font(StrandFont.subhead)
                     .foregroundStyle(theme.inkTertiary)
@@ -518,7 +509,7 @@ struct TodayView: View {
         case .verdict:
             verdictBody
         case .importedBaseline:
-            VStack(alignment: .center, spacing: 9) {
+            VStack(alignment: .center, spacing: NoopMetrics.space2) {
                 appleBaseChip
                 Text("Falta la lectura de hoy")
                     .font(StrandFont.headline).foregroundStyle(theme.ink)
@@ -530,7 +521,7 @@ struct TodayView: View {
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
         case .calibrating(let nights):
-            VStack(alignment: .center, spacing: 10) {
+            VStack(alignment: .center, spacing: NoopMetrics.gap) {
                 calibrationDots(nights: nights)
                 Text(calibrationDetailCopy(nights: nights))
                     .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
@@ -539,7 +530,7 @@ struct TodayView: View {
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
         case .waiting:
-            VStack(alignment: .center, spacing: 6) {
+            VStack(alignment: .center, spacing: NoopMetrics.space2) {
                 Text(strapSeen ? "Aún no hay lectura de hoy" : "Aún no hay lectura")
                     .font(StrandFont.headline).foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
@@ -561,7 +552,7 @@ struct TodayView: View {
         let r = readiness
         if r.level != .insufficient {
             Button { showWhyVerdict = true } label: {
-                HStack(spacing: 6) {
+                HStack(spacing: NoopMetrics.space2) {
                     Text(r.headline).font(StrandFont.title2).fontWeight(.semibold)
                         .foregroundStyle(verdictDataColor(r.level))
                         .multilineTextAlignment(.center)
@@ -579,7 +570,7 @@ struct TodayView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             if r.confidenceLow, let note = r.confidenceNote {
-                HStack(spacing: 7) {
+                HStack(spacing: NoopMetrics.space2) {
                     Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 10))
                     Text(note).font(StrandFont.caption)
                 }
@@ -620,29 +611,29 @@ struct TodayView: View {
                 .font(StrandFont.headline)
                 .foregroundStyle(theme.paper)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 11)
-                .background(theme.verdict, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                .padding(.vertical, NoopMetrics.gap)
+                .background(theme.verdict, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
         }
         .buttonStyle(.plain)
-        .padding(.top, 2)
+        .padding(.top, NoopMetrics.space1)
     }
 
     /// Chip de procedencia — la base viene de Apple Health, dicho de frente. Tono de dato (azul de Apple
     /// Salud), AA sobre papel.
     private var appleBaseChip: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: NoopMetrics.space2) {
             Image(systemName: "heart.fill").font(.system(size: 12))
             Text("Base · Apple Salud").font(StrandFont.subhead)
         }
         .foregroundStyle(theme.dataSpO2)
-        .padding(.horizontal, 9).padding(.vertical, 4)
-        .background(theme.dataSpO2.opacity(0.12), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+        .padding(.horizontal, NoopMetrics.space2).padding(.vertical, NoopMetrics.space1)
+        .background(theme.dataSpO2.opacity(0.12), in: RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
     }
 
     /// Night-dots de calibración: llenos en el dato (`dataRecovery`), vacíos en `hairline`.
     private func calibrationDots(nights: Int) -> some View {
         let total = Baselines.minNightsSeed
-        return HStack(spacing: 8) {
+        return HStack(spacing: NoopMetrics.space2) {
             ForEach(0..<total, id: \.self) { i in
                 Circle()
                     .fill(i < nights ? theme.dataRecovery : theme.hairline)
@@ -671,9 +662,9 @@ struct TodayView: View {
     private func appleHealthShortcut(onTap: @escaping () -> Void) -> some View {
         VStack(spacing: 0) {
             Rectangle().fill(theme.hairline).frame(height: 0.5)
-                .padding(.top, 14).padding(.bottom, 10)
+                .padding(.top, NoopMetrics.gap).padding(.bottom, NoopMetrics.gap)
             Button(action: onTap) {
-                HStack(spacing: 9) {
+                HStack(spacing: NoopMetrics.space2) {
                     Image(systemName: "heart.fill")
                         .font(.system(size: 12)).foregroundStyle(theme.dataSpO2)
                     Text("¿Tienes historial en Apple Salud? Conéctalo y tu base arranca con ventaja.")
@@ -681,7 +672,7 @@ struct TodayView: View {
                         .foregroundStyle(theme.inkSecondary)
                         .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: 6)
+                    Spacer(minLength: NoopMetrics.space2)
                     Image(systemName: "chevron.right")
                         .font(.system(size: 11)).foregroundStyle(theme.inkTertiary)
                 }
@@ -708,7 +699,7 @@ struct TodayView: View {
 
         var body: some View {
             Button(action: onTap) {
-                HStack(alignment: .center, spacing: 6) {
+                HStack(alignment: .center, spacing: NoopMetrics.space2) {
                     Image(systemName: "heart.fill")
                         .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                     Circle().fill(isLiveHR ? theme.dataHeart : theme.inkTertiary)
@@ -722,7 +713,7 @@ struct TodayView: View {
                     }
                     Text("bpm").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                 }
-                .padding(.horizontal, 11).padding(.vertical, 5)
+                .padding(.horizontal, NoopMetrics.gap).padding(.vertical, NoopMetrics.space1)
                 .background(theme.surface, in: Capsule())
                 .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
             }
@@ -743,7 +734,7 @@ struct TodayView: View {
                 .font(StrandFont.overline)
                 .tracking(StrandFont.overlineTracking)
                 .foregroundStyle(theme.inkTertiary)
-            Spacer(minLength: 8)
+            Spacer(minLength: NoopMetrics.space2)
             syncMeta
         }
     }
@@ -788,9 +779,9 @@ struct TodayView: View {
     /// nights" counter — so the two never read as the same thing twice. When Apple Health seeded the
     /// baseline, a tertiary note names the source so the early verdict never feels unexplained. (FER-105)
     private var calibrationConfidence: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
+        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+            HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space2) {
+                HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space2) {
                     Image(systemName: "sparkles").font(.system(size: 10))
                     // Compacto (FER-202): la procedencia «base Apple Salud» se pliega aquí, en la misma línea
                     // de la etiqueta, en vez de un tercer renglón aparte — recorta alto para que Hoy quepa.
@@ -805,7 +796,7 @@ struct TodayView: View {
                     }
                 }
                 .foregroundStyle(theme.inkSecondary)
-                Spacer(minLength: 8)
+                Spacer(minLength: NoopMetrics.space2)
                 Text("\(ownNights) de \(Baselines.minNightsTrust) noches")
                     .font(StrandFont.captionNumber)
                     .foregroundStyle(theme.inkSecondary)
@@ -822,7 +813,7 @@ struct TodayView: View {
             }
             .frame(height: 5)
         }
-        .padding(.top, 10)
+        .padding(.top, NoopMetrics.gap)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("Confianza de calibración"))
         .accessibilityValue(Text(baselineFromApple
@@ -866,7 +857,7 @@ struct TodayView: View {
             // strap; si no, el encabezado queda solo con el título (el héroe ofrece «Buscar strap»).
             HStack {
                 Text("Today's metrics").font(StrandFont.title1).foregroundStyle(theme.ink)
-                Spacer(minLength: 8)
+                Spacer(minLength: NoopMetrics.space2)
                 if strapSeen {
                     LivePulsePill(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
                 }
@@ -944,7 +935,7 @@ struct TodayView: View {
             }
             if notConnected && anyMeasuredMissing {
                 Button { showDataSources = true } label: {
-                    HStack(spacing: 6) {
+                    HStack(spacing: NoopMetrics.space2) {
                         Image(systemName: "heart.fill")
                         Text("Conectar Apple Salud")
                         Spacer(minLength: 0)
@@ -1050,18 +1041,18 @@ struct TodayView: View {
                 Text(label).instrumentoOverline()
                     .foregroundStyle(theme.inkSecondary)
                     .lineLimit(1).minimumScaleFactor(0.7)
-                Spacer(minLength: 2)
-                HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Spacer(minLength: NoopMetrics.space1)
+                HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
                     Text(value).font(StrandFont.number(22)).foregroundStyle(valueColor)
                         .lineLimit(1).minimumScaleFactor(0.6)
                     if let unit {
                         Text(unit).font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
                     }
                 }
-                Spacer(minLength: 2)
+                Spacer(minLength: NoopMetrics.space1)
                 footer
             }
-            .padding(.horizontal, 10).padding(.vertical, 8)
+            .padding(.horizontal, NoopMetrics.gap).padding(.vertical, NoopMetrics.space2)
             // Alto fijo compacto (FER-189/202): 76 → 70 para que la rejilla 2×4 + el héroe quepan en una
             // pantalla en estado calibrando; el contenido (label · valor · Δ) sigue cabiendo con su escala.
             .frame(maxWidth: .infinity, minHeight: 70, maxHeight: 70, alignment: .topLeading)
@@ -1076,7 +1067,7 @@ struct TodayView: View {
         /// preserva la altura (estados sin-ayer / sin-valor).
         @ViewBuilder private var footer: some View {
             if fromApple {
-                HStack(spacing: 4) {
+                HStack(spacing: NoopMetrics.space1) {
                     Image(systemName: "heart.fill").font(.system(size: 10))
                     Text("Apple Salud")
                 }
@@ -1086,7 +1077,7 @@ struct TodayView: View {
             } else if let delta {
                 switch delta {
                 case let .change(up, magnitude, color):
-                    HStack(spacing: 3) {
+                    HStack(spacing: NoopMetrics.space1) {
                         Image(systemName: up ? "arrow.up" : "arrow.down")
                             .font(.system(size: 10, weight: .semibold))
                         Text(verbatim: magnitude)

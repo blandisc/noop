@@ -11,6 +11,19 @@ public enum NoopMetrics {
     public static let gap: CGFloat = 12          // gap between cards
     public static let sectionGap: CGFloat = 28   // gap between sections
     public static let screenPadding: CGFloat = 24
+
+    // MARK: Fine spacing ramp (FER-206)
+    // Named steps below `gap` (plus a compact section rhythm and two control radii) so
+    // the «Instrumento» Today path stops using magic numbers — every spacing/radius
+    // there snaps to one of these instead of an inline literal.
+    public static let space1: CGFloat = 4              // finest step (tight icon↔text, a unit hugging a numeral)
+    public static let space2: CGFloat = 8              // tight step, below gap = 12
+    public static let sectionGapCompact: CGFloat = 16  // compact section rhythm on iPhone Today (FER-202)
+    /// Negative inset that pins a section to the foot of the one above (replaces the ad-hoc `padding(.top, -8)`).
+    public static let sectionTight: CGFloat = -8
+    public static let controlRadius: CGFloat = 12      // buttons / CTAs
+    public static let chipRadius: CGFloat = 8          // small inline chips / pills
+
     public static let sourceGlyph: CGFloat = 13  // point size of a data-source SF Symbol glyph
     public static let tileHeight: CGFloat = 104  // every metric tile is this tall
     public static let chartHeight: CGFloat = 220
