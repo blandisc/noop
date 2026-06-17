@@ -236,7 +236,8 @@ final class HealthKitBridge: ObservableObject {
                         deepMin: a.deepMin, remMin: a.remMin, lightMin: a.coreMin, disturbances: nil,
                         restingHr: a.restingHr.map { Int($0.rounded()) }, avgHrv: a.hrv,
                         recovery: nil, strain: nil, exerciseCount: nil,
-                        spo2Pct: a.spo2, skinTempDevC: nil, respRateBpm: a.respRate)
+                        spo2Pct: a.spo2, skinTempDevC: nil, respRateBpm: a.respRate,
+                        steps: a.steps.map { Int($0) })
         }
         // Generic metricSeries points. The per-source pages (Apple Health, Explore, Compare) and the
         // Today sparklines read from metricSeries, which the structured appleDaily/dailyMetric upserts
