@@ -81,6 +81,17 @@ public enum AnalyticsEngine {
         return String(data: data, encoding: .utf8)
     }
 
+    /// Decode a COMPUTED `stagesJSON` (the `[{start,end,stage}]` segment array `encodeStages` writes)
+    /// back to `[StageSegment]`. Returns nil for the IMPORTED dict-of-totals form (no per-segment
+    /// timeline) or empty/malformed input, so callers fall back to a coarse `[start,end]` interval.
+    /// The counterpart of `encodeStages`; reused by SleepView and the SRI orchestration (FER-214).
+    public static func decodeStages(_ json: String?) -> [StageSegment]? {
+        guard let json, let data = json.data(using: .utf8),
+              let segs = try? JSONDecoder().decode([StageSegment].self, from: data),
+              !segs.isEmpty else { return nil }
+        return segs
+    }
+
     /// Analyze one day's streams into a `DayResult`.
     ///
     /// - Parameters:

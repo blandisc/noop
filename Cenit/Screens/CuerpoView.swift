@@ -690,18 +690,27 @@ private struct CuerpoLanding: View {
 
         fitnessAge = computeFitnessAge()
 
-        // Longevity (FER-145): Body Age + Vitality from a 28-night window of nightly signals. Regularity
-        // uses the documented duration proxy (real SRI = FER-214); VO₂max needs a waist the profile
-        // doesn't collect, so the cardio signal flows through resting HR.
+        // Longevity (FER-145 + FER-214): Body Age + Vitality from a 28-night window. Regularity uses the
+        // real Sleep Regularity Index when there's coverage (FER-214), else the documented duration proxy;
+        // VO₂max needs a waist the profile doesn't collect, so the cardio signal flows through resting HR.
         let recent = trailingDisplay(28)
         let vInputs = VitalityInputsBuilder.build(.init(
             chronoAge: Double(model.profile.age),
             nightlyRestingHR: recent.compactMap { $0.restingHr.map(Double.init) },
             nightlyRMSSD: recent.compactMap { $0.avgHrv },
             nightlySleepHours: recent.compactMap { $0.totalSleepMin.map { $0 / 60 } },
-            dailySteps: recent.compactMap { $0.steps.map(Double.init) }))
+            dailySteps: recent.compactMap { $0.steps.map(Double.init) },
+            sleepRegularity: computeSleepRegularity()))
         vitalityInputs = vInputs
         vitalityResult = VitalityEngine.compute(vInputs)
+    }
+
+    /// The real Sleep Regularity Index (FER-214) over a trailing window of persisted sleep sessions, as a
+    /// 0–1 input for the engine (SRI/100). The session→timeline mapping is the pure
+    /// `SleepRegularityIndex.fromSessions`; the view only supplies the window. nil → the builder's proxy.
+    private func computeSleepRegularity() -> Double? {
+        let cutoff = Int(Date().timeIntervalSince1970) - 35 * 86_400
+        return SleepRegularityIndex.fromSessions(repo.sleeps.filter { $0.startTs >= cutoff }).map { $0 / 100 }
     }
 
     // MARK: - Trend / curve loaders for the light sheet (mirror Today)

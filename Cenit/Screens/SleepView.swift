@@ -1,6 +1,7 @@
 import SwiftUI
 import Foundation
 import StrandDesign
+import StrandAnalytics
 import WhoopStore
 
 // MARK: - SleepView
@@ -427,7 +428,7 @@ struct SleepView: View {
     /// the hypnogram draws genuine segments instead of the synthetic reconstruction.
     private var latestNight: Night? {
         guard let s = repo.sleeps.last else { return nil }
-        if let stages = decodeStages(s.stagesJSON), stages.total > 0 {
+        if let stages = decodeImportedTotals(s.stagesJSON), stages.total > 0 {
             return Night(session: s, stages: stages)
         }
         if let seg = decodeSegments(s.stagesJSON, sessionStart: s.startTs), seg.stages.total > 0 {
@@ -670,8 +671,9 @@ struct SleepView: View {
 
     // MARK: - Stage decoding
 
-    /// Decode the imported stagesJSON dict of MINUTES {"light","deep","rem","awake"}.
-    private func decodeStages(_ json: String?) -> Stages? {
+    /// Decode the imported stagesJSON dict of MINUTES {"light","deep","rem","awake"}. (The computed
+    /// segment-array form is parsed by the shared `AnalyticsEngine.decodeStages` in `decodeSegments`.)
+    private func decodeImportedTotals(_ json: String?) -> Stages? {
         guard let json, let data = json.data(using: .utf8) else { return nil }
         guard let obj = try? JSONSerialization.jsonObject(with: data),
               let dict = obj as? [String: Any] else { return nil }
@@ -692,18 +694,13 @@ struct SleepView: View {
     private func decodeSegments(
         _ json: String?, sessionStart: Int
     ) -> (stages: Stages, intervals: [SleepInterval])? {
-        guard let json, let data = json.data(using: .utf8),
-              let arr = (try? JSONSerialization.jsonObject(with: data)) as? [[String: Any]],
-              !arr.isEmpty else { return nil }
+        guard let segs = AnalyticsEngine.decodeStages(json) else { return nil }   // shared parser (FER-214)
         var stages = Stages(awake: 0, light: 0, deep: 0, rem: 0)
         var intervals: [SleepInterval] = []
-        for seg in arr {
-            guard let start = (seg["start"] as? NSNumber)?.intValue,
-                  let end = (seg["end"] as? NSNumber)?.intValue, end > start,
-                  let name = seg["stage"] as? String else { continue }
-            let minutes = Double(end - start) / 60.0
+        for seg in segs where seg.end > seg.start {
+            let minutes = Double(seg.end - seg.start) / 60.0
             let stage: SleepStage
-            switch name {
+            switch seg.stage {
             case "wake", "awake": stage = .awake; stages.awake += minutes
             case "light": stage = .light; stages.light += minutes
             case "deep": stage = .deep; stages.deep += minutes
@@ -712,8 +709,8 @@ struct SleepView: View {
             }
             intervals.append(SleepInterval(
                 stage: stage,
-                start: TimeInterval(start - sessionStart),
-                end: TimeInterval(end - sessionStart)))
+                start: TimeInterval(seg.start - sessionStart),
+                end: TimeInterval(seg.end - sessionStart)))
         }
         return stages.total > 0 ? (stages, intervals) : nil
     }
