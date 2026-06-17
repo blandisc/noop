@@ -208,6 +208,45 @@ extension MetricInfo {
         )
     }
 
+    /// Stress (0–3) — the same transparent autonomic proxy `StressView` shows, reachable from the new
+    /// Today tile (FER-180). Banded LOW (0–1) · MEDIUM (1–2) · HIGH (2–3); the header numeral is tinted
+    /// by the band (low → verdict green, medium → warning, high → critical), mirroring the tile. A
+    /// plain-language headline plus a "See the method" disclosure with the z-score derivation keep it
+    /// consistent with the other seven sheets.
+    static func stress(_ score: Double?) -> MetricInfo {
+        let bands: [Band] = [
+            Band(label: "Low", range: "0 – 1",
+                 isActive: score.map { $0 < 1 } ?? false),
+            Band(label: "Medium", range: "1 – 2",
+                 isActive: score.map { $0 >= 1 && $0 < 2 } ?? false),
+            Band(label: "High", range: "2 – 3",
+                 isActive: score.map { $0 >= 2 } ?? false),
+        ]
+        // WHOOP-style band → header tint, matching TodayView's stress tile (low green, medium amber,
+        // high red). Reserved roles, never the StressView blue→amber ramp (that's its own gauge).
+        let tint: Tint = score.map { s in
+            switch s {
+            case ..<1:  return .good
+            case ..<2:  return .warn
+            default:    return .bad
+            }
+        } ?? .neutral
+        return MetricInfo(
+            id: "stress",
+            name: "Stress",
+            headline: "Your autonomic load today, from 0 to 3. We estimate it by comparing today's resting heart rate and HRV with your own 30-day baseline: a higher-than-usual resting HR and a lower-than-usual HRV both push the number up — classic signs your body is activated.",
+            displayValue: score.map { String(format: "%.1f", $0) } ?? "—",
+            unit: score == nil ? nil : "/ 3",
+            headerTint: tint,
+            bands: bands,
+            note: "Derived from your overnight resting heart rate and HRV — a transparent proxy for autonomic load, not a clinical stress measure.",
+            method: Method(
+                prose: "We take today's resting heart rate and HRV and express each as how far it sits from your 30-day average (a z-score). A resting HR above your norm and an HRV below it both add to the load; the two are summed and squashed onto a 0–3 scale where 0 is calm, 1.5 is your baseline, and 3 is highly activated.",
+                citation: "Combined resting-HR / HRV z-score through a logistic curve; HRV via RMSSD (Task Force, 1996)."
+            )
+        )
+    }
+
     /// Heart Rate — today's continuous HR off the strap's own ~1Hz history. No bands (a personalized
     /// zone model would need the user's HRmax — out of scope), so the body is just one context line +
     /// the 24h curve. Distinct from Resting HR (the night's low), which keeps its own banded sheet.
@@ -345,6 +384,9 @@ struct MetricInfoSheet: View {
         case "spo2":                return theme.dataSpO2
         case "steps":               return theme.dataSteps
         case "recovery":            return theme.dataRecovery
+        // Stress has no single data hue: its bands are tinted by level (verdict/warning/critical), so
+        // the active-band highlight follows the header tint — green at LOW, amber at MEDIUM, red at HIGH.
+        case "stress":              return tintColor(info.headerTint)
         default:                    return theme.dataRecovery
         }
     }
@@ -922,6 +964,18 @@ private func sampleStrainCurve(score: Double) -> [TrendPoint] {
 #Preview("MetricInfoSheet — Recovery (calibrating)") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricInfoSheet(info: .recovery(score: nil, calibrationNights: 2, nightsNeeded: 4))
+    }
+}
+
+#Preview("MetricInfoSheet — Stress (low)") {
+    Color.clear.sheet(isPresented: .constant(true)) {
+        MetricInfoSheet(info: .stress(0.8))
+    }
+}
+
+#Preview("MetricInfoSheet — Stress (high)") {
+    Color.clear.sheet(isPresented: .constant(true)) {
+        MetricInfoSheet(info: .stress(2.4))
     }
 }
 #endif

@@ -19158,6 +19158,213 @@
           }
         }
       }
+    },
+    "Today's metrics": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today's metrics"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Métricas de hoy"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heutige Werte"
+          }
+        }
+      }
+    },
+    "vs yesterday": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "vs yesterday"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "vs ayer"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ggü. gestern"
+          }
+        }
+      }
+    },
+    "Same as yesterday": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Same as yesterday"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Igual que ayer"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wie gestern"
+          }
+        }
+      }
+    },
+    "Medium": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medium"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medio"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mittel"
+          }
+        }
+      }
+    },
+    "High": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "High"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alto"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoch"
+          }
+        }
+      }
+    },
+    "Your autonomic load today, from 0 to 3. We estimate it by comparing today's resting heart rate and HRV with your own 30-day baseline: a higher-than-usual resting HR and a lower-than-usual HRV both push the number up — classic signs your body is activated.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your autonomic load today, from 0 to 3. We estimate it by comparing today's resting heart rate and HRV with your own 30-day baseline: a higher-than-usual resting HR and a lower-than-usual HRV both push the number up — classic signs your body is activated."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu carga autonómica de hoy, del 0 al 3. La estimamos comparando tu frecuencia cardíaca en reposo y tu HRV con tu propia línea base de 30 días: una FC en reposo más alta de lo normal y una HRV más baja empujan el número hacia arriba — señales clásicas de que tu cuerpo está activado."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine autonome Belastung heute, von 0 bis 3. Wir schätzen sie, indem wir deinen heutigen Ruhepuls und deine HRV mit deiner eigenen 30-Tage-Basislinie vergleichen: ein höherer Ruhepuls als üblich und eine niedrigere HRV treiben den Wert nach oben — klassische Zeichen dafür, dass dein Körper aktiviert ist."
+          }
+        }
+      }
+    },
+    "Derived from your overnight resting heart rate and HRV — a transparent proxy for autonomic load, not a clinical stress measure.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Derived from your overnight resting heart rate and HRV — a transparent proxy for autonomic load, not a clinical stress measure."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se deriva de tu frecuencia cardíaca en reposo y tu HRV nocturnas — un proxy transparente de la carga autonómica, no una medida clínica de estrés."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abgeleitet aus deinem nächtlichen Ruhepuls und deiner HRV — ein transparenter Näherungswert für die autonome Belastung, kein klinisches Stressmaß."
+          }
+        }
+      }
+    },
+    "We take today's resting heart rate and HRV and express each as how far it sits from your 30-day average (a z-score). A resting HR above your norm and an HRV below it both add to the load; the two are summed and squashed onto a 0–3 scale where 0 is calm, 1.5 is your baseline, and 3 is highly activated.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We take today's resting heart rate and HRV and express each as how far it sits from your 30-day average (a z-score). A resting HR above your norm and an HRV below it both add to the load; the two are summed and squashed onto a 0–3 scale where 0 is calm, 1.5 is your baseline, and 3 is highly activated."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tomamos tu frecuencia cardíaca en reposo y tu HRV de hoy y expresamos cada una como qué tan lejos está de tu promedio de 30 días (un z-score). Una FC en reposo por arriba de tu norma y una HRV por debajo suman a la carga; las dos se combinan y se ajustan a una escala de 0 a 3, donde 0 es calma, 1.5 es tu línea base y 3 es muy activado."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wir nehmen deinen heutigen Ruhepuls und deine HRV und drücken jeden als Abstand zu deinem 30-Tage-Durchschnitt aus (einen z-Wert). Ein Ruhepuls über deiner Norm und eine HRV darunter erhöhen beide die Belastung; beide werden summiert und auf eine Skala von 0–3 gestaucht, wobei 0 ruhig, 1,5 deine Basislinie und 3 hoch aktiviert bedeutet."
+          }
+        }
+      }
+    },
+    "Combined resting-HR / HRV z-score through a logistic curve; HRV via RMSSD (Task Force, 1996).": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Combined resting-HR / HRV z-score through a logistic curve; HRV via RMSSD (Task Force, 1996)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Z-score combinado de FC en reposo y HRV a través de una curva logística; HRV vía RMSSD (Task Force, 1996)."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kombinierter Ruhepuls-/HRV-z-Wert über eine logistische Kurve; HRV via RMSSD (Task Force, 1996)."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

@@ -560,6 +560,17 @@ DE: dict[str, str] = {
     "Your strap in real time — heart rate and frames as they arrive.": "Dein Strap in Echtzeit — Herzfrequenz und Frames, sobald sie eintreffen.",
     "Your thread starts here.": "Dein Verlauf beginnt hier.",
     "Zone": "Zone",
+
+    # FER-180 — «Today's metrics» intraday tile grid + MetricInfoSheet stress variant.
+    "Today's metrics": "Heutige Werte",
+    "vs yesterday": "ggü. gestern",
+    "Same as yesterday": "Wie gestern",
+    "Medium": "Mittel",
+    "High": "Hoch",
+    "Your autonomic load today, from 0 to 3. We estimate it by comparing today's resting heart rate and HRV with your own 30-day baseline: a higher-than-usual resting HR and a lower-than-usual HRV both push the number up — classic signs your body is activated.": "Deine autonome Belastung heute, von 0 bis 3. Wir schätzen sie, indem wir deinen heutigen Ruhepuls und deine HRV mit deiner eigenen 30-Tage-Basislinie vergleichen: ein höherer Ruhepuls als üblich und eine niedrigere HRV treiben den Wert nach oben — klassische Zeichen dafür, dass dein Körper aktiviert ist.",
+    "Derived from your overnight resting heart rate and HRV — a transparent proxy for autonomic load, not a clinical stress measure.": "Abgeleitet aus deinem nächtlichen Ruhepuls und deiner HRV — ein transparenter Näherungswert für die autonome Belastung, kein klinisches Stressmaß.",
+    "We take today's resting heart rate and HRV and express each as how far it sits from your 30-day average (a z-score). A resting HR above your norm and an HRV below it both add to the load; the two are summed and squashed onto a 0–3 scale where 0 is calm, 1.5 is your baseline, and 3 is highly activated.": "Wir nehmen deinen heutigen Ruhepuls und deine HRV und drücken jeden als Abstand zu deinem 30-Tage-Durchschnitt aus (einen z-Wert). Ein Ruhepuls über deiner Norm und eine HRV darunter erhöhen beide die Belastung; beide werden summiert und auf eine Skala von 0–3 gestaucht, wobei 0 ruhig, 1,5 deine Basislinie und 3 hoch aktiviert bedeutet.",
+    "Combined resting-HR / HRV z-score through a logistic curve; HRV via RMSSD (Task Force, 1996).": "Kombinierter Ruhepuls-/HRV-z-Wert über eine logistische Kurve; HRV via RMSSD (Task Force, 1996).",
 }
 
 
