@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Estrés: la gráfica de tendencia ya aparece / Stress: the trend chart shows up.**
+  **ES** — Al tocar **Estrés** en «Métricas de hoy», la hoja de detalle se abría **sin ninguna gráfica** — era la única métrica sin una. Ahora muestra la tendencia de **«Últimos 14 días»** con la curva 0–3 (leída con un decimal), igual que recuperación, sueño, HRV y las demás. Reutiliza el mismo histórico diario que ya alimentaba el mini-sparkline del cuadro, así que no calcula nada nuevo.
+  **EN** — Tapping **Stress** in "Today's metrics" opened a detail sheet with **no chart at all** — the only metric missing one. It now shows the **"Last 14 days"** trend with the 0–3 curve (read to one decimal), just like recovery, sleep, HRV and the rest. It reuses the same daily history that already fed the tile's sparkline, so nothing new is computed.
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift), [Cenit/Screens/MetricInfoSheet.swift](Cenit/Screens/MetricInfoSheet.swift))
+
 - **Recupera el registro del strap en Ajustes / The strap log is back, in Settings.**
   **ES** — El **registro del strap** (la bitácora técnica de la conexión Bluetooth, útil para diagnosticar problemas y adjuntarla a un reporte) había desaparecido con el rediseño de En vivo. Vuelve, ahora embebido en **Ajustes → Strap**: lo ves desplazándose en vivo conforme tu banda se conecta y sincroniza, y puedes **Copiar** o **Guardar…** todo el registro con un toque. Si todavía no hay actividad, te lo dice en lugar de mostrar un recuadro vacío.
   **EN** — The **strap log** (the technical Bluetooth-connection trail you use to diagnose problems and attach to a bug report) had disappeared in the Live redesign. It's back, now embedded in **Settings → Strap**: you watch it scroll live as your strap connects and syncs, and you can **Copy** or **Save…** the whole log with one tap. If there's no activity yet, it says so instead of showing an empty box.
