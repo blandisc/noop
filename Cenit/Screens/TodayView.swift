@@ -149,12 +149,7 @@ struct TodayView: View {
             }
             .animation(.easeOut(duration: 0.18), value: showingSupport)
             .sheet(item: $metricDetail) { info in
-                MetricInfoSheet(
-                    info: info,
-                    strainCurveLoader: info.id == "strain" ? { await loadStrainCurve() } : nil,
-                    heartRateCurveLoader: info.id == "heart_rate" ? { hrPoints } : nil,
-                    trendLoader: trendLoader(for: info.id)
-                )
+                metricSheet(for: info)
             }
             .sheet(isPresented: $showWhyVerdict) {
                 WhyVerdictSheet(readiness: readiness)
@@ -163,6 +158,23 @@ struct TodayView: View {
 
     private var platformBody: some View {
         iosBody
+    }
+
+    /// Builds the metric detail sheet, passing the live «Instrumento» theme (it does NOT propagate
+    /// through `.sheet`'s fresh environment) and deciding the "connect Apple Salud" hint: shown only
+    /// for Apple-sourceable metrics that aren't connected and have no value yet — strap-only metrics
+    /// (strain, heart rate) never get it. The connect action itself stays in Today. (FER-162)
+    private func metricSheet(for info: MetricInfo) -> some View {
+        let appleCapable = ["sleep", "hrv", "rhr", "spo2", "steps"].contains(info.id)
+        let notConnected = health.auth != .authorized && health.auth != .unavailable
+        return MetricInfoSheet(
+            info: info,
+            theme: theme,
+            appleConnectHint: appleCapable && notConnected && info.displayValue == "—",
+            strainCurveLoader: info.id == "strain" ? { await loadStrainCurve() } : nil,
+            heartRateCurveLoader: info.id == "heart_rate" ? { hrPoints } : nil,
+            trendLoader: trendLoader(for: info.id)
+        )
     }
 
     // MARK: - Today (instrumento diurno · veredicto dominante · dial 24h · métricas en tinta)

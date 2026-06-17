@@ -382,8 +382,11 @@ se marca con tinta + un punto de «ahora» (verde recovery en claro, `accent` en
 | Recuperación · calibrando | Variante `recovery` con `recovery == nil`: tarjeta «Calibrando línea base» (N/`minNightsSeed`), pesos atenuados, sin desplegable |
 | HRV · con dato | Variante `hrv`: frase llana + nota «es personal» + desplegable «Ver el método» (RMSSD, 300–2000 ms, Malik 20%, ≥20 latidos) (FER-109) |
 | HRV · sin dato | Variante `hrv` con `avgHrv == nil`: la nota explica por qué no hay HRV de anoche (FER-109) |
+| Cualquier métrica · sin permiso Apple Salud | Métrica que puede venir de Apple Salud (Sueño / HRV / FC en reposo / Oxígeno / Pasos) sin valor y con Apple Salud no conectada: en vez de la nota normal, una línea «Esta lectura puede venir de Apple Salud. Conéctala desde Hoy para verla aquí.» (sin botón; la acción vive en Hoy). Strain y Frecuencia cardíaca (strap-only) nunca la muestran. (FER-162) |
 
-**Componentes:** `Metric name + headline`, `Valor actual + color`, `Bands (3–4 rangos + active highlight)`, `Nota opcional`, `TrendChart de esfuerzo acumulado (solo Day Strain, FER-110)`, `DisclosureGroup «Ver el método» (Recovery FER-108 + HRV FER-109)`, `Weight breakdown + calibration card (solo Recovery)`
+**Nota — tema claro «Instrumento» + copy es-MX (FER-162):** el sheet se presenta en el **tema claro por hora** (`InstrumentoTheme`, pasado explícito desde `TodayView` porque NO se propaga por `.sheet`): papel, tinta y superficies del tema, número del encabezado en el **color de la métrica** (`dataStrain`/`dataSleep`/`dataHrv`/`dataHeart`/`dataSpO2`/`dataSteps`/`dataRecovery`; banda de recuperación para `recovery`) o en tinta secundaria cuando no hay dato; zona activa resaltada con realce + punto + flecha en el color de la métrica, inactivas en tinta tenue. **Todo el copy** (nombres, headlines, zonas, notas, «Ver el método», citas, disclaimer) vive en `Localizable.xcstrings` (es-MX + de) — ya no hay literales en inglés. Las gráficas (`TrendChart`) reciben gradiente del color de la métrica y colores de eje legibles sobre papel.
+
+**Componentes:** `Metric name + headline`, `Valor actual (color de métrica / tinta)`, `Bands (3–4 rangos + active highlight)`, `Nota opcional · o línea de conexión a Apple Salud (FER-162)`, `TrendChart de esfuerzo acumulado (solo Day Strain, FER-110)`, `TrendChart 14 días / curva HR 24h inline en tema claro`, `DisclosureGroup «Ver el método» (Recovery FER-108 + HRV FER-109)`, `Weight breakdown + calibration card (solo Recovery)`
 
 ---
 

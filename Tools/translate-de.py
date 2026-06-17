@@ -13,6 +13,59 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> German value. Keys must match the catalog exactly.
 DE: dict[str, str] = {
+    # MetricInfoSheet — light-theme redesign + de copy (FER-162).
+    # Headlines.
+    "Cardiovascular load scored 0–21. Each second of the day your heart rate is recorded, it's assigned to a zone (1–5). Higher zones carry more weight. The total is compressed logarithmically so 21 represents a theoretical maximum — a full day at peak intensity.": "Die kardiovaskuläre Belastung auf einer Skala von 0 bis 21. Jede Sekunde, in der deine Herzfrequenz erfasst wird, fällt in eine Zone (1 bis 5); höhere Zonen zählen mehr. Die Summe wird logarithmisch verdichtet, sodass 21 ein theoretisches Maximum ist: ein ganzer Tag bei höchster Intensität.",
+    "Total time asleep last night, estimated from movement and heart rate. Sleep contributes ~15% of your recovery score and feeds the strain-to-load balance (ACWR).": "Die gesamte Schlafzeit der letzten Nacht, geschätzt aus Bewegung und Herzfrequenz. Schlaf macht etwa 15% deiner Erholung aus und fließt in das Verhältnis von Belastung zu Last (ACWR) ein.",
+    "Your heart rate when your body is fully at rest — how hard your heart has to work doing nothing. Lower generally means a stronger, more efficient cardiovascular system. Cénit uses it as ~20% of your recovery score; a rise from your norm can signal fatigue or that something's coming on.": "Deine Herzfrequenz, wenn dein Körper vollständig ruht — wie viel dein Herz im Nichtstun leisten muss. Niedriger bedeutet meist ein stärkeres, effizienteres Herz-Kreislauf-System. Cénit nutzt sie als etwa 20% deiner Erholung; ein Anstieg gegenüber deiner Norm kann auf Müdigkeit oder etwas Aufziehendes hindeuten.",
+    "Percentage of haemoglobin carrying oxygen in your blood. Healthy adults typically stay above 95%. A drop can indicate altitude effects, sleep apnea, or respiratory illness.": "Der Anteil deines Hämoglobins, der Sauerstoff transportiert. Bei gesunden Erwachsenen liegt er meist über 95%. Ein Abfall kann auf Höhe, Schlafapnoe oder eine Atemwegserkrankung hindeuten.",
+    "Daily step count. Consistent activity — even a 30-minute walk — supports cardiovascular health, mood, and recovery quality.": "Deine Schrittzahl des Tages. Beständige Aktivität — schon ein 30-minütiger Spaziergang — unterstützt Herz-Kreislauf-Gesundheit, Stimmung und Erholungsqualität.",
+    "Your heart rate across the day, averaged in 5-minute buckets.": "Deine Herzfrequenz über den Tag, gemittelt in 5-Minuten-Intervallen.",
+    # Notes.
+    "Measured overnight from your strap; when the strap isn't worn, Cénit uses Apple Health's resting heart rate instead.": "Wird nachts mit deinem Strap gemessen; wenn du ihn nicht trägst, nutzt Cénit die Ruhe-Herzfrequenz aus Apple Health.",
+    "Wrist-based sensors have lower accuracy than medical pulse oximeters — treat values as a trend, not a clinical reading.": "Sensoren am Handgelenk sind ungenauer als medizinische Pulsoximeter — sieh die Werte als Trend, nicht als klinische Messung.",
+    "Steps come from Apple Health and are not recorded by the WHOOP strap.": "Schritte stammen aus Apple Health und werden vom WHOOP-Strap nicht erfasst.",
+    # Zone labels.
+    "Rest / Light": "Ruhe / leicht",
+    "Moderate": "Moderat",
+    "Hard": "Hart",
+    "Extreme": "Extrem",
+    "Short": "Kurz",
+    "Adequate": "Ausreichend",
+    "Optimal": "Optimal",
+    "Extended": "Lang",
+    "Athlete": "Athlet",
+    "Excellent": "Ausgezeichnet",
+    "Normal": "Normal",
+    "Elevated": "Erhöht",
+    "Borderline": "Grenzwertig",
+    "Sedentary": "Sitzend",
+    "Active": "Aktiv",
+    "Very active": "Sehr aktiv",
+    # Section titles / wells / connect hint.
+    "Last 14 days": "Letzte 14 Tage",
+    "No data for the last 14 days.": "Keine Daten der letzten 14 Tage.",
+    "This reading can come from Apple Health. Connect it from Today to see it here.": "Dieser Wert kann aus Apple Health stammen. Verbinde ihn über Heute, um ihn hier zu sehen.",
+    "%lld of %lld nights": "%lld von %lld Nächten",
+    "Beats per minute": "Schläge pro Minute",
+    "5-minute average · since midnight": "5-Minuten-Mittel · seit Mitternacht",
+    "Calibrating baseline": "Basislinie wird kalibriert",
+    "Skin temp": "Hauttemp.",
+    "Respiration": "Atmung",
+    "See the method": "Methode ansehen",
+    # HRV / Recovery explainer copy (es existed; de added here).
+    "HRV is how much the time between your heartbeats varies, in milliseconds, while you sleep. More variation usually means better recovery. What matters isn't the number itself, but how it compares with your own average.": "Die HRV ist, wie stark die Zeit zwischen deinen Herzschlägen im Schlaf schwankt, in Millisekunden. Mehr Schwankung bedeutet meist bessere Erholung. Wichtig ist nicht die Zahl selbst, sondern wie sie sich mit deinem eigenen Durchschnitt vergleicht.",
+    "HRV is personal. There are no universal good/bad thresholds — only your trend over time.": "Die HRV ist persönlich. Es gibt keine allgemeingültigen Gut-/Schlecht-Schwellen — nur deinen Trend über die Zeit.",
+    "No HRV from last night. That can happen if you didn't wear the strap, or the night was too short to gather 20 clean beats.": "Keine HRV aus der letzten Nacht. Das kann passieren, wenn du den Strap nicht getragen hast oder die Nacht zu kurz war, um 20 saubere Schläge zu sammeln.",
+    "We take the intervals between your heartbeats overnight, drop any outside 300–2000 ms and any that deviate more than 20% from their neighbours (ectopic beats). If at least 20 clean beats remain, we compute RMSSD.": "Wir nehmen die Intervalle zwischen deinen Herzschlägen über Nacht, verwerfen alle außerhalb von 300–2000 ms sowie solche, die mehr als 20% von ihren Nachbarn abweichen (ektope Schläge). Bleiben mindestens 20 saubere Schläge übrig, berechnen wir den RMSSD.",
+    "RMSSD (Task Force, 1996); ectopic rejection by Malik's rule. HRV is about 60% of your recovery score.": "RMSSD (Task Force, 1996); Ausschluss ektoper Schläge nach Maliks Regel. Die HRV macht etwa 60% deiner Erholung aus.",
+    "Your recovery sums up how ready your body is today, from 0 to 100. It blends several signals from your night — your HRV above all — and compares them with your own average from recent weeks, not anyone else's.": "Deine Erholung fasst zusammen, wie bereit dein Körper heute ist, von 0 bis 100. Sie verbindet mehrere Signale deiner Nacht — vor allem deine HRV — und vergleicht sie mit deinem eigenen Durchschnitt der letzten Wochen, nicht mit dem anderer.",
+    "If a signal is missing on a given night, its weight is shared among the others.": "Fehlt ein Signal in einer Nacht, wird sein Gewicht auf die anderen verteilt.",
+    "It's an estimate, not a diagnosis.": "Es ist eine Schätzung, keine Diagnose.",
+    "Each signal becomes a score of how far above or below your personal average it sits; they're averaged with the weights above and mapped onto a 0–100 scale, calibrated so a typical day lands near 58.": "Jedes Signal wird zu einem Wert, wie weit es über oder unter deinem persönlichen Durchschnitt liegt; sie werden mit den obigen Gewichten gemittelt und auf eine Skala von 0–100 abgebildet, kalibriert so, dass ein typischer Tag nahe 58 landet.",
+    "A composite of z-scores through a logistic curve. HRV via RMSSD (Task Force, 1996).": "Ein Verbund aus z-Werten durch eine logistische Kurve. HRV über RMSSD (Task Force, 1996).",
+    "We can't score your recovery yet. We need at least %lld nights with your strap to learn your baseline; you're at %lld of %lld. We'd rather not show you a made-up number.": "Wir können deine Erholung noch nicht berechnen. Wir brauchen mindestens %lld Nächte mit deinem Strap, um deine Basislinie zu lernen; du bist bei %lld von %lld. Wir zeigen dir lieber keine erfundene Zahl.",
+
     # Symbols / pure placeholders — identical in German.
     "—": "—",
     "·": "·",
