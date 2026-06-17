@@ -28,11 +28,13 @@ enum ExploreRange: Int, CaseIterable, Identifiable, Hashable {
     /// Trailing days the window spans (nil = everything).
     var days: Int? { self == .all ? nil : rawValue }
 
+    /// Ascending order of every range, the basis for the auto-expand search.
+    private static let ascending: [ExploreRange] = [.week, .month, .quarter, .half, .year, .all]
+
     /// This range plus every LARGER range, ascending — the auto-expand search order
     /// when the selected window holds zero points. ALW always terminates the chain.
     var widening: [ExploreRange] {
-        let order: [ExploreRange] = [.week, .month, .quarter, .half, .year, .all]
-        guard let i = order.firstIndex(of: self) else { return [.all] }
-        return Array(order[i...])
+        guard let i = Self.ascending.firstIndex(of: self) else { return [.all] }
+        return Array(Self.ascending[i...])
     }
 }
