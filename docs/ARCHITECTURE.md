@@ -166,9 +166,26 @@ Concurrency is deliberately split between two isolation domains plus a serial dr
 | Historical frame drain | **serial Task queue** | `BLEManager.routeBackfillFrame` appends frames synchronously (delegate order) and a single drain `Task` awaits `Backfiller.ingest` one frame at a time, so `HISTORY_START → data → HISTORY_END` chunk assembly can never be reordered. |
 
 The key invariant: **frames are buffered synchronously in delegate-callback order**, and only the
-slow work (decode + `await store.insert`) crosses into the store actor. `Collector.flush()` and
+slow work (decode + `await store.insert`) crosses out of the main actor. `Collector.flush()` and
 `Backfiller.finishChunk()` both *snapshot-and-clear* their buffer before the first `await`, so
 concurrent ingests accumulate cleanly into the next batch.
+
+Two refinements keep that main-actor work small (FER-183). **Each inbound frame is parsed once** in
+the BLE delegate loop — the single `ParsedFrame` is reused by the live `FrameRouter`, the GET_CLOCK
+read, the clock-correlation and the live-gesture gate, instead of re-parsing the same bytes 2–3×.
+And `Collector.flush()` runs its CPU-pure decode (`parseFrame` + `extractStreams`) in a
+**`Task.detached`**, off the main actor, before the `await store.insert`; `Streams`/`ParsedFrame`
+are `Sendable`, so the result crosses back safely. This is sound because `WhoopProtocol`'s schema is
+now loaded **once into immutable shared state** (`CompiledProtocol.shared`, a `static let`) instead
+of lazily mutated globals — so `parseFrame` is race-free even when first called concurrently from the
+main actor and a detached task.
+
+> **In flight (FER-173):** the BLE delegate itself still runs on the main actor (the central is
+> created on `queue: .main`), which is why the `CBCentralManagerDelegate`/`CBPeripheralDelegate`
+> conformances still carry a "crosses into main actor-isolated code" warning. Moving the central onto
+> a dedicated serial `DispatchQueue` and the delegate off the main actor — so BLE I/O no longer
+> competes with SwiftUI for the main thread — is tracked separately and must be verified on real
+> hardware.
 
 Two SQLite handles are open simultaneously — one inside `BLEManager`'s `Collector`/`Backfiller`, one
 inside `Repository`. This is safe because `WhoopStore` enables **WAL journal mode** and a **5-second

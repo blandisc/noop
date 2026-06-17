@@ -1,6 +1,6 @@
 import Foundation
 
-public struct DecodedField: Codable, Equatable {
+public struct DecodedField: Codable, Equatable, Sendable {
     public let off: Int
     public let len: Int
     public let name: String
@@ -10,7 +10,7 @@ public struct DecodedField: Codable, Equatable {
     public let note: String?
 }
 
-public struct ParsedFrame: Codable, Equatable {
+public struct ParsedFrame: Codable, Equatable, Sendable {
     public let ok: Bool
     public let typeName: String
     public let seq: Int?
@@ -91,7 +91,17 @@ final class FieldBuilder {
     }
 }
 
+/// Test-only instrumentation. `onParse` fires once per real frame parse (`parseFrame` /
+/// `parseFrameWhoop5`), so a unit test can assert the BLE delegate hot path parses each frame
+/// **exactly once** (FER-183) instead of the old 2–3× re-parse. Always `nil` in production — the
+/// cost is one optional check per parse. `nonisolated(unsafe)`: a test sets it once before
+/// exercising the path and never mutates it concurrently. Not for app logic.
+public enum ParseInstrumentation {
+    nonisolated(unsafe) public static var onParse: (@Sendable () -> Void)?
+}
+
 public func parseFrame(_ frame: [UInt8]) -> ParsedFrame {
+    ParseInstrumentation.onParse?()
     let rawHex = frame.map { String(format: "%02x", $0) }.joined()
     if frame.count < 8 || frame[0] != 0xAA {
         return ParsedFrame(ok: false, typeName: "INVALID/FRAGMENT", seq: nil, cmdName: nil,
@@ -134,7 +144,7 @@ public func parseFrame(_ frame: [UInt8]) -> ParsedFrame {
             fb.add(fld.off, fld.len, fld.name, fld.cat, value: value, note: fld.note)
         }
         // per-type post-hook for irregular fields (populated in PostHooks.swift by B7)
-        if let postName = spec!.post, let hook = postHooks[postName] {
+        if let postName = spec!.post, let hook = CompiledProtocol.shared.postHooks[postName] {
             hook(fb, frame, length, schema)
         }
     }
@@ -172,6 +182,7 @@ public func parseFrame(_ frame: [UInt8], family: DeviceFamily) -> ParsedFrame {
 }
 
 private func parseFrameWhoop5(_ frame: [UInt8]) -> ParsedFrame {
+    ParseInstrumentation.onParse?()
     let rawHex = frame.map { String(format: "%02x", $0) }.joined()
     // Minimum whoop5 frame: 8 header bytes + 1 inner (type) + 4 CRC32 trailer.
     if frame.count < 12 || frame[0] != 0xAA {
@@ -506,7 +517,8 @@ private func hexFrameSlice(_ f: [UInt8], _ start: Int, _ end: Int) -> String {
     return f[start..<end].map { String(format: "%02x", $0) }.joined()
 }
 
-// Post-hook registry (populated in PostHooks.swift by Task B7).
-// name -> (FieldBuilder, frame, length, schema) -> Void
-typealias PostHook = (FieldBuilder, [UInt8], Int?, Schema) -> Void
-var postHooks: [String: PostHook] = [:]
+// Post-hook registry: name -> hook. Built once in PostHooks.swift (`buildPostHooks`) and held
+// immutably by `CompiledProtocol.shared`. `@Sendable` so the registry can be a concurrency-safe
+// `static let` read from both the BLE queue and detached decode tasks (FER-183). The closures
+// capture nothing (they use only their parameters + free reader functions), so they qualify.
+typealias PostHook = @Sendable (FieldBuilder, [UInt8], Int?, Schema) -> Void

@@ -1616,6 +1616,10 @@ extension BLEManager: CBPeripheralDelegate {
              BLEManager.eventNotifyChar:
             // Reassemble (no-op for already-complete frames) then route each complete frame.
             for frame in reassembler.feed(bytes) {
+                // Parse each complete frame ONCE and reuse the ParsedFrame across the live router, the
+                // GET_CLOCK read, the clock-correlation and the live-gesture gate (FER-183). Previously
+                // the same bytes were parsed up to 3× per frame on the main thread under the ~2/s flow.
+                let parsed = parseFrame(frame, family: router.family)
                 if backfilling, BLEManager.isOffloadFrame(frame, family: .whoop4) {
                     // Historical replay is bulk sync traffic, not live UI traffic. Feed it only to
                     // the Backfiller; parsing every record through FrameRouter updates SwiftUI for
@@ -1624,10 +1628,10 @@ extension BLEManager: CBPeripheralDelegate {
                     routeBackfillFrame(frame)
                     // …but a REAL-TIME physical gesture (double-tap / wrist) must still fire even mid-
                     // offload (#69). Gated on ts≈now so replayed historical EVENTs (old ts) are ignored.
-                    router.dispatchLiveGestureIfFresh(frame: frame, now: strapClockNow)
+                    router.dispatchLiveGestureIfFresh(parsed: parsed, now: strapClockNow)
                     continue
                 }
-                router.handle(frame: frame)                       // live/UI path
+                router.handle(parsed: parsed)                     // live/UI path
                 if frame.count > 6, frame[6] == WhoopCommand.getDataRange.rawValue {
                     if let window = BLEManager.plausibleDataRange(from: frame) {
                         strapNewestTs = window.newest             // feeds the liveness watchdog
@@ -1651,14 +1655,13 @@ extension BLEManager: CBPeripheralDelegate {
                 // then stops. Its value tells us directly whether SET_CLOCK is landing (≈now) or the band
                 // is stuck in the past (the "timestamp invalid; not saving data to flash" case).
                 if frame.count > 6, frame[6] == WhoopCommand.getClock.rawValue,
-                   let rtc = parseFrame(frame).parsed["clock"]?.intValue {
+                   let rtc = parsed.parsed["clock"]?.intValue {
                     getClockResponded = true
                     log("La banda cree que son: \(BLEManager.logDate(rtc)) (RTC=\(rtc))")
                 }
                 // Clock correlation runs in both live and backfill modes. Once established it
                 // unblocks both the Collector (live path) and the Backfiller (chunk decoding).
                 if clockRef == nil {
-                    let parsed = parseFrame(frame)
                     if let ref = ClockCorrelation.clockRef(from: parsed, wall: Int(Date().timeIntervalSince1970)) {
                         clockRef = ref
                         collector?.clockRef = ref                  // unblocks buffered persistence
@@ -1686,6 +1689,8 @@ extension BLEManager: CBPeripheralDelegate {
             // battery come from the standard 0x2A37 / 0x2A19 profiles handled above.
             if BLEManager.whoop5NotifyChars.contains(characteristic.uuid) {
                 for frame in reassembler.feed(bytes) {
+                    // Parse once, reuse for routing + the live-gesture gate (FER-183).
+                    let parsed = parseFrame(frame, family: router.family)
                     if backfilling, BLEManager.isOffloadFrame(frame, family: .whoop5) {
                         // Same policy as WHOOP4: historical offload frames are bulk sync traffic.
                         // Keep them out of the live UI parser during backfill and let Backfiller
@@ -1694,10 +1699,10 @@ extension BLEManager: CBPeripheralDelegate {
                         routeBackfillFrame(frame)
                         // A real-time double-tap / wrist gesture still fires during a 5/MG offload (which
                         // runs for minutes, #69); the ts≈now gate rejects replayed historical EVENTs.
-                        router.dispatchLiveGestureIfFresh(frame: frame, now: strapClockNow)
+                        router.dispatchLiveGestureIfFresh(parsed: parsed, now: strapClockNow)
                         continue
                     }
-                    router.handle(frame: frame)
+                    router.handle(parsed: parsed)
                     // Capture for protocol mapping (no-op unless the Settings toggle is on). PR #20.
                     puffinRecorder.capture(frame: frame, char: characteristic.uuid)
                 }

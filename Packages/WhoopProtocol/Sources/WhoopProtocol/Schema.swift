@@ -1,7 +1,7 @@
 import Foundation
 
 /// One static field entry from a packet spec's "fields" array.
-public struct FieldSpec: Codable, Equatable {
+public struct FieldSpec: Codable, Equatable, Sendable {
     public let off: Int
     public let len: Int
     public let dtype: String?
@@ -12,14 +12,14 @@ public struct FieldSpec: Codable, Equatable {
 }
 
 /// One IMU axis: [name, off, cat] in the JSON (a heterogeneous 3-element array).
-public struct AxisSpec: Equatable {
+public struct AxisSpec: Equatable, Sendable {
     public let name: String
     public let off: Int
     public let cat: String
 }
 
 /// A REALTIME_RAW_DATA variant keyed by payload data_len ("1917" = IMU, "1921" = optical).
-public struct VariantSpec: Equatable {
+public struct VariantSpec: Equatable, Sendable {
     public let kind: String
     public let note: String
     // imu-only
@@ -38,14 +38,14 @@ public struct VariantSpec: Equatable {
 }
 
 /// One type-47 HISTORICAL_DATA version layout (keyed by the version byte = seq).
-public struct VersionSpec: Equatable {
+public struct VersionSpec: Equatable, Sendable {
     public let kind: String?
     public let fields: [FieldSpec]
     public let rrFirstOff: Int?
     public let ref: String?
 }
 
-public struct PacketSpec: Equatable {
+public struct PacketSpec: Equatable, Sendable {
     public let name: String
     public let type: Int
     public let aliases: [Int]
@@ -55,7 +55,7 @@ public struct PacketSpec: Equatable {
     public let versions: [String: VersionSpec]
 }
 
-public struct Schema {
+public struct Schema: Sendable {
     public var enums: [String: [String: String]]
     public var envelope: [FieldSpec]
     public var packets: [String: PacketSpec]
@@ -171,10 +171,21 @@ private struct RawSchema: Decodable {
     let packets: [String: RawPacket]
 }
 
-private var _cachedSchema: Schema?
+/// Schema + per-type post-hook registry, compiled exactly once. A `static let` gives `dispatch_once`
+/// semantics: the JSON is decoded and the hooks built a single time, even when `parseFrame` is first
+/// called concurrently from the dedicated BLE queue and a detached decode task (FER-183). After init
+/// the value is fully immutable, so the parse hot path reads it lock-free — replacing the old lazily
+/// mutated `_cachedSchema`/`postHooks` globals, which were only race-free while everything ran on the
+/// main thread.
+enum CompiledProtocol {
+    static let shared: (schema: Schema, postHooks: [String: PostHook]) = (buildSchema(), buildPostHooks())
+}
 
-public func loadSchema() -> Schema {
-    if let cached = _cachedSchema { return cached }
+/// The compiled protocol schema. Thread-safe and memoized via `CompiledProtocol.shared`.
+public func loadSchema() -> Schema { CompiledProtocol.shared.schema }
+
+/// Decode + compile the schema from the bundled JSON. Called exactly once by `CompiledProtocol.shared`.
+private func buildSchema() -> Schema {
     guard let url = Bundle.module.url(forResource: "whoop_protocol", withExtension: "json") else {
         fatalError("whoop_protocol.json missing from Bundle.module resources")
     }
@@ -226,8 +237,5 @@ public func loadSchema() -> Schema {
             variants: variants,
             versions: versions)
     }
-    let schema = Schema(enums: raw.enums, envelope: raw.envelope, packets: packets)
-    registerPostHooks()
-    _cachedSchema = schema
-    return schema
+    return Schema(enums: raw.enums, envelope: raw.envelope, packets: packets)
 }
