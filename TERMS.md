@@ -16,7 +16,7 @@ remove it.
 
 ## 1. What Cénit is — and who provides it
 
-Cénit is a free, independent, **non-commercial** application for macOS and Android that pairs directly
+Cénit is a free, independent, **non-commercial** application for iOS that pairs directly
 with a WHOOP® strap you own over Bluetooth and stores your data **only on your own device**. There is
 no Cénit server, no Cénit account, and no telemetry — the maintainers cannot see your data and never
 receive it.
