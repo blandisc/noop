@@ -321,7 +321,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-17</span>
+  <span class="tb-updated">Actualizado 2026-06-17 · FER-160</span>
 </div>
 
 <div id="wrapper">
@@ -361,11 +361,13 @@ const SCREENS = [
     file: 'Cenit/Screens/TodayView.swift',
     icon: '⚡', color: '#18C98B',
     states: [
-      { label: 'Empty / First launch', type: 'empty' },
-      { label: 'Base lista (Apple Health) — hasImportedBaseline → importedBaselineHero nombra la fuente, sin "0 de 4" (FER-106)', type: 'empty' },
-      { label: 'Calibrando (1–3 noches) — sin import; copy "base propia" + atajo a Apple Health (FER-106)', type: 'loading' },
-      { label: 'Sin lectura de hoy', type: 'warn' },
-      { label: 'Veredicto listo', type: 'live' },
+      { label: 'Héroe unificado (FER-160): 1 esqueleto, 4 modos vía HeroState; color=listo / tinta=espera', type: 'live' },
+      { label: 'Empty / First launch — modo waiting: numeral "—" en tinta + CTA Buscar', type: 'empty' },
+      { label: 'Base lista (Apple Health) — modo importedBaseline: "—" + chip Apple Salud + "Falta la lectura de hoy", sin "0 de 4" (FER-106/160)', type: 'empty' },
+      { label: 'Calibrando (1–3 noches) — modo calibrating: numeral "N/4" + night-dots + atajo Apple Health (FER-106/160)', type: 'loading' },
+      { label: 'Sin lectura de hoy — modo waiting con strap visto: "—" + pulso vivo', type: 'warn' },
+      { label: 'Veredicto listo — modo verdict: recuperación en color de banda + palabra + «i»', type: 'live' },
+      { label: 'Hay número, sin contexto (insufficient) — numeral en tinta + "aún sin contexto", ya no cae al anillo (FER-160)', type: 'warn' },
       { label: 'Sincronizando (transversal iOS) — syncMeta muestra "Sincronizando historial…" en utility row; sin pill', type: 'warn' },
     ],
     nav: [
@@ -375,7 +377,7 @@ const SCREENS = [
       { to: 'why-verdict', label: '«i» junto a la palabra del veredicto', type: 'sheet' },
       { to: 'support', label: 'Toolbar ❤', type: 'toolbar' },
     ],
-    components: ['HealthAlertBanner', 'PaperBackground (lienzo por hora · FER-135)', 'DiurnalDial (dial 24h del héroe · FER-135)', 'importedBaselineHero (base lista por Apple Health · FER-106)', 'CalibrationProgressCard', 'LiveHeartbeatRow', 'WhyVerdictSheet (héroe «Instrumento diurno»: número + dial + veredicto + «i» · FER-135)', 'MetricRow (Métricas clave · banda p25–p75 + color por métrica · incl. Frecuencia cardíaca → sheet curva 24h, FER-135/137)', 'SourcesSummaryCard (Sources · en Data Sources, FER-137)', 'RecoveryRing (macOS)', 'StatTile ×10 (macOS)', 'ChartCard (HR Trend · macOS)', 'ReadinessGaugeBar (solo macOS)'],
+    components: ['HealthAlertBanner', 'PaperBackground (lienzo por hora · FER-135)', 'heroInstrument (héroe unificado, 4 modos vía HeroState · FER-160)', 'DiurnalDial (dial 24h del héroe · FER-135)', 'LiveHeartbeatRow', 'WhyVerdictSheet (héroe «Instrumento diurno»: número + dial + veredicto + «i» · FER-135)', 'MetricRow (Métricas clave · banda p25–p75 + color por métrica · incl. Frecuencia cardíaca → sheet curva 24h, FER-135/137)', 'SourcesSummaryCard (Sources · en Data Sources, FER-137)', 'RecoveryRing (macOS)', 'StatTile ×10 (macOS)', 'ChartCard (HR Trend · macOS)', 'ReadinessGaugeBar (solo macOS)'],
   },
   {
     id: 'health', x: 284, y: 60,
