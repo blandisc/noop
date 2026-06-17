@@ -19499,6 +19499,28 @@
           }
         }
       }
+    },
+    "records": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "records"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "registros"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datensätze"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
