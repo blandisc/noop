@@ -185,42 +185,14 @@ struct TodayView: View {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                 headerBlock
                 HealthAlertBanner()
-                if repo.today?.recovery == nil {
-                    // Aún no hay veredicto → una sola pantalla calmada, de la primera apertura a la
-                    // calibración. El héroe vacío adapta su copy a si se ha visto un strap; FER-106
-                    // enruta primero el caso «base sembrada por Apple Health».
-                    if hasImportedBaseline {
-                        // Apple Health sembró la base (≥seed noches con HRV válida) pero el strap PROPIO
-                        // aún no llega al seed → la base YA está; el strap solo debe la lectura de hoy.
-                        // Nombrar la fuente aquí mata la contradicción «0 de 4» que vería un usuario
-                        // recién importado. El pie se adapta: Buscar antes de ver strap, pulso vivo
-                        // después (FER-106).
-                        importedBaselineHero
-                    } else if (live.lastSyncedAt != nil || liveBpm != nil) && ownNights < Baselines.minNightsSeed {
-                        // Aún juntando las primeras `seed` noches de datos PROPIOS del strap → la tarjeta
-                        // de night-dots desde la noche cero. Los días de Apple Health no cuentan (datos
-                        // prestados, preliminares), así que un sync completo de Apple mantiene los dots
-                        // honestos en "N de 4"; una historia propia del WHOOP (import/uso) los llena y
-                        // cede al veredicto en cuanto cae la lectura de hoy. Sin import aquí, la tarjeta
-                        // ofrece el atajo de adelanto por Apple Health (FER-106).
-                        CalibrationProgressCard(nights: ownNights,
-                                                total: Baselines.minNightsSeed,
-                                                liveBpm: liveBpm,
-                                                isLiveHR: isLiveHR,
-                                                solar: solarWindow,
-                                                sleep: sleepWindow,
-                                                onTapLive: { showLiveMonitor = true },
-                                                onConnectAppleHealth: { showDataSources = true })
-                    } else {
-                        // Sin strap nunca (→ CTA Buscar), O una base ya sembrada (≥seed noches válidas,
-                        // p. ej. de un sync completo) que simplemente no tiene lectura de HOY — no es
-                        // calibración. emptyHero cuenta la historia honesta para ambos, sin inventar un
-                        // conteo de calibración.
-                        emptyHero
-                    }
-                } else {
-                    verdictSection
-                }
+                // Héroe unificado (FER-160): UN solo instrumento de estado adaptable cubre los cuatro
+                // modos (veredicto / base sembrada por Apple Health / calibrando / espera). El árbol de
+                // antes —4 sub-vistas con distinto layout (`emptyHero`/`importedBaselineHero`/
+                // `CalibrationProgressCard`/`verdictSection`)— colapsó en un mismo esqueleto: overline +
+                // numeral dominante + dial + cuerpo + pie. Lo único que cambia entre modos es QUÉ valor
+                // lleva el numeral, su color (regla «color = listo / tinta = en espera») y el pie. Ver
+                // `heroInstrument` + `heroState`.
+                heroInstrument
                 iosMetricsSection
                 iosSourcesSection
             }
@@ -335,103 +307,275 @@ struct TodayView: View {
         utilityRow
     }
 
-    /// Héroe del estado SIN datos, en «Instrumento diurno». Dos casos honestos, según si se ha visto un
-    /// strap: antes — un comprometido «Aún no hay lectura» + un único CTA «Buscar strap». Después — la
-    /// base ya está sembrada (por uso O un import completo) pero la lectura de hoy no ha caído, así que
-    /// un calmado «Aún no hay lectura de hoy». La ventana 1…seed−1 la posee CalibrationProgressCard, no
-    /// aquí. El dial vivo (24h) preside; sin números fabricados.
-    private var emptyHero: some View {
+    // MARK: - Héroe unificado «Instrumento diurno» (FER-160)
+    //
+    // Un SOLO esqueleto para los cuatro modos del héroe. Antes había cuatro sub-vistas con layouts
+    // distintos; aquí comparten una sola estructura —overline + numeral dominante + dial + cuerpo +
+    // pie— y solo cambian el numeral, su color y el pie. La regla «color = listo / tinta = en espera»
+    // hace de semáforo de estado: numeral con color de banda = la lectura de hoy está lista; numeral en
+    // tinta o em-dash «—» = en espera o sin contexto. Mata el último layout pre-veredicto separado.
+
+    /// Los cuatro modos del héroe, derivados de las MISMAS señales de solo-lectura de antes (sin tocar
+    /// el motor). El orden de prioridad replica el árbol previo del `iosBody`.
+    private enum HeroState: Equatable {
+        case verdict                    // repo.today?.recovery != nil → hay número
+        case importedBaseline           // pre-veredicto: base sembrada por Apple Health (FER-106)
+        case calibrating(nights: Int)   // pre-veredicto: strap visto, ownNights < seed
+        case waiting                    // pre-veredicto: sin strap nunca, o base propia sin lectura de hoy
+    }
+
+    private var heroState: HeroState {
+        if repo.today?.recovery != nil { return .verdict }
+        if hasImportedBaseline { return .importedBaseline }
         let strapSeen = live.lastSyncedAt != nil || liveBpm != nil
-        return VStack(alignment: .leading, spacing: 14) {
-            Text("El veredicto de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            HStack(alignment: .center, spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(strapSeen ? "Aún no hay lectura de hoy" : "Aún no hay lectura")
-                        .font(InstrumentoType.hero(32)).foregroundStyle(theme.ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text(strapSeen
-                         ? "Tu base está lista. Usa el strap esta noche y la recuperación, el esfuerzo y el sueño de la mañana aparecen al sincronizar."
-                         : "Conecta tu strap WHOOP para ver la disposición, la recuperación y la frecuencia cardiaca de la mañana.")
-                        .font(StrandFont.body)
-                        .foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+        if strapSeen && ownNights < Baselines.minNightsSeed { return .calibrating(nights: ownNights) }
+        return .waiting
+    }
+
+    /// Whether a strap has ever been seen (drives the foot affordance: Scan before, live pulse after).
+    private var strapSeen: Bool { live.lastSyncedAt != nil || liveBpm != nil }
+
+    /// El instrumento: un esqueleto, cuatro modos. Jerarquía por espacio (sin card-in-card); color solo
+    /// en el dato (numeral de banda / palabra del veredicto). El dial del momento preside SIEMPRE a la
+    /// derecha — incluso en espera — para que la pantalla nunca se vea a medio construir.
+    @ViewBuilder private var heroInstrument: some View {
+        let state = heroState
+        VStack(alignment: .leading, spacing: 12) {
+            Text(heroOverline(state)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            HStack(alignment: .center, spacing: 18) {
+                heroNumeral(state)
                 Spacer(minLength: 8)
-                // El dial 24h vivo preside el estado vacío — el marcador de hora/sol/sueño se mantiene
-                // aunque no haya veredicto, así la pantalla nunca se ve a medio construir.
+                // `sleepWindow` ya es nil cuando anoche no hubo registro de strap, así que el dial omite
+                // la banda de sueño solo (no hay que decidirlo aquí): contexto honesto en cada modo.
+                // Escala sistémica «L» (FER-164): dial 104.
                 DiurnalDial(now: Date(), solar: solarWindow, sleep: sleepWindow, diameter: 104)
             }
-            if !strapSeen {
-                // Único CTA: el «dato accionable». Texto en el papel sobre el verde del veredicto.
-                Button { model.scan() } label: {
-                    Text("Buscar strap")
-                        .font(StrandFont.headline)
-                        .foregroundStyle(theme.paper)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 11)
-                        .background(theme.verdict, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
-                }
-                .buttonStyle(.plain)
-                .padding(.top, 2)
-            }
-            // Strap visto pero sin lectura de hoy → el pulso vivo + monitor también viven aquí.
-            if strapSeen {
-                LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
-            }
+            heroBody(state)
+            heroFooter(state)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// Héroe del estado «base lista» (`hasImportedBaseline`), en «Instrumento diurno»: la base de
-    /// recuperación ya viene sembrada del historial de Apple Health, así que NOMBRA esa fuente en vez de
-    /// pedir «calibrar desde cero». Un mensaje honesto — la base está lista; el strap solo debe la lectura
-    /// de hoy (lo único que Apple Health no da). El pie se adapta como `emptyHero`: CTA Buscar antes de ver
-    /// un strap, el pulso vivo después. Refleja la procedencia «Tu base viene de Apple Salud» del veredicto
-    /// para que todo hable con una voz (FER-106, hermano de FER-105).
-    private var importedBaselineHero: some View {
-        let strapSeen = live.lastSyncedAt != nil || liveBpm != nil
-        return VStack(alignment: .leading, spacing: 14) {
-            Text("El veredicto de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            HStack(alignment: .center, spacing: 16) {
-                VStack(alignment: .leading, spacing: 9) {
-                    Text("Tu base ya está lista")
-                        .font(InstrumentoType.hero(32)).foregroundStyle(theme.ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                    // Chip de procedencia — la fuente de la base es Apple Health, dicho de frente para que
-                    // «lista» nunca quede sin explicar. En tono de dato (azul de Apple Salud), AA sobre papel.
-                    HStack(spacing: 6) {
-                        Image(systemName: "heart.fill").font(.system(size: 12))
-                        Text("Base · Apple Salud").font(StrandFont.subhead)
-                    }
-                    .foregroundStyle(theme.dataSpO2)
-                    .padding(.horizontal, 9).padding(.vertical, 4)
-                    .background(theme.dataSpO2.opacity(0.12), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-                    Text("Usa tu banda para sumar lo único que Apple Salud no puede: la lectura de hoy.")
-                        .font(StrandFont.body)
-                        .foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+    private func heroOverline(_ s: HeroState) -> LocalizedStringKey {
+        switch s {
+        case .calibrating: return "Tu base se afina"
+        default:           return "El veredicto de hoy"
+        }
+    }
+
+    /// El numeral dominante — lo único que “grita” el estado. Veredicto → recuperación en color de banda
+    /// (o en TINTA si el nivel es `insufficient`: hay número, no hay contexto). Calibrando → «N/4» en
+    /// tinta (progreso, no dato). Espera/base Apple → em-dash «—» en tinta. Escala sistémica «L»
+    /// (FER-164): numeral 88.
+    @ViewBuilder private func heroNumeral(_ s: HeroState) -> some View {
+        switch s {
+        case .verdict:
+            let score = recoveryScore
+            let insufficient = readiness.level == .insufficient
+            HStack(alignment: .firstTextBaseline, spacing: 5) {
+                if let score {
+                    Text("\(score)").instrumentoHero(88)
+                        .foregroundStyle(insufficient ? theme.ink : recoveryDataColor(score))
+                    Text("/100").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                } else {
+                    Text("—").instrumentoHero(88).foregroundStyle(theme.inkTertiary)
                 }
-                Spacer(minLength: 8)
-                // El dial 24h vivo preside también este estado, igual que en emptyHero.
-                DiurnalDial(now: Date(), solar: solarWindow, sleep: sleepWindow, diameter: 104)
             }
-            if !strapSeen {
-                // Único CTA: el «dato accionable». Texto en el papel sobre el verde del veredicto.
-                Button { model.scan() } label: {
-                    Text("Buscar strap")
-                        .font(StrandFont.headline)
-                        .foregroundStyle(theme.paper)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 11)
-                        .background(theme.verdict, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
-                }
-                .buttonStyle(.plain)
-                .padding(.top, 2)
-            } else {
-                LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
+            // El número abre el detalle de recuperación (cómo se calcula, serie, fuente).
+            .contentShape(Rectangle())
+            .onTapGesture {
+                metricDetail = .recovery(score: recoveryScore,
+                                         calibrationNights: recoveryCalibration,
+                                         nightsNeeded: Baselines.minNightsSeed)
+            }
+        case .calibrating(let nights):
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text("\(nights)").instrumentoHero(88).foregroundStyle(theme.ink)
+                Text("/\(Baselines.minNightsSeed)").font(InstrumentoType.hero(40))
+                    .foregroundStyle(theme.inkTertiary)
+            }
+        case .importedBaseline, .waiting:
+            Text("—").instrumentoHero(88).foregroundStyle(theme.inkTertiary)
+        }
+    }
+
+    /// El cuerpo bajo el numeral: la palabra del veredicto + «i» + modificadores (veredicto), o la línea
+    /// honesta de qué falta (resto de modos).
+    @ViewBuilder private func heroBody(_ s: HeroState) -> some View {
+        switch s {
+        case .verdict:
+            verdictBody
+        case .importedBaseline:
+            VStack(alignment: .leading, spacing: 9) {
+                appleBaseChip
+                Text("Falta la lectura de hoy")
+                    .font(StrandFont.headline).foregroundStyle(theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("Usa tu banda para sumar lo único que Apple Salud no puede: la lectura de hoy.")
+                    .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        case .calibrating(let nights):
+            VStack(alignment: .leading, spacing: 10) {
+                calibrationDots(nights: nights)
+                Text(calibrationDetailCopy(nights: nights))
+                    .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        case .waiting:
+            VStack(alignment: .leading, spacing: 6) {
+                Text(strapSeen ? "Aún no hay lectura de hoy" : "Aún no hay lectura")
+                    .font(StrandFont.headline).foregroundStyle(theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(strapSeen
+                     ? "Tu base está lista. Usa el strap esta noche y la recuperación, el esfuerzo y el sueño de la mañana aparecen al sincronizar."
+                     : "Conecta tu strap WHOOP para ver la disposición, la recuperación y la frecuencia cardiaca de la mañana.")
+                    .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// El cuerpo del veredicto: la palabra en su color de nivel + la «i» (toda la fila tocable) que abre
+    /// el porqué, la frase puente, la salvedad de noche corta y la barra «afinando · N de 14». Cuando el
+    /// nivel es `insufficient` hay número pero no palabra: el numeral va en tinta (arriba) y aquí la razón.
+    @ViewBuilder private var verdictBody: some View {
+        let r = readiness
+        if r.level != .insufficient {
+            Button { showWhyVerdict = true } label: {
+                HStack(spacing: 6) {
+                    Text(r.headline).font(StrandFont.title2).fontWeight(.semibold)
+                        .foregroundStyle(verdictDataColor(r.level))
+                        .fixedSize(horizontal: false, vertical: true)
+                    Image(systemName: "info.circle").font(.system(size: 15))
+                        .foregroundStyle(theme.inkTertiary)
+                    Spacer(minLength: 0)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint(Text("Abre por qué el veredicto se lee así"))
+            if let bridge = r.bridge {
+                Text(bridge).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if r.confidenceLow, let note = r.confidenceNote {
+                HStack(spacing: 7) {
+                    Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 10))
+                    Text(note).font(StrandFont.caption)
+                }
+                .foregroundStyle(theme.warning)
+            }
+            if (1..<Baselines.minNightsTrust).contains(ownNights) {
+                calibrationConfidence
+            }
+        } else {
+            // Hay número pero sin contexto para una palabra (ex-anillo / estado 6). El numeral ya va en
+            // tinta; aquí, la razón honesta — nunca un veredicto pintado de color sin respaldo. (FER-160)
+            Text("Aún sin contexto suficiente para un veredicto del día.")
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// El pie adaptable: pulso vivo (veredicto y modos con strap), atajo Apple Health + pulso (calibrando),
+    /// o el CTA «Buscar strap» cuando nunca se ha visto uno.
+    @ViewBuilder private func heroFooter(_ s: HeroState) -> some View {
+        switch s {
+        case .verdict:
+            LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
+        case .calibrating:
+            appleHealthShortcut { showDataSources = true }
+            LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
+        case .importedBaseline, .waiting:
+            if strapSeen {
+                LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
+            } else {
+                scanButton
+            }
+        }
+    }
+
+    /// El único CTA del estado de espera sin strap: texto en el papel sobre el verde del veredicto.
+    private var scanButton: some View {
+        Button { model.scan() } label: {
+            Text("Buscar strap")
+                .font(StrandFont.headline)
+                .foregroundStyle(theme.paper)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 11)
+                .background(theme.verdict, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 2)
+    }
+
+    /// Chip de procedencia — la base viene de Apple Health, dicho de frente. Tono de dato (azul de Apple
+    /// Salud), AA sobre papel.
+    private var appleBaseChip: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "heart.fill").font(.system(size: 12))
+            Text("Base · Apple Salud").font(StrandFont.subhead)
+        }
+        .foregroundStyle(theme.dataSpO2)
+        .padding(.horizontal, 9).padding(.vertical, 4)
+        .background(theme.dataSpO2.opacity(0.12), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+    }
+
+    /// Night-dots de calibración: llenos en el dato (`dataRecovery`), vacíos en `hairline`.
+    private func calibrationDots(nights: Int) -> some View {
+        let total = Baselines.minNightsSeed
+        return HStack(spacing: 8) {
+            ForEach(0..<total, id: \.self) { i in
+                Circle()
+                    .fill(i < nights ? theme.dataRecovery : theme.hairline)
+                    .frame(width: 10, height: 10)
+            }
+            Text("\(nights) de \(total) noches")
+                .font(StrandFont.captionNumber)
+                .foregroundStyle(theme.inkSecondary)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("\(nights) de \(total) noches calibradas"))
+    }
+
+    /// Copy de calibración por momento: noche cero, media calibración, y «todas las noches, computando».
+    /// Enmarca el conteo como las noches que tu PROPIA base necesita, nunca «tu veredicto».
+    private func calibrationDetailCopy(nights: Int) -> LocalizedStringKey {
+        let total = Baselines.minNightsSeed
+        if nights == 0 { return "Usa el strap esta noche — la primera de \(total) noches que tu propia base necesita." }
+        if nights >= total { return "Las \(total) noches están — computando tu primer veredicto." }
+        return "Tu propia base afina cada noche — ya llevas \(nights)."
+    }
+
+    /// Atajo de adelanto por Apple Health (solo en calibración): un usuario con historial puede sembrar la
+    /// base ahora en vez de esperar las 0→seed noches. Renglón full-width con hairline (mismo chrome que
+    /// LiveHeartbeatRow) que abre Fuentes de datos.
+    private func appleHealthShortcut(onTap: @escaping () -> Void) -> some View {
+        VStack(spacing: 0) {
+            Rectangle().fill(theme.hairline).frame(height: 0.5)
+                .padding(.top, 14).padding(.bottom, 10)
+            Button(action: onTap) {
+                HStack(spacing: 9) {
+                    Image(systemName: "heart.fill")
+                        .font(.system(size: 12)).foregroundStyle(theme.dataSpO2)
+                    Text("¿Tienes historial en Apple Salud? Conéctalo y tu base arranca con ventaja.")
+                        .font(StrandFont.caption)
+                        .foregroundStyle(theme.inkSecondary)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 6)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11)).foregroundStyle(theme.inkTertiary)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityElement(children: .ignore)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityLabel(Text("Conectar Apple Salud"))
+            .accessibilityHint(Text("Abre Fuentes de datos para adelantar tu base"))
+        }
     }
 
     /// El renglón de pulso vivo: el glifo de onda + «Verlo latido a latido», la pastilla de bpm vivo (o
@@ -495,110 +639,6 @@ struct TodayView: View {
         }
     }
 
-    /// Tarjeta de progreso — la única pantalla de espera hasta el primer veredicto, en «Instrumento
-    /// diurno». El dial 24h vivo preside; debajo, los night-dots (llenos en `dataRecovery`, vacíos en
-    /// `hairline`) desde la noche cero (0 de seed) hasta la calibración. El copy adapta a tres momentos:
-    /// noche cero, media calibración, y «todas las noches, computando».
-    private struct CalibrationProgressCard: View {
-        let nights: Int
-        let total: Int
-        /// Live heart rate for the "beat by beat" row (nil → "Sin lectura"); rose dot when streaming.
-        var liveBpm: Int? = nil
-        var isLiveHR: Bool = false
-        /// Ventanas solar/sueño para el dial vivo (mismas que el resto de la pantalla).
-        var solar: SolarWindow? = nil
-        var sleep: SleepWindow? = nil
-        /// Tap target for the live monitor; nil hides the "beat by beat" row.
-        var onTapLive: (() -> Void)? = nil
-        /// Tap target for the Apple-Health head-start shortcut; nil hides the row. This card only ever
-        /// shows on the NO-import path (an import routes to `importedBaselineHero`), so when present the
-        /// shortcut is an honest offer to skip the 0→seed wait — never a promise of a base already there.
-        var onConnectAppleHealth: (() -> Void)? = nil
-        @Environment(\.instrumentoTheme) private var theme
-
-        private var headline: LocalizedStringKey {
-            if nights == 0 { return "Tu primera noche cuenta" }
-            if nights >= total { return "Casi listo" }
-            return "Tus números se están formando"
-        }
-        // Frames the count as the nights YOUR OWN baseline needs — never "your verdict" — so a user with
-        // Apple Health history understands this path builds a strap-native base, not the verdict itself.
-        private var detail: LocalizedStringKey {
-            if nights == 0 { return "Usa el strap esta noche — la primera de \(total) noches que tu propia base necesita." }
-            if nights >= total { return "Las \(total) noches están — computando tu primer veredicto." }
-            return "Tu propia base afina cada noche — ya llevas \(nights)."
-        }
-
-        var body: some View {
-            VStack(alignment: .leading, spacing: 14) {
-                Text("Calibrando").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                HStack(alignment: .center, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text(headline)
-                            .font(InstrumentoType.hero(26)).foregroundStyle(theme.ink)
-                            .fixedSize(horizontal: false, vertical: true)
-                        // Night-dots: llenos en el dato (dataRecovery), vacíos en hairline.
-                        HStack(spacing: 8) {
-                            ForEach(0..<total, id: \.self) { i in
-                                Circle()
-                                    .fill(i < nights ? theme.dataRecovery : theme.hairline)
-                                    .frame(width: 10, height: 10)
-                            }
-                            Text("\(nights) de \(total) noches")
-                                .font(StrandFont.captionNumber)
-                                .foregroundStyle(theme.inkSecondary)
-                        }
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(Text("\(nights) de \(total) noches calibradas"))
-                        Text(detail)
-                            .font(StrandFont.subhead)
-                            .foregroundStyle(theme.inkSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    Spacer(minLength: 8)
-                    DiurnalDial(now: Date(), solar: solar, sleep: sleep, diameter: 94)
-                }
-                if let onConnectAppleHealth {
-                    appleHealthShortcut(onTap: onConnectAppleHealth)
-                }
-                if let onTapLive {
-                    LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: onTapLive)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-
-        /// Head-start nudge: a user with Apple Health history can seed the base now instead of waiting
-        /// out the 0→seed nights. A hairline-topped, full-width tap row (matching LiveHeartbeatRow's
-        /// chrome) that opens Data Sources. Cyan glyph marks it as the Apple-Health affordance.
-        private func appleHealthShortcut(onTap: @escaping () -> Void) -> some View {
-            VStack(spacing: 0) {
-                Rectangle().fill(theme.hairline).frame(height: 0.5)
-                    .padding(.top, 14).padding(.bottom, 10)
-                Button(action: onTap) {
-                    HStack(spacing: 9) {
-                        Image(systemName: "heart.fill")
-                            .font(.system(size: 12)).foregroundStyle(theme.dataSpO2)
-                        Text("¿Tienes historial en Apple Salud? Conéctalo y tu base arranca con ventaja.")
-                            .font(StrandFont.caption)
-                            .foregroundStyle(theme.inkSecondary)
-                            .multilineTextAlignment(.leading)
-                            .fixedSize(horizontal: false, vertical: true)   // wrap at large Dynamic Type
-                        Spacer(minLength: 6)
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 11)).foregroundStyle(theme.inkTertiary)
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityElement(children: .ignore)
-                .accessibilityAddTraits(.isButton)
-                .accessibilityLabel(Text("Conectar Apple Salud"))
-                .accessibilityHint(Text("Abre Fuentes de datos para adelantar tu base"))
-            }
-        }
-    }
-
     /// Top utility row: a compact date (the greeting is gone — the verdict greets with substance)
     /// and the live heart-rate pill.
     @ViewBuilder private var utilityRow: some View {
@@ -640,77 +680,6 @@ struct TodayView: View {
                 .lineLimit(1)
             }
         }
-    }
-
-    /// Readiness promoted to the hero: NOOP's reason to exist over the strap maker is on-device
-    /// synthesis, so the home answers "should you push today?" instead of posing a number. The
-    /// card tints to the readiness level. Falls back to the recovery ring while the baseline seeds.
-    @ViewBuilder private var verdictSection: some View {
-        let r = readiness
-        let score = recoveryScore
-        VStack(alignment: .leading, spacing: 12) {
-            Text("El veredicto de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            // UN número dominante (la recuperación) con SU color de banda, y el dial del momento a su
-            // derecha (chrome en tinta). Jerarquía por espacio: sin cajas, sin fondo de card. (FER-113:
-            // el número conserva su propio color de banda — el veredicto no lo repinta.)
-            HStack(alignment: .center, spacing: 18) {
-                HStack(alignment: .firstTextBaseline, spacing: 5) {
-                    if let score {
-                        Text("\(score)").instrumentoHero(88).foregroundStyle(recoveryDataColor(score))
-                        Text("/100").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
-                    } else {
-                        Text("—").instrumentoHero(88).foregroundStyle(theme.inkTertiary)
-                    }
-                }
-                // El número abre el detalle de recuperación (cómo se calcula, serie, fuente). La síntesis
-                // de 3 celdas se fundió aquí: HRV y Sueño viven abajo en Métricas clave.
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    metricDetail = .recovery(score: score,
-                                             calibrationNights: recoveryCalibration,
-                                             nightsNeeded: Baselines.minNightsSeed)
-                }
-                Spacer(minLength: 8)
-                DiurnalDial(now: Date(), solar: solarWindow, sleep: sleepWindow, diameter: 94)
-            }
-            if r.level != .insufficient {
-                // La palabra del veredicto en SU color de estado (independiente del número → pueden
-                // divergir) + la «i» que abre el porqué (drivers + leyenda en un sheet).
-                Button { showWhyVerdict = true } label: {
-                    HStack(spacing: 6) {
-                        Text(r.headline).font(StrandFont.title2).fontWeight(.semibold)
-                            .foregroundStyle(verdictDataColor(r.level))
-                            .fixedSize(horizontal: false, vertical: true)
-                        Image(systemName: "info.circle").font(.system(size: 15))
-                            .foregroundStyle(theme.inkTertiary)
-                        Spacer(minLength: 0)
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityHint(Text("Abre por qué el veredicto se lee así"))
-                // El puente reconciliador — una frase que explica la divergencia.
-                if let bridge = r.bridge {
-                    Text(bridge).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                // Salvedad de noche corta.
-                if r.confidenceLow, let note = r.confidenceNote {
-                    HStack(spacing: 7) {
-                        Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 10))
-                        Text(note).font(StrandFont.caption)
-                    }
-                    .foregroundStyle(theme.warning)
-                }
-                // Afinando con el strap hasta la base de confianza (1..<minNightsTrust).
-                if (1..<Baselines.minNightsTrust).contains(ownNights) {
-                    calibrationConfidence
-                }
-            }
-            // Pulso vivo + monitor latido a latido, al pie del veredicto.
-            LiveHeartbeatRow(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// Whether the personal baseline draws on imported Apple Health history — drives the
