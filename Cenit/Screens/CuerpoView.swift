@@ -11,7 +11,10 @@ import Foundation
 // `TrendsView`). An Apple-Health-Summary-style curated landing in the light «Instrumento diurno»
 // language: warm paper, color ONLY on the datum, hierarchy by space. One column of grouped sections —
 // Recuperación (hero) · Descanso & carga · Vitales · Actividad · Longevidad — each row a `MetricRow`
-// (label · 14-day sparkline + p25–p75 band · value in its data hue · chevron) that opens a detail.
+// (label · 14-day sparkline · value in its data hue · chevron) that opens a detail. The sparklines
+// carry NO p25–p75 reference band: at 60×26 pt the band read as a grey box behind the line, not as
+// context (it fought the «color only in the datum» DNA). The `Sparkline`/`MetricRow` band API stays
+// for any future large-chart caller; these dense rows just don't pass it.
 //
 // Detail bridge until the unified Detalle de Métrica (FER-185) lands: the metrics that already have a
 // light sheet open the same `MetricInfoSheet` Today uses; Sueño/Entrenamientos and the two vitals
@@ -225,7 +228,7 @@ private struct CuerpoLanding: View {
     // MARK: - Generic metric row
 
     /// One `MetricRow` wired to the light theme: value in its data hue (ink when absent), 14-day
-    /// sparkline + p25–p75 band, chevron, whole row tappable. `value == nil` shows an honest "—".
+    /// sparkline, chevron, whole row tappable. `value == nil` shows an honest "—".
     private func metricRow(_ label: LocalizedStringKey, value: String?, unit: String? = nil,
                            color: Color, sparkKey: String, fromApple: Bool = false,
                            open: @escaping () -> Void) -> some View {
@@ -243,8 +246,6 @@ private struct CuerpoLanding: View {
                 flagColor: theme.inkTertiary,
                 sparkline: validSpark,
                 sparkColor: color,
-                referenceBand: validSpark.flatMap { ReferenceRange.interquartile($0) },
-                bandColor: theme.hairlineStrong,
                 isPlaceholder: value == nil,
                 showsChevron: true,
                 chevronColor: theme.inkTertiary
@@ -274,8 +275,6 @@ private struct CuerpoLanding: View {
                 if showSpark, let spark {
                     Sparkline(values: spark,
                               gradient: Gradient(colors: [color.opacity(0.55), color]),
-                              referenceBand: ReferenceRange.interquartile(spark),
-                              bandColor: theme.hairlineStrong,
                               lineWidth: 2, showsArea: false, showsHead: false, showsHover: false)
                         .frame(width: 64, height: 28)
                 }
