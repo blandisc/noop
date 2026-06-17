@@ -139,7 +139,7 @@ struct InsightsView: View {
         // Recompute the cached ranking only when the outcome selection changes.
         // (behaviours / outcomeByKey change only at load, which calls
         //  recomputeRanked() directly, so keying on `outcome` is sufficient.)
-        .onChange(of: outcome) { _ in recomputeRanked() }
+        .onChange(of: outcome) { recomputeRanked() }
     }
 
     // MARK: - Load

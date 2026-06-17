@@ -54,7 +54,7 @@ struct StressView: View {
             }
         }
         .onAppear { rebuildModelIfNeeded() }
-        .onChange(of: repo.days) { _ in rebuildModelIfNeeded() }
+        .onChange(of: repo.days) { rebuildModelIfNeeded() }
         .task { await load() }
     }
 

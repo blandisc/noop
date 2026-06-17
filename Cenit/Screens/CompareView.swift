@@ -165,7 +165,7 @@ struct CompareView: View {
         }
         // Recompute the pairwise scan only when the windowed series content changes,
         // never on hover/animation/HR-tick re-renders that don't touch these inputs.
-        .onChange(of: correlationKey(activeSeries)) { _ in
+        .onChange(of: correlationKey(activeSeries)) {
             refreshPairCache(activeSeries)
         }
     }
@@ -687,7 +687,7 @@ private struct OverlayChart: View {
         .chartLegend(.hidden) // legend rendered separately with real min/max
         .chartOverlay { proxy in
             GeometryReader { geo in
-                let plot = geo[proxy.plotAreaFrame]
+                let plot = geo[proxy.plotFrame!]
                 ZStack(alignment: .topLeading) {
                     if let hx = hoverX,
                        let day = nearestDay(toX: hx, proxy: proxy, plot: plot),

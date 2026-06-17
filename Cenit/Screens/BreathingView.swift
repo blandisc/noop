@@ -109,11 +109,11 @@ struct BreathingView: View {
             sessionSeconds += 1
         }
         // Pull new R-R intervals into the rolling buffer as they arrive.
-        .onChange(of: live.rr) { rr in
+        .onChange(of: live.rr) { _, rr in
             ingest(rr)
         }
         // Changing pace mid-session re-arms the current phase cleanly.
-        .onChange(of: pace) { _ in
+        .onChange(of: pace) {
             if running { armPhase(.inhale, from: Date(), buzz: false) }
         }
         .onDisappear { stop() }

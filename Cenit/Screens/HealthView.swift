@@ -138,7 +138,7 @@ private struct HeartRateSection: View {
                 ])
             }
         }
-        .onChange(of: displayHR) { newHR in
+        .onChange(of: displayHR) { _, newHR in
             // Append each new live HR reading so the hero graph grows a continuous time-series (#105).
             guard let v = newHR else { return }
             hrHistory.append(Double(v))

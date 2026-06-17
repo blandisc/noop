@@ -86,16 +86,16 @@ struct LiveView: View {
         .instrumentoTheme(theme)
         .onAppear { refreshLiveSession() }
         .onDisappear { model.stopRealtimeHR() }
-        .onChange(of: live.bonded) { _ in refreshLiveSession() }
-        .onChange(of: live.connected) { _ in refreshLiveSession() }
-        .onChange(of: live.rr) { newRR in
+        .onChange(of: live.bonded) { refreshLiveSession() }
+        .onChange(of: live.connected) { refreshLiveSession() }
+        .onChange(of: live.rr) { _, newRR in
             // LiveState.rr only holds the latest notification's intervals; keep a rolling buffer so the
             // tachogram builds up beat by beat as the user watches.
             rrHistory.append(contentsOf: newRR)
             if rrHistory.count > 40 { rrHistory.removeFirst(rrHistory.count - 40) }
         }
         .task { receipt = await repo.dataReceipt() }
-        .onChange(of: live.hrFlushSeq) { _ in
+        .onChange(of: live.hrFlushSeq) {
             // A standard-HR flush just committed to SQLite → re-query so the stored counts climb live.
             Task { receipt = await repo.dataReceipt() }
         }

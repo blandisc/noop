@@ -89,10 +89,10 @@ enum ScreenshotFixtures {
 
         // Workouts + a 24h HR trace need the store (TodayView reads them back via loadAll).
         if let store = await model.repo.storeHandle() {
-            try? await store.upsertWorkouts(syntheticWorkouts(today: today, cal: cal, primed: primed),
-                                            deviceId: model.deviceId)
+            _ = try? await store.upsertWorkouts(syntheticWorkouts(today: today, cal: cal, primed: primed),
+                                                deviceId: model.deviceId)
             let hr = syntheticHRSamples(today: today, cal: cal)
-            try? await store.insert(Streams(hr: hr), deviceId: model.deviceId)
+            _ = try? await store.insert(Streams(hr: hr), deviceId: model.deviceId)
         }
 
         // Publish the dashboard last — single refreshSeq bump, drives loadAll.
