@@ -288,6 +288,14 @@ public final class BLEManager: NSObject, ObservableObject {
     /// background relaunch. `CenitApp.init` constructs `AppModel` (which owns `BLEManager`)
     /// synchronously to satisfy this.
     private static func makeCentral(delegate: CBCentralManagerDelegate) -> CBCentralManager {
+        // ⚠️ CONTRATO DE SEGURIDAD — NO cambiar `queue: .main` sin hacer el flip de
+        // isolation completo (FER-173). `BLEManager` es `@MainActor` pero conforma a los
+        // protocolos delegate `nonisolated` de CBCentralManager/CBPeripheral; hoy eso es
+        // sólido SOLO porque CoreBluetooth entrega cada callback en `.main`, el mismo
+        // contexto que el estado del actor. Mover esto a una cola en background mientras
+        // BLEManager siga `@MainActor` convierte una carrera de datos (hoy enmascarada)
+        // en crashes reales (`EXC_BAD_ACCESS`). El off-main y la isolation deben aterrizar
+        // juntos — ver FER-173.
         return CBCentralManager(
             delegate: delegate,
             queue: .main,
