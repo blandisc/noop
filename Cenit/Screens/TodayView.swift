@@ -448,10 +448,11 @@ struct TodayView: View {
             // Sin número que medir (em-dash) el dial es el protagonista; con número, el dato vive dentro del
             // reloj. El dial preside SIEMPRE y centrado para que la pantalla nunca se vea a medio construir.
             // `sleepWindow` ya es nil cuando anoche no hubo registro de strap, así que el dial omite la banda
-            // de sueño sola: contexto honesto en cada modo. Escala (FER-202): dial 118 con el numeral 52 y el
-            // «/100» apilado debajo, para que Hoy quepa en una pantalla en estado calibrando.
+            // de sueño sola: contexto honesto en cada modo. Escala (FER-205): dial 180 con el numeral 60 (como
+            // antes de FER-202 — el dueño prefirió el dial grande), conservando el «/100» apilado y centrado
+            // debajo (FER-202). Con el dial grande Hoy puede volver a necesitar algo de scroll en calibrando.
             ZStack {
-                DiurnalDial(now: Date(), solar: solarWindow, sleep: sleepWindow, diameter: 118)
+                DiurnalDial(now: Date(), solar: solarWindow, sleep: sleepWindow, diameter: 180)
                 heroNumeral(state)
             }
             heroBody(state)
@@ -469,7 +470,7 @@ struct TodayView: View {
 
     /// El numeral dominante — lo único que “grita” el estado. Veredicto → recuperación en color de banda
     /// (o en TINTA si el nivel es `insufficient`: hay número, no hay contexto). Calibrando → «N/4» en
-    /// tinta (progreso, no dato). Espera/base Apple → em-dash «—» en tinta. Numeral 52 con el denominador
+    /// tinta (progreso, no dato). Espera/base Apple → em-dash «—» en tinta. Numeral 60 con el denominador
     /// («/100» o «/seed») apilado pequeño y centrado debajo (FER-202).
     @ViewBuilder private func heroNumeral(_ s: HeroState) -> some View {
         switch s {
@@ -482,12 +483,12 @@ struct TodayView: View {
             Group {
                 if let score {
                     VStack(spacing: 1) {
-                        Text("\(score)").instrumentoHero(52)
+                        Text("\(score)").instrumentoHero(60)
                             .foregroundStyle(insufficient ? theme.ink : recoveryDataColor(score))
                         Text("/100").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
                     }
                 } else {
-                    Text("—").instrumentoHero(52).foregroundStyle(theme.inkTertiary)
+                    Text("—").instrumentoHero(60).foregroundStyle(theme.inkTertiary)
                 }
             }
             // El número abre el detalle de recuperación (cómo se calcula, serie, fuente).
@@ -501,12 +502,12 @@ struct TodayView: View {
             // Apilado (FER-202), igual que el veredicto: «N» centrado en el eje del dial con el «/seed»
             // pequeño y centrado debajo (antes a un lado con un «/seed» espejo invisible).
             VStack(spacing: 1) {
-                Text("\(nights)").instrumentoHero(52).foregroundStyle(theme.ink)
+                Text("\(nights)").instrumentoHero(60).foregroundStyle(theme.ink)
                 Text("/\(Baselines.minNightsSeed)").font(StrandFont.subhead)
                     .foregroundStyle(theme.inkTertiary)
             }
         case .importedBaseline, .waiting:
-            Text("—").instrumentoHero(52).foregroundStyle(theme.inkTertiary)
+            Text("—").instrumentoHero(60).foregroundStyle(theme.inkTertiary)
         }
     }
 
