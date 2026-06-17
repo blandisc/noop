@@ -283,16 +283,15 @@ struct TodayView: View {
         // El color scheme (y con él la barra de estado: Hoy = papel claro → tinta oscura) se decide
         // en ContentView según la pestaña activa, porque `preferredColorScheme` lo resuelve el
         // controlador raíz del WindowGroup y un valor puesto AQUÍ (dentro del TabView) no llega.
-        // En vivo se abre como HOJA (FER-190), no pantalla completa: un `.sheet` con detente grande y
-        // grabber, igual que las hojas de métrica. Todo el monitor cabe en una sola vista. El tema
-        // «Instrumento» se pasa explícito (no se propaga por el entorno fresco del sheet) y la hoja
-        // se presenta en claro con el papel del tema; se cierra con swipe/grabber (sin botón "Done").
+        // En vivo se abre como HOJA (FER-190), no pantalla completa: un `.sheet` con grabber, igual que
+        // las hojas de métrica. La hoja abre a la altura del contenido — el detente lo fija `LiveView`
+        // midiéndose (FER-196). El tema «Instrumento» se pasa explícito (no se propaga por el entorno
+        // fresco del sheet) y la hoja se presenta en claro con el papel del tema; cierra con swipe.
         .sheet(isPresented: $showLiveMonitor) {
             LiveView(theme: theme, monitorOnly: true)
                 .environmentObject(model)
                 .environmentObject(live)
                 .environmentObject(repo)
-                .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(theme.paper)
                 .preferredColorScheme(.light)
