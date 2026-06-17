@@ -683,7 +683,9 @@ public final class BLEManager: NSObject, ObservableObject {
     /// historical data (isBackfilling drops to false), exit the backfill session cleanly.
     private func afterBackfillIngest() {
         guard backfilling, backfiller?.isBackfilling == false else { return }
-        exitBackfilling(reason: "HISTORY_COMPLETE")
+        // The offload ended cleanly: either the strap sent HISTORY_COMPLETE, or the CaughtUpDetector
+        // judged the backlog drained on a firmware that never sends it (FER-201). Both are successes.
+        exitBackfilling(reason: backfiller?.didCatchUp == true ? "caught-up" : "HISTORY_COMPLETE")
     }
 
     /// True when a frame is part of the historical offload (HISTORICAL_DATA=47, EVENT=48,
@@ -776,8 +778,8 @@ public final class BLEManager: NSObject, ObservableObject {
     /// What a finished offload session means to the user, by teardown reason — pure, so the policy is
     /// unit-testable without CoreBluetooth or a strap (FER-174).
     enum SyncSessionOutcome: Equatable {
-        /// HISTORY_COMPLETE — the offload drained cleanly: stamp lastSyncedAt, clear the error, unlock
-        /// the receipt + verdict.
+        /// HISTORY_COMPLETE or "caught-up" (FER-201) — the offload drained cleanly: stamp lastSyncedAt,
+        /// clear the error, unlock the receipt + verdict.
         case completed
         /// The idle watchdog OR the absolute session cap fired — surface a non-silent, honest error;
         /// nothing is stamped as synced, so the durable strap_trim cursor resumes the next session.
@@ -788,11 +790,13 @@ public final class BLEManager: NSObject, ObservableObject {
 
     /// Maps an `exitBackfilling` teardown reason to its user-visible outcome. The "session-cap" case is
     /// the FER-174 fix: a strap that streams offload frames but never signals HISTORY_COMPLETE is ended
-    /// by the absolute cap with a non-silent message — never stamped as a successful sync. `nonisolated`:
-    /// it's a pure mapping over `reason` with no actor state, so it's callable (and testable) anywhere.
+    /// by the absolute cap with a non-silent message — never stamped as a successful sync. "caught-up"
+    /// is the FER-201 follow-up: the CaughtUpDetector judged the backlog drained on that same firmware,
+    /// so it completes as success (the cap is then only a backstop for sessions making no progress).
+    /// `nonisolated`: a pure mapping over `reason` with no actor state, callable (and testable) anywhere.
     nonisolated static func syncSessionOutcome(reason: String) -> SyncSessionOutcome {
         switch reason {
-        case "HISTORY_COMPLETE":
+        case "HISTORY_COMPLETE", "caught-up":
             return .completed
         case "timeout":
             return .interrupted(message: "Sync interrupted — the strap went quiet. It will retry on the next sync.")

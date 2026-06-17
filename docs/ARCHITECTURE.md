@@ -241,7 +241,9 @@ the periodic **type-47 historical offload is the primary metric source**, not th
    `SEND_HISTORICAL_DATA` and arms **two** timers: an *idle watchdog* (`backfillIdleTimeoutSeconds`,
    60s, re-armed on every offload frame) and an *absolute session cap*
    (`backfillAbsoluteTimeoutSeconds`, 300s, armed **once**, never re-armed by frames).
-2. The strap streams `HISTORY_START → type-47 records → HISTORY_END (acked) … → HISTORY_COMPLETE`.
+2. The strap streams `HISTORY_START → type-47 records → HISTORY_END (acked) … → HISTORY_COMPLETE` —
+   except some WHOOP 4.0 firmware (e.g. FW 1.542.0.0) **never sends `HISTORY_COMPLETE`** (FER-201), so
+   completion can't rely on that frame alone (see step 4).
 3. `Backfiller.ingest` is a state machine driven by `classifyHistoricalMeta`. On each `HISTORY_END`
    it commits one chunk with a strict **local safe-trim invariant**:
 
@@ -256,8 +258,16 @@ the periodic **type-47 historical offload is the primary metric source**, not th
    link-layer confirmed. If the idle watchdog fires (strap went silent) — or the absolute cap fires
    (strap keeps streaming offload frames but never signals `HISTORY_COMPLETE`, the WHOOP 4.0 wedge in
    FER-152/FER-174) — the session tears down, nothing in-flight is acked, and the durable `strap_trim`
-   cursor lets the next session resume exactly where it left off. The absolute cap is what guarantees
-   the "Sincronizando…" pill can never pin forever.
+   cursor lets the next session resume exactly where it left off. The absolute cap is the ultimate
+   backstop that guarantees the "Sincronizando…" pill can never pin forever.
+4. **Completion is positive, not just a timeout (FER-201).** A session ends as **success** two ways:
+   the strap's own `HISTORY_COMPLETE`, or — for firmware that never sends it — `CaughtUpDetector`
+   (`WhoopProtocol`, sibling of `RtcHealthPolicy`) judging the backlog drained from a sustained run of
+   small `HISTORY_END` chunks (the offload has shrunk to the live ~1 Hz drip). `Backfiller` feeds it the
+   per-END type-47 count **after** the safe-trim ack, flips `isBackfilling`/`didCatchUp`, and
+   `BLEManager.afterBackfillIngest` tears down with `reason: "caught-up"` → `.completed` (stamps
+   `lastSyncedAt`, green receipt). Completing on the heuristic is self-healing: the durable `strap_trim`
+   cursor + periodic re-sync drain any remainder next tick, so safe-trim still loses nothing.
 
 Type-47 records carry their **own real-unix timestamps**, so the historical path does *not* depend on
 `GET_CLOCK`; if the clock correlation hasn't landed yet, `Backfiller` falls back to an identity

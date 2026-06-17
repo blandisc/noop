@@ -50,6 +50,21 @@ final class SyncSessionOutcomeTests: XCTestCase {
         XCTAssertEqual(BLEManager.syncSessionOutcome(reason: ""), .silent)
     }
 
+    /// Caught-up completion (FER-201): when the offload drains the backlog on a firmware that never
+    /// sends HISTORY_COMPLETE, the `CaughtUpDetector` ends the session — and that MUST stamp a
+    /// successful sync (green receipt + lastSyncedAt), exactly like HISTORY_COMPLETE.
+    func testCaughtUpIsACompletedSync() {
+        XCTAssertEqual(BLEManager.syncSessionOutcome(reason: "caught-up"), .completed)
+    }
+
+    /// "caught-up" is a SUCCESS; the absolute cap is NOT — the FER-201 fix must never collapse the two,
+    /// otherwise a wedge would read as synced (or a real completion would show the orange paused error).
+    func testCaughtUpAndSessionCapAreOppositeOutcomes() {
+        XCTAssertEqual(BLEManager.syncSessionOutcome(reason: "caught-up"), .completed)
+        XCTAssertNotEqual(BLEManager.syncSessionOutcome(reason: "caught-up"),
+                          BLEManager.syncSessionOutcome(reason: "session-cap"))
+    }
+
     // MARK: - timer invariant
 
     /// The absolute cap must outlast the idle watchdog (so a healthy offload making real progress isn't
