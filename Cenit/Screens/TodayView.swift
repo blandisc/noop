@@ -971,7 +971,7 @@ struct TodayView: View {
     /// el `MetricInfoSheet` de la métrica. El detalle trae la tendencia 14d (interino hasta «Cuerpo»).
     private func metricTile(_ tile: TodayMetricTile, open: @escaping () -> Void) -> some View {
         Button(action: open) { tile }
-            .buttonStyle(TileButtonStyle(pressedFill: theme.ink.opacity(0.05)))
+            .buttonStyle(TileButtonStyle(liftBorder: theme.hairlineStrong))
             .accessibilityHint(Text("Abre el detalle"))
     }
 
@@ -1112,16 +1112,18 @@ struct TodayView: View {
         }
     }
 
-    /// Feedback de pulsado para un tile: una tinta tenue del tema sobre la forma redondeada del tile
-    /// (recortada al mismo radio para no asomar esquinas cuadradas, a diferencia de `MetricRowButtonStyle`
-    /// que es para renglones rectos). (FER-180)
+    /// Realce al pulsar (FER-213): la afordancia de «tocable» de los tiles de Hoy. En reposo el tile NO
+    /// lleva marca; al pulsar se ELEVA hacia el toque —escala ~1.03 + el borde pasa a `hairlineStrong`—
+    /// en vez del darken anterior (FER-180). Plano, sin sombra (regla del idioma «Instrumento»). El
+    /// zoom-morph de apertura de FER-210 se revirtió; esto conserva sólo el realce, que el dueño aprobó.
     private struct TileButtonStyle: ButtonStyle {
-        let pressedFill: Color
+        let liftBorder: Color
         func makeBody(configuration: Configuration) -> some View {
             configuration.label
                 .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                    .fill(configuration.isPressed ? pressedFill : Color.clear))
-                .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+                    .strokeBorder(configuration.isPressed ? liftBorder : Color.clear, lineWidth: 1))
+                .scaleEffect(configuration.isPressed ? 1.03 : 1.0)
+                .animation(.spring(response: 0.3, dampingFraction: 0.72), value: configuration.isPressed)
         }
     }
 
