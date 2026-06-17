@@ -48,6 +48,10 @@ struct LiveView: View {
     }()
     /// How many recent calendar days the coverage strip shows.
     private static let coverageWindow = 28
+    /// Fixed widths for the two right-hand signal columns so rows AND the per-group column headers
+    /// line up (FER-192): the status/sync column and the stored-count column.
+    private static let statusColW: CGFloat = 76
+    private static let countColW: CGFloat = 58
 
     var body: some View {
         ScrollView {
@@ -72,7 +76,8 @@ struct LiveView: View {
                 }
             }
             .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.top, monitorOnly ? 8 : 18)
+            // Breathing room below the sheet's grabber so the title isn't cramped against it (FER-192).
+            .padding(.top, monitorOnly ? 28 : 18)
             .padding(.bottom, NoopMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -198,14 +203,16 @@ struct LiveView: View {
         let c = receipt?.counts
         let ago = live.lastSyncedAt.map { relativeAgo($0) }
         return VStack(alignment: .leading, spacing: 0) {
-            groupLabel("Capturing live")
+            // Live group: the value column explains itself (84 bpm); only the count column needs a key.
+            groupHeader("Capturing live", statusKey: nil, countKey: "records")
             signalRow(icon: "heart.fill", name: "Heart rate",
                       status: displayHR.map { "\($0) bpm" } ?? "—", stored: c?.hr ?? 0, isLive: isLiveHR)
             rowDivider
             signalRow(icon: "waveform.path.ecg", name: "Variability (R-R)",
                       status: rrHistory.last.map { "\($0) ms" } ?? "—", stored: c?.rr ?? 0, isLive: isLiveHR)
 
-            groupLabel("Completes on sync").padding(.top, 12)
+            // Sync group: the time column is "when last saved", so key it "saved"; count keyed "records".
+            groupHeader("Completes on sync", statusKey: "saved", countKey: "records").padding(.top, 12)
             syncRow(icon: "drop.fill", name: "Blood oxygen (SpO₂)", stored: c?.spo2 ?? 0, ago: ago)
             rowDivider
             syncRow(icon: "thermometer", name: "Skin temperature", stored: c?.skinTemp ?? 0, ago: ago)
@@ -220,10 +227,28 @@ struct LiveView: View {
         Rectangle().fill(theme.hairline).frame(height: 0.5)
     }
 
-    private func groupLabel(_ text: LocalizedStringKey) -> some View {
-        Text(text).font(StrandFont.overline).tracking(StrandFont.overlineTracking)
-            .foregroundStyle(theme.inkSecondary)
-            .padding(.bottom, 5)
+    /// A group's overline label plus right-aligned column keys, aligned over the fixed-width status and
+    /// count columns of the rows below. `statusKey` is nil for the live group (its value is self-evident).
+    private func groupHeader(_ label: LocalizedStringKey, statusKey: LocalizedStringKey?, countKey: LocalizedStringKey) -> some View {
+        HStack(spacing: 9) {
+            Text(label).font(StrandFont.overline).tracking(StrandFont.overlineTracking)
+                .foregroundStyle(theme.inkSecondary)
+            Spacer(minLength: 6)
+            colKey(statusKey).frame(width: Self.statusColW, alignment: .trailing)
+            colKey(countKey).frame(width: Self.countColW, alignment: .trailing)
+            Color.clear.frame(width: 7, height: 1)   // aligns with the row's status dot
+        }
+        .padding(.bottom, 5)
+    }
+
+    @ViewBuilder private func colKey(_ text: LocalizedStringKey?) -> some View {
+        if let text {
+            Text(text).font(.system(size: 10, weight: .medium)).tracking(0.4)
+                .textCase(.uppercase).foregroundStyle(theme.inkTertiary)
+                .lineLimit(1)
+        } else {
+            Color.clear.frame(height: 1)
+        }
     }
 
     /// A live signal (HR / R-R): name · live value · stored count · green-when-live dot.
@@ -234,7 +259,9 @@ struct LiveView: View {
             Text(name).font(StrandFont.subhead).foregroundStyle(theme.ink)
                 .lineLimit(1).minimumScaleFactor(0.75)
             Spacer(minLength: 6)
-            Text(status).font(StrandFont.captionNumber).foregroundStyle(theme.ink).fixedSize()
+            Text(status).font(StrandFont.captionNumber).foregroundStyle(theme.ink)
+                .lineLimit(1).minimumScaleFactor(0.8)
+                .frame(width: Self.statusColW, alignment: .trailing)
             storedCount(stored)
             Circle().fill(isLive ? theme.dataRecovery : theme.inkTertiary).frame(width: 7, height: 7)
         }
@@ -252,14 +279,16 @@ struct LiveView: View {
                 .lineLimit(1).minimumScaleFactor(0.75)
             Spacer(minLength: 6)
             Text(syncedAgo ?? String(localized: "not yet"))
-                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary).fixedSize()
+                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                .lineLimit(1).minimumScaleFactor(0.8)
+                .frame(width: Self.statusColW, alignment: .trailing)
             storedCount(stored)
             Circle().fill(theme.inkTertiary).frame(width: 7, height: 7)
         }
         .padding(.vertical, 8)
     }
 
-    /// The stored-sample count (the on-disk "receipt"), right-aligned in its own column. "—" when a
+    /// The stored-sample count (the on-disk "receipt"), right-aligned in its fixed column. "—" when a
     /// stream hasn't landed anything yet, instead of an alarming "0".
     @ViewBuilder private func storedCount(_ n: Int) -> some View {
         Group {
@@ -271,7 +300,8 @@ struct LiveView: View {
             }
         }
         .font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary)
-        .frame(minWidth: 50, alignment: .trailing)
+        .lineLimit(1).minimumScaleFactor(0.7)
+        .frame(width: Self.countColW, alignment: .trailing)
     }
 
     // MARK: - Coverage (recent day-by-day continuity)
