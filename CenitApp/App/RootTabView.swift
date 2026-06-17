@@ -1,6 +1,7 @@
 #if os(iOS)
 import SwiftUI
 import StrandDesign
+import StrandAnalytics
 
 /// iOS navigation shell: a `TabView` with the most-used screens as tabs and everything else under a
 /// "More" list. Every screen is a `StrandDesign`-built view.
@@ -34,7 +35,21 @@ struct RootTabView: View {
             lazyTab(.sleep, "Sleep", "bed.double.fill") { SleepView() }
             moreTab.tag(Tab.more)
         }
+        // `.tint` no longer paints the tab bar (it's hidden below; the custom
+        // `InstrumentTabBar` sets its own ink), but it still tints links/controls
+        // inside the screens — kept for those.
         .tint(StrandPalette.accent)
+        // The «Barra de instrumento» (FER-163): the native bar is hidden per page
+        // (see `lazyTab`/`moreTab`) and this custom bar takes its place. It reserves
+        // its own space via `safeAreaInset`, and `instrumentoThemeByHour` drives
+        // `\.instrumentoTheme` so that — under Hoy — it warms with the clock exactly
+        // like TodayView. Under the dark screens it ignores the theme and uses
+        // `StrandPalette`. (Color scheme itself is owned by ContentView via
+        // `isTodayActive` — FER-160; the bar uses explicit colors either way.)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            InstrumentTabBar(items: barItems, selection: $selection, isLight: selection == .today)
+                .instrumentoThemeByHour(solar: barSolar)
+        }
         // Color scheme lo decide ContentView (cercano a la raíz) según `isTodayActive`; aquí solo lo
         // mantenemos sincronizado con la pestaña visible.
         .onChange(of: selection) { _, newValue in
@@ -84,6 +99,10 @@ struct RootTabView: View {
             }
         }
         .background(StrandPalette.surfaceBase.ignoresSafeArea())
+        // Hide the native tab bar everywhere; the custom `InstrumentTabBar` (mounted
+        // on the TabView via safeAreaInset) is the visible bar. `tabItem` stays so
+        // TabView keeps its tag/selection wiring — its label just never renders.
+        .toolbar(.hidden, for: .tabBar)
         .tabItem { Label(title, systemImage: icon) }
         .tag(tag)
     }
@@ -126,7 +145,32 @@ struct RootTabView: View {
                     .toolbarBackground(StrandPalette.surfaceBase, for: .navigationBar)
             }
         }
+        .toolbar(.hidden, for: .tabBar)
         .tabItem { Label("More", systemImage: "ellipsis.circle.fill") }
+    }
+
+    // MARK: - Custom bar (FER-163)
+
+    /// The five tabs as drawn by `InstrumentTabBar`. Labels reuse the same
+    /// `LocalizedStringKey`s the catalog already maps (Hoy / Tendencias / …). Icons
+    /// are the thin-stroke set: a 24h dial for Hoy, a crescent for Sueño, line
+    /// glyphs for the rest.
+    private var barItems: [InstrumentTabBar<Tab>.Item] {
+        [
+            .init(.today,  "Today",  .dial),
+            .init(.trends, "Trends", .system("chart.xyaxis.line")),
+            .init(.live,   "Live",   .system("waveform.path.ecg")),
+            .init(.sleep,  "Sleep",  .system("moon")),
+            .init(.more,   "More",   .system("ellipsis")),
+        ]
+    }
+
+    /// Sunrise/sunset for today, GPS- and permission-free (same `SolarClock` source
+    /// TodayView uses), so the bar's by-the-hour theme tracks the real sun in step
+    /// with the screen above it. `nil` in polar cases falls back to fixed hours.
+    private var barSolar: SolarWindow? {
+        guard let w = SolarClock.sunWindow(on: Date(), in: .current) else { return nil }
+        return SolarWindow(sunrise: w.sunrise, sunset: w.sunset)
     }
 
     @ViewBuilder

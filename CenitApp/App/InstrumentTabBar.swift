@@ -1,0 +1,141 @@
+#if os(iOS)
+import SwiftUI
+import StrandDesign
+
+// MARK: - «Barra de instrumento» — the bottom tab bar (FER-163)
+//
+// Replaces the native dark `TabView` chrome (a heavy bar, green `.tint` painting
+// the icons) with a quiet bar that speaks the app's two languages and ADAPTS to
+// the visible screen:
+//
+//   • Under «Hoy» (light «Instrumento diurno»): warm `paper`, a single hairline,
+//     and it breathes with the hour — it reads `\.instrumentoTheme`, which the
+//     shell drives by the clock, so the bar warms from dawn to dusk to night just
+//     like the screen above it.
+//   • Under the still-dark screens (Tendencias / En vivo / Sueño / Más): the dark
+//     `StrandPalette`, so it stays of a piece with them.
+//
+// The active tab is marked by INK + a now-dot (the green datum), never by a green
+// fill — color stays on the datum, not the chrome. The now-dot reuses the
+// DiurnalDial's marker and breathes, honoring Reduce Motion.
+
+/// How a tab draws its icon.
+enum InstrumentTabIcon {
+    /// A thin-stroke SF Symbol (non-fill).
+    case system(String)
+    /// The 24-hour `DialTabGlyph` (the «Hoy» mark).
+    case dial
+}
+
+/// The custom bottom bar. Mounted via `.safeAreaInset(edge: .bottom)` on the
+/// `TabView` (whose native bar is hidden), so it reserves its own space and pins
+/// to the bottom across every page.
+struct InstrumentTabBar<Tag: Hashable>: View {
+
+    struct Item {
+        let tag: Tag
+        let label: LocalizedStringKey
+        let icon: InstrumentTabIcon
+        init(_ tag: Tag, _ label: LocalizedStringKey, _ icon: InstrumentTabIcon) {
+            self.tag = tag; self.label = label; self.icon = icon
+        }
+    }
+
+    let items: [Item]
+    @Binding var selection: Tag
+    /// True when the visible screen speaks «Instrumento diurno» (Hoy): the bar
+    /// dresses in warm paper/ink; otherwise it stays in the dark `StrandPalette`.
+    let isLight: Bool
+
+    @Environment(\.instrumentoTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var surface: Color { isLight ? theme.paper : StrandPalette.surfaceBase }
+    private var rule: Color { isLight ? theme.hairline : StrandPalette.hairline }
+    private var activeInk: Color { isLight ? theme.ink : StrandPalette.textPrimary }
+    private var idleInk: Color { isLight ? theme.inkTertiary : StrandPalette.textSecondary }
+    private var nowDotColor: Color { isLight ? theme.dataRecovery : StrandPalette.accent }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 0) {
+            ForEach(items, id: \.tag) { item in tab(item) }
+        }
+        .padding(.top, 8)
+        .frame(maxWidth: .infinity)
+        // The surface (and its top hairline) extend through the home-indicator area;
+        // the buttons sit above it in the safe region.
+        .background(alignment: .top) {
+            ZStack(alignment: .top) {
+                surface
+                Rectangle().fill(rule).frame(height: 0.5)
+            }
+            .ignoresSafeArea(edges: .bottom)
+        }
+        .animation(reduceMotion ? nil : StrandMotion.interactive, value: isLight)
+        .animation(reduceMotion ? nil : StrandMotion.interactive, value: selection)
+    }
+
+    private func tab(_ item: Item) -> some View {
+        let active = item.tag == selection
+        let ink = active ? activeInk : idleInk
+        return Button {
+            selection = item.tag
+        } label: {
+            VStack(spacing: 5) {
+                glyph(item.icon, ink: ink).frame(height: 23)
+                // `StrandFont.footnote` (11pt) is the app's quiet-label token; the
+                // whole app is fixed-size, so the bar matches it and degrades with
+                // grace (single line, shrink-to-fit) at large Dynamic Type rather
+                // than being the one element that grows out of the row.
+                Text(item.label)
+                    .font(StrandFont.footnote).fontWeight(active ? .medium : .regular)
+                    .lineLimit(1).minimumScaleFactor(0.8)
+                    .foregroundStyle(ink)
+                NowDot(color: nowDotColor, active: active, animates: !reduceMotion)
+                    .frame(height: 5)
+            }
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(active ? [.isButton, .isSelected] : .isButton)
+    }
+
+    @ViewBuilder
+    private func glyph(_ icon: InstrumentTabIcon, ink: Color) -> some View {
+        switch icon {
+        case .system(let name):
+            Image(systemName: name)
+                .font(.system(size: 21, weight: .regular))
+                .symbolRenderingMode(.monochrome)
+                .foregroundStyle(ink)
+        case .dial:
+            DialTabGlyph(size: 23, color: ink)
+        }
+    }
+}
+
+/// The selection mark: a small dot under the active label, in the datum hue. It
+/// breathes (echoing the DiurnalDial's now-dot) when motion is allowed, and is a
+/// static dot otherwise. Decorative — the selected state is announced by the
+/// button's `.isSelected` trait.
+private struct NowDot: View {
+    let color: Color
+    let active: Bool
+    let animates: Bool
+    @State private var breathing = false
+
+    var body: some View {
+        Circle()
+            .fill(color)
+            .frame(width: 5, height: 5)
+            .scaleEffect(active ? (breathing ? 1.15 : 0.9) : 0.2)
+            .opacity(active ? 1 : 0)
+            .animation(animates && active ? StrandMotion.breathe : nil, value: breathing)
+            .animation(StrandMotion.interactive, value: active)
+            .onAppear { breathing = animates }
+            .onChange(of: active) { _, now in if now { breathing = animates } }
+            .accessibilityHidden(true)
+    }
+}
+#endif
