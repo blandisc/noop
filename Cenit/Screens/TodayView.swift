@@ -262,35 +262,47 @@ struct TodayView: View {
     // y «anochece» con el sol real. Cada sub-vista lee `@Environment(\.instrumentoTheme)`.
 
     private var iosBody: some View {
-        ScrollView {
-            // Ritmo de sección compacto (FER-202): el gap de sección baja de 28 a 16
-            // (`NoopMetrics.sectionGapCompact`) para que Hoy quepa en una pantalla en estado calibrando,
-            // sin que las secciones se lean fundidas ni apretadas.
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGapCompact) {
-                headerBlock
-                HealthAlertBanner()
-                // Héroe unificado (FER-160): UN solo instrumento de estado adaptable cubre los cuatro
-                // modos (veredicto / base sembrada por Apple Health / calibrando / espera). El árbol de
-                // antes —4 sub-vistas con distinto layout (`emptyHero`/`importedBaselineHero`/
-                // `CalibrationProgressCard`/`verdictSection`)— colapsó en un mismo esqueleto: overline +
-                // numeral dominante + dial + cuerpo + pie. Lo único que cambia entre modos es QUÉ valor
-                // lleva el numeral, su color (regla «color = listo / tinta = en espera») y el pie. Ver
-                // `heroInstrument` + `heroState`.
-                heroInstrument
-                // Sube «Métricas de hoy» pegándola al pie del héroe: recorta el gap de sección (16) de esta
-                // sección a ~8 con un inset negativo nombrado (`NoopMetrics.sectionTight`), sin tocar los
-                // gaps del héroe.
-                // El acceso al monitor en vivo «latido a latido» ya no es una fila al pie (FER-189): vive
-                // como una pastilla de pulso en el encabezado de «Métricas de hoy» (FER-194), así el pie de
-                // Hoy queda limpio y la pantalla cabe completa. Ver `iosMetricsSection` + `LivePulsePill`.
-                iosMetricsSection
-                    .padding(.top, NoopMetrics.sectionTight)
+        // Reparto del aire sobrante (FER-217): un `GeometryReader` da el alto visible (`proxy.size.height`)
+        // y el contenido se fuerza a medir AL MENOS ese alto (`.frame(minHeight:)`), de modo que dos
+        // `Spacer(minLength:)` reparten por igual el espacio que sobre —arriba y abajo de «Métricas de
+        // hoy»— y el bloque queda equilibrado en pantallas altas. En pantalla chica (contenido que llena
+        // o lo excede) los spacers colapsan a su mínimo y NO suman altura: preserva el compactado de
+        // FER-202 y el scroll de siempre. Los modifiers de la pantalla (refresh, tema, hojas) cuelgan del
+        // `GeometryReader`, que envuelve al `ScrollView`, así que pull-to-refresh y el papel siguen igual.
+        GeometryReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    // El grupo superior conserva el ritmo de sección compacto (FER-202): gap de 16
+                    // (`NoopMetrics.sectionGapCompact`) entre fecha, alerta y héroe.
+                    VStack(alignment: .leading, spacing: NoopMetrics.sectionGapCompact) {
+                        headerBlock
+                        HealthAlertBanner()
+                        // Héroe unificado (FER-160): UN solo instrumento de estado adaptable cubre los
+                        // cuatro modos (veredicto / base sembrada por Apple Health / calibrando / espera).
+                        // Lo único que cambia entre modos es QUÉ valor lleva el numeral, su color (regla
+                        // «color = listo / tinta = en espera») y el pie. Ver `heroInstrument` + `heroState`.
+                        heroInstrument
+                    }
+                    // Gap mínimo héroe→«Métricas de hoy»: 8 (`NoopMetrics.space2`), el mismo ~8 compacto que
+                    // daba el inset negativo de antes (FER-202/FER-217). Cuando sobra espacio, este Spacer
+                    // crece a la par del de abajo y despega las métricas del héroe.
+                    // El acceso al monitor en vivo «latido a latido» vive como pastilla de pulso en el
+                    // encabezado de «Métricas de hoy» (FER-194), no como fila al pie. Ver `iosMetricsSection`.
+                    Spacer(minLength: NoopMetrics.space2)
+                    iosMetricsSection
+                    // Gap mínimo bajo las métricas: 0 — el margen inferior lo da `.padding(.bottom)`. Cuando
+                    // sobra espacio, este Spacer crece igual que el de arriba y «Métricas de hoy» queda
+                    // centrada en el sobrante (opción aprobada por el dueño, FER-217).
+                    Spacer(minLength: 0)
+                }
+                // Inset superior `gap` (FER-202): el héroe queda alto pero respira; márgenes h/inferior estándar.
+                .padding(.horizontal, NoopMetrics.screenPadding)
+                .padding(.bottom, NoopMetrics.screenPadding)
+                .padding(.top, NoopMetrics.gap)
+                // Llena al menos el alto visible para que los `Spacer` tengan sobrante que repartir; si el
+                // contenido lo excede (p. ej. calibrando en pantalla chica), crece y hace scroll igual.
+                .frame(maxWidth: .infinity, minHeight: proxy.size.height, alignment: .leading)
             }
-            // Inset superior `gap` (FER-202): el héroe queda alto pero respira; márgenes h/inferior estándar.
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.bottom, NoopMetrics.screenPadding)
-            .padding(.top, NoopMetrics.gap)
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
         // Pull-to-refresh (FER-204): jala hacia abajo para forzar una sincronización con la banda. El
         // indicador es el nativo de `.refreshable` (estándar de la industria, no animación propia); la
