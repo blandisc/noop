@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Detalle de métrica con tu contexto personal / Per-metric detail with your personal context.**
+  **ES** — Toca HRV, frecuencia cardiaca en reposo o frecuencia respiratoria en Cuerpo (o en Hoy) y se abre una pantalla con tu media de 7 días, tu rango normal personal, la tendencia del periodo que elijas (de semana a año) y cómo se calcula — mucho más que el número de un solo día.
+  **EN** — Tap HRV, resting heart rate, or respiratory rate in Body (or Today) to open a screen with your 7-day average, your personal normal range, the trend over the period you pick (week to year), and how it's computed — far more than just today's number.
+  ([Cenit/Screens/MetricDetailScreen.swift](Cenit/Screens/MetricDetailScreen.swift))
+
 - **Hoy se lee como un instrumento: el número en tinta, el color en la palabra, y el HRV en cian / Today reads like an instrument: number in ink, color on the word, HRV in cyan.**
   **ES** — El número grande de recuperación ahora se imprime en **tipografía monoespaciada** (como la lectura de un instrumento) y va en **tinta**, no en color. El color del día lo lleva **solo la palabra del veredicto** —verde si estás listo, ámbar si vienes tensionado—, así el número y la palabra ya **no se contradicen** (se acabó el «66» ámbar bajo un «Equilibrado» verde). Además el dato de **HRV** cambió a un **cian** que se distingue claro del verde del veredicto (antes eran dos verdes que se confundían). El reloj del día se ve igual.
   **EN** — The big recovery number now prints in a **monospaced typeface** (like an instrument read-out) and sits in **ink**, not color. The day's color lives on **only the verdict word** — green when you're ready, amber when you're strained — so the number and the word can **no longer disagree** (no more amber "66" under a green "Balanced"). And the **HRV** datum moved to a **cyan** that's clearly distinct from the verdict's green (before they were two greens that blended together). The day clock looks the same.

@@ -161,6 +161,38 @@ extension MetricInfo {
         )
     }
 
+    /// Respiratory rate (breaths/min, measured during sleep). No `MetricInfo` factory existed; this
+    /// adds one in the same shape as the others (headline + bands + a "See the method" disclosure) so
+    /// the unified Detalle de Métrica (FER-185) can reuse it instead of duplicating the copy. Bands are
+    /// the typical sleeping-adult ranges; respiration is most informative as a deviation from your own
+    /// nightly norm, which the detail's normal-range band shows.
+    static func respiratory(_ value: Double?) -> MetricInfo {
+        let bands: [Band] = [
+            Band(label: "Low", range: "< 12 rpm",
+                 isActive: value.map { $0 < 12 } ?? false),
+            Band(label: "Typical", range: "12 – 18 rpm",
+                 isActive: value.map { $0 >= 12 && $0 <= 18 } ?? false),
+            Band(label: "Elevated", range: "18 – 20 rpm",
+                 isActive: value.map { $0 > 18 && $0 <= 20 } ?? false),
+            Band(label: "High", range: "> 20 rpm",
+                 isActive: value.map { $0 > 20 } ?? false),
+        ]
+        return MetricInfo(
+            id: "resp_rate",
+            name: "Respiratory Rate",
+            headline: "How many breaths you take per minute while you sleep. It's one of the steadiest signals your body has, so even a small rise from your own normal can be an early sign of strain, illness, or a late, heavy meal.",
+            displayValue: value.map { String(format: "%.1f", $0) } ?? "—",
+            unit: "rpm",
+            headerTint: value == nil ? .neutral : .metric,
+            bands: bands,
+            note: "Measured overnight from your strap. What matters is the change from your own baseline, not the absolute number.",
+            method: Method(
+                prose: "We count your breaths across the night from the slow rise and fall in your heart-rate signal (respiratory sinus arrhythmia) and report the nightly mean.",
+                citation: "Respiration from RSA in the overnight inter-beat intervals; reported as the nightly mean."
+            )
+        )
+    }
+
     static func spo2(_ value: Double?) -> MetricInfo {
         let bands: [Band] = [
             Band(label: "Normal", range: "95 – 100%",
