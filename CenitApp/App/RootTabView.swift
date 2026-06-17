@@ -3,14 +3,28 @@ import SwiftUI
 import StrandDesign
 import StrandAnalytics
 
-/// iOS navigation shell: a `TabView` with the most-used screens as tabs and everything else under a
-/// "More" list. Every screen is a `StrandDesign`-built view.
+/// iOS navigation shell — the «IA de 3 capas» tab shell (FER-182). Five tabs over the «Barra de
+/// instrumento» (FER-163): **Hoy · Cuerpo · Coach · Entrenar · Ajustes**. Trends and the old "More"
+/// drawer are gone; En vivo is no longer a tab (it opens from Today's "beat by beat" `fullScreenCover`).
+///
+/// Three of the tabs are interim hub-lists that reconnect screens which don't have a final home yet —
+/// each sibling issue (Cuerpo / Coach / Entrenar / Ajustes) replaces its interim with the real layer:
+///   • **Coach**    → Intelligence · Insights · Coach (seed of the unified Coach layer).
+///   • **Entrenar** → Breathe · Intervals.
+///   • **Ajustes**  → Settings + a temporary «Más» section listing the still-orphan screens
+///     (Sleep + Explore · Compare · Workouts · Health · Stress · Apple Health · Data Sources ·
+///     Automations · Support). Nothing from the old shell becomes unreachable in the meantime.
 struct RootTabView: View {
-    private enum Tab: Hashable { case today, trends, live, sleep, more }
-    private enum MoreScreen: String, Hashable {
-        case intelligence, coach, insights, explore, compare
-        case workouts, health, stress, breathe, intervals
-        case applehealth, datasources, automations, settings, support
+    private enum Tab: Hashable { case today, body, coach, train, settings }
+
+    /// Every screen reachable by pushing onto a hub tab's stack. Raw values match the `noop.nav.<key>`
+    /// debug-navigation keys (`ScreenshotNav.swift`) so screenshot automation still reaches each one.
+    private enum SecondaryScreen: String, Hashable {
+        case intelligence, insights, coach        // Coach hub
+        case breathe, intervals                   // Entrenar hub
+        case settings                             // Ajustes — primary
+        case sleep, explore, compare, workouts, health, stress
+        case applehealth, datasources, automations, support   // Ajustes — «Más»
     }
 
     /// Whether Today is the active tab — published up to ContentView, which owns the color scheme
@@ -19,16 +33,18 @@ struct RootTabView: View {
 
     /// The visible tab. Starts on Today, the launch screen.
     @State private var selection: Tab = .today
-    /// Tabs whose content has been shown at least once. Only Today is built at launch; the other
-    /// heavy tabs (Trends/Live/Sleep — each runs its own `.task` data load on appear) are deferred
-    /// until first selected, then kept in the set so switching back doesn't rebuild from scratch.
-    /// Was eager: all five tab bodies + their launch `.task`s ran at startup, widening the launch
-    /// gap. The "More" list is already lazy (its destinations build on `NavigationLink` tap). FER-31.
+    /// Tabs whose content has been shown at least once. Only Today is built at launch; the one heavy
+    /// lazy tab — Cuerpo (`TrendsView` runs its own `.task` data load on appear) — is deferred until
+    /// first selected, then kept in the set so switching back doesn't rebuild from scratch. The hub
+    /// tabs (Coach/Entrenar/Ajustes) are plain lists whose destinations build on `NavigationLink` tap,
+    /// so they stay eager (cheap). Avoids widening the launch gap — FER-31.
     @State private var visited: Set<Tab> = [.today]
-    /// Type-erased so the More tab's single stack can hold both `MoreScreen` (its
-    /// list rows) and the `MetricDescriptor` values Explore pushes. A homogeneous
-    /// `[MoreScreen]` path crossing a `MetricDescriptor` crashed SwiftUI — FER-171.
-    @State private var moreStack = NavigationPath()
+    /// One type-erased path per hub. `NavigationPath` (not a homogeneous `[SecondaryScreen]`) because
+    /// the Ajustes stack carries Explore, which pushes `MetricDescriptor` values onto it — a typed
+    /// path crossing a second value type crashed SwiftUI (FER-171).
+    @State private var coachStack = NavigationPath()
+    @State private var trainStack = NavigationPath()
+    @State private var settingsStack = NavigationPath()
     /// Measured height of the «Barra de instrumento» (its button row, above the
     /// home-indicator bleed). Each tab reserves exactly this much at its bottom so
     /// the last component clears the bar — see `barReservation`. Starts 0 and is
@@ -38,17 +54,51 @@ struct RootTabView: View {
     var body: some View {
         TabView(selection: $selection) {
             lazyTab(.today, "Today", "circle.hexagongrid.fill") { TodayView() }
-            lazyTab(.trends, "Trends", "chart.xyaxis.line") { TrendsView() }
-            lazyTab(.live, "Live", "waveform.path.ecg") { LiveView() }
-            lazyTab(.sleep, "Sleep", "bed.double.fill") { SleepView() }
-            moreTab.tag(Tab.more)
+            lazyTab(.body,  "Body",  "chart.xyaxis.line") { TrendsView() }
+
+            // Coach — interim hub: the three insight surfaces, seed of the unified Coach layer.
+            hubTab(.coach, "Coach", "sparkles", path: $coachStack) {
+                Section {
+                    row(.intelligence, "Intelligence", "brain.head.profile")
+                    row(.insights,     "Insights",     "lightbulb.fill")
+                    row(.coach,        "Coach",        "sparkles")
+                }
+            }
+
+            // Entrenar — interim hub: the active-session tools.
+            hubTab(.train, "Train", "figure.strengthtraining.functional", path: $trainStack) {
+                Section {
+                    row(.breathe,   "Breathe",   "wind")
+                    row(.intervals, "Intervals", "timer")
+                }
+            }
+
+            // Ajustes — Settings + a temporary «Más» section holding every still-orphan screen so
+            // nothing from the old shell (incl. Sleep, which lost its tab) becomes unreachable.
+            hubTab(.settings, "Ajustes", "gearshape.fill", path: $settingsStack) {
+                Section {
+                    row(.settings, "Settings", "gearshape.fill")
+                }
+                Section("More") {
+                    row(.sleep,       "Sleep",        "bed.double.fill")
+                    row(.explore,     "Explore",      "square.grid.2x2.fill")
+                    row(.compare,     "Compare",      "rectangle.split.2x1.fill")
+                    row(.workouts,    "Workouts",     "figure.run")
+                    row(.health,      "Health",       "heart.text.square.fill")
+                    row(.stress,      "Stress",       "bolt.heart.fill")
+                    row(.applehealth, "Apple Health", "heart.fill")
+                    row(.datasources, "Data Sources", "externaldrive.fill")
+                    row(.automations, "Automations",  "wand.and.stars")
+                    row(.support,     "Support",      "hands.clap.fill")
+                }
+            }
         }
         // `.tint` no longer paints the tab bar (it's hidden below; the custom
         // `InstrumentTabBar` sets its own ink), but it still tints links/controls
         // inside the screens — kept for those.
         .tint(StrandPalette.accent)
         // The «Barra de instrumento» (FER-163): the native bar is hidden per page
-        // (see `lazyTab`/`moreTab`) and this custom bar takes its place.
+        // (see `lazyTab`/`hubTab`) and this custom bar takes its place.
         //
         // It is mounted as an `overlay` (it floats, pinned to the bottom) rather
         // than via `safeAreaInset` on the `TabView`: a bottom safe-area inset placed
@@ -74,8 +124,8 @@ struct RootTabView: View {
         }
         .onPreferenceChange(BarHeightKey.self) { barHeight = $0 }
         // Color scheme lo decide ContentView (cercano a la raíz) según `isTodayActive`; aquí solo lo
-        // mantenemos sincronizado con la pestaña visible. En vivo ahora es papel claro «Instrumento»
-        // (FER-181) igual que Hoy, así que cuenta como pestaña clara (barra de estado en tinta).
+        // mantenemos sincronizado con la pestaña visible. Solo Hoy es papel claro «Instrumento»; las
+        // otras cuatro pestañas son el panel oscuro. (En vivo es ahora un cover sobre Hoy, no pestaña.)
         .onChange(of: selection) { _, newValue in
             visited.insert(newValue)
             isTodayActive = isLightTab(newValue)
@@ -84,26 +134,30 @@ struct RootTabView: View {
         #if DEBUG
         .onReceive(NotificationCenter.default.publisher(for: .noopDebugNav)) { note in
             guard let screen = note.object as? String else { return }
+            // Tab-level keys land on a clean hub root. "trends" → Cuerpo, "more"/"ajustes" → Ajustes.
             let tab: Tab? = switch screen {
-            case "today":   .today
-            case "trends":  .trends
-            case "live":    .live
-            case "sleep":   .sleep
-            case "more":    .more
-            default:        nil
+            case "today":              .today
+            case "body", "trends":     .body
+            case "coach":              .coach
+            case "train", "entrenar":  .train
+            case "settings", "ajustes", "more": .settings
+            default:                   nil
             }
             if let tab {
                 selection = tab
-                visited.insert(tab)
-                moreStack = NavigationPath()
+                coachStack = NavigationPath(); trainStack = NavigationPath(); settingsStack = NavigationPath()
                 return
             }
-            if let ms = MoreScreen(rawValue: screen) {
-                selection = .more
-                visited.insert(.more)
-                var path = NavigationPath()
-                path.append(ms)
-                moreStack = path
+            // Secondary screens: select the owning hub and push the screen onto its stack.
+            if let sec = SecondaryScreen(rawValue: screen) {
+                let owner = hub(for: sec)
+                selection = owner
+                var path = NavigationPath(); path.append(sec)
+                switch owner {
+                case .coach:    coachStack = path
+                case .train:    trainStack = path
+                default:        settingsStack = path
+                }
             }
         }
         #endif
@@ -113,9 +167,18 @@ struct RootTabView: View {
     }
 
     /// Which tabs render in the light «Instrumento diurno» paper (drives the status-bar color scheme
-    /// via `isTodayActive` and the instrument bar's `isLight`). Today and — since FER-181 — Live, both
-    /// warm-paper screens. Every other tab is the dark instrument panel.
-    private func isLightTab(_ tab: Tab) -> Bool { tab == .today || tab == .live }
+    /// via `isTodayActive` and the instrument bar's `isLight`). Only Hoy now — En vivo's light paper
+    /// (FER-181) lives in a cover over Hoy, not a tab; every other tab is the dark instrument panel.
+    private func isLightTab(_ tab: Tab) -> Bool { tab == .today }
+
+    /// The hub tab that owns a given secondary screen (for debug navigation).
+    private func hub(for screen: SecondaryScreen) -> Tab {
+        switch screen {
+        case .intelligence, .insights, .coach: return .coach
+        case .breathe, .intervals:             return .train
+        default:                               return .settings
+        }
+    }
 
     /// A tab whose real content is built only once its tag has been visited (kept alive afterward),
     /// so non-selected screens don't construct their body or fire their launch `.task` at startup.
@@ -142,63 +205,50 @@ struct RootTabView: View {
         .tag(tag)
     }
 
-    private var moreTab: some View {
-        NavigationStack(path: $moreStack) {
-            List {
-                Section("Insights") {
-                    NavigationLink(value: MoreScreen.intelligence) { Label("Intelligence", systemImage: "brain.head.profile") }.listRowBackground(StrandPalette.surfaceRaised)
-                    NavigationLink(value: MoreScreen.coach)        { Label("Coach",         systemImage: "sparkles") }.listRowBackground(StrandPalette.surfaceRaised)
-                    NavigationLink(value: MoreScreen.insights)     { Label("Insights",      systemImage: "lightbulb.fill") }.listRowBackground(StrandPalette.surfaceRaised)
-                    NavigationLink(value: MoreScreen.explore)      { Label("Explore",       systemImage: "square.grid.2x2.fill") }.listRowBackground(StrandPalette.surfaceRaised)
-                    NavigationLink(value: MoreScreen.compare)      { Label("Compare",       systemImage: "rectangle.split.2x1.fill") }.listRowBackground(StrandPalette.surfaceRaised)
+    /// An interim hub tab: a `NavigationStack` over a grouped list whose rows push `SecondaryScreen`s.
+    /// Same chrome the old "More" tab used (hidden native bar, dark surface, reserved bar height).
+    @ViewBuilder
+    private func hubTab<Rows: View>(_ tag: Tab, _ title: LocalizedStringKey, _ icon: String,
+                                    path: Binding<NavigationPath>,
+                                    @ViewBuilder rows: () -> Rows) -> some View {
+        NavigationStack(path: path) {
+            List { rows() }
+                .listStyle(.insetGrouped)
+                .scrollContentBackground(.hidden)
+                .background(StrandPalette.surfaceBase.ignoresSafeArea())
+                .barReservation(barHeight)
+                .navigationTitle(title)
+                .navigationDestination(for: SecondaryScreen.self) { screen in
+                    secondaryDestination(screen)
+                        .background(StrandPalette.surfaceBase.ignoresSafeArea())
+                        .barReservation(barHeight)
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbarBackground(StrandPalette.surfaceBase, for: .navigationBar)
                 }
-                Section("Body") {
-                    NavigationLink(value: MoreScreen.workouts)     { Label("Workouts", systemImage: "figure.run") }.listRowBackground(StrandPalette.surfaceRaised)
-                    NavigationLink(value: MoreScreen.health)       { Label("Health",   systemImage: "heart.text.square.fill") }.listRowBackground(StrandPalette.surfaceRaised)
-                    NavigationLink(value: MoreScreen.stress)       { Label("Stress",   systemImage: "bolt.heart.fill") }.listRowBackground(StrandPalette.surfaceRaised)
-                    NavigationLink(value: MoreScreen.breathe)      { Label("Breathe",  systemImage: "wind") }.listRowBackground(StrandPalette.surfaceRaised)
-                    NavigationLink(value: MoreScreen.intervals)    { Label("Intervals",systemImage: "timer") }.listRowBackground(StrandPalette.surfaceRaised)
-                }
-                Section("Data") {
-                    NavigationLink(value: MoreScreen.applehealth)  { Label("Apple Health",  systemImage: "heart.fill") }.listRowBackground(StrandPalette.surfaceRaised)
-                    NavigationLink(value: MoreScreen.datasources)  { Label("Data Sources",  systemImage: "externaldrive.fill") }.listRowBackground(StrandPalette.surfaceRaised)
-                }
-                Section("App") {
-                    NavigationLink(value: MoreScreen.automations)  { Label("Automations", systemImage: "wand.and.stars") }.listRowBackground(StrandPalette.surfaceRaised)
-                    NavigationLink(value: MoreScreen.settings)     { Label("Settings",    systemImage: "gearshape.fill") }.listRowBackground(StrandPalette.surfaceRaised)
-                    NavigationLink(value: MoreScreen.support)      { Label("Support",     systemImage: "hands.clap.fill") }.listRowBackground(StrandPalette.surfaceRaised)
-                }
-            }
-            .listStyle(.insetGrouped)
-            .scrollContentBackground(.hidden)
-            .background(StrandPalette.surfaceBase.ignoresSafeArea())
-            .barReservation(barHeight)
-            .navigationTitle("More")
-            .navigationDestination(for: MoreScreen.self) { screen in
-                moreDestination(screen)
-                    .background(StrandPalette.surfaceBase.ignoresSafeArea())
-                    .barReservation(barHeight)
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbarBackground(StrandPalette.surfaceBase, for: .navigationBar)
-            }
         }
         .toolbar(.hidden, for: .tabBar)
-        .tabItem { Label("More", systemImage: "ellipsis.circle.fill") }
+        .tabItem { Label(title, systemImage: icon) }
+        .tag(tag)
+    }
+
+    /// A grouped-list row that pushes a secondary screen onto its hub's stack.
+    private func row(_ screen: SecondaryScreen, _ title: LocalizedStringKey, _ icon: String) -> some View {
+        NavigationLink(value: screen) { Label(title, systemImage: icon) }
+            .listRowBackground(StrandPalette.surfaceRaised)
     }
 
     // MARK: - Custom bar (FER-163)
 
-    /// The five tabs as drawn by `InstrumentTabBar`. Labels reuse the same
-    /// `LocalizedStringKey`s the catalog already maps (Hoy / Tendencias / …). Icons
-    /// are the thin-stroke set: a 24h dial for Hoy, a crescent for Sueño, line
-    /// glyphs for the rest.
+    /// The five tabs as drawn by `InstrumentTabBar`. Thin-stroke set: the 24h dial for Hoy (the bar's
+    /// signature mark), line glyphs for the rest. (Hidden `tabItem` icons use the filled variants from
+    /// the issue spec; only this custom bar is visible.)
     private var barItems: [InstrumentTabBar<Tab>.Item] {
         [
-            .init(.today,  "Today",  .dial),
-            .init(.trends, "Trends", .system("chart.xyaxis.line")),
-            .init(.live,   "Live",   .system("waveform.path.ecg")),
-            .init(.sleep,  "Sleep",  .system("moon")),
-            .init(.more,   "More",   .system("ellipsis")),
+            .init(.today,    "Today",   .dial),
+            .init(.body,     "Body",    .system("chart.xyaxis.line")),
+            .init(.coach,    "Coach",   .system("sparkles")),
+            .init(.train,    "Train",   .system("figure.strengthtraining.functional")),
+            .init(.settings, "Ajustes", .system("gearshape")),
         ]
     }
 
@@ -211,22 +261,23 @@ struct RootTabView: View {
     }
 
     @ViewBuilder
-    private func moreDestination(_ screen: MoreScreen) -> some View {
+    private func secondaryDestination(_ screen: SecondaryScreen) -> some View {
         switch screen {
         case .intelligence: IntelligenceView()
-        case .coach:        CoachView()
         case .insights:     InsightsView()
+        case .coach:        CoachView()
+        case .breathe:      BreathingView()
+        case .intervals:    IntervalTimerView()
+        case .settings:     SettingsView()
+        case .sleep:        SleepView()
         case .explore:      MetricExplorerView()
         case .compare:      CompareView()
         case .workouts:     WorkoutsView()
         case .health:       HealthView()
         case .stress:       StressView()
-        case .breathe:      BreathingView()
-        case .intervals:    IntervalTimerView()
         case .applehealth:  AppleHealthView()
         case .datasources:  DataSourcesView()
         case .automations:  AutomationsView()
-        case .settings:     SettingsView()
         case .support:      SupportView()
         }
     }
