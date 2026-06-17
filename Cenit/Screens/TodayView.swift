@@ -61,6 +61,10 @@ struct TodayView: View {
     // Today's heart rate as 5-minute bucket means (midnight → now), for the 24h trend chart.
     @State private var hrPoints: [TrendPoint] = []
 
+    // Today's stress (0–3 autonomic proxy) for the «Estrés» tile — the same transparent model
+    // StressView builds, computed once per load from `repo.days` + the stored "stress" series. (FER-180)
+    @State private var stress: StressModel? = nil
+
     // Support sheet (donate + contact) — always reachable from the home toolbar.
     @State private var showingSupport = false
 
@@ -821,148 +825,108 @@ struct TodayView: View {
             : "Afinando con tu strap, \(ownNights) de \(Baselines.minNightsTrust) noches."))
     }
 
-    /// "Key Metrics" — a dense borderless list (label · sparkline · value) instead of a tile grid,
-    /// so six metrics read as one calm column. HRV carries a "Low conf" flag after a short night;
-    /// the first-launch state shows skeleton sparklines and "—" values.
+    /// "Métricas de hoy" — la lectura intradía del día como rejilla 2×4 de 8 tiles (valor + Δ vs ayer),
+    /// en el lenguaje «Instrumento diurno». Sustituye a la lista de tendencia 14d (FER-155/161): la
+    /// tendencia es entre-días y migra a «Cuerpo»; aquí queda la foto de HOY. Cada tile es tematizado
+    /// (papel `surface` + hairline, NUNCA el `NoopCard` oscuro), con etiqueta en tinta, valor en su
+    /// color de dato y la variación contra ayer con semántica por métrica (mejora→`verdict`,
+    /// empeora→`critical`, sin valencia/igual→`inkTertiary`). Recuperación NO es tile: ya es el numeral
+    /// del héroe (no se duplica el número dominante). La tendencia 14d sigue accesible al tocar un tile
+    /// (la hoja la trae). (FER-180)
     @ViewBuilder private var iosMetricsSection: some View {
-        let d = repo.today
-        // Measured signals resolve from today's row first, then fall back to the most recent value
-        // within the freshness window (today/yesterday) so Apple-Health data reads on the Today tiles
-        // when the strap hasn't covered the day yet — badged "Apple Health" so a fallback value is
-        // never passed off as a live strap reading. Day Strain stays strap-only (a computed score Apple
-        // doesn't provide), so it placeholders until the strap scores the day. (FER-62 follow-up)
-        let hrvR   = resolveMeasured { $0.avgHrv }
-        let rhrR   = resolveMeasured { $0.restingHr.map(Double.init) }
-        let sleepR = resolveMeasured { $0.totalSleepMin }
-        let spo2R  = resolveMeasured { $0.spo2Pct }
-        let hrvFlag: LocalizedStringKey? = hrvR?.fromApple == true ? "Apple Salud"
-            : ((hrvR != nil && readiness.confidenceLow) ? "Baja conf." : nil)
-        let hrvFlagColor = hrvR?.fromApple == true ? theme.inkTertiary : theme.warning
-        // Steps come only from Apple Health; guard the most-recent row to the 14-day window so a stale
-        // import can't render months-old steps under a Today tile.
+        // Señales medidas: hoy gana, si no el valor fresco (hoy/ayer) o Apple Salud, badgeado cuando
+        // viene de Apple para no pasarlo por una lectura del strap (misma lógica `resolveMeasured` que
+        // la lista previa). El esfuerzo es strap-only (Apple no lo computa); los pasos, Apple-only.
+        let hrvR    = resolveMeasured { $0.avgHrv }
+        let rhrR    = resolveMeasured { $0.restingHr.map(Double.init) }
+        let sleepR  = resolveMeasured { $0.totalSleepMin }
+        let spo2R   = resolveMeasured { $0.spo2Pct }
+        let strainT = repo.today?.strain
+        // Pasos: sólo Apple Salud; acota a la ventana de 14 días para no mostrar pasos rancios bajo un
+        // tile de "hoy".
         let stepsCutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -13, to: Date()) ?? Date())
-        let stepsFresh = appleDays.last(where: { $0.day >= stepsCutoff })?.steps
-        let stepsStr = stepsFresh.map { intString(Double($0)) } ?? latestString("steps", decimals: 0)
-        // Nudge to connect Apple Health only when it isn't connected AND a measured row is actually empty.
+        let stepsFresh  = appleDays.last(where: { $0.day >= stepsCutoff })?.steps
+        let stepsT      = stepsFresh.map(Double.init)
+        let stressT     = stress?.score
+        // Nudge para conectar Apple Salud sólo si no está conectado y falta alguna señal medida.
         let notConnected = health.auth != .authorized && health.auth != .unavailable
         let anyMeasuredMissing = hrvR == nil || sleepR == nil || rhrR == nil || spo2R == nil || stepsFresh == nil
-        // Serie 14d por métrica, calculada UNA vez: alimenta la línea Y su banda de referencia (p25–p75,
-        // FER-155). La línea va en el color de la métrica; la banda en tinta (`hairlineStrong`).
-        let strainSpark = sparks["strain"]
-        let sleepSpark  = measuredSpark("sleep_total_min") { $0.totalSleepMin }
-        let hrvSpark    = measuredSpark("hrv") { $0.avgHrv }
-        let hrSpark     = hrSparkline
-        let rhrSpark    = measuredSpark("rhr") { $0.restingHr.map(Double.init) }
-        let spo2Spark   = measuredSpark("spo2") { $0.spo2Pct }
-        let stepsSpark  = sparks["steps"]
-        // Spacing interno corto (4 en vez de `NoopMetrics.gap` 12): pega la lista de métricas justo bajo
-        // el encabezado «Métricas clave».
-        VStack(alignment: .leading, spacing: 4) {
-            // Encabezado en TINTA del tema (no el `SectionHeader` compartido: su título usa
-            // `StrandPalette.textPrimary`, casi blanco, que desaparece sobre el papel claro de
-            // «Instrumento diurno»). Mismo patrón overline+título+trailing, recoloreado al tema.
-            HStack(alignment: .firstTextBaseline) {
-                Text("Métricas clave").font(StrandFont.title1).foregroundStyle(theme.ink)
-                Spacer()
-                Text("Tendencia 14 días").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-            }
-            VStack(spacing: 0) {
-                Button { metricDetail = .strain(d?.strain) } label: {
-                    MetricRow(label: "Esfuerzo del día",
-                              value: d?.strain.map { String(format: "%.1f", $0) } ?? "—",
-                              valueColor: theme.ink, labelColor: theme.inkSecondary, unitColor: theme.inkTertiary,
-                              sparkline: strainSpark, sparkColor: theme.dataStrain,
-                              referenceBand: strainSpark.flatMap { ReferenceRange.interquartile($0) },
-                              bandColor: theme.hairlineStrong,
-                              isPlaceholder: d?.strain == nil,
-                              showsChevron: true, chevronColor: theme.inkTertiary)
-                }
-                .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05)))
-                .accessibilityHint("Abre el detalle")
-                metricSeparator
-                Button { metricDetail = .sleep(sleepR.map { Int($0.value.rounded()) }) } label: {
-                    MetricRow(label: "Sueño",
-                              value: sleepR.map { sleepText($0.value) } ?? "—",
-                              valueColor: theme.ink, labelColor: theme.inkSecondary, unitColor: theme.inkTertiary,
-                              flag: sleepR?.fromApple == true ? "Apple Salud" : nil, flagColor: theme.inkTertiary,
-                              sparkline: sleepSpark, sparkColor: theme.dataSleep,
-                              referenceBand: sleepSpark.flatMap { ReferenceRange.interquartile($0) },
-                              bandColor: theme.hairlineStrong,
-                              isPlaceholder: sleepR == nil,
-                              showsChevron: true, chevronColor: theme.inkTertiary)
-                }
-                .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05)))
-                .accessibilityHint("Abre el detalle")
-                metricSeparator
-                Button { metricDetail = .hrv(hrvR?.value) } label: {
-                    MetricRow(label: "HRV",
-                              value: hrvR.map { "\(Int($0.value.rounded()))" } ?? "—",
-                              unit: "ms", valueColor: theme.ink, labelColor: theme.inkSecondary, unitColor: theme.inkTertiary,
-                              flag: hrvFlag, flagColor: hrvFlagColor,
-                              sparkline: hrvSpark, sparkColor: theme.dataHrv,
-                              referenceBand: hrvSpark.flatMap { ReferenceRange.interquartile($0) },
-                              bandColor: theme.hairlineStrong,
-                              isPlaceholder: hrvR == nil,
-                              showsChevron: true, chevronColor: theme.inkTertiary)
-                }
-                .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05)))
-                .accessibilityHint("Abre el detalle")
-                metricSeparator
-                // Frecuencia cardíaca — la curva continua de hoy, justo encima de "FC en reposo"
-                // (RHR nocturna) para que se lean como par. Tap → sheet con la gráfica 24h. (FER-137)
-                Button { metricDetail = .heartRate(avgBpm: hrTodayAvg) } label: {
-                    MetricRow(label: "Frecuencia cardíaca",
-                              value: hrTodayAvg.map { "\($0)" } ?? "—",
-                              unit: "bpm", valueColor: theme.ink, labelColor: theme.inkSecondary, unitColor: theme.inkTertiary,
-                              sparkline: hrSpark, sparkColor: theme.dataHeart,
-                              referenceBand: hrSpark.flatMap { ReferenceRange.interquartile($0) },
-                              bandColor: theme.hairlineStrong,
-                              isPlaceholder: hrTodayAvg == nil,
-                              showsChevron: true, chevronColor: theme.inkTertiary)
-                }
-                .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05)))
-                .accessibilityHint("Abre el detalle")
-                metricSeparator
-                Button { metricDetail = .restingHR(rhrR.map { Int($0.value.rounded()) }) } label: {
-                    MetricRow(label: "FC en reposo",
-                              value: rhrR.map { "\(Int($0.value.rounded()))" } ?? "—",
-                              unit: "bpm", valueColor: theme.ink, labelColor: theme.inkSecondary, unitColor: theme.inkTertiary,
-                              flag: rhrR?.fromApple == true ? "Apple Salud" : nil, flagColor: theme.inkTertiary,
-                              sparkline: rhrSpark, sparkColor: theme.dataHeart,
-                              referenceBand: rhrSpark.flatMap { ReferenceRange.interquartile($0) },
-                              bandColor: theme.hairlineStrong,
-                              isPlaceholder: rhrR == nil,
-                              showsChevron: true, chevronColor: theme.inkTertiary)
-                }
-                .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05)))
-                .accessibilityHint("Abre el detalle")
-                metricSeparator
-                Button { metricDetail = .spo2(spo2R?.value) } label: {
-                    MetricRow(label: "Oxígeno en sangre",
-                              value: spo2R.map { String(format: "%.0f", $0.value) } ?? "—",
-                              unit: "%", valueColor: theme.ink, labelColor: theme.inkSecondary, unitColor: theme.inkTertiary,
-                              flag: spo2R?.fromApple == true ? "Apple Salud" : nil, flagColor: theme.inkTertiary,
-                              sparkline: spo2Spark, sparkColor: theme.dataSpO2,
-                              referenceBand: spo2Spark.flatMap { ReferenceRange.interquartile($0) },
-                              bandColor: theme.hairlineStrong,
-                              isPlaceholder: spo2R == nil,
-                              showsChevron: true, chevronColor: theme.inkTertiary)
-                }
-                .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05)))
-                .accessibilityHint("Abre el detalle")
-                metricSeparator
-                Button { metricDetail = .steps(stepsFresh) } label: {
-                    MetricRow(label: "Pasos",
-                              value: stepsStr,
-                              valueColor: theme.ink, labelColor: theme.inkSecondary, unitColor: theme.inkTertiary,
-                              sparkline: stepsSpark, sparkColor: theme.dataSteps,
-                              referenceBand: stepsSpark.flatMap { ReferenceRange.interquartile($0) },
-                              bandColor: theme.hairlineStrong,
-                              isPlaceholder: stepsStr == "—",
-                              showsChevron: true, chevronColor: theme.inkTertiary)
-                }
-                .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05)))
-                .accessibilityHint("Abre el detalle")
+
+        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            // Encabezado en TINTA del tema (no el `SectionHeader` compartido, casi blanco sobre el papel
+            // claro). Sin trailing "Tendencia 14 días": esta sección ya no es tendencia. Clave en inglés
+            // (es-MX/de en el catálogo) — mismo patrón que los nombres de las hojas de métrica.
+            Text("Today's metrics").font(StrandFont.title1).foregroundStyle(theme.ink)
+            // Rejilla fija 2×8 (2 columnas, 8 tiles → 4 renglones), separación `NoopMetrics.gap`.
+            LazyVGrid(columns: tileGrid, alignment: .leading, spacing: NoopMetrics.gap) {
+                // Esfuerzo del día — carga del día, sin valencia (Δ en tinta neutra).
+                metricTile(TodayMetricTile(
+                    label: "Day Strain",
+                    value: strainT.map { String(format: "%.1f", $0) } ?? "—",
+                    valueColor: theme.dataStrain,
+                    delta: tileDelta(today: strainT, yesterday: yesterdayValue { $0.strain },
+                                     betterHigher: nil, deadband: 0.3) { String(format: "%.1f", $0) }
+                )) { metricDetail = .strain(strainT) }
+                // Sueño — dormir más es mejor.
+                metricTile(TodayMetricTile(
+                    label: "Sleep",
+                    value: sleepR.map { sleepText($0.value) } ?? "—",
+                    valueColor: theme.dataSleep,
+                    fromApple: sleepR?.fromApple == true,
+                    delta: tileDelta(today: sleepR?.value, yesterday: yesterdayValue { $0.totalSleepMin },
+                                     betterHigher: true, deadband: 5) { sleepDeltaText($0) }
+                )) { metricDetail = .sleep(sleepR.map { Int($0.value.rounded()) }) }
+                // HRV — más alto es mejor.
+                metricTile(TodayMetricTile(
+                    label: "HRV",
+                    value: hrvR.map { "\(Int($0.value.rounded()))" } ?? "—", unit: "ms",
+                    valueColor: theme.dataHrv,
+                    fromApple: hrvR?.fromApple == true,
+                    delta: tileDelta(today: hrvR?.value, yesterday: yesterdayValue { $0.avgHrv },
+                                     betterHigher: true, deadband: 1) { "\(Int($0.rounded())) ms" }
+                )) { metricDetail = .hrv(hrvR?.value) }
+                // Frecuencia cardíaca — promedio continuo del día. Sin Δ: no se guarda un promedio diurno
+                // de "ayer" con qué comparar (decisión del dueño, FER-180).
+                metricTile(TodayMetricTile(
+                    label: "Heart Rate",
+                    value: hrTodayAvg.map { "\($0)" } ?? "—", unit: "bpm",
+                    valueColor: theme.dataHeart, delta: nil
+                )) { metricDetail = .heartRate(avgBpm: hrTodayAvg) }
+                // FC en reposo — más alta es PEOR.
+                metricTile(TodayMetricTile(
+                    label: "Resting HR",
+                    value: rhrR.map { "\(Int($0.value.rounded()))" } ?? "—", unit: "bpm",
+                    valueColor: theme.dataHeart,
+                    fromApple: rhrR?.fromApple == true,
+                    delta: tileDelta(today: rhrR?.value, yesterday: yesterdayValue { $0.restingHr.map(Double.init) },
+                                     betterHigher: false, deadband: 1) { "\(Int($0.rounded())) bpm" }
+                )) { metricDetail = .restingHR(rhrR.map { Int($0.value.rounded()) }) }
+                // Oxígeno en sangre — más alto es mejor.
+                metricTile(TodayMetricTile(
+                    label: "Blood Oxygen",
+                    value: spo2R.map { String(format: "%.0f", $0.value) } ?? "—", unit: "%",
+                    valueColor: theme.dataSpO2,
+                    fromApple: spo2R?.fromApple == true,
+                    delta: tileDelta(today: spo2R?.value, yesterday: yesterdayValue { $0.spo2Pct },
+                                     betterHigher: true, deadband: 0.5) { "\(Int($0.rounded())) %" }
+                )) { metricDetail = .spo2(spo2R?.value) }
+                // Pasos — sin meta (no existe en la app); más es mejor.
+                metricTile(TodayMetricTile(
+                    label: "Steps",
+                    value: stepsT.map { intString($0) } ?? "—",
+                    valueColor: theme.dataSteps,
+                    delta: tileDelta(today: stepsT, yesterday: yesterdayValue { $0.steps.map(Double.init) },
+                                     betterHigher: true, deadband: 100) { intString($0) }
+                )) { metricDetail = .steps(stepsFresh) }
+                // Estrés — más alto es PEOR; valor bandeado por nivel 0–3 (verde/ámbar/rojo).
+                metricTile(TodayMetricTile(
+                    label: "Stress",
+                    value: stressT.map { String(format: "%.1f", $0) } ?? "—",
+                    unit: stressT == nil ? nil : "/ 3",
+                    valueColor: stressT.map(stressDataColor) ?? theme.inkTertiary,
+                    delta: tileDelta(today: stressT, yesterday: stressYesterday,
+                                     betterHigher: false, deadband: 0.1) { String(format: "%.1f", $0) }
+                )) { metricDetail = .stress(stressT) }
             }
             if notConnected && anyMeasuredMissing {
                 Button { showDataSources = true } label: {
@@ -978,6 +942,167 @@ struct TodayView: View {
                 }
                 .buttonStyle(.plain)
             }
+        }
+    }
+
+    /// La rejilla de «Métricas de hoy»: dos columnas iguales → 8 tiles en 4 renglones de 2.
+    private let tileGrid = [GridItem(.flexible(), spacing: NoopMetrics.gap),
+                            GridItem(.flexible(), spacing: NoopMetrics.gap)]
+
+    /// Envuelve un tile en su `Button` tappable (todo el tile es objetivo) + feedback de pulsado, y abre
+    /// el `MetricInfoSheet` de la métrica. El detalle trae la tendencia 14d (interino hasta «Cuerpo»).
+    private func metricTile(_ tile: TodayMetricTile, open: @escaping () -> Void) -> some View {
+        Button(action: open) { tile }
+            .buttonStyle(TileButtonStyle(pressedFill: theme.ink.opacity(0.05)))
+            .accessibilityHint(Text("Abre el detalle"))
+    }
+
+    /// El valor de una métrica para AYER (el día calendario anterior), leído del dashboard de display
+    /// (`repo.displayDays`, la misma fuente en capas que resuelve el valor de hoy) para que un valor de
+    /// Apple Salud de ayer también cuente. nil si ayer no tiene esa lectura → el tile omite la Δ.
+    private func yesterdayValue(_ pick: (DailyMetric) -> Double?) -> Double? {
+        let yKey = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date())
+        guard let row = repo.displayDays.first(where: { $0.day == yKey }) else { return nil }
+        return pick(row)
+    }
+
+    /// El estrés de AYER, del proxy diario de `StressModel.fullTrend` (penúltimo punto): el modelo ya
+    /// computó la serie 0–3 por día, así que la comparación es contra el día anterior con base coherente.
+    private var stressYesterday: Double? {
+        guard let trend = stress?.fullTrend, trend.count >= 2 else { return nil }
+        return trend[trend.count - 2].value
+    }
+
+    /// La Δ vs ayer de un tile, con semántica por métrica. nil cuando falta hoy o ayer (el tile no
+    /// dibuja línea). Dentro del `deadband` → «Igual que ayer» en tinta. Con `betterHigher` nil la
+    /// métrica no tiene valencia (carga / FC del día): se muestra la dirección en tinta neutra, sin
+    /// pintar mejora/empeora.
+    private func tileDelta(today: Double?, yesterday: Double?, betterHigher: Bool?, deadband: Double,
+                           _ format: (Double) -> String) -> TileDelta? {
+        guard let t = today, let y = yesterday else { return nil }
+        let change = t - y
+        if abs(change) <= deadband { return .equal(color: theme.inkTertiary) }
+        let up = change > 0
+        let color: Color
+        if let betterHigher {
+            color = (up == betterHigher) ? theme.verdict : theme.critical
+        } else {
+            color = theme.inkTertiary   // sin valencia: dirección sin juicio
+        }
+        return .change(up: up, magnitude: format(abs(change)), color: color)
+    }
+
+    /// Δ de sueño en lenguaje de tiempo: «18 min» bajo una hora, «1h 5m» a partir de una.
+    private func sleepDeltaText(_ minutes: Double) -> String {
+        let m = Int(minutes.rounded())
+        return m >= 60 ? "\(m / 60)h \(m % 60)m" : "\(m) min"
+    }
+
+    /// El color del valor de Estrés por banda 0–3, en roles del tema (regla: color saturado solo en el
+    /// dato). Bajo → `verdict`, medio → `warning`, alto → `critical`. Reusa `StressBand` (StressView).
+    private func stressDataColor(_ score: Double) -> Color {
+        switch StressBand(score: score) {
+        case .low:    return theme.verdict
+        case .medium: return theme.warning
+        case .high:   return theme.critical
+        }
+    }
+
+    /// La variación de un tile contra ayer. `change` lleva dirección + magnitud ya formateada + color
+    /// (verdict/critical/tinta); `equal` es «Igual que ayer». La ausencia (sin ayer / sin valor de hoy)
+    /// se modela con el Optional: nil → el tile no dibuja línea de Δ.
+    private enum TileDelta {
+        case change(up: Bool, magnitude: String, color: Color)
+        case equal(color: Color)
+    }
+
+    /// Un tile de «Métricas de hoy»: etiqueta (overline en tinta) · valor en color de dato + unidad ·
+    /// pie con la Δ vs ayer, el badge «Apple Salud» (cuando el valor vino de Apple), o nada. Tematizado
+    /// con tokens de `InstrumentoTheme` sobre el papel `surface` con hairline — sin el `NoopCard` oscuro,
+    /// que no lee sobre el papel claro. Lee el tema del entorno (vive dentro del subárbol tematizado).
+    private struct TodayMetricTile: View {
+        let label: LocalizedStringKey
+        let value: String
+        var unit: String? = nil
+        let valueColor: Color
+        var fromApple: Bool = false
+        var delta: TileDelta? = nil
+        @Environment(\.instrumentoTheme) private var theme
+
+        var body: some View {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(label).instrumentoOverline()
+                    .foregroundStyle(theme.inkSecondary)
+                    .lineLimit(2).minimumScaleFactor(0.85)
+                    .multilineTextAlignment(.leading)
+                Spacer(minLength: 4)
+                HStack(alignment: .firstTextBaseline, spacing: 3) {
+                    Text(value).font(StrandFont.number(24)).foregroundStyle(valueColor)
+                        .lineLimit(1).minimumScaleFactor(0.6)
+                    if let unit {
+                        Text(unit).font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                    }
+                }
+                Spacer(minLength: 4)
+                footer
+            }
+            .padding(14)
+            // `maxHeight: .infinity` hace que cada tile rellene la altura del renglón (la marca el tile
+            // más alto del par): una etiqueta que envuelve a 2 líneas no deja un card más bajo al lado.
+            .frame(maxWidth: .infinity, minHeight: NoopMetrics.tileHeight, maxHeight: .infinity, alignment: .topLeading)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                .strokeBorder(theme.hairline, lineWidth: 1))
+            .accessibilityElement(children: .combine)
+        }
+
+        /// El pie del tile: provenance de Apple Salud manda (cuando el valor es un fallback de Apple, la
+        /// Δ vs ayer compara fuentes distintas y se omite), luego la Δ, luego una línea vacía que
+        /// preserva la altura (estados sin-ayer / sin-valor).
+        @ViewBuilder private var footer: some View {
+            if fromApple {
+                HStack(spacing: 4) {
+                    Image(systemName: "heart.fill").font(.system(size: 10))
+                    Text("Apple Salud")
+                }
+                .font(StrandFont.caption)
+                .foregroundStyle(theme.inkTertiary)
+                .lineLimit(1).minimumScaleFactor(0.8)
+            } else if let delta {
+                switch delta {
+                case let .change(up, magnitude, color):
+                    HStack(spacing: 3) {
+                        Image(systemName: up ? "arrow.up" : "arrow.down")
+                            .font(.system(size: 10, weight: .semibold))
+                        Text(verbatim: magnitude)
+                        Text("vs yesterday")
+                    }
+                    .font(StrandFont.caption)
+                    .foregroundStyle(color)
+                    .lineLimit(1).minimumScaleFactor(0.75)
+                case let .equal(color):
+                    Text("Same as yesterday")
+                        .font(StrandFont.caption)
+                        .foregroundStyle(color)
+                        .lineLimit(1).minimumScaleFactor(0.8)
+                }
+            } else {
+                // Sin ayer / sin valor de hoy: una línea vacía mantiene parejos los tiles del renglón.
+                Text(verbatim: " ").font(StrandFont.caption).foregroundStyle(.clear)
+            }
+        }
+    }
+
+    /// Feedback de pulsado para un tile: una tinta tenue del tema sobre la forma redondeada del tile
+    /// (recortada al mismo radio para no asomar esquinas cuadradas, a diferencia de `MetricRowButtonStyle`
+    /// que es para renglones rectos). (FER-180)
+    private struct TileButtonStyle: ButtonStyle {
+        let pressedFill: Color
+        func makeBody(configuration: Configuration) -> some View {
+            configuration.label
+                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                    .fill(configuration.isPressed ? pressedFill : Color.clear))
+                .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
         }
     }
 
@@ -1058,15 +1183,6 @@ struct TodayView: View {
         guard hrPoints.count > 1 else { return nil }
         let v = hrPoints.map(\.value)
         return Int((v.reduce(0, +) / Double(v.count)).rounded())
-    }
-
-    /// The day's HR curve subsampled to a compact sparkline for the Key-Metrics row (≤32 points).
-    private var hrSparkline: [Double]? {
-        guard hrPoints.count > 1 else { return nil }
-        let v = hrPoints.map(\.value)
-        guard v.count > 40 else { return v }
-        let step = max(1, v.count / 32)
-        return stride(from: 0, to: v.count, by: step).map { v[$0] }
     }
 
     /// Compact localized date for the utility row, e.g. "THU 12 JUN" — context without the greeting.
@@ -1404,6 +1520,8 @@ struct TodayView: View {
         async let wkRows     = repo.workoutRows()
         async let adRows     = repo.appleDailyRows()
         async let amRows     = repo.appleDailyMetricRows()
+        // Stored daily "stress" series (0–3) — the model prefers it, else derives from RHR/HRV. (FER-180)
+        async let stressRows = repo.series(key: "stress", source: "my-whoop")
 
         // Today's HR trend — 5-minute bucket means from local midnight → now.
         let startOfToday = Int(Calendar.current.startOfDay(for: Date()).timeIntervalSince1970)
@@ -1425,12 +1543,15 @@ struct TodayView: View {
         appleMetricDays = (await amRows).sorted { $0.day < $1.day }
         hrPoints  = await hrBucketRows
             .map { TrendPoint(date: Date(timeIntervalSince1970: TimeInterval($0.ts)), value: $0.bpm) }
+        // Build today's stress model from the day rows + stored series (nil when there's no usable
+        // signal yet — the tile then placeholders "—").
+        stress = StressModel(days: repo.days, stored: await stressRows)
     }
 
     // MARK: - 14-day trend loader (all platforms)
 
     /// Builds the trailing 14-day trend from the DISPLAY dashboard rows (`repo.displayDays`) — the same
-    /// layered source the Key Metrics tiles draw from (`measuredSpark`): Apple Health is the base,
+    /// layered source the Today tiles draw their values from (`resolveMeasured`/`yesterdayValue`): Apple Health is the base,
     /// on-device computed scores (`my-whoop-noop`) fill the strap's days, imported strap rows win, and a
     /// strap-covered day with a nil field back-fills from Apple Health so the line has no gap (FER-149).
     /// Reading `repo.series(source: "my-whoop")` instead returned EMPTY for a BLE + Apple Health user,
@@ -1627,18 +1748,6 @@ struct TodayView: View {
             if let v = pick(day) { return (v, true) }
         }
         return nil
-    }
-
-    /// Inline sparkline for a measured tile: the strap series when present (unchanged behaviour),
-    /// otherwise a 14-day series rebuilt from the DISPLAY daily rows so Apple-only history still draws —
-    /// and so a strap-covered day whose field is nil (partial-connection day) back-fills from Apple
-    /// Health instead of leaving a gap, without touching the strap-only `repo.days` the baseline reads
-    /// (FER-149).
-    private func measuredSpark(_ key: String, _ pick: (DailyMetric) -> Double?) -> [Double]? {
-        if let s = sparks[key], s.count > 1 { return s }
-        let cutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -13, to: Date()) ?? Date())
-        let apple = repo.displayDays.filter { $0.day >= cutoff }.compactMap(pick)
-        return apple.count > 1 ? apple : sparks[key]
     }
 
     /// Active calories (Apple) for the latest day, falling back to the sparkline tail.

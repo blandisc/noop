@@ -1063,6 +1063,17 @@ ES: dict[str, str] = {
     "The band has nothing new.": "La banda no tiene nada nuevo.",
     "Data arrives but doesn’t decode — please report.": "Llegan datos pero no se decodifican — repórtalo.",
     "Receiving and storing everything.": "Recibiendo y guardando todo.",
+
+    # FER-180 — «Métricas de hoy»: rejilla de tiles intradía + variante stress de MetricInfoSheet.
+    "Today's metrics": "Métricas de hoy",
+    "vs yesterday": "vs ayer",
+    "Same as yesterday": "Igual que ayer",
+    "Medium": "Medio",
+    "High": "Alto",
+    "Your autonomic load today, from 0 to 3. We estimate it by comparing today's resting heart rate and HRV with your own 30-day baseline: a higher-than-usual resting HR and a lower-than-usual HRV both push the number up — classic signs your body is activated.": "Tu carga autonómica de hoy, del 0 al 3. La estimamos comparando tu frecuencia cardíaca en reposo y tu HRV con tu propia línea base de 30 días: una FC en reposo más alta de lo normal y una HRV más baja empujan el número hacia arriba — señales clásicas de que tu cuerpo está activado.",
+    "Derived from your overnight resting heart rate and HRV — a transparent proxy for autonomic load, not a clinical stress measure.": "Se deriva de tu frecuencia cardíaca en reposo y tu HRV nocturnas — un proxy transparente de la carga autonómica, no una medida clínica de estrés.",
+    "We take today's resting heart rate and HRV and express each as how far it sits from your 30-day average (a z-score). A resting HR above your norm and an HRV below it both add to the load; the two are summed and squashed onto a 0–3 scale where 0 is calm, 1.5 is your baseline, and 3 is highly activated.": "Tomamos tu frecuencia cardíaca en reposo y tu HRV de hoy y expresamos cada una como qué tan lejos está de tu promedio de 30 días (un z-score). Una FC en reposo por arriba de tu norma y una HRV por debajo suman a la carga; las dos se combinan y se ajustan a una escala de 0 a 3, donde 0 es calma, 1.5 es tu línea base y 3 es muy activado.",
+    "Combined resting-HR / HRV z-score through a logistic curve; HRV via RMSSD (Task Force, 1996).": "Z-score combinado de FC en reposo y HRV a través de una curva logística; HRV vía RMSSD (Task Force, 1996).",
 }
 
 
