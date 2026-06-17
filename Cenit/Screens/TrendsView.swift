@@ -44,6 +44,13 @@ struct TrendsView: View {
 
     @State private var range: Range = .quarter
 
+    // Memoized snapshot of every expensive derivation (the four resolved series, the year strip,
+    // the per-card Apple-source flags). Rebuilt only when the repo data or the selected range
+    // actually changes — NOT on hover/animation re-renders. `nil` until first build / no history.
+    @State private var model: TrendsModel?
+    /// The input signature the cached `model` was built from; when it differs we rebuild.
+    @State private var modelKey: TrendsInputKey?
+
     // yyyy-MM-dd → Date (en_US_POSIX, UTC), per task spec.
     private static let dayParser: DateFormatter = {
         let f = DateFormatter()
@@ -52,49 +59,6 @@ struct TrendsView: View {
         f.dateFormat = "yyyy-MM-dd"
         return f
     }()
-    private func date(_ day: String) -> Date? { Self.dayParser.date(from: day) }
-
-    // MARK: Window selection (relative to the LATEST day, with auto-expand)
-
-    /// The latest recorded day across all history (anchors every window).
-    private var latestDay: Date? {
-        guard let d = repo.days.last?.day else { return nil }
-        return date(d)
-    }
-
-    /// Days for a given range, taken RELATIVE TO TODAY (the phone's local date) — not the latest
-    /// recorded day, which on a stale import anchored W/M/3M to months-old data so it looked current
-    /// (issue #23). Empty short windows auto-widen (see `resolve`), so old imports surface under a
-    /// wider range / All history instead of masquerading as recent. `.all` returns everything.
-    /// ISO yyyy-MM-dd compares chronologically.
-    private func days(for r: Range) -> [DailyMetric] {
-        guard let n = r.days else { return repo.days }
-        let cutoffKey = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -(n - 1), to: Date()) ?? Date())
-        return repo.days.filter { $0.day >= cutoffKey }
-    }
-
-    /// Build trend points from a metric accessor over a day slice.
-    private func points(_ days: ArraySlice<DailyMetric>, _ value: (DailyMetric) -> Double?) -> [TrendPoint] {
-        days.compactMap { d in
-            guard let v = value(d), let dt = date(d.day) else { return nil }
-            return TrendPoint(date: dt, value: v)
-        }
-    }
-    private func points(_ days: [DailyMetric], _ value: (DailyMetric) -> Double?) -> [TrendPoint] {
-        points(days[...], value)
-    }
-
-    // MARK: Resolved metric (memoized per body)
-    //
-    // days(for:) / points each re-filter the full multi-year `repo.days` array,
-    // and the subviews used to fan out to them many times per render (caption +
-    // widened + windowPoints, ×4 metrics). `resolve(_:)` walks the widening order
-    // ONCE per metric (the smallest range ≥ selected whose window holds ≥1 point,
-    // else ALL), captures that window's points and its effective range, then
-    // derives the caption / widened flag from those — so a single body evaluation
-    // filters each metric's window once instead of dozens of times. Identical
-    // results to the old per-helper (effectiveRange / windowPoints / caption /
-    // widened) computation.
     private struct ResolvedMetric {
         var points: [TrendPoint]
         var effective: Range
@@ -102,20 +66,118 @@ struct TrendsView: View {
         var caption: String
     }
 
-    private func resolve(_ value: (DailyMetric) -> Double?) -> ResolvedMetric {
-        // Find the smallest range ≥ selected whose window has ≥1 point, keeping
-        // that window's points so we don't re-filter to read them back.
-        for r in range.widening {
-            let pts = points(days(for: r), value)
-            if !pts.isEmpty {
-                return ResolvedMetric(points: pts, effective: r,
-                                      widened: r != range, caption: caption(count: pts.count, eff: r))
+    // MARK: Memoized build (FER-176)
+    //
+    // Everything expensive this screen draws — the four resolved metric series and the year
+    // heat-strip — is derived ONCE per data/range change here, not per `body`. Each day-key is
+    // parsed to a `Date` a single time and reused across every metric window + the strip, so a
+    // multi-year import no longer re-filters `repo.days` and re-parses dates on the many body
+    // re-evaluations from hover/animation. The result is cached in `model`, keyed by `dataKey`.
+
+    /// Snapshot of every derivation the subviews read. Built once in `buildModel()`.
+    private struct TrendsModel {
+        var recovery: ResolvedMetric
+        var hrv: ResolvedMetric
+        var rhr: ResolvedMetric
+        var strain: ResolvedMetric
+        var hrvApple: Bool
+        var rhrApple: Bool
+        var stripDays: [RecoveryDay]
+        var stripTitle: String
+        var stripScored: Int
+    }
+
+    /// Cheap, Equatable fingerprint of the inputs the screen derives from (counts + newest-row
+    /// identity + Apple-day count + the selected range). Recomputed every render but fast to
+    /// compare; when it changes we rebuild `model`, otherwise re-renders pay nothing.
+    private struct TrendsInputKey: Equatable {
+        var loaded: Bool
+        var daysCount: Int
+        var firstDay: String?
+        var lastDay: String?
+        var lastDayRow: DailyMetric?
+        var appleCount: Int
+        var refreshSeq: Int
+        var range: Int
+    }
+
+    private var dataKey: TrendsInputKey {
+        TrendsInputKey(
+            loaded: repo.loaded,
+            daysCount: repo.days.count,
+            firstDay: repo.days.first?.day,
+            lastDay: repo.days.last?.day,
+            lastDayRow: repo.days.last,
+            appleCount: repo.appleHealthDays.count,
+            refreshSeq: repo.refreshSeq,
+            range: range.rawValue)
+    }
+
+    /// Build every derivation exactly once. Returns `nil` when there is no history.
+    private func buildModel() -> TrendsModel? {
+        let days = repo.days
+        guard !days.isEmpty else { return nil }
+
+        // Parse each distinct day-key to a Date a single time; reused by every window + the strip.
+        var parsed: [String: Date] = [:]
+        parsed.reserveCapacity(days.count)
+        for d in days where parsed[d.day] == nil {
+            parsed[d.day] = Self.dayParser.date(from: d.day)
+        }
+
+        // Trailing-day window RELATIVE TO TODAY (the phone's local date) — not the latest recorded
+        // day, which on a stale import anchored W/M/3M to months-old data so it looked current
+        // (issue #23). Empty short windows auto-widen in `resolve`. `.all` returns everything.
+        func window(_ r: Range) -> [DailyMetric] {
+            guard let n = r.days else { return days }
+            let cutoffKey = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -(n - 1), to: Date()) ?? Date())
+            return days.filter { $0.day >= cutoffKey }
+        }
+        func points(_ slice: [DailyMetric], _ value: (DailyMetric) -> Double?) -> [TrendPoint] {
+            slice.compactMap { d in
+                guard let v = value(d), let dt = parsed[d.day] else { return nil }
+                return TrendPoint(date: dt, value: v)
             }
         }
-        // No range held data: fall back to ALL (matches effectiveRange()).
-        let pts = points(days(for: .all), value)
-        return ResolvedMetric(points: pts, effective: .all,
-                              widened: .all != range, caption: caption(count: pts.count, eff: .all))
+        // Smallest range ≥ selected whose window holds ≥1 point (else ALL), keeping that window's
+        // points so we don't re-filter to read them back.
+        func resolve(_ value: (DailyMetric) -> Double?) -> ResolvedMetric {
+            for r in range.widening {
+                let pts = points(window(r), value)
+                if !pts.isEmpty {
+                    return ResolvedMetric(points: pts, effective: r,
+                                          widened: r != range, caption: caption(count: pts.count, eff: r))
+                }
+            }
+            let pts = points(days, value)
+            return ResolvedMetric(points: pts, effective: .all,
+                                  widened: .all != range, caption: caption(count: pts.count, eff: .all))
+        }
+        /// Whether the most recent day carrying this metric was surfaced from Apple Health (no
+        /// strap coverage) — drives the per-card "Apple Health" source badge. (FER-62)
+        func latestIsApple(_ value: (DailyMetric) -> Double?) -> Bool {
+            guard let d = days.last(where: { value($0) != nil }) else { return false }
+            return repo.appleHealthDays.contains(d.day)
+        }
+
+        // Year heat-strip: always at least a full year for context; all history on ALL.
+        let stripCount = max(range.days ?? days.count, 365)
+        let stripDays: [RecoveryDay] = days.suffix(stripCount).compactMap { d in
+            guard let dt = parsed[d.day] else { return nil }
+            return RecoveryDay(date: dt, score: d.recovery)
+        }
+        let stripTitle = (range == .all && days.count > 365) ? "Recovery — all history" : "Recovery — past year"
+
+        return TrendsModel(
+            recovery: resolve { $0.recovery },
+            hrv: resolve { $0.avgHrv },
+            rhr: resolve { $0.restingHr.map(Double.init) },
+            strain: resolve { $0.strain },
+            hrvApple: latestIsApple { $0.avgHrv },
+            rhrApple: latestIsApple { $0.restingHr.map(Double.init) },
+            stripDays: stripDays,
+            stripTitle: stripTitle,
+            stripScored: stripDays.filter { $0.score != nil }.count)
     }
 
     /// Caption text from an already-resolved count + effective range. Mirrors
@@ -162,13 +224,6 @@ struct TrendsView: View {
         return pts.map(\.value).reduce(0, +) / Double(pts.count)
     }
 
-    /// Whether the most recent day carrying this metric was surfaced from Apple Health (no strap
-    /// coverage) — drives the per-card "Apple Health" source badge. (FER-62)
-    private func latestDayIsApple(_ value: (DailyMetric) -> Double?) -> Bool {
-        guard let d = repo.days.last(where: { value($0) != nil }) else { return false }
-        return repo.appleHealthDays.contains(d.day)
-    }
-
     /// "Trailing 90 days" / "All history" — used as a card subtitle.
     private var rangeSubtitle: String {
         guard let n = range.days else { return String(localized: "All history") }
@@ -187,25 +242,38 @@ struct TrendsView: View {
     }
 
     var body: some View {
-        ScreenScaffold(title: "Trends", subtitle: "The thread of you over time.") {
-            if repo.days.isEmpty {
-                ComingSoon(what: repo.loaded
-                    ? "Trends need history to draw. Import your WHOOP export — or connect Apple Health — in Data Sources to see weeks, months and years."
-                    : "Loading your history…")
-            } else {
-                // Resolve each metric's window ONCE per body and pass the results
-                // down — rangeBar/heroRecovery/smallMultiples all reuse these
-                // instead of re-filtering repo.days through caption/widened/
-                // windowPoints on every render (hover, animation, 1 Hz HR tick).
-                let recovery = resolve { $0.recovery }
-                let hrv = resolve { $0.avgHrv }
-                let rhr = resolve { $0.restingHr.map(Double.init) }
-                let strain = resolve { $0.strain }
-                VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
-                    rangeBar(recovery: recovery)
-                    heroRecovery(recovery: recovery)
-                    smallMultiples(hrv: hrv, rhr: rhr, strain: strain)
-                    yearStrip
+        // Resolve the memoized model for THIS render. `dataKey` is O(1)-ish, so comparing it
+        // every render is cheap; when it matches the cached key we reuse `model` untouched — the
+        // many re-evaluations from hover/animation pay nothing. When it differs (or on first
+        // render) we build once, here, so the very first frame already shows content. (FER-176)
+        let key = dataKey
+        let resolved: TrendsModel? = (key == modelKey) ? model : buildModel()
+        return ScreenScaffold(title: "Trends", subtitle: "The thread of you over time.") {
+            Group {
+                if let m = resolved {
+                    VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+                        rangeBar(recovery: m.recovery)
+                        heroRecovery(recovery: m.recovery)
+                        smallMultiples(hrv: m.hrv, rhr: m.rhr, strain: m.strain,
+                                       hrvApple: m.hrvApple, rhrApple: m.rhrApple)
+                        yearStrip(m)
+                    }
+                } else {
+                    ComingSoon(what: repo.loaded
+                        ? "Trends need history to draw. Import your WHOOP export — or connect Apple Health — in Data Sources to see weeks, months and years."
+                        : "Loading your history…")
+                }
+            }
+            // Commit the freshly-built model after layout (writing @State during body is not
+            // allowed); `resolved` already drives THIS frame, so there is no flash.
+            .onChange(of: key) { newKey in
+                modelKey = newKey
+                model = buildModel()
+            }
+            .onAppear {
+                if modelKey != key {
+                    modelKey = key
+                    model = resolved
                 }
             }
         }
@@ -263,7 +331,8 @@ struct TrendsView: View {
 
     // MARK: Small multiples — HRV / Resting HR / Day Strain
 
-    private func smallMultiples(hrv: ResolvedMetric, rhr: ResolvedMetric, strain: ResolvedMetric) -> some View {
+    private func smallMultiples(hrv: ResolvedMetric, rhr: ResolvedMetric, strain: ResolvedMetric,
+                                hrvApple: Bool, rhrApple: Bool) -> some View {
         let cols = [GridItem(.adaptive(minimum: 320), spacing: NoopMetrics.gap)]
         let hrvPts = hrv.points
         let rhrPts = rhr.points
@@ -278,7 +347,7 @@ struct TrendsView: View {
                     subtitle: hrv.caption,
                     gradient: gradient(StrandPalette.metricPurple),
                     range: valueRange(hrvPts, fallback: 20...120),
-                    appleSourced: latestDayIsApple { $0.avgHrv },
+                    appleSourced: hrvApple,
                     fmt: { "\(Int($0.rounded()))" }
                 )
                 metricChart(
@@ -287,7 +356,7 @@ struct TrendsView: View {
                     subtitle: rhr.caption,
                     gradient: gradient(StrandPalette.metricRose),
                     range: valueRange(rhrPts, fallback: 40...80),
-                    appleSourced: latestDayIsApple { $0.restingHr.map(Double.init) },
+                    appleSourced: rhrApple,
                     fmt: { "\(Int($0.rounded()))" }
                 )
                 metricChart(
@@ -343,18 +412,11 @@ struct TrendsView: View {
 
     // MARK: Year heat-strip
 
-    private var yearStrip: some View {
-        // Always show at least a full year for context; expand to all history on ALL.
-        let stripDays = max(range.days ?? repo.days.count, 365)
-        let recent = repo.days.suffix(stripDays)
-        let recoveryDays: [RecoveryDay] = recent.compactMap { d in
-            guard let dt = date(d.day) else { return nil }
-            return RecoveryDay(date: dt, score: d.recovery)
-        }
-        let title = (range == .all && repo.days.count > 365) ? "Recovery — all history" : "Recovery — past year"
+    private func yearStrip(_ m: TrendsModel) -> some View {
+        let recoveryDays = m.stripDays
         return NoopCard {
             VStack(alignment: .leading, spacing: 12) {
-                SectionHeader("\(title)", overline: "Calendar", trailing: "\(recoveryDays.filter { $0.score != nil }.count) days")
+                SectionHeader("\(m.stripTitle)", overline: "Calendar", trailing: "\(m.stripScored) days")
                 if recoveryDays.isEmpty {
                     sparsePlaceholder.frame(height: 120)
                 } else {

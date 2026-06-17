@@ -756,12 +756,15 @@ private struct MultiTooltip: View {
     let anchorX: CGFloat
     let container: CGSize
 
-    private var dateLabel: String {
-        guard let d = parseCompareDay(day) else { return day }
+    private static let dateLabelFmt: DateFormatter = {
         let f = DateFormatter()
         f.locale = Locale(identifier: "en_US_POSIX")
         f.dateFormat = "EEE d MMM yyyy"
-        return f.string(from: d)
+        return f
+    }()
+    private var dateLabel: String {
+        guard let d = parseCompareDay(day) else { return day }
+        return Self.dateLabelFmt.string(from: d)
     }
 
     var body: some View {
