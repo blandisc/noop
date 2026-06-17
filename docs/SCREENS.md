@@ -32,14 +32,17 @@ git config core.hooksPath .githooks
 ```
 Tab shell (FER-182) → 5 pestañas: Hoy · Cuerpo · Coach · Entrenar · Ajustes
   Hoy      → TodayView
-  Cuerpo   → TrendsView (interino; el Detalle de Métrica llega en el issue de Cuerpo)
+  Cuerpo   → CuerpoView (landing curado de la capa «historia», FER-186)
   Coach    → hub-lista → IntelligenceView · InsightsView · CoachView
   Entrenar → hub-lista → BreathingView · IntervalTimerView
-  Ajustes  → SettingsView + sección «Más» → SleepView · MetricExplorerView · CompareView ·
-             WorkoutsView · HealthView · StressView · AppleHealthView · DataSourcesView ·
-             AutomationsView · SupportView
+  Ajustes  → SettingsView + sección «Más» → MetricExplorerView · CompareView ·
+             WorkoutsView · AppleHealthView · DataSourcesView · AutomationsView · SupportView
+             (Sueño · Health · Stress se mudaron a «Cuerpo» como métricas — FER-186)
 SettingsView → WhatsNewView (sheet)
 TodayView   → LiveView (sheet, detente grande) · MetricInfoSheet (sheet) · WhyVerdictSheet (sheet) · SupportView (toolbar)
+CuerpoView  → MetricInfoSheet (sheet claro: Recuperación/Esfuerzo/HRV/FC reposo/SpO₂/FC/Pasos/Estrés) ·
+             SleepView · WorkoutsView · CompareView · MetricExplorerView · DataSourcesView ·
+             MetricDetailView (Respiración/Temp. piel) — todos como sheet oscuro fijado a .dark (FER-186)
 WorkoutsView → ManualWorkoutSheet (sheet: add / edit)
 MetricExplorerView → MetricDetailView (NavigationLink push, sobre el stack de la pestaña «Ajustes» — FER-171)
 ```
@@ -166,9 +169,27 @@ trazo fino: **Hoy** = glifo de dial 24h (`DialTabGlyph`, StrandDesign), el resto
 
 ---
 
+### CuerpoView
+**Archivo:** `Cenit/Screens/CuerpoView.swift`  
+**Descripción:** Landing curado de la capa «historia / entre-días» (pestaña **Cuerpo**, FER-186). Estilo Apple Salud (Resumen) en papel claro «Instrumento» (color solo en el dato): una columna de secciones, cada fila un `MetricRow` (label · sparkline 14d + banda p25–p75 · valor en su color de dato · chevron) que abre un detalle.
+
+**Secciones:** Recuperación (fila héroe destacada, en `surface`) · Descanso & carga (Sueño · Esfuerzo del día · Estrés) · Vitales (HRV · FC en reposo · SpO₂ · Frecuencia cardíaca · Respiración · Temp. de piel) · Actividad (Pasos · Entrenamientos) · Longevidad (Edad física · Vitalidad → «Próximamente», FER-141/145) · acciones al pie (Comparar · Ver todas las métricas).
+
+| Estado | Condición de entrada |
+|--------|---------------------|
+| Con datos | Filas pobladas desde `repo.displayDays` (valores + sparklines) |
+| Calibrando | Recuperación muestra «N/4» + «Calibrando tu base»; el resto en «—» con esqueleto |
+| Sin permiso / offline | Muestra lo guardado; las métricas solo-Apple (Pasos) invitan a conectar sin prometer datos |
+
+**Apertura del detalle (puente hasta el Detalle unificado, FER-185):** la mayoría abren el `MetricInfoSheet` claro (igual que Hoy); Sueño→`SleepView`, Entrenamientos→`WorkoutsView`, Respiración/Temp. piel→`MetricDetailView` del catálogo, Comparar→`CompareView`, Ver todas→`MetricExplorerView` — estos como **sheet oscuro fijado a `.dark`** (un tab claro no puede empujar una pantalla oscura sin romper la barra de estado).
+
+**Componentes:** `MetricRow`, `Sparkline` (+ `ReferenceRange.interquartile`), `MetricInfoSheet`, `InstrumentoTheme` (`instrumentoThemeByHour`).
+
+---
+
 ### TrendsView
 **Archivo:** `Cenit/Screens/TrendsView.swift`  
-**Descripción:** Análisis longitudinal — Recovery, HRV, RHR, Day Strain.
+**Descripción:** Análisis longitudinal — Recovery, HRV, RHR, Day Strain. *(Ya no es la pestaña Cuerpo; accesible vía debug-nav / histórico — reemplazada por `CuerpoView` en FER-186.)*
 
 | Estado | Condición de entrada |
 |--------|---------------------|

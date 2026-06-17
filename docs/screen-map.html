@@ -312,7 +312,7 @@ body {
   <h1>NOOP iOS · Mapa de Pantallas</h1>
   <span class="chip">19 pantallas</span>
   <span class="chip">~71 estados</span>
-  <span class="chip" title="Barra de pestañas custom (CenitApp/App/InstrumentTabBar.swift, FER-163; reorganizada a 5 tabs en FER-182): Hoy · Cuerpo · Coach · Entrenar · Ajustes. Adapta su tema a la pestaña activa — papel «Instrumento diurno» por hora bajo Hoy, StrandPalette oscuro bajo el resto; activo = tinta + punto de «ahora»; íconos de trazo fino (dial 24h en Hoy, glifos de línea el resto). En vivo ya no es tab: abre desde «beat by beat» de Hoy.">Barra: «Instrumento» ⓘ</span>
+  <span class="chip" title="Barra de pestañas custom (CenitApp/App/InstrumentTabBar.swift, FER-163; reorganizada a 5 tabs en FER-182): Hoy · Cuerpo · Coach · Entrenar · Ajustes. Adapta su tema a la pestaña activa — papel «Instrumento diurno» por hora bajo Hoy y Cuerpo (FER-186), StrandPalette oscuro bajo Coach / Entrenar / Ajustes; activo = tinta + punto de «ahora»; íconos de trazo fino (dial 24h en Hoy, glifos de línea el resto). En vivo ya no es tab: abre desde «beat by beat» de Hoy.">Barra: «Instrumento» ⓘ</span>
   <div class="sep"></div>
   <div class="legend">
     <div class="leg"><div class="leg-dot" style="background:#2e2e2e"></div>Vacío</div>
@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-17 · FER-196</span>
+  <span class="tb-updated">Actualizado 2026-06-17 · FER-186</span>
 </div>
 
 <div id="wrapper">
@@ -444,17 +444,26 @@ const SCREENS = [
     components: ['SegmentedPillControl (7D–All)', 'StatTile ×5', 'Activity Breakdown', 'HR Zones', 'Sessions table'],
   },
   {
-    id: 'trends', x: 284, y: 710,
-    name: 'Trends', desc: 'Análisis longitudinal',
-    file: 'Cenit/Screens/TrendsView.swift',
-    icon: '📈', color: '#18C98B',
+    id: 'cuerpo', x: 284, y: 710,
+    name: 'Cuerpo', desc: 'Tab «historia» · landing curado',
+    file: 'Cenit/Screens/CuerpoView.swift',
+    icon: '🫀', color: '#0C8F62',
     states: [
-      { label: 'Ventana vacía', type: 'empty' },
-      { label: 'Un solo punto', type: 'warn' },
-      { label: 'Múltiples puntos', type: 'data' },
+      { label: 'Con datos (FER-186): secciones pobladas desde repo.displayDays — Recuperación (héroe) · Descanso&carga · Vitales · Actividad · Longevidad', type: 'data' },
+      { label: 'Papel claro «Instrumento» (color solo en el dato), instrumentoThemeByHour; .body es tab claro (FER-186)', type: 'live' },
+      { label: 'Calibrando: Recuperación «N/4» + «Calibrando tu base»; el resto «—» con esqueleto', type: 'loading' },
+      { label: 'Sin permiso / offline: muestra lo guardado; Pasos (solo-Apple) invita a conectar sin prometer datos', type: 'empty' },
+      { label: 'Longevidad → «Próximamente» hasta orquestar FER-141 (Fitness Age) / FER-145 (Vitality)', type: 'warn' },
     ],
-    nav: [],
-    components: ['SegmentedPillControl (W–ALL)', 'Hero ChartCard (Recovery)', 'ChartCard ×3 (HRV/RHR/Strain)', 'YearHeatStrip'],
+    nav: [
+      { to: 'metric-info', label: 'Tap fila con hoja clara (Recuperación/Esfuerzo/HRV/FC reposo/SpO₂/FC/Pasos/Estrés)', type: 'sheet' },
+      { to: 'sleep', label: 'Sueño → SleepView (sheet oscuro .dark)', type: 'sheet' },
+      { to: 'workouts', label: 'Entrenamientos → WorkoutsView (sheet oscuro)', type: 'sheet' },
+      { to: 'metricdetail', label: 'Respiración / Temp. piel → MetricDetailView (sheet oscuro)', type: 'sheet' },
+      { to: 'compare', label: 'Comparar (sheet oscuro)', type: 'sheet' },
+      { to: 'explore', label: 'Ver todas las métricas → MetricExplorerView (sheet oscuro)', type: 'sheet' },
+    ],
+    components: ['MetricRow (label · sparkline 14d + banda p25–p75 · valor en color de dato · chevron)', 'Sparkline + ReferenceRange.interquartile', 'fila héroe Recuperación (surface)', 'MetricInfoSheet (puente claro hasta FER-185)', 'InstrumentoTheme (instrumentoThemeByHour)'],
   },
   {
     id: 'insights', x: 538, y: 710,

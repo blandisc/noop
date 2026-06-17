@@ -18,6 +18,20 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
+    # Cuerpo landing — the «historia / entre-días» tab (FER-186).
+    "Rest & load": "Descanso y carga",
+    "Vitals": "Vitales",
+    "Longevity": "Longevidad",
+    "Ready to train": "Listo para entrenar",
+    "Recovering": "Recuperándote",
+    "Prioritize rest": "Prioriza el descanso",
+    "Calibrating your baseline": "Calibrando tu base",
+    "Physical age": "Edad física",
+    "Vitality": "Vitalidad",
+    "Coming soon": "Próximamente",
+    "See all metrics": "Ver todas las métricas",
+    "Connect Apple Health to fill steps and more.": "Conecta Apple Salud para llenar pasos y más.",
+
     # WhyVerdictSheet — color name for the red/rundown level (FER-167).
     "red": "rojo",
 
