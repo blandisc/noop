@@ -228,7 +228,17 @@ public final class BLEManager: NSObject, ObservableObject {
     /// FER-90 diagnostic: did the strap answer the GET_CLOCK we sent this connect? Reset when we send
     /// GET_CLOCK, set when its response lands — a deferred check logs "sin respuesta" if it never does.
     private var getClockResponded = false
-    private var intentionalDisconnect = false
+    /// Intentional teardowns (disconnect()/model-switch) we've requested but not yet matched to a
+    /// `didDisconnectPeripheral`. A plain bool was wrong here: `connect()` reset it to false *before* the
+    /// async disconnect from a model-switch (`prepareForModelSwitch → disconnect → scan → connect`) landed,
+    /// so that disconnect read as unintentional and scheduled a SECOND reconnect on top of the new connect
+    /// (FER-175). A counter survives that async gap — `connect()` never touches it; only the matching
+    /// `didDisconnect` consumes one.
+    private var pendingIntentionalDisconnects = 0
+    /// Bumped on every `connect()` (incl. the auto-reconnect) so a deferred (3s) reconnect closure can tell
+    /// that a newer connection intent superseded it before its timer fired, and bail instead of stacking
+    /// a second overlapping attempt (FER-175).
+    private var connectGeneration = 0
     /// The strap family the user chose to pair. Drives which service we scan for
     /// and which service we discover after connecting. Hydrated from the persisted
     /// pick so restoration/reconnect after a relaunch target the right strap.
@@ -350,7 +360,7 @@ public final class BLEManager: NSObject, ObservableObject {
 
     // MARK: Public API
     public func connect(model: WhoopModel = .persisted) {
-        intentionalDisconnect = false
+        connectGeneration += 1   // a fresh connection intent — supersedes any pending deferred reconnect
         selectedModel = model
         // Frame the inbound stream for the chosen family (WHOOP 4.0 CRC8 vs WHOOP 5.0 CRC16/puffin)
         // and tell the router which decoder to use. Fresh per connection so no stale bytes carry over.
@@ -361,6 +371,12 @@ public final class BLEManager: NSObject, ObservableObject {
             return
         }
         if let p = peripheral, p.state == .connected {
+            // Already linked (a foreground/refresh while connected). The per-connection handshake latches
+            // survive from the live session, so without this reset didWriteValueFor's `guard
+            // !connectHandshakeDone` (:1342) short-circuits and we never re-run clock/SET_CONFIG/first-
+            // offload — leaving us "connected but never synced" until the 15-min timer (FER-175). Reset the
+            // latches so the re-discovered bond write drives a fresh handshake that re-schedules sync.
+            resetConnectionState()
             state.connected = true
             p.delegate = self
             log("Already connected to \(model.displayName) — refreshing services and notifications")
@@ -388,16 +404,37 @@ public final class BLEManager: NSObject, ObservableObject {
     }
 
     public func disconnect() {
-        intentionalDisconnect = true
         // A user-initiated teardown is a clean slate: clear any #80 marginal-radio fallback so the next
         // (manual) reconnect attempts the full R10/R11 stream again rather than inheriting old suspicion.
         marginalRadio.reset()
         standardHRFallback = false
         state.standardHRMode = nil
         if let p = peripheral {
+            // Only count a teardown we'll actually get a `didDisconnect` callback for — cancelling a
+            // *connected* link yields exactly one. Counting here (instead of a bool that `connect()` later
+            // flips back) is what lets the model-switch disconnect still read as intentional even after
+            // `connect()` has already run in the async gap (FER-175).
+            if p.state == .connected { pendingIntentionalDisconnects += 1 }
             central.cancelPeripheralConnection(p)
         }
         central.stopScan()
+    }
+
+    /// Reset the per-connection latches that gate the connect handshake/offload so the NEXT bond write
+    /// drives a fresh sequence. These are once-per-connection guards (didWriteValueFor re-fires on every
+    /// `.withResponse` write), so they MUST start false at the top of each connection or the handshake is
+    /// skipped. `didDisconnect` already clears them as part of teardown; this is the shared entry point for
+    /// the *connect* side — `didConnect` and the "already connected" refresh branch — so a refresh that
+    /// never went through a disconnect (FER-175) still re-runs the handshake. Does NOT touch teardown state
+    /// (timers, characteristics, `state.connected`) — that stays owned by `didDisconnect`.
+    private func resetConnectionState() {
+        didBond = false
+        connectHandshakeDone = false
+        backfillStarted = false
+        whoop5RealtimeArmed = false
+        whoop5SessionStarted = false
+        clockRequested = false
+        getClockResponded = false
     }
 
     /// Switch which strap we'll connect to next: drop the current strap and clear the **sticky** bond
@@ -1103,6 +1140,7 @@ extension BLEManager: CBCentralManagerDelegate {
 
     public func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         restoredPeripheral = nil
+        resetConnectionState()   // fresh link — clear any stale per-connection handshake latches (FER-175)
         preparePeripheral(peripheral)
         state.connected = true
         state.encryptedBond = false   // re-proved per connection at the genuine-bond site (#69)
@@ -1120,7 +1158,12 @@ extension BLEManager: CBCentralManagerDelegate {
         // arm timestamp. A drop that is unintentional, error-bearing, and lands shortly after we armed
         // the R10/R11 burst is the marginal-radio tell. Feed the detector; if it trips, the NEXT connect
         // skips the heavy arm (the flag is intentionally NOT reset on disconnect so it survives rescan).
-        let timedOut = !intentionalDisconnect && error != nil
+        // Consume one pending intentional teardown if this disconnect matches one. A counter (not a bool
+        // reset by connect()) is what makes a model-switch disconnect still read as intentional here even
+        // though connect() already ran in the async gap (FER-175).
+        let wasIntentional = pendingIntentionalDisconnects > 0
+        if wasIntentional { pendingIntentionalDisconnects -= 1 }
+        let timedOut = !wasIntentional && error != nil
         let sinceArm = realtimeArmedAt.map { Date().timeIntervalSince($0) }
         if marginalRadio.connectionEnded(wasArmed: realtimeArmedAt != nil,
                                          secondsSinceArm: sinceArm,
@@ -1162,10 +1205,14 @@ extension BLEManager: CBCentralManagerDelegate {
         resetCharacteristics()
         puffinRecorder.flush()   // persist any buffered puffin capture frames before reconnect
         Task { @MainActor in await collector?.flushStandardHR() }   // persist any buffered 0x2A37 HR
-        if !intentionalDisconnect {
+        if !wasIntentional {
+            let gen = connectGeneration
             log("Disconnected\(error.map { " — \($0.localizedDescription)" } ?? ""); rescanning in 3s")
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
-                guard let self, !self.intentionalDisconnect else { return }
+                // Bail if a newer connect() bumped the generation, or an intentional teardown is now
+                // pending, during the wait — either means "don't stack a second attempt" (FER-175).
+                guard let self, self.connectGeneration == gen,
+                      self.pendingIntentionalDisconnects == 0 else { return }
                 self.connect()
             }
         } else {
