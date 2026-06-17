@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-17 · FER-139</span>
+  <span class="tb-updated">Actualizado 2026-06-17 · FER-141</span>
 </div>
 
 <div id="wrapper">
@@ -456,7 +456,7 @@ const SCREENS = [
       { label: 'Papel claro «Instrumento» (color solo en el dato), instrumentoThemeByHour; .body es tab claro (FER-186)', type: 'live' },
       { label: 'Calibrando: Recuperación «N/4» + «Calibrando tu base»; el resto «—» con esqueleto', type: 'loading' },
       { label: 'Sin permiso / offline: muestra lo guardado; Pasos (solo-Apple) invita a conectar sin prometer datos', type: 'empty' },
-      { label: 'Longevidad → «Próximamente» hasta orquestar FER-141 (Fitness Age) / FER-145 (Vitality)', type: 'warn' },
+      { label: 'Longevidad: Edad física activa (FER-141) — número + delta vs edad, teñido por dirección; Vitalidad «Próximamente» (FER-145)', type: 'data' },
     ],
     nav: [
       { to: 'metric-info', label: 'Tap fila con hoja clara (Recuperación/Esfuerzo/SpO₂/FC/Pasos/Estrés)', type: 'sheet' },
@@ -466,8 +466,9 @@ const SCREENS = [
       { to: 'metricdetail', label: 'Temp. piel → MetricDetailView (sheet oscuro)', type: 'sheet' },
       { to: 'compare', label: 'Comparar (sheet oscuro)', type: 'sheet' },
       { to: 'explore', label: 'Ver todas las métricas → MetricExplorerView (sheet oscuro)', type: 'sheet' },
+      { to: 'fitness-age', label: 'Edad física → FitnessAgeDetailView (sheet claro «Instrumento»)', type: 'sheet' },
     ],
-    components: ['MetricRow (label · sparkline 14d + banda p25–p75 · valor en color de dato · chevron)', 'Sparkline + ReferenceRange.interquartile', 'fila héroe Recuperación (surface)', 'MetricInfoSheet + MetricDetailScreen (Detalle unificado FER-185)', 'InstrumentoTheme (instrumentoThemeByHour)'],
+    components: ['MetricRow (label · sparkline 14d + banda p25–p75 · valor en color de dato · chevron)', 'Sparkline + ReferenceRange.interquartile', 'fila héroe Recuperación (surface)', 'fila Edad física custom (delta bajo etiqueta + chip «Estimado»)', 'MetricInfoSheet + MetricDetailScreen (Detalle unificado FER-185)', 'FitnessAgeDetailView (Edad física · FER-141)', 'InstrumentoTheme (instrumentoThemeByHour)'],
   },
   {
     id: 'insights', x: 538, y: 710,
@@ -720,6 +721,21 @@ const SCREENS = [
     ],
     nav: [],
     components: ['Héroe = media móvil 7d (SeriesShape.latestMovingAverage), hoy como contexto', 'SegmentedPillControl (ExploreRange → Cenit/Data/ExploreRange.swift)', 'Sparkline + ReferenceRange.interquartile (banda)', 'MetricDetailSpec (BlockSet/HeroKind/baselineCfg) reutiliza MetricInfo', 'SeriesShape (StrandAnalytics: SMA/CV) + Baselines + ComparisonEngine', 'InstrumentoTheme (explícito · sin NavigationStack anidado FER-171)'],
+  },
+  {
+    id: 'fitness-age', x: 284, y: 3310,
+    name: 'Edad física', desc: 'Sheet: detalle de Fitness Age (Nes/HUNT) en tema claro «Instrumento» (desde Cuerpo › Longevidad · FER-141)',
+    file: 'Cenit/Screens/FitnessAgeDetailView.swift',
+    icon: '🫀', color: '#0C8F62',
+    isSheet: true,
+    states: [
+      { label: 'ready: numeral héroe teñido por dirección (verde joven / ámbar mayor / tinta igual) + delta vs edad + banda ±5 + descargo no-clínico + «Qué la mueve» (FC reposo · Actividad) + «Qué estamos usando» (checklist) + método Nes/HUNT', type: 'data' },
+      { label: 'estimate: chip «Estimado» + cobertura parcial (actividad escasa o RHR sin semana completa)', type: 'warn' },
+      { label: 'notReady: sin numeral — pozo vacío honesto + checklist de qué falta (FC en reposo N/4 noches)', type: 'empty' },
+      { label: 'Hoja clara «Instrumento» (tema explícito, no se propaga por .sheet); VO₂max fuera de alcance (requiere cintura)', type: 'live' },
+    ],
+    nav: [],
+    components: ['instrumentoHero(64) teñido por dirección', 'InlineFlagChip («Estimado»)', 'tirita de descargo + secciones en surface (patrón MetricInfoSheet)', 'FitnessAgeEngine.snapshot (orquestación pura, StrandAnalytics · FER-141)'],
   },
   {
     id: 'why-verdict', x: 30, y: 3310,
