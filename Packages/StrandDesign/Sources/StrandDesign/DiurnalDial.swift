@@ -8,12 +8,16 @@ import SwiftUI
 //
 // It speaks the language (see Instrumento.swift):
 //   • Reads the active theme from `\.instrumentoTheme`, so the by-the-hour engine
-//     (FER-132) recolors the whole dial for free — the ring quietly warms from day
-//     to dusk to night without the dial drawing any colored chrome itself.
-//   • COLOR ONLY IN THE DATUM. The face carries no saturated hue: day vs. night,
-//     the sleep band, and the now-dot are all drawn in ink/paper tones. The health
-//     datum's color belongs to the hero numeral TodayView lays over the centre —
-//     which is why the centre is intentionally left empty here.
+//     (FER-132) recolors the whole dial for free — the ring warms from day to dusk
+//     to night, and its colored chrome rides the same per-hour data tokens (so the
+//     hue quiets and darkens into the night anchor with the rest of the screen).
+//   • COLOR IN THE CHROME, AS DIURNAL CONTEXT (FER-165). The face carries hue to
+//     read like the «A color» app icon: the day arc is `dataStrain` amber, the
+//     sleep band `dataSleep` indigo, the now-dot `dataRecovery` green, the noon
+//     tick ink. This is CONTEXT (sun, sleep, time of day), NOT the health datum —
+//     that still belongs to the hero numeral TodayView lays beside the dial, which
+//     is why the centre is intentionally left empty here. (This deliberately
+//     supersedes the earlier "color only in the datum" rule for the dial.)
 //
 // Dependency-free, like the rest of StrandDesign: the sun and sleep windows are
 // INJECTED (`SolarWindow` / `SleepWindow`), never imported. The app computes them
@@ -125,6 +129,9 @@ public struct DiurnalDial: View {
     private var ringRadius: CGFloat { diameter * 0.42 }
     private var sleepRadius: CGFloat { diameter * 0.368 }
     private var trackWidth: CGFloat { max(2, diameter * 0.012) }
+    /// The day arc is drawn heavier than the bezel track so the amber reads like the
+    /// «A color» icon's bold daytime sweep — always at least a hair thicker than it.
+    private var dayArcWidth: CGFloat { max(trackWidth + 1, diameter * 0.019) }
     private var bandWidth: CGFloat { diameter * 0.030 }
     private var dotDiameter: CGFloat { diameter * 0.044 }
     private var haloDiameter: CGFloat { diameter * 0.12 }
@@ -158,34 +165,38 @@ public struct DiurnalDial: View {
             ctx.stroke(circlePath(center: c, radius: r),
                        with: .color(theme.hairlineStrong), lineWidth: trackWidth)
 
-            // Day arc (sunrise → sunset, over the top). Distinguishes day from night
-            // by TONE, not color — ink, never a data hue. Omitted in the polar case.
+            // Day arc (sunrise → sunset, over the top). The day reads in `dataStrain`
+            // amber, drawn heavier than the track (`dayArcWidth`) — the «A color»
+            // icon's bold daytime sweep. Omitted in the polar case.
             if let s = solar {
                 ctx.stroke(arcPath(center: c, radius: r, fromHour: s.sunrise, toHour: s.sunset),
-                           with: .color(theme.inkTertiary.opacity(0.5)),
-                           style: StrokeStyle(lineWidth: trackWidth, lineCap: .round))
+                           with: .color(theme.dataStrain),
+                           style: StrokeStyle(lineWidth: dayArcWidth, lineCap: .round))
             }
 
-            // Sleep band — a faint inner segment, crossing midnight as needed.
+            // Sleep band — an inner segment in `dataSleep` indigo, crossing midnight as
+            // needed. Held back to ~0.55 so it stays the night's quiet context.
             if let sl = sleep {
                 ctx.stroke(arcPath(center: c, radius: sleepRadius, fromHour: sl.bedtime, toHour: sl.wake),
-                           with: .color(theme.ink.opacity(0.12)),
+                           with: .color(theme.dataSleep.opacity(0.55)),
                            style: StrokeStyle(lineWidth: bandWidth, lineCap: .round))
             }
 
-            // Quiet cardinal ticks (00 / 06 / 12 / 18) to orient the face.
+            // Cardinal ticks (00 / 06 / 12 / 18) to orient the face. Noon is picked out
+            // in ink (the icon's top tick); the rest stay a quiet warm rule.
             let cardIn = r - diameter * 0.018, cardOut = r + diameter * 0.018
             for h in stride(from: 0.0, to: 24.0, by: 6.0) {
+                let isNoon = h == 12.0
                 ctx.stroke(tickPath(center: c, hour: h, inner: cardIn, outer: cardOut),
-                           with: .color(theme.hairlineStrong), lineWidth: 1.4)
+                           with: .color(isNoon ? theme.ink : theme.hairlineStrong), lineWidth: 1.4)
             }
 
-            // Sunrise / sunset marks — a touch stronger than the cardinals, still ink.
+            // Sunrise / sunset marks — tinted `warning` to ride with the amber day arc.
             if let s = solar {
                 let sunIn = r - diameter * 0.028, sunOut = r + diameter * 0.028
                 for h in [s.sunrise, s.sunset] {
                     ctx.stroke(tickPath(center: c, hour: h, inner: sunIn, outer: sunOut),
-                               with: .color(theme.inkSecondary),
+                               with: .color(theme.warning),
                                style: StrokeStyle(lineWidth: 2, lineCap: .round))
                 }
             }
@@ -199,18 +210,19 @@ public struct DiurnalDial: View {
         let c = CGPoint(x: diameter / 2, y: diameter / 2)
         let p = DialGeometry.point(forHour: nowHour, center: c, radius: ringRadius)
         return ZStack {
-            // Soft halo that breathes (pulse). Ink, low opacity — a point of light on
-            // paper reads as a crisp dark focus, not a glow.
+            // Soft halo that breathes (pulse), in `dataRecovery` green at low opacity —
+            // a quiet glow around the "now" mark. Green is FIXED here: it marks the
+            // current moment, it does NOT track the day's verdict.
             Circle()
-                .fill(theme.ink)
+                .fill(theme.dataRecovery)
                 .frame(width: haloDiameter, height: haloDiameter)
                 .scaleEffect(pulsing ? 1.3 : 0.92)
                 .opacity(pulsing ? 0.05 : 0.18)
                 .animation(allowsMotion ? StrandMotion.breathe : nil, value: pulsing)
                 .position(p)
-            // The now dot.
+            // The now dot — `dataRecovery` green, fixed.
             Circle()
-                .fill(theme.ink)
+                .fill(theme.dataRecovery)
                 .frame(width: dotDiameter, height: dotDiameter)
                 .position(p)
         }
