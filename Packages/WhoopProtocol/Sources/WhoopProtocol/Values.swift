@@ -3,7 +3,7 @@ import Foundation
 /// Mirrors Python's heterogeneous parsed dict so values round-trip through JSON
 /// byte-identically to the golden output. Encodes/decodes as a BARE JSON scalar/array
 /// (not a tagged union), so golden.json's `parsed` values decode directly.
-public enum ParsedValue: Codable, Equatable {
+public enum ParsedValue: Codable, Equatable, Sendable {
     case int(Int)
     case double(Double)
     case string(String)

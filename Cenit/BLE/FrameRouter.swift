@@ -25,9 +25,17 @@ public final class FrameRouter {
         self.state = state
     }
 
-    /// Handle one complete frame (bytes including 0xAA SOF and the crc32 trailer).
+    /// Handle one complete frame (bytes including 0xAA SOF and the crc32 trailer). Convenience that
+    /// parses then routes; the BLE delegate hot path uses `handle(parsed:)` so each frame is parsed
+    /// exactly once and the `ParsedFrame` is reused across the live router, the clock-correlation and
+    /// the live-gesture gate (FER-183).
     public func handle(frame: [UInt8]) {
-        let parsed = parseFrame(frame, family: family)
+        handle(parsed: parseFrame(frame, family: family))
+    }
+
+    /// Route an ALREADY-parsed frame into LiveState. Same logic as `handle(frame:)` minus the parse,
+    /// so callers that already hold the `ParsedFrame` don't re-parse the same bytes.
+    public func handle(parsed: ParsedFrame) {
         guard parsed.ok else { return }
         // Reject frames that failed their checksum — never let bad bytes drive state.
         if parsed.crcOK == false { return }
@@ -109,7 +117,11 @@ public final class FrameRouter {
     /// Deliberately does NOT touch lastEvent / sync trigger / bonded / battery — those stay on the normal
     /// handle(frame:) path, so backfill UI behaviour is otherwise unchanged.
     func dispatchLiveGestureIfFresh(frame: [UInt8], now: Int = Int(Date().timeIntervalSince1970)) {
-        let parsed = parseFrame(frame, family: family)
+        dispatchLiveGestureIfFresh(parsed: parseFrame(frame, family: family), now: now)
+    }
+
+    /// Live-gesture gate for an ALREADY-parsed frame — the parse-once twin of `dispatchLiveGestureIfFresh(frame:now:)`.
+    func dispatchLiveGestureIfFresh(parsed: ParsedFrame, now: Int = Int(Date().timeIntervalSince1970)) {
         guard parsed.ok, parsed.crcOK != false else { return }
         guard parsed.typeName == "EVENT", let ev = parsed.parsed["event"]?.stringValue else { return }
         guard let ts = parsed.parsed["event_timestamp"]?.intValue, ts > 0 else { return }   // fail closed

@@ -103,8 +103,11 @@ private let utcRangeFormatter: DateFormatter = {
     return f
 }()
 
-func registerPostHooks() {
-    postHooks["realtime_data"] = { fb, frame, _, _ in
+/// Build the per-type post-hook registry. Called exactly once by `CompiledProtocol.shared` (FER-183);
+/// returns an immutable dict instead of mutating a global, so the registry can be shared race-free.
+func buildPostHooks() -> [String: PostHook] {
+    var hooks: [String: PostHook] = [:]
+    hooks["realtime_data"] = { fb, frame, _, _ in
         let rrn = u8(frame, 13) ?? 0
         var rrs: [Int] = []
         for i in 0..<rrn {
@@ -118,7 +121,7 @@ func registerPostHooks() {
         fb.parsed["rr_intervals"] = .intArray(rrs)
     }
 
-    postHooks["event"] = { fb, frame, length, schema in
+    hooks["event"] = { fb, frame, length, schema in
         let evVal = frame.count > 6 ? Int(frame[6]) : nil
         let evName = evVal.flatMap { schema.enums["EventNumber"]?[String($0)] }
         guard let length = length else { return }
@@ -155,7 +158,7 @@ func registerPostHooks() {
         }
     }
 
-    postHooks["command_response"] = { fb, frame, length, schema in
+    hooks["command_response"] = { fb, frame, length, schema in
         guard let length = length else { return }
         let payEnd = min(length, frame.count)
         guard 7 <= payEnd else { return }
@@ -215,7 +218,7 @@ func registerPostHooks() {
         }
     }
 
-    postHooks["raw_data"] = { fb, frame, length, schema in
+    hooks["raw_data"] = { fb, frame, length, schema in
         guard let length = length else { return }
         let spec = schema.packet(forType: Int(frame[4]))
         let dataLen = length - 7
@@ -289,7 +292,7 @@ func registerPostHooks() {
         }
     }
 
-    postHooks["historical_data"] = { fb, frame, length, schema in
+    hooks["historical_data"] = { fb, frame, length, schema in
         guard let length = length else { return }
         let spec = schema.packet(forType: Int(frame[4]))
         let version = Int(frame[5])
@@ -359,7 +362,7 @@ func registerPostHooks() {
         }
     }
 
-    postHooks["metadata"] = { fb, frame, length, _ in
+    hooks["metadata"] = { fb, frame, length, _ in
         guard let length = length else { return }
         let payEnd = min(length, frame.count)
         guard 7 < payEnd else { return }
@@ -377,7 +380,7 @@ func registerPostHooks() {
         }
     }
 
-    postHooks["console_logs"] = { fb, frame, length, _ in
+    hooks["console_logs"] = { fb, frame, length, _ in
         guard let length = length else { return }
         var txt = ""
         let lo = 11
@@ -391,4 +394,5 @@ func registerPostHooks() {
         // arbitrary bytes per frame as a String on the parse path. A log line is never this long.
         fb.parsed["log"] = .string(String(txt.prefix(2048)))
     }
+    return hooks
 }

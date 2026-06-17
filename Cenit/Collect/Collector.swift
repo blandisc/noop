@@ -129,8 +129,15 @@ final class Collector {
         let frames = buffer
         buffer.removeAll(keepingCapacity: true)
 
-        let parsed = frames.map { parseFrame($0) }
-        let streams = extractStreams(parsed, deviceClockRef: ref.device, wallClockRef: ref.wall)
+        // Decode is CPU-pure (`parseFrame`/`extractStreams` never touch the DB or UIKit). Run it OFF
+        // the main actor so the ~64-frame batch parse can't jank the UI (FER-183). Capturing only the
+        // two clock Ints + the Sendable `[[UInt8]]` keeps the detached closure Sendable; the schema is
+        // now loaded once into immutable shared state, so this is race-free against the live BLE parse,
+        // and `Streams` is Sendable so the result crosses back cleanly.
+        let devRef = ref.device, wallRef = ref.wall
+        let streams = await Task.detached {
+            extractStreams(frames.map { parseFrame($0) }, deviceClockRef: devRef, wallClockRef: wallRef)
+        }.value
         do {
             try await store.insert(streams, deviceId: deviceId)   // DECODED FIRST (durable)
         } catch {

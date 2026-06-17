@@ -178,6 +178,7 @@ targets:
       - CenitUnitTests
     dependencies:
       - target: Cenit
+      - package: WhoopProtocol
       - package: WhoopStore
       - package: StrandAnalytics
     settings:
