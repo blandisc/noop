@@ -52,13 +52,19 @@ public struct MetricRow: View {
 
     public var body: some View {
         HStack(spacing: 12) {
-            HStack(spacing: 6) {
-                Text(label)
-                    .font(StrandFont.body)
-                    .foregroundStyle(labelColor)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                if let flag { InlineFlagChip(flag, color: flagColor) }
+            // La etiqueta nunca se recorta ni se encoge: cuando cabe va en una línea junto a su chip;
+            // cuando una etiqueta larga lleva chip (p. ej. "Oxígeno en sangre · APPLE SALUD") el chip
+            // baja a una segunda línea, todo a tamaño completo.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 6) {
+                    Text(label).font(StrandFont.body).foregroundStyle(labelColor).lineLimit(1)
+                    if let flag { InlineFlagChip(flag, color: flagColor) }
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(label).font(StrandFont.body).foregroundStyle(labelColor)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let flag { InlineFlagChip(flag, color: flagColor) }
+                }
             }
             Spacer(minLength: 8)
             ZStack {
@@ -66,24 +72,24 @@ public struct MetricRow: View {
                     Sparkline(values: sparkline,
                               gradient: Gradient(colors: [sparkColor.opacity(0.55), sparkColor]),
                               referenceBand: referenceBand, bandColor: bandColor,
-                              lineWidth: 1.5, showsArea: false, showsHead: false, showsHover: false)
+                              lineWidth: 2.0, showsArea: false, showsHead: false, showsHover: false)
                 } else if isPlaceholder {
                     RoundedRectangle(cornerRadius: 3)
                         .fill(StrandPalette.textPrimary.opacity(0.06))
                         .frame(height: 8)
                 }
             }
-            .frame(width: 50, height: 16)
+            .frame(width: 60, height: 26)
             HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text(value).font(StrandFont.number(18)).foregroundStyle(valueColor)
+                Text(value).font(StrandFont.number(20)).foregroundStyle(valueColor)
                 if let unit {
-                    Text(unit).font(.system(size: 11)).foregroundStyle(unitColor)
+                    Text(unit).font(StrandFont.unit).foregroundStyle(unitColor)
                 }
             }
             .lineLimit(1)
-            .frame(width: 90, alignment: .trailing)
+            .frame(width: 88, alignment: .trailing)
         }
-        .padding(.vertical, 12)
+        .padding(.vertical, 15)
         .frame(maxWidth: .infinity)
     }
 }

@@ -156,7 +156,7 @@ public enum InstrumentoType {
 
     /// A moderate overline — medium (not semibold), gentler tracking than the
     /// legacy 0.8. Loud enough to label, quiet enough not to compete with data.
-    public static let overline = Font.system(size: 11, weight: .medium)
+    public static let overline = Font.system(size: 12, weight: .medium)
     /// Recommended tracking for `overline`.
     public static let overlineTracking: CGFloat = 0.6
 }

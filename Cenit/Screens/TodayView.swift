@@ -180,9 +180,9 @@ struct TodayView: View {
 
     private var iosBody: some View {
         ScrollView {
-            // Ritmo de sección más apretado que el `sectionGap` estándar (28): la pantalla apila varias
-            // secciones cortas, así que 22 comprime la columna verticalmente sin que se lean fundidas.
-            VStack(alignment: .leading, spacing: 22) {
+            // Ritmo de sección estándar (`sectionGap` = 28): con la escala grande de «Instrumento
+            // diurno» las secciones respiran y llenan la columna sin que se lean fundidas ni apretadas.
+            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                 headerBlock
                 HealthAlertBanner()
                 if repo.today?.recovery == nil {
@@ -222,12 +222,12 @@ struct TodayView: View {
                     verdictSection
                 }
                 iosMetricsSection
+                iosSourcesSection
             }
-            // Sube la columna hacia arriba: recorta el inset SUPERIOR (24 → 16) conservando los márgenes
-            // horizontal/inferior estándar, para que el héroe quede un poco más alto.
+            // Inset superior 20: el héroe queda alto pero respira; márgenes horizontal/inferior estándar.
             .padding(.horizontal, NoopMetrics.screenPadding)
             .padding(.bottom, NoopMetrics.screenPadding)
-            .padding(.top, 16)
+            .padding(.top, 20)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         // El fondo es el papel del tema (`PaperBackground` lee `\.instrumentoTheme` DENTRO del subárbol
@@ -236,12 +236,9 @@ struct TodayView: View {
         // se recolorea según la hora del día gratis.
         .background(PaperBackground())
         .instrumentoThemeByHour(solar: solarWindow)
-        // La app corre en `.dark` global (CenitApp/RootTabView), lo que pinta la barra de estado
-        // (hora, señal, batería) en CLARO — casi invisible sobre el papel de «Instrumento diurno».
-        // Hoy es una pantalla de papel claro, así que forzamos `.light` SOLO en su cuerpo: los íconos
-        // del sistema pasan a negro y ganan contraste. Los sheets/covers de abajo fijan su propio
-        // `.preferredColorScheme(.dark)`, así que conservan su apariencia oscura.
-        .preferredColorScheme(.light)
+        // El color scheme (y con él la barra de estado: Hoy = papel claro → tinta oscura) se decide
+        // en ContentView según la pestaña activa, porque `preferredColorScheme` lo resuelve el
+        // controlador raíz del WindowGroup y un valor puesto AQUÍ (dentro del TabView) no llega.
         .fullScreenCover(isPresented: $showLiveMonitor) {
             // No NavigationStack: its nav-bar scroll-edge background painted a bar over the monitor on
             // the slightest scroll. A floating "Done" pill overlays the content and never blocks it.
@@ -350,19 +347,19 @@ struct TodayView: View {
             HStack(alignment: .center, spacing: 16) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(strapSeen ? "Aún no hay lectura de hoy" : "Aún no hay lectura")
-                        .font(InstrumentoType.hero(28)).foregroundStyle(theme.ink)
+                        .font(InstrumentoType.hero(32)).foregroundStyle(theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                     Text(strapSeen
                          ? "Tu base está lista. Usa el strap esta noche y la recuperación, el esfuerzo y el sueño de la mañana aparecen al sincronizar."
                          : "Conecta tu strap WHOOP para ver la disposición, la recuperación y la frecuencia cardiaca de la mañana.")
-                        .font(StrandFont.subhead)
+                        .font(StrandFont.body)
                         .foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 8)
                 // El dial 24h vivo preside el estado vacío — el marcador de hora/sol/sueño se mantiene
                 // aunque no haya veredicto, así la pantalla nunca se ve a medio construir.
-                DiurnalDial(now: Date(), solar: solarWindow, sleep: sleepWindow, diameter: 94)
+                DiurnalDial(now: Date(), solar: solarWindow, sleep: sleepWindow, diameter: 104)
             }
             if !strapSeen {
                 // Único CTA: el «dato accionable». Texto en el papel sobre el verde del veredicto.
@@ -398,25 +395,25 @@ struct TodayView: View {
             HStack(alignment: .center, spacing: 16) {
                 VStack(alignment: .leading, spacing: 9) {
                     Text("Tu base ya está lista")
-                        .font(InstrumentoType.hero(28)).foregroundStyle(theme.ink)
+                        .font(InstrumentoType.hero(32)).foregroundStyle(theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                     // Chip de procedencia — la fuente de la base es Apple Health, dicho de frente para que
                     // «lista» nunca quede sin explicar. En tono de dato (azul de Apple Salud), AA sobre papel.
                     HStack(spacing: 6) {
-                        Image(systemName: "heart.fill").font(.system(size: 11))
-                        Text("Base · Apple Salud").font(StrandFont.caption)
+                        Image(systemName: "heart.fill").font(.system(size: 12))
+                        Text("Base · Apple Salud").font(StrandFont.subhead)
                     }
                     .foregroundStyle(theme.dataSpO2)
                     .padding(.horizontal, 9).padding(.vertical, 4)
                     .background(theme.dataSpO2.opacity(0.12), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
                     Text("Usa tu banda para sumar lo único que Apple Salud no puede: la lectura de hoy.")
-                        .font(StrandFont.subhead)
+                        .font(StrandFont.body)
                         .foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 8)
                 // El dial 24h vivo preside también este estado, igual que en emptyHero.
-                DiurnalDial(now: Date(), solar: solarWindow, sleep: sleepWindow, diameter: 94)
+                DiurnalDial(now: Date(), solar: solarWindow, sleep: sleepWindow, diameter: 104)
             }
             if !strapSeen {
                 // Único CTA: el «dato accionable». Texto en el papel sobre el verde del veredicto.
@@ -454,14 +451,14 @@ struct TodayView: View {
                 Button(action: onTap) {
                     HStack(spacing: 9) {
                         Image(systemName: "waveform.path.ecg")
-                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                            .font(StrandFont.headline).foregroundStyle(theme.inkSecondary)
                         Text("Verlo latido a latido")
-                            .font(StrandFont.subhead).fontWeight(.medium)
+                            .font(StrandFont.body).fontWeight(.medium)
                             .foregroundStyle(theme.ink)
                         Spacer(minLength: 0)
                         badge
                         Image(systemName: "chevron.right")
-                            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                     }
                     // Objetivo táctil compacto (34, bajo el ideal HIG de 44): es un renglón full-width
                     // (objetivo horizontal amplio) y una acción secundaria, recortado para matar el
@@ -481,18 +478,18 @@ struct TodayView: View {
         /// «Sin lectura» en tinta cuando el strap no está transmitiendo.
         @ViewBuilder private var badge: some View {
             if let bpm = liveBpm {
-                HStack(alignment: .firstTextBaseline, spacing: 5) {
+                // `.center`: el punto se centra ópticamente con el número (antes colgaba bajo la baseline).
+                HStack(alignment: .center, spacing: 6) {
                     Circle().fill(isLiveHR ? theme.dataHeart : theme.inkTertiary)
-                        .frame(width: 6, height: 6)
-                        .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 1 }
-                    Text("\(bpm)").font(StrandFont.number(13, weight: .semibold))
+                        .frame(width: 7, height: 7)
+                    Text("\(bpm)").font(StrandFont.number(15, weight: .semibold))
                         .foregroundStyle(theme.ink)
-                    Text("bpm").font(.system(size: 10)).foregroundStyle(theme.inkTertiary)
+                    Text("bpm").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                 }
             } else {
-                HStack(spacing: 5) {
-                    Circle().fill(theme.inkTertiary).frame(width: 6, height: 6)
-                    Text("Sin lectura").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                HStack(alignment: .center, spacing: 6) {
+                    Circle().fill(theme.inkTertiary).frame(width: 7, height: 7)
+                    Text("Sin lectura").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
                 }
             }
         }
@@ -659,10 +656,10 @@ struct TodayView: View {
             HStack(alignment: .center, spacing: 18) {
                 HStack(alignment: .firstTextBaseline, spacing: 5) {
                     if let score {
-                        Text("\(score)").instrumentoHero(76).foregroundStyle(recoveryDataColor(score))
-                        Text("/100").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        Text("\(score)").instrumentoHero(88).foregroundStyle(recoveryDataColor(score))
+                        Text("/100").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
                     } else {
-                        Text("—").instrumentoHero(76).foregroundStyle(theme.inkTertiary)
+                        Text("—").instrumentoHero(88).foregroundStyle(theme.inkTertiary)
                     }
                 }
                 // El número abre el detalle de recuperación (cómo se calcula, serie, fuente). La síntesis
@@ -805,7 +802,7 @@ struct TodayView: View {
             // `StrandPalette.textPrimary`, casi blanco, que desaparece sobre el papel claro de
             // «Instrumento diurno»). Mismo patrón overline+título+trailing, recoloreado al tema.
             HStack(alignment: .firstTextBaseline) {
-                Text("Métricas clave").font(StrandFont.title2).foregroundStyle(theme.ink)
+                Text("Métricas clave").font(StrandFont.title1).foregroundStyle(theme.ink)
                 Spacer()
                 Text("Tendencia 14 días").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
             }
@@ -908,6 +905,51 @@ struct TodayView: View {
     /// separación entre métricas se lea con más presencia sobre el papel claro.
     private var metricSeparator: some View {
         Rectangle().fill(theme.hairlineStrong).frame(height: 1)
+    }
+
+    /// Carta de Fuentes traída a Hoy (FER-164) en lenguaje «Instrumento diurno»: jerarquía REDUCIDA —
+    /// un overline callado «FUENTES» (no un título como Métricas clave) — y una fila por fuente con el
+    /// glifo en color del dato (verde WHOOP / azul Apple Salud), nombre en tinta y conteo tabular,
+    /// divididas por la misma hairline. SIN la línea de sincronización (ya vive en el header de arriba).
+    /// La `SourcesSummaryCard` compartida (macOS Today / Fuentes de datos) queda intacta. Renderiza nada
+    /// hasta que haya al menos una fuente con datos.
+    @ViewBuilder private var iosSourcesSection: some View {
+        let whoopDays = repo.days.count - repo.appleHealthDays.count
+        let ahDays    = repo.appleHealthDays.count
+        let appleWk   = workouts.filter { $0.source == "apple-health" }.count
+        if whoopDays > 0 || ahDays > 0 {
+            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+                Text("Fuentes").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                VStack(spacing: 0) {
+                    if whoopDays > 0 {
+                        sourceRow(symbol: "bolt.heart.fill", name: "WHOOP",
+                                  detail: String(localized: "\(whoopDays) días · \(repo.sleeps.count) sueños"),
+                                  tint: theme.dataRecovery)
+                    }
+                    if whoopDays > 0 && ahDays > 0 { metricSeparator }
+                    if ahDays > 0 {
+                        sourceRow(symbol: "heart.fill", name: "Apple Salud",
+                                  detail: String(localized: "\(ahDays) días · \(appleWk) entrenamientos"),
+                                  tint: theme.dataSpO2)
+                    }
+                }
+            }
+        }
+    }
+
+    /// Una fila de fuente: glifo tintado (la identidad de la fuente, único color de la fila) + nombre
+    /// en tinta + conteo tabular a la derecha. Quieta a propósito — es un pie, no compite con las métricas.
+    private func sourceRow(symbol: String, name: LocalizedStringKey, detail: String, tint: Color) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: symbol)
+                .font(StrandFont.headline)
+                .foregroundStyle(tint)
+                .frame(width: 22)
+            Text(name).font(StrandFont.body).foregroundStyle(theme.ink)
+            Spacer(minLength: 8)
+            Text(detail).font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
+        }
+        .padding(.vertical, 12)
     }
 
     /// On-device readiness for the verdict hero (same engine the macOS `readinessSection` uses).
