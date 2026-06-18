@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Limpieza interna de Hoy: misma pantalla, menos trabajo por debajo / Internal cleanup of Today: same screen, less work under the hood.**
+  **ES** — Hoy arrastraba una versión vieja y oscura de la pantalla (de antes del rediseño «Instrumento») que ya no se mostraba pero seguía en el código, y con ella una decena de consultas a la base de datos que se ejecutaban en cada actualización **sin que nada las usara**. Las quitamos: la pantalla se ve y funciona exactamente igual, pero cada refresco de Hoy hace menos trabajo en segundo plano. Cambio puramente interno, sin efecto visible.
+  **EN** — Today still carried an old, dark version of the screen (from before the "Instrumento" redesign) that no longer showed but lived on in the code — and with it a dozen database queries that ran on every refresh **with nothing reading them**. We removed it: the screen looks and behaves exactly the same, but each Today refresh does less background work. Purely internal, no visible change.
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **Detalles de accesibilidad en Hoy: pulso más fácil de tocar y un corazón que se lee mejor / Accessibility polish on Today: an easier-to-tap pulse and a more readable heart.**
   **ES** — Tres ajustes finos en Hoy. El **chip de pulso vivo** (el del bpm) ahora tiene un área tocable más grande (44pt, el mínimo de Apple) aunque se vea igual de compacto, así no se te escapa al picarlo. El **corazón de «Apoya a Cénit»** de arriba a la derecha cambió a un rojo del propio tema, que contrasta bien sobre el papel claro (antes usaba un rosa del tema oscuro que quedaba lavado). Y los **números de los tiles** ya nunca se encogen tanto como para perder contraste. Nada cambia en el uso diario; solo se ven y se tocan mejor.
   **EN** — Three fine-grained tweaks on Today. The **live-pulse chip** (the bpm one) now has a larger tap area (44pt, Apple's minimum) while looking just as compact, so it's easier to hit. The **"Support Cénit" heart** in the top-right switched to a theme red that reads well on the light paper (it used to borrow a dark-theme rose that looked washed out). And the **tile numbers** never shrink so far that they lose contrast. Nothing changes in daily use; things just read and tap better.
