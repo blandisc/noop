@@ -344,7 +344,10 @@ extension MetricInfo {
             unit: nil,
             headerTint: value == nil ? .neutral : .metric,
             bands: bands,
-            note: "Steps come from Apple Health and are not recorded by the WHOOP strap."
+            note: "Steps come from Apple Health and are not recorded by the WHOOP strap.",
+            method: Method(
+                prose: "Steps come from Apple Health — the WHOOP strap does not record them. The detail reads each day's total and smooths it into a 7-day trend, so weekday/weekend swings don't drown out the direction you're heading. Research links roughly 7,000–9,000 steps a day with lower mortality, with the benefit leveling off beyond that — there is nothing magic about exactly 10,000.",
+                citation: "Paluch et al. 2022, Lancet Public Health.")
         )
     }
 

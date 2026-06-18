@@ -28284,6 +28284,159 @@
           }
         }
       }
+    },
+    "Steps · today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Steps · today"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pasos · hoy"
+          }
+        }
+      }
+    },
+    "7-day average · %@ steps": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7-day average · %@ steps"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Promedio de 7 días · %@ pasos"
+          }
+        }
+      }
+    },
+    "Your step count for today. Steady activity — even a short walk — supports your heart, your mood and your recovery.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your step count for today. Steady activity — even a short walk — supports your heart, your mood and your recovery."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu conteo de pasos de hoy. La actividad constante —aunque sea una caminata corta— apoya tu corazón, tu ánimo y tu recuperación."
+          }
+        }
+      }
+    },
+    "Where your steps are headed this month compared with last month.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where your steps are headed this month compared with last month."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hacia dónde van tus pasos este mes comparado con el anterior."
+          }
+        }
+      }
+    },
+    "Gathering": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gathering"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reuniendo"
+          }
+        }
+      }
+    },
+    "%lld / 7 days": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld / 7 days"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld / 7 días"
+          }
+        }
+      }
+    },
+    "Connect Apple Salud and walk a few days to see your daily average and your trend.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect Apple Salud and walk a few days to see your daily average and your trend."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conecta Apple Salud y camina unos días para ver tu promedio diario y tu tendencia."
+          }
+        }
+      }
+    },
+    "Steps come from Apple Health — the WHOOP strap does not record them. The detail reads each day's total and smooths it into a 7-day trend, so weekday/weekend swings don't drown out the direction you're heading. Research links roughly 7,000–9,000 steps a day with lower mortality, with the benefit leveling off beyond that — there is nothing magic about exactly 10,000.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Steps come from Apple Health — the WHOOP strap does not record them. The detail reads each day's total and smooths it into a 7-day trend, so weekday/weekend swings don't drown out the direction you're heading. Research links roughly 7,000–9,000 steps a day with lower mortality, with the benefit leveling off beyond that — there is nothing magic about exactly 10,000."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los pasos vienen de Apple Salud — el strap WHOOP no los registra. El detalle toma el total de cada día y lo suaviza en una tendencia de 7 días, para que los altibajos entre semana y fin de semana no tapen hacia dónde vas. La investigación asocia entre 7,000 y 9,000 pasos al día con menor mortalidad, y el beneficio se aplana más allá de eso: no hay nada mágico en los 10,000 exactos."
+          }
+        }
+      }
+    },
+    "Paluch et al. 2022, Lancet Public Health.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paluch et al. 2022, Lancet Public Health."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paluch et al. 2022, Lancet Public Health."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-18 · FER-253</span>
+  <span class="tb-updated">Actualizado 2026-06-18 · FER-254</span>
 </div>
 
 <div id="wrapper">
@@ -482,8 +482,7 @@ const SCREENS = [
     nav: [
       { to: 'recovery-detail', label: 'Recuperación (héroe) → RecoveryDetailScreen «Instrumento» (FER-225)', type: 'sheet' },
       { to: 'strain-detail', label: 'Esfuerzo del día → StrainDetailScreen «Instrumento» (FER-238)', type: 'sheet' },
-      { to: 'metric-info', label: 'Tap fila con hoja clara (FC/Pasos)', type: 'sheet' },
-      { to: 'metric-detail-screen', label: 'HRV / FC reposo / Respiración / SpO₂ / Frecuencia cardíaca → MetricDetailScreen unificado (.full, sheet claro — FER-185; SpO₂ FER-252; Frecuencia cardíaca intradía FER-253)', type: 'sheet' },
+      { to: 'metric-detail-screen', label: 'HRV / FC reposo / Respiración / SpO₂ / Frecuencia cardíaca / Pasos → MetricDetailScreen unificado (.full, sheet claro — FER-185; SpO₂ FER-252; Frecuencia cardíaca intradía FER-253; Pasos FER-254)', type: 'sheet' },
       { to: 'stress', label: 'Estrés → StressDetailScreen (sheet claro «Instrumento» — FER-241)', type: 'sheet' },
       { to: 'sleep', label: 'Sueño → SleepDetailScreen (sheet claro «Instrumento» — FER-212)', type: 'sheet' },
       { to: 'workouts', label: 'Entrenamientos → WorkoutsView (sheet oscuro)', type: 'sheet' },
@@ -729,7 +728,7 @@ const SCREENS = [
   },
   {
     id: 'metric-detail-screen', x: 538, y: 3310,
-    name: 'Detalle de Métrica', desc: 'Sheet: Detalle de Métrica unificado y reutilizable (HRV/FC reposo/Respiración/SpO₂/Frecuencia cardíaca · tema claro «Instrumento» · FER-185; SpO₂ FER-252; Frecuencia cardíaca intradía FER-253)',
+    name: 'Detalle de Métrica', desc: 'Sheet: Detalle de Métrica unificado y reutilizable (HRV/FC reposo/Respiración/SpO₂/Frecuencia cardíaca/Pasos · tema claro «Instrumento» · FER-185; SpO₂ FER-252; Frecuencia cardíaca intradía FER-253; Pasos FER-254)',
     file: 'Cenit/Screens/MetricDetailScreen.swift',
     icon: '📈', color: '#2E7D6B',
     isSheet: true,
@@ -744,7 +743,8 @@ const SCREENS = [
       { label: 'SpO₂ (FER-252): valores crudos por noche + banda clínica fija 95–100% sombreada (puntos <95% en rojo) · tabla de bandas Normal/Limítrofe/Bajo con «· hoy» · «Noches bajo 95%» (conteo 30d, reemplaza consistencia) · sin baseline personal/«qué la mueve»', type: 'data' },
       { label: 'Frecuencia cardíaca (FER-253): ruta intradía — héroe = promedio del día (mín·máx + piso de reposo) · curva intradía de hoy (pico marcado + FC reposo como línea de referencia punteada) + Mín/Prom/Máx · «Tiempo en zonas · hoy» (Z1–Z5 como %FCmáx, Tanaka, vía HRZones) · sin serie diaria/tendencia/baseline', type: 'data' },
       { label: 'Frecuencia cardíaca sin lecturas hoy: héroe «—» + well «Aún no hay lecturas de hoy» (solo-strap, sin estado «sin permiso»)', type: 'empty' },
-      { label: 'Sin suficiente historial (<2): bloque de calibración «N / 7 noches»', type: 'empty' },
+      { label: 'Pasos (FER-254): héroe = conteo de HOY (no media 7d) + promedio diario 7d de contexto · bloques = selector + gráfica tendencia diaria (MA 7d) + tendencia mes-vs-mes + método · sin rango normal/consistencia/bandas clínicas (no es vital); número con separador de miles', type: 'data' },
+      { label: 'Sin suficiente historial (<2): bloque de calibración «N / 7 noches» (Pasos: «N / 7 días» + invita a conectar Apple Salud)', type: 'empty' },
       { label: 'Sin permiso / offline: muestra lo guardado (repo.displayDays; origen inyectado)', type: 'empty' },
     ],
     nav: [],
