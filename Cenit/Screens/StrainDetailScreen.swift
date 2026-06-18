@@ -54,19 +54,19 @@ struct StrainDetailScreen: View {
                 if !model.loaded {
                     loadingWell(height: 160)
                 } else {
+                    if model.series.count >= 2 {
+                        blockDivider
+                        trendBlock
+                    }
                     // The intraday curve needs a score / activity today; it's hidden when there's none.
                     if model.hasData {
                         blockDivider
                         curveBlock
                     }
-                    // Zones + method are FIXED reference (no user data invented), so they show even on a
-                    // brand-new empty screen — the hero's "—" reading is honest about the missing score.
+                    // Zones are FIXED reference (no user data invented), so they show even on a brand-new
+                    // empty screen — the hero's "—" reading is honest about the missing score.
                     blockDivider
                     zonesBlock
-                    if model.series.count >= 2 {
-                        blockDivider
-                        trendBlock
-                    }
                     // "Qué mueve tu esfuerzo" — shown whenever the screen has data; renders an honest empty
                     // state when no relationship clears the gate, instead of vanishing (FER-246).
                     if model.hasData {
@@ -75,7 +75,6 @@ struct StrainDetailScreen: View {
                     }
                     blockDivider
                     methodDisclosure
-                    if model.hasData { sourceFooter }
                 }
             }
             .padding(NoopMetrics.screenPadding)
@@ -364,16 +363,7 @@ struct StrainDetailScreen: View {
         .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    // MARK: - Source footer + wells
-
-    /// Strain is strap-only (Apple Health doesn't compute it), so the source is always the strap.
-    private var sourceFooter: some View {
-        Text("Source · your strap, on device")
-            .font(StrandFont.footnote)
-            .foregroundStyle(theme.inkTertiary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 2)
-    }
+    // MARK: - Wells
 
     private func loadingWell(height: CGFloat) -> some View {
         RoundedRectangle(cornerRadius: 12, style: .continuous)

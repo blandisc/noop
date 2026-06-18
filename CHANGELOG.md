@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Detalle de Esfuerzo: Tendencia primero, sin nota de fuente / Strain detail: Trend first, source note removed.**
+  **ES** — En la hoja de **Esfuerzo** (en Cuerpo): la sección **«Tendencia»** sube al segundo lugar (justo después del número de hoy), antes de la curva intradía y las zonas — igual que en las demás hojas de detalle. Además, desaparece la nota «fuente: tu correa, en el dispositivo» del pie de la pantalla, que no existía en ninguna otra hoja y resultaba redundante.
+  **EN** — In the **Strain** sheet (in Body): the **"Trend"** section moves up to second position (right after today's number), before the intraday curve and the zones — consistent with the rest of the detail sheets. Also removed the "source: your strap, on device" note at the bottom, which didn't appear in any other detail sheet and was redundant.
+  ([Cenit/Screens/StrainDetailScreen.swift](Cenit/Screens/StrainDetailScreen.swift))
+
 - **Detalle de Estrés: gráfica alineada, texto en español y secciones reordenadas / Stress detail: aligned chart, Spanish text, reordered sections.**
   **ES** — Tres correcciones en la hoja de Estrés (en Cuerpo): (1) las líneas de cuadrícula del eje Y ahora están **perfectamente alineadas** con las bandas de color del fondo de la gráfica; (2) la comparativa mes-a-mes («+10% vs el mes pasado») ahora aparece **en español**; (3) el bloque **«Tiempo en calma»** sube por encima de **«Qué lo mueve»**, porque el primero es más fácil de leer para quien no conoce HRV ni FC en reposo.
   **EN** — Three fixes in the Stress sheet (in Body): (1) the Y-axis grid lines are now **perfectly aligned** with the colour bands behind the chart; (2) the month-over-month comparison ("+10% vs last month") now shows **in Spanish**; (3) the **"Calm time"** block moves above **"What moves it"**, since the former is easier to read for users unfamiliar with HRV or resting HR.
