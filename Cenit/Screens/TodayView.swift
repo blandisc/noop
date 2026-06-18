@@ -357,8 +357,10 @@ struct TodayView: View {
             present = { metricSpec = .heartRate(hrTodayAvg) }
         case "steps":
             present = { metricSpec = .steps(freshSteps) }
+        case "spo2":
+            present = { metricSpec = .spo2(resolveMeasured { $0.spo2Pct }?.value) }
         default:
-            present = nil   // spo2 — no "Ver más" rich detail from Today yet (FER-252)
+            present = nil
         }
         guard let present else { return nil }
         return { pendingSeeMore = present; metricDetail = nil }

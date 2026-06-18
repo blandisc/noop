@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **La tarjeta de Oxígeno en sangre en Hoy ahora tiene botón «Ver más» / Blood-oxygen card in Today now has a "See more" button.**
+  **ES** — La tarjeta de **SpO₂** en la pantalla de Hoy ya muestra el botón «Ver más». Al tocarlo abre el detalle completo: promedio 7 días como número principal, gráfica con banda clínica 95–100%, conteo de noches por debajo del 95% y método.
+  **EN** — The **SpO₂** card on the Today screen now shows a "See more" button. Tapping it opens the full detail: 7-day average as the headline number, chart with the clinical 95–100% band, nights-below-95% count, and method.
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **La fila de Entrenamientos en Cuerpo ahora luce como las demás / The Workouts row in Body now looks like the rest.**
   **ES** — En **Cuerpo**, la fila **Entrenamientos** ya no es un número gris y plano: muestra tus **sesiones recientes** (últimos 14 días) con el mismo color de dato que las demás filas —el tono de esfuerzo, ámbar— para que la sección Actividad lea pareja. Cuando no hay sesiones recientes queda un honesto «—». Tocar la fila sigue abriendo tu lista de entrenamientos.
   **EN** — In **Body**, the **Workouts** row is no longer a flat grey number: it shows your **recent sessions** (last 14 days) in the same data colour as the rows around it — the amber effort hue — so the Activity section reads as one. With no recent sessions it shows an honest "—". Tapping the row still opens your workouts list.
