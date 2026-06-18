@@ -170,7 +170,55 @@ public enum ComparisonEngine {
         return compare(current: curVals, previous: prevVals)
     }
 
+    // MARK: - Period over period (trailing window)
+
+    /// Compare the trailing `windowDays` ending at `referenceDay` (current) against the equally-long
+    /// window immediately before it (previous), then `compare`. Unlike `monthOverMonth` this tracks the
+    /// SELECTED window: a 7-day window compares last week vs the week before, a 90-day window last quarter
+    /// vs the quarter before. Days are matched by their calendar distance from `referenceDay` (a pure
+    /// proleptic-Gregorian day number, timezone-free), so it lines up with the "yyyy-MM-dd" day strings
+    /// AnalyticsEngine emits. Within each window the values stay chronological for the slope.
+    ///
+    /// `referenceDay` must be "yyyy-MM-dd"; if it cannot be parsed both periods come back empty.
+    /// `windowDays` must be ≥ 1.
+    public static func periodOverPeriod(byDay: [(day: String, value: Double)],
+                                        windowDays: Int,
+                                        referenceDay: String) -> PeriodComparison {
+        guard windowDays >= 1, let refOrd = epochDay(of: referenceDay) else {
+            return compare(current: [], previous: [])
+        }
+        let sorted = byDay.sorted { $0.day < $1.day }
+        var curVals: [Double] = []
+        var prevVals: [Double] = []
+        for row in sorted {
+            guard let ord = epochDay(of: row.day) else { continue }
+            let delta = refOrd - ord   // 0 = referenceDay, positive = further in the past
+            if delta >= 0 && delta < windowDays {
+                curVals.append(row.value)
+            } else if delta >= windowDays && delta < 2 * windowDays {
+                prevVals.append(row.value)
+            }
+        }
+        return compare(current: curVals, previous: prevVals)
+    }
+
     // MARK: - Helpers
+
+    /// Days since 1970-01-01 for a "yyyy-MM-dd" string, via Howard Hinnant's `days_from_civil` — pure
+    /// integer arithmetic, no `Date`/timezone, so two day strings always differ by their true calendar
+    /// distance. Returns nil for an unparseable / out-of-range day. Used by `periodOverPeriod`.
+    static func epochDay(of day: String) -> Int? {
+        let parts = day.split(separator: "-", omittingEmptySubsequences: false)
+        guard parts.count >= 3,
+              let y0 = Int(parts[0]), let m = Int(parts[1]), let d = Int(parts[2]),
+              (1...12).contains(m), (1...31).contains(d) else { return nil }
+        let y = y0 - (m <= 2 ? 1 : 0)
+        let era = (y >= 0 ? y : y - 399) / 400
+        let yoe = y - era * 400                                   // [0, 399]
+        let doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1  // [0, 365]
+        let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy           // [0, 146096]
+        return era * 146097 + doe - 719468
+    }
 
     /// Median of an array (0 when empty).
     static func median(_ values: [Double]) -> Double {

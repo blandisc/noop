@@ -29127,6 +29127,244 @@
           }
         }
       }
+    },
+    "%@ vs last week": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ vs last week"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ vs la semana pasada"
+          }
+        }
+      }
+    },
+    "%@ vs last quarter": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ vs last quarter"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ vs el trimestre pasado"
+          }
+        }
+      }
+    },
+    "%@ vs the previous 6 months": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ vs the previous 6 months"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ vs el semestre pasado"
+          }
+        }
+      }
+    },
+    "%@ vs last year": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ vs last year"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ vs el año pasado"
+          }
+        }
+      }
+    },
+    "Stable this week": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stable this week"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estable esta semana"
+          }
+        }
+      }
+    },
+    "Stable this quarter": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stable this quarter"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estable este trimestre"
+          }
+        }
+      }
+    },
+    "Stable these 6 months": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stable these 6 months"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estable estos 6 meses"
+          }
+        }
+      }
+    },
+    "Stable this year": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stable this year"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estable este año"
+          }
+        }
+      }
+    },
+    "The line includes today, still in progress; the figures below use completed days only.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The line includes today, still in progress; the figures below use completed days only."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La línea incluye hoy, aún en curso; las cifras de abajo usan solo días completos."
+          }
+        }
+      }
+    },
+    "The slope is how much it rises or falls on average per day, by linear regression over the period. The percentage compares this period's average against the previous period of the same length. Average, Lowest and Highest are from the range you selected.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The slope is how much it rises or falls on average per day, by linear regression over the period. The percentage compares this period's average against the previous period of the same length. Average, Lowest and Highest are from the range you selected."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La pendiente es cuánto sube o baja en promedio por día, por regresión lineal sobre el periodo. El porcentaje compara el promedio de este periodo contra el del periodo anterior del mismo largo. Promedio, Más bajo y Más alto son del rango que seleccionaste."
+          }
+        }
+      }
+    },
+    "The line is your 7-day moving average over the period you pick. The percentage compares this period's average with the previous period of the same length. The average and range come from the range you selected.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The line is your 7-day moving average over the period you pick. The percentage compares this period's average with the previous period of the same length. The average and range come from the range you selected."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La línea es tu promedio móvil de 7 días sobre el periodo que elijas. El porcentaje compara el promedio de este periodo con el del periodo anterior del mismo largo. El promedio y el rango salen del rango que seleccionaste."
+          }
+        }
+      }
+    },
+    "The line is your 7-day moving average over the period you pick. The percentage compares this period's average with the previous period of the same length. Average, Lowest and Highest come from the range you selected.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The line is your 7-day moving average over the period you pick. The percentage compares this period's average with the previous period of the same length. Average, Lowest and Highest come from the range you selected."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La línea es tu promedio móvil de 7 días sobre el periodo que elijas. El porcentaje compara el promedio de este periodo con el del periodo anterior del mismo largo. Promedio, Más bajo y Más alto salen del rango que seleccionaste."
+          }
+        }
+      }
+    },
+    "Each point is your daily stress index. The bands behind it are the fixed Low / Moderate / High zones (0–1 / 1–2 / 2–3). The percentage compares this period's average with the previous period of the same length; Average, Lowest and Highest come from the range you selected. What matters isn't a single day — it's several days in a row drifting into a higher band.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Each point is your daily stress index. The bands behind it are the fixed Low / Moderate / High zones (0–1 / 1–2 / 2–3). The percentage compares this period's average with the previous period of the same length; Average, Lowest and Highest come from the range you selected. What matters isn't a single day — it's several days in a row drifting into a higher band."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada punto es tu índice de estrés diario. Las bandas detrás son las zonas fijas Bajo / Moderado / Alto (0–1 / 1–2 / 2–3). El porcentaje compara el promedio de este periodo con el del periodo anterior del mismo largo; Promedio, Más bajo y Más alto salen del rango que seleccionaste. Lo que importa no es un solo día, sino varios días seguidos derivando a una banda más alta."
+          }
+        }
+      }
+    },
+    "Each point is one night's deviation from your baseline. The shaded band is your own typical night-to-night swing (±1 SD around 0) — inside it is business as usual; a run of nights poking out the same side is the signal. Average and the range come from the period you pick; the chip compares this period's average with the previous period of the same length, in °C.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Each point is one night's deviation from your baseline. The shaded band is your own typical night-to-night swing (±1 SD around 0) — inside it is business as usual; a run of nights poking out the same side is the signal. Average and the range come from the period you pick; the chip compares this period's average with the previous period of the same length, in °C."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada punto es la desviación de una noche respecto a tu base. La banda sombreada es tu propio vaivén típico de noche a noche (±1 DE alrededor de 0) — dentro de ella es lo normal; varias noches seguidas saliéndose por el mismo lado son la señal. El promedio y el rango salen del periodo que elijas; el chip compara el promedio de este periodo con el del periodo anterior del mismo largo, en °C."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

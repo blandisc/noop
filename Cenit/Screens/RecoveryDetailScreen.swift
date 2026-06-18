@@ -264,10 +264,12 @@ struct RecoveryDetailScreen: View {
     private var trendBlock: some View {
         let window = makeWindow()
         let stat = ComparisonEngine.stat(window.values)
-        let mom = ComparisonEngine.monthOverMonth(byDay: model.series, referenceDay: model.series.last?.day ?? "")
+        // Compare the selected window against the equally-long window before it, not always the calendar
+        // month. `.all` has no previous period, so no chip. (FER-264)
+        let comparison = window.range.periodComparison(of: model.series)
         return InfoAccordion(
             title: "Trend",
-            explanation: "The line is your 7-day moving average over the period you pick. The percentage compares this month's average with last month's. The average and range come from the range you selected.",
+            explanation: "The line is your 7-day moving average over the period you pick. The percentage compares this period's average with the previous period of the same length. The average and range come from the range you selected.",
             accessibilityLabel: "Information about the trend",
             theme: theme
         ) {
@@ -295,8 +297,9 @@ struct RecoveryDetailScreen: View {
                     .accessibilityLabel(Text("Recovery, 7-day moving average"))
                     TrendStatSummary(
                         average: "\(Int(stat.mean.rounded()))",
-                        pctChange: mom.pctChange,
+                        pctChange: comparison?.pctChange,
                         polarity: .higherIsBetter,
+                        period: window.range.comparisonPeriod ?? .month,
                         rangeLow: "\(Int(stat.min.rounded()))",
                         rangeHigh: "\(Int(stat.max.rounded()))",
                         theme: theme

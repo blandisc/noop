@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-18 · FER-257</span>
+  <span class="tb-updated">Actualizado 2026-06-18 · FER-264</span>
 </div>
 
 <div id="wrapper">
@@ -439,12 +439,12 @@ const SCREENS = [
     file: 'Cenit/Screens/SkinTempDetailScreen.swift',
     icon: '🌡', color: '#C4631F',
     states: [
-      { label: 'Con datos: hero = última lectura (±°C, ink neutral) + tendencia diaria sobre banda ±típica + TrendStatSummary (chip mes-vs-mes en delta absoluto °C, neutral) + consistencia (SD °C)', type: 'data' },
+      { label: 'Con datos: hero = última lectura (±°C, ink neutral) + tendencia diaria sobre banda ±típica + TrendStatSummary (chip periodo-vs-periodo en delta absoluto °C, neutral — FER-264) + consistencia (SD °C)', type: 'data' },
       { label: 'Sin datos (today nil + serie vacía): hero «—» + cómo obtener datos', type: 'empty' },
       { label: 'Pocos días (<2): se ocultan tendencia/consistencia', type: 'loading' },
     ],
     nav: [],
-    components: ['InfoAccordion (ⓘ por bloque)', 'TrendChart (línea diaria + banda ±típica)', 'SegmentedPillControl', 'TrendStatSummary (modo absoluteChange — FER-256)', 'ComparisonEngine (media/rango/SD/mes-vs-mes)', 'SeriesShape (decimación)'],
+    components: ['InfoAccordion (ⓘ por bloque)', 'TrendChart (línea diaria + banda ±típica)', 'SegmentedPillControl', 'TrendStatSummary (modo absoluteChange — FER-256)', 'ComparisonEngine (media/rango/SD/periodo-vs-periodo)', 'SeriesShape (decimación)'],
   },
 
   // ── ROW 1: Actividad (y = 710) ────────────
@@ -734,7 +734,8 @@ const SCREENS = [
     icon: '📈', color: '#2E7D6B',
     isSheet: true,
     states: [
-      { label: 'Con datos (≥2 pts): media móvil 7d (Sparkline) + banda p25–p75; rango normal (Baselines.rollingMeanSD ± σ); tendencia (monthOverMonth + Prom/Mediana/Mín/Máx/σ); consistencia (CV)', type: 'data' },
+      { label: 'Con datos (≥2 pts): media móvil 7d (Sparkline) + banda p25–p75; rango normal (Baselines.rollingMeanSD ± σ); tendencia (periodo-vs-periodo del mismo largo, FER-264, + Prom/Mediana/Mín/Máx/σ); consistencia (CV)', type: 'data' },
+      { label: 'Chip de tendencia (FER-264, todas las hojas con selector): compara contra el periodo previo del MISMO largo que el seleccionado (semana/mes/trimestre/semestre/año); en «Todo» se oculta. Etiqueta vía ExploreRange.comparisonPeriod → TrendStatSummary.ComparisonPeriod', type: 'data' },
       { label: 'depth .focus (desde Hoy): foto del día — rango corto + [gráfica+banda, rango normal, método, vitales noche]', type: 'data' },
       { label: 'depth .full (desde Cuerpo): todos los bloques del spec', type: 'data' },
       { label: '«Qué la mueve» (FER-209, solo HRV/FC reposo): tendencia direccional real (sueño misma noche · esfuerzo día anterior con lag) vía CorrelationEngine; sin r ni causa + chip «tendencia, no causa»; gate ≥42 pares (~6 sem)+|r|≥0.20+p<0.05, si no clarea se oculta', type: 'data' },
@@ -744,7 +745,8 @@ const SCREENS = [
       { label: 'SpO₂ (FER-252): valores crudos por noche + banda clínica fija 95–100% sombreada (puntos <95% en rojo) · tabla de bandas Normal/Limítrofe/Bajo con «· hoy» · «Noches bajo 95%» (conteo 30d, reemplaza consistencia) · sin baseline personal/«qué la mueve»', type: 'data' },
       { label: 'Frecuencia cardíaca (FER-253): ruta intradía — héroe = promedio del día (mín·máx + piso de reposo) · curva intradía de hoy (pico marcado + FC reposo como línea de referencia punteada) + Mín/Prom/Máx · «Tiempo en zonas · hoy» (Z1–Z5 como %FCmáx, Tanaka, vía HRZones) · sin serie diaria/tendencia/baseline', type: 'data' },
       { label: 'Frecuencia cardíaca sin lecturas hoy: héroe «—» + well «Aún no hay lecturas de hoy» (solo-strap, sin estado «sin permiso»)', type: 'empty' },
-      { label: 'Pasos (FER-254): héroe = conteo de HOY (no media 7d) + promedio diario 7d de contexto · bloques = selector + gráfica tendencia diaria (MA 7d) + tendencia mes-vs-mes + método · sin rango normal/consistencia/bandas clínicas (no es vital); número con separador de miles', type: 'data' },
+      { label: 'Pasos (FER-254): héroe = conteo de HOY (no media 7d) + promedio diario 7d de contexto · bloques = selector + gráfica tendencia diaria (MA 7d) + tendencia periodo-vs-periodo + método · sin rango normal/consistencia/bandas clínicas (no es vital); número con separador de miles', type: 'data' },
+      { label: 'Pasos · día en curso (FER-264): las cifras de tendencia (rango «varió entre», promedio, comparación) EXCLUYEN el día de hoy (conteo a medias) vía spec.currentDayIncomplete + todayKey, así el límite inferior varía por periodo. El héroe y la gráfica SÍ muestran hoy; nota corta explica la posible discrepancia línea-vs-cifras', type: 'data' },
       { label: 'VO₂ máx (FER-257, dato esporádico de Apple, sparseMeasured): hero = última lectura leída contra tus pares por edad/sexo (VO2maxReference.expected) · gráfica de valores medidos crudos por meses · cambio en el periodo · nivel Bajo/Promedio/Bueno/Excelente (VO2maxReference.category) · edad cardiorrespiratoria (equivalentAge) · «por qué importa» (longevidad, Mandsager 2018/Kodama 2009) · método; ≥1 lectura basta', type: 'data' },
       { label: 'VO₂ máx sin dato (FER-257): estado vacío explicativo «Aún no hay VO₂max…» (sin gráfica) + nudge «Conectar Apple Salud» cuando no hay permiso', type: 'empty' },
       { label: 'Sin suficiente historial (<2): bloque de calibración «N / 7 noches» (Pasos: «N / 7 días» + invita a conectar Apple Salud; no aplica a VO₂max)', type: 'empty' },

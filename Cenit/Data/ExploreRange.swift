@@ -1,4 +1,6 @@
 import Foundation
+import StrandDesign
+import StrandAnalytics
 
 // MARK: - Range
 //
@@ -27,6 +29,27 @@ enum ExploreRange: Int, CaseIterable, Identifiable, Hashable {
     }
     /// Trailing days the window spans (nil = everything).
     var days: Int? { self == .all ? nil : rawValue }
+
+    /// The trend chip's comparison for `series`: this window vs the equally-long window before it. `.all`
+    /// has no previous period of the same length, so it returns nil (and the chip hides). Pass the series
+    /// already trimmed of any in-progress current day. The shared glue for every trend block. (FER-264)
+    func periodComparison(of series: [(day: String, value: Double)]) -> PeriodComparison? {
+        days.map { ComparisonEngine.periodOverPeriod(byDay: series, windowDays: $0,
+                                                     referenceDay: series.last?.day ?? "") }
+    }
+
+    /// The period the trend chip compares against — its trailing window vs the equally-long window before
+    /// it. `.all` has no previous period of the same length, so it returns nil and the chip hides. (FER-264)
+    var comparisonPeriod: TrendStatSummary.ComparisonPeriod? {
+        switch self {
+        case .week:    return .week
+        case .month:   return .month
+        case .quarter: return .quarter
+        case .half:    return .halfYear
+        case .year:    return .year
+        case .all:     return nil
+        }
+    }
 
     /// Ascending order of every range, the basis for the auto-expand search.
     private static let ascending: [ExploreRange] = [.week, .month, .quarter, .half, .year, .all]

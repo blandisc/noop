@@ -126,13 +126,15 @@ struct SkinTempDetailScreen: View {
     private var trendBlock: some View {
         let window = makeWindow()
         let stat = ComparisonEngine.stat(window.values)
-        let mom = ComparisonEngine.monthOverMonth(byDay: model.series, referenceDay: model.series.last?.day ?? "")
-        // Absolute °C delta vs last month — and only when there IS a previous month to compare against
-        // (mom.previous.n > 0). A percentage would be unstable on a near-zero mean, so we never pass one.
-        let momDelta: Double? = mom.previous.n > 0 ? mom.delta : nil
+        // Compare the selected window against the equally-long window before it, not always the calendar
+        // month. `.all` has no previous period, so no chip. (FER-264)
+        let comparison = window.range.periodComparison(of: model.series)
+        // Absolute °C delta vs the previous period — and only when there IS one (previous.n > 0). A
+        // percentage would be unstable on a near-zero mean, so we never pass one.
+        let periodDelta: Double? = (comparison?.previous.n ?? 0) > 0 ? comparison?.delta : nil
         return InfoAccordion(
             title: "Trend",
-            explanation: "Each point is one night's deviation from your baseline. The shaded band is your own typical night-to-night swing (±1 SD around 0) — inside it is business as usual; a run of nights poking out the same side is the signal. Average and the range come from the period you pick; the chip compares this month's average with last month's, in °C.",
+            explanation: "Each point is one night's deviation from your baseline. The shaded band is your own typical night-to-night swing (±1 SD around 0) — inside it is business as usual; a run of nights poking out the same side is the signal. Average and the range come from the period you pick; the chip compares this period's average with the previous period of the same length, in °C.",
             accessibilityLabel: "Information about the skin temperature trend",
             theme: theme
         ) {
@@ -149,8 +151,9 @@ struct SkinTempDetailScreen: View {
                         average: fmt(stat.mean),
                         unit: "°C",
                         pctChange: nil,
-                        absoluteChange: momDelta,
+                        absoluteChange: periodDelta,
                         polarity: .neutral,
+                        period: window.range.comparisonPeriod ?? .month,
                         rangeLow: fmt(stat.min),
                         rangeHigh: "\(fmt(stat.max)) °C",
                         theme: theme)

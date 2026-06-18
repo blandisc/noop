@@ -121,4 +121,55 @@ final class ComparisonEngineTests: XCTestCase {
         XCTAssertEqual(c.current.n, 0)
         XCTAssertEqual(c.previous.n, 0)
     }
+
+    // MARK: - Period over period
+
+    func testPeriodOverPeriodWeekWindowSplitsTrailingTwoWeeks() {
+        // referenceDay = 2026-03-14. Current week = the 7 days 03-08…03-14; previous = 03-01…03-07.
+        let byDay: [(day: String, value: Double)] = [
+            ("2026-03-01", 10), ("2026-03-02", 10), ("2026-03-03", 10), ("2026-03-04", 10),
+            ("2026-03-05", 10), ("2026-03-06", 10), ("2026-03-07", 10),                       // previous: 7×10
+            ("2026-03-08", 20), ("2026-03-09", 20), ("2026-03-10", 20), ("2026-03-11", 20),
+            ("2026-03-12", 20), ("2026-03-13", 20), ("2026-03-14", 20),                       // current: 7×20
+            ("2026-02-25", 99),   // older than both windows → ignored
+        ]
+        let c = ComparisonEngine.periodOverPeriod(byDay: byDay, windowDays: 7, referenceDay: "2026-03-14")
+        XCTAssertEqual(c.current.n, 7)
+        XCTAssertEqual(c.previous.n, 7)
+        XCTAssertEqual(c.current.mean, 20.0, accuracy: 1e-9)
+        XCTAssertEqual(c.previous.mean, 10.0, accuracy: 1e-9)
+        XCTAssertEqual(c.pctChange ?? .nan, 100.0, accuracy: 1e-9)
+        XCTAssertEqual(c.direction, 1)
+    }
+
+    func testPeriodOverPeriodCrossesMonthBoundaryByCalendarDistance() {
+        // A 30-day window ending 2026-03-10 reaches back to 2026-02-09 (current), prior 30 to 2026-01-10.
+        let byDay: [(day: String, value: Double)] = [
+            ("2026-02-09", 4), ("2026-03-10", 8),   // both in the current 30-day window
+            ("2026-01-20", 2),                       // in the previous 30-day window
+            ("2026-01-01", 99),                      // older → ignored
+        ]
+        let c = ComparisonEngine.periodOverPeriod(byDay: byDay, windowDays: 30, referenceDay: "2026-03-10")
+        XCTAssertEqual(c.current.n, 2)             // 02-09 and 03-10
+        XCTAssertEqual(c.previous.n, 1)            // 01-20
+        XCTAssertEqual(c.current.mean, 6.0, accuracy: 1e-9)
+        XCTAssertEqual(c.previous.mean, 2.0, accuracy: 1e-9)
+    }
+
+    func testPeriodOverPeriodEmptyPreviousGivesNilPct() {
+        let byDay: [(day: String, value: Double)] = [("2026-03-13", 5), ("2026-03-14", 5)]
+        let c = ComparisonEngine.periodOverPeriod(byDay: byDay, windowDays: 7, referenceDay: "2026-03-14")
+        XCTAssertEqual(c.current.n, 2)
+        XCTAssertEqual(c.previous.n, 0)
+        XCTAssertNil(c.pctChange)
+        XCTAssertEqual(c.direction, 0)
+    }
+
+    func testEpochDayConsecutiveDaysDifferByOne() {
+        XCTAssertEqual(ComparisonEngine.epochDay(of: "2026-03-01")! - ComparisonEngine.epochDay(of: "2026-02-28")!, 1)
+        // 2024 is a leap year → Feb has 29 days.
+        XCTAssertEqual(ComparisonEngine.epochDay(of: "2024-03-01")! - ComparisonEngine.epochDay(of: "2024-02-29")!, 1)
+        XCTAssertEqual(ComparisonEngine.epochDay(of: "1970-01-01"), 0)
+        XCTAssertNil(ComparisonEngine.epochDay(of: "not-a-date"))
+    }
 }

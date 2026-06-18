@@ -224,10 +224,12 @@ struct StrainDetailScreen: View {
     private var trendBlock: some View {
         let window = makeWindow()
         let stat = ComparisonEngine.stat(window.values)
-        let mom = ComparisonEngine.monthOverMonth(byDay: model.series, referenceDay: model.series.last?.day ?? "")
+        // Compare the selected window against the equally-long window before it, not always the calendar
+        // month. `.all` has no previous period, so no chip. (FER-264)
+        let comparison = window.range.periodComparison(of: model.series)
         return InfoAccordion(
             title: "Trend",
-            explanation: "The line is your 7-day moving average over the period you pick. The percentage compares this month's average with last month's. Average, Lowest and Highest come from the range you selected.",
+            explanation: "The line is your 7-day moving average over the period you pick. The percentage compares this period's average with the previous period of the same length. Average, Lowest and Highest come from the range you selected.",
             accessibilityLabel: "Information about the trend",
             theme: theme
         ) {
@@ -255,8 +257,9 @@ struct StrainDetailScreen: View {
                     .accessibilityLabel(Text("Day strain, 7-day moving average"))
                     TrendStatSummary(
                         average: fmt(stat.mean),
-                        pctChange: mom.pctChange,
+                        pctChange: comparison?.pctChange,
                         polarity: .neutral,
+                        period: window.range.comparisonPeriod ?? .month,
                         rangeLow: fmt(stat.min),
                         rangeHigh: fmt(stat.max),
                         theme: theme

@@ -51,6 +51,10 @@ struct MetricDetailScreen: View {
     var hrMax: Double = 0
     /// Last night's resting HR (bpm), drawn as a quiet reference line under the day's curve. (FER-253)
     var restingHR: Double? = nil
+    /// Today's local day key ("yyyy-MM-dd"), passed by the caller (it uses `Repository.localDayKey`, which
+    /// the DB-free screen can't reproduce timezone-for-timezone). Lets the trend figures drop the
+    /// in-progress current day for a cumulative metric (steps). nil → nothing is dropped. (FER-264)
+    var todayKey: String? = nil
 
     enum Depth { case focus, full }
 
@@ -493,6 +497,14 @@ struct MetricDetailScreen: View {
                 Text(chartCaption(window.range))
                     .font(StrandFont.footnote)
                     .foregroundStyle(theme.inkTertiary)
+                if spec.currentDayIncomplete {
+                    // The line includes today (still adding up), so its right edge can dip; the figures
+                    // below read only completed days — so the two may not line up exactly. (FER-264)
+                    Text("The line includes today, still in progress; the figures below use completed days only.")
+                        .font(StrandFont.footnote)
+                        .foregroundStyle(theme.inkTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             } else if let only = window.values.first {
                 // A single point in the window: no line. Show the value plainly with a note.
                 VStack(alignment: .leading, spacing: 6) {
@@ -949,14 +961,17 @@ struct MetricDetailScreen: View {
     // MARK: - Trend (month over month)
 
     @ViewBuilder private func trendBlock(_ window: Window) -> some View {
-        let mom = ComparisonEngine.monthOverMonth(byDay: series, referenceDay: series.last?.day ?? "")
-        let s = ComparisonEngine.stat(window.values)
+        // Figures read over COMPLETED days: for a running daily total (steps) drop the in-progress
+        // current day, else it's always the floor of the range and drags the average. (FER-264)
+        let s = ComparisonEngine.stat(trendStatRows(window).map(\.value))
+        // Compare the selected window against the equally-long window before it (not always the calendar
+        // month), over completed days. `.all` has no previous period, so no chip. (FER-264)
+        let comparison = window.range.periodComparison(of: trendComparisonSeries)
         if s.n > 0 {
-            // The ⓘ discloses how the slope, the month-over-month % and the stats are computed (FER-220);
-            // the block's overline + headline + stat strip + plain-language reading (FER-216) are unchanged.
+            // The ⓘ discloses how the slope, the period comparison and the stats are computed (FER-220).
             InfoAccordion(
                 title: "Trend",
-                explanation: "The slope is how much it rises or falls on average per day, by linear regression over the period. The percentage vs last month compares this month's average against the previous one. Average, Lowest and Highest are from the range you selected.",
+                explanation: "The slope is how much it rises or falls on average per day, by linear regression over the period. The percentage compares this period's average against the previous period of the same length. Average, Lowest and Highest are from the range you selected.",
                 accessibilityLabel: "Information about the trend",
                 theme: theme
             ) {
@@ -964,8 +979,9 @@ struct MetricDetailScreen: View {
                     TrendStatSummary(
                         average: fmt(s.mean),
                         unit: unit.isEmpty ? nil : unit,
-                        pctChange: mom.pctChange,
+                        pctChange: comparison?.pctChange,
                         polarity: trendPolarity,
+                        period: window.range.comparisonPeriod ?? .month,
                         rangeLow: fmt(s.min),
                         rangeHigh: unit.isEmpty ? fmt(s.max) : "\(fmt(s.max)) \(unit)",
                         theme: theme
@@ -979,6 +995,24 @@ struct MetricDetailScreen: View {
                 }
             }
         }
+    }
+
+    /// True when the latest series point is TODAY and this metric's day is still accumulating (steps) —
+    /// then the trend figures exclude it so they read over completed days only. (FER-264)
+    private var dropsIncompleteToday: Bool {
+        spec.currentDayIncomplete && todayKey != nil && series.last?.day == todayKey
+    }
+
+    /// The window's rows used for the range/average, with the in-progress current day removed for a
+    /// cumulative metric. (FER-264)
+    private func trendStatRows(_ window: Window) -> [(day: String, value: Double)] {
+        dropsIncompleteToday ? window.rows.filter { $0.day != todayKey } : window.rows
+    }
+
+    /// The full series the period comparison splits, with the in-progress current day removed for a
+    /// cumulative metric (so "this period" and "the previous period" are both completed-day means). (FER-264)
+    private var trendComparisonSeries: [(day: String, value: Double)] {
+        dropsIncompleteToday ? series.filter { $0.day != todayKey } : series
     }
 
     /// Whether a rise is good for this metric, from the catalog's `higherIsBetter` — drives the trend

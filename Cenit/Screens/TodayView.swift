@@ -292,7 +292,8 @@ struct TodayView: View {
                         : nil,
                     intradayCurveLoader: spec.blocks.contains(.intradayCurve) ? { hrPoints } : nil,
                     hrMax: Double(model.profile.hrMax),
-                    restingHR: resolveMeasured { $0.restingHr.map(Double.init) }?.value
+                    restingHR: resolveMeasured { $0.restingHr.map(Double.init) }?.value,
+                    todayKey: Repository.localDayKey(Date())
                 )
             }
     }
