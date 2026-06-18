@@ -173,7 +173,7 @@ struct StressDetailScreen: View {
                 }
                 if window.values.count > 1 {
                     stressChart(window)
-                    Text(trendHeadline(mom))
+                    Text(verbatim: trendHeadline(mom))
                         .font(StrandFont.bodyNumber)
                         .foregroundStyle(theme.ink)
                     statStrip(stat)
@@ -184,38 +184,44 @@ struct StressDetailScreen: View {
         }
     }
 
-    /// The daily 0–3 line over the three fixed band zones. The band backdrop is a quiet tint behind the
-    /// plot (inset for the date axis at the bottom) — red on top, amber in the middle, green at the base —
-    /// so the line reads against its bands. Color only as a faint backdrop; the line carries the datum.
+    /// The daily 0–3 line over the three fixed band zones (Low / Moderate / High). The zones are drawn by
+    /// `TrendChart`'s NATIVE bands (FER-244) — aligned to the real plot via the ChartProxy, with explicit
+    /// Y ticks at 0/1/2/3 — so the line, the band bracket and the left axis all share one coordinate space.
+    /// (The old hand-rolled `GeometryReader` backdrop was full-bleed and ignored the chart's Y-axis gutter,
+    /// so the bands sat offset from the axis and the greedy reader squeezed the headline copy below. FER-247)
     private func stressChart(_ window: Window) -> some View {
-        ZStack {
-            GeometryReader { geo in
-                let h = geo.size.height
-                let axis: CGFloat = NoopMetrics.chartXLabelBand  // must match TrendChart's own startPadding
-                let plot = max(0, h - axis)
-                VStack(spacing: 0) {
-                    Rectangle().fill(theme.critical).opacity(0.07)
-                    Rectangle().fill(theme.warning).opacity(0.08)
-                    Rectangle().fill(theme.verdict).opacity(0.08)
-                }
-                .frame(height: plot)
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            }
-            TrendChart(
-                points: Self.decimatedPoints(rows: window.rows, maxPoints: 80),
-                gradient: Gradient(colors: [theme.inkSecondary.opacity(0.5), theme.inkSecondary]),
-                valueRange: 0...3,
-                showsArea: false,
-                height: 200,
-                showsHover: true,
-                valueFormat: { String(format: "%.1f", $0) },
-                axisLabelColor: theme.inkTertiary,
-                gridLineColor: theme.hairline
-            )
-            .accessibilityElement()
-            .accessibilityLabel(Text("Daily stress index, 0 to 3"))
-        }
-        .frame(height: 200)
+        let pts = Self.decimatedPoints(rows: window.rows, maxPoints: 80)
+        let last = pts.last?.value ?? window.values.last ?? 0
+        return TrendChart(
+            points: pts,
+            gradient: Gradient(colors: [theme.inkSecondary.opacity(0.5), theme.inkSecondary]),
+            valueRange: 0...3,
+            showsArea: false,
+            height: 200,
+            showsHover: true,
+            valueFormat: { String(format: "%.1f", $0) },
+            axisLabelColor: theme.inkTertiary,
+            gridLineColor: theme.hairline,
+            bands: stressBands(activeValue: last),
+            bandColor: bandColor(band(forValue: last)),
+            yAxisValues: [0, 1, 2, 3]
+        )
+        .accessibilityElement()
+        .accessibilityLabel(Text("Daily stress index, 0 to 3"))
+    }
+
+    /// The three fixed stress zones as `TrendBand`s, with the one holding `activeValue` shaded as the bracket.
+    private func stressBands(activeValue v: Double) -> [TrendBand] {
+        [
+            TrendBand(label: "Low", lower: nil, upper: 1, isActive: v < 1),
+            TrendBand(label: "Moderate", lower: 1, upper: 2, isActive: v >= 1 && v < 2),
+            TrendBand(label: "High", lower: 2, upper: nil, isActive: v >= 2),
+        ]
+    }
+
+    /// Map a 0–3 value to its band (mirrors the model's fixed 0–1 / 1–2 / 2–3 thresholds).
+    private func band(forValue v: Double) -> StressBand {
+        v < 1 ? .low : (v < 2 ? .medium : .high)
     }
 
     /// Three statistics over the selected window — Average · Lowest · Highest — mirroring the siblings.
@@ -237,14 +243,15 @@ struct StressDetailScreen: View {
         }
     }
 
-    private func trendHeadline(_ mom: PeriodComparison) -> LocalizedStringKey {
-        guard let pct = mom.pctChange, abs(pct) >= 1 else { return "Stable this month" }
+    /// Resolve the localized headline to a plain `String` (rendered via `Text(verbatim:)`), instead of
+    /// handing an interpolated `LocalizedStringKey` to `Text`: building the signed percentage into the key
+    /// at the View layer was resolving to a blank line on device. `String(localized:)` looks up the same
+    /// "%@ vs last month" key explicitly and reliably. (FER-247)
+    private func trendHeadline(_ mom: PeriodComparison) -> String {
+        guard let pct = mom.pctChange, abs(pct) >= 1 else { return String(localized: "Stable this month") }
         let v = Int(abs(pct).rounded())
-        // Build the signed percentage as a String so the LocalizedStringKey key becomes
-        // "%@ vs last month" (String arg → %@), which has an xcstrings translation.
-        // The previous "+%lld% vs last month" key (Int arg + literal %) didn't match reliably. (FER-247)
         let pctStr = pct >= 0 ? "+\(v)%" : "−\(v)%"
-        return "\(pctStr) vs last month"
+        return String(localized: "\(pctStr) vs last month")
     }
 
     // MARK: - 3. Rango normal — bandas UNIVERSALES (no baseline personal)
