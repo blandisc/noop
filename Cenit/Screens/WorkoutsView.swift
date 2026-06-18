@@ -70,7 +70,7 @@ struct WorkoutsView: View {
             WorkoutDetailScreen(theme: theme, row: row, onChange: { await reload() })
         }
         .sheet(item: $sheet) { target in
-            ManualWorkoutSheet(editing: target.editing) { row, replacing in
+            ManualWorkoutSheet(editing: target.editing, theme: theme) { row, replacing in
                 Task { await repo.saveManualWorkout(row, replacing: replacing); await reload() }
             }
         }
