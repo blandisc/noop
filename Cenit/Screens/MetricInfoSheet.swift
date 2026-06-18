@@ -400,7 +400,10 @@ extension MetricInfo {
             unit: String(localized: "bpm"),
             headerTint: avgBpm == nil ? .neutral : .metric,
             bands: [],
-            note: nil
+            note: nil,
+            method: Method(
+                prose: "We average your heart rate in 5-minute buckets across the day, from midnight. Your resting heart rate — the low while you sleep — is its own metric. The zones split the day by how hard your heart worked, as a percentage of your estimated maximum heart rate (zone 1 is 50–60%, zone 5 is 90–100%).",
+                citation: "Max HR estimated by Tanaka et al. (2001): 208 − 0.7 × age.")
         )
     }
 

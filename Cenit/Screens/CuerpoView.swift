@@ -187,7 +187,10 @@ private struct CuerpoLanding: View {
                 nightVitalsLoader: spec.blocks.contains(.nightVitals) ? { await loadNightVitals() } : nil,
                 whatMovesItLoader: spec.blocks.contains(.whatMovesIt)
                     ? { whatMovesItFindings(for: spec.descriptor.key) }
-                    : nil
+                    : nil,
+                intradayCurveLoader: spec.blocks.contains(.intradayCurve) ? { hrPoints } : nil,
+                hrMax: Double(model.profile.hrMax),
+                restingHR: resolveMeasured { $0.restingHr.map(Double.init) }?.value
             )
         }
         .sheet(item: $recoveryDetail) { item in
@@ -409,7 +412,7 @@ private struct CuerpoLanding: View {
         let avg = hrTodayAvg
         return metricRow("Heart Rate", value: avg.map { "\($0)" }, unit: String(localized: "bpm"),
                          color: theme.dataHeart, sparkKey: "_none") {
-            metricInfo = .heartRate(avgBpm: avg)
+            metricSpec = .heartRate(avg)
         }
     }
 

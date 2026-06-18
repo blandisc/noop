@@ -289,7 +289,10 @@ struct TodayView: View {
                     nightVitalsLoader: spec.blocks.contains(.nightVitals) ? { await loadNightVitals() } : nil,
                     whatMovesItLoader: spec.blocks.contains(.whatMovesIt)
                         ? { whatMovesItFindings(for: spec.descriptor.key) }
-                        : nil
+                        : nil,
+                    intradayCurveLoader: spec.blocks.contains(.intradayCurve) ? { hrPoints } : nil,
+                    hrMax: Double(model.profile.hrMax),
+                    restingHR: resolveMeasured { $0.restingHr.map(Double.init) }?.value
                 )
             }
     }
@@ -349,8 +352,10 @@ struct TodayView: View {
         case "rhr":
             present = { metricSpec = .restingHR(resolveMeasured { $0.restingHr.map(Double.init) }
                 .map { Int($0.value.rounded()) }) }
+        case "heart_rate":
+            present = { metricSpec = .heartRate(hrTodayAvg) }
         default:
-            present = nil   // spo2 / heart_rate / steps — no rich detail destination yet (FER-252/253/254)
+            present = nil   // spo2 / steps — no "Ver más" rich detail from Today yet (FER-252/254)
         }
         guard let present else { return nil }
         return { pendingSeeMore = present; metricDetail = nil }

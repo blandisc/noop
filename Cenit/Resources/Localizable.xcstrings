@@ -27416,6 +27416,380 @@
           }
         }
       }
+    },
+    "Heart rate · today": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Herzfrequenz · heute"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heart rate · today"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frecuencia cardiaca · hoy"
+          }
+        }
+      }
+    },
+    "Average today · min %@ · max %@ bpm · resting %lld": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heute im Schnitt · min. %@ · max. %@ bpm · Ruhe %lld"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Average today · min %@ · max %@ bpm · resting %lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Promedio de hoy · mín %@ · máx %@ bpm · reposo %lld"
+          }
+        }
+      }
+    },
+    "Average today · min %@ · max %@ bpm": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heute im Schnitt · min. %@ · max. %@ bpm"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Average today · min %@ · max %@ bpm"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Promedio de hoy · mín %@ · máx %@ bpm"
+          }
+        }
+      }
+    },
+    "Your heart rate across the day, in 5-minute averages. Your resting heart rate — the low while you sleep — is its own metric.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Herzfrequenz über den Tag, in 5-Minuten-Mittelwerten. Deine Ruheherzfrequenz – der Tiefpunkt im Schlaf – ist eine eigene Kennzahl."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your heart rate across the day, in 5-minute averages. Your resting heart rate — the low while you sleep — is its own metric."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu frecuencia cardiaca a lo largo del día, en promedios de 5 minutos. Tu frecuencia en reposo —la más baja mientras duermes— es una métrica aparte."
+          }
+        }
+      }
+    },
+    "Today's heart rate, 5-minute averages": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Herzfrequenz heute, 5-Minuten-Mittelwerte"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today's heart rate, 5-minute averages"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frecuencia cardiaca de hoy, promedios de 5 minutos"
+          }
+        }
+      }
+    },
+    "Peak %lld bpm · %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spitze %lld bpm · %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peak %lld bpm · %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pico %lld bpm · %@"
+          }
+        }
+      }
+    },
+    "Resting %lld": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ruhe %lld"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resting %lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reposo %lld"
+          }
+        }
+      }
+    },
+    "Time in zones · today": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeit in Zonen · heute"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time in zones · today"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiempo en zonas · hoy"
+          }
+        }
+      }
+    },
+    "min elevated (zone 3+)": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Min. erhöht (Zone 3+)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "min elevated (zone 3+)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "min elevado (zona 3+)"
+          }
+        }
+      }
+    },
+    "Zone 1 · very light": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zone 1 · sehr leicht"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zone 1 · very light"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zona 1 · muy ligero"
+          }
+        }
+      }
+    },
+    "Zone 2 · light": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zone 2 · leicht"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zone 2 · light"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zona 2 · ligero"
+          }
+        }
+      }
+    },
+    "Zone 3 · moderate": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zone 3 · moderat"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zone 3 · moderate"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zona 3 · moderado"
+          }
+        }
+      }
+    },
+    "Zone 4 · hard": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zone 4 · hart"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zone 4 · hard"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zona 4 · fuerte"
+          }
+        }
+      }
+    },
+    "Zone 5 · max": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zone 5 · maximal"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zone 5 · max"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zona 5 · máximo"
+          }
+        }
+      }
+    },
+    "Zones as a percentage of your max heart rate (%lld bpm, Tanaka). The rest of the day you were resting or very light.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zonen als Prozentsatz deiner maximalen Herzfrequenz (%lld bpm, Tanaka). Den Rest des Tages warst du in Ruhe oder sehr leicht."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zones as a percentage of your max heart rate (%lld bpm, Tanaka). The rest of the day you were resting or very light."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zonas como porcentaje de tu frecuencia cardiaca máxima (%lld bpm, Tanaka). El resto del día estuviste en reposo o muy ligero."
+          }
+        }
+      }
+    },
+    "We average your heart rate in 5-minute buckets across the day, from midnight. Your resting heart rate — the low while you sleep — is its own metric. The zones split the day by how hard your heart worked, as a percentage of your estimated maximum heart rate (zone 1 is 50–60%, zone 5 is 90–100%).": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wir mitteln deine Herzfrequenz über den Tag in 5-Minuten-Abschnitten, ab Mitternacht. Deine Ruheherzfrequenz – der Tiefpunkt im Schlaf – ist eine eigene Kennzahl. Die Zonen teilen den Tag danach auf, wie stark dein Herz gearbeitet hat, als Prozentsatz deiner geschätzten maximalen Herzfrequenz (Zone 1 ist 50–60 %, Zone 5 ist 90–100 %)."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We average your heart rate in 5-minute buckets across the day, from midnight. Your resting heart rate — the low while you sleep — is its own metric. The zones split the day by how hard your heart worked, as a percentage of your estimated maximum heart rate (zone 1 is 50–60%, zone 5 is 90–100%)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Promediamos tu frecuencia cardiaca en tramos de 5 minutos a lo largo del día, desde medianoche. Tu frecuencia en reposo —la más baja mientras duermes— es una métrica aparte. Las zonas dividen el día según qué tan fuerte trabajó tu corazón, como porcentaje de tu frecuencia cardiaca máxima estimada (la zona 1 es 50–60%, la zona 5 es 90–100%)."
+          }
+        }
+      }
+    },
+    "Max HR estimated by Tanaka et al. (2001): 208 − 0.7 × age.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maximale HF geschätzt nach Tanaka et al. (2001): 208 − 0,7 × Alter."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Max HR estimated by Tanaka et al. (2001): 208 − 0.7 × age."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FC máxima estimada con Tanaka et al. (2001): 208 − 0.7 × edad."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

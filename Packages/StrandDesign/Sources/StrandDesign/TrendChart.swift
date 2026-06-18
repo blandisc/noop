@@ -97,6 +97,13 @@ public struct TrendChart: View {
     public var alertThreshold: Double?
     /// The hue for sub-`alertThreshold` point marks. (FER-252)
     public var alertColor: Color
+    /// A dashed horizontal reference line at this value (e.g. the night's resting HR under the day's
+    /// HR curve). `nil` = no line. (FER-253)
+    public var referenceLine: Double?
+    /// The hue for the dashed reference line. (FER-253)
+    public var referenceLineColor: Color
+    /// A single point to emphasise with a larger filled dot (e.g. the day's peak HR). `nil` = none. (FER-253)
+    public var markedPoint: TrendPoint?
 
     public init(
         points: [TrendPoint],
@@ -113,7 +120,10 @@ public struct TrendChart: View {
         bandColor: Color = .clear,
         yAxisValues: [Double]? = nil,
         alertThreshold: Double? = nil,
-        alertColor: Color = .clear
+        alertColor: Color = .clear,
+        referenceLine: Double? = nil,
+        referenceLineColor: Color = .clear,
+        markedPoint: TrendPoint? = nil
     ) {
         self.points = points.sorted { $0.date < $1.date }
         self.gradient = gradient
@@ -130,6 +140,9 @@ public struct TrendChart: View {
         self.yAxisValues = yAxisValues
         self.alertThreshold = alertThreshold
         self.alertColor = alertColor
+        self.referenceLine = referenceLine
+        self.referenceLineColor = referenceLineColor
+        self.markedPoint = markedPoint
     }
 
     /// The x-position the cursor is hovering, in chart-local coordinates.
@@ -171,6 +184,13 @@ public struct TrendChart: View {
 
     public var body: some View {
         Chart {
+            // A quiet dashed rule under the curve (e.g. the night's resting HR). Drawn first so the
+            // line/area sit on top of it. (FER-253)
+            if let ref = referenceLine {
+                RuleMark(y: .value("Reference", ref))
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                    .foregroundStyle(referenceLineColor)
+            }
             if showsArea {
                 ForEach(points) { p in
                     AreaMark(
@@ -228,6 +248,16 @@ public struct TrendChart: View {
                             : StrandPalette.sample(stops: gradient.toStops(), at: unit(p.value))
                     )
                 }
+            }
+            // A single emphasised dot at a caller-chosen point (e.g. the day's peak). Larger than the
+            // per-point dots, in the line's hue, so it reads as "this is the moment". (FER-253)
+            if let peak = markedPoint {
+                PointMark(
+                    x: .value("Date", peak.date),
+                    y: .value("Value", peak.value)
+                )
+                .symbolSize(70)
+                .foregroundStyle(StrandPalette.sample(stops: gradient.toStops(), at: unit(peak.value)))
             }
         }
         // No draw-on / interpolation animation when the data changes (switching period rebuilds the

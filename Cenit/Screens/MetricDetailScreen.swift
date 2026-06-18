@@ -41,6 +41,13 @@ struct MetricDetailScreen: View {
     /// Loads the gated directional findings for the "Qué la mueve" block (FER-209). Only used when the
     /// spec declares `.whatMovesIt`; the caller computes them from `repo.displayDays` (DB-free here).
     var whatMovesItLoader: (() async -> [WhatMovesItFinding])? = nil
+    /// Loads today's intraday HR curve (5-minute buckets). Injected only for Heart Rate (the spec
+    /// declares `.intradayCurve`); the caller reuses the same `hrPoints` the summary sheet uses. (FER-253)
+    var intradayCurveLoader: (() async -> [TrendPoint])? = nil
+    /// The user's estimated max HR (bpm), for the "time in zones" block. 0 disables zones. (FER-253)
+    var hrMax: Double = 0
+    /// Last night's resting HR (bpm), drawn as a quiet reference line under the day's curve. (FER-253)
+    var restingHR: Double? = nil
 
     enum Depth { case focus, full }
 
@@ -54,7 +61,14 @@ struct MetricDetailScreen: View {
     @State private var series: [(day: String, value: Double)] = []
     @State private var nightVitals: NightVitals = NightVitals(respiration: nil, restingHR: nil)
     @State private var whatMovesItFindings: [WhatMovesItFinding] = []
+    @State private var intradayCurve: [TrendPoint] = []
+    /// Minutes per HR zone for today, computed once when the curve loads (see `computeZoneMinutes`). (FER-253)
+    @State private var cachedZoneMinutes: [Double]? = nil
     @State private var loaded = false
+
+    /// Heart Rate routes through a separate, intraday path (today's curve at minute resolution) rather
+    /// than the daily-series machinery the vitals use. (FER-253)
+    private var isIntraday: Bool { spec.blocks.contains(.intradayCurve) }
 
     // MARK: - Depth → visible blocks
 
@@ -62,7 +76,7 @@ struct MetricDetailScreen: View {
     private var visibleBlocks: BlockSet {
         switch depth {
         case .full:  return spec.blocks
-        case .focus: return spec.blocks.intersection([.seriesChartBand, .normalRange, .method, .nightVitals])
+        case .focus: return spec.blocks.intersection([.seriesChartBand, .normalRange, .method, .nightVitals, .intradayCurve, .hrZones])
         }
     }
 
@@ -80,7 +94,11 @@ struct MetricDetailScreen: View {
             VStack(alignment: .leading, spacing: 22) {
                 hero
                 if loaded {
-                    if enoughHistory {
+                    // Heart Rate's intraday path has no "N/7 nights" calibration — each block shows its
+                    // own honest empty state (no readings yet today). (FER-253)
+                    if isIntraday {
+                        content(window)
+                    } else if enoughHistory {
                         content(window)
                     } else {
                         calibrationBlock
@@ -97,6 +115,10 @@ struct MetricDetailScreen: View {
         .modifier(SheetPaperBackground(paper: theme.paper))
         .task {
             range = defaultRange
+            if let loader = intradayCurveLoader {
+                intradayCurve = await loader()
+                cachedZoneMinutes = computeZoneMinutes()
+            }
             series = await seriesLoader()
             // Parse every day string to a Date ONCE per series (not per slice / per render). (FER-216)
             parsedSeries = series.map { ($0.day, Self.dayParser.date(from: $0.day), $0.value) }
@@ -112,6 +134,16 @@ struct MetricDetailScreen: View {
     /// The window is computed once in `body` and threaded through. (FER-216)
     @ViewBuilder private func content(_ window: Window) -> some View {
         let hasMethod = visibleBlocks.contains(.method) && spec.info.method != nil
+        // Heart Rate's intraday blocks (curve always renders something; zones only when there's
+        // elevation to report, so its divider is gated to avoid a dangling rule). (FER-253)
+        if visibleBlocks.contains(.intradayCurve) {
+            blockDivider
+            intradayBlock
+        }
+        if visibleBlocks.contains(.hrZones), let mins = cachedZoneMinutes, mins[1...].contains(where: { $0 > 0 }) {
+            blockDivider
+            hrZonesBlock(mins)
+        }
         if visibleBlocks.contains(.periodSelector) {
             blockDivider
             periodSelector(window)
@@ -216,9 +248,17 @@ struct MetricDetailScreen: View {
     /// the last reading for specs that prefer it.
     private var heroValue: Double? {
         switch spec.hero {
-        case .movingAverage7: return SeriesShape.latestMovingAverage(allValues, window: 7)
-        case .latest:         return series.last?.value
+        case .movingAverage7:  return SeriesShape.latestMovingAverage(allValues, window: 7)
+        case .latest:          return series.last?.value
+        case .intradayAverage: return intradayAverage
         }
+    }
+
+    /// The mean of today's intraday curve (the Heart Rate hero). nil when there are no readings. (FER-253)
+    private var intradayAverage: Double? {
+        let v = intradayCurve.map(\.value)
+        guard !v.isEmpty else { return nil }
+        return v.reduce(0, +) / Double(v.count)
     }
 
     /// Today's (most recent) single reading, shown as secondary context under the hero.
@@ -272,6 +312,9 @@ struct MetricDetailScreen: View {
         case ("spo2", .header):
             return "It's the average oxygen saturation read at your wrist while you sleep, over the last week. A healthy adult usually stays at 95% or above."
 
+        case ("heart_rate", .header):
+            return "Your heart rate across the day, in 5-minute averages. Your resting heart rate — the low while you sleep — is its own metric."
+
         default:
             return nil
         }
@@ -290,7 +333,12 @@ struct MetricDetailScreen: View {
                     Text(unit).font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
                 }
             }
-            if loaded, let today = todayValue {
+            if loaded, isIntraday, let context = intradayHeroContext {
+                Text(context)
+                    .font(StrandFont.subhead)
+                    .foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if loaded, !isIntraday, let today = todayValue {
                 Text(heroContext(today))
                     .font(StrandFont.subhead)
                     .foregroundStyle(theme.inkSecondary)
@@ -308,12 +356,25 @@ struct MetricDetailScreen: View {
 
     private var heroOverline: LocalizedStringKey {
         switch spec.descriptor.key {
-        case "hrv":       return "Heart rate variability · 7-day average"
-        case "rhr":       return "Resting HR · 7-day average"
-        case "resp_rate": return "Respiratory rate · 7-day average"
-        case "spo2":      return "Blood oxygen · 7-day average"
-        default:          return "7-day average"
+        case "hrv":        return "Heart rate variability · 7-day average"
+        case "rhr":        return "Resting HR · 7-day average"
+        case "resp_rate":  return "Respiratory rate · 7-day average"
+        case "spo2":       return "Blood oxygen · 7-day average"
+        case "heart_rate": return "Heart rate · today"
+        default:           return "7-day average"
         }
+    }
+
+    /// The Heart Rate hero context: today's average is the hero, so frame it with the day's range and
+    /// the night's resting floor. nil until there are at least two readings. (FER-253)
+    private var intradayHeroContext: LocalizedStringKey? {
+        let v = intradayCurve.map(\.value)
+        guard v.count > 1, let lo = v.min(), let hi = v.max() else { return nil }
+        let minS = "\(Int(lo.rounded()))", maxS = "\(Int(hi.rounded()))"
+        if let rest = restingHR {
+            return "Average today · min \(minS) · max \(maxS) bpm · resting \(Int(rest.rounded()))"
+        }
+        return "Average today · min \(minS) · max \(maxS) bpm"
     }
 
     /// "Today {v} {u} · within your normal variation" — frames the single reading against the band.
@@ -625,6 +686,202 @@ struct MetricDetailScreen: View {
             : "Isolated low nights are usually noise (altitude, a cold, sensor fit). A sustained run is worth a look with a finger pulse oximeter."
     }
 
+    // MARK: - Intraday HR curve (FER-253)
+
+    /// Today's continuous HR curve — the protagonist block for Heart Rate. Reuses the same render the
+    /// summary sheet used (BPM chart + min/avg/max), now with the day's peak marked and the night's
+    /// resting HR as a quiet dashed reference line. Empty curve → an honest "no readings yet" well.
+    @ViewBuilder private var intradayBlock: some View {
+        if intradayCurve.count > 1 {
+            let v = intradayCurve.map(\.value)
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Beats per minute").font(StrandFont.headline).foregroundStyle(theme.ink)
+                        Text("5-minute average · since midnight")
+                            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    }
+                    Spacer()
+                    if let last = v.last {
+                        Text("\(Int(last.rounded())) bpm")
+                            .font(StrandFont.bodyNumber).foregroundStyle(theme.ink)
+                    }
+                }
+                TrendChart(
+                    points: intradayCurve,
+                    gradient: chartGradient,
+                    valueRange: Self.hrRange(v, resting: restingHR),
+                    showsArea: true,
+                    height: 240,
+                    showsHover: true,
+                    valueFormat: { "\(Int($0.rounded())) \(unit)" },
+                    dateFormat: { Self.hrClock.string(from: $0) },
+                    axisLabelColor: theme.inkTertiary,
+                    gridLineColor: theme.hairline,
+                    referenceLine: restingHR,
+                    referenceLineColor: theme.inkTertiary.opacity(0.7),
+                    markedPoint: peakPoint
+                )
+                .accessibilityElement()
+                .accessibilityLabel(Text("Today's heart rate, 5-minute averages"))
+                peakRestingCaption
+                intradayFooter(v)
+            }
+        } else {
+            emptyWell(text: "No readings yet today.")
+        }
+    }
+
+    /// The peak of the day (max bpm), marked on the curve.
+    private var peakPoint: TrendPoint? { intradayCurve.max { $0.value < $1.value } }
+
+    /// "Peak {v} bpm · {time}" plus the resting reference, in the chart's two legend hues. Built once.
+    @ViewBuilder private var peakRestingCaption: some View {
+        if let peak = peakPoint {
+            HStack(spacing: 14) {
+                HStack(spacing: 5) {
+                    Circle().fill(metricHue).frame(width: 7, height: 7)
+                    Text("Peak \(Int(peak.value.rounded())) bpm · \(Self.hrClock.string(from: peak.date))")
+                        .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                }
+                if let rest = restingHR {
+                    Text("Resting \(Int(rest.rounded()))")
+                        .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                }
+            }
+        }
+    }
+
+    private func intradayFooter(_ v: [Double]) -> some View {
+        let lo = Int((v.min() ?? 0).rounded())
+        let avg = Int((v.reduce(0, +) / Double(max(v.count, 1))).rounded())
+        let hi = Int((v.max() ?? 0).rounded())
+        return HStack {
+            intradayStat("Min", "\(lo)")
+            Spacer()
+            intradayStat("Avg", "\(avg)")
+            Spacer()
+            intradayStat("Max", "\(hi)")
+        }
+    }
+
+    private func intradayStat(_ label: LocalizedStringKey, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label).textCase(.uppercase)
+                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            Text(value).font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
+        }
+    }
+
+    /// Padded HR axis so the line never sits flush against an edge; widens to include the resting
+    /// reference if it falls below the curve's floor. (mirrors MetricInfoSheet.hrRange)
+    private static func hrRange(_ v: [Double], resting: Double?) -> ClosedRange<Double> {
+        var lo = v.min() ?? 40, hi = v.max() ?? 120
+        if let r = resting { lo = Swift.min(lo, r) }
+        if hi <= lo { return (lo - 5)...(hi + 5) }
+        let span = hi - lo
+        return (lo - span * 0.12)...(hi + span * 0.12)
+    }
+
+    private static let hrClock: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "h a"; return f
+    }()
+
+    // MARK: - Time in zones · today (FER-253)
+
+    /// The five %HRmax zones (Tanaka), or nil when no max HR is configured.
+    private var zoneSet: HRZoneSet? {
+        guard hrMax > 0 else { return nil }
+        return HRZones.zones(maxHR: hrMax, source: "tanaka")
+    }
+
+    /// The dominant bucket spacing in minutes — derived from the curve so the "minutes in zone" math
+    /// doesn't hard-code the 5-minute bucket size. Gaps (no wear) aren't counted: each reading is
+    /// credited one bucket, never the gap to the next. (FER-253)
+    private var bucketMinutes: Double {
+        let ts = intradayCurve.map { $0.date.timeIntervalSince1970 }.sorted()
+        guard ts.count >= 2 else { return 5 }
+        var gaps: [Double] = []
+        for i in 1..<ts.count { let g = ts[i] - ts[i - 1]; if g > 0 { gaps.append(g) } }
+        guard !gaps.isEmpty else { return 5 }
+        gaps.sort()
+        return Swift.max(gaps[gaps.count / 2] / 60.0, 0.5)
+    }
+
+    /// Minutes in [rest, Z1, Z2, Z3, Z4, Z5] from today's curve (index 0 = below Zone 1). nil when
+    /// there's no max HR or too little curve to bucket. Computed ONCE when the curve loads (it sorts +
+    /// buckets the whole curve), then cached — the same discipline the daily path uses for
+    /// `parsedSeries`. (FER-253 / FER-216 pattern)
+    private func computeZoneMinutes() -> [Double]? {
+        guard let zs = zoneSet, intradayCurve.count > 1 else { return nil }
+        let per = bucketMinutes
+        var mins = [Double](repeating: 0, count: 6)
+        for p in intradayCurve { mins[zs.zoneNumber(forBPM: p.value)] += per }
+        return mins
+    }
+
+    private func hrZonesBlock(_ mins: [Double]) -> some View {
+        let elevated = Int((mins[3] + mins[4] + mins[5]).rounded())
+        let total = Swift.max(mins.reduce(0, +), 1)
+        return block(title: "Time in zones · today") {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("\(elevated)").instrumentoHero(30).foregroundStyle(metricHue)
+                    Text("min elevated (zone 3+)")
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                }
+                GeometryReader { geo in
+                    HStack(spacing: 0) {
+                        ForEach(0..<6, id: \.self) { i in
+                            Rectangle()
+                                .fill(zoneFill(i))
+                                .frame(width: geo.size.width * CGFloat(mins[i] / total))
+                        }
+                    }
+                }
+                .frame(height: 10)
+                .clipShape(Capsule())
+                VStack(alignment: .leading, spacing: 7) {
+                    ForEach((1...5).filter { mins[$0] >= 1 }, id: \.self) { i in
+                        HStack(spacing: 8) {
+                            Circle().fill(zoneFill(i)).frame(width: 8, height: 8)
+                            Text(zoneLabel(i)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                            Spacer()
+                            Text("\(Int(mins[i].rounded())) min")
+                                .font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
+                        }
+                    }
+                }
+                Text("Zones as a percentage of your max heart rate (\(Int(hrMax.rounded())) bpm, Tanaka). The rest of the day you were resting or very light.")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    /// Rest (below Zone 1) reads in quiet ink; the five training zones grade up the metric hue so a
+    /// harder zone reads darker. The bar segments ARE the datum, so hue is allowed here. (FER-253)
+    private func zoneFill(_ i: Int) -> Color {
+        switch i {
+        case 0:  return theme.hairlineStrong
+        case 1:  return metricHue.opacity(0.35)
+        case 2:  return metricHue.opacity(0.5)
+        case 3:  return metricHue.opacity(0.65)
+        case 4:  return metricHue.opacity(0.82)
+        default: return metricHue
+        }
+    }
+
+    private func zoneLabel(_ n: Int) -> LocalizedStringKey {
+        switch n {
+        case 1:  return "Zone 1 · very light"
+        case 2:  return "Zone 2 · light"
+        case 3:  return "Zone 3 · moderate"
+        case 4:  return "Zone 4 · hard"
+        default: return "Zone 5 · max"
+        }
+    }
+
     // MARK: - Trend (month over month)
 
     @ViewBuilder private func trendBlock(_ window: Window) -> some View {
@@ -851,6 +1108,7 @@ struct MetricDetailScreen: View {
         case "rhr":               return theme.dataHeart
         case "resp_rate":         return theme.dataSpO2
         case "spo2":              return theme.dataSpO2
+        case "heart_rate":        return theme.dataHeart
         default:                  return theme.dataRecovery
         }
     }
@@ -937,6 +1195,42 @@ private func sampleVitalSeries(base: Double, swing: Double, days: Int = 40) -> [
             depth: .full,
             seriesLoader: { sampleVitalSeries(base: 14.5, swing: 1.2) },
             nightVitalsLoader: { .init(respiration: 14.8, restingHR: 54) }
+        )
+    }
+}
+
+private func sampleHRCurve() -> [TrendPoint] {
+    let cal = Calendar(identifier: .gregorian)
+    let midnight = cal.startOfDay(for: Date())
+    return (0..<200).map { i in
+        let t = midnight.addingTimeInterval(Double(i) * 300)
+        let base = 60.0 + 26.0 * sin(Double(i) / 18.0) + Double((i * 7) % 9)
+        let spike = (i > 150 && i < 162) ? 60.0 : 0
+        return TrendPoint(date: t, value: max(48, base + spike))
+    }
+}
+
+#Preview("MetricDetailScreen — Heart Rate (full)") {
+    Color.clear.sheet(isPresented: .constant(true)) {
+        MetricDetailScreen(
+            spec: .heartRate(68),
+            depth: .full,
+            seriesLoader: { [] },
+            intradayCurveLoader: { sampleHRCurve() },
+            hrMax: 188,
+            restingHR: 52
+        )
+    }
+}
+
+#Preview("MetricDetailScreen — Heart Rate (no readings)") {
+    Color.clear.sheet(isPresented: .constant(true)) {
+        MetricDetailScreen(
+            spec: .heartRate(nil),
+            depth: .full,
+            seriesLoader: { [] },
+            intradayCurveLoader: { [] },
+            hrMax: 188
         )
     }
 }

@@ -42,6 +42,13 @@ struct BlockSet: OptionSet {
     /// Replaces `consistency` for SpO₂, where the CV is near-zero and a low-night count is the
     /// clinically legible figure. (FER-252)
     static let lowNightsCount = BlockSet(rawValue: 1 << 9)
+    /// Today's intraday HR curve (5-minute buckets) — the protagonist block for Heart Rate, with its
+    /// peak marked and the night's resting HR as a quiet reference line. Unlike the daily series the
+    /// vitals carry, this is a single day at minute resolution. (FER-253)
+    static let intradayCurve = BlockSet(rawValue: 1 << 10)
+    /// "Time in zones · today" — minutes spent in HR zones 1–5 (as % of HRmax, Tanaka), led by the
+    /// elevated total (zone 3+). Computed from the intraday curve. (FER-253)
+    static let hrZones = BlockSet(rawValue: 1 << 11)
 }
 
 /// How the hero numeral reads.
@@ -50,6 +57,8 @@ enum HeroKind {
     case movingAverage7
     /// The latest single reading.
     case latest
+    /// The average of today's intraday curve (Heart Rate) — the day's mean bpm. (FER-253)
+    case intradayAverage
 }
 
 /// A presentation descriptor for one metric in the unified Detalle de Métrica.
@@ -140,6 +149,24 @@ struct MetricDetailSpec: Identifiable {
             clinicalBands: true,
             lowThreshold: 95,
             chartDomain: 88...100
+        )
+    }
+
+    /// Heart-rate detail. Unlike the night vitals, Heart Rate has no daily series — its data is the
+    /// intraday curve of TODAY (5-minute buckets). So the hero is the day's average bpm, the protagonist
+    /// block is that curve (peak marked, resting HR as a reference line), followed by "time in zones"
+    /// and the method. No personal baseline / trend / night-vitals (none apply to a single-day curve). (FER-253)
+    static func heartRate(_ avgBpm: Int?) -> MetricDetailSpec {
+        MetricDetailSpec(
+            descriptor: MetricDescriptor(
+                key: "heart_rate", title: String(localized: "Heart Rate"), category: "Heart",
+                unit: String(localized: "bpm"), source: "my-whoop", icon: "waveform.path.ecg",
+                decimals: 0, higherIsBetter: nil),
+            info: .heartRate(avgBpm: avgBpm),
+            blocks: [.intradayCurve, .hrZones, .method],
+            hero: .intradayAverage,
+            baselineCfg: nil,
+            populationRange: nil
         )
     }
 
