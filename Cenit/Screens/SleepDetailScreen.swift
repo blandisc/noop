@@ -116,7 +116,7 @@ struct SleepDetailScreen: View {
                     Hypnogram(intervals: model.intervals,
                               height: 150,
                               showsStageAxis: true,
-                              showsHover: false,
+                              showsHover: true,   // finger-drag scrub → stage + clock range + duration (FER-234)
                               nightStart: night.onsetDate)
                 } else {
                     // Apple Health / no per-epoch timeline → proportional stacked bar.
@@ -845,7 +845,9 @@ struct SleepDetailModel {
         // local day, mirroring StressModel (FER-224) / ReadinessEngine.
         let days = days.filter { $0.day <= todayKey }
         // --- Latest night: strap session wins, else Apple Health stage minutes (FER-62). ---
-        let strap = latestStrapNight(sleeps)
+        // Respiration for the strap night comes from the latest daily metric (the session doesn't
+        // carry it), so the Respiration tile shows anoche's value instead of "—". (FER-234)
+        let strap = latestStrapNight(sleeps, respRate: days.last?.respRateBpm)
         let night: Night? = strap ?? appleHealthNight(days: days, appleHealthDays: appleHealthDays)
         let isApple = (strap == nil) && (night != nil)
         let intervals: [SleepInterval] = {
@@ -955,15 +957,18 @@ struct SleepDetailModel {
     // MARK: - Night resolution (ported from the old sleep screen)
 
     /// The most recent strap sleep, decoded into stage durations + (when on-device) its real timeline.
-    private static func latestStrapNight(_ sleeps: [CachedSleepSession]) -> Night? {
+    /// `respRate` is the night's mean respiration, taken from the matching daily metric — the cached
+    /// sleep session itself doesn't carry it, so without this the "Respiration" tile read "—" even
+    /// though the 14-day trend (sourced from `repo.days`) had data. (FER-234)
+    private static func latestStrapNight(_ sleeps: [CachedSleepSession], respRate: Double?) -> Night? {
         guard let s = sleeps.last, s.endTs > s.startTs else { return nil }
         if let stages = decodeStages(s.stagesJSON), stages.total > 0 {
             return Night(startTs: s.startTs, endTs: s.endTs, efficiency: s.efficiency,
-                         respRate: nil, stages: stages)
+                         respRate: respRate, stages: stages)
         }
         if let seg = decodeSegments(s.stagesJSON, sessionStart: s.startTs), seg.stages.total > 0 {
             return Night(startTs: s.startTs, endTs: s.endTs, efficiency: s.efficiency,
-                         respRate: nil, stages: seg.stages)
+                         respRate: respRate, stages: seg.stages)
         }
         return nil
     }

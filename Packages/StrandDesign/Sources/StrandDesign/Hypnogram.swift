@@ -146,15 +146,11 @@ public struct Hypnogram: View {
                 }
                 .animation(StrandMotion.fade, value: hoverIndex)
                 .contentShape(Rectangle())
-                .onContinuousHover(coordinateSpace: .local) { phase in
-                    guard showsHover else { return }
-                    switch phase {
-                    case .active(let location):
-                        hoverIndex = intervalIndex(atX: location.x, in: geo.size)
-                    case .ended:
-                        hoverIndex = nil
-                    }
-                }
+                // Finger-drag scrub on iOS (pointer-hover on macOS). `highPriorityGesture` wins the
+                // touch over the parent sheet's vertical ScrollView while the finger is on the band —
+                // same affordance the metric `TrendChart` uses (FER-234, mirrors its `scrubGesture`).
+                .hypnogramScrub(enabled: showsHover, size: geo.size,
+                                hoverIndex: $hoverIndex, locate: intervalIndex)
             }
             .frame(height: height)
         }
@@ -223,6 +219,36 @@ public struct Hypnogram: View {
             }
         }
         .stroke(StrandPalette.textTertiary.opacity(0.5), lineWidth: 2)
+    }
+}
+
+// MARK: - Scrub gesture (touch on iOS, pointer on macOS) — FER-234
+//
+// Mirrors `TrendChart`'s `scrubGesture`: on iOS a `highPriorityGesture(DragGesture(minimumDistance: 0))`
+// so the finger-drag wins over the parent sheet's vertical ScrollView and the tooltip appears on first
+// contact; on macOS the pointer `onContinuousHover`. `locate` maps a local x to the hovered band index.
+private extension View {
+    @ViewBuilder
+    func hypnogramScrub(enabled: Bool, size: CGSize, hoverIndex: Binding<Int?>,
+                        locate: @escaping (CGFloat, CGSize) -> Int?) -> some View {
+        #if os(iOS)
+        self.highPriorityGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { v in
+                    guard enabled else { return }
+                    hoverIndex.wrappedValue = locate(v.location.x, size)
+                }
+                .onEnded { _ in hoverIndex.wrappedValue = nil }
+        )
+        #else
+        self.onContinuousHover(coordinateSpace: .local) { phase in
+            guard enabled else { return }
+            switch phase {
+            case .active(let location): hoverIndex.wrappedValue = locate(location.x, size)
+            case .ended:                hoverIndex.wrappedValue = nil
+            }
+        }
+        #endif
     }
 }
 
