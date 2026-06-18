@@ -330,14 +330,12 @@ struct SleepDetailScreen: View {
                         showsHover: true,
                         valueFormat: { String(format: "%.1f h", $0) },
                         axisLabelColor: theme.inkTertiary,
-                        gridLineColor: theme.hairline
+                        gridLineColor: theme.hairline,
+                        bands: durationBands(pts),
+                        bandColor: theme.dataSleep
                     )
                     .accessibilityElement()
                     .accessibilityLabel(Text("Hours asleep per night, last 30 days"))
-                    Text("Each point is one night. The recommended zone for an adult is 7–9 h.")
-                        .font(StrandFont.footnote)
-                        .foregroundStyle(theme.inkTertiary)
-                        .fixedSize(horizontal: false, vertical: true)
                     durationStats(pts)
                 } else {
                     emptyWell(text: "Not enough nights yet to draw a trend.")
@@ -632,9 +630,14 @@ struct SleepDetailScreen: View {
 
     private func trendRange(_ pts: [TrendPoint]) -> ClosedRange<Double> {
         let vals = pts.map(\.value)
-        let lo = Swift.max(0, (vals.min() ?? 0) - 1)
-        let hi = (vals.max() ?? 9) + 1
+        let lo = Swift.max(0, Swift.min(vals.min() ?? 7, 7) - 1)
+        let hi = Swift.max(vals.max() ?? 9, 9) + 1
         return lo...Swift.max(hi, lo + 1)
+    }
+
+    private func durationBands(_ pts: [TrendPoint]) -> [TrendBand] {
+        let last = pts.last?.value ?? 0
+        return [TrendBand(label: "Recomendado 7–9 h", lower: 7, upper: 9, isActive: last >= 7 && last < 9)]
     }
 }
 

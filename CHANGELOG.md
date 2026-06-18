@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Detalle de Sueño: zona recomendada 7–9 h dentro de la gráfica / Sleep detail: recommended zone inside the chart.**
+  **ES** — En la hoja de **Sueño** (en Cuerpo): la zona recomendada para adultos (7–9 h) ya no es texto suelto debajo de la gráfica de tendencia. Ahora es una **banda horizontal dentro de la propia gráfica**: con relleno suave y bordes en índigo cuando tu última noche cae en la zona, o solo el label tenue cuando queda fuera. La gráfica también ajusta su escala para que la banda siempre sea visible.
+  **EN** — In the **Sleep** sheet (in Body): the recommended adult sleep range (7–9 h) is no longer a loose text line below the trend chart. It is now a **horizontal band inside the chart itself**: with a soft fill and indigo edge lines when your last night falls in the zone, or just a quiet label when it doesn't. The chart scale also adjusts to always keep the band in view.
+  ([Cenit/Screens/SleepDetailScreen.swift](Cenit/Screens/SleepDetailScreen.swift))
+
 - **Detalle de Esfuerzo: Tendencia primero, sin nota de fuente / Strain detail: Trend first, source note removed.**
   **ES** — En la hoja de **Esfuerzo** (en Cuerpo): la sección **«Tendencia»** sube al segundo lugar (justo después del número de hoy), antes de la curva intradía y las zonas — igual que en las demás hojas de detalle. Además, desaparece la nota «fuente: tu correa, en el dispositivo» del pie de la pantalla, que no existía en ninguna otra hoja y resultaba redundante.
   **EN** — In the **Strain** sheet (in Body): the **"Trend"** section moves up to second position (right after today's number), before the intraday curve and the zones — consistent with the rest of the detail sheets. Also removed the "source: your strap, on device" note at the bottom, which didn't appear in any other detail sheet and was redundant.
