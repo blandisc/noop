@@ -867,22 +867,27 @@ struct TodayView: View {
         }
     }
 
-    /// Top utility row: a compact date (the greeting is gone — the verdict greets with substance)
-    /// and the live heart-rate pill.
+    /// Top utility row: compact date only — sync status moved to the grid footer (FER-233).
     @ViewBuilder private var utilityRow: some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text(shortDate)
-                .font(StrandFont.overline)
-                .tracking(StrandFont.overlineTracking)
-                .foregroundStyle(theme.inkTertiary)
-            Spacer(minLength: NoopMetrics.space2)
-            syncMeta
+        Text(shortDate)
+            .font(StrandFont.overline)
+            .tracking(StrandFont.overlineTracking)
+            .foregroundStyle(theme.inkTertiary)
+    }
+
+    /// Spanish relative-time label used by syncMeta — keeps the rest of the app's relativeAgo intact.
+    private func relativeAgoES(_ epochSeconds: TimeInterval, now: TimeInterval) -> String {
+        let d = max(0, Int(now - epochSeconds))
+        switch d {
+        case ..<60:     return "ahora mismo"
+        case ..<3600:   return "hace \(d / 60) min"
+        case ..<86_400: return "hace \(d / 3600) h"
+        default:        return "hace \(d / 86_400) d"
         }
     }
 
-    /// Honesty line — "Synced 2 min ago · strap 87%" / "Last sync — never". Shows "Syncing strap
-    /// history…" while a history offload runs so the user gets a quiet, non-intrusive signal without
-    /// a prominent pill. Mono + tertiary in all states so it reads as quiet provenance.
+    /// Honesty line — "Sincronizado hace 2 min · strap 87%" / "Última sincronización: nunca".
+    /// Shows "Sincronizando historial…" during a history offload. Mono + tertiary in all states.
     @ViewBuilder private var syncMeta: some View {
         if live.backfilling {
             Text("Sincronizando historial…")
@@ -893,7 +898,7 @@ struct TodayView: View {
             TimelineView(.periodic(from: .now, by: 60)) { context in
                 Group {
                     if let at = live.lastSyncedAt {
-                        let rel = relativeAgo(at, now: context.date.timeIntervalSince1970)
+                        let rel = relativeAgoES(at, now: context.date.timeIntervalSince1970)
                         if let pct = live.batteryPct {
                             Text("Sincronizado \(rel) · strap \(Int(pct.rounded()))%")
                         } else {
@@ -1075,9 +1080,9 @@ struct TodayView: View {
                                      betterHigher: false, deadband: 0.1) { String(format: "%.1f", $0) }
                 )) { metricDetail = .stress(stressT) }
             }
-            // Leyenda de fuente (FER-233): caption discreto alineado a la derecha, al nivel de
-            // «Sincronizado · strap 77%». Sin fondo ni borde — solo tinta tertiary.
-            HStack {
+            // Pie de cuadrícula (FER-233): sincronización a la izquierda, leyenda de fuente a la derecha.
+            HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space2) {
+                syncMeta
                 Spacer(minLength: 0)
                 HStack(spacing: NoopMetrics.space2) {
                     Text(verbatim: "W Strap")
@@ -1089,8 +1094,8 @@ struct TodayView: View {
                 }
                 .font(StrandFont.caption)
                 .foregroundStyle(theme.inkTertiary)
+                .accessibilityHidden(true)
             }
-            .accessibilityHidden(true)
             if notConnected && anyMeasuredMissing {
                 Button { showDataSources = true } label: {
                     HStack(spacing: NoopMetrics.space2) {
