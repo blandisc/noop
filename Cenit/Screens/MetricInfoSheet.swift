@@ -35,6 +35,12 @@ struct MetricInfo: Identifiable {
         let label: LocalizedStringKey
         let range: String
         var isActive: Bool
+        /// Numeric bounds as a half-open interval [lower, upper); `nil` = open on that side. Only filled
+        /// for sleep & stress (FER-244) so their trend chart can draw the active band + count days in it;
+        /// every other metric leaves them `nil` and the chart stays band-less. Units match the chart's:
+        /// sleep in HOURS, stress in score (0–3).
+        var lower: Double? = nil
+        var upper: Double? = nil
     }
 
     /// One driver in the recovery weight breakdown: a labeled bar whose fill length shows how much
@@ -89,13 +95,15 @@ extension MetricInfo {
         let hours = totalMinutes.map { Double($0) / 60.0 }
         let bands: [Band] = [
             Band(label: "Short", range: "< 6 h",
-                 isActive: hours.map { $0 < 6 } ?? false),
+                 isActive: hours.map { $0 < 6 } ?? false, lower: nil, upper: 6),
             Band(label: "Adequate", range: "6 – 7 h",
-                 isActive: hours.map { $0 >= 6 && $0 < 7 } ?? false),
+                 isActive: hours.map { $0 >= 6 && $0 < 7 } ?? false, lower: 6, upper: 7),
+            // Half-open to match the chart's band math (TrendBand.contains): exactly 9.00 h reads as
+            // Extended in both the table and the chart's bracket, never one each. (FER-244)
             Band(label: "Optimal", range: "7 – 9 h",
-                 isActive: hours.map { $0 >= 7 && $0 <= 9 } ?? false),
+                 isActive: hours.map { $0 >= 7 && $0 < 9 } ?? false, lower: 7, upper: 9),
             Band(label: "Extended", range: "> 9 h",
-                 isActive: hours.map { $0 > 9 } ?? false),
+                 isActive: hours.map { $0 >= 9 } ?? false, lower: 9, upper: nil),
         ]
         let display: String
         if let m = totalMinutes {
@@ -342,11 +350,11 @@ extension MetricInfo {
     static func stress(_ score: Double?) -> MetricInfo {
         let bands: [Band] = [
             Band(label: "Low", range: "0 – 1",
-                 isActive: score.map { $0 < 1 } ?? false),
+                 isActive: score.map { $0 < 1 } ?? false, lower: nil, upper: 1),
             Band(label: "Medium", range: "1 – 2",
-                 isActive: score.map { $0 >= 1 && $0 < 2 } ?? false),
+                 isActive: score.map { $0 >= 1 && $0 < 2 } ?? false, lower: 1, upper: 2),
             Band(label: "High", range: "2 – 3",
-                 isActive: score.map { $0 >= 2 } ?? false),
+                 isActive: score.map { $0 >= 2 } ?? false, lower: 2, upper: nil),
         ]
         // WHOOP-style band → header tint, matching TodayView's stress tile (low green, medium amber,
         // high red). Reserved roles, never the StressView blue→amber ramp (that's its own gauge).
@@ -807,26 +815,96 @@ struct MetricInfoSheet: View {
                 .font(StrandFont.headline)
                 .foregroundStyle(theme.ink)
             if trendData.count > 1 {
-                TrendChart(
-                    points: trendData,
-                    gradient: chartGradient,
-                    valueRange: trendValueRange,
-                    showsArea: true,
-                    height: 140,
-                    showsHover: true,
-                    valueFormat: trendValueFormat,
-                    dateFormat: Self.trendDayString,
-                    axisLabelColor: theme.inkTertiary,
-                    gridLineColor: theme.hairline
-                )
-                .accessibilityElement()
-                .accessibilityLabel(Text("14-day trend"))
+                if let bt = bandedTrend {
+                    // Active-band readout: which classification today's value sits in + how many of the
+                    // recent days share it. (FER-244)
+                    HStack(spacing: 6) {
+                        Text(bt.activeLabel).foregroundStyle(bt.color)
+                        Text(verbatim: "·").foregroundStyle(theme.inkTertiary)
+                        Text("\(bt.count) of the last \(bt.total) days in this range")
+                            .foregroundStyle(theme.inkSecondary)
+                    }
+                    .font(StrandFont.subhead)
+                    TrendChart(
+                        points: bt.points,
+                        gradient: chartGradient,
+                        valueRange: bt.range,
+                        showsArea: true,
+                        height: 140,
+                        showsHover: true,
+                        valueFormat: bt.valueFormat,
+                        dateFormat: Self.trendDayString,
+                        axisLabelColor: theme.inkTertiary,
+                        gridLineColor: theme.hairline,
+                        bands: bt.bands,
+                        bandColor: bt.color,
+                        yAxisValues: bt.yTicks
+                    )
+                    .accessibilityElement()
+                    .accessibilityLabel(Text("14-day trend with classification bands"))
+                } else {
+                    TrendChart(
+                        points: trendData,
+                        gradient: chartGradient,
+                        valueRange: trendValueRange,
+                        showsArea: true,
+                        height: 140,
+                        showsHover: true,
+                        valueFormat: trendValueFormat,
+                        dateFormat: Self.trendDayString,
+                        axisLabelColor: theme.inkTertiary,
+                        gridLineColor: theme.hairline
+                    )
+                    .accessibilityElement()
+                    .accessibilityLabel(Text("14-day trend"))
+                }
             } else if trendLoading {
                 loadingWell(height: 140)
             } else {
                 emptyWell(icon: "chart.xyaxis.line", text: "No data for the last 14 days.")
             }
         }
+    }
+
+    /// The banded-chart configuration for the two metrics whose trend reads against fixed classification
+    /// bands (sleep, stress) — the active band the latest value falls in, the Y range anchored to the
+    /// band thresholds, ticks at those thresholds, and a paper-legible value format. Sleep is converted
+    /// to HOURS here (its series is stored in minutes); stress stays on its 0–3 score. `nil` for every
+    /// other metric, so they keep the plain auto-scaled chart. (FER-244)
+    private struct BandedTrend {
+        var points: [TrendPoint]
+        var bands: [TrendBand]
+        var range: ClosedRange<Double>
+        var yTicks: [Double]
+        var color: Color
+        var valueFormat: (Double) -> String
+        var activeLabel: LocalizedStringKey
+        var count: Int
+        var total: Int
+    }
+
+    private var bandedTrend: BandedTrend? {
+        guard info.id == "sleep" || info.id == "stress", !info.bands.isEmpty, trendData.count > 1 else { return nil }
+        let toHours = info.id == "sleep"
+        let sorted = trendData.sorted { $0.date < $1.date }
+        let pts = sorted.map { TrendPoint(date: $0.date, value: toHours ? $0.value / 60 : $0.value) }
+        let values = pts.map(\.value)
+        var bands = info.bands.map { TrendBand(label: $0.label, lower: $0.lower, upper: $0.upper) }
+        guard let active = TrendBands.activeBand(values: values, bands: bands) else { return nil }
+        bands[active.index].isActive = true
+        let thresholds = Set(info.bands.flatMap { [$0.lower, $0.upper].compactMap { $0 } }).sorted()
+        let tLo = thresholds.first ?? (values.min() ?? 0)
+        let tHi = thresholds.last ?? (values.max() ?? 1)
+        let lo = min(values.min() ?? tLo, tLo)
+        let hi = max(values.max() ?? tHi, tHi)
+        let pad = max((hi - lo) * 0.08, 0.25)
+        let range = max(0, lo - pad)...(hi + pad)
+        let fmt: (Double) -> String = toHours
+            ? { v in let m = Int((v * 60).rounded()); return m % 60 > 0 ? "\(m / 60)h \(m % 60)m" : "\(m / 60)h" }
+            : { String(format: "%.1f", $0) }
+        return BandedTrend(points: pts, bands: bands, range: range, yTicks: thresholds,
+                           color: metricHue, valueFormat: fmt,
+                           activeLabel: bands[active.index].label, count: active.count, total: values.count)
     }
 
     /// Auto-scale: 15% headroom above the max, floor capped at zero.
