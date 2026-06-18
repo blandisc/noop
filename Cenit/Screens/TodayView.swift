@@ -65,7 +65,7 @@ struct TodayView: View {
     @State private var hrPoints: [TrendPoint] = []
 
     // Today's stress (0–3 autonomic proxy) for the «Estrés» tile — the same transparent model
-    // StressView builds, computed once per load from `repo.days` + the stored "stress" series. (FER-180)
+    // StressView builds, computed once per load from `repo.displayDays` + the stored "stress" series. (FER-180)
     @State private var stress: StressModel? = nil
 
     // Support sheet (donate + contact) — always reachable from the home toolbar.
@@ -1520,8 +1520,10 @@ struct TodayView: View {
         hrPoints  = await hrBucketRows
             .map { TrendPoint(date: Date(timeIntervalSince1970: TimeInterval($0.ts)), value: $0.bpm) }
         // Build today's stress model from the day rows + stored series (nil when there's no usable
-        // signal yet — the tile then placeholders "—").
-        stress = StressModel(days: repo.days, stored: await stressRows)
+        // signal yet — the tile then placeholders "—"). Reads `displayDays` (Apple-health fallback,
+        // FER-149) so a strap-partial night still derives, and anchors "today" to the local day so a
+        // UTC-bucketed "tomorrow" row (FER-226) can't blank the tile.
+        stress = StressModel(days: repo.displayDays, stored: await stressRows, todayKey: Repository.localDayKey(Date()))
     }
 
     // MARK: - 14-day trend loader (all platforms)
