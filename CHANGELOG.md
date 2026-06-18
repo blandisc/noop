@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **El encabezado de «Métricas de hoy» se hizo más ligero y ya cabe sin recortarse / The "Today's metrics" header got lighter and now fits without clipping.**
+  **ES** — Quitamos el título grande «Métricas de hoy» y lo cambiamos por un sello discreto **«Hoy»** con la **última sincronización a su lado** (antes vivía abajo): «hace 3 min» en reposo, o un contador girando con **«N paquetes»** mientras descarga tu historial. El **pulso en vivo** dejó de ser una cápsula grande y ahora es un **chip que se ve tocable** (punto + bpm + flecha) que abre el monitor latido a latido. Y cada tile volvió a ser compacto: la mini-banda de tu rango típico y el cambio **vs tu media** ahora caben en una sola línea. Resultado: la sección entra en pantalla sin desbordarse y los números mandan.
+  **EN** — We dropped the big "Today's metrics" title for a quiet **"Today"** stamp with the **last sync right next to it** (it used to live at the bottom): "3 min ago" at rest, or a spinning counter with **"N packets"** while it downloads your history. The **live pulse** is no longer a big capsule — it's now a **clearly tappable chip** (dot + bpm + chevron) that opens the beat-by-beat monitor. And each tile is compact again: the mini-band of your typical range and the change **vs your average** now fit on a single line. The result: the section fits on screen without clipping, and the numbers lead.
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **La tarjeta de Oxígeno en sangre en Hoy ahora tiene botón «Ver más» / Blood-oxygen card in Today now has a "See more" button.**
   **ES** — La tarjeta de **SpO₂** en la pantalla de Hoy ya muestra el botón «Ver más». Al tocarlo abre el detalle completo: promedio 7 días como número principal, gráfica con banda clínica 95–100%, conteo de noches por debajo del 95% y método.
   **EN** — The **SpO₂** card on the Today screen now shows a "See more" button. Tapping it opens the full detail: 7-day average as the headline number, chart with the clinical 95–100% band, nights-below-95% count, and method.
