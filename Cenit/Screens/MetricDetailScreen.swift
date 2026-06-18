@@ -30,6 +30,9 @@ struct MetricDetailScreen: View {
     var depth: Depth = .full
     /// The live «Instrumento» theme, passed explicitly (sheets start a fresh environment). (FER-162)
     var theme: InstrumentoTheme = .base
+    /// When the metric is Apple-sourced and there's no reading + no permission, the empty state adds a
+    /// quiet "Connect Apple Health" line. Only used by the sparse VO₂max empty state today. (FER-257)
+    var appleConnectHint: Bool = false
 
     /// Loads the full daily series for this metric (oldest → newest), as `(day "yyyy-MM-dd", value)`.
     /// Injected so the screen stays DB-free and the caller controls the source (`displayDays` for BLE,
@@ -98,6 +101,14 @@ struct MetricDetailScreen: View {
                     // own honest empty state (no readings yet today). (FER-253)
                     if isIntraday {
                         content(window)
+                    } else if spec.sparseMeasured {
+                        // A sparsely-measured metric (VO₂max): one reading is enough to render; zero
+                        // readings show a dedicated explanatory empty state, not the nights-calibration. (FER-257)
+                        if series.isEmpty {
+                            sparseEmptyState
+                        } else {
+                            content(window)
+                        }
                     } else if enoughHistory {
                         content(window)
                     } else {
@@ -181,6 +192,11 @@ struct MetricDetailScreen: View {
         if visibleBlocks.contains(.whatMovesIt), !series.isEmpty {
             blockDivider
             whatMovesItBlock
+        }
+        // VO₂max's age/sex-anchored extras (change over the period · fitness category · cardiorespiratory-
+        // equivalent age · why it matters) sit between the chart and the method. (FER-257)
+        if spec.descriptor.key == "vo2max" {
+            vo2maxExtras(window)
         }
         if hasMethod, let method = spec.info.method {
             blockDivider
@@ -349,11 +365,30 @@ struct MetricDetailScreen: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// The secondary line under the hero numeral. For the vitals (hero = 7-day average) it frames TODAY's
-    /// single reading against the band. For steps the hero IS today's count, so the secondary instead
-    /// carries the 7-day daily average — the stable context for a noisy daily count. (FER-254)
+    /// The secondary line(s) under the hero numeral. VO₂max reads its latest value against its age/sex
+    /// peers across up to three lines (comparison · expected · measured-ago — FER-257); every other metric
+    /// shows the single `heroSecondaryText` (vitals frame today against the band, steps show the 7-day
+    /// average, Heart Rate shows today's range — FER-253/254).
     @ViewBuilder private var heroSecondary: some View {
-        if let text = heroSecondaryText {
+        if spec.descriptor.key == "vo2max" {
+            if heroValue != nil {
+                Text(vo2maxComparison)
+                    .font(StrandFont.subhead)
+                    .foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let expected = vo2maxExpectedLine {
+                    Text(expected)
+                        .font(StrandFont.caption)
+                        .foregroundStyle(theme.inkTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if let ago = vo2maxMeasuredAgoLine {
+                    Text(ago)
+                        .font(StrandFont.footnote)
+                        .foregroundStyle(theme.inkTertiary)
+                }
+            }
+        } else if let text = heroSecondaryText {
             Text(text)
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.inkSecondary)
@@ -381,6 +416,7 @@ struct MetricDetailScreen: View {
         case "spo2":       return "Blood oxygen · 7-day average"
         case "heart_rate": return "Heart rate · today"
         case "steps":      return "Steps · today"
+        case "vo2max":     return "VO₂ Max · latest reading"
         default:           return "7-day average"
         }
     }
@@ -430,7 +466,7 @@ struct MetricDetailScreen: View {
             if window.values.count > 1 {
                 // Clinically-anchored metrics (SpO₂) plot RAW nightly values behind a fixed band so a
                 // single low night stays visible; the noisy vitals (HRV/RHR/resp) plot the 7-day MA. (FER-252)
-                let lineValues = spec.clinicalBands ? window.values : SeriesShape.movingAverage(window.values, window: 7)
+                let lineValues = plotsRawValues ? window.values : SeriesShape.movingAverage(window.values, window: 7)
                 // Decimate to ~80 points for DRAWING only (a year is 365 days → 365 marks Charts must
                 // stroke + animate, which is what made the chart stick on long ranges). The hero/stats
                 // above still read the FULL series; this only thins what the line draws. Short ranges
@@ -453,7 +489,7 @@ struct MetricDetailScreen: View {
                     alertColor: theme.critical
                 )
                 .accessibilityElement()
-                .accessibilityLabel(Text(spec.clinicalBands ? "Nightly readings" : "7-day moving average"))
+                .accessibilityLabel(Text(chartAccessibilityLabel))
                 Text(chartCaption(window.range))
                     .font(StrandFont.footnote)
                     .foregroundStyle(theme.inkTertiary)
@@ -537,7 +573,22 @@ struct MetricDetailScreen: View {
     /// The chart's caption: the 7-day-average note, suffixed with the window ("· last month") for a
     /// bounded range and left bare for ALL. The window name is already localized, so it's interpolated
     /// as a `String` (a `%@` placeholder), not re-localized as a key. (FER-211)
+    /// Whether the chart plots RAW measured points (clinical SpO₂ band, or sparse VO₂max readings) rather
+    /// than the 7-day moving average the noisy nightly vitals smooth. (FER-252 / FER-257)
+    private var plotsRawValues: Bool { spec.clinicalBands || spec.sparseMeasured }
+
+    private var chartAccessibilityLabel: LocalizedStringKey {
+        if spec.sparseMeasured { return "Measured readings" }
+        return spec.clinicalBands ? "Nightly readings" : "7-day moving average"
+    }
+
     private func chartCaption(_ effectiveRange: ExploreRange) -> LocalizedStringKey {
+        if spec.sparseMeasured {
+            // VO₂max: the chart is the raw measured points over months, not a smoothed line.
+            return effectiveRange == .all
+                ? "Measured values."
+                : "Measured values · last \(effectiveRange.name)."
+        }
         if spec.clinicalBands {
             // Raw nightly values, not a moving average; the green band is the healthy 95–100% zone.
             return effectiveRange == .all
@@ -623,16 +674,22 @@ struct MetricDetailScreen: View {
             VStack(spacing: 0) {
                 ForEach(Array(spec.info.bands.enumerated()), id: \.offset) { i, band in
                     bandRow(band)
-                    if i < spec.info.bands.count - 1 {
-                        Rectangle().fill(theme.hairline).frame(height: 1).padding(.leading, 36)
-                    }
+                    if i < spec.info.bands.count - 1 { bandTableDivider }
                 }
             }
             .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
     }
 
-    private func bandRow(_ band: MetricInfo.Band) -> some View {
+    /// A hairline between rows of a band table, inset past the indicator dot. Shared by the SpO₂ fixed
+    /// bands and the VO₂max category table. (FER-252 / FER-257)
+    private var bandTableDivider: some View {
+        Rectangle().fill(theme.hairline).frame(height: 1).padding(.leading, 36)
+    }
+
+    /// One row of a population-band table: an indicator dot (active → metric hue), the band label, its
+    /// range, and a `badge` ("· today" for SpO₂, "· you" for the VO₂max level) on the active row. (FER-252)
+    private func bandRow(_ band: MetricInfo.Band, badge: LocalizedStringKey = "· today") -> some View {
         HStack(spacing: 10) {
             Circle()
                 .fill(band.isActive ? metricHue : theme.inkTertiary.opacity(0.45))
@@ -646,7 +703,7 @@ struct MetricDetailScreen: View {
                 .font(StrandFont.captionNumber)
                 .foregroundStyle(band.isActive ? metricHue : theme.inkTertiary)
             if band.isActive {
-                Text("· today")
+                Text(badge)
                     .font(StrandFont.footnote)
                     .foregroundStyle(metricHue)
                     .padding(.trailing, 14)
@@ -1040,6 +1097,172 @@ struct MetricDetailScreen: View {
         .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
+    // MARK: - VO₂max (Apple Health, measured · FER-257)
+
+    /// The population median VO₂max for the user's age & sex (the reference the hero reads against).
+    private var vo2maxExpected: Double? {
+        spec.vo2maxProfile.map { VO2maxReference.expected(age: $0.age, sex: $0.sex) }
+    }
+
+    /// Where the latest measured value sits versus the age/sex median — the hero's headline reading. A
+    /// small ±1.5 deadband keeps a value right at the median reading "in line", not flip-flopping.
+    private var vo2maxComparison: LocalizedStringKey {
+        guard let v = heroValue, let exp = vo2maxExpected else { return " " }
+        if v > exp + 1.5 { return "Above what's expected for your age." }
+        if v < exp - 1.5 { return "Below what's expected for your age." }
+        return "In line with what's expected for your age."
+    }
+
+    /// "Expected for your age: ~N" — the median value, so the headline comparison is legible.
+    private var vo2maxExpectedLine: LocalizedStringKey? {
+        guard let exp = vo2maxExpected else { return nil }
+        return "Expected for your age: ~\(Int(exp.rounded()))"
+    }
+
+    /// "Measured today / yesterday / N days ago" — three legible cases so the count never reads "1 days".
+    /// Apple measures VO₂max sparsely, so freshness is worth surfacing. `nil` when there's no parseable reading.
+    private var vo2maxMeasuredAgoLine: LocalizedStringKey? {
+        guard let day = series.last?.day, let date = Self.dayParser.date(from: day) else { return nil }
+        let cal = Calendar.current
+        guard let d = cal.dateComponents([.day], from: cal.startOfDay(for: date), to: cal.startOfDay(for: Date())).day,
+              d >= 0 else { return nil }
+        switch d {
+        case 0:  return "Measured today"
+        case 1:  return "Measured yesterday"
+        default: return "Measured \(d) days ago"
+        }
+    }
+
+    /// The age/sex-anchored extras the user asked for, between the chart and the method (FER-257): how it
+    /// changed over the period (≥2 readings), the fitness category, the cardiorespiratory-equivalent age,
+    /// and why VO₂max matters. Each emits its own leading divider only when it renders.
+    @ViewBuilder private func vo2maxExtras(_ window: Window) -> some View {
+        if window.values.count >= 2 {
+            blockDivider
+            vo2maxChangeBlock(window)
+        }
+        if let v = heroValue, let profile = spec.vo2maxProfile {
+            blockDivider
+            vo2maxCategoryBlock(value: v, profile: profile)
+            blockDivider
+            vo2maxEquivalentAgeBlock(value: v, profile: profile)
+        }
+        blockDivider
+        vo2maxWhyBlock
+    }
+
+    /// How much VO₂max moved across the selected window (last − first measured value). Framed as a long-run
+    /// change ("up since your first reading"), NOT a noisy month-over-month %, because the data is sparse.
+    @ViewBuilder private func vo2maxChangeBlock(_ window: Window) -> some View {
+        if let first = window.values.first, let last = window.values.last {
+            let delta = Int((last - first).rounded())
+            let color = delta > 0 ? theme.dataRecovery : (delta < 0 ? theme.warning : theme.ink)
+            block(title: "Change") {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text(delta > 0 ? "+\(delta)" : "\(delta)")
+                            .instrumentoHero(30)
+                            .foregroundStyle(color)
+                        Text(unit).font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
+                    }
+                    Text(vo2maxChangeReading(delta))
+                        .font(StrandFont.caption)
+                        .foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    private func vo2maxChangeReading(_ delta: Int) -> LocalizedStringKey {
+        if delta > 0 { return "Up since your first reading in this range. VO₂max responds to training." }
+        if delta < 0 { return "Down since your first reading in this range." }
+        return "About the same across this range."
+    }
+
+    /// Where the latest value lands among healthy peers of the same age & sex — a four-band table
+    /// (Low / Average / Good / Excellent) with the active band marked, built from `VO2maxReference`.
+    /// Reuses the shared `bandRow` / `bandTableDivider` (the SpO₂ table) with a "· you" badge. (FER-257)
+    private func vo2maxCategoryBlock(value v: Double, profile: VO2maxProfile) -> some View {
+        let t = VO2maxReference.categoryThresholds(age: profile.age, sex: profile.sex)
+        let active = VO2maxReference.category(value: v, age: profile.age, sex: profile.sex)
+        let lo = Int(t.low.rounded()), gd = Int(t.good.rounded()), ex = Int(t.excellent.rounded())
+        let bands: [MetricInfo.Band] = [
+            MetricInfo.Band(label: "Low", range: "< \(lo)", isActive: active == .low),
+            MetricInfo.Band(label: "Average", range: "\(lo) – \(gd)", isActive: active == .average),
+            MetricInfo.Band(label: "Good", range: "\(gd) – \(ex)", isActive: active == .good),
+            MetricInfo.Band(label: "Excellent", range: "> \(ex)", isActive: active == .excellent),
+        ]
+        return block(title: "Your level for your age") {
+            VStack(spacing: 0) {
+                ForEach(Array(bands.enumerated()), id: \.offset) { i, band in
+                    bandRow(band, badge: "· you")
+                    if i < bands.count - 1 { bandTableDivider }
+                }
+            }
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+    }
+
+    /// The age whose median VO₂max matches the latest measured value — an intuitive "cardiorespiratory
+    /// age". Different basis from the Nes «Edad física», so the copy says so to avoid confusion.
+    private func vo2maxEquivalentAgeBlock(value v: Double, profile: VO2maxProfile) -> some View {
+        let eq = VO2maxReference.equivalentAge(value: v, sex: profile.sex)
+        return block(title: "Cardiorespiratory age") {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text("\(eq)").instrumentoHero(30).foregroundStyle(metricHue)
+                    Text("years").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
+                }
+                Text("Your VO₂max matches the median for someone aged \(eq). It's a different basis from your Physical age.")
+                    .font(StrandFont.caption)
+                    .foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    /// Why the number is worth caring about — VO₂max's all-cause-mortality association, with citations.
+    private var vo2maxWhyBlock: some View {
+        block(title: "Why it matters") {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("A higher VO₂max is associated with a lower risk of all-cause mortality. It's one of the best-evidenced predictors of long-term health.")
+                    .font(StrandFont.subhead)
+                    .foregroundStyle(theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("Mandsager 2018 (JAMA) · Kodama 2009")
+                    .font(StrandFont.footnote)
+                    .foregroundStyle(theme.inkTertiary)
+            }
+        }
+    }
+
+    /// Zero-reading state for VO₂max: an explanatory card (no chart), plus a quiet "Connect Apple Health"
+    /// line when nothing's connected. (FER-257)
+    private var sparseEmptyState: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("No VO₂max yet")
+                .font(StrandFont.headline)
+                .foregroundStyle(theme.ink)
+            Text("Your Apple Watch estimates VO₂max during outdoor walks and runs with a good GPS signal — it isn't recorded by the WHOOP strap.")
+                .font(StrandFont.subhead)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            if appleConnectHint {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Image(systemName: "heart.fill").font(.system(size: 12)).foregroundStyle(theme.dataHeart)
+                    Text("Connect Apple Health to see your VO₂max.")
+                        .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.top, 2)
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
     // MARK: - Calibration (not enough history)
 
     private var calibrationBlock: some View {
@@ -1122,6 +1345,7 @@ struct MetricDetailScreen: View {
         case "spo2":              return theme.dataSpO2
         case "heart_rate":        return theme.dataHeart
         case "steps":             return theme.dataSteps
+        case "vo2max":            return theme.dataSpO2
         default:                  return theme.dataRecovery
         }
     }
