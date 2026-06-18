@@ -387,7 +387,8 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 
 ### CompareView
 **Archivo:** `Cenit/Screens/CompareView.swift`  
-**Descripción:** Superponer 2–4 métricas en gráfica normalizada (0–1) + Pearson r entre pares. En lenguaje «Instrumento diurno» claro (FER-268): papel cálido, color SOLO en el dato (las líneas del overlay + el valor r), jerarquía por espacio. Se abre desde el pie de Cuerpo como `.sheet` claro (tema inyectado en la raíz, sin `NavigationStack` anidado; se cierra arrastrando). Las 4 líneas usan las tintas de dato profundas (`verdict` / `dataHrv` / `dataSleep` / `dataStrain`), legibles sobre el papel.
+**Descripción:** Superponer 2–4 métricas en gráfica normalizada (0–1) + Pearson r entre pares. En lenguaje «Instrumento diurno» claro (FER-268): papel cálido, color SOLO en el dato (las líneas del overlay + el valor r), jerarquía por espacio. Se abre desde el pie de Cuerpo como `.sheet` claro (tema inyectado en la raíz, sin `NavigationStack` anidado; se cierra arrastrando). Las 4 líneas usan las tintas de dato profundas (`verdict` / `dataHrv` / `dataSleep` / `dataStrain`), legibles sobre el papel.  
+**Datos (FER-275):** las métricas que son campos diarios del tablero (recovery/strain/hrv/rhr/resp_rate/spo2/skin_temp/steps/sueño total·deep·rem·light·efficiency/active_kcal) se leen de `repo.displayDays` → resuelven para usuarios de strap **y** de import; las demás (composición corporal Apple, zonas HR, % de sueño derivados) caen al fallback `repo.series()`. Default: Recuperación · Esfuerzo · HRV.
 
 | Estado | Condición de entrada |
 |--------|---------------------|
