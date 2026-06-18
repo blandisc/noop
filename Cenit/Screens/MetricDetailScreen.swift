@@ -128,6 +128,14 @@ struct MetricDetailScreen: View {
             blockDivider
             consistencyBlock
         }
+        if visibleBlocks.contains(.fixedBands) {
+            blockDivider
+            fixedBandsBlock
+        }
+        if visibleBlocks.contains(.lowNightsCount) {
+            blockDivider
+            lowNightsBlock
+        }
         if visibleBlocks.contains(.trend) {
             blockDivider
             trendBlock(window)
@@ -261,6 +269,9 @@ struct MetricDetailScreen: View {
         case ("resp_rate", .nightVitals):
             return nightVitals
 
+        case ("spo2", .header):
+            return "It's the average oxygen saturation read at your wrist while you sleep, over the last week. A healthy adult usually stays at 95% or above."
+
         default:
             return nil
         }
@@ -300,6 +311,7 @@ struct MetricDetailScreen: View {
         case "hrv":       return "Heart rate variability · 7-day average"
         case "rhr":       return "Resting HR · 7-day average"
         case "resp_rate": return "Respiratory rate · 7-day average"
+        case "spo2":      return "Blood oxygen · 7-day average"
         default:          return "7-day average"
         }
     }
@@ -335,25 +347,32 @@ struct MetricDetailScreen: View {
     @ViewBuilder private func chartBlock(_ window: Window) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             if window.values.count > 1 {
-                let smoothed = SeriesShape.movingAverage(window.values, window: 7)
+                // Clinically-anchored metrics (SpO₂) plot RAW nightly values behind a fixed band so a
+                // single low night stays visible; the noisy vitals (HRV/RHR/resp) plot the 7-day MA. (FER-252)
+                let lineValues = spec.clinicalBands ? window.values : SeriesShape.movingAverage(window.values, window: 7)
                 // Decimate to ~80 points for DRAWING only (a year is 365 days → 365 marks Charts must
                 // stroke + animate, which is what made the chart stick on long ranges). The hero/stats
                 // above still read the FULL series; this only thins what the line draws. Short ranges
                 // (≤80 days: week/month) pass through untouched, so they look identical. (FER-219)
-                let points = Self.decimatedPoints(rows: window.rows, values: smoothed, maxPoints: 80)
+                let points = Self.decimatedPoints(rows: window.rows, values: lineValues, maxPoints: 80)
                 TrendChart(
                     points: points,
                     gradient: chartGradient,
-                    valueRange: chartRange(smoothed),
+                    valueRange: spec.chartDomain ?? chartRange(lineValues),
                     showsArea: true,
                     height: 200,
                     showsHover: true,
                     valueFormat: { "\(fmt($0)) \(unit)" },
                     axisLabelColor: theme.inkTertiary,
-                    gridLineColor: theme.hairline
+                    gridLineColor: theme.hairline,
+                    bands: clinicalChartBands,
+                    bandColor: theme.verdict,
+                    yAxisValues: clinicalYAxisValues,
+                    alertThreshold: spec.clinicalBands ? spec.lowThreshold : nil,
+                    alertColor: theme.critical
                 )
                 .accessibilityElement()
-                .accessibilityLabel(Text("7-day moving average"))
+                .accessibilityLabel(Text(spec.clinicalBands ? "Nightly readings" : "7-day moving average"))
                 Text(chartCaption(window.range))
                     .font(StrandFont.footnote)
                     .foregroundStyle(theme.inkTertiary)
@@ -405,6 +424,26 @@ struct MetricDetailScreen: View {
         return out
     }
 
+    /// The fixed clinical bands drawn behind the line (FER-244 mechanism), built from the metric's own
+    /// `MetricInfo.bands`. The HEALTHY band (the one whose lower bound is the clinical floor) is forced
+    /// active so the green floor is ALWAYS shaded — not just when today's value lands in it. Empty for
+    /// the non-clinical vitals, so their chart stays band-less. (FER-252)
+    private var clinicalChartBands: [TrendBand] {
+        guard spec.clinicalBands else { return [] }
+        return spec.info.bands.map {
+            TrendBand(label: $0.label, lower: $0.lower, upper: $0.upper,
+                      isActive: $0.lower == spec.lowThreshold)
+        }
+    }
+
+    /// Y-axis ticks at the band thresholds (e.g. SpO₂ 90/95/100) for the clinical chart; `nil` otherwise
+    /// so the vitals keep automatic ticks. (FER-252)
+    private var clinicalYAxisValues: [Double]? {
+        guard spec.clinicalBands, let domain = spec.chartDomain else { return nil }
+        let thresholds = Set(spec.info.bands.flatMap { [$0.lower, $0.upper].compactMap { $0 } })
+        return ([domain.lowerBound, domain.upperBound] + thresholds).sorted()
+    }
+
     /// Auto-fit the chart's value axis to the smoothed line, with a small margin so it doesn't clip.
     private func chartRange(_ smoothed: [Double]) -> ClosedRange<Double> {
         let lo = smoothed.min() ?? 0
@@ -418,7 +457,13 @@ struct MetricDetailScreen: View {
     /// bounded range and left bare for ALL. The window name is already localized, so it's interpolated
     /// as a `String` (a `%@` placeholder), not re-localized as a key. (FER-211)
     private func chartCaption(_ effectiveRange: ExploreRange) -> LocalizedStringKey {
-        effectiveRange == .all
+        if spec.clinicalBands {
+            // Raw nightly values, not a moving average; the green band is the healthy 95–100% zone.
+            return effectiveRange == .all
+                ? "Nightly values · the shaded band is the healthy range."
+                : "Nightly values · last \(effectiveRange.name) · the shaded band is the healthy range."
+        }
+        return effectiveRange == .all
             ? "7-day moving average."
             : "7-day moving average · last \(effectiveRange.name)."
     }
@@ -498,6 +543,86 @@ struct MetricDetailScreen: View {
                 }
             }
         }
+    }
+
+    // MARK: - Fixed clinical bands (population range table) — SpO₂ (FER-252)
+
+    /// The metric's fixed population bands (Normal / Borderline / Low) as a table, with the band
+    /// today's value falls in marked "· today". Unlike `normalRangeBlock` (a personal rolling ±SD),
+    /// this is the same clinical reference for everyone — what matters for SpO₂ is the population floor.
+    @ViewBuilder private var fixedBandsBlock: some View {
+        block(title: "Normal range") {
+            VStack(spacing: 0) {
+                ForEach(Array(spec.info.bands.enumerated()), id: \.offset) { i, band in
+                    bandRow(band)
+                    if i < spec.info.bands.count - 1 {
+                        Rectangle().fill(theme.hairline).frame(height: 1).padding(.leading, 36)
+                    }
+                }
+            }
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+    }
+
+    private func bandRow(_ band: MetricInfo.Band) -> some View {
+        HStack(spacing: 10) {
+            Circle()
+                .fill(band.isActive ? metricHue : theme.inkTertiary.opacity(0.45))
+                .frame(width: 8, height: 8)
+                .padding(.leading, 14)
+            Text(band.label)
+                .font(StrandFont.subhead)
+                .foregroundStyle(band.isActive ? theme.ink : theme.inkSecondary)
+            Spacer()
+            Text(band.range)
+                .font(StrandFont.captionNumber)
+                .foregroundStyle(band.isActive ? metricHue : theme.inkTertiary)
+            if band.isActive {
+                Text("· today")
+                    .font(StrandFont.footnote)
+                    .foregroundStyle(metricHue)
+                    .padding(.trailing, 14)
+            } else {
+                Spacer().frame(width: 14)
+            }
+        }
+        .padding(.vertical, 11)
+        .frame(maxWidth: .infinity)
+        .background(band.isActive ? metricHue.opacity(0.12) : Color.clear)
+    }
+
+    // MARK: - Nights below the clinical floor — SpO₂ (FER-252)
+
+    /// How many of the recent nights fell under the clinical floor (SpO₂ < 95%). Replaces the
+    /// consistency block for clinically-anchored metrics, where the CV is near-zero and a low-night
+    /// count is the figure that actually reads.
+    @ViewBuilder private var lowNightsBlock: some View {
+        if let threshold = spec.lowThreshold {
+            let recent = slice(for: .month)
+            let low = recent.reduce(0) { $0 + ($1.value < threshold ? 1 : 0) }
+            block(title: "Nights below \(fmt(threshold))\(unit)") {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text("\(low)")
+                            .instrumentoHero(34)
+                            .foregroundStyle(low == 0 ? theme.verdict : theme.ink)
+                        Text("of the last \(recent.count) nights")
+                            .font(StrandFont.subhead)
+                            .foregroundStyle(theme.inkSecondary)
+                    }
+                    Text(lowNightsReading(low: low))
+                        .font(StrandFont.caption)
+                        .foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    private func lowNightsReading(low: Int) -> LocalizedStringKey {
+        low == 0
+            ? "Every recent night sat in the healthy range."
+            : "Isolated low nights are usually noise (altitude, a cold, sensor fit). A sustained run is worth a look with a finger pulse oximeter."
     }
 
     // MARK: - Trend (month over month)
@@ -759,6 +884,7 @@ struct MetricDetailScreen: View {
         case "hrv":               return theme.dataHrv
         case "rhr":               return theme.dataHeart
         case "resp_rate":         return theme.dataSpO2
+        case "spo2":              return theme.dataSpO2
         default:                  return theme.dataRecovery
         }
     }

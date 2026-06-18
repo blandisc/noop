@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Oxígeno en sangre ahora tiene su hoja de detalle completa / Blood oxygen now has its full detail sheet.**
+  **ES** — En **Cuerpo**, tocar **Oxígeno en sangre** ya no abre la hoja resumida: abre el detalle completo, al nivel de Sueño y Estrés. Trae tu **promedio de 7 días** arriba, un **selector de período** (semana a año), y una **gráfica por noche** con la **zona sana 95–100% sombreada en verde** y las noches que cayeron por debajo de 95% **marcadas en rojo**. Debajo, la tabla de rango (Normal / Limítrofe / Bajo) con tu banda de hoy señalada, y un bloque **«Noches bajo 95%»** que cuenta cuántas de tus últimas 30 noches se quedaron bajas. La nota de siempre se mantiene: el sensor de muñeca es para tendencia, no es una lectura médica.
+  **EN** — In **Body**, tapping **Blood oxygen** no longer opens the summary sheet: it opens the full detail, on par with Sleep and Stress. It leads with your **7-day average**, a **period selector** (week to year), and a **per-night chart** with the **healthy 95–100% zone shaded green** and nights that dipped below 95% **flagged in red**. Below it, the range table (Normal / Borderline / Low) with today's band marked, and a **"Nights below 95%"** block counting how many of your last 30 nights ran low. The usual caveat stays: a wrist sensor is for trend, not a clinical reading.
+  ([Cenit/Screens/MetricDetailScreen.swift](Cenit/Screens/MetricDetailScreen.swift))
+
 - **Detalle de Estrés: arreglo del eje y del texto de tendencia / Stress detail: trend axis & headline fix.**
   **ES** — En la hoja de **Estrés** (en Cuerpo): la gráfica de tendencia vuelve a tener su **eje Y (0–3) alineado con las bandas** y reaparece la **línea de comparación mes-a-mes** debajo, que se había quedado en blanco. Las zonas Bajo/Moderado/Alto ahora las dibuja la propia gráfica (no un fondo aparte que se desfasaba del eje), igual que en Sueño.
   **EN** — In the **Stress** sheet (in Body): the trend chart's **Y axis (0–3) is aligned with the bands** again and the **month-over-month line** below it is back (it had gone blank). The Low/Moderate/High zones are now drawn by the chart itself (not a separate backdrop drifting off the axis), matching the Sleep sheet.

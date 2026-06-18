@@ -401,7 +401,7 @@ private struct CuerpoLanding: View {
         let r = resolveMeasured { $0.spo2Pct }
         return metricRow("Blood Oxygen", value: r.map { String(format: "%.0f", $0.value) }, unit: "%",
                          color: theme.dataSpO2, sparkKey: "spo2", fromApple: r?.fromApple == true) {
-            metricInfo = .spo2(r?.value)
+            metricSpec = .spo2(r?.value)
         }
     }
 
@@ -795,6 +795,7 @@ private struct CuerpoLanding: View {
         case "hrv":       pick = { $0.avgHrv }
         case "rhr":       pick = { $0.restingHr.map(Double.init) }
         case "resp_rate": pick = { $0.respRateBpm }
+        case "spo2":      pick = { $0.spo2Pct }
         default:          return []
         }
         return repo.displayDays

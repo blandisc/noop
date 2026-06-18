@@ -42,8 +42,8 @@ SettingsView → WhatsNewView (sheet)
 TodayView   → LiveView (sheet, detente grande) · MetricInfoSheet (sheet; incl. Recuperación — hoja resumida, FER-232) · MetricDetailScreen (sheet, .focus: HRV/FC reposo — FER-185) · WhyVerdictSheet (sheet) · SupportView (toolbar)
 CuerpoView  → RecoveryDetailScreen (sheet «Instrumento»: Recuperación — FER-225) ·
              StrainDetailScreen (sheet claro «Instrumento»: Esfuerzo del día — FER-238) ·
-             MetricInfoSheet (sheet claro: SpO₂/FC/Pasos) ·
-             MetricDetailScreen (sheet claro, .full: HRV/FC reposo/Respiración — FER-185) ·
+             MetricInfoSheet (sheet claro: FC/Pasos) ·
+             MetricDetailScreen (sheet claro, .full: HRV/FC reposo/Respiración/SpO₂ — FER-185; SpO₂ con banda clínica fija 95–100% + «Noches bajo 95%» — FER-252) ·
              StressDetailScreen (sheet claro «Instrumento»: Estrés — valor de hoy + bandas universales + qué lo mueve + ⓘ por concepto — FER-241) ·
              BodyAgeSheet (sheet claro: Edad corporal + Vitalidad — FER-145) ·
              SleepDetailScreen (sheet claro «Instrumento»: Sueño + regularidad del horario — FER-212) ·

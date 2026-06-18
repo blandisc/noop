@@ -296,13 +296,16 @@ extension MetricInfo {
     }
 
     static func spo2(_ value: Double?) -> MetricInfo {
+        // Half-open bounds [lower, upper) so the chart's TrendBand math (FER-244) and the fixed-bands
+        // table agree on the edge: exactly 95.0% reads as Normal in both. The 95% floor is the typical
+        // healthy adult threshold; < 90% is hypoxemia. (FER-252)
         let bands: [Band] = [
             Band(label: "Normal", range: "95 – 100%",
-                 isActive: value.map { $0 >= 95 } ?? false),
+                 isActive: value.map { $0 >= 95 } ?? false, lower: 95, upper: nil),
             Band(label: "Borderline", range: "90 – 94%",
-                 isActive: value.map { $0 >= 90 && $0 < 95 } ?? false),
+                 isActive: value.map { $0 >= 90 && $0 < 95 } ?? false, lower: 90, upper: 95),
             Band(label: "Low", range: "< 90%",
-                 isActive: value.map { $0 < 90 } ?? false),
+                 isActive: value.map { $0 < 90 } ?? false, lower: nil, upper: 90),
         ]
         return MetricInfo(
             id: "spo2",
@@ -312,7 +315,10 @@ extension MetricInfo {
             unit: "%",
             headerTint: value == nil ? .neutral : .metric,
             bands: bands,
-            note: "Wrist-based sensors have lower accuracy than medical pulse oximeters — treat values as a trend, not a clinical reading."
+            note: "Wrist-based sensors have lower accuracy than medical pulse oximeters — treat values as a trend, not a clinical reading.",
+            method: Method(
+                prose: "Each night your strap averages the oxygen saturation read at your wrist while you sleep. A healthy adult typically sits at 95–100%; readings below 90% are considered low (hypoxemia). Isolated low nights are usually noise — altitude, a cold, or how the sensor sat. A sustained run of low nights is what's worth a look with a finger pulse oximeter.",
+                citation: "Wrist optical sensors are less accurate than medical pulse oximeters — read this as a trend, not a clinical measurement. NOOP is not a medical device.")
         )
     }
 
