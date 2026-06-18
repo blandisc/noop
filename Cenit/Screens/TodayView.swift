@@ -1080,7 +1080,7 @@ struct TodayView: View {
             HStack {
                 Spacer(minLength: 0)
                 HStack(spacing: NoopMetrics.space2) {
-                    Text(verbatim: "S")
+                    Text(verbatim: "W Strap")
                     Text("·")
                     HStack(spacing: NoopMetrics.space1) {
                         Image(systemName: "heart.fill").font(.system(size: 9))
@@ -1255,7 +1255,7 @@ struct TodayView: View {
                         .foregroundStyle(theme.inkTertiary)
                         .accessibilityLabel(Text("de Apple Salud"))
                 } else if value != "—" {
-                    Text(verbatim: "S")
+                    Text(verbatim: "W")
                         .font(.system(size: 9, weight: .semibold))
                         .foregroundStyle(theme.inkTertiary)
                         .accessibilityLabel(Text("de strap"))
