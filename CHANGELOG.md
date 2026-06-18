@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Esfuerzo del día ahora abre un detalle completo, como las demás métricas / Day Strain now opens a full detail, like your other metrics.**
+  **ES** — En Cuerpo, tocar **«Esfuerzo del día»** ya no abre una hoja básica: abre un **detalle rico** en papel cálido con tu **número de hoy** (0–21), la **curva de cómo se fue acumulando el esfuerzo a lo largo del día**, tus **zonas** de intensidad (con la de hoy marcada), la **tendencia de 14 días** y **cómo se calcula** — con una **ⓘ en cada bloque** que explica la ciencia. En **Hoy** no cambia nada: el mosaico de Esfuerzo sigue mostrando su resumen al tocarlo.
+  **EN** — In Body, tapping **"Day Strain"** no longer opens a basic sheet: it opens a **rich detail** on warm paper with your **today's number** (0–21), the **curve of how your strain piled up through the day**, your intensity **zones** (with today's highlighted), the **14-day trend** and **how it's calculated** — each block with an **ⓘ** that explains the science. **Today** is unchanged: the Strain tile still shows its quick summary on tap.
+  ([Cenit/Screens/StrainDetailScreen.swift](Cenit/Screens/StrainDetailScreen.swift), [Cenit/Screens/CuerpoView.swift](Cenit/Screens/CuerpoView.swift))
+
 - **La temperatura de piel de la WHOOP 4.0 ya aparece / Your WHOOP 4.0 skin temperature now shows up.**
   **ES** — En la WHOOP 4.0, tu temperatura de piel salía siempre vacía aunque la banda sí la mide: Cénit la convertía con la escala de la 5.0, que en la 4.0 daba un valor imposiblemente frío y se descartaba completo. Ahora Cénit usa la conversión correcta para cada modelo de banda, así que la desviación de temperatura de tus noches vuelve a calcularse y a mostrarse (se afina sobre unas cuantas noches, como el resto de tus líneas base).
   **EN** — On the WHOOP 4.0, your skin temperature always came up empty even though the band measures it: Cénit was converting it with the 5.0's scale, which on the 4.0 produced an impossibly cold value that got discarded entirely. Cénit now uses the right conversion per band model, so your nightly temperature deviation is computed and shown again (it sharpens over a few nights, like the rest of your baselines).

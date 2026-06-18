@@ -841,7 +841,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ lpm"
+            "value": "%@ bpm"
           }
         }
       }
@@ -858,7 +858,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ lpm · %@"
+            "value": "%@ bpm · %@"
           }
         }
       }
@@ -3227,7 +3227,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Auto · %lld lpm (Tanaka)"
+            "value": "Auto · %lld bpm (Tanaka)"
           }
         }
       }
@@ -3424,7 +3424,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "lpm"
+            "value": "BPM"
           }
         }
       }
@@ -6878,7 +6878,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Frecuencia cardiaca máxima estimada · %lld lpm"
+            "value": "Frecuencia cardiaca máxima estimada · %lld bpm"
           }
         }
       }
@@ -19537,7 +19537,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "lpm"
+            "value": "bpm"
           }
         },
         "de": {
@@ -20485,7 +20485,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "FC en reposo +%lld lpm"
+            "value": "FC en reposo +%lld bpm"
           }
         }
       }
@@ -25756,6 +25756,397 @@
           "stringUnit": {
             "state": "translated",
             "value": "La FC promedio debe ser 25–250 lpm."
+          }
+        }
+      }
+    },
+    "All-out day — about as much strain as you carry.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All-out day — about as much strain as you carry."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Día a tope — casi todo el esfuerzo que aguantas."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volle Pulle – fast so viel Belastung, wie du verträgst."
+          }
+        }
+      }
+    },
+    "Day Strain is your cardiovascular load on a 0–21 scale. Each second your heart rate is recorded, it's placed in an intensity zone (1–5); higher zones weigh more, and the total is compressed logarithmically so 21 is a theoretical maximum — a full day at peak intensity. (Edwards 1993; Banister 1991)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day Strain is your cardiovascular load on a 0–21 scale. Each second your heart rate is recorded, it's placed in an intensity zone (1–5); higher zones weigh more, and the total is compressed logarithmically so 21 is a theoretical maximum — a full day at peak intensity. (Edwards 1993; Banister 1991)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El Esfuerzo del día es tu carga cardiovascular en una escala de 0 a 21. Cada segundo en que se registra tu frecuencia cardiaca se asigna a una zona de intensidad (1–5); las zonas altas pesan más, y el total se comprime logarítmicamente, así que 21 es un máximo teórico: un día entero a intensidad máxima. (Edwards 1993; Banister 1991)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day Strain ist deine kardiovaskuläre Belastung auf einer Skala von 0–21. Jede Sekunde, in der deine Herzfrequenz erfasst wird, wird einer Intensitätszone (1–5) zugeordnet; höhere Zonen zählen mehr, und die Summe wird logarithmisch komprimiert, sodass 21 ein theoretisches Maximum ist – ein ganzer Tag bei Höchstintensität. (Edwards 1993; Banister 1991)"
+          }
+        }
+      }
+    },
+    "Day strain, 7-day moving average": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day strain, 7-day moving average"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esfuerzo del día, promedio móvil de 7 días"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day Strain, gleitender 7-Tage-Durchschnitt"
+          }
+        }
+      }
+    },
+    "Each second of heart rate is mapped to one of five intensity zones; time in the higher zones counts for much more. The weighted total is compressed onto a 0–21 scale through a logarithmic curve, so the top of the scale represents a theoretical full day at peak intensity.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Each second of heart rate is mapped to one of five intensity zones; time in the higher zones counts for much more. The weighted total is compressed onto a 0–21 scale through a logarithmic curve, so the top of the scale represents a theoretical full day at peak intensity."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada segundo de frecuencia cardiaca se asigna a una de cinco zonas de intensidad; el tiempo en las zonas altas cuenta mucho más. El total ponderado se comprime a una escala de 0 a 21 con una curva logarítmica, así que el tope representa un día entero teórico a intensidad máxima."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jede Sekunde der Herzfrequenz wird einer von fünf Intensitätszonen zugeordnet; Zeit in den höheren Zonen zählt deutlich mehr. Die gewichtete Summe wird über eine logarithmische Kurve auf eine Skala von 0–21 komprimiert, sodass das obere Ende einen theoretischen ganzen Tag bei Höchstintensität darstellt."
+          }
+        }
+      }
+    },
+    "Hard effort today — solid work.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hard effort today — solid work."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esfuerzo fuerte hoy — buen trabajo."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Harte Anstrengung heute – starke Arbeit."
+          }
+        }
+      }
+    },
+    "Heart-rate-zone load (TRIMP), compressed logarithmically. (Edwards 1993; Banister 1991)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heart-rate-zone load (TRIMP), compressed logarithmically. (Edwards 1993; Banister 1991)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carga por zonas de frecuencia cardiaca (TRIMP), comprimida logarítmicamente. (Edwards 1993; Banister 1991)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Belastung nach Herzfrequenzzonen (TRIMP), logarithmisch komprimiert. (Edwards 1993; Banister 1991)"
+          }
+        }
+      }
+    },
+    "Information about day strain": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Information about day strain"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Información sobre el esfuerzo del día"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informationen zum Day Strain"
+          }
+        }
+      }
+    },
+    "Information about how today's strain added up": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Information about how today's strain added up"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Información sobre cómo se acumuló tu esfuerzo hoy"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informationen dazu, wie sich deine Belastung heute summiert hat"
+          }
+        }
+      }
+    },
+    "Information about the strain zones": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Information about the strain zones"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Información sobre las zonas de esfuerzo"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informationen zu den Belastungszonen"
+          }
+        }
+      }
+    },
+    "Light load today — plenty left in the tank.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Light load today — plenty left in the tank."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carga ligera hoy — te queda mucho en el tanque."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leichte Belastung heute – noch viel im Tank."
+          }
+        }
+      }
+    },
+    "Moderate effort today.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moderate effort today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esfuerzo moderado hoy."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moderate Anstrengung heute."
+          }
+        }
+      }
+    },
+    "No strain from today yet — your recent history is below.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No strain from today yet — your recent history is below."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no hay esfuerzo de hoy — abajo está tu historial reciente."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Belastung von heute – dein bisheriger Verlauf steht unten."
+          }
+        }
+      }
+    },
+    "No strain yet. Wear your strap through the day and open this again after it syncs.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No strain yet. Wear your strap through the day and open this again after it syncs."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no hay esfuerzo. Usa tu banda durante el día y vuelve a abrir esto cuando sincronice."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Belastung. Trage deine Band über den Tag und öffne dies erneut, sobald sie synchronisiert."
+          }
+        }
+      }
+    },
+    "The line is your 7-day moving average over the period you pick. The percentage compares this month's average with last month's. Average, Lowest and Highest come from the range you selected.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The line is your 7-day moving average over the period you pick. The percentage compares this month's average with last month's. Average, Lowest and Highest come from the range you selected."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La línea es tu promedio móvil de 7 días en el periodo que elijas. El porcentaje compara el promedio de este mes con el del mes pasado. Promedio, Mínimo y Máximo salen del rango que seleccionaste."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Linie ist dein gleitender 7-Tage-Durchschnitt über den gewählten Zeitraum. Der Prozentwert vergleicht den Durchschnitt dieses Monats mit dem des Vormonats. Durchschnitt, Tiefst- und Höchstwert stammen aus dem gewählten Bereich."
+          }
+        }
+      }
+    },
+    "The line shows how your strain piled up through the day — each second of heart rate adds to the running total, so it only ever rises. It ends on today's score above.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The line shows how your strain piled up through the day — each second of heart rate adds to the running total, so it only ever rises. It ends on today's score above."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La línea muestra cómo se fue acumulando tu esfuerzo durante el día — cada segundo de frecuencia cardiaca suma al total, así que solo sube. Termina en tu puntaje de hoy, arriba."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Linie zeigt, wie sich deine Belastung über den Tag aufgebaut hat – jede Sekunde Herzfrequenz zählt zur laufenden Summe, daher steigt sie nur. Sie endet bei deinem heutigen Wert oben."
+          }
+        }
+      }
+    },
+    "Your heart rate falls into one of four intensity zones through the day. The highlighted row is where today's score lands on the 0–21 scale.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your heart rate falls into one of four intensity zones through the day. The highlighted row is where today's score lands on the 0–21 scale."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu frecuencia cardiaca cae en una de cuatro zonas de intensidad a lo largo del día. La fila resaltada es donde aterriza tu puntaje de hoy en la escala de 0 a 21."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Herzfrequenz fällt über den Tag in eine von vier Intensitätszonen. Die hervorgehobene Zeile zeigt, wo dein heutiger Wert auf der Skala von 0–21 liegt."
+          }
+        }
+      }
+    },
+    "Zones": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zones"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zonas"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zonen"
           }
         }
       }
