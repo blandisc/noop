@@ -340,7 +340,8 @@ struct TodayView: View {
                 recoveryDetail = RecoveryDetailItem(model: RecoveryDetailModel.build(
                     days: repo.days, today: repo.today,
                     todayKey: Repository.localDayKey(Date()),
-                    appleHealthDays: repo.appleHealthDays, loaded: repo.loaded))
+                    appleHealthDays: repo.appleHealthDays,
+                    loaded: repo.loaded, importedSleep: repo.importedSleep))
             }
         case "sleep":
             present = {

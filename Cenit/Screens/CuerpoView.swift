@@ -352,7 +352,8 @@ private struct CuerpoLanding: View {
                 today: repo.today,
                 todayKey: Repository.localDayKey(Date()),
                 appleHealthDays: repo.appleHealthDays,
-                loaded: repo.loaded))
+                loaded: repo.loaded,
+                importedSleep: repo.importedSleep))
         } label: {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {

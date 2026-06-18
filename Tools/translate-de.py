@@ -13,6 +13,16 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> German value. Keys must match the catalog exactly.
 DE: dict[str, str] = {
+    # FER-277 — Detalle de Recuperación: bloque de pronóstico «Mañana, si descansas igual»
+    'Tomorrow, if you rest the same': 'Morgen, bei gleicher Erholung',
+    "A simple projection from your recent recovery trend (a moving average plus a damped recent slope), nudged down a little by any standing sleep debt. It's a trend, not a guarantee — what you do today matters most — and it needs about two weeks of history before it'll show. (De Sabbata & Simonini, J Healthcare Informatics Research, 2025)": 'Eine einfache Projektion aus deinem jüngsten Erholungstrend (ein gleitender Durchschnitt plus eine gedämpfte jüngste Steigung), leicht nach unten korrigiert durch ein bestehendes Schlafdefizit. Es ist ein Trend, keine Garantie – was du heute tust, zählt am meisten – und es braucht etwa zwei Wochen Verlauf, bevor es erscheint. (De Sabbata & Simonini, J Healthcare Informatics Research, 2025)',
+    "Information about tomorrow's forecast": 'Informationen zur Prognose für morgen',
+    'likely range': 'wahrscheinlicher Bereich',
+    'A trend projection, not a guarantee. Tomorrow depends most on what you do today.': 'Eine Trendprojektion, keine Garantie. Morgen hängt vor allem davon ab, was du heute tust.',
+    'Still calibrating': 'Noch in Kalibrierung',
+    'We need about two weeks of data to project this.': 'Wir brauchen etwa zwei Wochen Daten für eine Projektion.',
+    'rising': 'steigend',
+    'falling': 'fallend',
     # FER-256 — Detalle de Temperatura de la piel (SkinTempDetailScreen)
     "How far last night's skin temperature ran from your own recent baseline, in °C. We learn your normal over recent nights, so 0 is your usual and the number is the shift up or down. A single warm or cool night rarely means much — what's worth noticing is several nights in a row drifting the same way. It's a comfort signal, not a thermometer or a diagnosis.": 'Wie weit deine Hauttemperatur letzte Nacht von deiner eigenen jüngsten Baseline abwich, in °C. Wir lernen dein Normal aus den letzten Nächten, also ist 0 dein Üblich und die Zahl die Verschiebung nach oben oder unten. Eine einzelne warme oder kühle Nacht bedeutet selten viel – worauf es ankommt, sind mehrere Nächte in Folge, die in dieselbe Richtung driften. Es ist ein Komfortsignal, kein Thermometer und keine Diagnose.',
     'Information about skin temperature': 'Informationen zur Hauttemperatur',

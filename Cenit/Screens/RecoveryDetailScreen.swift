@@ -62,6 +62,9 @@ struct RecoveryDetailScreen: View {
                 } else if model.hasData {
                     blockDivider
                     whatExplainsItBlock
+                    // Forward-looking, so it reads high — right after what drives today's score. (FER-277)
+                    blockDivider
+                    forecastBlock
                     blockDivider
                     normalRangeBlock
                     // Calendar reads in the trend's old spot; the trend moves to the bottom (FER-237).
@@ -230,6 +233,109 @@ struct RecoveryDetailScreen: View {
         case ("respRate", .bad):   return "elevated"
         default:                   return "in your normal range"
         }
+    }
+
+    // MARK: - 2.5 Mañana, si descansas igual — pronóstico a 1 día (FER-277, motor FER-188)
+
+    /// The forecast block: a humble one-day projection of tomorrow's recovery. With a result it shows the
+    /// estimate (the datum, in recovery green), its likely range and the trend direction (in ink — color
+    /// stays on the number); with none it shows the "still calibrating" state in the same slot. The ⓘ
+    /// carries the method + citation; the framing line below keeps the always-visible humility.
+    private var forecastBlock: some View {
+        InfoAccordion(
+            title: "Tomorrow, if you rest the same",
+            explanation: "A simple projection from your recent recovery trend (a moving average plus a damped recent slope), nudged down a little by any standing sleep debt. It's a trend, not a guarantee — what you do today matters most — and it needs about two weeks of history before it'll show. (De Sabbata & Simonini, J Healthcare Informatics Research, 2025)",
+            accessibilityLabel: "Information about tomorrow's forecast",
+            theme: theme
+        ) {
+            if let f = model.forecast {
+                forecastReadout(f)
+            } else {
+                forecastCalibrating
+            }
+        }
+    }
+
+    /// The populated readout: estimate + direction on the title line, the likely-range bar, and the honest
+    /// framing line. VoiceOver reads it as one phrase by combining the already-localized child texts
+    /// (decorative glyphs are hidden), so no bespoke interpolated string key is needed.
+    private func forecastReadout(_ f: RecoveryForecast.Result) -> some View {
+        let lo = Int(f.low.rounded())
+        let hi = Int(f.high.rounded())
+        let est = Int(f.estimate.rounded())
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text("~").font(StrandFont.unit).foregroundStyle(theme.inkSecondary)
+                    .accessibilityHidden(true)
+                Text("\(est)").instrumentoHero(34).foregroundStyle(theme.dataRecovery)
+                Spacer(minLength: 8)
+                directionChip(f.direction)
+            }
+            // Likely range: a quiet track with the estimate's band drawn across it (token-only, like driverRow).
+            VStack(alignment: .leading, spacing: 5) {
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(theme.hairline).frame(height: 6)
+                        Capsule().fill(theme.dataRecovery.opacity(0.85))
+                            .frame(width: max(6, geo.size.width * CGFloat(hi - lo) / 100), height: 6)
+                            .offset(x: geo.size.width * CGFloat(lo) / 100)
+                    }
+                    .frame(maxHeight: .infinity, alignment: .center)
+                }
+                .frame(height: 6)
+                HStack {
+                    Text("\(lo)").font(StrandFont.captionNumber).foregroundStyle(theme.inkTertiary)
+                    Spacer()
+                    Text("likely range").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    Spacer()
+                    Text("\(hi)").font(StrandFont.captionNumber).foregroundStyle(theme.inkTertiary)
+                }
+            }
+            Text("A trend projection, not a guarantee. Tomorrow depends most on what you do today.")
+                .font(StrandFont.caption)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// The "still calibrating" sub-state, shown in the forecast slot when there isn't enough base yet.
+    private var forecastCalibrating: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "hourglass")
+                .font(StrandFont.headline)
+                .foregroundStyle(theme.inkTertiary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Still calibrating").font(StrandFont.bodyNumber).foregroundStyle(theme.ink)
+                Text("We need about two weeks of data to project this.")
+                    .font(StrandFont.caption)
+                    .foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// Direction as a quiet ink chip (arrow + word). The hue stays on the datum, never on chrome, so the
+    /// chip carries no saturated fill — it sits on the raised surface in secondary ink.
+    private func directionChip(_ d: RecoveryForecast.Direction) -> some View {
+        let symbol: String
+        let word: LocalizedStringKey
+        switch d {
+        case .rising:  symbol = "arrow.up.right";   word = "rising"
+        case .steady:  symbol = "arrow.right";      word = "steady"
+        case .falling: symbol = "arrow.down.right"; word = "falling"
+        }
+        return HStack(spacing: 4) {
+            Image(systemName: symbol).accessibilityHidden(true)
+            Text(word)
+        }
+        .font(StrandFont.captionNumber)
+        .foregroundStyle(theme.inkSecondary)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(theme.surface, in: Capsule())
+        .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
     }
 
     // MARK: - 3. Tu rango normal (media ± σ de tu recuperación reciente)
@@ -646,6 +752,9 @@ struct RecoveryDetailModel {
     let loaded: Bool
     /// Whether today's reading is Apple-sourced (for the source footer).
     let isAppleHealth: Bool
+    /// Tomorrow's one-day recovery projection (estimate + range + direction), or nil while there isn't
+    /// enough base (< ~2 weeks of valid days) — then the block shows its "still calibrating" state. (FER-277)
+    let forecast: RecoveryForecast.Result?
 
     /// True when there's a score or any stored recovery history to draw (the rich path); false → empty.
     var hasData: Bool { score != nil || !series.isEmpty }
@@ -659,15 +768,16 @@ struct RecoveryDetailModel {
                       today: DailyMetric?,
                       todayKey: String,
                       appleHealthDays: Set<String>,
-                      loaded: Bool) -> RecoveryDetailModel {
+                      loaded: Bool,
+                      importedSleep: [String: ImportedSleepFigures] = [:]) -> RecoveryDetailModel {
         let hasRecovery = today?.recovery != nil
         let score = today?.recovery.map { Int($0.rounded()) }
         let calibration = RecoveryScorer.calibrationNights(
             nightlyHrv: days.map(\.avgHrv), hasRecovery: hasRecovery)
 
-        let series = days
-            .compactMap { d in d.recovery.map { (day: d.day, value: $0) } }
-            .sorted { $0.day < $1.day }
+        // Sort once; both the UI series (nils dropped) and the forecast input (nils kept for spacing) read it.
+        let sortedDays = days.sorted { $0.day < $1.day }
+        let series = sortedDays.compactMap { d in d.recovery.map { (day: d.day, value: $0) } }
 
         let readiness = ReadinessEngine.evaluate(days: days, today: todayKey)
         let drivers = deriveDrivers(readiness: readiness, today: today)
@@ -680,6 +790,13 @@ struct RecoveryDetailModel {
 
         let heat = buildHeat(days: days, todayKey: todayKey)
 
+        // Tomorrow's projection: the recovery series (oldest → newest, nils kept so the engine respects
+        // missing-day spacing) plus any imported WHOOP sleep debt for today. The engine filters/gates and
+        // returns nil below ~2 weeks of base; we never recompute its math here. (FER-277, FER-188)
+        let forecast = RecoveryForecast.compute(
+            recovery: sortedDays.map(\.recovery),
+            sleepDebtMin: importedSleep[todayKey]?.debtMin)
+
         return RecoveryDetailModel(
             score: score,
             calibration: calibration,
@@ -689,7 +806,8 @@ struct RecoveryDetailModel {
             heat: heat,
             load: load,
             loaded: loaded,
-            isAppleHealth: appleHealthDays.contains(todayKey))
+            isAppleHealth: appleHealthDays.contains(todayKey),
+            forecast: forecast)
     }
 
     /// Map the recovery composite's five drivers to their current state. HRV / FC / Respiración /
@@ -778,7 +896,8 @@ private func sampleModel(score: Int?, calibration: Int?) -> RecoveryDetailModel 
         heat: calibration != nil ? [] : heat,
         load: calibration != nil ? nil : .init(acwr: 1.05, monotony: 1.4, bandLabel: "Ideal load", bandFlag: .good),
         loaded: true,
-        isAppleHealth: false)
+        isAppleHealth: false,
+        forecast: RecoveryForecast.compute(recovery: series.map { $0.value }))
 }
 
 #Preview("Recovery detail — con datos") {
@@ -797,7 +916,7 @@ private func sampleModel(score: Int?, calibration: Int?) -> RecoveryDetailModel 
     Color.clear.sheet(isPresented: .constant(true)) {
         RecoveryDetailScreen(model: RecoveryDetailModel(
             score: nil, calibration: nil, nightsNeeded: 4, drivers: [],
-            series: [], heat: [], load: nil, loaded: true, isAppleHealth: false))
+            series: [], heat: [], load: nil, loaded: true, isAppleHealth: false, forecast: nil))
     }
 }
 #endif
