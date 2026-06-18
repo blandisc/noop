@@ -1998,6 +1998,7 @@ struct TodayView: View {
         case "hrv":       pick = { $0.avgHrv }
         case "rhr":       pick = { $0.restingHr.map(Double.init) }
         case "resp_rate": pick = { $0.respRateBpm }
+        case "spo2":      pick = { $0.spo2Pct }
         case "steps":     pick = { $0.steps.map(Double.init) }
         default:          return []
         }
