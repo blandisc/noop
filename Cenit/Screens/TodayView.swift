@@ -104,9 +104,6 @@ struct TodayView: View {
 
     // Metric-info sheet — tapping any Key Metrics row presents this.
     @State private var metricDetail: MetricInfo? = nil
-    /// Light «Instrumento» Detalle de Recuperación (FER-225): the verdict numeral opens this rich detail
-    /// (superset of the old recovery `MetricInfoSheet`), built fresh on tap from the in-memory dashboard.
-    @State private var recoveryDetail: RecoveryDetailItem? = nil
     @State private var showWhyVerdict = false
 
     // THE single grid definition — every tile group reuses it so margins line up.
@@ -242,11 +239,6 @@ struct TodayView: View {
             .animation(.easeOut(duration: 0.18), value: showingSupport)
             .sheet(item: $metricDetail) { info in
                 metricSheet(for: info)
-            }
-            .sheet(item: $recoveryDetail) { item in
-                // Light «Instrumento» Detalle de Recuperación — theme passed explicitly (doesn't propagate
-                // through `.sheet`), NO nested NavigationStack (FER-171). (FER-225)
-                RecoveryDetailScreen(theme: theme, model: item.model)
             }
             .sheet(isPresented: $showWhyVerdict) {
                 WhyVerdictSheet(readiness: readiness, theme: theme)
@@ -607,16 +599,13 @@ struct TodayView: View {
                     Text("—").instrumentoHero(60).foregroundStyle(theme.inkTertiary)
                 }
             }
-            // El número abre el detalle de recuperación rico en «Instrumento» (FER-225): score por banda,
-            // qué lo explica, rango normal, tendencia, consistencia, calendario, carga y método.
+            // El número abre la hoja RESUMIDA de recuperación (MetricInfoSheet), igual que las demás
+            // métricas de Hoy — el detalle rico «Instrumento» (RecoveryDetailScreen) vive en Cuerpo (FER-232).
             .contentShape(Rectangle())
             .onTapGesture {
-                recoveryDetail = RecoveryDetailItem(model: RecoveryDetailModel.build(
-                    days: repo.days,
-                    today: repo.today,
-                    todayKey: Repository.localDayKey(Date()),
-                    appleHealthDays: repo.appleHealthDays,
-                    loaded: repo.loaded))
+                metricDetail = .recovery(score: recoveryScore,
+                                         calibrationNights: recoveryCalibration,
+                                         nightsNeeded: Baselines.minNightsSeed)
             }
         case .calibrating(let nights):
             // Apilado (FER-202), igual que el veredicto: «N» centrado en el eje del dial con el «/seed»

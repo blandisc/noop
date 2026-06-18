@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-17 · FER-225</span>
+  <span class="tb-updated">Actualizado 2026-06-17 · FER-232</span>
 </div>
 
 <div id="wrapper">
@@ -380,7 +380,7 @@ const SCREENS = [
       { to: 'live', label: 'beat by beat (hoja · FER-190)', type: 'sheet' },
       { to: 'metric-info', label: 'Tap tile de «Métricas de hoy» (Esfuerzo/Sueño/FC/SpO₂/Pasos/Estrés · FER-180)', type: 'sheet' },
       { to: 'metric-detail-screen', label: 'Tap tile HRV / FC reposo → MetricDetailScreen unificado (.focus · FER-185)', type: 'sheet' },
-      { to: 'recovery-detail', label: 'Tap número de recuperación (héroe) → RecoveryDetailScreen «Instrumento» (FER-225)', type: 'sheet' },
+      { to: 'metric-info', label: 'Tap número de recuperación (héroe) → MetricInfoSheet resumida (FER-232)', type: 'sheet' },
       { to: 'why-verdict', label: '«i» junto a la palabra del veredicto', type: 'sheet' },
       { to: 'support', label: 'Toolbar ❤', type: 'toolbar' },
     ],
@@ -732,7 +732,7 @@ const SCREENS = [
   },
   {
     id: 'recovery-detail', x: 792, y: 3310,
-    name: 'Detalle de Recuperación', desc: 'Sheet: Detalle de Recuperación «Instrumento» — score compuesto + ⓘ científico por bloque (desde Cuerpo y Hoy · FER-225)',
+    name: 'Detalle de Recuperación', desc: 'Sheet: Detalle de Recuperación «Instrumento» — score compuesto + ⓘ científico por bloque (desde Cuerpo · FER-225; Hoy abre la hoja resumida · FER-232)',
     file: 'Cenit/Screens/RecoveryDetailScreen.swift',
     icon: '🟢', color: '#0C8F62',
     isSheet: true,
