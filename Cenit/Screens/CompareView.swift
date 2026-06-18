@@ -332,7 +332,9 @@ struct CompareView: View {
         case "sleep_rem_min":    return { $0.remMin }
         case "sleep_light_min":  return { $0.lightMin }
         case "sleep_efficiency": return { $0.efficiency.map { $0 <= 1.0 ? $0 * 100 : $0 } }
-        case "active_kcal":      return { $0.activeKcalEst }
+        // NOTE: `active_kcal` stays on the `series()` path on purpose — the catalog sources it from Apple
+        // Health, and the dashboard's `activeKcalEst` is a *different* figure (an HR-only whole-day
+        // estimate), so resolving it here would silently swap that metric's meaning. (FER-275)
         default:                 return nil
         }
     }
