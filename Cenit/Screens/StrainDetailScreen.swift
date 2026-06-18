@@ -67,6 +67,11 @@ struct StrainDetailScreen: View {
                         blockDivider
                         trendBlock
                     }
+                    // "Qué mueve tu esfuerzo" — only when ≥1 relationship cleared the gate (FER-239).
+                    if !model.drivers.isEmpty {
+                        blockDivider
+                        whatMovesBlock
+                    }
                     blockDivider
                     methodDisclosure
                     if model.hasData { sourceFooter }
@@ -285,6 +290,44 @@ struct StrainDetailScreen: View {
         return pct >= 0 ? "+\(v)% vs last month" : "−\(v)% vs last month"
     }
 
+    // MARK: - 4.5 Qué mueve tu esfuerzo (correlación direccional, gated — FER-239)
+
+    /// Documented, DIRECTIONAL drivers of strain (same-day recovery, the prior day's strain), computed from
+    /// the user's OWN history in `StrandAnalytics` and degraded to a direction — never a coefficient, never
+    /// a causal claim (hence the "tendencia, no causa" chip). Mirrors `MetricDetailScreen`'s block. Rendered
+    /// only when at least one relationship clears the sufficiency gate (the caller already checked).
+    private var whatMovesBlock: some View {
+        // The ⓘ discloses the correlation method + the sufficiency gate (FER-220 pattern); the chip and the
+        // directional sentences live inside the accordion's content.
+        InfoAccordion(
+            title: "What moves your strain",
+            explanation: "We line up your day strain against your own recovery and the prior day's strain, day by day across your history, and read which way it leans (Pearson correlation). We only show a direction once there are enough paired days (about six weeks) and the link is strong enough to be unlikely to be chance — never the number, and never as a cause. (Plews 2013; Vesterinen 2016)",
+            accessibilityLabel: "Information about what moves your strain",
+            theme: theme
+        ) {
+            VStack(alignment: .leading, spacing: 10) {
+                InlineFlagChip("trend, not cause", color: theme.inkTertiary)
+                ForEach(model.drivers, id: \.driver) { finding in
+                    Text(Self.driverPhrase(finding))
+                        .font(StrandFont.caption)
+                        .foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    /// The directional sentence for a driver. The direction comes from the user's data; no number is ever
+    /// shown. Source strings are English; the es-MX values live in `Localizable.xcstrings`.
+    private static func driverPhrase(_ f: StrainDriverFinding) -> LocalizedStringKey {
+        switch (f.driver, f.trend) {
+        case (.sameDayRecovery, .rises): return "Tends to run higher on days you start more recovered."
+        case (.sameDayRecovery, .falls): return "Tends to run lower on days you start more recovered."
+        case (.priorDayStrain, .rises):  return "Tends to run higher the day after a hard effort."
+        case (.priorDayStrain, .falls):  return "Tends to ease off the day after a hard effort."
+        }
+    }
+
     // MARK: - 5. Ver el método (DisclosureGroup, patrón de las otras pantallas)
 
     private var methodDisclosure: some View {
@@ -472,17 +515,26 @@ struct StrainDetailModel {
     let series: [(day: String, value: Double)]
     /// Whether the repo finished its first load (drives loading vs empty hero copy).
     let loaded: Bool
+    /// The gated, directional drivers of strain ("Qué mueve tu esfuerzo"), computed from the user's own
+    /// history (FER-239). Empty when nothing clears the sufficiency gate → the block stays hidden.
+    let drivers: [StrainDriverFinding]
 
     /// True when there's a score today or any stored strain history to draw (the rich path); false → empty.
     var hasData: Bool { today != nil || !series.isEmpty }
 
     /// Build the whole model from the repo's in-memory dashboard. Pure (no DB). `days` is the strap +
-    /// on-device dashboard (`repo.days`, the baseline source — FER-149); `today` is `repo.today`.
+    /// on-device dashboard (`repo.days`, the baseline source — FER-149); `today` is `repo.today`. The
+    /// drivers are computed here off the same `days` (which carry recovery) via `StrandAnalytics`, keeping
+    /// the screen DB-free presentation over a ready-made model.
     static func build(days: [DailyMetric], today: DailyMetric?, loaded: Bool) -> StrainDetailModel {
         let series = days
             .compactMap { d in d.strain.map { (day: d.day, value: $0) } }
             .sorted { $0.day < $1.day }
-        return StrainDetailModel(today: today?.strain, series: series, loaded: loaded)
+        let recovery = days
+            .compactMap { d in d.recovery.map { (day: d.day, value: $0) } }
+            .sorted { $0.day < $1.day }
+        let drivers = WhatMovesStrainEngine.drivers(strain: series, recovery: recovery)
+        return StrainDetailModel(today: today?.strain, series: series, loaded: loaded, drivers: drivers)
     }
 }
 
@@ -513,7 +565,9 @@ private func sampleCurve() -> [TrendPoint] {
 #Preview("Strain detail — con datos") {
     Color.clear.sheet(isPresented: .constant(true)) {
         StrainDetailScreen(
-            model: StrainDetailModel(today: 14.2, series: sampleStrainSeries(), loaded: true),
+            model: StrainDetailModel(today: 14.2, series: sampleStrainSeries(), loaded: true,
+                                     drivers: [.init(driver: .sameDayRecovery, trend: .rises),
+                                               .init(driver: .priorDayStrain, trend: .falls)]),
             curveLoader: { sampleCurve() })
     }
 }
@@ -521,7 +575,7 @@ private func sampleCurve() -> [TrendPoint] {
 #Preview("Strain detail — sin datos") {
     Color.clear.sheet(isPresented: .constant(true)) {
         StrainDetailScreen(
-            model: StrainDetailModel(today: nil, series: [], loaded: true),
+            model: StrainDetailModel(today: nil, series: [], loaded: true, drivers: []),
             curveLoader: { [] })
     }
 }
