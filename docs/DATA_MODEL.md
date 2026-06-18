@@ -60,7 +60,7 @@ single `DatabaseQueue` and applies these PRAGMAs before any query runs:
 
 `WhoopStore` is an `actor`: all GRDB calls run on the actor's serial executor (off the main
 thread) through the `syncRead` / `syncWrite` helpers. The reported schema version is
-`WhoopStoreInfo.schemaVersion = 9`.
+`WhoopStoreInfo.schemaVersion = 11`.
 
 ---
 

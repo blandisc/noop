@@ -44,13 +44,17 @@ final class IntelligenceEngine: ObservableObject {
     /// Compute on-device scores for each of the last `maxDays` that actually has raw HR data.
     /// Personal baselines (HRV / resting HR) are folded from the imported history, so even the first
     /// live night can be scored against your norm.
-    func analyzeRecent(maxDays: Int = 21, force: Bool = false) async {
-        guard !computing else { return }
-        guard let store = await repo.storeHandle() else { note = String(localized: "No on-device store yet."); return }
+    /// Returns the set of `day` keys it (re)wrote under the computed source this run — the one-time
+    /// day-key re-bucket (FER-226) uses it to prune the rows orphaned by the UTC→local re-dating.
+    /// Empty when nothing was scored. (`@discardableResult` — the periodic loop ignores it.)
+    @discardableResult
+    func analyzeRecent(maxDays: Int = 21, force: Bool = false) async -> Set<String> {
+        guard !computing else { return [] }
+        guard let store = await repo.storeHandle() else { note = String(localized: "No on-device store yet."); return [] }
         guard let hrvCfg = Baselines.metricCfg["hrv"],
               let rhrCfg = Baselines.metricCfg["resting_hr"],
               let respCfg = Baselines.metricCfg["resp"],
-              let skinCfg = Baselines.metricCfg["skin_temp"] else { return }
+              let skinCfg = Baselines.metricCfg["skin_temp"] else { return [] }
 
         // ── Snapshot ALL repo-derived inputs ONCE, up front, before any heavy await. `repo.days` is a
         // value type (copy-on-write), so a concurrent `repo.refresh()` (e.g. a backfill completing
@@ -63,7 +67,7 @@ final class IntelligenceEngine: ObservableObject {
         let frontier = (try? await store.latestHRSampleTs(deviceId: deviceId)) ?? nil
         let histKey = "\(hist.count)|\(hist.first?.day ?? "")|\(hist.last?.day ?? "")"
         if !force, frontier != nil, frontier == lastAnalyzedHRFrontier, histKey == lastAnalyzedHistKey {
-            return
+            return []
         }
 
         computing = true
@@ -106,7 +110,7 @@ final class IntelligenceEngine: ObservableObject {
 
         for offset in 0..<maxDays {
             let dayStart = now - offset * 86_400
-            let day = AnalyticsEngine.dayString(dayStart)
+            let day = AnalyticsEngine.dayString(dayStart, tzOffsetSeconds: tzOffset)
             // Read a generous window around the night that ends on `day`; the stager finds the span.
             let from = dayStart - 30 * 3_600
             let to = dayStart + 12 * 3_600
@@ -120,12 +124,12 @@ final class IntelligenceEngine: ObservableObject {
             let skin = (try? await store.skinTempSamples(deviceId: deviceId, from: from, to: to, limit: 200_000)) ?? []
 
             // Calendar-day window for the ADDITIVE daily totals (steps + calories). The night window
-            // above is anchored to the current UTC time-of-day and ends at dayStart+12h, so for a PAST
+            // above is anchored to the current local time-of-day and ends at dayStart+12h, so for a PAST
             // day whose late hours sit after that bound those hours are never read and the totals
-            // undercount. Read exactly [midnightUtc(day), midnightUtc(day)+86400) and hand it to
-            // analyzeDay's dayHr/daySteps, which use it ONLY for those totals. (floorMod so the
-            // midnight floor is correct for any sign; the store range is inclusive, so end at -1 s.)
-            let dayMid = dayStart - ((dayStart % 86_400) + 86_400) % 86_400
+            // undercount. Read exactly [localMidnight(day), localMidnight(day)+86400) — the device's
+            // LOCAL civil day (FER-226) — and hand it to analyzeDay's dayHr/daySteps, which use it ONLY
+            // for those totals. (the store range is inclusive, so end at -1 s.)
+            let dayMid = AnalyticsEngine.localMidnight(dayStart, tzOffsetSeconds: tzOffset)
             let dayEnd = dayMid + 86_400 - 1
             // These two reads cover EXACTLY one calendar day, which holds at most ~86_400 1 Hz samples,
             // so the 200k night-window ceiling is wasteful headroom here. Cap at a true day ceiling
@@ -183,8 +187,8 @@ final class IntelligenceEngine: ObservableObject {
         // (efficiency/skin-temp are NOT seeded: Apple writes efficiency = nil and carries no skin temp,
         // so those terms keep their honest population-center cold-start.)
         let appleRows = (try? await store.dailyMetrics(deviceId: "apple-health",
-                                                       from: AnalyticsEngine.dayString(now - 90 * 86_400),
-                                                       to: AnalyticsEngine.dayString(now))) ?? []
+                                                       from: AnalyticsEngine.dayString(now - 90 * 86_400, tzOffsetSeconds: tzOffset),
+                                                       to: AnalyticsEngine.dayString(now, tzOffsetSeconds: tzOffset))) ?? []
         let priorDays = Self.applePriorDays(appleRows, maxNights: Self.applePriorMaxNights)
         var appleHrvByDay: [String: Double?] = [:]
         var appleRhrByDay: [String: Double?] = [:]
@@ -289,6 +293,10 @@ final class IntelligenceEngine: ObservableObject {
         // just-persisted computed days — matches and short-circuits when no new raw data arrived.
         lastAnalyzedHRFrontier = frontier
         lastAnalyzedHistKey = "\(repo.days.count)|\(repo.days.first?.day ?? "")|\(repo.days.last?.day ?? "")"
+
+        // The day-keys (re)written under the computed source this run — the FER-226 re-bucket prunes
+        // any computed row in its window NOT in this set (the UTC orphans left by the old dating).
+        return Set(dailies.map(\.day))
     }
 
     /// Re-score ONLY the recovery composite for a day against a (re-seeded) baseline. Every other field

@@ -17,11 +17,13 @@ struct CenitApp: App {
         WidgetSnapshot.assertGroupProvisioned()
         let model = AppModel()
         _model = StateObject(wrappedValue: model)
-        _health = StateObject(wrappedValue: HealthKitBridge(
+        let healthBridge = HealthKitBridge(
             repo: model.repo,
             appleDeviceId: model.appleDeviceId,
             noopDeviceId: model.deviceId
-        ))
+        )
+        model.healthBridge = healthBridge   // FER-226: AppModel reaches the bridge for the one-time re-bucket
+        _health = StateObject(wrappedValue: healthBridge)
     }
 
     var body: some Scene {

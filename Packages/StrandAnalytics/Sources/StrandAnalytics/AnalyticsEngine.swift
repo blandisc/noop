@@ -70,9 +70,32 @@ public enum AnalyticsEngine {
         return f
     }()
 
-    /// Format a unix-seconds timestamp as a UTC YYYY-MM-DD day string.
-    public static func dayString(_ ts: Int) -> String {
-        isoDay.string(from: Date(timeIntervalSince1970: TimeInterval(ts)))
+    /// Format a unix-seconds timestamp as a `YYYY-MM-DD` day string in a wall-clock zone
+    /// `tzOffsetSeconds` east of UTC. Default 0 = UTC, which keeps pure-function callers and tests on
+    /// UTC. The device's LOCAL civil day is obtained by shifting the instant by the offset and
+    /// formatting in UTC — the same trick `WhoopImporter` uses with `tzOffsetMin`, so day-keys stay
+    /// deterministic and dedup-stable across sources. (FER-226: `dailyMetric.day` is the local civil day.)
+    public static func dayString(_ ts: Int, tzOffsetSeconds: Int = 0) -> String {
+        isoDay.string(from: Date(timeIntervalSince1970: TimeInterval(ts + tzOffsetSeconds)))
+    }
+
+    /// Unix-seconds instant of LOCAL midnight for the civil day `ts` falls on, in a wall-clock zone
+    /// `tzOffsetSeconds` east of UTC. Used as the inclusive lower bound of the additive-totals window
+    /// (steps + calories), replacing the old UTC-midnight floor. Pure; default 0 = UTC midnight. (FER-226)
+    public static func localMidnight(_ ts: Int, tzOffsetSeconds: Int = 0) -> Int {
+        let local = ts + tzOffsetSeconds
+        let flooredLocal = local - ((local % 86_400) + 86_400) % 86_400
+        return flooredLocal - tzOffsetSeconds
+    }
+
+    /// Which `stored` day-keys fall strictly AFTER `today` (the device's local civil day) and were NOT
+    /// (re)written this run — the spurious "future-in-local" rows the one-time UTC→local re-bucket
+    /// prunes (FER-226). Pure so the prune's selection is testable without the app/store. Past and
+    /// today rows are never returned, so a day that couldn't be recomputed keeps its row (no data loss);
+    /// `written` excludes a freshly-written future row defensively (the re-group never writes future).
+    public static func futureLocalDaysToPrune(stored: [String], today: String,
+                                              written: Set<String>) -> [String] {
+        stored.filter { $0 > today && !written.contains($0) }
     }
 
     /// JSON-encode stage segments to the verbatim array shape CachedSleepSession stores.
@@ -95,8 +118,9 @@ public enum AnalyticsEngine {
     /// Analyze one day's streams into a `DayResult`.
     ///
     /// - Parameters:
-    ///   - day: the calendar day (UTC) this metric is for; a sleep session is
-    ///     attributed to the day its `end` falls on (a night ending that morning).
+    ///   - day: the calendar day this metric is for — the device's LOCAL civil day (the caller
+    ///     formats it with the same `tzOffsetSeconds` passed here); a sleep session is attributed to
+    ///     the day its `end` falls on (a night ending that morning).
     ///   - hr/rr/resp/gravity: the day's raw streams (the wider window around the
     ///     night may be passed; sleep detection finds the in-bed span itself).
     ///   - profile: user profile (age/sex/weight/height) for HRmax + calories.
@@ -113,9 +137,9 @@ public enum AnalyticsEngine {
                                   // (steps + activeKcalEst) ONLY. When nil, the totals fall back to
                                   // the same window the rest of the analysis uses (preserving the
                                   // pure-function contract). The caller (IntelligenceEngine) supplies
-                                  // a full [midnightUtc(day), midnightUtc(day)+86400) read here so a
+                                  // a full [localMidnight(day), localMidnight(day)+86400) read here so a
                                   // PAST day's late hours — which fall outside the ~42h
-                                  // night-detection window when the current UTC time-of-day is before
+                                  // night-detection window when the current local time-of-day is before
                                   // noon — are still counted. Sleep / recovery / strain / workouts
                                   // keep using hr/rr/resp/gravity/steps.
                                   dayHr: [HRSample]? = nil,
@@ -136,8 +160,8 @@ public enum AnalyticsEngine {
         // ── Sleep detection + staging ─────────────────────────────────────────
         let allSessions = SleepStager.detectSleep(hr: hr, rr: rr, resp: resp, gravity: gravity,
                                                   tzOffsetSeconds: tzOffsetSeconds)
-        // Sessions attributed to `day` = those whose end falls on `day` (UTC).
-        let matched = allSessions.filter { dayString($0.end) == day }
+        // Sessions attributed to `day` = those whose end falls on `day` (local civil day per tzOffsetSeconds).
+        let matched = allSessions.filter { dayString($0.end, tzOffsetSeconds: tzOffsetSeconds) == day }
 
         // ── Daily sleep aggregates (AASM, in-bed weighted) ────────────────────
         var deepS = 0.0, remS = 0.0, lightS = 0.0, tstS = 0.0
@@ -222,7 +246,7 @@ public enum AnalyticsEngine {
         let stepsTotal: Int? = {
             // Prefer the full-calendar-day stream for the additive total; fall back to the
             // night-window stream when the caller didn't supply one (pure-function callers/tests).
-            let sorted = (daySteps ?? steps).filter { dayString($0.ts) == day }.sorted { $0.ts < $1.ts }
+            let sorted = (daySteps ?? steps).filter { dayString($0.ts, tzOffsetSeconds: tzOffsetSeconds) == day }.sorted { $0.ts < $1.ts }
             if sorted.count < 2 { return nil }
             // A firmware reboot resets the counter and is byte-indistinguishable from a u16 wrap.
             // A genuine wrap yields a SMALL corrected delta (the steps since the last record); a
@@ -244,12 +268,12 @@ public enum AnalyticsEngine {
         // per-second model the per-workout estimate uses (resting BMR below activeThreshold, Keytel
         // active above). effMaxHR + restingHRDaily are the same effective HRmax / resting baseline
         // strain uses. Nil when there is no HR. A heart-rate ESTIMATE — not cloud/clinical parity.
-        // Whole-day additive totals (steps above, calories here) are summed over the full UTC
+        // Whole-day additive totals (steps above, calories here) are summed over the full LOCAL
         // calendar day supplied by the caller (dayHr / daySteps), NOT the ~42h sleep-detection
         // window — which, anchored to the current time-of-day, would drop a past day's late hours
         // and double-count seconds shared with adjacent days. Fall back to the night-window hr for
         // pure-function callers that don't supply dayHr. Strain keeps the full window (bounded log).
-        let dayHrFiltered = (dayHr ?? hr).filter { dayString($0.ts) == day }
+        let dayHrFiltered = (dayHr ?? hr).filter { dayString($0.ts, tzOffsetSeconds: tzOffsetSeconds) == day }
         let activeKcalEst: Double? = dayHrFiltered.isEmpty ? nil : Calories.estimateDayCalories(
             dayHrFiltered, profile: profile, hrmax: effMaxHR,
             restingHR: restingHRDaily.map(Double.init))

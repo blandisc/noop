@@ -41,6 +41,11 @@ final class AppModel: ObservableObject {
     /// Opt-in AI coach (bring-your-own-key) — the one networked feature, off until the user enables it.
     let coach: AICoachEngine
 
+    /// The iOS Apple Health bridge, wired in by `CenitApp` right after init (it depends on `repo`).
+    /// `weak` so SwiftUI owns its lifetime; AppModel only reaches it for the one-time day-key
+    /// re-bucket (FER-226), and tolerates nil (Apple re-group is then deferred to the normal sync).
+    weak var healthBridge: HealthKitBridge?
+
     /// Timestamps of moments marked via a double-tap (persisted).
     @Published var moments: [Date] = []
 
@@ -208,6 +213,7 @@ final class AppModel: ObservableObject {
         analysisTask = Task { [weak self] in
             guard let self else { return }
             await self.repo.refresh()                          // surface any imported data at once
+            await self.migrateDayKeysToLocalIfNeeded()         // FER-226: one-time UTC→local re-bucket (flag-gated)
             try? await Task.sleep(nanoseconds: 6_000_000_000)  // give the first offload a moment
             while !Task.isCancelled {
                 if !self.live.backfilling, !self.hasActiveImport {
@@ -223,6 +229,62 @@ final class AppModel: ObservableObject {
     func stopAnalysisLoop() {
         analysisTask?.cancel()
         analysisTask = nil
+    }
+
+    // MARK: - One-time day-key re-bucket (FER-226)
+
+    /// Cursor flag (in the existing `cursors` table — no schema change) that gates the one-time
+    /// UTC→local day-key re-bucket so it runs at most once per install.
+    private static let dayKeyMigrationCursor = "dayKeyV2Done"
+
+    /// Re-group the on-device computed scores (and, when Apple Health is connected, the Apple rows)
+    /// onto the device's LOCAL civil day, then prune the spurious future-in-local rows the old UTC
+    /// dating left behind (FER-226). Flag-gated so it runs once; idempotent and safe to re-enter on
+    /// every foreground. Conservative by construction: the re-group rewrites from the still-stored raw
+    /// streams / Apple Health, and the prune only ever removes FUTURE-dated rows — a past day that
+    /// can't be recomputed (raw already pruned) keeps its row, so there is no data loss.
+    func migrateDayKeysToLocalIfNeeded() async {
+        guard let store = await repo.storeHandle() else { return }   // no store yet → retry next launch
+        if ((try? await store.cursor(Self.dayKeyMigrationCursor)) ?? nil) == 1 { return }   // already done
+
+        let window = 60   // bounded recompute window; older days keep their date (accepted seam)
+
+        // 1. On-device computed scores: re-group from the still-stored raw streams onto the local day
+        //    (force bypasses FER-177's idempotent skip), then drop the future-in-local orphan(s).
+        let writtenComputed = await intelligence.analyzeRecent(maxDays: window, force: true)
+        await Self.pruneFutureLocalDays(store: store, deviceId: deviceId + "-noop", written: writtenComputed)
+
+        // 2. Apple Health: only when already connected (auth restored from the persisted "connected"
+        //    flag on launch). New Apple rows are written local from now on, so a user who connects HK
+        //    LATER has no UTC rows to migrate — the normal sync already lands them on the local day.
+        if let health = healthBridge, health.auth == .authorized {
+            let writtenApple = await health.sync(days: window)
+            await Self.pruneFutureLocalDays(store: store, deviceId: appleDeviceId, written: writtenApple)
+        }
+
+        // Mark done so the heavy re-group doesn't re-run on every launch. The re-group is idempotent,
+        // so marking even when Apple was skipped is harmless (a later HK connect lands local anyway).
+        try? await store.setCursor(Self.dayKeyMigrationCursor, 1)
+    }
+
+    /// Prune rows for `deviceId` dated AFTER today's local civil day — the spurious "future-in-local"
+    /// rows the old UTC dating materialized for the evening's data in a UTC− zone, now superseded by
+    /// the local-day rows the re-group just wrote. Only future-dated rows are touched, so a past day
+    /// that couldn't be recomputed keeps its row (no data loss). `written` are this run's freshly
+    /// written local days, excluded defensively. Static: no instance state, just the store.
+    private static func pruneFutureLocalDays(store: WhoopStore, deviceId: String,
+                                             written: Set<String>) async {
+        let todayLocal = Repository.localDayKey(Date())
+        // A UTC offset shifts a row by at most one day, so [today … +2d local] covers every future orphan.
+        let now = Int(Date().timeIntervalSince1970)
+        let tz = TimeZone.current.secondsFromGMT()
+        let toDay = AnalyticsEngine.dayString(now + 2 * 86_400, tzOffsetSeconds: tz)
+        let rows = (try? await store.dailyMetrics(deviceId: deviceId, from: todayLocal, to: toDay)) ?? []
+        let future = AnalyticsEngine.futureLocalDaysToPrune(stored: rows.map(\.day),
+                                                            today: todayLocal, written: written)
+        if !future.isEmpty {
+            _ = try? await store.deleteDailyMetrics(deviceId: deviceId, days: future)
+        }
     }
 
     private func refreshAfterCompletedBackfill() async {

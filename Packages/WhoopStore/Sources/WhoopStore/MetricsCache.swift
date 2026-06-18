@@ -141,6 +141,22 @@ extension WhoopStore {
         }
     }
 
+    /// Delete cached daily-metrics rows for specific `(deviceId, day)` keys. Used by the one-time
+    /// day-key re-bucket (FER-226) to prune the rows orphaned when their `day` was re-dated UTC→local
+    /// — e.g. the spurious future-in-local row this evening's data used to materialize in a UTC−
+    /// zone. No-op on an empty list. Returns rows deleted.
+    @discardableResult
+    public func deleteDailyMetrics(deviceId: String, days: [String]) async throws -> Int {
+        guard !days.isEmpty else { return 0 }
+        return try syncWrite { db in
+            let placeholders = Array(repeating: "?", count: days.count).joined(separator: ", ")
+            try db.execute(sql: """
+                DELETE FROM dailyMetric WHERE deviceId = ? AND day IN (\(placeholders))
+                """, arguments: StatementArguments([deviceId] + days))
+            return db.changesCount
+        }
+    }
+
     // MARK: - Reads
 
     /// Cached sleep sessions overlapping [from, to] (by startTs), oldest first.
