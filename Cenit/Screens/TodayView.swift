@@ -1004,32 +1004,49 @@ struct TodayView: View {
         let lastSyncedAt: Double?
         @Environment(\.instrumentoTheme) private var theme
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
-        @State private var spin = false
 
         var body: some View {
             HStack(spacing: NoopMetrics.space1) {
-                Image(systemName: "arrow.triangle.2.circlepath")
-                    .font(.system(size: 10))
-                    .foregroundStyle(backfilling ? theme.verdict : theme.inkTertiary)
-                    .rotationEffect(.degrees(spin && backfilling ? 360 : 0))
-                    .animation(backfilling && !reduceMotion ? StrandMotion.spin() : nil, value: spin)
+                glyph
                 label
             }
             .font(StrandFont.caption)
             .foregroundStyle(theme.inkTertiary)
             .lineLimit(1)
-            .onAppear { spin = backfilling }
-            .onChange(of: backfilling) { _, now in spin = now }
             .accessibilityElement(children: .combine)
+        }
+
+        /// El glifo de sync. Gira SOLO mientras `backfilling`, a velocidad constante manejada por
+        /// `TimelineView(.animation)` (ángulo = tiempo × 240°/s, ~1.5 s/vuelta) — al terminar no hay
+        /// TimelineView y el glifo se detiene en seco (el `.repeatForever` de SwiftUI no cancelaba
+        /// limpio, FER-267). Reduce Motion → estático. En reposo es un glifo quieto que desambigua que
+        /// el tiempo de al lado es la última sincronización.
+        @ViewBuilder private var glyph: some View {
+            let base = Image(systemName: "arrow.triangle.2.circlepath")
+                .font(.system(size: 10))
+                .foregroundStyle(backfilling ? theme.verdict : theme.inkTertiary)
+            if backfilling && !reduceMotion {
+                TimelineView(.animation) { context in
+                    let angle = (context.date.timeIntervalSinceReferenceDate * 240)
+                        .truncatingRemainder(dividingBy: 360)
+                    base.rotationEffect(.degrees(angle))
+                }
+            } else {
+                base
+            }
         }
 
         @ViewBuilder private var label: some View {
             if backfilling {
-                Text(chunks > 0 ? "\(chunks) packets" : String(localized: "Syncing…")).monospacedDigit()
+                // String(localized:) localiza la interpolación (clave «%lld packets»); un `Text(String)`
+                // por ternario sería verbatim y saldría en inglés (FER-267).
+                Text(chunks > 0 ? String(localized: "\(chunks) packets") : String(localized: "Syncing…"))
+                    .monospacedDigit()
             } else if let at = lastSyncedAt {
                 TimelineView(.periodic(from: .now, by: 60)) { context in
-                    Text(RelativeDateTimeFormatter().localizedString(
-                        fromTimeInterval: at - context.date.timeIntervalSince1970))
+                    // Acota a pasado (≤ −1 s) para que nunca diga «dentro de…» cuando la sync es ≈ ahora.
+                    let delta = Swift.min(at - context.date.timeIntervalSince1970, -1)
+                    Text(RelativeDateTimeFormatter().localizedString(fromTimeInterval: delta))
                 }
             } else {
                 Text("Last sync — never")
