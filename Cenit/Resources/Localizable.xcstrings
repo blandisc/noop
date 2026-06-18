@@ -27416,6 +27416,40 @@
           }
         }
       }
+    },
+    "The line is your 7-day moving average over the period you pick. The percentage compares this month's average with last month's. Average, Median, Lowest, Highest and σ (how spread out your days are) come from the range you selected.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The line is your 7-day moving average over the period you pick. The percentage compares this month's average with last month's. Average, Median, Lowest, Highest and σ (how spread out your days are) come from the range you selected."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La línea es tu promedio móvil de 7 días en el periodo que elijas. El porcentaje compara el promedio de este mes con el del mes pasado. Promedio, mediana, mínimo, máximo y σ (qué tan dispersos están tus días) salen del rango que seleccionaste."
+          }
+        }
+      }
+    },
+    "slept %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "slept %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "dormiste %@"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

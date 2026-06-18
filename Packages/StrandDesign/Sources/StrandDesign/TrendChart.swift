@@ -350,9 +350,14 @@ public struct TrendChart: View {
                     .frame(width: plot.width, height: 1)
                     .offset(x: plot.minX, y: yTop + h - 1)
             }
-            if h >= 16 {
+            // Every band tall enough gets a label; the ACTIVE band always gets one even when it's too
+            // thin to clear the height test (e.g. sleep's 1-hour "Adequate" 6–7 h band) — otherwise the
+            // one band you most need named is the one that goes unlabelled. The active label is also
+            // weightier so "which band am I in" reads at a glance. (FER-249)
+            if h >= 16 || band.isActive {
                 Text(band.label)
                     .font(StrandFont.footnote)
+                    .fontWeight(band.isActive ? .semibold : .regular)
                     .lineLimit(1)
                     .foregroundStyle(band.isActive ? bandColor : axisLabelColor.opacity(0.8))
                     .frame(width: plot.width - 6, alignment: .trailing)
@@ -364,7 +369,9 @@ public struct TrendChart: View {
 
 // MARK: - Platform scrub gesture
 
-private extension View {
+// Internal (not file-private) so sibling charts in the package — e.g. `DebtBars` — share the exact
+// same finger-drag / hover affordance instead of re-implementing it. (FER-249)
+extension View {
     /// Attaches the chart-scrub affordance: `DragGesture` on iOS (finger drag, no minimum
     /// distance so the crosshair appears on first touch), `onContinuousHover` on macOS
     /// (pointer hover). Both update the `hoverX` binding so the same crosshair + tooltip

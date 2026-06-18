@@ -96,6 +96,7 @@ ES: dict[str, str] = {
     "%lld of the last %lld nights in this range": "%1$lld de las últimas %2$lld noches en este rango",
     "Hours above or below your sleep need, each of the last 7 nights": "Horas por encima o por debajo de tu necesidad de sueño, cada una de las últimas 7 noches",
     "Hours asleep per night, last 14 nights, with classification bands": "Horas dormidas por noche, últimas 14 noches, con bandas de clasificación",
+    "slept %@": "dormiste %@",
     "What the stages mean": "Qué significan las etapas",
     "Shows what this means": "Muestra qué significa esto",
     "Sleep stages": "Etapas del sueño",
