@@ -1,6 +1,5 @@
 #if os(iOS)
 import SwiftUI
-import Charts
 import StrandDesign
 import StrandAnalytics
 import WhoopStore
@@ -341,7 +340,10 @@ struct SleepDetailScreen: View {
                         points: pts,
                         gradient: Gradient(colors: [theme.dataSleep.opacity(0.5), theme.dataSleep]),
                         valueRange: bt.range,
-                        showsArea: true,
+                        // No area fill: the soft gradient under the line muddied the classification
+                        // bands so you couldn't tell which one you were in. The line alone reads the
+                        // band cleanly. (FER-249 v3)
+                        showsArea: false,
                         height: 160,
                         showsHover: true,
                         valueFormat: bt.valueFormat,
@@ -392,40 +394,26 @@ struct SleepDetailScreen: View {
     }
 
     /// One bar per night for the trailing week: hours above (`verdict`) or below (`warning`) your need,
-    /// with the need itself as the zero rule. The dates are UTC day-keys (FER-226), so the weekday label
-    /// formats in UTC to avoid an off-by-one shift.
+    /// with the need itself as the zero rule. Scrubbable like every other chart — drag to read a night's
+    /// debt and how much you slept (`DebtBars`). The dates are UTC day-keys (FER-226), so the weekday
+    /// label formats in UTC to avoid an off-by-one shift. (FER-249 v3)
     private var weeklyDebtBars: some View {
-        Chart {
-            RuleMark(y: .value("Need", 0))
-                .foregroundStyle(theme.hairlineStrong)
-                .lineStyle(StrokeStyle(lineWidth: 1))
-                .annotation(position: .top, alignment: .trailing, spacing: 2) {
-                    Text("your need")
-                        .font(StrandFont.footnote)
-                        .foregroundStyle(theme.inkTertiary)
-                }
-            ForEach(model.weeklyDebtNights, id: \.date) { n in
-                BarMark(
-                    x: .value("Night", n.date, unit: .day),
-                    y: .value("vs need", n.vsNeedMin / 60)
-                )
-                .foregroundStyle(n.vsNeedMin < 0 ? theme.warning : theme.verdict)
-                .cornerRadius(2)
-            }
-        }
-        .frame(height: 96)
-        .chartYAxis(.hidden)
-        .chartXAxis {
-            AxisMarks(values: .stride(by: .day)) { value in
-                if let d = value.as(Date.self) {
-                    AxisValueLabel {
-                        Text(Self.weekdayNarrow(d))
-                            .font(StrandFont.footnote)
-                            .foregroundStyle(theme.inkTertiary)
-                    }
-                }
-            }
-        }
+        DebtBars(
+            nights: model.weeklyDebtNights.map {
+                DebtNightBar(date: $0.date, vsNeedMin: $0.vsNeedMin, sleptMin: $0.sleptMin)
+            },
+            deficitColor: theme.warning,
+            surplusColor: theme.verdict,
+            ruleColor: theme.hairlineStrong,
+            axisLabelColor: theme.inkTertiary,
+            height: 96,
+            ruleLabel: String(localized: "your need"),
+            weekdayLabel: Self.weekdayNarrow,
+            valueFormat: { vsNeedMin in
+                vsNeedMin < 0 ? "−\(hoursMinutes(-vsNeedMin))" : "+\(hoursMinutes(vsNeedMin))"
+            },
+            sleptFormat: { slept in String(localized: "slept \(hoursMinutes(slept))") }
+        )
         .accessibilityElement()
         .accessibilityLabel(Text("Hours above or below your sleep need, each of the last 7 nights"))
     }
@@ -909,9 +897,11 @@ struct SleepDetailModel {
     let weeklyDebtNights: [DebtNight]
 
     /// One night's sleep relative to your personal need, in minutes (signed). Drives a single debt bar.
+    /// `sleptMin` is the night's total sleep, for the scrub tooltip's "slept …" line. (FER-249 v3)
     struct DebtNight: Equatable {
         let date: Date
         let vsNeedMin: Double
+        let sleptMin: Double
     }
 
     // Per-metric 14-day mini-trends for the metric info cards (FER-227). Derived from `repo.days`;
@@ -1015,7 +1005,7 @@ struct SleepDetailModel {
         let debtNights: [DebtNight] = days.suffix(7).compactMap { d in
             guard let asleep = d.totalSleepMin, asleep > 0, need > 0,
                   let date = dayParser.date(from: d.day) else { return nil }
-            return DebtNight(date: date, vsNeedMin: asleep - need)
+            return DebtNight(date: date, vsNeedMin: asleep - need, sleptMin: asleep)
         }
 
         // --- Per-metric 14-day mini-trends for the info cards (FER-227). Same derivations as the tiles,

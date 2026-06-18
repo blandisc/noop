@@ -31,6 +31,7 @@ public struct TrendStatSummary: View {
     private let average: String
     private let unit: String?
     private let pctChange: Double?
+    private let absoluteChange: Double?
     private let polarity: Polarity
     private let rangeLow: String
     private let rangeHigh: String
@@ -40,6 +41,10 @@ public struct TrendStatSummary: View {
     ///   - average: the period mean, already formatted to the metric's precision (no unit).
     ///   - unit: optional unit shown small next to the number (e.g. "ms", "h"); nil for unitless indices.
     ///   - pctChange: signed month-over-month % change in the mean; nil when there's no previous month.
+    ///   - absoluteChange: opt-in alternative to `pctChange` — a signed month-over-month change expressed
+    ///     in the metric's OWN units (rendered at one decimal + `unit`, e.g. "0.1 °C vs last month"). Use it
+    ///     for metrics whose mean sits near zero, where a percentage is unstable/misleading (e.g. a skin-
+    ///     temperature deviation). When non-nil it drives the chip and `pctChange` is ignored. (FER-256)
     ///   - polarity: which direction of change is good — colours the chip.
     ///   - rangeLow / rangeHigh: the period min and max, already formatted (bake the unit into rangeHigh
     ///     when you want it shown, e.g. "62 ms").
@@ -47,6 +52,7 @@ public struct TrendStatSummary: View {
     public init(average: String,
                 unit: String? = nil,
                 pctChange: Double?,
+                absoluteChange: Double? = nil,
                 polarity: Polarity,
                 rangeLow: String,
                 rangeHigh: String,
@@ -54,32 +60,46 @@ public struct TrendStatSummary: View {
         self.average = average
         self.unit = unit
         self.pctChange = pctChange
+        self.absoluteChange = absoluteChange
         self.polarity = polarity
         self.rangeLow = rangeLow
         self.rangeHigh = rangeHigh
         self.theme = theme
     }
 
-    /// A change present but under ±1% reads as no movement — say "Stable" instead of "0%". When there's
-    /// no previous month at all (`pctChange == nil`), the chip is hidden entirely rather than faking "Stable".
-    private var isFlat: Bool { pctChange.map { abs($0) < 1 } ?? false }
+    /// The signed change that drives the chip — the absolute delta when given, else the percentage.
+    private var changeValue: Double? { absoluteChange ?? pctChange }
+
+    /// A change too small to matter reads as no movement — say "Stable" instead of "0". Thresholds differ
+    /// by mode: under ±1% for a percentage, under ±0.05 (rounds to 0.0) for a one-decimal absolute delta.
+    /// When there's no previous month at all the chip is hidden entirely rather than faking "Stable".
+    private var isFlat: Bool {
+        if let absoluteChange { return abs(absoluteChange) < 0.05 }
+        return pctChange.map { abs($0) < 1 } ?? false
+    }
 
     /// Green when the change moves the good way, amber when the bad way; quiet ink when flat or neutral.
     private var changeColor: Color {
-        guard !isFlat, let pct = pctChange else { return theme.inkSecondary }
+        guard !isFlat, let v = changeValue else { return theme.inkSecondary }
         switch polarity {
         case .neutral:        return theme.inkSecondary
-        case .higherIsBetter: return pct > 0 ? theme.verdict : theme.warning
-        case .lowerIsBetter:  return pct < 0 ? theme.verdict : theme.warning
+        case .higherIsBetter: return v > 0 ? theme.verdict : theme.warning
+        case .lowerIsBetter:  return v < 0 ? theme.verdict : theme.warning
         }
     }
 
-    /// "10% vs last month" (String-interpolated so the key is "%@ vs last month", which localizes —
-    /// the arrow already carries the sign, FER-247), or "Stable this month" when flat.
+    /// "10% vs last month" / "0.1 °C vs last month" (String-interpolated so the key is "%@ vs last month",
+    /// which localizes — the arrow already carries the sign, FER-247), or "Stable this month" when flat.
     private var chipText: LocalizedStringKey {
-        guard !isFlat, let pct = pctChange else { return "Stable this month" }
-        let pctStr = "\(Int(abs(pct).rounded()))%"
-        return "\(pctStr) vs last month"
+        guard !isFlat, let v = changeValue else { return "Stable this month" }
+        let magnitude: String
+        if absoluteChange != nil {
+            let mag = String(format: "%.1f", abs(v))
+            magnitude = unit.map { "\(mag) \($0)" } ?? mag
+        } else {
+            magnitude = "\(Int(abs(v).rounded()))%"
+        }
+        return "\(magnitude) vs last month"
     }
 
     private var rangeText: LocalizedStringKey { "Varied between \(rangeLow) and \(rangeHigh)" }
@@ -94,7 +114,7 @@ public struct TrendStatSummary: View {
                         Text(unit).font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
                     }
                 }
-                if pctChange != nil { chip }
+                if changeValue != nil { chip }
             }
             Text(rangeText).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
         }
@@ -103,8 +123,8 @@ public struct TrendStatSummary: View {
 
     private var chip: some View {
         HStack(spacing: 3) {
-            if !isFlat, let pct = pctChange {
-                Image(systemName: pct >= 0 ? "arrow.up.right" : "arrow.down.right")
+            if !isFlat, let v = changeValue {
+                Image(systemName: v >= 0 ? "arrow.up.right" : "arrow.down.right")
                     .font(.system(size: 11, weight: .semibold))
             }
             Text(chipText).font(StrandFont.captionNumber)
@@ -135,6 +155,9 @@ public struct TrendStatSummary: View {
         // Flat month → "Stable this month"
         TrendStatSummary(average: "65", unit: nil, pctChange: 0.4,
                          polarity: .higherIsBetter, rangeLow: "40", rangeHigh: "88", theme: t)
+        // Skin-temp deviation — absolute-delta chip in °C (mean near zero, % would be misleading); neutral
+        TrendStatSummary(average: "+0.1", unit: "°C", pctChange: nil, absoluteChange: 0.1,
+                         polarity: .neutral, rangeLow: "−0.4", rangeHigh: "+0.5 °C", theme: t)
     }
     .padding(24)
     .background(t.paper)

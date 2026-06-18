@@ -1108,6 +1108,9 @@ struct TodayView: View {
         let stepsFresh  = appleDays.last(where: { $0.day >= stepsCutoff })?.steps
         let stepsT      = stepsFresh.map(Double.init)
         let stressT     = stress?.score
+        // Base para la media de 7 días de cada tile (FER-258): días anteriores a hoy, ordenados,
+        // computada una vez por render (no por tile).
+        let base = baselineDays()
         // Nudge para conectar Apple Salud sólo si no está conectado y falta alguna señal medida.
         let notConnected = health.auth != .authorized && health.auth != .unavailable
         let anyMeasuredMissing = hrvR == nil || sleepR == nil || rhrR == nil || spo2R == nil || stepsFresh == nil
@@ -1133,8 +1136,8 @@ struct TodayView: View {
                     label: "Day Strain",
                     value: strainT.map { String(format: "%.1f", $0) } ?? "—",
                     valueColor: theme.dataStrain,
-                    delta: tileDelta(today: strainT, yesterday: yesterdayValue { $0.strain },
-                                     betterHigher: nil, deadband: 0.3) { String(format: "%.1f", $0) }
+                    context: tileContext(today: strainT, history: history(base) { $0.strain },
+                                         betterHigher: nil, deadband: 0.3) { String(format: "%.1f", $0) }
                 )) { metricDetail = .strain(strainT) }
                 // Sueño — dormir más es mejor.
                 metricTile(TodayMetricTile(
@@ -1142,8 +1145,8 @@ struct TodayView: View {
                     value: sleepR.map { sleepText($0.value) } ?? "—",
                     valueColor: theme.dataSleep,
                     fromApple: sleepR?.fromApple == true,
-                    delta: tileDelta(today: sleepR?.value, yesterday: yesterdayValue { $0.totalSleepMin },
-                                     betterHigher: true, deadband: 5) { sleepDeltaText($0) }
+                    context: tileContext(today: sleepR?.value, history: history(base) { $0.totalSleepMin },
+                                         betterHigher: true, deadband: 5) { sleepDeltaText($0) }
                 )) { metricDetail = .sleep(sleepR.map { Int($0.value.rounded()) }) }
                 // HRV — más alto es mejor.
                 metricTile(TodayMetricTile(
@@ -1151,15 +1154,15 @@ struct TodayView: View {
                     value: hrvR.map { "\(Int($0.value.rounded()))" } ?? "—", unit: "ms",
                     valueColor: theme.dataHrv,
                     fromApple: hrvR?.fromApple == true,
-                    delta: tileDelta(today: hrvR?.value, yesterday: yesterdayValue { $0.avgHrv },
-                                     betterHigher: true, deadband: 1) { "\(Int($0.rounded())) ms" }
+                    context: tileContext(today: hrvR?.value, history: history(base) { $0.avgHrv },
+                                         betterHigher: true, deadband: 1) { "\(Int($0.rounded())) ms" }
                 )) { metricDetail = .hrv(hrvR?.value) }
                 // Frecuencia cardíaca — promedio continuo del día. Sin Δ: no se guarda un promedio diurno
                 // de "ayer" con qué comparar (decisión del dueño, FER-180).
                 metricTile(TodayMetricTile(
                     label: "Heart Rate",
                     value: hrTodayAvg.map { "\($0)" } ?? "—", unit: String(localized: "bpm"),
-                    valueColor: theme.dataHeart, delta: nil
+                    valueColor: theme.dataHeart
                 )) { metricDetail = .heartRate(avgBpm: hrTodayAvg) }
                 // FC en reposo — más alta es PEOR.
                 metricTile(TodayMetricTile(
@@ -1167,8 +1170,8 @@ struct TodayView: View {
                     value: rhrR.map { "\(Int($0.value.rounded()))" } ?? "—", unit: String(localized: "bpm"),
                     valueColor: theme.dataHeart,
                     fromApple: rhrR?.fromApple == true,
-                    delta: tileDelta(today: rhrR?.value, yesterday: yesterdayValue { $0.restingHr.map(Double.init) },
-                                     betterHigher: false, deadband: 1) { "\(Int($0.rounded())) \(String(localized: "bpm"))" }
+                    context: tileContext(today: rhrR?.value, history: history(base) { $0.restingHr.map(Double.init) },
+                                         betterHigher: false, deadband: 1) { "\(Int($0.rounded())) \(String(localized: "bpm"))" }
                 )) { metricDetail = .restingHR(rhrR.map { Int($0.value.rounded()) }) }
                 // Oxígeno en sangre — más alto es mejor.
                 metricTile(TodayMetricTile(
@@ -1176,8 +1179,8 @@ struct TodayView: View {
                     value: spo2R.map { String(format: "%.0f", $0.value) } ?? "—", unit: "%",
                     valueColor: theme.dataSpO2,
                     fromApple: spo2R?.fromApple == true,
-                    delta: tileDelta(today: spo2R?.value, yesterday: yesterdayValue { $0.spo2Pct },
-                                     betterHigher: true, deadband: 0.5) { "\(Int($0.rounded())) %" }
+                    context: tileContext(today: spo2R?.value, history: history(base) { $0.spo2Pct },
+                                         betterHigher: true, deadband: 0.5) { "\(Int($0.rounded())) %" }
                 )) { metricDetail = .spo2(spo2R?.value) }
                 // Pasos — sin meta (no existe en la app); más es mejor.
                 metricTile(TodayMetricTile(
@@ -1185,8 +1188,8 @@ struct TodayView: View {
                     value: stepsT.map { intString($0) } ?? "—",
                     valueColor: theme.dataSteps,
                     fromApple: true,
-                    delta: tileDelta(today: stepsT, yesterday: yesterdayValue { $0.steps.map(Double.init) },
-                                     betterHigher: true, deadband: 100) { intString($0) }
+                    context: tileContext(today: stepsT, history: history(base) { $0.steps.map(Double.init) },
+                                         betterHigher: true, deadband: 100) { intString($0) }
                 )) { metricDetail = .steps(stepsFresh) }
                 // Estrés — más alto es PEOR; valor bandeado por nivel 0–3 (verde/ámbar/rojo).
                 metricTile(TodayMetricTile(
@@ -1194,8 +1197,8 @@ struct TodayView: View {
                     value: stressT.map { String(format: "%.1f", $0) } ?? "—",
                     unit: stressT == nil ? nil : "/ 3",
                     valueColor: stressT.map(stressDataColor) ?? theme.inkTertiary,
-                    delta: tileDelta(today: stressT, yesterday: stressYesterday,
-                                     betterHigher: false, deadband: 0.1) { String(format: "%.1f", $0) }
+                    context: tileContext(today: stressT, history: stressHistory,
+                                         betterHigher: false, deadband: 0.1) { String(format: "%.1f", $0) }
                 )) { metricDetail = .stress(stressT) }
             }
             // Pie de cuadrícula (FER-233): sincronización a la izquierda, leyenda de fuente a la derecha.
@@ -1243,39 +1246,63 @@ struct TodayView: View {
             .accessibilityHint(Text("Abre el detalle"))
     }
 
-    /// El valor de una métrica para AYER (el día calendario anterior), leído del dashboard de display
-    /// (`repo.displayDays`, la misma fuente en capas que resuelve el valor de hoy) para que un valor de
-    /// Apple Salud de ayer también cuente. nil si ayer no tiene esa lectura → el tile omite la Δ.
-    private func yesterdayValue(_ pick: (DailyMetric) -> Double?) -> Double? {
-        let yKey = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date())
-        guard let row = repo.displayDays.first(where: { $0.day == yKey }) else { return nil }
-        return pick(row)
+    /// Los días de base para la media de 7 días (FER-258): las filas del dashboard de display
+    /// ANTERIORES a hoy (la misma fuente en capas que resuelve el valor de hoy y la de la tendencia
+    /// 14d), ordenadas y acotadas a las recientes. Excluir hoy hace que el delta sea «hoy vs tu
+    /// semana», no «hoy contra sí mismo». Se computa una vez por render, no por tile.
+    private func baselineDays() -> [DailyMetric] {
+        let todayKey = Repository.localDayKey(Date())
+        return Array(repo.displayDays.filter { $0.day < todayKey }.sorted { $0.day < $1.day }.suffix(30))
     }
 
-    /// El estrés de AYER, del proxy diario de `StressModel.fullTrend` (penúltimo punto): el modelo ya
-    /// computó la serie 0–3 por día, así que la comparación es contra el día anterior con base coherente.
-    private var stressYesterday: Double? {
-        guard let trend = stress?.fullTrend, trend.count >= 2 else { return nil }
-        return trend[trend.count - 2].value
+    /// Los ≤7 valores válidos más recientes de una métrica sobre los días de base: su ventana de media.
+    private func history(_ days: [DailyMetric], _ pick: (DailyMetric) -> Double?) -> [Double] {
+        Array(days.compactMap(pick).suffix(7))
     }
 
-    /// La Δ vs ayer de un tile, con semántica por métrica. nil cuando falta hoy o ayer (el tile no
-    /// dibuja línea). Dentro del `deadband` → «Igual que ayer» en tinta. Con `betterHigher` nil la
-    /// métrica no tiene valencia (carga / FC del día): se muestra la dirección en tinta neutra, sin
+    /// La base de 7 días del estrés, del proxy diario 0–3 de `StressModel.fullTrend` excluyendo hoy
+    /// (el último punto). El estrés no es campo de `DailyMetric`, así que va por su propia serie.
+    private var stressHistory: [Double] {
+        guard let trend = stress?.fullTrend, !trend.isEmpty else { return [] }
+        return Array(trend.dropLast().suffix(7).map { $0.value })
+    }
+
+    /// El contexto de un tile (FER-258): compara hoy contra la media de 7 días de `history` y arma la
+    /// mini-banda del rango típico. nil cuando no hay valor de hoy → el tile pone «—» sin pie. Con <4
+    /// días válidos → `.building` (aún no hay base honesta). Dentro del `deadband` → `.equal`. Con
+    /// `betterHigher` nil la métrica no tiene valencia (carga / FC): dirección en tinta neutra, sin
     /// pintar mejora/empeora.
-    private func tileDelta(today: Double?, yesterday: Double?, betterHigher: Bool?, deadband: Double,
-                           _ format: (Double) -> String) -> TileDelta? {
-        guard let t = today, let y = yesterday else { return nil }
-        let change = t - y
-        if abs(change) <= deadband { return .equal(color: theme.inkTertiary) }
+    private func tileContext(today: Double?, history: [Double], betterHigher: Bool?, deadband: Double,
+                             _ format: (Double) -> String) -> TileContext? {
+        guard let t = today else { return nil }
+        let valid = history.filter { $0.isFinite }
+        guard valid.count >= 4 else { return .building }
+        let mean = valid.reduce(0, +) / Double(valid.count)
+        let band = bandViz(today: t, history: valid)
+        let change = t - mean
+        if abs(change) <= deadband { return .ready(change: .equal(color: theme.inkTertiary), band: band) }
         let up = change > 0
-        let color: Color
-        if let betterHigher {
-            color = (up == betterHigher) ? theme.verdict : theme.critical
-        } else {
-            color = theme.inkTertiary   // sin valencia: dirección sin juicio
+        let color: Color = betterHigher.map { (up == $0) ? theme.verdict : theme.critical } ?? theme.inkTertiary
+        let mag = format(abs(change))
+        return .ready(change: up ? .above(magnitude: mag, color: color)
+                                 : .below(magnitude: mag, color: color), band: band)
+    }
+
+    /// Mapea p25, p75 y el valor de hoy a fracciones 0…1 sobre el rango real (min…max) de la ventana
+    /// + hoy, para que el tick de la mini-banda quede visible aun cuando hoy cae fuera de la banda
+    /// típica. La banda p25–p75 reusa `ReferenceRange.interquartile` (StrandDesign).
+    private func bandViz(today: Double, history: [Double]) -> BandViz {
+        let band = ReferenceRange.interquartile(history)
+        let all = history + [today]
+        let lo = all.min() ?? today
+        let hi = all.max() ?? today
+        let span = hi - lo
+        func frac(_ v: Double) -> Double {
+            guard span > 0 else { return 0.5 }
+            return Swift.min(1, Swift.max(0, (v - lo) / span))
         }
-        return .change(up: up, magnitude: format(abs(change)), color: color)
+        guard let band else { return BandViz(lowFrac: 0, highFrac: 1, tickFrac: frac(today)) }
+        return BandViz(lowFrac: frac(band.lowerBound), highFrac: frac(band.upperBound), tickFrac: frac(today))
     }
 
     /// Δ de sueño en lenguaje de tiempo: «18 min» bajo una hora, «1h 5m» a partir de una.
@@ -1294,16 +1321,33 @@ struct TodayView: View {
         }
     }
 
-    /// La variación de un tile contra ayer. `change` lleva dirección + magnitud ya formateada + color
-    /// (verdict/critical/tinta); `equal` es «Igual que ayer». La ausencia (sin ayer / sin valor de hoy)
-    /// se modela con el Optional: nil → el tile no dibuja línea de Δ.
-    private enum TileDelta {
-        case change(up: Bool, magnitude: String, color: Color)
+    /// El contexto de un tile vs su media de 7 días (FER-258): el cambio en lenguaje + la mini-banda
+    /// del rango típico. `building` = aún no hay ≥4 días de base para una media honesta (sin flecha ni
+    /// banda). La ausencia (sin valor de hoy) se modela con el Optional del tile: nil → no dibuja pie.
+    private enum TileContext {
+        case building
+        case ready(change: TileChange, band: BandViz)
+    }
+
+    /// El cambio de hoy contra la media de 7 días, ya formateado + con color por polaridad. `equal` es
+    /// «En tu media de 7 días» (dentro del deadband).
+    private enum TileChange {
+        case above(magnitude: String, color: Color)
+        case below(magnitude: String, color: Color)
         case equal(color: Color)
     }
 
+    /// Posiciones 0…1 (sobre el ancho del tile) para dibujar la mini-banda: el segmento típico
+    /// p25–p75 (`lowFrac…highFrac`) y el tick del valor de hoy (`tickFrac`).
+    private struct BandViz {
+        let lowFrac: Double
+        let highFrac: Double
+        let tickFrac: Double
+    }
+
     /// Un tile de «Métricas de hoy»: etiqueta (overline en tinta) · valor en color de dato + unidad ·
-    /// pie partido — Δ vs ayer (izquierda) + badge de fuente (derecha): W = banda, ♥ = Apple Salud (FER-233).
+    /// mini-banda del rango típico (p25–p75) con el tick de hoy · pie partido — cambio vs tu media de
+    /// 7 días (izquierda, FER-258) + badge de fuente (derecha): W = banda, ♥ = Apple Salud (FER-233).
     /// Tematizado con tokens de `InstrumentoTheme` sobre el papel `surface` con hairline — sin el
     /// `NoopCard` oscuro, que no lee sobre el papel claro. Lee el tema del entorno.
     private struct TodayMetricTile: View {
@@ -1312,13 +1356,13 @@ struct TodayView: View {
         var unit: String? = nil
         let valueColor: Color
         var fromApple: Bool = false
-        var delta: TileDelta? = nil
+        var context: TileContext? = nil
         @Environment(\.instrumentoTheme) private var theme
 
         var body: some View {
             VStack(alignment: .leading, spacing: 0) {
-                // Etiqueta a UNA línea (FER-189): mantiene el tile bajo y parejo; un nombre largo
-                // (Frecuencia cardíaca) se encoge un poco en vez de envolver a 2 líneas y crecer el alto.
+                // Etiqueta a UNA línea (FER-189): mantiene el tile parejo; un nombre largo (Frecuencia
+                // cardíaca) se encoge un poco en vez de envolver a 2 líneas y crecer el alto.
                 Text(label).instrumentoOverline()
                     .foregroundStyle(theme.inkSecondary)
                     .lineLimit(1).minimumScaleFactor(0.7)
@@ -1331,45 +1375,29 @@ struct TodayView: View {
                     }
                 }
                 Spacer(minLength: NoopMetrics.space1)
+                // Mini-banda del rango típico — solo cuando hay base (estado ready). Sin base / sin hoy
+                // no se dibuja; el alto fijo del tile mantiene parejos los renglones.
+                if case let .ready(_, band) = context {
+                    MetricBand(band: band)
+                    Spacer(minLength: NoopMetrics.space1)
+                }
                 footer
             }
             .padding(.horizontal, NoopMetrics.gap).padding(.vertical, NoopMetrics.space2)
-            // Alto fijo compacto (FER-189/202): 76 → 70 para que la rejilla 2×4 + el héroe quepan en una
-            // pantalla en estado calibrando; el contenido (label · valor · Δ) sigue cabiendo con su escala.
-            .frame(maxWidth: .infinity, minHeight: 70, maxHeight: 70, alignment: .topLeading)
+            // Alto fijo (FER-258): 70 → 88 para acomodar la mini-banda + el pie sin apretar el valor;
+            // todos los tiles miden igual aunque a algunos les falte banda (sin base / sin hoy).
+            .frame(maxWidth: .infinity, minHeight: 88, maxHeight: 88, alignment: .topLeading)
             .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
                 .strokeBorder(theme.hairline, lineWidth: 1))
             .accessibilityElement(children: .combine)
         }
 
-        /// El pie del tile (FER-233): Δ a la izquierda + badge de fuente a la derecha, siempre en la
-        /// misma línea. La fuente ya no desplaza la Δ — conviven. Línea vacía preserva la altura.
+        /// El pie del tile: cambio vs tu media de 7 días a la izquierda + badge de fuente a la derecha,
+        /// en la misma línea. La fuente no desplaza el cambio — conviven. Línea vacía preserva la altura.
         @ViewBuilder private var footer: some View {
             HStack(spacing: 0) {
-                // Delta (izquierda) — siempre visible cuando existe, independiente de la fuente.
-                if let delta {
-                    switch delta {
-                    case let .change(up, magnitude, color):
-                        HStack(spacing: NoopMetrics.space1) {
-                            Image(systemName: up ? "arrow.up" : "arrow.down")
-                                .font(.system(size: 10, weight: .semibold))
-                            Text(verbatim: magnitude)
-                            Text("vs yesterday")
-                        }
-                        .font(StrandFont.caption)
-                        .foregroundStyle(color)
-                        .lineLimit(1).minimumScaleFactor(0.75)
-                    case let .equal(color):
-                        Text("Same as yesterday")
-                            .font(StrandFont.caption)
-                            .foregroundStyle(color)
-                            .lineLimit(1).minimumScaleFactor(0.8)
-                    }
-                } else {
-                    // Sin ayer / sin valor de hoy: línea vacía mantiene parejos los tiles del renglón.
-                    Text(verbatim: " ").font(StrandFont.caption).foregroundStyle(.clear)
-                }
+                contextLine
                 Spacer(minLength: 0)
                 // Badge de fuente (derecha) — solo cuando hay dato; siempre inkTertiary, nunca color de dato.
                 if fromApple {
@@ -1384,6 +1412,74 @@ struct TodayView: View {
                         .accessibilityLabel(Text("de strap"))
                 }
             }
+        }
+
+        /// El texto de pie por estado: cambio con flecha (sobre/bajo tu media), «En tu media de 7 días»
+        /// (deadband), «Aún construyendo tu media» (poca historia) o línea vacía (sin valor de hoy).
+        @ViewBuilder private var contextLine: some View {
+            switch context {
+            case let .ready(change, _):
+                switch change {
+                case let .above(magnitude, color): changeText(up: true, magnitude: magnitude, color: color)
+                case let .below(magnitude, color): changeText(up: false, magnitude: magnitude, color: color)
+                case let .equal(color):
+                    Text("At your 7-day average")
+                        .font(StrandFont.caption).foregroundStyle(color)
+                        .lineLimit(1).minimumScaleFactor(0.8)
+                }
+            case .building:
+                Text("Still building your average")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .lineLimit(1).minimumScaleFactor(0.8)
+            case .none:
+                // Sin valor de hoy: línea vacía mantiene parejos los tiles del renglón.
+                Text(verbatim: " ").font(StrandFont.caption).foregroundStyle(.clear)
+            }
+        }
+
+        /// La línea de cambio vs la media: flecha + magnitud + «vs tu media 7d» (compacta para el tile).
+        /// VoiceOver lee la frase completa «sobre/bajo tu media de 7 días» (la flecha va oculta).
+        private func changeText(up: Bool, magnitude: String, color: Color) -> some View {
+            HStack(spacing: NoopMetrics.space1) {
+                Image(systemName: up ? "arrow.up" : "arrow.down")
+                    .font(.system(size: 10, weight: .semibold))
+                Text(verbatim: magnitude)
+                Text("vs 7-day avg")
+            }
+            .font(StrandFont.caption)
+            .foregroundStyle(color)
+            .lineLimit(1).minimumScaleFactor(0.75)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(up ? "\(magnitude) above your 7-day average"
+                                         : "\(magnitude) below your 7-day average"))
+        }
+    }
+
+    /// La mini-banda del tile (FER-258): el rango típico p25–p75 en `hairlineStrong` sobre la regla
+    /// `hairline`, con un tick en `inkTertiary` donde cae el valor de hoy. Chrome en tinta pura — nunca
+    /// color de dato (regla del idioma «Instrumento»). Decorativa para VoiceOver (el pie ya lo narra).
+    private struct MetricBand: View {
+        let band: BandViz
+        @Environment(\.instrumentoTheme) private var theme
+
+        var body: some View {
+            GeometryReader { geo in
+                let w = geo.size.width
+                let segW = Swift.max(2, w * (band.highFrac - band.lowFrac))
+                ZStack(alignment: .leading) {
+                    Capsule().fill(theme.hairline)
+                        .frame(height: 2).frame(maxHeight: .infinity, alignment: .center)
+                    Capsule().fill(theme.hairlineStrong)
+                        .frame(width: segW, height: 2)
+                        .offset(x: w * band.lowFrac)
+                        .frame(maxHeight: .infinity, alignment: .center)
+                    RoundedRectangle(cornerRadius: 1).fill(theme.inkTertiary)
+                        .frame(width: 2, height: 8)
+                        .offset(x: Swift.min(w - 2, Swift.max(0, w * band.tickFrac - 1)))
+                }
+            }
+            .frame(height: 8)
+            .accessibilityHidden(true)
         }
     }
 
@@ -1797,7 +1893,7 @@ struct TodayView: View {
     // MARK: - 14-day trend loader (all platforms)
 
     /// Builds the trailing 14-day trend from the DISPLAY dashboard rows (`repo.displayDays`) — the same
-    /// layered source the Today tiles draw their values from (`resolveMeasured`/`yesterdayValue`): Apple Health is the base,
+    /// layered source the Today tiles draw their values from (`resolveMeasured`/`baselineDays`): Apple Health is the base,
     /// on-device computed scores (`my-whoop-noop`) fill the strap's days, imported strap rows win, and a
     /// strap-covered day with a nil field back-fills from Apple Health so the line has no gap (FER-149).
     /// Reading `repo.series(source: "my-whoop")` instead returned EMPTY for a BLE + Apple Health user,

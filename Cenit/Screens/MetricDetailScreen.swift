@@ -580,28 +580,15 @@ struct MetricDetailScreen: View {
     @ViewBuilder private var consistencyBlock: some View {
         if let cv = SeriesShape.coefficientOfVariation(allValues, window: 7) {
             let pct = Int((cv * 100).rounded())
-            let steady = cv <= 0.10 ? String(localized: "steady") : String(localized: "variable")
-            // The ⓘ discloses the coefficient-of-variation math (FER-220); the block's overline + datum +
-            // plain-language reading (FER-216) stay exactly as before, inside the accordion's content.
+            // The ⓘ discloses the coefficient-of-variation math (FER-220); the block now leads with the
+            // word (Steady/Variable) as the protagonist and demotes the ±% below it (FER-255).
             InfoAccordion(
-                title: "Consistency (CV)",
+                title: "Consistency",
                 explanation: "Coefficient of variation = standard deviation ÷ the mean of your last few weeks. It measures how spread out your values are around your average. Low = steady. In HRV, a rising CV can precede fatigue even while the value still looks high. (Plews 2013)",
                 accessibilityLabel: "Information about consistency",
                 theme: theme
             ) {
-                VStack(alignment: .leading, spacing: 6) {
-                    // Resolve the steady/variable word to a String first so the nested phrase localizes
-                    // (interpolating a LocalizedStringKey into another doesn't translate the inner key).
-                    Text("±\(pct)% week to week · \(steady)")
-                        .font(StrandFont.bodyNumber)
-                        .foregroundStyle(theme.ink)
-                    if let reading = readingCopy(for: .consistency) {
-                        Text(reading)
-                            .font(StrandFont.caption)
-                            .foregroundStyle(theme.inkSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
+                ConsistencySummary(cvPercent: pct, reading: readingCopy(for: .consistency), theme: theme)
             }
         }
     }
