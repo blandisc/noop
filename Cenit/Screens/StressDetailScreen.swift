@@ -329,22 +329,15 @@ struct StressDetailScreen: View {
 
     @ViewBuilder private func consistencyBlock(_ model: StressModel) -> some View {
         if let pct = consistency(model) {
-            let steady = pct <= 10 ? String(localized: "steady") : String(localized: "variable")
             InfoAccordion(
-                title: "Consistency (CV)",
+                title: "Consistency",
                 explanation: "Coefficient of variation = how spread out your daily stress is around its own average, as a percentage. Low = steady. A steadier signal usually means your load and recovery are in balance. (Plews 2013)",
                 accessibilityLabel: "Information about consistency",
                 theme: theme
             ) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("±\(pct)% week to week · \(steady)")
-                        .font(StrandFont.bodyNumber)
-                        .foregroundStyle(theme.ink)
-                    Text("How steady your stress stays from one week to the next.")
-                        .font(StrandFont.caption)
-                        .foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                ConsistencySummary(cvPercent: pct,
+                                   reading: "How steady your stress stays from one week to the next.",
+                                   theme: theme)
             }
         }
     }

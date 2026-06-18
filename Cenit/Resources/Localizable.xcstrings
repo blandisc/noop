@@ -353,6 +353,23 @@
         }
       }
     },
+    "%@ week to week": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ week to week"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ semana a semana"
+          }
+        }
+      }
+    },
     "%@ wrist alerts": {
       "localizations": {
         "de": {
@@ -21429,6 +21446,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Variabilidad (R-R)"
+          }
+        }
+      }
+    },
+    "Variable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variable"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variable"
           }
         }
       }

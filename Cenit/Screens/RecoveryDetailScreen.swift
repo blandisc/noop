@@ -317,22 +317,15 @@ struct RecoveryDetailScreen: View {
 
     @ViewBuilder private var consistencyBlock: some View {
         if let pct = consistency {
-            let steady = pct <= 10 ? String(localized: "steady") : String(localized: "variable")
             InfoAccordion(
-                title: "Consistency (CV)",
+                title: "Consistency",
                 explanation: "Coefficient of variation = how spread out your recovery is around its own average, as a percentage. Low = steady. A steadier recovery usually means your body is coping well with your load. (Plews 2013)",
                 accessibilityLabel: "Information about consistency",
                 theme: theme
             ) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("±\(pct)% week to week · \(steady)")
-                        .font(StrandFont.bodyNumber)
-                        .foregroundStyle(theme.ink)
-                    Text("How steady your recovery stays from one week to the next.")
-                        .font(StrandFont.caption)
-                        .foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                ConsistencySummary(cvPercent: pct,
+                                   reading: "How steady your recovery stays from one week to the next.",
+                                   theme: theme)
             }
         }
     }
