@@ -1,0 +1,347 @@
+#if os(iOS)
+import SwiftUI
+import StrandDesign
+import WhoopStore
+import Foundation
+
+// MARK: - WorkoutDetailScreen — el detalle de UNA sesión, en «Instrumento» (FER-261)
+//
+// Hermana de `StrainDetailScreen`/`SleepDetailScreen`: REUSA su lenguaje (hero + bloques separados por
+// hairline + `theme: InstrumentoTheme` explícito + papel cálido), con su propio contenido. Se PUSHEA
+// dentro del único `NavigationStack` que vive en la sheet de Entrenamientos (`WorkoutsView`) — NO crea un
+// `NavigationStack` anidado (un stack anidado cruzando el path de la tab crasheaba SwiftUI, FER-171); el
+// back nativo vuelve a la lista.
+//
+// El héroe DEGRADA con honestidad: esfuerzo (strain, strap-only) → FC media → duración. Nunca pinta un 0
+// ni un «—» como protagonista falso. Las zonas de FC solo aparecen si la sesión las trae (`zonesJSON`);
+// distancia/energía solo si existen, con un disclaimer cuando la fuente no es WHOOP (son estimaciones).
+// El CRUD (editar/re-etiquetar/descartar/borrar/duplicar) vive en el menú ••• de la barra, según la
+// fuente, y reusa el `Repository` tal cual — no toca la lógica de merge/persistencia.
+
+struct WorkoutDetailScreen: View {
+    /// The live «Instrumento» theme, passed explicitly (sheets/pushes from a sheet don't reliably carry
+    /// it; the sibling detail screens do the same). (FER-162)
+    var theme: InstrumentoTheme = .base
+    /// The session to show. A value type — after a mutation we reload the list and pop, rather than try
+    /// to keep a stale copy live.
+    let row: WorkoutRow
+    /// Re-read the list after a CRUD mutation, injected by `WorkoutsView` so both stay in sync.
+    var onChange: () async -> Void = {}
+
+    @EnvironmentObject var repo: Repository
+    @Environment(\.dismiss) private var dismiss
+
+    /// Imperial/Metric display preference (display-only; nothing on disk changes). Same toggle the list reads.
+    @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
+    private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
+
+    /// The add/edit sheet target (edit this manual row, or a manual copy of an imported one). nil = closed.
+    @State private var editTarget: EditTarget?
+    private struct EditTarget: Identifiable { let row: WorkoutRow; let id = UUID() }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 22) {
+                hero
+                contextLine
+                if let zones = WorkoutZones.percents(row.zonesJSON) {
+                    blockDivider
+                    zonesBlock(zones)
+                }
+                if row.avgHr != nil || row.maxHr != nil {
+                    blockDivider
+                    heartBlock
+                }
+                if row.distanceM != nil || row.energyKcal != nil {
+                    blockDivider
+                    supportsBlock
+                }
+                if let notes = row.notes, !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    blockDivider
+                    notesBlock(notes)
+                }
+                blockDivider
+                originBlock
+                methodNote
+            }
+            .padding(NoopMetrics.screenPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(theme.paper.ignoresSafeArea())
+        .navigationTitle(Text(WorkoutSource.displaySport(row.sport)))
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar { ToolbarItem(placement: .primaryAction) { actionMenu } }
+        .toolbarBackground(theme.paper, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .sheet(item: $editTarget) { target in
+            ManualWorkoutSheet(editing: target.row) { saved, replacing in
+                Task {
+                    await repo.saveManualWorkout(saved, replacing: replacing)
+                    await onChange()
+                    dismiss()
+                }
+            }
+        }
+    }
+
+    private var blockDivider: some View { Rectangle().fill(theme.hairline).frame(height: 1) }
+
+    // MARK: - Hero (esfuerzo → FC media → duración, degradación honesta)
+
+    private enum Hero { case strain(Double), heartRate(Int), duration(Double) }
+
+    /// Session length from the stored duration, or the span when it's missing. Computed once; reused by the
+    /// hero (when it degrades to duration) and the context line.
+    private var sessionDuration: Double { row.durationS ?? Double(max(0, row.endTs - row.startTs)) }
+
+    /// The protagonist datum, picked by what the session actually carries — never a fabricated 0/«—». A
+    /// stored `strain` of 0 isn't a real effort reading (WHOOP strain is logarithmic and > 0; a manual row
+    /// leaves it nil), so it degrades like a missing value rather than showing "0.0 / 21".
+    private var heroKind: Hero {
+        if let s = row.strain, s > 0 { return .strain(s) }
+        if let hr = row.avgHr { return .heartRate(hr) }
+        return .duration(sessionDuration)
+    }
+
+    private var hero: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(heroOverline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(heroValue)
+                    .instrumentoHero(46)
+                    .foregroundStyle(heroColor)
+                if let unit = heroUnit {
+                    Text(unit).font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
+                }
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private var heroOverline: LocalizedStringKey {
+        switch heroKind {
+        case .strain:    return "Effort"
+        case .heartRate: return "Average heart rate"
+        case .duration:  return "Duration"
+        }
+    }
+    private var heroValue: String {
+        switch heroKind {
+        case .strain(let s):    return String(format: "%.1f", s)
+        case .heartRate(let hr): return "\(hr)"
+        case .duration(let s):  return WorkoutFormat.duration(s)
+        }
+    }
+    private var heroUnit: String? {
+        switch heroKind {
+        case .strain:    return "/ 21"
+        case .heartRate: return String(localized: "bpm")
+        case .duration:  return nil
+        }
+    }
+    /// Color only on the measured datum: strain ember, HR rose; duration stays ink (it's not a saturated
+    /// physiological figure, so coloring it would overclaim).
+    private var heroColor: Color {
+        switch heroKind {
+        case .strain:    return theme.dataStrain
+        case .heartRate: return theme.dataHeart
+        case .duration:  return theme.ink
+        }
+    }
+
+    private var contextLine: some View {
+        Text(contextText)
+            .font(StrandFont.subhead)
+            .foregroundStyle(theme.inkSecondary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+    private var contextText: String {
+        "\(WorkoutSource.displaySport(row.sport)) · \(WorkoutFormat.date(row.startTs)) · \(WorkoutFormat.time(row.startTs)) · \(WorkoutFormat.duration(sessionDuration))"
+    }
+
+    // MARK: - Zonas de FC (solo si la sesión las trae)
+
+    private func zonesBlock(_ percents: [Double]) -> some View {
+        // Normalize the bar to the recorded zone time so it fills the width (WHOOP omits sub-Z1 time, so
+        // the raw percents can sum to < 100); the % labels below show the raw share. Same shape as the
+        // sleep-stage bar / the old aggregate zones bar, but with the warm `hrZoneRamp`.
+        let total = max(percents.reduce(0, +), 0.001)
+        return VStack(alignment: .leading, spacing: 12) {
+            Text("Heart-rate zones").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            GeometryReader { geo in
+                HStack(spacing: 2) {
+                    ForEach(0..<5, id: \.self) { i in
+                        Rectangle()
+                            .fill(theme.hrZoneRamp[i])
+                            .frame(width: max(0, CGFloat(percents[i] / total) * geo.size.width))
+                    }
+                }
+            }
+            .frame(height: 34)
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(zonesA11y(percents))
+            HStack(spacing: 0) {
+                ForEach(0..<5, id: \.self) { i in
+                    VStack(spacing: 3) {
+                        Text("Z\(i + 1)" as String).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                        Text("\(Int(percents[i].rounded()))%")
+                            .font(StrandFont.captionNumber).foregroundStyle(theme.ink)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+        }
+    }
+
+    private func zonesA11y(_ p: [Double]) -> Text {
+        let parts = (0..<5).map { String(localized: "zone \($0 + 1) \(Int(p[$0].rounded())) percent") }
+        return Text("Heart-rate zone split: \(parts.joined(separator: ", "))")
+    }
+
+    // MARK: - FC media / máx
+
+    private var heartBlock: some View {
+        HStack(spacing: 48) {
+            if let avg = row.avgHr { stat("Avg HR", "\(avg)", unit: String(localized: "bpm"), color: theme.dataHeart) }
+            if let mx = row.maxHr { stat("Max HR", "\(mx)", unit: String(localized: "bpm"), color: theme.dataHeart) }
+        }
+    }
+
+    // MARK: - Distancia / energía (apoyos en ink, con disclaimer si no es WHOOP)
+
+    private var supportsBlock: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 48) {
+                if let m = row.distanceM, m > 0 {
+                    stat("Distance", UnitFormatter.distanceFromMeters(m, system: unitSystem), unit: nil, color: theme.ink)
+                }
+                if let k = row.energyKcal, k > 0 {
+                    stat("Energy", grouped(k), unit: String(localized: "kcal"), color: theme.ink)
+                }
+            }
+            if WorkoutSource.classify(row.source) != .whoop {
+                Text("Estimated by the source.")
+                    .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            }
+        }
+    }
+
+    /// One label-over-value support (ink overline + value). Color only when the caller passes a data hue.
+    private func stat(_ label: LocalizedStringKey, _ value: String, unit: String?, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(value).font(StrandFont.number(17)).foregroundStyle(color)
+                if let unit { Text(unit).font(StrandFont.unit).foregroundStyle(theme.inkTertiary) }
+            }
+        }
+    }
+
+    // MARK: - Notas
+
+    private func notesBlock(_ notes: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Notes").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(notes).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    // MARK: - Origen
+
+    private var originBlock: some View {
+        HStack(spacing: 8) {
+            Text("Source").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            workoutSourceBadge(for: row.source, theme: theme)
+        }
+    }
+
+    /// The method note depends on whether there's a strain hero: with strain, explain the 0–21 scale; when
+    /// degraded, explain WHY there's no effort number (strap-only), so the honest degradation reads as a
+    /// fact, not a gap.
+    private var methodNote: some View {
+        Text(strainMethodNote)
+            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+    private var strainMethodNote: LocalizedStringKey {
+        // Keyed off the hero so the note never disagrees with the degraded value (a 0/absent strain reads
+        // as "no effort number", not as a 0–21 reading).
+        if case .strain = heroKind {
+            return "Scale 0–21, WHOOP-style: it grows logarithmically — not a physical unit."
+        }
+        return "Effort (0–21 scale) is computed only by your WHOOP — this session doesn't carry it."
+    }
+
+    // MARK: - Acciones (menú ••• según fuente)
+
+    @ViewBuilder private var actionMenu: some View {
+        Menu {
+            switch WorkoutSource.classify(row.source) {
+            case .detected:
+                Menu("Re-label as") {
+                    ForEach(WorkoutSource.relabelSports, id: \.self) { sport in
+                        Button(sport) { mutate { await repo.relabelDetected(row, sport: sport) } }
+                    }
+                }
+                Button("Edit details…") { editTarget = EditTarget(row: row) }
+                Divider()
+                Button("Dismiss (not a workout)", role: .destructive) { mutate { await repo.dismissDetected(row) } }
+            case .manual:
+                Button("Edit…") { editTarget = EditTarget(row: row) }
+                Divider()
+                Button("Delete", role: .destructive) { mutate { await repo.deleteWorkout(row) } }
+            case .whoop, .apple:
+                Button("Duplicate as manual…") { editTarget = EditTarget(row: asManualCopy(row)) }
+            }
+        } label: {
+            Image(systemName: "ellipsis.circle").foregroundStyle(theme.ink)
+        }
+        .accessibilityLabel("Session actions")
+    }
+
+    /// Run a mutation, reload the list, then pop back to it — the detail's `row` is a value copy, so the
+    /// honest move after any change is to return to the freshly-loaded list.
+    private func mutate(_ op: @escaping () async -> Void) {
+        Task { await op(); await onChange(); dismiss() }
+    }
+
+    /// A manual-source copy of an imported row, so "Duplicate as manual" pre-fills the add sheet without
+    /// ever mutating the imported original (mirrors the list's old `asManualCopy`).
+    private func asManualCopy(_ row: WorkoutRow) -> WorkoutRow {
+        WorkoutRow(startTs: row.startTs, endTs: row.endTs, sport: WorkoutSource.displaySport(row.sport),
+                   source: "manual", durationS: row.durationS, energyKcal: row.energyKcal,
+                   avgHr: row.avgHr, maxHr: row.maxHr, strain: row.strain, distanceM: row.distanceM,
+                   zonesJSON: row.zonesJSON, notes: row.notes)
+    }
+
+    // MARK: - Formatting
+
+    /// Thousands-grouped integer for the energy support (e.g. "1,240").
+    private func grouped(_ v: Double) -> String {
+        Self.intFmt.string(from: NSNumber(value: Int(v.rounded()))) ?? "\(Int(v.rounded()))"
+    }
+    private static let intFmt: NumberFormatter = {
+        let f = NumberFormatter(); f.numberStyle = .decimal; f.maximumFractionDigits = 0; return f
+    }()
+}
+
+// MARK: - Shared source badge (list + detail)
+
+/// The origin badge, colored per source (the user's choice over an all-ink treatment): Whoop ember, Apple
+/// blue, Detected neutral ink (it's an honest "we guessed"), Manual amber. Built from the locked
+/// `SourceBadge`. A free function so the list's rows and the detail's "Source" line stay identical.
+@ViewBuilder
+func workoutSourceBadge(for source: String, theme: InstrumentoTheme) -> some View {
+    let (label, tint, a11y): (LocalizedStringKey, Color, LocalizedStringKey) = {
+        switch WorkoutSource.classify(source) {
+        case .whoop:    return ("Whoop", theme.dataStrain, "Source Whoop")
+        case .apple:    return ("Apple", theme.dataSpO2, "Source Apple Health")
+        case .detected: return ("Detected", theme.inkSecondary, "Source on-device detected")
+        case .manual:   return ("Manual", theme.warning, "Source manual entry")
+        }
+    }()
+    SourceBadge(label, tint: tint).accessibilityLabel(Text(a11y))
+}
+#endif
