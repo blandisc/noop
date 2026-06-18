@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **«Ver más» en Hoy abre el detalle completo / "See more" in Today opens the full detail.**
+  **ES** — Al tocar una métrica en **Hoy** y abrir su tarjeta de resumen, ahora aparece un enlace **«Ver más»** abajo a la derecha que te lleva directo a su **detalle completo** (el mismo que ves en Cuerpo) sin salir de Hoy: al cerrarlo, vuelves justo donde estabas. Disponible en Recuperación, Sueño, Esfuerzo, Estrés, HRV y Frecuencia cardíaca en reposo.
+  **EN** — When you tap a metric in **Today** and open its summary card, a **"See more"** link now sits at the bottom right and takes you straight to its **full detail** (the same one you see in Body) without leaving Today: close it and you're right back where you were. Available on Recovery, Sleep, Strain, Stress, HRV and Resting heart rate.
+  ([Cenit/Screens/MetricInfoSheet.swift](Cenit/Screens/MetricInfoSheet.swift), [Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **Estadísticas de tendencia que sí dicen algo / Trend stats that actually mean something.**
   **ES** — En las seis hojas de detalle (Estrés, Esfuerzo, Sueño, Recuperación, HRV y Ritmo Cardíaco en Reposo), la vieja fila de tres números técnicos —«Promedio / Más bajo / Más alto»— se rediseñó. Ahora tu **promedio** es el número que manda, la comparativa con el mes pasado aparece como un **chip** a su lado («10% vs el mes pasado», con flecha) y en **español**, y el color te dice si el cambio es bueno o malo para esa métrica (verde, ámbar, o gris cuando no aplica, como en Esfuerzo). El mínimo y el máximo se resumen en una sola línea de rango. Antes esos números no comunicaban nada sin conocimiento técnico.
   **EN** — Across all six detail sheets (Stress, Strain, Sleep, Recovery, HRV and Resting Heart Rate), the old row of three technical numbers — "Average / Lowest / Highest" — was redesigned. Your **average** is now the number that leads, the comparison with last month shows up as a **chip** next to it ("10% vs last month", with an arrow) in **Spanish**, and its colour tells you whether the change is good or bad for that metric (green, amber, or grey when it doesn't apply, like Strain). The minimum and maximum collapse into a single range line. Those numbers used to communicate nothing without technical knowledge.

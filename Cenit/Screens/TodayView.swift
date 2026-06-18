@@ -31,6 +31,13 @@ private struct TodayScrollOffsetKey: PreferenceKey {
 // Sparse series (weight) fall back to ALL history so a tile never shows an empty
 // state when data exists. Only locked StrandDesign components are used.
 
+/// Identifiable wrapper so the light «Instrumento» Detalle de Sueño can ride `.sheet(item:)` from Today
+/// (the model itself isn't Identifiable). Mirrors the one Cuerpo uses. (FER-251)
+private struct SleepDetailItem: Identifiable {
+    let id = UUID()
+    let model: SleepDetailModel
+}
+
 struct TodayView: View {
     @EnvironmentObject var repo: Repository
     @EnvironmentObject var live: LiveState
@@ -105,6 +112,17 @@ struct TodayView: View {
     // Metric-info sheet — tapping any Key Metrics row presents this.
     @State private var metricDetail: MetricInfo? = nil
     @State private var showWhyVerdict = false
+
+    // Rich «Instrumento» Detalle drilled into via the summary sheet's "Ver más" (FER-251). These mirror the
+    // ones Cuerpo presents — Today reuses the SAME static `.build()` factories / specs, so the detail is
+    // identical from both tabs. `pendingSeeMore` defers presenting until the summary fully dismisses, so the
+    // sheet-over-sheet hand-off never gets swallowed (it runs in the summary sheet's `onDismiss`).
+    @State private var pendingSeeMore: (() -> Void)? = nil
+    @State private var recoveryDetail: RecoveryDetailItem? = nil
+    @State private var sleepDetail: SleepDetailItem? = nil
+    @State private var strainDetail: StrainDetailItem? = nil
+    @State private var stressDetail: StressDetailItem? = nil
+    @State private var metricSpec: MetricDetailSpec? = nil
 
     // THE single grid definition — every tile group reuses it so margins line up.
     private let grid = [GridItem(.adaptive(minimum: 168), spacing: NoopMetrics.gap)]
@@ -237,11 +255,42 @@ struct TodayView: View {
                 }
             }
             .animation(.easeOut(duration: 0.18), value: showingSupport)
-            .sheet(item: $metricDetail) { info in
+            // The summary sheet. On dismiss, run any pending "Ver más" hand-off (FER-251): presenting the
+            // rich detail only AFTER this one is gone avoids SwiftUI swallowing a sheet-over-sheet present.
+            // A plain swipe-to-close leaves `pendingSeeMore` nil, so nothing extra happens.
+            .sheet(item: $metricDetail, onDismiss: { pendingSeeMore?(); pendingSeeMore = nil }) { info in
                 metricSheet(for: info)
             }
             .sheet(isPresented: $showWhyVerdict) {
                 WhyVerdictSheet(readiness: readiness, theme: theme)
+            }
+            // Rich «Instrumento» Detalle, drilled into from a summary sheet's "Ver más" — the SAME screens
+            // Cuerpo presents, theme passed explicitly (it doesn't propagate through `.sheet`), NO nested
+            // NavigationStack (FER-171). (FER-251)
+            .sheet(item: $recoveryDetail) { item in
+                RecoveryDetailScreen(theme: theme, model: item.model)
+            }
+            .sheet(item: $sleepDetail) { item in
+                SleepDetailScreen(theme: theme, model: item.model)
+            }
+            .sheet(item: $strainDetail) { item in
+                StrainDetailScreen(theme: theme, model: item.model,
+                                   curveLoader: { await loadStrainCurve() })
+            }
+            .sheet(item: $stressDetail) { item in
+                StressDetailScreen(theme: theme, model: item.model)
+            }
+            .sheet(item: $metricSpec) { spec in
+                MetricDetailScreen(
+                    spec: spec,
+                    depth: .full,
+                    theme: theme,
+                    seriesLoader: { vitalSeries(for: spec.descriptor.key) },
+                    nightVitalsLoader: spec.blocks.contains(.nightVitals) ? { await loadNightVitals() } : nil,
+                    whatMovesItLoader: spec.blocks.contains(.whatMovesIt)
+                        ? { whatMovesItFindings(for: spec.descriptor.key) }
+                        : nil
+                )
             }
     }
 
@@ -262,8 +311,49 @@ struct TodayView: View {
             appleConnectHint: appleCapable && notConnected && info.displayValue == "—",
             strainCurveLoader: info.id == "strain" ? { await loadStrainCurve() } : nil,
             heartRateCurveLoader: info.id == "heart_rate" ? { hrPoints } : nil,
-            trendLoader: trendLoader(for: info.id)
+            trendLoader: trendLoader(for: info.id),
+            onSeeMore: seeMoreAction(for: info.id)
         )
+    }
+
+    /// The "Ver más" hand-off for a metric: returns nil when there's no rich detail destination yet
+    /// (SpO₂ / Heart Rate / Steps → no link shown). Otherwise returns a closure that defers presenting
+    /// the rich detail until the summary dismisses (`pendingSeeMore` + `metricDetail = nil`). The detail
+    /// reuses the SAME static factories / specs Cuerpo uses, so it's identical from both tabs. (FER-251)
+    private func seeMoreAction(for id: String) -> (() -> Void)? {
+        let present: (() -> Void)?
+        switch id {
+        case "recovery":
+            present = {
+                recoveryDetail = RecoveryDetailItem(model: RecoveryDetailModel.build(
+                    days: repo.days, today: repo.today,
+                    todayKey: Repository.localDayKey(Date()),
+                    appleHealthDays: repo.appleHealthDays, loaded: repo.loaded))
+            }
+        case "sleep":
+            present = {
+                sleepDetail = SleepDetailItem(model: SleepDetailModel.build(
+                    days: repo.days, sleeps: repo.sleeps, importedSleep: repo.importedSleep,
+                    appleHealthDays: repo.appleHealthDays, loaded: repo.loaded,
+                    todayKey: Repository.localDayKey(Date())))
+            }
+        case "strain":
+            present = {
+                strainDetail = StrainDetailItem(model: StrainDetailModel.build(
+                    days: repo.days, today: repo.today, loaded: repo.loaded))
+            }
+        case "stress":
+            present = { stressDetail = StressDetailItem(model: stress) }
+        case "hrv":
+            present = { metricSpec = .hrv(resolveMeasured { $0.avgHrv }?.value) }
+        case "rhr":
+            present = { metricSpec = .restingHR(resolveMeasured { $0.restingHr.map(Double.init) }
+                .map { Int($0.value.rounded()) }) }
+        default:
+            present = nil   // spo2 / heart_rate / steps — no rich detail destination yet (FER-252/253/254)
+        }
+        guard let present else { return nil }
+        return { pendingSeeMore = present; metricDetail = nil }
     }
 
     // MARK: - Today (instrumento diurno · veredicto dominante · dial 24h · métricas en tinta)
@@ -1780,6 +1870,40 @@ struct TodayView: View {
         return [midnight] + curve
     }
     #endif
+
+    // MARK: - Loaders for the rich vital Detalle drilled into via "Ver más" (FER-251)
+    //
+    // The unified Detalle de Métrica (FER-185) for HRV / Resting HR needs the same three loaders Cuerpo
+    // feeds it, so the screen is identical from either tab. They read the same layered source the rows
+    // already use (`repo.displayDays` / `resolveMeasured`); mirror of `CuerpoView`.
+
+    /// The FULL daily series (oldest → newest) for a vital — the detail carries its own range selector,
+    /// so it needs all history, not just the trailing window.
+    private func vitalSeries(for key: String) -> [(day: String, value: Double)] {
+        let pick: (DailyMetric) -> Double?
+        switch key {
+        case "hrv":       pick = { $0.avgHrv }
+        case "rhr":       pick = { $0.restingHr.map(Double.init) }
+        case "resp_rate": pick = { $0.respRateBpm }
+        default:          return []
+        }
+        return repo.displayDays
+            .compactMap { row in pick(row).map { (row.day, $0) } }
+            .sorted { $0.day < $1.day }
+    }
+
+    /// The gated, directional "Qué la mueve" findings (FER-209), computed from the user's own history.
+    /// Empty → the detail hides the block.
+    private func whatMovesItFindings(for key: String) -> [WhatMovesItFinding] {
+        WhatMovesItEngine.findings(forMetricKey: key, days: repo.displayDays)
+    }
+
+    /// Last night's companion vitals (respiration + resting HR) for the detail's "Vitales de la noche".
+    private func loadNightVitals() async -> MetricDetailScreen.NightVitals {
+        MetricDetailScreen.NightVitals(
+            respiration: resolveMeasured { $0.respRateBpm }?.value,
+            restingHR: resolveMeasured { $0.restingHr.map(Double.init) }?.value)
+    }
 
     /// Trailing-window values for a metric — NO fall back to all history. The section is labelled a
     /// current trend ("14-day trend"), so a stale import must not render months-old points as if they
