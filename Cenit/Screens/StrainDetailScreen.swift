@@ -67,8 +67,9 @@ struct StrainDetailScreen: View {
                         blockDivider
                         trendBlock
                     }
-                    // "Qué mueve tu esfuerzo" — only when ≥1 relationship cleared the gate (FER-239).
-                    if !model.drivers.isEmpty {
+                    // "Qué mueve tu esfuerzo" — shown whenever the screen has data; renders an honest empty
+                    // state when no relationship clears the gate, instead of vanishing (FER-246).
+                    if model.hasData {
                         blockDivider
                         whatMovesBlock
                     }
@@ -294,8 +295,8 @@ struct StrainDetailScreen: View {
 
     /// Documented, DIRECTIONAL drivers of strain (same-day recovery, the prior day's strain), computed from
     /// the user's OWN history in `StrandAnalytics` and degraded to a direction — never a coefficient, never
-    /// a causal claim (hence the "tendencia, no causa" chip). Mirrors `MetricDetailScreen`'s block. Rendered
-    /// only when at least one relationship clears the sufficiency gate (the caller already checked).
+    /// a causal claim (hence the "tendencia, no causa" chip). Mirrors `MetricDetailScreen`'s block. When no
+    /// relationship clears the gate it renders an honest empty state instead of vanishing (FER-246).
     private var whatMovesBlock: some View {
         // The ⓘ discloses the correlation method + the sufficiency gate (FER-220 pattern); the chip and the
         // directional sentences live inside the accordion's content.
@@ -306,12 +307,20 @@ struct StrainDetailScreen: View {
             theme: theme
         ) {
             VStack(alignment: .leading, spacing: 10) {
-                InlineFlagChip("trend, not cause", color: theme.inkTertiary)
-                ForEach(model.drivers, id: \.driver) { finding in
-                    Text(Self.driverPhrase(finding))
+                if model.drivers.isEmpty {
+                    // Too few paired days yet, or none strong enough — honest, neutral empty state (FER-246).
+                    Text("Not enough data yet — keep wearing your strap and check back in a few weeks.")
                         .font(StrandFont.caption)
                         .foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    InlineFlagChip("trend, not cause", color: theme.inkTertiary)
+                    ForEach(model.drivers, id: \.driver) { finding in
+                        Text(Self.driverPhrase(finding))
+                            .font(StrandFont.caption)
+                            .foregroundStyle(theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
         }
