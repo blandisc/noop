@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **El dial de Hoy gira mientras tu banda se sincroniza / Today's dial spins while your strap syncs.**
+  **ES** — Cuando tu banda está descargando su historial, el **reloj de 24 h de Hoy cobra vida**: un arco verde gira sobre el aro y el número de recuperación se atenúa un momento («recalculando»), en lugar de la ruedita genérica de antes. Al terminar, el dial vuelve a su estado normal con tu número. Si tienes activado *Reducir movimiento*, el arco **no gira** —se queda quieto— y VoiceOver avisa «Sincronizando». La línea pequeña del encabezado («Sincronizado hace…») no cambia.
+  **EN** — While your strap is downloading its history, the **24-hour dial on Today comes alive**: a green arc spins around the ring and the recovery number dims for a moment ("recalculating"), instead of the old generic spinner. When it's done, the dial returns to normal with your number. With *Reduce Motion* on, the arc **doesn't spin** —it rests— and VoiceOver announces "Syncing". The small header line ("Synced … ago") is unchanged.
+  ([Packages/StrandDesign/Sources/StrandDesign/DiurnalDial.swift](Packages/StrandDesign/Sources/StrandDesign/DiurnalDial.swift), [Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **«Métricas de hoy» reparte el espacio en pantallas grandes / "Today's metrics" spreads to fill the screen.**
   **ES** — En teléfonos donde la pantalla de Hoy no se llenaba, las «Métricas de hoy» quedaban pegadas al número grande y sobraba un hueco al fondo. Ahora ese aire **se reparte por igual arriba y abajo** del bloque de métricas, así la pantalla se ve equilibrada en cualquier tamaño de iPhone. En teléfonos chicos donde ya cabía justo, nada cambia: el reparto solo aparece cuando de verdad sobra espacio, y nunca desborda.
   **EN** — On phones where the Today screen didn't fill up, "Today's metrics" sat glued to the big number with an empty gap at the bottom. That space is now **shared evenly above and below** the metrics block, so the screen looks balanced on any iPhone size. On small phones where it already fit snugly, nothing changes: the spread only appears when there's genuinely room to spare, and never overflows.

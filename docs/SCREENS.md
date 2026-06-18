@@ -128,6 +128,8 @@ de En vivo en FER-184; **no toca `LiveView`**.
 
 **Nota — realce al pulsar en los tiles (iOS, FER-213 · ajusta el «pulsado» de FER-180):** `TileButtonStyle` pasó del **darken** (overlay `ink.opacity(0.05)`) a un **realce**: al pulsar, el tile se **eleva** (`scaleEffect(1.03)`) y su borde pasa a `hairlineStrong`, sin sombra; en reposo no hay marca. Es lo único que sobrevivió de FER-210 (el zoom-morph de apertura se **revirtió** — PR #171); la apertura del detalle sigue siendo el `.sheet` estándar (desde abajo).
 
+**Nota — el dial gira al sincronizar (iOS, FER-221):** el `DiurnalDial` estrena un modo **«sincronizando»** (parámetro `syncing: Bool`, pasado desde `TodayView` como `live.backfilling`): mientras la banda descarga su historial, un **arco de progreso `dataRecovery`** con punto líder **gira** sobre el bezel (`StrandMotion.spin()`, ~1.5 s/vuelta, indeterminado — sin %, el protocolo no revela el total), el **now-dot fijo de la hora se oculta** (su verde se muda al arco) y el resto del reloj (arco de día, banda de sueño, ticks) **permanece fijo**. En `TodayView`, el numeral del héroe se **atenúa** a `inkTertiary` mientras `live.backfilling` (`heroNumeralInk`) y vuelve a tinta al terminar. **Reduce Motion**: el arco **no gira** (reposa estático) y el `accessibilityLabel` del dial antepone «Sincronizando». **La honesty line del header (`syncMeta`) no cambia** — todo el protagonismo del sync pasa al dial, en lugar de la ruedita nativa. Reemplaza la señal genérica de sync en Hoy; el pull-to-refresh propio (matar la ruedita nativa al jalar) queda para FER-222.
+
 ---
 
 ### HealthView

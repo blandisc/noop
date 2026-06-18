@@ -467,7 +467,11 @@ struct TodayView: View {
             // antes de FER-202 — el dueño prefirió el dial grande), conservando el «/100» apilado y centrado
             // debajo (FER-202). Con el dial grande Hoy puede volver a necesitar algo de scroll en calibrando.
             ZStack {
-                DiurnalDial(now: Date(), solar: solarWindow, sleep: sleepWindow, diameter: 180)
+                // FER-221: mientras la banda descarga (`backfilling`) el dial cobra vida —un arco
+                // verde gira sobre el bezel— y el numeral se atenúa («recalculando»). La honesty line
+                // del header no cambia. Al terminar, vuelve al reposo.
+                DiurnalDial(now: Date(), solar: solarWindow, sleep: sleepWindow,
+                            diameter: 180, syncing: live.backfilling)
                 heroNumeral(state)
             }
             heroBody(state)
@@ -482,6 +486,10 @@ struct TodayView: View {
         default:           return "El veredicto de hoy"
         }
     }
+
+    /// El color del numeral del héroe — tinta normal, atenuado a tertiary mientras sincroniza
+    /// (FER-221): «recalculando», en sintonía con el dial girando. Vuelve a tinta al terminar.
+    private var heroNumeralInk: Color { live.backfilling ? theme.inkTertiary : theme.ink }
 
     /// El numeral dominante — lo único que “grita” el estado. Veredicto → recuperación SIEMPRE en TINTA:
     /// el color por nivel lo lleva la PALABRA del veredicto, no el número, así nunca se contradicen
@@ -500,7 +508,7 @@ struct TodayView: View {
                 if let score {
                     VStack(spacing: NoopMetrics.space1) {
                         Text("\(score)").instrumentoHero(60)
-                            .foregroundStyle(theme.ink)
+                            .foregroundStyle(heroNumeralInk)
                         Text("/100").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
                     }
                 } else {
@@ -518,7 +526,7 @@ struct TodayView: View {
             // Apilado (FER-202), igual que el veredicto: «N» centrado en el eje del dial con el «/seed»
             // pequeño y centrado debajo (antes a un lado con un «/seed» espejo invisible).
             VStack(spacing: NoopMetrics.space1) {
-                Text("\(nights)").instrumentoHero(60).foregroundStyle(theme.ink)
+                Text("\(nights)").instrumentoHero(60).foregroundStyle(heroNumeralInk)
                 Text("/\(Baselines.minNightsSeed)").font(StrandFont.subhead)
                     .foregroundStyle(theme.inkTertiary)
             }

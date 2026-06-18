@@ -83,4 +83,18 @@ final class DiurnalDialTests: XCTestCase {
         XCTAssertEqual(SleepWindow(bedtime: 23, wake: 7), SleepWindow(bedtime: 23, wake: 7))
         XCTAssertNotEqual(SleepWindow(bedtime: 23, wake: 7), SleepWindow(bedtime: 22, wake: 7))
     }
+
+    // MARK: syncing mode announces itself to VoiceOver (FER-221)
+
+    func testSyncingAnnouncesInAccessibilityLabel() {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "UTC")!
+        let d = cal.date(from: DateComponents(year: 2026, month: 6, day: 16, hour: 15, minute: 30))!
+        let syncing = DiurnalDial(now: d, calendar: cal, syncing: true)
+        XCTAssertTrue(syncing.accessibilityText.hasPrefix("Sincronizando"),
+                      "a syncing dial should announce it is syncing first")
+        let resting = DiurnalDial(now: d, calendar: cal, syncing: false)
+        XCTAssertFalse(resting.accessibilityText.contains("Sincronizando"),
+                       "a resting dial must not announce syncing")
+    }
 }

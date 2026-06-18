@@ -48,6 +48,12 @@ public enum StrandMotion {
 
     /// Standard fade.
     public static let fade = Animation.easeInOut(duration: durationStandard)
+
+    /// Continuous linear spin for indeterminate progress (e.g. the sync dial arc,
+    /// FER-221). No autoreverse — a steady rotation, not a wobble.
+    public static func spin(period: Double = 1.5) -> Animation {
+        .linear(duration: period).repeatForever(autoreverses: false)
+    }
 }
 
 #if DEBUG

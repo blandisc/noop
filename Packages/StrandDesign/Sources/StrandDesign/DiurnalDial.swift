@@ -98,6 +98,12 @@ public struct DiurnalDial: View {
     /// to sit at the current hour with no entrance). `prefers-reduced-motion` forces
     /// it off regardless.
     public var animated: Bool
+    /// Whether to show the «syncing» activity layer (FER-221): a `dataRecovery` arc
+    /// that spins over the bezel while the strap's history offload runs. While syncing
+    /// the fixed now-dot is hidden (its green moves to the arc) and the rest of the
+    /// clock stays put. Indeterminate by design — no percentage (the protocol never
+    /// reveals the total pending). `prefers-reduced-motion` rests the arc (no spin).
+    public var syncing: Bool
 
     public init(
         now: Date = Date(),
@@ -105,6 +111,7 @@ public struct DiurnalDial: View {
         solar: SolarWindow? = nil,
         sleep: SleepWindow? = nil,
         diameter: CGFloat = 240,
+        syncing: Bool = false,
         animated: Bool = true
     ) {
         self.now = now
@@ -112,6 +119,7 @@ public struct DiurnalDial: View {
         self.solar = solar
         self.sleep = sleep
         self.diameter = diameter
+        self.syncing = syncing
         self.animated = animated
     }
 
@@ -124,6 +132,9 @@ public struct DiurnalDial: View {
     // is allowed (see `startSweep`).
     @State private var sweepDegrees: Double = 0
     @State private var pulsing: Bool = false
+    /// Drives the indeterminate sync spin (FER-221). Set from `syncing && allowsMotion`
+    /// so reduced-motion rests the arc and the snapshot harness renders it static.
+    @State private var spinning: Bool = false
 
     // MARK: Derived measures (all scale from `diameter`)
 
@@ -136,6 +147,12 @@ public struct DiurnalDial: View {
     private var bandWidth: CGFloat { diameter * 0.030 }
     private var dotDiameter: CGFloat { diameter * 0.044 }
     private var haloDiameter: CGFloat { diameter * 0.12 }
+    /// The spinning sync arc — a hair heavier than the day arc so the green reads as
+    /// the live layer riding over the bezel.
+    private var syncArcWidth: CGFloat { max(trackWidth + 1, diameter * 0.020) }
+    /// Fraction of the ring the sync arc spans (a comet, not a full ring) — a fixed
+    /// design constant, not a measure derived from `diameter`.
+    private let syncArcFraction: CGFloat = 0.30
 
     private var nowHour: Double { InstrumentoThemeEngine.localHour(of: now, calendar: calendar) }
 
@@ -147,12 +164,21 @@ public struct DiurnalDial: View {
     public var body: some View {
         ZStack {
             staticFace
-            nowLayer
+            // While syncing, the spinning arc replaces the fixed now-dot (the green
+            // moves to the arc); at rest, the now-dot marks the current hour.
+            if syncing {
+                syncLayer
+            } else {
+                nowLayer
+            }
         }
         .frame(width: diameter, height: diameter)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(accessibilityText))
         .onAppear(perform: startSweep)
+        // `task(id:)` runs on appear and whenever `syncing` flips — starts/stops the
+        // spin without the macOS 14-only two-parameter `onChange`.
+        .task(id: syncing) { updateSpin() }
     }
 
     // MARK: Static face — track, day arc, sleep band, ticks, sun marks
@@ -234,6 +260,38 @@ public struct DiurnalDial: View {
         .accessibilityHidden(true)
     }
 
+    // MARK: Sync layer — the spinning activity arc (FER-221)
+
+    /// A `dataRecovery` arc that spins over the bezel while a history offload runs,
+    /// led by a dot (the «now» green, reused at the arc's head). Indeterminate: no
+    /// percentage. Reduced-motion rests it (`spinning` stays false), which also makes
+    /// the snapshot harness deterministic. The clock underneath (day arc, sleep band,
+    /// ticks) stays put — only this layer moves.
+    private var syncLayer: some View {
+        ZStack {
+            Circle()
+                .trim(from: 0, to: syncArcFraction)
+                .stroke(theme.dataRecovery,
+                        style: StrokeStyle(lineWidth: syncArcWidth, lineCap: .round))
+                .rotationEffect(.degrees(-90))                            // start at the top
+            Circle()
+                .fill(theme.dataRecovery)
+                .frame(width: dotDiameter, height: dotDiameter)
+                .offset(y: -ringRadius)
+                .rotationEffect(.degrees(Double(syncArcFraction) * 360))  // head of the arc
+        }
+        .frame(width: ringRadius * 2, height: ringRadius * 2)
+        .rotationEffect(.degrees(spinning ? 360 : 0))
+        .animation(allowsMotion ? StrandMotion.spin() : nil, value: spinning)
+        .accessibilityHidden(true)
+    }
+
+    /// Start/stop the spin from the current `syncing` + motion state. Reduced-motion
+    /// leaves the arc at rest — an honest, still indicator.
+    private func updateSpin() {
+        spinning = syncing && allowsMotion
+    }
+
     private func startSweep() {
         // Motion off (reduced-motion or `animated: false`): leave the resting state —
         // dot already at the current hour, no pulse.
@@ -278,8 +336,10 @@ public struct DiurnalDial: View {
         return String(format: "%02d:%02d", (total / 60) % 24, total % 60)
     }
 
-    private var accessibilityText: String {
-        var parts = ["Reloj de 24 horas. Son las \(clockString(nowHour))."]
+    var accessibilityText: String {
+        var parts: [String] = []
+        if syncing { parts.append("Sincronizando.") }
+        parts.append("Reloj de 24 horas. Son las \(clockString(nowHour)).")
         if let s = solar {
             parts.append("Amanecer \(clockString(s.sunrise)), atardecer \(clockString(s.sunset)).")
         }
