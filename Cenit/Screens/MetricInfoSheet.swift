@@ -139,14 +139,15 @@ extension MetricInfo {
     }
 
     static func restingHR(_ value: Int?) -> MetricInfo {
+        let lpm = String(localized: "bpm")
         let bands: [Band] = [
-            Band(label: "Athlete", range: "< 50 bpm",
+            Band(label: "Athlete", range: "< 50 \(lpm)",
                  isActive: value.map { $0 < 50 } ?? false),
-            Band(label: "Excellent", range: "50 – 60 bpm",
+            Band(label: "Excellent", range: "50 – 60 \(lpm)",
                  isActive: value.map { $0 >= 50 && $0 < 60 } ?? false),
-            Band(label: "Normal", range: "60 – 80 bpm",
+            Band(label: "Normal", range: "60 – 80 \(lpm)",
                  isActive: value.map { $0 >= 60 && $0 < 80 } ?? false),
-            Band(label: "Elevated", range: "> 80 bpm",
+            Band(label: "Elevated", range: "> 80 \(lpm)",
                  isActive: value.map { $0 >= 80 } ?? false),
         ]
         return MetricInfo(
@@ -154,7 +155,7 @@ extension MetricInfo {
             name: "Resting HR",
             headline: "Your heart rate when your body is fully at rest — how hard your heart has to work doing nothing. Lower generally means a stronger, more efficient cardiovascular system. Cénit uses it as ~20% of your recovery score; a rise from your norm can signal fatigue or that something's coming on.",
             displayValue: value.map { "\($0)" } ?? "—",
-            unit: "bpm",
+            unit: lpm,
             headerTint: value == nil ? .neutral : .metric,
             bands: bands,
             note: "Measured overnight from your strap; when the strap isn't worn, Cénit uses Apple Health's resting heart rate instead."
@@ -382,7 +383,7 @@ extension MetricInfo {
             name: "Heart Rate",
             headline: "Your heart rate across the day, averaged in 5-minute buckets.",
             displayValue: avgBpm.map { "\($0)" } ?? "—",
-            unit: "bpm",
+            unit: String(localized: "bpm"),
             headerTint: avgBpm == nil ? .neutral : .metric,
             bands: [],
             note: nil
@@ -726,7 +727,7 @@ struct MetricInfoSheet: View {
                     showsArea: true,
                     height: 260,
                     showsHover: true,
-                    valueFormat: { "\(Int($0.rounded())) bpm" },
+                    valueFormat: { "\(Int($0.rounded())) \(String(localized: "bpm"))" },
                     dateFormat: { Self.hrClock.string(from: $0) },
                     axisLabelColor: theme.inkTertiary,
                     gridLineColor: theme.hairline
@@ -829,7 +830,7 @@ struct MetricInfoSheet: View {
                         return { String(format: "%.1f", $0) }
         case "sleep_awakenings":
                         return { "\(Int($0.rounded()))" }
-        case "rhr":     return { "\(Int($0.rounded())) bpm" }
+        case "rhr":     return { "\(Int($0.rounded())) \(String(localized: "bpm"))" }
         case "spo2":    return { String(format: "%.0f%%", $0) }
         case "steps":   return { Self.stepFmt.string(from: NSNumber(value: Int($0.rounded()))) ?? "\(Int($0.rounded()))" }
         default:        return { "\(Int($0.rounded()))" }

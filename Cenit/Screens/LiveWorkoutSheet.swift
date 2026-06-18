@@ -107,7 +107,7 @@ struct LiveWorkoutHubRow: View {
         if let w = model.lastWorkout {
             let mins = max(1, Int(((w.durationS ?? 0) / 60).rounded()))
             let avg = w.avgHr ?? 0
-            return "\(String(localized: "Workout saved")) · \(mins) min · \(avg) bpm"
+            return "\(String(localized: "Workout saved")) · \(mins) min · \(avg) \(String(localized: "bpm"))"
         }
         return ""
     }

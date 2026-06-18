@@ -283,7 +283,7 @@ struct BreathingView: View {
         HStack(spacing: NoopMetrics.gap) {
             readoutTile(label: "Heart rate",
                         value: model.bpm.map { "\($0)" } ?? "—",
-                        unit: "bpm",
+                        unit: String(localized: "bpm"),
                         accent: StrandPalette.metricRose,
                         caption: live.worn ? "Live" : "Strap not worn")
 

@@ -73,7 +73,7 @@ struct ManualWorkoutSheet: View {
                 }
                 HStack(spacing: 14) {
                     field("Avg HR") {
-                        numberInput("optional", text: $avgHrText, unit: "bpm")
+                        numberInput("optional", text: $avgHrText, unit: String(localized: "bpm"))
                             .accessibilityLabel("Average heart rate in beats per minute, optional")
                     }
                     field("Calories") {
@@ -182,7 +182,7 @@ struct ManualWorkoutSheet: View {
         if sport.trimmingCharacters(in: .whitespaces).isEmpty { return "Enter a sport." }
         if start > Date() { return "Start can't be in the future." }
         if !avgHrText.trimmingCharacters(in: .whitespaces).isEmpty, avgHr == nil || !(25...250).contains(avgHr ?? -1) {
-            return "Average HR must be 25–250 bpm."
+            return String(localized: "Average HR must be 25–250 bpm.")
         }
         if !kcalText.trimmingCharacters(in: .whitespaces).isEmpty, kcal == nil || (kcal ?? -1) < 0 || (kcal ?? 0) > 20_000 {
             return "Calories must be 0–20,000."

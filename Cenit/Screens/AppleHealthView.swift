@@ -306,7 +306,7 @@ struct AppleHealthView: View {
             statTile(key: "steps", label: "Steps",
                      accent: StrandPalette.metricCyan, fmt: { intString($0) })
             statTile(key: "resting_hr", label: "Resting HR",
-                     accent: StrandPalette.metricRose, unit: "bpm",
+                     accent: StrandPalette.metricRose, unit: String(localized: "bpm"),
                      fmt: { "\(Int($0.rounded()))" })
             statTile(key: "hrv", label: "HRV",
                      accent: StrandPalette.metricPurple, unit: "ms",
@@ -387,7 +387,7 @@ struct AppleHealthView: View {
                           trailing: range.caption)
             chartCard(title: "Resting heart rate", key: "resting_hr",
                       gradient: roseGradient, fallback: 40...80,
-                      fmt: { "\(Int($0.rounded())) bpm" })
+                      fmt: { "\(Int($0.rounded())) \(String(localized: "bpm"))" })
             chartCard(title: "Heart rate variability", key: "hrv",
                       gradient: purpleGradient, fallback: 20...120,
                       fmt: { "\(Int($0.rounded())) ms" })
