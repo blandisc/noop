@@ -136,7 +136,9 @@ struct MetricDetailScreen: View {
             blockDivider
             nightVitalsBlock
         }
-        if visibleBlocks.contains(.whatMovesIt), !whatMovesItFindings.isEmpty {
+        // Shown whenever there's series data — when no relationship clears the gate it renders an honest
+        // empty state instead of vanishing (FER-246). Stays hidden on a cold-start/empty screen.
+        if visibleBlocks.contains(.whatMovesIt), !series.isEmpty {
             blockDivider
             whatMovesItBlock
         }
@@ -620,12 +622,21 @@ struct MetricDetailScreen: View {
             theme: theme
         ) {
             VStack(alignment: .leading, spacing: 10) {
-                InlineFlagChip("trend, not cause", color: theme.inkTertiary)
-                ForEach(whatMovesItFindings) { finding in
-                    Text(Self.whatMovesItPhrase(finding))
+                if whatMovesItFindings.isEmpty {
+                    // No relationship cleared the gate yet (too few paired nights, or none strong enough).
+                    // Honest empty state instead of vanishing — neutral wording true in both cases (FER-246).
+                    Text("Not enough data yet — keep wearing your strap and check back in a few weeks.")
                         .font(StrandFont.caption)
                         .foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    InlineFlagChip("trend, not cause", color: theme.inkTertiary)
+                    ForEach(whatMovesItFindings) { finding in
+                        Text(Self.whatMovesItPhrase(finding))
+                            .font(StrandFont.caption)
+                            .foregroundStyle(theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
         }

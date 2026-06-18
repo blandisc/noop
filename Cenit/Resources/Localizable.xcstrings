@@ -9221,6 +9221,29 @@
         }
       }
     },
+    "Hide explanation": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide explanation"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ocultar explicación"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erklärung ausblenden"
+          }
+        }
+      }
+    },
     "High": {
       "extractionState": "manual",
       "localizations": {
@@ -10870,52 +10893,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Letzte 14 Tage"
-          }
-        }
-      }
-    },
-    "Hide explanation": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hide explanation"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ocultar explicación"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Erklärung ausblenden"
-          }
-        }
-      }
-    },
-    "Show explanation": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Show explanation"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ver explicación"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Erklärung anzeigen"
           }
         }
       }
@@ -13827,6 +13804,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "No hay datos suficientes para esta ventana."
+          }
+        }
+      }
+    },
+    "Not enough data yet — keep wearing your strap and check back in a few weeks.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not enough data yet — keep wearing your strap and check back in a few weeks."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no hay suficientes datos — sigue usando tu correa y vuelve en unas semanas."
           }
         }
       }
@@ -18235,6 +18229,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mostrar dirección de donación de %@"
+          }
+        }
+      }
+    },
+    "Show explanation": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show explanation"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver explicación"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erklärung anzeigen"
           }
         }
       }
