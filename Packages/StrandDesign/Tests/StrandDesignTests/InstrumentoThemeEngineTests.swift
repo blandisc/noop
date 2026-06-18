@@ -119,6 +119,35 @@ final class InstrumentoThemeEngineTests: XCTestCase {
         XCTAssertGreaterThan(lab(noon.paper).L, 0.85, "noon should read as light paper")
     }
 
+    // MARK: positiveText — AA-at-text-size positive green (auditoría Hoy · P1)
+
+    /// `verdict` is AA-LARGE (3:1) for the dominant numerals, so at 12pt body text (the
+    /// Today tile's "↑ vs media" delta) it falls short of the 4.5:1 normal-text floor —
+    /// 3.6:1 by day, ~3.2:1 at night. `positiveText` darkens it just enough to clear 4.5:1
+    /// against whatever paper is live. Pin that it holds at every minute of the sweep.
+    func testPositiveTextClearsTextAAAcrossTheWholeDay() {
+        let cal = utcCalendar(), base = midnight(cal)
+        for minute in stride(from: 0, through: 24 * 60, by: 1) {
+            let t = InstrumentoThemeEngine.theme(at: base.addingTimeInterval(Double(minute) * 60), calendar: cal)
+            let c = contrast(t.positiveText, t.paper)
+            XCTAssertGreaterThanOrEqual(c, 4.5,
+                "positiveText \(String(format: "%.2f", c)):1 at \(minute / 60):\(String(format: "%02d", minute % 60))")
+        }
+    }
+
+    /// The base `verdict` actually fails the 12pt floor (proving the fix is needed), while
+    /// `positiveText` repairs it and keeps the hue green (not collapsed to ink/black).
+    func testPositiveTextFixesVerdictAndStaysGreen() {
+        let t = InstrumentoTheme.base
+        XCTAssertLessThan(contrast(t.verdict, t.paper), 4.5, "verdict should miss the 12pt text floor")
+        XCTAssertGreaterThanOrEqual(contrast(t.positiveText, t.paper), 4.5, "positiveText must clear it")
+        // Still green: the green channel dominates, and it's darker (lower OKLab L) than verdict.
+        let k = t.positiveText.rgbaComponents
+        XCTAssertGreaterThan(k.g, k.r, "positiveText should still read green (G > R)")
+        XCTAssertGreaterThan(k.g, k.b, "positiveText should still read green (G > B)")
+        XCTAssertLessThan(lab(t.positiveText).L, lab(t.verdict).L, "positiveText must be darker than verdict")
+    }
+
     // MARK: datum stays legible at night
 
     func testDataAccentsLegibleAtNightAnchor() {

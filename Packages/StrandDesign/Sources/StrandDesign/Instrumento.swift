@@ -124,6 +124,20 @@ public extension InstrumentoTheme {
         [Color(hex: "#8FA98C"), Color(hex: "#C8A24A"), Color(hex: "#D98A3D"),
          Color(hex: "#C4631F"), Color(hex: "#9C3D14")]
     }
+
+    /// An AA-at-text-size positive green, for the rare case a POSITIVE signal must ride
+    /// SMALL text (the Today metric tile's "↑ N vs media" delta, 12pt) rather than a large
+    /// numeral. `verdict` is tuned for AA-LARGE (3:1 at ≥18pt where the dominant numerals
+    /// live); at 12pt body text needs 4.5:1, which `verdict` misses at every hour (3.6:1 on
+    /// day paper, ~3.2:1 on the dimmer night paper). This darkens `verdict` in OKLab —
+    /// keeping its hue — only as far as needed to clear 4.5:1 against the CURRENT (already
+    /// hour-interpolated) `paper`, so the positive delta stays WCAG-AA across the whole 24h
+    /// sweep with no hand-tuned hex per anchor. `critical` already clears 4.5:1 (≈4.6:1 even
+    /// at night), so the negative delta keeps using it directly. Computed (like `hrZoneRamp`)
+    /// so it needs no change to the theme's init or the hour engine. (Auditoría Hoy · P1)
+    var positiveText: Color {
+        OKLab.darkened(verdict, toContrast: 4.5, against: paper)
+    }
 }
 
 // MARK: - Environment injection
