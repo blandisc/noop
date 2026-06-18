@@ -72,5 +72,62 @@ final class DiurnalDialSnapshotTests: XCTestCase {
         try png.write(to: url)
         print("WROTE \(url.path) — \(image.size)")
     }
+
+    /// FER-222 — renders the determinate «arming» arc (pull-to-refresh) at progress 0 / 0.5 / 1.0
+    /// and the `syncing` handoff, so the arc growth + head-dot placement can be eyeballed against
+    /// the spinning comet it cedes to. Resting capture (no animation), like the by-hour test.
+    /// Run: swift test --filter DiurnalDialSnapshotTests/test_renderDialArming
+    @MainActor
+    func test_renderDialArming() throws {
+        func utc() -> Calendar {
+            var c = Calendar(identifier: .gregorian)
+            c.timeZone = TimeZone(identifier: "UTC")!
+            return c
+        }
+        let date = utc().date(from: DateComponents(year: 2026, month: 6, day: 16, hour: 14))!
+        let sun = SolarWindow(sunrise: 6.2, sunset: 19.8)
+        let bed = SleepWindow(bedtime: 23.5, wake: 7.25)
+        let theme = InstrumentoThemeEngine.theme(at: date, calendar: utc(), solar: sun)
+
+        func panel(_ label: String, armProgress: Double = 0, syncing: Bool = false) -> some View {
+            VStack(spacing: 12) {
+                DiurnalDial(now: date, calendar: utc(), solar: sun, sleep: bed, diameter: 170,
+                            syncing: syncing, armProgress: armProgress, animated: false)
+                Text(label).font(InstrumentoType.overline).tracking(InstrumentoType.overlineTracking)
+                    .textCase(.uppercase).foregroundStyle(theme.inkTertiary)
+            }
+            .padding(18)
+            .frame(width: 230)
+            .background(theme.paper)
+            .clipShape(RoundedRectangle(cornerRadius: 18))
+            .instrumentoTheme(theme)
+        }
+
+        let grid = VStack(spacing: 16) {
+            HStack(spacing: 16) {
+                panel("reposo")
+                panel("armando 50%", armProgress: 0.5)
+            }
+            HStack(spacing: 16) {
+                panel("umbral · 100%", armProgress: 1.0)
+                panel("sincronizando", syncing: true)
+            }
+        }
+        .padding(28)
+        .background(Color(hex: "#E8E2D6"))
+
+        let renderer = ImageRenderer(content: grid)
+        renderer.scale = 2
+        guard let image = renderer.nsImage,
+              let tiff = image.tiffRepresentation,
+              let rep = NSBitmapImageRep(data: tiff),
+              let png = rep.representation(using: .png, properties: [:]) else {
+            XCTFail("ImageRenderer produced no image"); return
+        }
+        let url = URL(fileURLWithPath: "/tmp/noop-fer222/dial_arming.png")
+        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try png.write(to: url)
+        print("WROTE \(url.path) — \(image.size)")
+    }
 }
 #endif
