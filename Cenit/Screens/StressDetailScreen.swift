@@ -157,10 +157,12 @@ struct StressDetailScreen: View {
         let window = makeWindow()
         let stat = ComparisonEngine.stat(window.values)
         let pairs = seriesPairs(model)
-        let mom = ComparisonEngine.monthOverMonth(byDay: pairs, referenceDay: pairs.last?.day ?? "")
+        // Compare the selected window against the equally-long window before it, not always the calendar
+        // month. `.all` has no previous period, so no chip. (FER-264)
+        let comparison = window.range.periodComparison(of: pairs)
         return InfoAccordion(
             title: "Trend",
-            explanation: "Each point is your daily stress index. The bands behind it are the fixed Low / Moderate / High zones (0–1 / 1–2 / 2–3). The percentage compares this month's average with last month's; Average, Lowest and Highest come from the range you selected. What matters isn't a single day — it's several days in a row drifting into a higher band.",
+            explanation: "Each point is your daily stress index. The bands behind it are the fixed Low / Moderate / High zones (0–1 / 1–2 / 2–3). The percentage compares this period's average with the previous period of the same length; Average, Lowest and Highest come from the range you selected. What matters isn't a single day — it's several days in a row drifting into a higher band.",
             accessibilityLabel: "Information about the stress trend",
             theme: theme
         ) {
@@ -175,8 +177,9 @@ struct StressDetailScreen: View {
                     stressChart(window)
                     TrendStatSummary(
                         average: fmt(stat.mean),
-                        pctChange: mom.pctChange,
+                        pctChange: comparison?.pctChange,
                         polarity: .lowerIsBetter,
+                        period: window.range.comparisonPeriod ?? .month,
                         rangeLow: fmt(stat.min),
                         rangeHigh: fmt(stat.max),
                         theme: theme

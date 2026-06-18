@@ -102,6 +102,11 @@ struct MetricDetailSpec: Identifiable {
     /// (`VO2maxReference`: expected median, fitness category, cardiorespiratory-equivalent age). Only set
     /// for the VO₂max spec. (FER-257)
     var vo2maxProfile: VO2maxProfile? = nil
+    /// When true, the CURRENT calendar day is still accumulating (a running daily total, not a finished
+    /// value) — so the trend figures (range / average / period comparison) drop it and read only completed
+    /// days. The hero and the chart still show today. Only steps sets this; a vital's "today" is last
+    /// night's finished measurement. (FER-264)
+    var currentDayIncomplete: Bool = false
 
     var id: String { descriptor.id }
 
@@ -197,7 +202,8 @@ struct MetricDetailSpec: Identifiable {
             blocks: [.periodSelector, .seriesChartBand, .trend, .method],
             hero: .latest,
             baselineCfg: nil,
-            populationRange: nil
+            populationRange: nil,
+            currentDayIncomplete: true   // today is a running total, not a finished day (FER-264)
         )
     }
 

@@ -28,11 +28,18 @@ public struct TrendStatSummary: View {
         case neutral          // strain — more isn't inherently good or bad
     }
 
+    /// The length of the period the change compares against — drives the chip wording ("vs last week" /
+    /// "vs last quarter" …) so it tracks the selected range instead of always saying "month". (FER-264)
+    public enum ComparisonPeriod: Sendable {
+        case week, month, quarter, halfYear, year
+    }
+
     private let average: String
     private let unit: String?
     private let pctChange: Double?
     private let absoluteChange: Double?
     private let polarity: Polarity
+    private let period: ComparisonPeriod
     private let rangeLow: String
     private let rangeHigh: String
     private let theme: InstrumentoTheme
@@ -40,12 +47,14 @@ public struct TrendStatSummary: View {
     /// - Parameters:
     ///   - average: the period mean, already formatted to the metric's precision (no unit).
     ///   - unit: optional unit shown small next to the number (e.g. "ms", "h"); nil for unitless indices.
-    ///   - pctChange: signed month-over-month % change in the mean; nil when there's no previous month.
-    ///   - absoluteChange: opt-in alternative to `pctChange` — a signed month-over-month change expressed
+    ///   - pctChange: signed period-over-period % change in the mean; nil when there's no previous period.
+    ///   - absoluteChange: opt-in alternative to `pctChange` — a signed period-over-period change expressed
     ///     in the metric's OWN units (rendered at one decimal + `unit`, e.g. "0.1 °C vs last month"). Use it
     ///     for metrics whose mean sits near zero, where a percentage is unstable/misleading (e.g. a skin-
     ///     temperature deviation). When non-nil it drives the chip and `pctChange` is ignored. (FER-256)
     ///   - polarity: which direction of change is good — colours the chip.
+    ///   - period: the length of the period being compared, which drives the chip wording ("vs last week"
+    ///     / "vs last quarter" …). Defaults to `.month`. (FER-264)
     ///   - rangeLow / rangeHigh: the period min and max, already formatted (bake the unit into rangeHigh
     ///     when you want it shown, e.g. "62 ms").
     ///   - theme: the active «Instrumento» theme (it does not propagate through `.sheet`, so pass it).
@@ -54,6 +63,7 @@ public struct TrendStatSummary: View {
                 pctChange: Double?,
                 absoluteChange: Double? = nil,
                 polarity: Polarity,
+                period: ComparisonPeriod = .month,
                 rangeLow: String,
                 rangeHigh: String,
                 theme: InstrumentoTheme) {
@@ -62,6 +72,7 @@ public struct TrendStatSummary: View {
         self.pctChange = pctChange
         self.absoluteChange = absoluteChange
         self.polarity = polarity
+        self.period = period
         self.rangeLow = rangeLow
         self.rangeHigh = rangeHigh
         self.theme = theme
@@ -88,10 +99,11 @@ public struct TrendStatSummary: View {
         }
     }
 
-    /// "10% vs last month" / "0.1 °C vs last month" (String-interpolated so the key is "%@ vs last month",
-    /// which localizes — the arrow already carries the sign, FER-247), or "Stable this month" when flat.
+    /// "10% vs last week" / "0.1 °C vs last quarter" (String-interpolated so each key is "%@ vs last …",
+    /// which localizes — the arrow already carries the sign, FER-247), or "Stable this …" when flat. The
+    /// period suffix tracks the selected range instead of always saying "month". (FER-264)
     private var chipText: LocalizedStringKey {
-        guard !isFlat, let v = changeValue else { return "Stable this month" }
+        guard !isFlat, let v = changeValue else { return flatText }
         let magnitude: String
         if absoluteChange != nil {
             let mag = String(format: "%.1f", abs(v))
@@ -99,7 +111,24 @@ public struct TrendStatSummary: View {
         } else {
             magnitude = "\(Int(abs(v).rounded()))%"
         }
-        return "\(magnitude) vs last month"
+        switch period {
+        case .week:     return "\(magnitude) vs last week"
+        case .month:    return "\(magnitude) vs last month"
+        case .quarter:  return "\(magnitude) vs last quarter"
+        case .halfYear: return "\(magnitude) vs the previous 6 months"
+        case .year:     return "\(magnitude) vs last year"
+        }
+    }
+
+    /// "Stable this week / month / quarter / …" — the no-movement copy, period-aware like the chip. (FER-264)
+    private var flatText: LocalizedStringKey {
+        switch period {
+        case .week:     return "Stable this week"
+        case .month:    return "Stable this month"
+        case .quarter:  return "Stable this quarter"
+        case .halfYear: return "Stable these 6 months"
+        case .year:     return "Stable this year"
+        }
     }
 
     private var rangeText: LocalizedStringKey { "Varied between \(rangeLow) and \(rangeHigh)" }

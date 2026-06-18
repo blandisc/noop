@@ -205,7 +205,8 @@ private struct CuerpoLanding: View {
                     : nil,
                 intradayCurveLoader: spec.blocks.contains(.intradayCurve) ? { hrPoints } : nil,
                 hrMax: Double(model.profile.hrMax),
-                restingHR: resolveMeasured { $0.restingHr.map(Double.init) }?.value
+                restingHR: resolveMeasured { $0.restingHr.map(Double.init) }?.value,
+                todayKey: Repository.localDayKey(Date())
             )
         }
         .sheet(item: $recoveryDetail) { item in
