@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-18 · FER-252</span>
+  <span class="tb-updated">Actualizado 2026-06-18 · FER-258</span>
 </div>
 
 <div id="wrapper">
@@ -372,7 +372,7 @@ const SCREENS = [
       { label: 'Hay número, sin contexto (insufficient) — numeral en tinta + "aún sin contexto", ya no cae al anillo (FER-160)', type: 'warn' },
       { label: 'Sincronizando (transversal iOS) — syncMeta muestra "Sincronizando historial…" en utility row; sin pill', type: 'warn' },
       { label: 'Pull-to-refresh propio que dibuja el dial (FER-222 · reemplaza el nativo FER-204): jalar arma el arco verde del dial (armProgress 0→1, sin ruedita nativa); cruzar el umbral (96pt) dispara el sync + háptica .medium y el dial gira (modo syncing FER-221); soltar antes no dispara; VoiceOver: acción «Sincronizar»; Reduce Motion: sin dibujo del arco; offline: solo refresh local', type: 'live' },
-      { label: '«Métricas de hoy» (FER-180): rejilla 2×4 de 8 tiles intradía (valor en color de dato + Δ vs ayer), sin sparkline 14d; Recuperación NO es tile', type: 'live' },
+      { label: '«Métricas de hoy» (FER-180/258): rejilla 2×4 de 8 tiles intradía (valor en color de dato + cambio vs tu media 7d + mini-banda p25–p75 con tick de hoy), sin sparkline 14d; Recuperación NO es tile', type: 'live' },
       { label: 'Cabe en una pantalla (FER-189): sin sección Fuentes, tiles 76pt — sin scroll en 6.1"+', type: 'live' },
       { label: 'Pulso vivo en el encabezado (FER-194): pastilla heart.fill + punto + bpm en el trailing de «Métricas de hoy» (sólo si strapSeen), abre el monitor; la fila del pie se eliminó', type: 'live' },
     ],
@@ -385,7 +385,7 @@ const SCREENS = [
       { to: 'why-verdict', label: '«i» junto a la palabra del veredicto', type: 'sheet' },
       { to: 'support', label: 'Toolbar ❤', type: 'toolbar' },
     ],
-    components: ['HealthAlertBanner', 'PaperBackground (lienzo por hora · FER-135)', 'heroInstrument (héroe unificado, 4 modos vía HeroState · concéntrico FER-169)', 'DiurnalDial (dial 24h del héroe · 180px con numeral 60 + «/100» apilado · FER-135/169/202/205)', 'LivePulsePill (pastilla de pulso en el encabezado de «Métricas de hoy» · FER-194 · reemplaza LiveHeartbeatRow)', 'WhyVerdictSheet (héroe «Instrumento diurno»: número + dial + veredicto + «i» · FER-135)', 'TodayMetricTile + TileButtonStyle (rejilla «Métricas de hoy» 2×4 · valor en color de dato + Δ vs ayer · sin sparkline · tiles 70pt · tile «stress» nuevo, FER-180/189/202)', 'MetricRow (macOS · Métricas clave heredado)', 'SourcesSummaryCard (Sources · en Data Sources, FER-137)', 'RecoveryRing (macOS)', 'StatTile ×10 (macOS)', 'ChartCard (HR Trend · macOS)', 'ReadinessGaugeBar (solo macOS)'],
+    components: ['HealthAlertBanner', 'PaperBackground (lienzo por hora · FER-135)', 'heroInstrument (héroe unificado, 4 modos vía HeroState · concéntrico FER-169)', 'DiurnalDial (dial 24h del héroe · 180px con numeral 60 + «/100» apilado · FER-135/169/202/205)', 'LivePulsePill (pastilla de pulso en el encabezado de «Métricas de hoy» · FER-194 · reemplaza LiveHeartbeatRow)', 'WhyVerdictSheet (héroe «Instrumento diurno»: número + dial + veredicto + «i» · FER-135)', 'TodayMetricTile + TileButtonStyle + MetricBand (rejilla «Métricas de hoy» 2×4 · valor en color de dato + cambio vs media 7d + mini-banda p25–p75 · sin sparkline · tiles 88pt · tile «stress» nuevo, FER-180/189/202/258)', 'MetricRow (macOS · Métricas clave heredado)', 'SourcesSummaryCard (Sources · en Data Sources, FER-137)', 'RecoveryRing (macOS)', 'StatTile ×10 (macOS)', 'ChartCard (HR Trend · macOS)', 'ReadinessGaugeBar (solo macOS)'],
   },
   {
     id: 'health', x: 284, y: 60,
