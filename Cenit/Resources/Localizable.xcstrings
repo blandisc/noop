@@ -9549,7 +9549,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dein Schlafverlauf wird geladen…"
+            "value": "Lade deinen Schlafverlauf…"
           }
         },
         "en": {
@@ -20920,6 +20920,12 @@
             "state": "translated",
             "value": "variable"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "variabel"
+          }
         }
       }
     },
@@ -21615,6 +21621,125 @@
           "stringUnit": {
             "state": "translated",
             "value": "Was es beeinflusst"
+          }
+        }
+      }
+    },
+    "We line up this vital against your own sleep and the prior day's strain, night by night across your history, and read which way it leans (Pearson correlation). We only show a direction once there are enough paired nights (about six weeks) and the link is strong enough to be unlikely to be chance — never the number, and never as a cause. (Plews 2013)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We line up this vital against your own sleep and the prior day's strain, night by night across your history, and read which way it leans (Pearson correlation). We only show a direction once there are enough paired nights (about six weeks) and the link is strong enough to be unlikely to be chance — never the number, and never as a cause. (Plews 2013)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alineamos este vital con tu propio sueño y con el esfuerzo del día anterior, noche por noche a lo largo de tu historial, y leemos hacia dónde se inclina (correlación de Pearson). Solo mostramos una dirección cuando hay suficientes noches pareadas (unas seis semanas) y la relación es lo bastante fuerte como para que sea poco probable que sea azar — nunca el número, y nunca como causa. (Plews 2013)"
+          }
+        }
+      }
+    },
+    "Information about what moves it": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Information about what moves it"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Información sobre qué la mueve"
+          }
+        }
+      }
+    },
+    "trend, not cause": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "trend, not cause"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tendencia, no causa"
+          }
+        }
+      }
+    },
+    "Tends to dip the day after a hard effort.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tends to dip the day after a hard effort."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suele bajar el día después de un esfuerzo alto."
+          }
+        }
+      }
+    },
+    "Tends to rise the day after a hard effort.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tends to rise the day after a hard effort."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suele subir el día después de un esfuerzo alto."
+          }
+        }
+      }
+    },
+    "Tends to run higher on nights you sleep more.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tends to run higher on nights you sleep more."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suele ser más alta las noches que duermes más."
+          }
+        }
+      }
+    },
+    "Tends to run lower on nights you sleep more.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tends to run lower on nights you sleep more."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suele ser más baja las noches que duermes más."
           }
         }
       }
@@ -23137,6 +23262,949 @@
           "stringUnit": {
             "state": "translated",
             "value": "colapsado"
+          }
+        }
+      }
+    },
+    "h asleep": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "h asleep"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "h dormido"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Std. geschlafen"
+          }
+        }
+      }
+    },
+    "%@ · from Apple Health": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · from Apple Health"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · desde Apple Salud"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · aus Apple Health"
+          }
+        }
+      }
+    },
+    "Approximate stages": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Approximate stages"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Etapas aproximadas"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ungefähre Phasen"
+          }
+        }
+      }
+    },
+    "Proportions, not minutes — the watch gets about 2 of 3 stages right.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Proportions, not minutes — the watch gets about 2 of 3 stages right."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Proporciones, no minutos — el reloj acierta unas 2 de cada 3 etapas."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anteile, keine Minuten — die Uhr trifft etwa 2 von 3 Phasen."
+          }
+        }
+      }
+    },
+    "Schedule regularity": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schedule regularity"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regularidad del horario"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regelmäßigkeit des Rhythmus"
+          }
+        }
+      }
+    },
+    "How alike your mid-sleep point is night to night — it predicts your health better than total hours.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How alike your mid-sleep point is night to night — it predicts your health better than total hours."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qué tan parecido es tu punto medio de sueño noche a noche — predice tu salud mejor que las horas totales."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wie ähnlich dein Schlafmittelpunkt Nacht für Nacht ist — er sagt deine Gesundheit besser voraus als die Gesamtstunden."
+          }
+        }
+      }
+    },
+    "Weekend shift": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weekend shift"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desfase de fin de semana"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wochenend-Verschiebung"
+          }
+        }
+      }
+    },
+    "+%@ later": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%@ later"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%@ más tarde"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%@ später"
+          }
+        }
+      }
+    },
+    "Still settling": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Still settling"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se está afinando"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pendelt sich noch ein"
+          }
+        }
+      }
+    },
+    "Settling in · %lld nights to go": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settling in · %lld nights to go"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se está afinando · faltan %lld noches"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pendelt sich ein · noch %lld Nächte"
+          }
+        }
+      }
+    },
+    "very regular": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "very regular"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "muy regular"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sehr regelmäßig"
+          }
+        }
+      }
+    },
+    "regular": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "regular"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "regular"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "regelmäßig"
+          }
+        }
+      }
+    },
+    "Last night vs your typical": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last night vs your typical"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anoche vs lo típico"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Letzte Nacht vs. dein Üblich"
+          }
+        }
+      }
+    },
+    "Duration trend": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duration trend"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tendencia de duración"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dauer-Trend"
+          }
+        }
+      }
+    },
+    "Hours asleep per night · target band 7–9 h.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hours asleep per night · target band 7–9 h."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Horas dormidas por noche · banda objetivo 7–9 h."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schlafstunden pro Nacht · Zielband 7–9 Std."
+          }
+        }
+      }
+    },
+    "Not enough nights yet to draw a trend.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not enough nights yet to draw a trend."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no hay suficientes noches para una tendencia."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch nicht genug Nächte für einen Trend."
+          }
+        }
+      }
+    },
+    "%@ this week · one good night won't clear it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ this week · one good night won't clear it."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ esta semana · no se salda con una sola noche buena."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ diese Woche · eine gute Nacht gleicht es nicht aus."
+          }
+        }
+      }
+    },
+    "Tonight's metrics": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tonight's metrics"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Métricas de la noche"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Werte der Nacht"
+          }
+        }
+      }
+    },
+    "Performance": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Performance"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rendimiento"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leistung"
+          }
+        }
+      }
+    },
+    "vs your need": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "vs your need"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "vs lo necesario"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "vs. dein Bedarf"
+          }
+        }
+      }
+    },
+    "−%@ vs your need": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "−%@ vs your need"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "−%@ vs lo necesario"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "−%@ vs. dein Bedarf"
+          }
+        }
+      }
+    },
+    "vs time in bed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "vs time in bed"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "vs tiempo en cama"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "vs. Zeit im Bett"
+          }
+        }
+      }
+    },
+    "Deep + REM": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deep + REM"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profundo + REM"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tief + REM"
+          }
+        }
+      }
+    },
+    "Latency": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Latency"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Latencia"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Latenz"
+          }
+        }
+      }
+    },
+    "10–20 healthy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "10–20 healthy"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "10–20 sano"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "10–20 gesund"
+          }
+        }
+      }
+    },
+    "rpm": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "rpm"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "rpm"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AZ/min"
+          }
+        }
+      }
+    },
+    "Awakenings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Awakenings"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Despertares"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufwachphasen"
+          }
+        }
+      }
+    },
+    "times": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "times"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "veces"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "mal"
+          }
+        }
+      }
+    },
+    "Regularity is the night-to-night variability of your mid-sleep point (the midpoint between falling asleep and waking) — a steadier schedule predicts health more strongly than how long you sleep. Stages are estimated from movement, heart rate and HRV, so they're approximate; deep sleep repairs the body, REM consolidates memory and emotion. \"Need\" is a 7–9 h population target, not a measurement of you.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regularity is the night-to-night variability of your mid-sleep point (the midpoint between falling asleep and waking) — a steadier schedule predicts health more strongly than how long you sleep. Stages are estimated from movement, heart rate and HRV, so they're approximate; deep sleep repairs the body, REM consolidates memory and emotion. \"Need\" is a 7–9 h population target, not a measurement of you."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La regularidad es la variabilidad noche a noche de tu punto medio de sueño (el punto medio entre dormirte y despertar) — un horario más parejo predice tu salud con más fuerza que cuánto duermes. Las etapas se estiman del movimiento, la frecuencia cardíaca y la HRV, así que son aproximadas; el sueño profundo repara el cuerpo, el REM consolida memoria y emociones. La «necesidad» es un objetivo poblacional de 7–9 h, no una medición tuya."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regelmäßigkeit ist die nächtliche Schwankung deines Schlafmittelpunkts (der Mitte zwischen Einschlafen und Aufwachen) — ein gleichmäßigerer Rhythmus sagt die Gesundheit stärker voraus als die Schlafdauer. Phasen werden aus Bewegung, Herzfrequenz und HRV geschätzt, also ungefähr; Tiefschlaf repariert den Körper, REM festigt Gedächtnis und Emotionen. Der „Bedarf“ ist ein Bevölkerungsziel von 7–9 Std., keine Messung an dir."
+          }
+        }
+      }
+    },
+    "Windred et al., Sleep 2024 (regularity); Miller et al., J Sports Sci 2020 (wrist staging vs PSG); Hirshkowitz et al., 2015 (sleep need).": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Windred et al., Sleep 2024 (regularity); Miller et al., J Sports Sci 2020 (wrist staging vs PSG); Hirshkowitz et al., 2015 (sleep need)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Windred et al., Sleep 2024 (regularidad); Miller et al., J Sports Sci 2020 (etapas en muñeca vs PSG); Hirshkowitz et al., 2015 (necesidad de sueño)."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Windred et al., Sleep 2024 (Regelmäßigkeit); Miller et al., J Sports Sci 2020 (Phasen am Handgelenk vs. PSG); Hirshkowitz et al., 2015 (Schlafbedarf)."
+          }
+        }
+      }
+    },
+    "Source · Apple Health": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source · Apple Health"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fuente · Apple Salud"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quelle · Apple Health"
+          }
+        }
+      }
+    },
+    "Source · your strap, on device": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source · your strap, on device"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fuente · tu banda, en el dispositivo"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quelle · dein Band, auf dem Gerät"
+          }
+        }
+      }
+    },
+    "No nights yet. Import your WHOOP export — or connect Apple Health — in Data Sources to see your sleep stages and trends. Or wear the strap to bed and open it again after the strap syncs.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No nights yet. Import your WHOOP export — or connect Apple Health — in Data Sources to see your sleep stages and trends. Or wear the strap to bed and open it again after the strap syncs."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no hay noches. Importa tu exportación de WHOOP — o conecta Apple Salud — en Fuentes de datos para ver tus etapas y tendencias de sueño. O usa la banda al dormir y ábrelo de nuevo cuando la banda se sincronice."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Nächte. Importiere deinen WHOOP-Export — oder verbinde Apple Health — in Datenquellen, um deine Schlafphasen und Trends zu sehen. Oder trage das Band zum Schlafen und öffne es erneut, sobald das Band synchronisiert hat."
+          }
+        }
+      }
+    },
+    "Hours asleep per night, last 30 days": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hours asleep per night, last 30 days"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Horas dormidas por noche, últimos 30 días"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schlafstunden pro Nacht, letzte 30 Tage"
+          }
+        }
+      }
+    },
+    "%@ – %@ · %lld%% efficiency": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ – %@ · %lld%% efficiency"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ – %@ · %lld%% de eficiencia"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ – %@ · %lld%% Effizienz"
+          }
+        }
+      }
+    },
+    "%@, %lld%% last night": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, %lld%% last night"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, %lld%% anoche"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, %lld%% letzte Nacht"
+          }
+        }
+      }
+    },
+    ", typical %lld%%": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", typical %lld%%"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", típico %lld%%"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", üblich %lld%%"
+          }
+        }
+      }
+    },
+    "+%lld pts": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%lld pts"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%lld pts"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%lld Pkt."
+          }
+        }
+      }
+    },
+    "−%lld pts": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "−%lld pts"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "−%lld pts"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "−%lld Pkt."
+          }
+        }
+      }
+    },
+    "−%@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "−%@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "−%@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "−%@"
+          }
+        }
+      }
+    },
+    "Sleep stages: deep %lld percent, light %lld percent, REM %lld percent, awake %lld percent": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sleep stages: deep %lld percent, light %lld percent, REM %lld percent, awake %lld percent"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Etapas de sueño: profundo %lld por ciento, ligero %lld por ciento, REM %lld por ciento, despierto %lld por ciento"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schlafphasen: Tief %lld Prozent, Leicht %lld Prozent, REM %lld Prozent, Wach %lld Prozent"
           }
         }
       }

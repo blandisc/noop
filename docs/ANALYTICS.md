@@ -283,6 +283,16 @@ Consecutive same-stage epochs are merged into `StageSegment`s tiling `[start, en
 
 ---
 
+## `SleepRegularityIndex` — sleep-timing regularity (SRI)
+
+Source: `SleepRegularityIndex.swift` (FER-214). The **Sleep Regularity Index** (Phillips et al. 2017, *Sci Rep* 7:3216) scores how repeatable your sleep TIMING is, independent of duration or quality: the probability of being in the same state (asleep vs awake) at two instants exactly 24 h apart, averaged over the window and rescaled `SRI = (2·P − 1)·100` (100 = a perfectly repeated schedule; 0 = chance; negatives clamped to 0). Windred et al. 2024 (*Sleep* 47:zsae015) found the SRI predicts all-cause mortality **above** sleep duration — which is why `VitalityEngine`'s regularity hazard prefers it to the `1 − CV` duration proxy it ships with.
+
+NOOP records only during sleep sessions (a night wearable, not 24/7 actigraphy), so the index compares consecutive nights over a **±12 h coverage window** around each night's onset rather than a continuous round-the-clock timeline: daytime reads as awake on both days (a match), and a missing night drops out of the 24 h pairing instead of reading as an all-awake day. Coverage gate: fewer than `minNights` (7) → `nil`, and the orchestration falls back to the duration proxy.
+
+The per-night asleep timeline comes from the **already-persisted hypnogram** — the `stagesJSON` segments for on-device nights (every non-`wake` segment), via `AnalyticsEngine.decodeStages` — or, for imported / Apple-Health nights that store only stage totals, the session's whole `[start, end]` span (a coarser timeline that captures bed/wake-time regularity but not intra-night wakes). APPROXIMATE; no clinical claim.
+
+---
+
 ## `Baselines` — personal rolling baselines
 
 Source: `Baselines.swift`. Per-metric personal baselines that `RecoveryScorer` consumes. Two interchangeable paths produce the same `BaselineState` shape.

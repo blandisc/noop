@@ -11,7 +11,10 @@ import Foundation
 // `TrendsView`). An Apple-Health-Summary-style curated landing in the light «Instrumento diurno»
 // language: warm paper, color ONLY on the datum, hierarchy by space. One column of grouped sections —
 // Recuperación (hero) · Descanso & carga · Vitales · Actividad · Longevidad — each row a `MetricRow`
-// (label · 14-day sparkline + p25–p75 band · value in its data hue · chevron) that opens a detail.
+// (label · 14-day sparkline · value in its data hue · chevron) that opens a detail. The sparklines
+// carry NO p25–p75 reference band: at 60×26 pt the band read as a grey box behind the line, not as
+// context (it fought the «color only in the datum» DNA). The `Sparkline`/`MetricRow` band API stays
+// for any future large-chart caller; these dense rows just don't pass it.
 //
 // Detail bridge until the unified Detalle de Métrica (FER-185) lands: the metrics that already have a
 // light sheet open the same `MetricInfoSheet` Today uses; Sueño/Entrenamientos and the two vitals
@@ -43,7 +46,14 @@ struct CuerpoView: View {
 // MARK: - Sheet routing
 
 /// A dark, existing screen presented as a self-contained sheet (pinned to `.dark`).
-private enum CuerpoScreen: Hashable { case sleep, workouts, compare, explore, dataSources }
+private enum CuerpoScreen: Hashable { case workouts, compare, explore, dataSources }
+
+/// Identifiable wrapper so the light «Instrumento» Detalle de Sueño can ride `.sheet(item:)`
+/// (the model itself isn't Identifiable). One per presentation. (FER-212)
+private struct SleepDetailItem: Identifiable {
+    let id = UUID()
+    let model: SleepDetailModel
+}
 
 /// The dark-sheet driver — either a full screen, or a catalog metric detail (Respiración / Temp. de
 /// piel, which have no light sheet of their own yet).
@@ -74,6 +84,9 @@ private struct CuerpoLanding: View {
     @State private var metricSpec: MetricDetailSpec? = nil
     /// Dark screen / catalog-detail sheet, for everything without a light sheet yet.
     @State private var darkSheet: CuerpoSheet? = nil
+    /// Light «Instrumento» Detalle de Sueño (FER-212) — the «Sueño» row now opens this superset of the
+    /// old dark sleep screen (built fresh on tap from the in-memory dashboard), theme passed explicitly.
+    @State private var sleepDetail: SleepDetailItem? = nil
     /// «How you wake after each sport» — ranked ActivityCost per sport (FER-139); empty = "gathering data".
     @State private var activityCosts: [ActivityCost] = []
     /// Presents the light Activity-recovery detail sheet.
@@ -159,10 +172,18 @@ private struct CuerpoLanding: View {
                 depth: .full,
                 theme: theme,
                 seriesLoader: { vitalSeries(for: spec.descriptor.key) },
-                nightVitalsLoader: spec.blocks.contains(.nightVitals) ? { await loadNightVitals() } : nil
+                nightVitalsLoader: spec.blocks.contains(.nightVitals) ? { await loadNightVitals() } : nil,
+                whatMovesItLoader: spec.blocks.contains(.whatMovesIt)
+                    ? { whatMovesItFindings(for: spec.descriptor.key) }
+                    : nil
             )
         }
         .sheet(item: $darkSheet) { sheet in darkSheetContent(sheet) }
+        .sheet(item: $sleepDetail) { item in
+            // Light «Instrumento» sheet — pass the resolved theme explicitly (it doesn't propagate
+            // through `.sheet`), NO nested NavigationStack (FER-171). (FER-212)
+            SleepDetailScreen(theme: theme, model: item.model)
+        }
         .sheet(isPresented: $showActivityCost) { activityRecoverySheet }
         .sheet(isPresented: $showFitnessAge) {
             // Light «Instrumento» sheet — pass the resolved theme explicitly (it doesn't propagate
@@ -207,7 +228,7 @@ private struct CuerpoLanding: View {
     // MARK: - Generic metric row
 
     /// One `MetricRow` wired to the light theme: value in its data hue (ink when absent), 14-day
-    /// sparkline + p25–p75 band, chevron, whole row tappable. `value == nil` shows an honest "—".
+    /// sparkline, chevron, whole row tappable. `value == nil` shows an honest "—".
     private func metricRow(_ label: LocalizedStringKey, value: String?, unit: String? = nil,
                            color: Color, sparkKey: String, fromApple: Bool = false,
                            open: @escaping () -> Void) -> some View {
@@ -225,8 +246,6 @@ private struct CuerpoLanding: View {
                 flagColor: theme.inkTertiary,
                 sparkline: validSpark,
                 sparkColor: color,
-                referenceBand: validSpark.flatMap { ReferenceRange.interquartile($0) },
-                bandColor: theme.hairlineStrong,
                 isPlaceholder: value == nil,
                 showsChevron: true,
                 chevronColor: theme.inkTertiary
@@ -256,8 +275,6 @@ private struct CuerpoLanding: View {
                 if showSpark, let spark {
                     Sparkline(values: spark,
                               gradient: Gradient(colors: [color.opacity(0.55), color]),
-                              referenceBand: ReferenceRange.interquartile(spark),
-                              bandColor: theme.hairlineStrong,
                               lineWidth: 2, showsArea: false, showsHead: false, showsHover: false)
                         .frame(width: 64, height: 28)
                 }
@@ -299,7 +316,12 @@ private struct CuerpoLanding: View {
         let r = resolveMeasured { $0.totalSleepMin }
         return metricRow("Sleep", value: r.map { sleepText($0.value) }, color: theme.dataSleep,
                          sparkKey: "sleep_total_min", fromApple: r?.fromApple == true) {
-            darkSheet = .screen(.sleep)
+            sleepDetail = SleepDetailItem(model: SleepDetailModel.build(
+                days: repo.days,
+                sleeps: repo.sleeps,
+                importedSleep: repo.importedSleep,
+                appleHealthDays: repo.appleHealthDays,
+                loaded: repo.loaded))
         }
     }
 
@@ -621,7 +643,6 @@ private struct CuerpoLanding: View {
         NavigationStack {
             Group {
                 switch sheet {
-                case .screen(.sleep):       SleepView()
                 case .screen(.workouts):    WorkoutsView()
                 case .screen(.compare):     CompareView()
                 case .screen(.explore):     MetricExplorerView()
@@ -690,18 +711,27 @@ private struct CuerpoLanding: View {
 
         fitnessAge = computeFitnessAge()
 
-        // Longevity (FER-145): Body Age + Vitality from a 28-night window of nightly signals. Regularity
-        // uses the documented duration proxy (real SRI = FER-214); VO₂max needs a waist the profile
-        // doesn't collect, so the cardio signal flows through resting HR.
+        // Longevity (FER-145 + FER-214): Body Age + Vitality from a 28-night window. Regularity uses the
+        // real Sleep Regularity Index when there's coverage (FER-214), else the documented duration proxy;
+        // VO₂max needs a waist the profile doesn't collect, so the cardio signal flows through resting HR.
         let recent = trailingDisplay(28)
         let vInputs = VitalityInputsBuilder.build(.init(
             chronoAge: Double(model.profile.age),
             nightlyRestingHR: recent.compactMap { $0.restingHr.map(Double.init) },
             nightlyRMSSD: recent.compactMap { $0.avgHrv },
             nightlySleepHours: recent.compactMap { $0.totalSleepMin.map { $0 / 60 } },
-            dailySteps: recent.compactMap { $0.steps.map(Double.init) }))
+            dailySteps: recent.compactMap { $0.steps.map(Double.init) },
+            sleepRegularity: computeSleepRegularity()))
         vitalityInputs = vInputs
         vitalityResult = VitalityEngine.compute(vInputs)
+    }
+
+    /// The real Sleep Regularity Index (FER-214) over a trailing window of persisted sleep sessions, as a
+    /// 0–1 input for the engine (SRI/100). The session→timeline mapping is the pure
+    /// `SleepRegularityIndex.fromSessions`; the view only supplies the window. nil → the builder's proxy.
+    private func computeSleepRegularity() -> Double? {
+        let cutoff = Int(Date().timeIntervalSince1970) - 35 * 86_400
+        return SleepRegularityIndex.fromSessions(repo.sleeps.filter { $0.startTs >= cutoff }).map { $0 / 100 }
     }
 
     // MARK: - Trend / curve loaders for the light sheet (mirror Today)
@@ -730,6 +760,12 @@ private struct CuerpoLanding: View {
         return repo.displayDays
             .compactMap { row in pick(row).map { (row.day, $0) } }
             .sorted { $0.day < $1.day }
+    }
+
+    /// The gated, directional "Qué la mueve" findings (FER-209) for a vital, computed from the user's
+    /// own history (`repo.displayDays`). Empty → the detail screen hides the block.
+    private func whatMovesItFindings(for key: String) -> [WhatMovesItFinding] {
+        WhatMovesItEngine.findings(forMetricKey: key, days: repo.displayDays)
     }
 
     /// Last night's companion vitals (respiration + resting HR) for the detail's "Vitales de la noche"

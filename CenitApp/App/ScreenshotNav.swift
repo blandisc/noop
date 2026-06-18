@@ -9,9 +9,10 @@ import SwiftUI
 ///   2. URL scheme (backup):              xcrun simctl openurl booted "noopdev://<screen>"
 ///
 /// Supported screen keys (FER-182 — 5-tab shell):
-///   Tabs: today · body (alias: trends) · coach · train (alias: entrenar) · settings (aliases: ajustes, more)
+///   Tabs: today · body (aliases: trends, sleep — Sueño lives inside Cuerpo now) · coach ·
+///     train (alias: entrenar) · settings (aliases: ajustes, more)
 ///   Pushed onto a hub: intelligence · insights · breathe · intervals ·
-///     sleep · explore · compare · workouts · health · stress ·
+///     explore · compare · workouts · health · stress ·
 ///     applehealth · datasources · automations · support
 ///   (En vivo is no longer a key — it opens as a cover from Today's "beat by beat".)
 extension Notification.Name {

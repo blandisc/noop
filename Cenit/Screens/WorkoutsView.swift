@@ -298,7 +298,7 @@ struct WorkoutsView: View {
                           trailing: "\(z.sessionsWithZones) of \(totalSessions) session\(totalSessions == 1 ? "" : "s")")
             NoopCard {
                 VStack(alignment: .leading, spacing: 12) {
-                    // Proportional stacked bar — same construction as SleepView's stage bar.
+                    // Proportional stacked bar — same construction as the sleep stage bar.
                     GeometryReader { geo in
                         HStack(spacing: 2) {
                             ForEach(0..<5, id: \.self) { i in

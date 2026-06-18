@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-17 · FER-145</span>
+  <span class="tb-updated">Actualizado 2026-06-17 · FER-212</span>
 </div>
 
 <div id="wrapper">
@@ -401,17 +401,19 @@ const SCREENS = [
   },
   {
     id: 'sleep', x: 538, y: 60,
-    name: 'Sleep', desc: 'Análisis de sueño',
-    file: 'Cenit/Screens/SleepView.swift',
+    name: 'Detalle de Sueño', desc: 'Detalle de Sueño «Instrumento» + regularidad del horario (FER-212)',
+    file: 'Cenit/Screens/SleepDetailScreen.swift',
     icon: '🌙', color: '#7B8FFF',
     states: [
-      { label: 'Sin datos de noche (sin pill de backfilling)', type: 'empty' },
-      { label: 'Apple Health', type: 'data' },
+      { label: 'Cargando (model.loaded == false)', type: 'empty' },
+      { label: 'Sin datos de noche', type: 'empty' },
+      { label: 'Apple Health (barra proporcional)', type: 'data' },
       { label: 'WHOOP · hipnograma', type: 'live' },
-      { label: 'WHOOP · estimado', type: 'data' },
+      { label: 'WHOOP · estimado (barra apilada)', type: 'data' },
+      { label: 'Regularidad afinándose (N noches por venir)', type: 'empty' },
     ],
     nav: [],
-    components: ['ChartCard (hipnograma/stacked)', 'StatTile ×7', 'Stages vs Typical Card', 'Duration Trend ChartCard'],
+    components: ['Hypnogram', 'TrendChart (30d + banda + deuda)', 'Regularidad del horario (SleepRegularity)', 'Anoche vs típico (en %)', 'Rejilla de métricas (Latencia se omite sin dato)', 'See the method'],
   },
   {
     id: 'stress', x: 792, y: 60,
@@ -462,7 +464,7 @@ const SCREENS = [
     nav: [
       { to: 'metric-info', label: 'Tap fila con hoja clara (Recuperación/Esfuerzo/SpO₂/FC/Pasos/Estrés)', type: 'sheet' },
       { to: 'metric-detail-screen', label: 'HRV / FC reposo / Respiración → MetricDetailScreen unificado (.full, sheet claro — FER-185)', type: 'sheet' },
-      { to: 'sleep', label: 'Sueño → SleepView (sheet oscuro .dark)', type: 'sheet' },
+      { to: 'sleep', label: 'Sueño → SleepDetailScreen (sheet claro «Instrumento» — FER-212)', type: 'sheet' },
       { to: 'workouts', label: 'Entrenamientos → WorkoutsView (sheet oscuro)', type: 'sheet' },
       { to: 'metricdetail', label: 'Temp. piel → MetricDetailView (sheet oscuro)', type: 'sheet' },
       { to: 'compare', label: 'Comparar (sheet oscuro)', type: 'sheet' },
@@ -714,6 +716,7 @@ const SCREENS = [
       { label: 'Con datos (≥2 pts): media móvil 7d (Sparkline) + banda p25–p75; rango normal (Baselines.rollingMeanSD ± σ); tendencia (monthOverMonth + Prom/Mediana/Mín/Máx/σ); consistencia (CV)', type: 'data' },
       { label: 'depth .focus (desde Hoy): foto del día — rango corto + [gráfica+banda, rango normal, método, vitales noche]', type: 'data' },
       { label: 'depth .full (desde Cuerpo): todos los bloques del spec', type: 'data' },
+      { label: '«Qué la mueve» (FER-209, solo HRV/FC reposo): tendencia direccional real (sueño misma noche · esfuerzo día anterior con lag) vía CorrelationEngine; sin r ni causa + chip «tendencia, no causa»; gate ≥42 pares (~6 sem)+|r|≥0.20+p<0.05, si no clarea se oculta', type: 'data' },
       { label: 'Cargando: well con spinner mientras se inyecta la serie', type: 'loading' },
       { label: 'Ventana vacía: auto-ensancha al siguiente rango con datos + «Mostrando los últimos N días»', type: 'warn' },
       { label: 'Un solo punto: valor sin línea + nota', type: 'warn' },
@@ -721,7 +724,7 @@ const SCREENS = [
       { label: 'Sin permiso / offline: muestra lo guardado (repo.displayDays; origen inyectado)', type: 'empty' },
     ],
     nav: [],
-    components: ['Héroe = media móvil 7d (SeriesShape.latestMovingAverage), hoy como contexto', 'SegmentedPillControl (ExploreRange → Cenit/Data/ExploreRange.swift)', 'Sparkline + ReferenceRange.interquartile (banda)', 'MetricDetailSpec (BlockSet/HeroKind/baselineCfg) reutiliza MetricInfo', 'SeriesShape (StrandAnalytics: SMA/CV) + Baselines + ComparisonEngine', 'InstrumentoTheme (explícito · sin NavigationStack anidado FER-171)'],
+    components: ['Héroe = media móvil 7d (SeriesShape.latestMovingAverage), hoy como contexto', 'SegmentedPillControl (ExploreRange → Cenit/Data/ExploreRange.swift)', 'Sparkline + ReferenceRange.interquartile (banda)', 'MetricDetailSpec (BlockSet/HeroKind/baselineCfg) reutiliza MetricInfo', 'SeriesShape (StrandAnalytics: SMA/CV) + Baselines + ComparisonEngine', 'WhatMovesItEngine (Cenit/Data/WhatMovesIt.swift) + CorrelationEngine.trend/MetricTrend (StrandAnalytics: gate r→dirección · FER-209) + InlineFlagChip', 'InstrumentoTheme (explícito · sin NavigationStack anidado FER-171)'],
   },
   {
     id: 'fitness-age', x: 284, y: 3310,
