@@ -215,7 +215,7 @@ struct SettingsView: View {
             Stepper("Max heart rate override",
                     value: $profile.hrMaxOverride, in: 0...230, step: 1)
                 .labelsHidden()
-                .accessibilityLabel("Max heart rate override, \(profile.hrMaxOverride == 0 ? "automatic" : "\(profile.hrMaxOverride) bpm")")
+                .accessibilityLabel("Max heart rate override, \(profile.hrMaxOverride == 0 ? "automatic" : "\(profile.hrMaxOverride) \(String(localized: "bpm"))")")
         }
     }
 

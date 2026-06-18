@@ -1035,17 +1035,17 @@ struct TodayView: View {
                 // de "ayer" con qué comparar (decisión del dueño, FER-180).
                 metricTile(TodayMetricTile(
                     label: "Heart Rate",
-                    value: hrTodayAvg.map { "\($0)" } ?? "—", unit: "bpm",
+                    value: hrTodayAvg.map { "\($0)" } ?? "—", unit: String(localized: "bpm"),
                     valueColor: theme.dataHeart, delta: nil
                 )) { metricDetail = .heartRate(avgBpm: hrTodayAvg) }
                 // FC en reposo — más alta es PEOR.
                 metricTile(TodayMetricTile(
                     label: "Resting HR",
-                    value: rhrR.map { "\(Int($0.value.rounded()))" } ?? "—", unit: "bpm",
+                    value: rhrR.map { "\(Int($0.value.rounded()))" } ?? "—", unit: String(localized: "bpm"),
                     valueColor: theme.dataHeart,
                     fromApple: rhrR?.fromApple == true,
                     delta: tileDelta(today: rhrR?.value, yesterday: yesterdayValue { $0.restingHr.map(Double.init) },
-                                     betterHigher: false, deadband: 1) { "\(Int($0.rounded())) bpm" }
+                                     betterHigher: false, deadband: 1) { "\(Int($0.rounded())) \(String(localized: "bpm"))" }
                 )) { metricDetail = .restingHR(rhrR.map { Int($0.value.rounded()) }) }
                 // Oxígeno en sangre — más alto es mejor.
                 metricTile(TodayMetricTile(
@@ -1459,7 +1459,7 @@ struct TodayView: View {
                 ChartCard(
                     title: "Beats per minute",
                     subtitle: String(localized: "5-minute average · since midnight"),
-                    trailing: v.last.map { "\(Int($0.rounded())) bpm" }
+                    trailing: v.last.map { "\(Int($0.rounded())) \(String(localized: "bpm"))" }
                 ) {
                     TrendChart(
                         points: hrPoints,
@@ -1467,7 +1467,7 @@ struct TodayView: View {
                         valueRange: hrRange(v),
                         showsArea: true,
                         height: NoopMetrics.chartHeight,
-                        valueFormat: { "\(Int($0.rounded())) bpm" },
+                        valueFormat: { "\(Int($0.rounded())) \(String(localized: "bpm"))" },
                         dateFormat: { Self.hrTimeFmt.string(from: $0) }
                     )
                 } footer: {
@@ -1535,7 +1535,7 @@ struct TodayView: View {
                 StatTile(
                     label: "Resting HR",
                     value: d?.restingHr.map { "\($0)" } ?? "—",
-                    caption: "bpm",
+                    caption: String(localized: "bpm"),
                     accent: StrandPalette.metricRose,
                     sparkline: sparks["rhr"],
                     sparkColor: StrandPalette.metricRose
@@ -1912,7 +1912,7 @@ struct TodayView: View {
     }()
     private func workoutCaption(_ w: WorkoutRow) -> String {
         let date = Self.workoutDateFmt.string(from: Date(timeIntervalSince1970: TimeInterval(w.startTs)))
-        if let hr = w.avgHr { return "\(date) · \(hr) bpm" }
+        if let hr = w.avgHr { return "\(date) · \(hr) \(String(localized: "bpm"))" }
         return date
     }
 

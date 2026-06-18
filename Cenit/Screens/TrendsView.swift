@@ -351,7 +351,7 @@ struct TrendsView: View {
                     fmt: { "\(Int($0.rounded()))" }
                 )
                 metricChart(
-                    title: "Resting heart rate", unit: "bpm",
+                    title: "Resting heart rate", unit: String(localized: "bpm"),
                     points: rhrPts,
                     subtitle: rhr.caption,
                     gradient: gradient(StrandPalette.metricRose),

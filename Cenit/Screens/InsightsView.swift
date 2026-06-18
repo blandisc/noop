@@ -519,7 +519,7 @@ struct InsightsView: View {
         switch outcome {
         case .recovery, .sleep: return "\(Int(v.rounded()))%"
         case .hrv:              return "\(Int(v.rounded())) ms"
-        case .rhr:              return "\(Int(v.rounded())) bpm"
+        case .rhr:              return "\(Int(v.rounded())) \(String(localized: "bpm"))"
         }
     }
 

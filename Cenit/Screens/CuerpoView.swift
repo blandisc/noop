@@ -367,7 +367,7 @@ private struct CuerpoLanding: View {
 
     private var rhrRow: some View {
         let r = resolveMeasured { $0.restingHr.map(Double.init) }
-        return metricRow("Resting HR", value: r.map { "\(Int($0.value.rounded()))" }, unit: "bpm",
+        return metricRow("Resting HR", value: r.map { "\(Int($0.value.rounded()))" }, unit: String(localized: "bpm"),
                          color: theme.dataHeart, sparkKey: "rhr", fromApple: r?.fromApple == true) {
             metricSpec = .restingHR(r.map { Int($0.value.rounded()) })
         }
@@ -383,7 +383,7 @@ private struct CuerpoLanding: View {
 
     private var heartRow: some View {
         let avg = hrTodayAvg
-        return metricRow("Heart Rate", value: avg.map { "\($0)" }, unit: "bpm",
+        return metricRow("Heart Rate", value: avg.map { "\($0)" }, unit: String(localized: "bpm"),
                          color: theme.dataHeart, sparkKey: "_none") {
             metricInfo = .heartRate(avgBpm: avg)
         }

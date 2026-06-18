@@ -140,7 +140,7 @@ struct StressView: View {
             // Resting HR — an INCREASE is the stressful direction.
             markerTile(
                 label: "Resting HR",
-                value: model.rhrToday.map { "\($0) bpm" } ?? "—",
+                value: model.rhrToday.map { "\($0) \(String(localized: "bpm"))" } ?? "—",
                 delta: model.rhrDelta,
                 accent: StrandPalette.metricRose,
                 higherIsStress: true

@@ -65,15 +65,15 @@ enum MetricCatalog {
         // ── Heart
         // Titles are wrapped in String(localized:) AT the literal so Xcode's
         // string extraction sees them; a plain String field never localizes.
-        d("avg_hr", String(localized: "Average Heart Rate"), "Heart", "bpm", "my-whoop", "heart", 0, nil),
-        d("max_hr", String(localized: "Max Heart Rate"), "Heart", "bpm", "my-whoop", "bolt.heart", 0, nil),
+        d("avg_hr", String(localized: "Average Heart Rate"), "Heart", String(localized: "bpm"), "my-whoop", "heart", 0, nil),
+        d("max_hr", String(localized: "Max Heart Rate"), "Heart", String(localized: "bpm"), "my-whoop", "bolt.heart", 0, nil),
         d("energy_kcal", String(localized: "Calories"), "Heart", "kcal", "my-whoop", "flame", 0, nil),
         d("vo2max", String(localized: "VO₂ Max"), "Heart", "", "apple-health", "lungs.fill", 1, true),
 
         // ── Recovery
         d("recovery", String(localized: "Recovery"), "Recovery", "%", "my-whoop", "heart.circle", 0, true),
         d("hrv", String(localized: "Heart Rate Variability"), "Recovery", "ms", "my-whoop", "waveform.path.ecg", 0, true),
-        d("rhr", String(localized: "Resting Heart Rate"), "Recovery", "bpm", "my-whoop", "heart", 0, false),
+        d("rhr", String(localized: "Resting Heart Rate"), "Recovery", String(localized: "bpm"), "my-whoop", "heart", 0, false),
         d("resp_rate", String(localized: "Respiratory Rate"), "Recovery", "rpm", "my-whoop", "lungs", 1, nil),
         d("spo2", String(localized: "Blood Oxygen"), "Recovery", "%", "my-whoop", "drop", 0, true),
         d("skin_temp", String(localized: "Skin Temperature"), "Recovery", "°C", "my-whoop", "thermometer", 1, nil),

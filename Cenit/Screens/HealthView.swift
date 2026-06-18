@@ -125,7 +125,7 @@ private struct HeartRateSection: View {
                 title: "Heart Rate",
                 subtitle: hrIsDerived ? "Estimated from R-R interval"
                     : (hasLiveHR ? "Streaming live" : "Awaiting strap"),
-                trailing: hasLiveHR ? "\(displayHR!) bpm" : "—"
+                trailing: hasLiveHR ? "\(displayHR!) \(String(localized: "bpm"))" : "—"
             ) {
                 heroChart(displayHR: displayHR, hasLiveHR: hasLiveHR,
                           fraction: fraction, zone: zone, series: series)
@@ -160,7 +160,7 @@ private struct HeartRateSection: View {
                     ]),
                     lineWidth: 2.5,
                     showsArea: true,
-                    valueFormat: { "\(Int($0.rounded())) bpm" }
+                    valueFormat: { "\(Int($0.rounded())) \(String(localized: "bpm"))" }
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -289,7 +289,7 @@ private struct VitalsSection: View {
                   banding: VitalBands.band(value: d?.spo2Pct, history: [],
                                            populationRange: 95...100, cfg: nil),
                   metricColor: StrandPalette.metricCyan),
-            Vital(key: "rhr", label: "Resting HR", unit: "bpm",
+            Vital(key: "rhr", label: "Resting HR", unit: String(localized: "bpm"),
                   value: d?.restingHr.map(Double.init), format: { String(Int($0.rounded())) },
                   banding: VitalBands.band(value: d?.restingHr.map(Double.init),
                                            history: series { $0.restingHr.map(Double.init) },
