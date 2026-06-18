@@ -497,6 +497,10 @@ struct MetricInfoSheet: View {
     /// "See the method" disclosure — collapsed each time the sheet opens. (FER-108)
     @State private var methodExpanded = false
 
+    /// The plain-language explanation (`info.headline`) is hidden behind the header's ⓘ; collapsed each
+    /// time the sheet opens so the card reads clean (number first), one tap from the "why". (FER-243)
+    @State private var headlineExpanded = false
+
     // MARK: Colour resolution (against the live theme)
 
     /// The metric's own data hue, from the «Instrumento» theme (the same per-metric colours the
@@ -544,10 +548,13 @@ struct MetricInfoSheet: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 header
-                Text(info.headline)
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                if headlineExpanded {
+                    Text(info.headline)
+                        .font(StrandFont.subhead)
+                        .foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                }
                 if trendLoader != nil { trendSection }
                 // Day Strain's intraday "How today added up" curve sits in the SAME middle slot as
                 // the 14-day trend on every other metric — after the headline, before the reference
@@ -619,9 +626,22 @@ struct MetricInfoSheet: View {
 
     private var header: some View {
         HStack(alignment: .firstTextBaseline) {
-            Text(info.name)
-                .font(StrandFont.title2)
-                .foregroundStyle(theme.ink)
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(info.name)
+                    .font(StrandFont.title2)
+                    .foregroundStyle(theme.ink)
+                // ⓘ reveals the plain-language explanation in-place (collapsed by default). Quiet ink
+                // when closed; the metric hue when open, signalling state. (FER-243)
+                Button {
+                    withAnimation(StrandMotion.interactive) { headlineExpanded.toggle() }
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 15))
+                        .foregroundStyle(headlineExpanded ? metricHue : theme.inkTertiary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text(headlineExpanded ? "Hide explanation" : "Show explanation"))
+            }
             Spacer()
             HStack(alignment: .firstTextBaseline, spacing: 3) {
                 Text(info.displayValue)
