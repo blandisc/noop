@@ -1,6 +1,25 @@
 import Foundation
 import WhoopStore
 
+/// Locale-aware display formatting shared by the workouts list and the session detail (so the two never
+/// drift, and the list doesn't reach into the detail's private statics). Dates/times render in the device
+/// locale (es-MX → «mié 18 jun» / 24h per region).
+enum WorkoutFormat {
+    static func duration(_ s: Double) -> String {
+        let total = Int(s.rounded()), h = total / 3600, m = (total % 3600) / 60
+        return h > 0 ? "\(h)h \(m)m" : "\(m)m"
+    }
+    static func date(_ ts: Int) -> String { dateFmt.string(from: Date(timeIntervalSince1970: TimeInterval(ts))) }
+    static func time(_ ts: Int) -> String { timeFmt.string(from: Date(timeIntervalSince1970: TimeInterval(ts))) }
+
+    private static let dateFmt: DateFormatter = {
+        let f = DateFormatter(); f.locale = .current; f.setLocalizedDateFormatFromTemplate("EEE d MMM"); return f
+    }()
+    private static let timeFmt: DateFormatter = {
+        let f = DateFormatter(); f.locale = .current; f.setLocalizedDateFormatFromTemplate("j:mm"); return f
+    }()
+}
+
 /// Origin of a workout row, classified from its stored `source` column. The macOS read model
 /// (`WorkoutRow`) carries no `deviceId`, so the row's origin has to be recovered from `source`.
 /// Stored values today:
@@ -14,6 +33,11 @@ import WhoopStore
 /// "my-whoop-noop" also contains the substring "whoop".
 enum WorkoutSource: Equatable {
     case whoop, apple, detected, manual
+
+    /// Common sports offered when re-labelling a detected bout — short and honest (the user can
+    /// fine-tune via Edit afterwards). Shared by the list's swipe action and the detail's menu.
+    static let relabelSports = ["Running", "Walking", "Cycling", "Strength Training",
+                                "Swimming", "Rowing", "Yoga", "HIIT"]
 
     static func classify(_ source: String) -> WorkoutSource {
         let s = source.lowercased()
@@ -46,6 +70,38 @@ enum WorkoutSource: Equatable {
             prev = ch
         }
         return out
+    }
+
+    /// SF Symbol for a sport, matched on the lowercased name. Shared by the list and the detail so the
+    /// same session shows the same glyph everywhere. Falls back to a neutral mixed-cardio figure.
+    static func sfSymbol(for sport: String) -> String {
+        let s = sport.lowercased()
+        switch true {
+        case s.contains("run"):                         return "figure.run"
+        case s.contains("walk") || s.contains("hike"):  return "figure.walk"
+        case s.contains("cycl") || s.contains("bike") || s.contains("ride"):
+                                                         return "figure.outdoor.cycle"
+        case s.contains("swim"):                        return "figure.pool.swim"
+        case s.contains("row"):                         return "figure.rower"
+        case s.contains("yoga"):                        return "figure.yoga"
+        case s.contains("strength") || s.contains("weight") || s.contains("lift"):
+                                                         return "dumbbell.fill"
+        case s.contains("box"):                         return "figure.boxing"
+        case s.contains("hiit") || s.contains("functional"):
+                                                         return "figure.highintensity.intervaltraining"
+        case s.contains("elliptical"):                  return "figure.elliptical"
+        case s.contains("ski"):                         return "figure.skiing.downhill"
+        case s.contains("tennis"):                      return "figure.tennis"
+        case s.contains("golf"):                        return "figure.golf"
+        case s.contains("soccer") || s.contains("football"):
+                                                         return "figure.soccer"
+        case s.contains("basketball"):                  return "figure.basketball"
+        case s.contains("dance"):                       return "figure.dance"
+        case s.contains("climb"):                       return "figure.climbing"
+        case s.contains("pilates"):                     return "figure.pilates"
+        case s.contains("meditat"):                     return "figure.mind.and.body"
+        default:                                        return "figure.mixed.cardio"
+        }
     }
 
     // MARK: - Dismissed detected bouts (durable across re-detection)
