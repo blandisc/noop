@@ -41,6 +41,14 @@ public struct YearHeatStrip: View {
     /// Color of the month + weekday gutter labels. Defaults to the dark `textTertiary`; the light
     /// detail passes warm `inkTertiary`. (FER-225)
     public var labelColor: Color
+    /// When set, tapping a day calls this with the tapped `RecoveryDay` — touch-friendly selection, since
+    /// `onContinuousHover` never fires on touch (iPhone). The tapped cell gets a selection ring, and the
+    /// caller shows the day's read-out. Default `nil` keeps the shipped (dark, hover-only) behavior, so
+    /// the Trends caller is unchanged. (FER-235)
+    public var onSelect: ((RecoveryDay) -> Void)?
+    /// Color of the tap-selection ring. Defaults to the dark `hairlineStrong`; the light detail passes
+    /// warm ink. (FER-235)
+    public var selectionColor: Color
     /// Formats a day's score for the tooltip's bold line.
     public var valueFormat: (Double) -> String
 
@@ -54,6 +62,8 @@ public struct YearHeatStrip: View {
         emptyFill: Color = StrandPalette.surfaceInset,
         emptyStroke: Color = StrandPalette.hairline.opacity(0.6),
         labelColor: Color = StrandPalette.textTertiary,
+        onSelect: ((RecoveryDay) -> Void)? = nil,
+        selectionColor: Color = StrandPalette.hairlineStrong,
         valueFormat: @escaping (Double) -> String = { "Recovery \(Int($0.rounded()))" }
     ) {
         self.days = days.sorted { $0.date < $1.date }
@@ -65,6 +75,8 @@ public struct YearHeatStrip: View {
         self.emptyFill = emptyFill
         self.emptyStroke = emptyStroke
         self.labelColor = labelColor
+        self.onSelect = onSelect
+        self.selectionColor = selectionColor
         self.valueFormat = valueFormat
     }
 
@@ -87,6 +99,8 @@ public struct YearHeatStrip: View {
 
     /// Hovered cell as (weekIndex, row), or nil.
     @State private var hoverCell: (week: Int, row: Int)? = nil
+    /// Tapped day's id, for the touch-selection ring. (FER-235)
+    @State private var selectedID: UUID? = nil
 
     private var calendar: Calendar {
         var c = Calendar(identifier: .gregorian)
@@ -268,21 +282,66 @@ public struct YearHeatStrip: View {
     @ViewBuilder
     private func cell(_ day: RecoveryDay?, isHovered: Bool) -> some View {
         let shape = RoundedRectangle(cornerRadius: 2.5)
-        if let day, let score = day.score {
-            shape
-                .fill(tint(score))
-                .frame(width: cellSize, height: cellSize)
-                .opacity(isHovered ? 1.0 : (hoverCell == nil ? 1.0 : 0.78))
-                .help("\(DateFormatterCache.day.string(from: day.date)) · recovery \(Int(score.rounded()))")
-        } else if day != nil {
-            shape
-                .fill(emptyFill)
-                .overlay(shape.stroke(emptyStroke, lineWidth: 0.5))
-                .frame(width: cellSize, height: cellSize)
+        let isSelected = day.map { $0.id == selectedID } ?? false
+        Group {
+            if let day, let score = day.score {
+                shape
+                    .fill(tint(score))
+                    .frame(width: cellSize, height: cellSize)
+                    .opacity(isHovered ? 1.0 : (hoverCell == nil ? 1.0 : 0.78))
+                    .help("\(DateFormatterCache.day.string(from: day.date)) · recovery \(Int(score.rounded()))")
+            } else if day != nil {
+                shape
+                    .fill(emptyFill)
+                    .overlay(shape.stroke(emptyStroke, lineWidth: 0.5))
+                    .frame(width: cellSize, height: cellSize)
+            } else {
+                shape
+                    .fill(Color.clear)
+                    .frame(width: cellSize, height: cellSize)
+            }
+        }
+        .overlay {
+            // Selection ring for touch (FER-235). Only ever shows after a tap, which only the selectable
+            // path enables — so it's inert for the hover-only Trends caller.
+            if isSelected {
+                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                    .stroke(selectionColor, lineWidth: 2)
+                    .frame(width: cellSize + 4, height: cellSize + 4)
+            }
+        }
+        .modifier(SelectableCell(
+            enabled: onSelect != nil && day != nil,
+            label: day.map(cellAccessibilityLabel) ?? Text(""),
+            action: { if let day { selectedID = day.id; onSelect?(day) } }))
+    }
+
+    /// VoiceOver label for a selectable cell: its date + score, or "no reading" for an in-range gap. (FER-235)
+    private func cellAccessibilityLabel(_ day: RecoveryDay) -> Text {
+        let date = DateFormatterCache.day.string(from: day.date)
+        if let score = day.score {
+            return Text("\(date) · recovery \(Int(score.rounded()))")
+        }
+        return Text("\(date) · no reading")
+    }
+}
+
+/// Adds tap selection + a VoiceOver button only when `enabled` (a calendar day with `onSelect` set), so
+/// the hover-only Trends caller's cells stay exactly as before — no tap target, no extra a11y element. (FER-235)
+private struct SelectableCell: ViewModifier {
+    let enabled: Bool
+    let label: Text
+    let action: () -> Void
+    func body(content: Content) -> some View {
+        if enabled {
+            content
+                .contentShape(Rectangle())
+                .onTapGesture(perform: action)
+                .accessibilityElement()
+                .accessibilityLabel(label)
+                .accessibilityAddTraits(.isButton)
         } else {
-            shape
-                .fill(Color.clear)
-                .frame(width: cellSize, height: cellSize)
+            content
         }
     }
 }

@@ -44,6 +44,8 @@ struct RecoveryDetailScreen: View {
     /// Measured available width for the calendar, so the heat grid can size its cells to fill it. (FER-225)
     @State private var calWidth: CGFloat = 0
     @State private var methodExpanded = false
+    /// The calendar day the user tapped, for the read-out below the grid (touch — FER-235).
+    @State private var selectedHeatDay: RecoveryDay? = nil
 
     var body: some View {
         ScrollView {
@@ -378,13 +380,53 @@ struct RecoveryDetailScreen: View {
             accessibilityLabel: "Information about the 90-day calendar",
             theme: theme
         ) {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 10) {
                 heatGrid
-                Text("Each square is a day, tinted by your recovery; empty squares are days with no reading.")
-                    .font(StrandFont.caption)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                heatReadout
             }
+        }
+    }
+
+    /// The read-out under the calendar: the tapped day's date + score (in its band color) + state word,
+    /// or an honest "no reading" for an in-range gap; a quiet hint until the user taps a day. (FER-235)
+    @ViewBuilder private var heatReadout: some View {
+        if let day = selectedHeatDay {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(Self.heatDateFmt.string(from: day.date))
+                    .instrumentoOverline()
+                    .foregroundStyle(theme.inkTertiary)
+                Spacer(minLength: 8)
+                if let score = day.score {
+                    Text("\(Int(score.rounded()))")
+                        .font(StrandFont.number(20))
+                        .foregroundStyle(heatTint(score))
+                    Text(bandWord(score))
+                        .font(StrandFont.subhead)
+                        .foregroundStyle(theme.inkSecondary)
+                } else {
+                    Text("—")
+                        .font(StrandFont.number(20))
+                        .foregroundStyle(theme.inkTertiary)
+                    Text("no reading")
+                        .font(StrandFont.subhead)
+                        .foregroundStyle(theme.inkTertiary)
+                }
+            }
+            .accessibilityElement(children: .combine)
+        } else {
+            Text("Tap a day to see its recovery.")
+                .font(StrandFont.caption)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// A short band word for the calendar read-out (matches the hero's band coloring).
+    private func bandWord(_ score: Double) -> LocalizedStringKey {
+        switch RecoveryScorer.band(score) {
+        case "green":  return "Ready"
+        case "yellow": return "Recovering"
+        default:       return "Low"
         }
     }
 
@@ -405,7 +447,9 @@ struct RecoveryDetailScreen: View {
             tint: heatTint,
             emptyFill: theme.hairline,
             emptyStroke: theme.hairlineStrong,
-            labelColor: theme.inkTertiary
+            labelColor: theme.inkTertiary,
+            onSelect: { selectedHeatDay = $0 },
+            selectionColor: theme.ink
         )
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(GeometryReader { g in
@@ -613,6 +657,13 @@ struct RecoveryDetailScreen: View {
         f.locale = Locale(identifier: "en_US_POSIX")
         f.timeZone = TimeZone(identifier: "UTC")
         f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
+    /// Locale-aware "Wed 14 May" for the calendar read-out (orders/abbreviates per device locale). (FER-235)
+    static let heatDateFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.setLocalizedDateFormatFromTemplate("EEEdMMM")
         return f
     }()
 }
