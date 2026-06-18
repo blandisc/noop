@@ -524,9 +524,21 @@ struct TodayView: View {
         HStack(alignment: .center) {
             utilityRow
             Spacer(minLength: 0)
-            if live.backfilling || pullSyncing {
-                ConnectionDot(tone: .accent, pulsing: true, size: 6)
-                    .accessibilityHidden(true)
+            if let pct = live.batteryPct {
+                HStack(spacing: 3) {
+                    if live.charging == true {
+                        Image(systemName: "bolt.fill")
+                            .font(.system(size: 8, weight: .semibold))
+                            .foregroundStyle(theme.inkTertiary)
+                    }
+                    Text("\(Int(pct.rounded()))%")
+                        .font(StrandFont.mono(10))
+                        .foregroundStyle(theme.inkTertiary)
+                        .monospacedDigit()
+                }
+                .accessibilityLabel(live.charging == true
+                    ? Text("Batería del strap: \(Int(pct.rounded()))%, cargando")
+                    : Text("Batería del strap: \(Int(pct.rounded()))%"))
             }
         }
         .accessibilityElement(children: .combine)
@@ -903,11 +915,7 @@ struct TodayView: View {
                     if let at = live.lastSyncedAt {
                         let rel = RelativeDateTimeFormatter().localizedString(
                             fromTimeInterval: at - context.date.timeIntervalSince1970)
-                        if let pct = live.batteryPct {
-                            Text("Synced \(rel) · strap \(Int(pct.rounded()))%")
-                        } else {
-                            Text("Synced \(rel)")
-                        }
+                        Text("Synced \(rel)")
                     } else {
                         Text("Last sync — never")
                     }
