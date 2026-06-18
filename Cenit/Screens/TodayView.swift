@@ -481,6 +481,14 @@ struct TodayView: View {
                 // centrada en el sobrante (opción aprobada por el dueño, FER-217).
                 Spacer(minLength: 0)
             }
+            // FER-274: la pista de sync (chevron.down) flota en el TOPE como overlay — NO ocupa alto de
+            // layout, así que no empuja el héroe ni desborda la pantalla (a diferencia del renglón de texto
+            // de FER-270). Centrada arriba, donde se inicia el tirón. Entra/sale con un desvanecido;
+            // estático bajo Reduce Motion.
+            .overlay(alignment: .top) {
+                if showsSyncHint { syncChevron }
+            }
+            .animation(reduceMotion ? nil : StrandMotion.fade, value: showsSyncHint)
             // Inset superior `gap` (FER-202): el héroe queda alto pero respira; márgenes h/inferior estándar.
             .padding(.horizontal, NoopMetrics.screenPadding)
             .padding(.bottom, NoopMetrics.screenPadding)
@@ -703,7 +711,6 @@ struct TodayView: View {
     @ViewBuilder private var heroInstrument: some View {
         let state = heroState
         VStack(spacing: NoopMetrics.gap) {
-            if showsSyncHint { syncHint }
             Text(heroOverline(state)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 .frame(maxWidth: .infinity, alignment: .center)
             // Instrumento concéntrico (FER-169): el numeral domina el CENTRO del dial de 24h, no a su lado.
@@ -729,31 +736,26 @@ struct TodayView: View {
             heroFooter(state)
         }
         .frame(maxWidth: .infinity)
-        // FER-270: la pista de sincronización entra/sale con un desvanecido; bajo Reduce Motion el
-        // cambio es instantáneo (cue estático).
-        .animation(reduceMotion ? nil : StrandMotion.fade, value: showsSyncHint)
     }
 
-    /// Muestra la pista «Desliza para sincronizar» (FER-270): solo cuando hay strap (jalar SÍ
-    /// sincroniza algo), el usuario aún no ha hecho su primer pull-to-sync, y no se está sincronizando
-    /// ya (el dial girando — FER-221 — comunica ese estado). Sin strap no se muestra: jalar sería un
-    /// no-op y el estado de espera ya ofrece «Buscar strap».
+    /// Muestra la pista de sincronización (FER-270/FER-274): solo cuando hay strap (jalar SÍ sincroniza
+    /// algo), el usuario aún no ha hecho su primer pull-to-sync, y no se está sincronizando ya (el dial
+    /// girando — FER-221 — comunica ese estado). Sin strap no se muestra: jalar sería un no-op y el
+    /// estado de espera ya ofrece «Buscar strap».
     private var showsSyncHint: Bool {
         strapSeen && !didFirstPullSync && !(live.backfilling || pullSyncing)
     }
 
-    /// La pista de sincronización: chevron-abajo + texto, en TINTA (regla «color solo en el dato»).
-    /// Oculta a VoiceOver — su equivalente accesible es la acción «Sincronizar» del encabezado (FER-222),
-    /// así que el cue visual no se anuncia dos veces.
-    private var syncHint: some View {
-        HStack(spacing: NoopMetrics.space1) {
-            Image(systemName: "chevron.down").font(.system(size: 10, weight: .semibold))
-            Text("Pull to sync").font(StrandFont.caption)
-        }
-        .foregroundStyle(theme.inkTertiary)
-        .frame(maxWidth: .infinity, alignment: .center)
-        .transition(.opacity)
-        .accessibilityHidden(true)
+    /// La pista de sincronización (FER-274): un `chevron.down` TENUE, sin texto, en tinta. Se monta como
+    /// `.overlay` en el tope del scroll, así que NO ocupa alto de layout (antes era un renglón de texto
+    /// que empujaba el héroe y desbordaba la pantalla — FER-270). Oculta a VoiceOver — su equivalente
+    /// accesible es la acción «Sincronizar» del encabezado (FER-222).
+    private var syncChevron: some View {
+        Image(systemName: "chevron.down")
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(theme.inkTertiary)
+            .transition(.opacity)
+            .accessibilityHidden(true)
     }
 
     private func heroOverline(_ s: HeroState) -> LocalizedStringKey {
@@ -785,8 +787,14 @@ struct TodayView: View {
                     VStack(spacing: NoopMetrics.space1) {
                         Text("\(score)").instrumentoHero(60)
                             .foregroundStyle(heroNumeralInk)
-                        Text("/100").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
-                        seeRecoveryCue
+                        // FER-274: el «/100» lleva un chevron EN LÍNEA como pista de que el numeral es
+                        // tocable — sin un tercer renglón que descentre el número del dial (FER-270).
+                        HStack(spacing: NoopMetrics.space1) {
+                            Text("/100").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                            Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
+                                .foregroundStyle(theme.inkTertiary)
+                                .accessibilityHidden(true)
+                        }
                     }
                 } else {
                     Text("—").instrumentoHero(60).foregroundStyle(theme.inkTertiary)
@@ -811,20 +819,6 @@ struct TodayView: View {
         case .importedBaseline, .waiting:
             Text("—").instrumentoHero(60).foregroundStyle(theme.inkTertiary)
         }
-    }
-
-    /// Pista quieta de que el numeral del veredicto es tocable (FER-270): «Ver recuperación» + chevron,
-    /// en TINTA (regla «color solo en el dato»). Vive DENTRO del objetivo tocable del numeral, así que es
-    /// parte del mismo tap que abre la hoja de recuperación. Oculta a VoiceOver (el numeral ya es el
-    /// objetivo; el cue es solo afordancia visual).
-    private var seeRecoveryCue: some View {
-        HStack(spacing: NoopMetrics.space1) {
-            Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
-            Text("See recovery").font(StrandFont.caption)
-        }
-        .foregroundStyle(theme.inkTertiary)
-        .padding(.top, NoopMetrics.space1)
-        .accessibilityHidden(true)
     }
 
     /// El cuerpo bajo el numeral: la palabra del veredicto + «i» + modificadores (veredicto), o la línea
