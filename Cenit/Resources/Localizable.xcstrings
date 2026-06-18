@@ -20246,25 +20246,25 @@
         }
       }
     },
-    "The line is your 7-day moving average over the period you pick. The percentage compares this month's average with last month's. Average, Median, Lowest, Highest and σ (how spread out your days are) come from the range you selected.": {
+    "The line is your 7-day moving average over the period you pick. The percentage compares this month's average with last month's. The average and range come from the range you selected.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The line is your 7-day moving average over the period you pick. The percentage compares this month's average with last month's. Average, Median, Lowest, Highest and σ (how spread out your days are) come from the range you selected."
+            "value": "The line is your 7-day moving average over the period you pick. The percentage compares this month's average with last month's. The average and range come from the range you selected."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "La línea es tu promedio móvil de 7 días en el periodo que elijas. El porcentaje compara el promedio de este mes con el del mes pasado. Promedio, mediana, mínimo, máximo y σ (qué tan dispersos están tus días) salen del rango que seleccionaste."
+            "value": "La línea es tu promedio móvil de 7 días en el periodo que elijas. El porcentaje compara el promedio de este mes con el del mes pasado. El promedio y el rango salen del periodo que seleccionaste."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die Linie ist dein gleitender 7-Tage-Durchschnitt im gewählten Zeitraum. Der Prozentwert vergleicht den Durchschnitt dieses Monats mit dem des Vormonats. Durchschnitt, Median, Minimum, Maximum und σ (wie stark deine Tage streuen) stammen aus dem gewählten Bereich."
+            "value": "Die Linie ist dein gleitender 7-Tage-Durchschnitt im gewählten Zeitraum. Der Prozentwert vergleicht den Durchschnitt dieses Monats mit dem des Vormonats. Durchschnitt und Bereich stammen aus dem gewählten Zeitraum."
           }
         }
       }
@@ -21383,6 +21383,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Variabilidad (R-R)"
+          }
+        }
+      }
+    },
+    "Varied between %@ and %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Varied between %@ and %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Varió entre %@ y %@"
           }
         }
       }
@@ -23165,6 +23182,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Estás alrededor de tu línea base autonómica típica — estrés moderado, un día normal y equilibrado."
+          }
+        }
+      }
+    },
+    "Your average": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your average"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu promedio"
           }
         }
       }

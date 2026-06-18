@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Estadísticas de tendencia que sí dicen algo / Trend stats that actually mean something.**
+  **ES** — En las seis hojas de detalle (Estrés, Esfuerzo, Sueño, Recuperación, HRV y Ritmo Cardíaco en Reposo), la vieja fila de tres números técnicos —«Promedio / Más bajo / Más alto»— se rediseñó. Ahora tu **promedio** es el número que manda, la comparativa con el mes pasado aparece como un **chip** a su lado («10% vs el mes pasado», con flecha) y en **español**, y el color te dice si el cambio es bueno o malo para esa métrica (verde, ámbar, o gris cuando no aplica, como en Esfuerzo). El mínimo y el máximo se resumen en una sola línea de rango. Antes esos números no comunicaban nada sin conocimiento técnico.
+  **EN** — Across all six detail sheets (Stress, Strain, Sleep, Recovery, HRV and Resting Heart Rate), the old row of three technical numbers — "Average / Lowest / Highest" — was redesigned. Your **average** is now the number that leads, the comparison with last month shows up as a **chip** next to it ("10% vs last month", with an arrow) in **Spanish**, and its colour tells you whether the change is good or bad for that metric (green, amber, or grey when it doesn't apply, like Strain). The minimum and maximum collapse into a single range line. Those numbers used to communicate nothing without technical knowledge.
+  ([Packages/StrandDesign/Sources/StrandDesign/TrendStatSummary.swift](Packages/StrandDesign/Sources/StrandDesign/TrendStatSummary.swift))
+
 - **Detalle de Estrés: arreglo del eje y del texto de tendencia / Stress detail: trend axis & headline fix.**
   **ES** — En la hoja de **Estrés** (en Cuerpo): la gráfica de tendencia vuelve a tener su **eje Y (0–3) alineado con las bandas** y reaparece la **línea de comparación mes-a-mes** debajo, que se había quedado en blanco. Las zonas Bajo/Moderado/Alto ahora las dibuja la propia gráfica (no un fondo aparte que se desfasaba del eje), igual que en Sueño.
   **EN** — In the **Stress** sheet (in Body): the trend chart's **Y axis (0–3) is aligned with the bands** again and the **month-over-month line** below it is back (it had gone blank). The Low/Moderate/High zones are now drawn by the chart itself (not a separate backdrop drifting off the axis), matching the Sleep sheet.
