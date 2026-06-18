@@ -222,7 +222,7 @@ struct StrainDetailScreen: View {
     // MARK: - 4. Tendencia 14d (+ Prom/Mín/Máx)
 
     private var trendBlock: some View {
-        let window = makeWindow()
+        let window = MetricWindowMath.make(parsed, selected: range)
         let stat = ComparisonEngine.stat(window.values)
         // Compare the selected window against the equally-long window before it, not always the calendar
         // month. `.all` has no previous period, so no chip. (FER-264)
@@ -234,27 +234,21 @@ struct StrainDetailScreen: View {
             theme: theme
         ) {
             VStack(alignment: .leading, spacing: 10) {
-                SegmentedPillControl(ExploreRange.allCases, selection: $range, theme: theme) { $0.label }
-                if window.fellBack {
-                    Text("Showing the last \(window.rows.count) days")
-                        .font(StrandFont.footnote)
-                        .foregroundStyle(theme.warning)
+                MetricTrendChart(
+                    range: $range,
+                    window: window,
+                    theme: theme,
+                    style: .init(
+                        smoothing: 7,
+                        gradient: chartGradient,
+                        valueRange: { chartRange($0) },
+                        valueFormat: { fmt($0) },
+                        accessibilityLabel: "Day strain, 7-day moving average"
+                    )
+                ) {
+                    emptyWell(text: "Not enough days in this range to draw a trend.")
                 }
                 if window.values.count > 1 {
-                    let smoothed = SeriesShape.movingAverage(window.values, window: 7)
-                    TrendChart(
-                        points: Self.decimatedPoints(rows: window.rows, values: smoothed, maxPoints: 80),
-                        gradient: chartGradient,
-                        valueRange: chartRange(smoothed),
-                        showsArea: true,
-                        height: 200,
-                        showsHover: true,
-                        valueFormat: { fmt($0) },
-                        axisLabelColor: theme.inkTertiary,
-                        gridLineColor: theme.hairline
-                    )
-                    .accessibilityElement()
-                    .accessibilityLabel(Text("Day strain, 7-day moving average"))
                     TrendStatSummary(
                         average: fmt(stat.mean),
                         pctChange: comparison?.pctChange,
@@ -264,8 +258,6 @@ struct StrainDetailScreen: View {
                         rangeHigh: fmt(stat.max),
                         theme: theme
                     )
-                } else {
-                    emptyWell(text: "Not enough days in this range to draw a trend.")
                 }
             }
         }
@@ -375,61 +367,7 @@ struct StrainDetailScreen: View {
     /// Strain reads to one decimal (0–21), like the row and the hero.
     private func fmt(_ v: Double) -> String { String(format: "%.1f", v) }
 
-    // MARK: - Window math (mirror RecoveryDetailScreen, scoped to this screen)
-
-    struct Window {
-        let range: ExploreRange
-        let rows: [(day: String, value: Double)]
-        let values: [Double]
-        let fellBack: Bool
-    }
-
-    /// Trailing-N-days slice for `r`, taken relative to the latest point (reads the memoized `date`).
-    private func slice(for r: ExploreRange) -> [(day: String, value: Double)] {
-        guard let days = r.days else { return parsed.map { ($0.day, $0.value) } }
-        guard let last = parsed.last?.date else { return [] }
-        let cutoff = last.addingTimeInterval(-Double(days - 1) * 86_400)
-        return parsed.compactMap { row in
-            guard let d = row.date, d >= cutoff else { return nil }
-            return (row.day, row.value)
-        }
-    }
-
-    /// The selected range, or the smallest larger range whose window holds ≥1 point (Explorer auto-widen).
-    private func effectiveRange() -> ExploreRange {
-        guard !parsed.isEmpty else { return range }
-        for r in range.widening where !slice(for: r).isEmpty { return r }
-        return .all
-    }
-
-    private func makeWindow() -> Window {
-        let eff = effectiveRange()
-        let rows = slice(for: eff)
-        return Window(range: eff, rows: rows, values: rows.map(\.value), fellBack: eff != range)
-    }
-
-    /// Build the chart's points, decimating long series to ≤`maxPoints` for DRAWING only (FER-219). Short
-    /// ranges pass through one point per day.
-    private static func decimatedPoints(rows: [(day: String, value: Double)], values: [Double], maxPoints: Int) -> [TrendPoint] {
-        let n = Swift.min(rows.count, values.count)
-        guard n > maxPoints, maxPoints > 1 else {
-            return zip(rows, values).compactMap { row, value in
-                dayParser.date(from: row.day).map { TrendPoint(date: $0, value: value) }
-            }
-        }
-        let decimated = SeriesShape.decimate(Array(values.prefix(n)), maxPoints: maxPoints)
-        var out: [TrendPoint] = []
-        out.reserveCapacity(decimated.count)
-        for b in 0..<decimated.count {
-            let lo = (n * b) / maxPoints
-            let hi = (n * (b + 1)) / maxPoints
-            let mid = Swift.min(lo + (hi - lo) / 2, n - 1)
-            if let date = dayParser.date(from: rows[mid].day) {
-                out.append(TrendPoint(date: date, value: decimated[b]))
-            }
-        }
-        return out
-    }
+    // MARK: - Chart axis
 
     /// Auto-fit the chart's axis to the smoothed line, clamped to the 0–21 strain scale.
     private func chartRange(_ smoothed: [Double]) -> ClosedRange<Double> {

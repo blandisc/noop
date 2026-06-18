@@ -124,7 +124,7 @@ struct SkinTempDetailScreen: View {
     // MARK: - 2. Selector de periodo + Tendencia (línea diaria sobre la banda ±típica) + TrendStatSummary
 
     private var trendBlock: some View {
-        let window = makeWindow()
+        let window = MetricWindowMath.make(parsed, selected: range)
         let stat = ComparisonEngine.stat(window.values)
         // Compare the selected window against the equally-long window before it, not always the calendar
         // month. `.all` has no previous period, so no chip. (FER-264)
@@ -132,6 +132,7 @@ struct SkinTempDetailScreen: View {
         // Absolute °C delta vs the previous period — and only when there IS one (previous.n > 0). A
         // percentage would be unstable on a near-zero mean, so we never pass one.
         let periodDelta: Double? = (comparison?.previous.n ?? 0) > 0 ? comparison?.delta : nil
+        let typical = model.typicalSD
         return InfoAccordion(
             title: "Trend",
             explanation: "Each point is one night's deviation from your baseline. The shaded band is your own typical night-to-night swing (±1 SD around 0) — inside it is business as usual; a run of nights poking out the same side is the signal. Average and the range come from the period you pick; the chip compares this period's average with the previous period of the same length, in °C.",
@@ -139,14 +140,30 @@ struct SkinTempDetailScreen: View {
             theme: theme
         ) {
             VStack(alignment: .leading, spacing: 10) {
-                SegmentedPillControl(ExploreRange.allCases, selection: $range, theme: theme) { $0.label }
-                if window.fellBack {
-                    Text("Showing the last \(window.rows.count) days")
-                        .font(StrandFont.footnote)
-                        .foregroundStyle(theme.warning)
+                // The daily deviation line (raw, not a moving average — the night-to-night signal is read
+                // day to day) over a subtle «typical variation» band (±1 SD around 0), drawn by `TrendChart`'s
+                // native bands in the strain hue at low opacity so the line stays the protagonist.
+                MetricTrendChart(
+                    range: $range,
+                    window: window,
+                    theme: theme,
+                    style: .init(
+                        gradient: Gradient(colors: [theme.inkSecondary.opacity(0.5), theme.inkSecondary]),
+                        showsArea: false,
+                        valueRange: { chartRange($0, typical: typical) },
+                        valueFormat: { "\(fmt($0)) °C" },
+                        bands: { _ in
+                            typical > 0.01
+                                ? [TrendBand(label: "typical", lower: -typical, upper: typical, isActive: true)]
+                                : []
+                        },
+                        bandColor: { _ in theme.dataStrain },
+                        accessibilityLabel: "Nightly skin-temperature deviation, in degrees Celsius"
+                    )
+                ) {
+                    emptyWell(text: "Not enough days in this range to draw a trend.")
                 }
                 if window.values.count > 1 {
-                    tempChart(window)
                     TrendStatSummary(
                         average: fmt(stat.mean),
                         unit: "°C",
@@ -157,36 +174,9 @@ struct SkinTempDetailScreen: View {
                         rangeLow: fmt(stat.min),
                         rangeHigh: "\(fmt(stat.max)) °C",
                         theme: theme)
-                } else {
-                    emptyWell(text: "Not enough days in this range to draw a trend.")
                 }
             }
         }
-    }
-
-    /// The daily deviation line over a subtle «typical variation» band (±1 SD around 0). The band is drawn
-    /// by `TrendChart`'s native bands so it shares the plot's coordinate space; it's tinted in the strain
-    /// hue (the row's colour) at low opacity — the datum (the line) stays the protagonist.
-    private func tempChart(_ window: Window) -> some View {
-        let pts = Self.decimatedPoints(rows: window.rows, maxPoints: 80)
-        let typical = model.typicalSD
-        let bands: [TrendBand] = typical > 0.01
-            ? [TrendBand(label: "typical", lower: -typical, upper: typical, isActive: true)]
-            : []
-        return TrendChart(
-            points: pts,
-            gradient: Gradient(colors: [theme.inkSecondary.opacity(0.5), theme.inkSecondary]),
-            valueRange: chartRange(window.values, typical: typical),
-            showsArea: false,
-            height: 200,
-            showsHover: true,
-            valueFormat: { "\(fmt($0)) °C" },
-            axisLabelColor: theme.inkTertiary,
-            gridLineColor: theme.hairline,
-            bands: bands,
-            bandColor: theme.dataStrain)
-        .accessibilityElement()
-        .accessibilityLabel(Text("Nightly skin-temperature deviation, in degrees Celsius"))
     }
 
     // MARK: - 3. Consistencia — la desviación estándar en °C (NO el CV%: la media ≈0 lo haría absurdo)
@@ -269,61 +259,6 @@ struct SkinTempDetailScreen: View {
 
     /// Skin-temp reads as a SIGNED deviation at one decimal (e.g. "+0.3", "−0.2"), like the row and hero.
     private func fmt(_ v: Double) -> String { String(format: "%+.1f", v) }
-
-    struct Window {
-        let range: ExploreRange
-        let rows: [(day: String, value: Double)]
-        let values: [Double]
-        let fellBack: Bool
-    }
-
-    /// Trailing-N-days slice for `r`, taken relative to the latest point (reads the memoized `date`).
-    private func slice(for r: ExploreRange) -> [(day: String, value: Double)] {
-        guard let days = r.days else { return parsed.map { ($0.day, $0.value) } }
-        guard let last = parsed.last?.date else { return [] }
-        let cutoff = last.addingTimeInterval(-Double(days - 1) * 86_400)
-        return parsed.compactMap { row in
-            guard let d = row.date, d >= cutoff else { return nil }
-            return (row.day, row.value)
-        }
-    }
-
-    /// The selected range, or the smallest larger range whose window holds ≥1 point (Explorer auto-widen).
-    private func effectiveRange() -> ExploreRange {
-        guard !parsed.isEmpty else { return range }
-        for r in range.widening where !slice(for: r).isEmpty { return r }
-        return .all
-    }
-
-    private func makeWindow() -> Window {
-        let eff = effectiveRange()
-        let rows = slice(for: eff)
-        return Window(range: eff, rows: rows, values: rows.map(\.value), fellBack: eff != range)
-    }
-
-    /// Build the chart's points (the DAILY deviation line, not a moving average — the night-to-night signal
-    /// is read day to day), decimating long series to ≤`maxPoints` for DRAWING only (FER-219).
-    private static func decimatedPoints(rows: [(day: String, value: Double)], maxPoints: Int) -> [TrendPoint] {
-        let values = rows.map(\.value)
-        let n = rows.count
-        guard n > maxPoints, maxPoints > 1 else {
-            return rows.compactMap { row in
-                dayParser.date(from: row.day).map { TrendPoint(date: $0, value: row.value) }
-            }
-        }
-        let decimated = SeriesShape.decimate(values, maxPoints: maxPoints)
-        var out: [TrendPoint] = []
-        out.reserveCapacity(decimated.count)
-        for b in 0..<decimated.count {
-            let lo = (n * b) / maxPoints
-            let hi = (n * (b + 1)) / maxPoints
-            let mid = Swift.min(lo + (hi - lo) / 2, n - 1)
-            if let date = dayParser.date(from: rows[mid].day) {
-                out.append(TrendPoint(date: date, value: decimated[b]))
-            }
-        }
-        return out
-    }
 
     /// Auto-fit the chart's axis to the data, always including 0 and the ±typical band so the band reads as
     /// a band (not a clipped edge), with a little padding.
