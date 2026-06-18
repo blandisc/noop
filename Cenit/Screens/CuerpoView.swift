@@ -321,7 +321,8 @@ private struct CuerpoLanding: View {
                 sleeps: repo.sleeps,
                 importedSleep: repo.importedSleep,
                 appleHealthDays: repo.appleHealthDays,
-                loaded: repo.loaded))
+                loaded: repo.loaded,
+                todayKey: Repository.localDayKey(Date())))
         }
     }
 
