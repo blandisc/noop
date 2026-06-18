@@ -24645,6 +24645,1018 @@
           }
         }
       }
+    },
+    "No reading from last night yet — your recent history is below.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No reading from last night yet — your recent history is below."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no hay lectura de anoche — abajo está tu historial reciente."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Messung von letzter Nacht – dein bisheriger Verlauf steht unten."
+          }
+        }
+      }
+    },
+    "Recovery blends several signals from your nervous system — your HRV above all, plus resting heart rate, sleep and breathing — and compares them with your own baseline from recent weeks. It's an estimate of how ready your body is today, not a diagnosis. (Buchheit 2014)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovery blends several signals from your nervous system — your HRV above all, plus resting heart rate, sleep and breathing — and compares them with your own baseline from recent weeks. It's an estimate of how ready your body is today, not a diagnosis. (Buchheit 2014)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La recuperación combina varias señales de tu sistema nervioso —tu HRV sobre todo, más la frecuencia cardiaca en reposo, el sueño y la respiración— y las compara con tu propia base de las últimas semanas. Es una estimación de qué tan listo está tu cuerpo hoy, no un diagnóstico. (Buchheit 2014)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Erholung verbindet mehrere Signale deines Nervensystems – vor allem deine HRV, dazu Ruhepuls, Schlaf und Atmung – und vergleicht sie mit deiner eigenen Basislinie der letzten Wochen. Es ist eine Schätzung, wie bereit dein Körper heute ist, keine Diagnose. (Buchheit 2014)"
+          }
+        }
+      }
+    },
+    "Information about recovery": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Information about recovery"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Información sobre la recuperación"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informationen zur Erholung"
+          }
+        }
+      }
+    },
+    "Above your baseline — your body is ready for a strong day.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Above your baseline — your body is ready for a strong day."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por encima de tu base — tu cuerpo está listo para un día fuerte."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Über deiner Basislinie – dein Körper ist bereit für einen starken Tag."
+          }
+        }
+      }
+    },
+    "Recovering — train, but keep it controlled.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovering — train, but keep it controlled."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuperándote — entrena, pero con cabeza."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In Erholung – trainiere, aber kontrolliert."
+          }
+        }
+      }
+    },
+    "Low — prioritize rest today.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Low — prioritize rest today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baja — hoy prioriza el descanso."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Niedrig – heute Erholung priorisieren."
+          }
+        }
+      }
+    },
+    "Calibrating — we need a few more nights of your strap.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calibrating — we need a few more nights of your strap."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calibrando — necesitamos unas noches más con tu banda."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kalibrierung – wir brauchen noch ein paar Nächte mit deinem Band."
+          }
+        }
+      }
+    },
+    "No recovery yet. Wear your strap overnight and open this again after it syncs — or import your WHOOP history in Data Sources.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No recovery yet. Wear your strap overnight and open this again after it syncs — or import your WHOOP history in Data Sources."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no hay recuperación. Usa tu banda de noche y vuelve a abrir esto cuando sincronice — o importa tu historial de WHOOP en Fuentes de datos."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Erholung. Trag dein Band über Nacht und öffne dies erneut, sobald es synchronisiert – oder importiere deinen WHOOP-Verlauf unter Datenquellen."
+          }
+        }
+      }
+    },
+    "What explains your recovery": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What explains your recovery"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qué explica tu recuperación"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was deine Erholung erklärt"
+          }
+        }
+      }
+    },
+    "HRV carries the most weight — it's the best window onto your autonomic nervous system. What matters is the average of your recent nights, not a single day. If a signal is missing on a given night, its weight is shared among the others. (Plews 2013; Buchheit 2014)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HRV carries the most weight — it's the best window onto your autonomic nervous system. What matters is the average of your recent nights, not a single day. If a signal is missing on a given night, its weight is shared among the others. (Plews 2013; Buchheit 2014)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La HRV es la que más pesa: es la mejor ventana a tu sistema nervioso autónomo. Lo que importa es el promedio de tus últimas noches, no un día suelto. Si falta una señal en una noche, su peso se reparte entre las demás. (Plews 2013; Buchheit 2014)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die HRV hat das größte Gewicht – sie ist das beste Fenster zu deinem autonomen Nervensystem. Es zählt der Durchschnitt deiner letzten Nächte, nicht ein einzelner Tag. Fehlt in einer Nacht ein Signal, wird sein Gewicht auf die anderen verteilt. (Plews 2013; Buchheit 2014)"
+          }
+        }
+      }
+    },
+    "Information about what explains your recovery": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Information about what explains your recovery"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Información sobre qué explica tu recuperación"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informationen dazu, was deine Erholung erklärt"
+          }
+        }
+      }
+    },
+    "above your base": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "above your base"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "por encima de tu base"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "über deiner Basis"
+          }
+        }
+      }
+    },
+    "a touch low": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "a touch low"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "algo baja"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "etwas niedrig"
+          }
+        }
+      }
+    },
+    "suppressed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "suppressed"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "suprimida"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "unterdrückt"
+          }
+        }
+      }
+    },
+    "low, in your base": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "low, in your base"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "baja, en tu base"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "niedrig, in deiner Basis"
+          }
+        }
+      }
+    },
+    "running high": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "running high"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "algo elevada"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "etwas erhöht"
+          }
+        }
+      }
+    },
+    "elevated": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "elevated"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "elevada"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "erhöht"
+          }
+        }
+      }
+    },
+    "solid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "solid"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sólido"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "solide"
+          }
+        }
+      }
+    },
+    "light": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "light"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ligero"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "leicht"
+          }
+        }
+      }
+    },
+    "very short": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "very short"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "muy corto"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sehr kurz"
+          }
+        }
+      }
+    },
+    "running warm": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "running warm"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "algo tibia"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "etwas warm"
+          }
+        }
+      }
+    },
+    "slightly raised": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "slightly raised"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ligeramente elevada"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "leicht erhöht"
+          }
+        }
+      }
+    },
+    "Your personal baseline: the average of your recent recovery days ± a band of your own variation. A day outside the band is unusual for you, not for the population. (Buchheit 2014)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your personal baseline: the average of your recent recovery days ± a band of your own variation. A day outside the band is unusual for you, not for the population. (Buchheit 2014)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu base personal: el promedio de tus días de recuperación recientes ± una banda de tu propia variación. Un día fuera de la banda es inusual para ti, no para la población. (Buchheit 2014)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine persönliche Basislinie: der Durchschnitt deiner letzten Erholungstage ± ein Band deiner eigenen Schwankung. Ein Tag außerhalb des Bands ist für dich ungewöhnlich, nicht für die Allgemeinheit. (Buchheit 2014)"
+          }
+        }
+      }
+    },
+    "%lld–%lld · %lld days": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld–%lld · %lld days"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld–%lld · %lld días"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld–%lld · %lld Tage"
+          }
+        }
+      }
+    },
+    "Where your recovery usually lands when you're well. Worth noting when a day falls outside it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where your recovery usually lands when you're well. Worth noting when a day falls outside it."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Donde suele caer tu recuperación cuando estás bien. Vale la pena fijarse cuando un día se sale de ahí."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wo deine Erholung normalerweise liegt, wenn es dir gut geht. Achte darauf, wenn ein Tag herausfällt."
+          }
+        }
+      }
+    },
+    "The line is your 7-day moving average over the period you pick. The percentage compares this month's average with last month's. Average, Median, Lowest, Highest and σ (how spread out your days are) come from the range you selected.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The line is your 7-day moving average over the period you pick. The percentage compares this month's average with last month's. Average, Median, Lowest, Highest and σ (how spread out your days are) come from the range you selected."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La línea es tu promedio móvil de 7 días en el periodo que elijas. El porcentaje compara el promedio de este mes con el del mes pasado. Promedio, mediana, mínimo, máximo y σ (qué tan dispersos están tus días) salen del rango que seleccionaste."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Linie ist dein gleitender 7-Tage-Durchschnitt im gewählten Zeitraum. Der Prozentwert vergleicht den Durchschnitt dieses Monats mit dem des Vormonats. Durchschnitt, Median, Minimum, Maximum und σ (wie stark deine Tage streuen) stammen aus dem gewählten Bereich."
+          }
+        }
+      }
+    },
+    "+%lld% vs last month": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%lld% vs last month"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%lld% vs el mes pasado"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%lld% ggü. Vormonat"
+          }
+        }
+      }
+    },
+    "−%lld% vs last month": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "−%lld% vs last month"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "−%lld% vs el mes pasado"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "−%lld% ggü. Vormonat"
+          }
+        }
+      }
+    },
+    "Not enough days in this range to draw a trend.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not enough days in this range to draw a trend."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hay suficientes días en este rango para dibujar una tendencia."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht genügend Tage in diesem Bereich für einen Trend."
+          }
+        }
+      }
+    },
+    "Coefficient of variation = how spread out your recovery is around its own average, as a percentage. Low = steady. A steadier recovery usually means your body is coping well with your load. (Plews 2013)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coefficient of variation = how spread out your recovery is around its own average, as a percentage. Low = steady. A steadier recovery usually means your body is coping well with your load. (Plews 2013)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coeficiente de variación = qué tan dispersa está tu recuperación alrededor de su propio promedio, en porcentaje. Bajo = estable. Una recuperación más estable suele significar que tu cuerpo lleva bien tu carga. (Plews 2013)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variationskoeffizient = wie stark deine Erholung um ihren eigenen Durchschnitt streut, in Prozent. Niedrig = stabil. Eine stabilere Erholung bedeutet meist, dass dein Körper deine Belastung gut verkraftet. (Plews 2013)"
+          }
+        }
+      }
+    },
+    "±%lld% week to week · %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "±%lld% week to week · %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "±%lld% de una semana a otra · %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "±%lld% von Woche zu Woche · %@"
+          }
+        }
+      }
+    },
+    "How steady your recovery stays from one week to the next.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How steady your recovery stays from one week to the next."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qué tan estable se mantiene tu recuperación de una semana a otra."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wie stabil deine Erholung von einer Woche zur nächsten bleibt."
+          }
+        }
+      }
+    },
+    "Calendar · 90 days": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calendar · 90 days"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calendario · 90 días"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kalender · 90 Tage"
+          }
+        }
+      }
+    },
+    "Each square is a day, tinted by your recovery — red when low, amber in the middle, green when high. Empty squares are days with no reading. It's the at-a-glance shape of your last three months. (Buchheit 2014)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Each square is a day, tinted by your recovery — red when low, amber in the middle, green when high. Empty squares are days with no reading. It's the at-a-glance shape of your last three months. (Buchheit 2014)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada cuadro es un día, tintado por tu recuperación — rojo cuando es baja, ámbar en medio, verde cuando es alta. Los cuadros vacíos son días sin lectura. Es la forma de un vistazo de tus últimos tres meses. (Buchheit 2014)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jedes Kästchen ist ein Tag, eingefärbt nach deiner Erholung – rot bei niedrig, bernstein in der Mitte, grün bei hoch. Leere Kästchen sind Tage ohne Messung. So siehst du auf einen Blick die Form deiner letzten drei Monate. (Buchheit 2014)"
+          }
+        }
+      }
+    },
+    "Information about the 90-day calendar": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Information about the 90-day calendar"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Información sobre el calendario de 90 días"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informationen zum 90-Tage-Kalender"
+          }
+        }
+      }
+    },
+    "Each square is a day, tinted by your recovery; empty squares are days with no reading.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Each square is a day, tinted by your recovery; empty squares are days with no reading."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada cuadro es un día, tintado por tu recuperación; los cuadros vacíos son días sin lectura."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jedes Kästchen ist ein Tag, eingefärbt nach deiner Erholung; leere Kästchen sind Tage ohne Messung."
+          }
+        }
+      }
+    },
+    "Recent load": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recent load"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carga reciente"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktuelle Belastung"
+          }
+        }
+      }
+    },
+    "The acute:chronic workload ratio (your last week vs your last month) and training monotony describe how your load is trending. They are context for your recovery — they do NOT predict injuries; that evidence doesn't hold up. (Impellizzeri 2020)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The acute:chronic workload ratio (your last week vs your last month) and training monotony describe how your load is trending. They are context for your recovery — they do NOT predict injuries; that evidence doesn't hold up. (Impellizzeri 2020)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El cociente de carga aguda:crónica (tu última semana vs tu último mes) y la monotonía describen cómo viene tu carga. Son contexto para tu recuperación — NO predicen lesiones; esa evidencia no se sostiene. (Impellizzeri 2020)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Verhältnis von akuter zu chronischer Belastung (deine letzte Woche vs. dein letzter Monat) und die Trainingsmonotonie beschreiben, wie sich deine Belastung entwickelt. Sie sind Kontext für deine Erholung – sie sagen KEINE Verletzungen voraus; diese Evidenz hält nicht stand. (Impellizzeri 2020)"
+          }
+        }
+      }
+    },
+    "Information about recent load": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Information about recent load"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Información sobre la carga reciente"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informationen zur aktuellen Belastung"
+          }
+        }
+      }
+    },
+    "Similar effort most days — a little variety helps.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Similar effort most days — a little variety helps."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esfuerzo parecido casi todos los días — un poco de variedad ayuda."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ähnliche Anstrengung an den meisten Tagen – etwas Abwechslung hilft."
+          }
+        }
+      }
+    },
+    "context, not injury risk": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "context, not injury risk"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "contexto, no riesgo de lesión"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontext, kein Verletzungsrisiko"
+          }
+        }
+      }
+    },
+    "Each signal becomes a score of how far above or below your personal average it sits (a z-score). They're combined with the weights above and mapped onto a 0–100 scale through a logistic curve, calibrated so a typical day lands near 58. It's an estimate, not a diagnosis.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Each signal becomes a score of how far above or below your personal average it sits (a z-score). They're combined with the weights above and mapped onto a 0–100 scale through a logistic curve, calibrated so a typical day lands near 58. It's an estimate, not a diagnosis."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada señal se vuelve una puntuación de qué tan por encima o por debajo de tu promedio personal está (un z-score). Se combinan con los pesos de arriba y se mapean a una escala de 0–100 con una curva logística, calibrada para que un día típico caiga cerca de 58. Es una estimación, no un diagnóstico."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jedes Signal wird zu einem Wert dafür, wie weit über oder unter deinem persönlichen Durchschnitt es liegt (ein z-Wert). Sie werden mit den obigen Gewichten kombiniert und über eine logistische Kurve auf eine Skala von 0–100 abgebildet, kalibriert so, dass ein typischer Tag nahe 58 liegt. Es ist eine Schätzung, keine Diagnose."
+          }
+        }
+      }
+    },
+    "%lld / %lld nights": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld / %lld nights"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld / %lld noches"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld / %lld Nächte"
+          }
+        }
+      }
+    },
+    "We need a few more nights with your strap to learn your baseline before we score your recovery. We'd rather not show a made-up number.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We need a few more nights with your strap to learn your baseline before we score your recovery. We'd rather not show a made-up number."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Necesitamos unas noches más con tu banda para aprender tu base antes de calcular tu recuperación. Preferimos no mostrarte un número inventado."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wir brauchen noch ein paar Nächte mit deinem Band, um deine Basislinie zu lernen, bevor wir deine Erholung berechnen. Wir zeigen lieber keine erfundene Zahl."
+          }
+        }
+      }
     }
   },
   "version": "1.1"
