@@ -15508,28 +15508,6 @@
         }
       }
     },
-    "Pull to sync": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zum Synchronisieren ziehen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pull to sync"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Desliza para sincronizar"
-          }
-        }
-      }
-    },
     "Question": {
       "localizations": {
         "de": {
@@ -17833,28 +17811,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mehr ansehen"
-          }
-        }
-      }
-    },
-    "See recovery": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Erholung ansehen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "See recovery"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ver recuperación"
           }
         }
       }
