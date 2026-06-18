@@ -225,6 +225,8 @@ public struct SegmentedPillControl<T: Hashable>: View {
                 Button { withAnimation(StrandMotion.interactive) { selection = item } } label: {
                     Text(label(item))
                         .font(StrandFont.captionNumber)
+                        .lineLimit(1)                  // never wrap a pill label onto a 2nd line…
+                        .minimumScaleFactor(0.8)       // …shrink a tight label (e.g. «TODO») instead (FER-275)
                         .foregroundStyle(segmentText(sel))
                         .frame(minWidth: 32, maxWidth: theme == nil ? nil : .infinity)
                         .padding(.vertical, 6).padding(.horizontal, 11)
