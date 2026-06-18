@@ -254,6 +254,48 @@ enum OKLab {
         let out = toRGB(m)
         return Color(.sRGB, red: out.r, green: out.g, blue: out.b)
     }
+
+    // MARK: WCAG contrast helpers (small-text AA for data hues — `positiveText`)
+
+    /// WCAG 2.x relative luminance (0…1) of an sRGB color.
+    static func relativeLuminance(_ c: Color) -> Double {
+        let p = c.rgbaComponents
+        return 0.2126 * srgbToLinear(p.r) + 0.7152 * srgbToLinear(p.g) + 0.0722 * srgbToLinear(p.b)
+    }
+
+    /// WCAG 2.x contrast ratio (1…21) between two colors.
+    static func contrastRatio(_ a: Color, _ b: Color) -> Double {
+        let la = relativeLuminance(a), lb = relativeLuminance(b)
+        return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
+    }
+
+    /// Darken `color` in OKLab — lowering perceptual lightness `L` while keeping its
+    /// hue/chroma (`a`,`b`) — only as far as needed to reach `ratio` contrast against
+    /// `bg`. Returns `color` unchanged when it already clears `ratio`. Bisects on `L`
+    /// (contrast is monotonic in `L` on a light background), so it's deterministic and
+    /// converges in a handful of iterations. Lets a data hue become AA-compliant for
+    /// SMALL text against whatever paper is live, with no hand-tuned hex per hour.
+    static func darkened(_ color: Color, toContrast ratio: Double, against bg: Color) -> Color {
+        if contrastRatio(color, bg) >= ratio { return color }
+        let c = color.rgbaComponents
+        var lab = toLab((c.r, c.g, c.b))
+        // L ∈ [0, origL]: lower L = darker = higher contrast on light paper. Find the
+        // LIGHTEST L that still passes, so the hue is preserved as much as AA allows.
+        var lo = 0.0, hi = lab.L
+        for _ in 0..<16 {
+            let mid = (lo + hi) / 2
+            lab.L = mid
+            let rgb = toRGB(lab)
+            if contrastRatio(Color(.sRGB, red: rgb.r, green: rgb.g, blue: rgb.b), bg) >= ratio {
+                lo = mid          // passes — the threshold is at or above here; try lighter
+            } else {
+                hi = mid          // fails — go darker
+            }
+        }
+        lab.L = lo
+        let rgb = toRGB(lab)
+        return Color(.sRGB, red: rgb.r, green: rgb.g, blue: rgb.b)
+    }
 }
 
 // MARK: - App-wide driver (@MainActor)

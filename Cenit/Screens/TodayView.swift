@@ -1140,6 +1140,11 @@ struct TodayView: View {
         // Base para la media de 7 días de cada tile (FER-258): días anteriores a hoy, ordenados,
         // computada una vez por render (no por tile).
         let base = baselineDays()
+        // Verde AA-en-texto-chico para el delta «mejora» (auditoría Hoy · P1): `theme.verdict` es
+        // AA-grande (3:1 ≥18pt) pero el delta va en caption 12pt, donde hace falta 4.5:1.
+        // `positiveText` oscurece el verdict lo justo para pasar AA contra el papel de la hora. Se
+        // resuelve UNA vez por render (su bisección OKLab no debe correr por-tile) y se pasa a cada tile.
+        let positiveDelta = theme.positiveText
         // Nudge para conectar Apple Salud sólo si no está conectado y falta alguna señal medida.
         let notConnected = health.auth != .authorized && health.auth != .unavailable
         let anyMeasuredMissing = hrvR == nil || sleepR == nil || rhrR == nil || spo2R == nil || stepsFresh == nil
@@ -1157,7 +1162,7 @@ struct TodayView: View {
                     value: strainT.map { String(format: "%.1f", $0) } ?? "—",
                     valueColor: theme.dataStrain,
                     context: tileContext(today: strainT, history: history(base) { $0.strain },
-                                         betterHigher: nil, deadband: 0.3) { String(format: "%.1f", $0) }
+                                         betterHigher: nil, deadband: 0.3, positive: positiveDelta) { String(format: "%.1f", $0) }
                 )) { metricDetail = .strain(strainT) }
                 // Sueño — dormir más es mejor.
                 metricTile(TodayMetricTile(
@@ -1166,7 +1171,7 @@ struct TodayView: View {
                     valueColor: theme.dataSleep,
                     fromApple: sleepR?.fromApple == true,
                     context: tileContext(today: sleepR?.value, history: history(base) { $0.totalSleepMin },
-                                         betterHigher: true, deadband: 5) { sleepDeltaText($0) }
+                                         betterHigher: true, deadband: 5, positive: positiveDelta) { sleepDeltaText($0) }
                 )) { metricDetail = .sleep(sleepR.map { Int($0.value.rounded()) }) }
                 // HRV — más alto es mejor.
                 metricTile(TodayMetricTile(
@@ -1175,7 +1180,7 @@ struct TodayView: View {
                     valueColor: theme.dataHrv,
                     fromApple: hrvR?.fromApple == true,
                     context: tileContext(today: hrvR?.value, history: history(base) { $0.avgHrv },
-                                         betterHigher: true, deadband: 1) { "\(Int($0.rounded())) ms" }
+                                         betterHigher: true, deadband: 1, positive: positiveDelta) { "\(Int($0.rounded())) ms" }
                 )) { metricDetail = .hrv(hrvR?.value) }
                 // Frecuencia cardíaca — promedio continuo del día. Sin Δ: no se guarda un promedio diurno
                 // de "ayer" con qué comparar (decisión del dueño, FER-180).
@@ -1191,7 +1196,7 @@ struct TodayView: View {
                     valueColor: theme.dataHeart,
                     fromApple: rhrR?.fromApple == true,
                     context: tileContext(today: rhrR?.value, history: history(base) { $0.restingHr.map(Double.init) },
-                                         betterHigher: false, deadband: 1) { "\(Int($0.rounded())) \(String(localized: "bpm"))" }
+                                         betterHigher: false, deadband: 1, positive: positiveDelta) { "\(Int($0.rounded())) \(String(localized: "bpm"))" }
                 )) { metricDetail = .restingHR(rhrR.map { Int($0.value.rounded()) }) }
                 // Oxígeno en sangre — más alto es mejor.
                 metricTile(TodayMetricTile(
@@ -1200,7 +1205,7 @@ struct TodayView: View {
                     valueColor: theme.dataSpO2,
                     fromApple: spo2R?.fromApple == true,
                     context: tileContext(today: spo2R?.value, history: history(base) { $0.spo2Pct },
-                                         betterHigher: true, deadband: 0.5) { "\(Int($0.rounded())) %" }
+                                         betterHigher: true, deadband: 0.5, positive: positiveDelta) { "\(Int($0.rounded())) %" }
                 )) { metricDetail = .spo2(spo2R?.value) }
                 // Pasos — sin meta (no existe en la app); más es mejor.
                 metricTile(TodayMetricTile(
@@ -1209,7 +1214,7 @@ struct TodayView: View {
                     valueColor: theme.dataSteps,
                     fromApple: true,
                     context: tileContext(today: stepsT, history: history(base) { $0.steps.map(Double.init) },
-                                         betterHigher: true, deadband: 100) { intString($0) }
+                                         betterHigher: true, deadband: 100, positive: positiveDelta) { intString($0) }
                 )) { metricDetail = .steps(stepsFresh) }
                 // Estrés — más alto es PEOR; valor bandeado por nivel 0–3 (verde/ámbar/rojo).
                 metricTile(TodayMetricTile(
@@ -1218,7 +1223,7 @@ struct TodayView: View {
                     unit: stressT == nil ? nil : "/ 3",
                     valueColor: stressT.map(stressDataColor) ?? theme.inkTertiary,
                     context: tileContext(today: stressT, history: stressHistory,
-                                         betterHigher: false, deadband: 0.1) { String(format: "%.1f", $0) }
+                                         betterHigher: false, deadband: 0.1, positive: positiveDelta) { String(format: "%.1f", $0) }
                 )) { metricDetail = .stress(stressT) }
             }
             // Pie de cuadrícula (FER-265): solo la leyenda de fuente, a la derecha. La sincronización se
@@ -1319,7 +1324,7 @@ struct TodayView: View {
     /// `betterHigher` nil la métrica no tiene valencia (carga / FC): dirección en tinta neutra, sin
     /// pintar mejora/empeora.
     private func tileContext(today: Double?, history: [Double], betterHigher: Bool?, deadband: Double,
-                             _ format: (Double) -> String) -> TileContext? {
+                             positive: Color, _ format: (Double) -> String) -> TileContext? {
         guard let t = today else { return nil }
         let valid = history.filter { $0.isFinite }
         guard valid.count >= 4 else { return .building }
@@ -1328,7 +1333,9 @@ struct TodayView: View {
         let change = t - mean
         if abs(change) <= deadband { return .ready(change: .equal(color: theme.inkTertiary), band: band) }
         let up = change > 0
-        let color: Color = betterHigher.map { (up == $0) ? theme.verdict : theme.critical } ?? theme.inkTertiary
+        // Mejora → `positive` (verde AA-en-texto-chico); empeora → `critical` (ya pasa 4.5:1);
+        // sin valencia (carga / FC) → tinta neutra.
+        let color: Color = betterHigher.map { (up == $0) ? positive : theme.critical } ?? theme.inkTertiary
         let mag = format(abs(change))
         return .ready(change: up ? .above(magnitude: mag, color: color)
                                  : .below(magnitude: mag, color: color), band: band)
