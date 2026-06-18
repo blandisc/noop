@@ -33,24 +33,25 @@ struct SleepDetailScreen: View {
     /// Everything the screen draws, derived ONCE by the caller from `repo` (no DB access here).
     let model: SleepDetailModel
 
+    /// The metric whose info card is open (tap a Tonight's-metrics tile). (FER-227)
+    @State private var metricInfo: MetricInfo?
+    /// Whether the combined "Sleep stages" explainer card is open (the ⓘ by "Last night"). (FER-227)
+    @State private var showStages = false
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
+            // Rhythm by space: sections breathe on `sectionGap`, with NO rule between them — the
+            // hairline only divides WITHIN a group now (DESIGN.md §8: hierarchy by space, not boxes).
+            // (FER-227)
+            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                 if let night = model.night {
                     hero(night)
-                    blockDivider
                     lastNightBlock(night)
-                    blockDivider
                     regularityBlock
-                    blockDivider
                     stagesVsTypicalBlock(night)
-                    blockDivider
                     durationTrendBlock
-                    blockDivider
                     nightMetricsBlock(night)
-                    blockDivider
                     methodDisclosure
-                    sourceFooter
                 } else {
                     emptyState
                 }
@@ -61,11 +62,15 @@ struct SleepDetailScreen: View {
         .background(theme.paper)
         .presentationDragIndicator(.visible)
         .modifier(SleepSheetPaperBackground(paper: theme.paper))
-    }
-
-    /// A subtle 1px rule between blocks (token-only, no hex). Mirrors MetricDetailScreen's `blockDivider`.
-    private var blockDivider: some View {
-        Rectangle().fill(theme.hairline).frame(height: 1)
+        // Tap a tile → its MetricInfoSheet; tap the ⓘ by "Last night" → the stages explainer. Both are
+        // nested sheets themed EXPLICITLY (the theme doesn't propagate through `.sheet`, FER-162) and
+        // with NO nested NavigationStack (FER-171). (FER-227)
+        .sheet(item: $metricInfo) { info in
+            MetricInfoSheet(info: info, theme: theme, trendLoader: trendLoader(for: info.id))
+        }
+        .sheet(isPresented: $showStages) {
+            SleepStagesInfoSheet(theme: theme)
+        }
     }
 
     // MARK: - 1. Hero — horas dormidas anoche
@@ -103,7 +108,9 @@ struct SleepDetailScreen: View {
     @ViewBuilder
     private func lastNightBlock(_ night: SleepDetailModel.Night) -> some View {
         let s = night.stages
-        block(title: "Last night") {
+        // The ⓘ opens the combined "what the stages mean" card — it absorbs the old always-visible
+        // "Approximate stages / Proportions, not minutes…" caption, decluttering the screen. (FER-227)
+        block(title: "Last night", info: { showStages = true }) {
             VStack(alignment: .leading, spacing: 14) {
                 if model.intervals.count >= 2 {
                     Hypnogram(intervals: model.intervals,
@@ -121,12 +128,6 @@ struct SleepDetailScreen: View {
                 }
                 // Stage breakdown in PERCENT (not exact minutes — wrist staging is ~2/3 accurate).
                 stagePercents(s)
-                Text("Approximate stages")
-                    .instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Text("Proportions, not minutes — the watch gets about 2 of 3 stages right.")
-                    .font(StrandFont.footnote)
-                    .foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -231,9 +232,9 @@ struct SleepDetailScreen: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .padding(16)
+            .padding(NoopMetrics.cardPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
         }
     }
 
@@ -333,16 +334,26 @@ struct SleepDetailScreen: View {
                     )
                     .accessibilityElement()
                     .accessibilityLabel(Text("Hours asleep per night, last 30 days"))
-                    Text("Hours asleep per night · target band 7–9 h.")
+                    Text("Each point is one night. The recommended zone for an adult is 7–9 h.")
                         .font(StrandFont.footnote)
                         .foregroundStyle(theme.inkTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
                     durationStats(pts)
                 } else {
                     emptyWell(text: "Not enough nights yet to draw a trend.")
                 }
+                // Sleep debt as a labeled datum (was a bare "−8h 51m this week …" that read ambiguously).
+                // The hairline divides WITHIN this group, which is allowed. (FER-227)
                 if let debt = model.weeklyDebtMinutes, debt >= 15 {
                     Divider().overlay(theme.hairline)
-                    Text("\(debtText(debt)) this week · one good night won't clear it.")
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("Weekly debt").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                        Spacer()
+                        Text(debtText(debt))
+                            .font(StrandFont.captionNumber)
+                            .foregroundStyle(theme.warning)
+                    }
+                    Text("What you missed versus what your body needs. One good night won't clear it.")
                         .font(StrandFont.caption)
                         .foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -380,61 +391,97 @@ struct SleepDetailScreen: View {
     @ViewBuilder
     private func nightMetricsBlock(_ night: SleepDetailModel.Night) -> some View {
         block(title: "Tonight's metrics") {
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)],
-                      alignment: .leading, spacing: 12) {
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: NoopMetrics.gap), GridItem(.flexible(), spacing: NoopMetrics.gap)],
+                      alignment: .leading, spacing: NoopMetrics.gap) {
                 // Performance: asleep / need, capped at 100%, with the shortfall in real hours.
                 metricTile(
                     label: "Performance",
                     value: model.performancePct.map { "\(Int(min(100, $0).rounded()))%" } ?? "—",
                     caption: performanceCaption,
-                    color: model.performancePct != nil ? theme.dataSleep : theme.inkTertiary)
+                    color: model.performancePct != nil ? theme.dataSleep : theme.inkTertiary,
+                    info: .sleepPerformance(model.performancePct))
                 metricTile(
                     label: "Efficiency",
                     value: efficiencyPct(night).map { "\(Int($0.rounded()))%" } ?? "—",
                     caption: "vs time in bed",
-                    color: efficiencyPct(night) != nil ? theme.dataSleep : theme.inkTertiary)
+                    color: efficiencyPct(night) != nil ? theme.dataSleep : theme.inkTertiary,
+                    info: .sleepEfficiency(efficiencyPct(night)))
                 // Restorative = (deep + REM) / asleep, the literal WHOOP definition.
                 metricTile(
                     label: "Restorative",
                     value: restorativePct(night.stages).map { "\(Int($0.rounded()))%" } ?? "—",
                     caption: "Deep + REM",
-                    color: restorativePct(night.stages) != nil ? theme.dataSleep : theme.inkTertiary)
+                    color: restorativePct(night.stages) != nil ? theme.dataSleep : theme.inkTertiary,
+                    info: .sleepRestorative(restorativePct(night.stages)))
                 // Latency: the cache carries no onset-latency, so omit the tile rather than show a permanent "—".
                 if let latency = model.latencyMin {
                     metricTile(
                         label: "Latency",
                         value: "\(Int(latency.rounded())) min",
                         caption: "10–20 healthy",
-                        color: theme.dataSleep)
+                        color: theme.dataSleep,
+                        info: .sleepLatency(latency))
                 }
                 metricTile(
                     label: "Respiration",
                     value: night.respRate.map { String(format: "%.1f", $0) } ?? "—",
                     caption: "rpm",
-                    color: night.respRate != nil ? theme.dataSpO2 : theme.inkTertiary)
+                    color: night.respRate != nil ? theme.dataSpO2 : theme.inkTertiary,
+                    info: .respiratory(night.respRate))
                 metricTile(
                     label: "Awakenings",
                     value: model.awakenings.map { "\($0)" } ?? "—",
                     caption: "times",
-                    color: model.awakenings != nil ? theme.dataSleep : theme.inkTertiary)
+                    color: model.awakenings != nil ? theme.dataSleep : theme.inkTertiary,
+                    info: .sleepAwakenings(model.awakenings))
             }
         }
     }
 
-    /// One metric tile in Instrumento: label overline · value in its data hue · quiet caption. Never the
-    /// dark `StatTile`; surface + hairline like the Cuerpo tiles.
+    /// One metric tile in Instrumento: label overline · value in its data hue · quiet caption. The whole
+    /// tile is a button that opens the metric's `MetricInfoSheet` (like Today); a quiet ⓘ in the corner
+    /// signals "tap to learn what this means". Never the dark `StatTile`. (FER-227)
     private func metricTile(label: LocalizedStringKey, value: String,
-                            caption: LocalizedStringKey, color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text(value).font(StrandFont.number(22)).foregroundStyle(color)
-            Text(caption).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                            caption: LocalizedStringKey, color: Color, info: MetricInfo) -> some View {
+        Button {
+            metricInfo = info
+        } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text(value).font(StrandFont.number(22)).foregroundStyle(color)
+                Text(caption).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(NoopMetrics.cardPadding)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+            .overlay(alignment: .topTrailing) {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 15))
+                    .foregroundStyle(theme.inkTertiary)
+                    .padding(11)
+            }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+        .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint(Text("Shows what this means"))
+    }
+
+    /// The precomputed 14-day mini-trend for a metric sheet, wrapped as the loader `MetricInfoSheet`
+    /// expects (it runs lazily on appear). nil for ids we don't chart; an empty series makes the sheet
+    /// show its "no data" well rather than a fake line. (FER-227)
+    private func trendLoader(for id: String) -> (() async -> [TrendPoint])? {
+        let pts: [TrendPoint]
+        switch id {
+        case "sleep_performance": pts = model.performanceTrend
+        case "sleep_efficiency":  pts = model.efficiencyTrend
+        case "sleep_restorative": pts = model.restorativeTrend
+        case "resp_rate":         pts = model.respirationTrend
+        case "sleep_awakenings":  pts = model.awakeningsTrend
+        default:                  return nil
+        }
+        return { pts }
     }
 
     // MARK: - 7. Ver el método (DisclosureGroup, patrón de MetricDetailScreen)
@@ -462,18 +509,8 @@ struct SleepDetailScreen: View {
                 .foregroundStyle(theme.ink)
         }
         .tint(theme.inkTertiary)
-        .padding(14)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
-
-    // MARK: - 8. Footer de fuente
-
-    private var sourceFooter: some View {
-        Text(model.isAppleHealth ? "Source · Apple Health" : "Source · your strap, on device")
-            .font(StrandFont.footnote)
-            .foregroundStyle(theme.inkTertiary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 2)
+        .padding(NoopMetrics.cardPadding)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
     }
 
     // MARK: - Empty state (ported from the old sleep screen)
@@ -496,10 +533,27 @@ struct SleepDetailScreen: View {
     // MARK: - Shared block scaffold + wells (mirrors MetricDetailScreen)
 
     /// A titled block on the paper: a quiet overline + content (no card-in-card; surface used sparingly).
+    /// When `info` is set, the overline gets a trailing ⓘ button (iOS-native "more info") — used by
+    /// "Last night" to open the stages explainer. (FER-227)
     @ViewBuilder
-    private func block<Content: View>(title: LocalizedStringKey, @ViewBuilder content: () -> Content) -> some View {
+    private func block<Content: View>(title: LocalizedStringKey, info: (() -> Void)? = nil,
+                                      @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            if let info {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(title).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Spacer(minLength: 8)
+                    Button(action: info) {
+                        Image(systemName: "info.circle")
+                            .font(.system(size: 17))
+                            .foregroundStyle(theme.inkTertiary)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text("What the stages mean"))
+                }
+            } else {
+                Text(title).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            }
             content()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -517,7 +571,7 @@ struct SleepDetailScreen: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 28)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
     }
 
     // MARK: - Formatting helpers
@@ -597,6 +651,84 @@ private struct SleepSheetPaperBackground: ViewModifier {
     }
 }
 
+// MARK: - SleepStagesInfoSheet — the combined "what the stages mean" card (FER-227)
+//
+// One bottom sheet explaining all four sleep stages + why they're approximate, opened from the ⓘ next
+// to "Last night". It mirrors the `MetricInfoSheet` visual language (warm paper, title, lede, rows,
+// footnote) but its content is a list of stages rather than a banded value — so it's its own small
+// view, not a contorted `MetricInfo`. Theme passed EXPLICITLY (it doesn't propagate through `.sheet`,
+// FER-162); no nested `NavigationStack` (FER-171). The stage hues are the fixed `StrandPalette` sleep
+// colors, the same dots the legend uses (color only in the datum).
+
+struct SleepStagesInfoSheet: View {
+    var theme: InstrumentoTheme = .base
+
+    private struct StageRow: Identifiable {
+        let id = UUID()
+        let stage: SleepStage
+        let name: LocalizedStringKey
+        let detail: LocalizedStringKey
+    }
+
+    private let rows: [StageRow] = [
+        StageRow(stage: .rem,   name: "REM",   detail: "Dreams and memory. It consolidates what you learned and processes emotion."),
+        StageRow(stage: .deep,  name: "Deep",  detail: "Physical repair. Your body restores itself and releases growth hormone."),
+        StageRow(stage: .light, name: "Light", detail: "Most of the night. A transition in which your body winds down."),
+        StageRow(stage: .awake, name: "Awake", detail: "Brief awakenings. They're normal and don't mean a bad night."),
+    ]
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                Text("Sleep stages")
+                    .font(StrandFont.title2)
+                    .foregroundStyle(theme.ink)
+                Text("Your night moves through four phases. The watch estimates them from your movement and heart rate, so they're approximate — it gets about 2 of 3 right.")
+                    .font(StrandFont.subhead)
+                    .foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                VStack(spacing: 0) {
+                    ForEach(Array(rows.enumerated()), id: \.element.id) { i, row in
+                        stageRow(row)
+                        if i < rows.count - 1 {
+                            Divider().overlay(theme.hairline)
+                        }
+                    }
+                }
+                Text("Proportions, not minutes. A clinical measurement needs a sleep study.")
+                    .font(StrandFont.caption)
+                    .foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(20)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(theme.paper)
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+        .modifier(SleepSheetPaperBackground(paper: theme.paper))
+    }
+
+    private func stageRow(_ row: StageRow) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            RoundedRectangle(cornerRadius: 3, style: .continuous)
+                .fill(StrandPalette.sleepStageColor(row.stage))
+                .frame(width: 10, height: 10)
+                .padding(.top, 4)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(row.name).font(StrandFont.headline).foregroundStyle(theme.ink)
+                Text(row.detail)
+                    .font(StrandFont.caption)
+                    .foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.vertical, 13)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+    }
+}
+
 // MARK: - SleepDetailModel — every derivation the screen draws, built ONCE from the repo
 //
 // The data layer of the old dark sleep screen, lifted out of the view and merged with the new
@@ -673,6 +805,14 @@ struct SleepDetailModel {
     /// Accumulated sleep debt over the trailing 7 days, in minutes (sum of per-night need − asleep,
     /// floored per night). `nil` when there's nothing to sum.
     let weeklyDebtMinutes: Double?
+
+    // Per-metric 14-day mini-trends for the metric info cards (FER-227). Derived from `repo.days`;
+    // empty when there's no series, so the sheet shows its "no data" well rather than a fake line.
+    let performanceTrend: [TrendPoint]
+    let efficiencyTrend: [TrendPoint]
+    let restorativeTrend: [TrendPoint]
+    let respirationTrend: [TrendPoint]
+    let awakeningsTrend: [TrendPoint]
 
     // MARK: - Build
 
@@ -756,6 +896,24 @@ struct SleepDetailModel {
             return debts.isEmpty ? nil : debts.reduce(0, +)
         }()
 
+        // --- Per-metric 14-day mini-trends for the info cards (FER-227). Same derivations as the tiles,
+        // over history; each skips nights missing that value. ---
+        let performanceTrend = metricTrend(days) { d in
+            if let p = importedSleep[d.day]?.performancePct { return p }
+            guard let asleep = d.totalSleepMin, asleep > 0, need > 0 else { return nil }
+            return Swift.min(100, asleep / need * 100)
+        }
+        let efficiencyTrend = metricTrend(days) { d in
+            d.efficiency.map { $0 <= 1.0 ? $0 * 100 : $0 }
+        }
+        let restorativeTrend = metricTrend(days) { d in
+            guard let deep = d.deepMin, let rem = d.remMin, let light = d.lightMin else { return nil }
+            let asleep = deep + rem + light
+            return asleep > 0 ? (deep + rem) / asleep * 100 : nil
+        }
+        let respirationTrend = metricTrend(days) { $0.respRateBpm }
+        let awakeningsTrend = metricTrend(days) { $0.disturbances.map(Double.init) }
+
         return SleepDetailModel(
             night: night,
             intervals: intervals,
@@ -771,7 +929,22 @@ struct SleepDetailModel {
             latencyMin: nil,
             awakenings: awakenings,
             trendPoints: trend,
-            weeklyDebtMinutes: weeklyDebt)
+            weeklyDebtMinutes: weeklyDebt,
+            performanceTrend: performanceTrend,
+            efficiencyTrend: efficiencyTrend,
+            restorativeTrend: restorativeTrend,
+            respirationTrend: respirationTrend,
+            awakeningsTrend: awakeningsTrend)
+    }
+
+    /// Trailing 14 nights of a metric, in whatever unit `pick` returns, as `TrendPoint`s. Skips nights
+    /// where the value is missing; empty when there's nothing to chart. (FER-227)
+    private static func metricTrend(_ days: [DailyMetric], _ pick: (DailyMetric) -> Double?) -> [TrendPoint] {
+        let pts = days.compactMap { d -> TrendPoint? in
+            guard let v = pick(d), let date = dayParser.date(from: d.day) else { return nil }
+            return TrendPoint(date: date, value: v)
+        }
+        return Array(pts.suffix(14))
     }
 
     // MARK: - Night resolution (ported from the old sleep screen)

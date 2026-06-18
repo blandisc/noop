@@ -18,6 +18,27 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
+    # Detalle de Sueño — pasada de UI: etapas + métricas con tarjeta + copy (FER-227).
+    "Each point is one night. The recommended zone for an adult is 7–9 h.": "Cada punto es una noche. La zona recomendada para un adulto es de 7 a 9 h.",
+    "Weekly debt": "Deuda de la semana",
+    "What you missed versus what your body needs. One good night won't clear it.": "Lo que te faltó dormir frente a lo que tu cuerpo necesita. No se salda con una sola noche buena.",
+    "What the stages mean": "Qué significan las etapas",
+    "Shows what this means": "Muestra qué significa esto",
+    "Sleep stages": "Etapas del sueño",
+    "Your night moves through four phases. The watch estimates them from your movement and heart rate, so they're approximate — it gets about 2 of 3 right.": "Tu noche pasa por cuatro fases. El reloj las estima con tu movimiento y tu ritmo cardiaco, así que son aproximadas: acierta cerca de 2 de cada 3.",
+    "Dreams and memory. It consolidates what you learned and processes emotion.": "Sueños y memoria. Consolida lo que aprendiste y procesa las emociones.",
+    "Physical repair. Your body restores itself and releases growth hormone.": "Reparación física. El cuerpo se restaura y libera hormona de crecimiento.",
+    "Most of the night. A transition in which your body winds down.": "La mayor parte de la noche. Una transición en la que tu cuerpo baja revoluciones.",
+    "Brief awakenings. They're normal and don't mean a bad night.": "Microdespertares breves. Son normales y no significan una mala noche.",
+    "Proportions, not minutes. A clinical measurement needs a sleep study.": "Proporciones, no minutos. Una medición clínica necesita un estudio de sueño.",
+    "How much you slept versus what your body needs. At 100% you fully covered last night's need.": "Cuánto dormiste frente a lo que tu cuerpo necesita. Al 100% cubriste por completo lo que necesitabas anoche.",
+    "Your need is your own rolling average of recent nights, never under 7.5 h.": "Tu necesidad es tu propio promedio de las últimas noches, nunca menos de 7.5 h.",
+    "Of the time you spent in bed, how much you actually spent asleep. Above about 85% is considered healthy.": "Del tiempo que pasaste en cama, cuánto dormiste de verdad. Por encima del 85% se considera saludable.",
+    "The share of your sleep spent in deep and REM — the stages that physically and mentally restore you. Around 40–50% is typical for a healthy adult.": "La parte de tu sueño en profundo y REM, las etapas que te restauran física y mentalmente. Cerca del 40–50% es lo típico en un adulto sano.",
+    "How many times you briefly woke during the night. A few are completely normal — everyone surfaces between sleep cycles.": "Cuántas veces te despertaste brevemente durante la noche. Unas pocas son del todo normales: todos salimos a flote entre ciclos de sueño.",
+    "Brief awakenings are normal and often not remembered. What matters is the trend, not a single night.": "Los microdespertares son normales y a menudo no se recuerdan. Lo que importa es la tendencia, no una sola noche.",
+    "How long it took you to fall asleep after lights out. Ten to twenty minutes is a healthy range.": "Cuánto tardaste en quedarte dormido tras apagar la luz. De diez a veinte minutos es un rango saludable.",
+
     # SettingsView — strap-log empty placeholder (FER-199).
     "No activity yet. The log fills in as your strap connects.": "Aún no hay actividad. El registro aparece cuando conectas la banda.",
     # Cuerpo landing — the «historia / entre-días» tab (FER-186).

@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-17 · FER-212</span>
+  <span class="tb-updated">Actualizado 2026-06-17 · FER-227</span>
 </div>
 
 <div id="wrapper">
@@ -401,7 +401,7 @@ const SCREENS = [
   },
   {
     id: 'sleep', x: 538, y: 60,
-    name: 'Detalle de Sueño', desc: 'Detalle de Sueño «Instrumento» + regularidad del horario (FER-212)',
+    name: 'Detalle de Sueño', desc: 'Detalle de Sueño «Instrumento» + regularidad + tarjetas ⓘ por métrica/etapa (FER-212 · pasada de UI FER-227)',
     file: 'Cenit/Screens/SleepDetailScreen.swift',
     icon: '🌙', color: '#7B8FFF',
     states: [
@@ -412,8 +412,11 @@ const SCREENS = [
       { label: 'WHOOP · estimado (barra apilada)', type: 'data' },
       { label: 'Regularidad afinándose (N noches por venir)', type: 'empty' },
     ],
-    nav: [],
-    components: ['Hypnogram', 'TrendChart (30d + banda + deuda)', 'Regularidad del horario (SleepRegularity)', 'Anoche vs típico (en %)', 'Rejilla de métricas (Latencia se omite sin dato)', 'See the method'],
+    nav: [
+      { to: 'sleep', label: 'Tile de métrica → MetricInfoSheet (mini-tendencia 14d + bandas — FER-227)', type: 'sheet' },
+      { to: 'sleep', label: 'ⓘ junto a «Anoche» → SleepStagesInfoSheet (qué es cada etapa — FER-227)', type: 'sheet' },
+    ],
+    components: ['Hypnogram', 'TrendChart (30d + banda + deuda etiquetada)', 'Regularidad del horario (SleepRegularity)', 'Anoche vs típico (en %)', 'Rejilla de métricas tocables (ⓘ → MetricInfoSheet)', 'SleepStagesInfoSheet (tarjeta de etapas)', 'See the method'],
   },
   {
     id: 'stress', x: 792, y: 60,

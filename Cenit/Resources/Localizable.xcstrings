@@ -24208,6 +24208,443 @@
           }
         }
       }
+    },
+    "Each point is one night. The recommended zone for an adult is 7–9 h.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Each point is one night. The recommended zone for an adult is 7–9 h."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada punto es una noche. La zona recomendada para un adulto es de 7 a 9 h."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jeder Punkt ist eine Nacht. Der empfohlene Bereich für Erwachsene liegt bei 7–9 h."
+          }
+        }
+      }
+    },
+    "Weekly debt": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weekly debt"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deuda de la semana"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wochenschuld"
+          }
+        }
+      }
+    },
+    "What you missed versus what your body needs. One good night won't clear it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What you missed versus what your body needs. One good night won't clear it."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lo que te faltó dormir frente a lo que tu cuerpo necesita. No se salda con una sola noche buena."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was dir gegenüber dem Bedarf deines Körpers gefehlt hat. Eine gute Nacht gleicht das nicht aus."
+          }
+        }
+      }
+    },
+    "What the stages mean": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What the stages mean"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qué significan las etapas"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was die Phasen bedeuten"
+          }
+        }
+      }
+    },
+    "Shows what this means": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shows what this means"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muestra qué significa esto"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeigt, was das bedeutet"
+          }
+        }
+      }
+    },
+    "Sleep stages": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sleep stages"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Etapas del sueño"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schlafphasen"
+          }
+        }
+      }
+    },
+    "Your night moves through four phases. The watch estimates them from your movement and heart rate, so they're approximate — it gets about 2 of 3 right.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your night moves through four phases. The watch estimates them from your movement and heart rate, so they're approximate — it gets about 2 of 3 right."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu noche pasa por cuatro fases. El reloj las estima con tu movimiento y tu ritmo cardiaco, así que son aproximadas: acierta cerca de 2 de cada 3."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Nacht durchläuft vier Phasen. Die Uhr schätzt sie aus Bewegung und Herzfrequenz, daher sind sie ungefähr – etwa 2 von 3 stimmen."
+          }
+        }
+      }
+    },
+    "Dreams and memory. It consolidates what you learned and processes emotion.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dreams and memory. It consolidates what you learned and processes emotion."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sueños y memoria. Consolida lo que aprendiste y procesa las emociones."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Träume und Gedächtnis. Festigt Gelerntes und verarbeitet Emotionen."
+          }
+        }
+      }
+    },
+    "Physical repair. Your body restores itself and releases growth hormone.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Physical repair. Your body restores itself and releases growth hormone."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reparación física. El cuerpo se restaura y libera hormona de crecimiento."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Körperliche Reparatur. Dein Körper erholt sich und schüttet Wachstumshormon aus."
+          }
+        }
+      }
+    },
+    "Most of the night. A transition in which your body winds down.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Most of the night. A transition in which your body winds down."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La mayor parte de la noche. Una transición en la que tu cuerpo baja revoluciones."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der größte Teil der Nacht. Ein Übergang, in dem dein Körper herunterfährt."
+          }
+        }
+      }
+    },
+    "Brief awakenings. They're normal and don't mean a bad night.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brief awakenings. They're normal and don't mean a bad night."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microdespertares breves. Son normales y no significan una mala noche."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kurzes Aufwachen. Das ist normal und bedeutet keine schlechte Nacht."
+          }
+        }
+      }
+    },
+    "Proportions, not minutes. A clinical measurement needs a sleep study.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Proportions, not minutes. A clinical measurement needs a sleep study."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Proporciones, no minutos. Una medición clínica necesita un estudio de sueño."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anteile, keine Minuten. Eine klinische Messung erfordert eine Schlafstudie."
+          }
+        }
+      }
+    },
+    "How much you slept versus what your body needs. At 100% you fully covered last night's need.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How much you slept versus what your body needs. At 100% you fully covered last night's need."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuánto dormiste frente a lo que tu cuerpo necesita. Al 100% cubriste por completo lo que necesitabas anoche."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wie viel du im Vergleich zum Bedarf deines Körpers geschlafen hast. Bei 100% hast du den Bedarf der letzten Nacht voll gedeckt."
+          }
+        }
+      }
+    },
+    "Your need is your own rolling average of recent nights, never under 7.5 h.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your need is your own rolling average of recent nights, never under 7.5 h."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu necesidad es tu propio promedio de las últimas noches, nunca menos de 7.5 h."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Bedarf ist dein eigener gleitender Durchschnitt der letzten Nächte, nie unter 7,5 h."
+          }
+        }
+      }
+    },
+    "Of the time you spent in bed, how much you actually spent asleep. Above about 85% is considered healthy.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Of the time you spent in bed, how much you actually spent asleep. Above about 85% is considered healthy."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Del tiempo que pasaste en cama, cuánto dormiste de verdad. Por encima del 85% se considera saludable."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Von der Zeit im Bett: wie viel du tatsächlich geschlafen hast. Über etwa 85% gilt als gesund."
+          }
+        }
+      }
+    },
+    "The share of your sleep spent in deep and REM — the stages that physically and mentally restore you. Around 40–50% is typical for a healthy adult.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The share of your sleep spent in deep and REM — the stages that physically and mentally restore you. Around 40–50% is typical for a healthy adult."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La parte de tu sueño en profundo y REM, las etapas que te restauran física y mentalmente. Cerca del 40–50% es lo típico en un adulto sano."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Anteil deines Schlafs in Tief- und REM-Schlaf – die Phasen, die dich körperlich und mental erholen. Etwa 40–50% sind bei gesunden Erwachsenen typisch."
+          }
+        }
+      }
+    },
+    "How many times you briefly woke during the night. A few are completely normal — everyone surfaces between sleep cycles.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How many times you briefly woke during the night. A few are completely normal — everyone surfaces between sleep cycles."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuántas veces te despertaste brevemente durante la noche. Unas pocas son del todo normales: todos salimos a flote entre ciclos de sueño."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wie oft du nachts kurz aufgewacht bist. Ein paar Mal ist völlig normal – jeder taucht zwischen den Schlafzyklen auf."
+          }
+        }
+      }
+    },
+    "Brief awakenings are normal and often not remembered. What matters is the trend, not a single night.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brief awakenings are normal and often not remembered. What matters is the trend, not a single night."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los microdespertares son normales y a menudo no se recuerdan. Lo que importa es la tendencia, no una sola noche."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kurzes Aufwachen ist normal und wird oft nicht erinnert. Wichtig ist der Trend, nicht eine einzelne Nacht."
+          }
+        }
+      }
+    },
+    "How long it took you to fall asleep after lights out. Ten to twenty minutes is a healthy range.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How long it took you to fall asleep after lights out. Ten to twenty minutes is a healthy range."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuánto tardaste en quedarte dormido tras apagar la luz. De diez a veinte minutos es un rango saludable."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wie lange du nach dem Lichtausschalten zum Einschlafen gebraucht hast. Zehn bis zwanzig Minuten sind ein gesunder Bereich."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

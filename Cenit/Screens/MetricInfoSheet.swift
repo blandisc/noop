@@ -193,6 +193,99 @@ extension MetricInfo {
         )
     }
 
+    // MARK: - Sleep night metrics (FER-227)
+    //
+    // The "Tonight's metrics" tiles in the Detalle de Sueño open these. Same shape as the seven Today
+    // sheets (plain-language headline + reference bands + a 14-day trend the screen feeds). Their data
+    // hue is `dataSleep`, resolved in `metricHue` by id; the trend number format is keyed in
+    // `trendValueFormat`.
+
+    /// Sleep performance — time asleep vs your personal need, capped at 100%.
+    static func sleepPerformance(_ pct: Double?) -> MetricInfo {
+        let bands: [Band] = [
+            Band(label: "Low", range: "< 70%", isActive: pct.map { $0 < 70 } ?? false),
+            Band(label: "Adequate", range: "70 – 85%", isActive: pct.map { $0 >= 70 && $0 < 85 } ?? false),
+            Band(label: "Optimal", range: "85 – 100%", isActive: pct.map { $0 >= 85 } ?? false),
+        ]
+        return MetricInfo(
+            id: "sleep_performance",
+            name: "Performance",
+            headline: "How much you slept versus what your body needs. At 100% you fully covered last night's need.",
+            displayValue: pct.map { "\(Int(min(100, $0).rounded()))%" } ?? "—",
+            unit: nil,
+            headerTint: pct == nil ? .neutral : .metric,
+            bands: bands,
+            note: "Your need is your own rolling average of recent nights, never under 7.5 h."
+        )
+    }
+
+    /// Sleep efficiency — of the time in bed, how much was actually spent asleep.
+    static func sleepEfficiency(_ pct: Double?) -> MetricInfo {
+        let bands: [Band] = [
+            Band(label: "Low", range: "< 75%", isActive: pct.map { $0 < 75 } ?? false),
+            Band(label: "Adequate", range: "75 – 85%", isActive: pct.map { $0 >= 75 && $0 < 85 } ?? false),
+            Band(label: "Optimal", range: "> 85%", isActive: pct.map { $0 >= 85 } ?? false),
+        ]
+        return MetricInfo(
+            id: "sleep_efficiency",
+            name: "Efficiency",
+            headline: "Of the time you spent in bed, how much you actually spent asleep. Above about 85% is considered healthy.",
+            displayValue: pct.map { "\(Int($0.rounded()))%" } ?? "—",
+            unit: nil,
+            headerTint: pct == nil ? .neutral : .metric,
+            bands: bands,
+            note: nil
+        )
+    }
+
+    /// Restorative sleep — the share of the night in deep + REM, the stages that do the repair.
+    static func sleepRestorative(_ pct: Double?) -> MetricInfo {
+        let bands: [Band] = [
+            Band(label: "Low", range: "< 30%", isActive: pct.map { $0 < 30 } ?? false),
+            Band(label: "Typical", range: "30 – 50%", isActive: pct.map { $0 >= 30 && $0 <= 50 } ?? false),
+            Band(label: "High", range: "> 50%", isActive: pct.map { $0 > 50 } ?? false),
+        ]
+        return MetricInfo(
+            id: "sleep_restorative",
+            name: "Restorative",
+            headline: "The share of your sleep spent in deep and REM — the stages that physically and mentally restore you. Around 40–50% is typical for a healthy adult.",
+            displayValue: pct.map { "\(Int($0.rounded()))%" } ?? "—",
+            unit: nil,
+            headerTint: pct == nil ? .neutral : .metric,
+            bands: bands,
+            note: nil
+        )
+    }
+
+    /// Awakenings — brief surfacing during the night. No bands (no honest universal threshold); the
+    /// trend matters more than any single night.
+    static func sleepAwakenings(_ count: Int?) -> MetricInfo {
+        MetricInfo(
+            id: "sleep_awakenings",
+            name: "Awakenings",
+            headline: "How many times you briefly woke during the night. A few are completely normal — everyone surfaces between sleep cycles.",
+            displayValue: count.map { "\($0)" } ?? "—",
+            unit: nil,
+            headerTint: count == nil ? .neutral : .metric,
+            bands: [],
+            note: "Brief awakenings are normal and often not remembered. What matters is the trend, not a single night."
+        )
+    }
+
+    /// Sleep latency — minutes to fall asleep. Shown only when the night carries an onset latency.
+    static func sleepLatency(_ minutes: Double?) -> MetricInfo {
+        MetricInfo(
+            id: "sleep_latency",
+            name: "Latency",
+            headline: "How long it took you to fall asleep after lights out. Ten to twenty minutes is a healthy range.",
+            displayValue: minutes.map { "\(Int($0.rounded())) min" } ?? "—",
+            unit: nil,
+            headerTint: minutes == nil ? .neutral : .metric,
+            bands: [],
+            note: nil
+        )
+    }
+
     static func spo2(_ value: Double?) -> MetricInfo {
         let bands: [Band] = [
             Band(label: "Normal", range: "95 – 100%",
@@ -411,6 +504,12 @@ struct MetricInfoSheet: View {
         switch info.id {
         case "strain":              return theme.dataStrain
         case "sleep":               return theme.dataSleep
+        // Detalle de Sueño night metrics share the sleep hue; respiration keeps its SpO₂-family blue
+        // (matching its tile). (FER-227)
+        case "sleep_performance", "sleep_efficiency", "sleep_restorative",
+             "sleep_awakenings", "sleep_latency":
+                                    return theme.dataSleep
+        case "resp_rate":           return theme.dataSpO2
         case "hrv":                 return theme.dataHrv
         case "heart_rate", "rhr":   return theme.dataHeart
         case "spo2":                return theme.dataSpO2
@@ -723,6 +822,13 @@ struct MetricInfoSheet: View {
         case "strain":  return { String(format: "%.1f", $0) }
         case "stress":  return { String(format: "%.1f", $0) }   // 0–3 proxy reads with one decimal, not rounded to "2"
         case "sleep":   return { Self.formatSleep(Int($0.rounded())) }
+        // Detalle de Sueño night metrics (FER-227): percent shares, a 0.1-rpm respiration, integer wakes.
+        case "sleep_performance", "sleep_efficiency", "sleep_restorative":
+                        return { "\(Int($0.rounded()))%" }
+        case "resp_rate":
+                        return { String(format: "%.1f", $0) }
+        case "sleep_awakenings":
+                        return { "\(Int($0.rounded()))" }
         case "rhr":     return { "\(Int($0.rounded())) bpm" }
         case "spo2":    return { String(format: "%.0f%%", $0) }
         case "steps":   return { Self.stepFmt.string(from: NSNumber(value: Int($0.rounded()))) ?? "\(Int($0.rounded()))" }
