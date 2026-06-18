@@ -154,7 +154,7 @@ struct StressDetailScreen: View {
     // MARK: - 2. Selector de periodo + Tendencia (línea diaria 0–3 sobre las bandas)
 
     private func trendBlock(_ model: StressModel) -> some View {
-        let window = makeWindow()
+        let window = MetricWindowMath.make(parsed, selected: range)
         let stat = ComparisonEngine.stat(window.values)
         let pairs = seriesPairs(model)
         // Compare the selected window against the equally-long window before it, not always the calendar
@@ -167,14 +167,27 @@ struct StressDetailScreen: View {
             theme: theme
         ) {
             VStack(alignment: .leading, spacing: 10) {
-                SegmentedPillControl(ExploreRange.allCases, selection: $range, theme: theme) { $0.label }
-                if window.fellBack {
-                    Text("Showing the last \(window.rows.count) days")
-                        .font(StrandFont.footnote)
-                        .foregroundStyle(theme.warning)
+                // The daily 0–3 line over the three fixed band zones (Low / Moderate / High), drawn by
+                // `TrendChart`'s native bands (FER-244) with explicit Y ticks at 0/1/2/3. Raw daily values,
+                // not a moving average — the stress signal is read day to day.
+                MetricTrendChart(
+                    range: $range,
+                    window: window,
+                    theme: theme,
+                    style: .init(
+                        gradient: Gradient(colors: [theme.inkSecondary.opacity(0.5), theme.inkSecondary]),
+                        showsArea: false,
+                        valueRange: { _ in 0...3 },
+                        valueFormat: { String(format: "%.1f", $0) },
+                        bands: { stressBands(activeValue: $0) },
+                        bandColor: { bandColor(band(forValue: $0)) },
+                        yAxisValues: [0, 1, 2, 3],
+                        accessibilityLabel: "Daily stress index, 0 to 3"
+                    )
+                ) {
+                    emptyWell(text: "Not enough days in this range to draw a trend.")
                 }
                 if window.values.count > 1 {
-                    stressChart(window)
                     TrendStatSummary(
                         average: fmt(stat.mean),
                         pctChange: comparison?.pctChange,
@@ -184,37 +197,9 @@ struct StressDetailScreen: View {
                         rangeHigh: fmt(stat.max),
                         theme: theme
                     )
-                } else {
-                    emptyWell(text: "Not enough days in this range to draw a trend.")
                 }
             }
         }
-    }
-
-    /// The daily 0–3 line over the three fixed band zones (Low / Moderate / High). The zones are drawn by
-    /// `TrendChart`'s NATIVE bands (FER-244) — aligned to the real plot via the ChartProxy, with explicit
-    /// Y ticks at 0/1/2/3 — so the line, the band bracket and the left axis all share one coordinate space.
-    /// (The old hand-rolled `GeometryReader` backdrop was full-bleed and ignored the chart's Y-axis gutter,
-    /// so the bands sat offset from the axis and the greedy reader squeezed the headline copy below. FER-247)
-    private func stressChart(_ window: Window) -> some View {
-        let pts = Self.decimatedPoints(rows: window.rows, maxPoints: 80)
-        let last = pts.last?.value ?? window.values.last ?? 0
-        return TrendChart(
-            points: pts,
-            gradient: Gradient(colors: [theme.inkSecondary.opacity(0.5), theme.inkSecondary]),
-            valueRange: 0...3,
-            showsArea: false,
-            height: 200,
-            showsHover: true,
-            valueFormat: { String(format: "%.1f", $0) },
-            axisLabelColor: theme.inkTertiary,
-            gridLineColor: theme.hairline,
-            bands: stressBands(activeValue: last),
-            bandColor: bandColor(band(forValue: last)),
-            yAxisValues: [0, 1, 2, 3]
-        )
-        .accessibilityElement()
-        .accessibilityLabel(Text("Daily stress index, 0 to 3"))
     }
 
     /// The three fixed stress zones as `TrendBand`s, with the one holding `activeValue` shaded as the bracket.
@@ -450,67 +435,12 @@ struct StressDetailScreen: View {
         .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    // MARK: - Series + window math (mirror RecoveryDetailScreen, scoped to this screen)
+    // MARK: - Series + format
 
     /// The full daily proxy series as `(day "yyyy-MM-dd", value)`, oldest→newest — for `ComparisonEngine`
     /// (which keys by day). Derived from `fullTrend`'s parsed dates.
     private func seriesPairs(_ model: StressModel) -> [(day: String, value: Double)] {
         model.fullTrend.map { (Self.dayParser.string(from: $0.date), $0.value) }
-    }
-
-    struct Window {
-        let range: ExploreRange
-        let rows: [(day: String, value: Double)]
-        let values: [Double]
-        let fellBack: Bool
-    }
-
-    /// Trailing-N-days slice for `r`, taken relative to the latest point (reads the memoized `date`).
-    private func slice(for r: ExploreRange) -> [(day: String, value: Double)] {
-        guard let days = r.days else { return parsed.map { ($0.day, $0.value) } }
-        guard let last = parsed.last?.date else { return [] }
-        let cutoff = last.addingTimeInterval(-Double(days - 1) * 86_400)
-        return parsed.compactMap { row in
-            guard let d = row.date, d >= cutoff else { return nil }
-            return (row.day, row.value)
-        }
-    }
-
-    /// The selected range, or the smallest larger range whose window holds ≥1 point (Explorer auto-widen).
-    private func effectiveRange() -> ExploreRange {
-        guard !parsed.isEmpty else { return range }
-        for r in range.widening where !slice(for: r).isEmpty { return r }
-        return .all
-    }
-
-    private func makeWindow() -> Window {
-        let eff = effectiveRange()
-        let rows = slice(for: eff)
-        return Window(range: eff, rows: rows, values: rows.map(\.value), fellBack: eff != range)
-    }
-
-    /// Build the chart's points (the DAILY proxy line, not a moving average — the stress signal is read
-    /// day to day), decimating long series to ≤`maxPoints` for DRAWING only (FER-219).
-    private static func decimatedPoints(rows: [(day: String, value: Double)], maxPoints: Int) -> [TrendPoint] {
-        let values = rows.map(\.value)
-        let n = rows.count
-        guard n > maxPoints, maxPoints > 1 else {
-            return rows.compactMap { row in
-                dayParser.date(from: row.day).map { TrendPoint(date: $0, value: row.value) }
-            }
-        }
-        let decimated = SeriesShape.decimate(values, maxPoints: maxPoints)
-        var out: [TrendPoint] = []
-        out.reserveCapacity(decimated.count)
-        for b in 0..<decimated.count {
-            let lo = (n * b) / maxPoints
-            let hi = (n * (b + 1)) / maxPoints
-            let mid = Swift.min(lo + (hi - lo) / 2, n - 1)
-            if let date = dayParser.date(from: rows[mid].day) {
-                out.append(TrendPoint(date: date, value: decimated[b]))
-            }
-        }
-        return out
     }
 
     /// Format a 0–3 stress value at one decimal (the index's precision).
