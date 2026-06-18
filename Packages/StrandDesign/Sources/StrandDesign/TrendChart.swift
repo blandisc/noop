@@ -91,6 +91,12 @@ public struct TrendChart: View {
     public var bandColor: Color
     /// Explicit Y-axis tick values (e.g. the band thresholds). `nil` = automatic ticks. (FER-244)
     public var yAxisValues: [Double]?
+    /// When set, point marks whose value is BELOW this threshold are drawn in `alertColor` instead of
+    /// the gradient — to flag clinically-low readings (e.g. SpO₂ nights under 95%). `nil` = off, every
+    /// point keeps its gradient colour. (FER-252)
+    public var alertThreshold: Double?
+    /// The hue for sub-`alertThreshold` point marks. (FER-252)
+    public var alertColor: Color
 
     public init(
         points: [TrendPoint],
@@ -105,7 +111,9 @@ public struct TrendChart: View {
         gridLineColor: Color = StrandPalette.hairline,
         bands: [TrendBand] = [],
         bandColor: Color = .clear,
-        yAxisValues: [Double]? = nil
+        yAxisValues: [Double]? = nil,
+        alertThreshold: Double? = nil,
+        alertColor: Color = .clear
     ) {
         self.points = points.sorted { $0.date < $1.date }
         self.gradient = gradient
@@ -120,6 +128,8 @@ public struct TrendChart: View {
         self.bands = bands
         self.bandColor = bandColor
         self.yAxisValues = yAxisValues
+        self.alertThreshold = alertThreshold
+        self.alertColor = alertColor
     }
 
     /// The x-position the cursor is hovering, in chart-local coordinates.
@@ -210,7 +220,13 @@ public struct TrendChart: View {
                         y: .value("Value", p.value)
                     )
                     .symbolSize(18)
-                    .foregroundStyle(StrandPalette.sample(stops: gradient.toStops(), at: unit(p.value)))
+                    // Flag clinically-low points (e.g. SpO₂ < 95%) in the alert hue; everything at or
+                    // above the threshold keeps its gradient colour. (FER-252)
+                    .foregroundStyle(
+                        (alertThreshold.map { p.value < $0 } ?? false)
+                            ? alertColor
+                            : StrandPalette.sample(stops: gradient.toStops(), at: unit(p.value))
+                    )
                 }
             }
         }

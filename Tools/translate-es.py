@@ -1329,6 +1329,18 @@ ES: dict[str, str] = {
     "We compare today's resting heart rate and HRV with your own 30-day baseline. A higher-than-usual resting HR and a lower-than-usual HRV both push the score up — classic signs the body is activated. The combined shift becomes a z-score sum, squashed onto 0–3 by a logistic curve: 0 calm, 1.5 at your baseline, 3 highly activated.": "Comparamos tu frecuencia en reposo y tu HRV de hoy con tu propia base de 30 días. Una frecuencia en reposo más alta de lo usual y una HRV más baja de lo usual empujan el número hacia arriba — señales clásicas de que el cuerpo está activado. El desplazamiento combinado se vuelve una suma de z-scores, comprimida a 0–3 por una curva logística: 0 en calma, 1.5 en tu base, 3 muy activado.",
     "Today's value is your recorded daily stress score (0–3). The trend, bands and markers are derived the same way.": "El valor de hoy es tu puntaje de estrés diario registrado (0–3). La tendencia, las bandas y los marcadores se derivan de la misma forma.",
     "Combined resting-HR / HRV z-score through a logistic curve. HRV via RMSSD (Task Force, 1996). An estimate, not a diagnosis.": "Z-score combinado de frecuencia en reposo / HRV a través de una curva logística. HRV vía RMSSD (Task Force, 1996). Una estimación, no un diagnóstico.",
+    # FER-252 — Detalle de Oxígeno en sangre (SpO₂, Cuerpo)
+    "Blood oxygen · 7-day average": "Oxígeno en sangre · promedio de 7 días",
+    "It's the average oxygen saturation read at your wrist while you sleep, over the last week. A healthy adult usually stays at 95% or above.": "Es el promedio de la saturación de oxígeno medida en tu muñeca mientras duermes, en la última semana. Un adulto sano suele mantenerse en 95% o más.",
+    "Nightly values · the shaded band is the healthy range.": "Valores por noche · la banda sombreada es el rango sano.",
+    "Nightly values · last %@ · the shaded band is the healthy range.": "Valores por noche · último %@ · la banda sombreada es el rango sano.",
+    "Nightly readings": "Lecturas por noche",
+    "Nights below %@%@": "Noches por debajo de %@%@",
+    "of the last %lld nights": "de las últimas %lld noches",
+    "Every recent night sat in the healthy range.": "Todas las noches recientes quedaron en el rango sano.",
+    "Isolated low nights are usually noise (altitude, a cold, sensor fit). A sustained run is worth a look with a finger pulse oximeter.": "Las noches bajas aisladas suelen ser ruido (altitud, un resfriado, cómo quedó el sensor). Una racha sostenida amerita revisarla con un oxímetro de dedo.",
+    "Each night your strap averages the oxygen saturation read at your wrist while you sleep. A healthy adult typically sits at 95–100%; readings below 90% are considered low (hypoxemia). Isolated low nights are usually noise — altitude, a cold, or how the sensor sat. A sustained run of low nights is what's worth a look with a finger pulse oximeter.": "Cada noche tu banda promedia la saturación de oxígeno medida en tu muñeca mientras duermes. Un adulto sano suele estar en 95–100%; lecturas por debajo de 90% se consideran bajas (hipoxemia). Las noches bajas aisladas suelen ser ruido — altitud, un resfriado, o cómo quedó el sensor. Una racha sostenida de noches bajas es lo que amerita revisarse con un oxímetro de dedo.",
+    "Wrist optical sensors are less accurate than medical pulse oximeters — read this as a trend, not a clinical measurement. NOOP is not a medical device.": "Los sensores ópticos de muñeca son menos precisos que un oxímetro médico — léelo como tendencia, no como una medición clínica. NOOP no es un dispositivo médico.",
 }
 
 

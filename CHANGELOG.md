@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Oxígeno en sangre ahora tiene su hoja de detalle completa / Blood oxygen now has its full detail sheet.**
+  **ES** — En **Cuerpo**, tocar **Oxígeno en sangre** ya no abre la hoja resumida: abre el detalle completo, al nivel de Sueño y Estrés. Trae tu **promedio de 7 días** arriba, un **selector de período** (semana a año), y una **gráfica por noche** con la **zona sana 95–100% sombreada en verde** y las noches que cayeron por debajo de 95% **marcadas en rojo**. Debajo, la tabla de rango (Normal / Limítrofe / Bajo) con tu banda de hoy señalada, y un bloque **«Noches bajo 95%»** que cuenta cuántas de tus últimas 30 noches se quedaron bajas. La nota de siempre se mantiene: el sensor de muñeca es para tendencia, no es una lectura médica.
+  **EN** — In **Body**, tapping **Blood oxygen** no longer opens the summary sheet: it opens the full detail, on par with Sleep and Stress. It leads with your **7-day average**, a **period selector** (week to year), and a **per-night chart** with the **healthy 95–100% zone shaded green** and nights that dipped below 95% **flagged in red**. Below it, the range table (Normal / Borderline / Low) with today's band marked, and a **"Nights below 95%"** block counting how many of your last 30 nights ran low. The usual caveat stays: a wrist sensor is for trend, not a clinical reading.
+  ([Cenit/Screens/MetricDetailScreen.swift](Cenit/Screens/MetricDetailScreen.swift))
+
 - **«Ver más» en Hoy abre el detalle completo / "See more" in Today opens the full detail.**
   **ES** — Al tocar una métrica en **Hoy** y abrir su tarjeta de resumen, ahora aparece un enlace **«Ver más»** abajo a la derecha que te lleva directo a su **detalle completo** (el mismo que ves en Cuerpo) sin salir de Hoy: al cerrarlo, vuelves justo donde estabas. Disponible en Recuperación, Sueño, Esfuerzo, Estrés, HRV y Frecuencia cardíaca en reposo.
   **EN** — When you tap a metric in **Today** and open its summary card, a **"See more"** link now sits at the bottom right and takes you straight to its **full detail** (the same one you see in Body) without leaving Today: close it and you're right back where you were. Available on Recovery, Sleep, Strain, Stress, HRV and Resting heart rate.

@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-18 · FER-251</span>
+  <span class="tb-updated">Actualizado 2026-06-18 · FER-252</span>
 </div>
 
 <div id="wrapper">
@@ -469,8 +469,8 @@ const SCREENS = [
     nav: [
       { to: 'recovery-detail', label: 'Recuperación (héroe) → RecoveryDetailScreen «Instrumento» (FER-225)', type: 'sheet' },
       { to: 'strain-detail', label: 'Esfuerzo del día → StrainDetailScreen «Instrumento» (FER-238)', type: 'sheet' },
-      { to: 'metric-info', label: 'Tap fila con hoja clara (SpO₂/FC/Pasos)', type: 'sheet' },
-      { to: 'metric-detail-screen', label: 'HRV / FC reposo / Respiración → MetricDetailScreen unificado (.full, sheet claro — FER-185)', type: 'sheet' },
+      { to: 'metric-info', label: 'Tap fila con hoja clara (FC/Pasos)', type: 'sheet' },
+      { to: 'metric-detail-screen', label: 'HRV / FC reposo / Respiración / SpO₂ → MetricDetailScreen unificado (.full, sheet claro — FER-185; SpO₂ FER-252)', type: 'sheet' },
       { to: 'stress', label: 'Estrés → StressDetailScreen (sheet claro «Instrumento» — FER-241)', type: 'sheet' },
       { to: 'sleep', label: 'Sueño → SleepDetailScreen (sheet claro «Instrumento» — FER-212)', type: 'sheet' },
       { to: 'workouts', label: 'Entrenamientos → WorkoutsView (sheet oscuro)', type: 'sheet' },
@@ -716,7 +716,7 @@ const SCREENS = [
   },
   {
     id: 'metric-detail-screen', x: 538, y: 3310,
-    name: 'Detalle de Métrica', desc: 'Sheet: Detalle de Métrica unificado y reutilizable (HRV/FC reposo/Respiración · tema claro «Instrumento» · FER-185)',
+    name: 'Detalle de Métrica', desc: 'Sheet: Detalle de Métrica unificado y reutilizable (HRV/FC reposo/Respiración/SpO₂ · tema claro «Instrumento» · FER-185; SpO₂ FER-252)',
     file: 'Cenit/Screens/MetricDetailScreen.swift',
     icon: '📈', color: '#2E7D6B',
     isSheet: true,
@@ -728,6 +728,7 @@ const SCREENS = [
       { label: 'Cargando: well con spinner mientras se inyecta la serie', type: 'loading' },
       { label: 'Ventana vacía: auto-ensancha al siguiente rango con datos + «Mostrando los últimos N días»', type: 'warn' },
       { label: 'Un solo punto: valor sin línea + nota', type: 'warn' },
+      { label: 'SpO₂ (FER-252): valores crudos por noche + banda clínica fija 95–100% sombreada (puntos <95% en rojo) · tabla de bandas Normal/Limítrofe/Bajo con «· hoy» · «Noches bajo 95%» (conteo 30d, reemplaza consistencia) · sin baseline personal/«qué la mueve»', type: 'data' },
       { label: 'Sin suficiente historial (<2): bloque de calibración «N / 7 noches»', type: 'empty' },
       { label: 'Sin permiso / offline: muestra lo guardado (repo.displayDays; origen inyectado)', type: 'empty' },
     ],

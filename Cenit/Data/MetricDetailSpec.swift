@@ -34,6 +34,14 @@ struct BlockSet: OptionSet {
     static let nightVitals = BlockSet(rawValue: 1 << 6)
     /// "Qué la mueve" — a documented, DIRECTIONAL tendency (never a coefficient or cause). FER-209.
     static let whatMovesIt = BlockSet(rawValue: 1 << 7)
+    /// A fixed, population (not personal) range table — the metric's `MetricInfo.bands` with the
+    /// active one marked. For clinically-anchored metrics like SpO₂ where the meaningful reference is
+    /// the population floor (95%), not your own variance. (FER-252)
+    static let fixedBands = BlockSet(rawValue: 1 << 8)
+    /// "Nights below the clinical floor" — a count of recent nights under `lowThreshold` (last 30).
+    /// Replaces `consistency` for SpO₂, where the CV is near-zero and a low-night count is the
+    /// clinically legible figure. (FER-252)
+    static let lowNightsCount = BlockSet(rawValue: 1 << 9)
 }
 
 /// How the hero numeral reads.
@@ -59,6 +67,17 @@ struct MetricDetailSpec: Identifiable {
     let baselineCfg: MetricCfg?
     /// The fixed typical-adult range, used as the cold-start / stale fallback for the normal-range band.
     let populationRange: ClosedRange<Double>?
+
+    /// When true, the chart draws RAW nightly values (not the 7-day MA) behind a FIXED clinical band
+    /// (the `info.bands`, healthy band always shaded) instead of the personal p25–p75 band. For
+    /// clinically-anchored vitals like SpO₂. Default false keeps the vitals' behaviour unchanged. (FER-252)
+    var clinicalBands: Bool = false
+    /// The clinical floor: chart points below it are flagged in the critical hue, and the
+    /// `lowNightsCount` block counts nights under it. `nil` disables both. (FER-252)
+    var lowThreshold: Double? = nil
+    /// Explicit Y-domain for the chart (e.g. SpO₂ 88…100 so the 95% band reads clearly). `nil` =
+    /// auto-fit to the line, as the vitals do. (FER-252)
+    var chartDomain: ClosedRange<Double>? = nil
 
     var id: String { descriptor.id }
 
@@ -103,6 +122,24 @@ struct MetricDetailSpec: Identifiable {
             hero: .movingAverage7,
             baselineCfg: Baselines.respCfg,
             populationRange: 12...20
+        )
+    }
+
+    /// Blood-oxygen detail. A clinically-anchored vital: hero = 7-day average, a fixed 95–100% band on
+    /// the chart (raw nightly values, low nights flagged), the population band table, a "nights below
+    /// 95%" count instead of consistency, and the method. No personal baseline (`baselineCfg: nil`) and
+    /// no "Qué la mueve" / night-vitals (SpO₂ *is* a night vital). (FER-252)
+    static func spo2(_ value: Double?) -> MetricDetailSpec {
+        MetricDetailSpec(
+            descriptor: Self.catalog("spo2"),
+            info: .spo2(value),
+            blocks: [.periodSelector, .seriesChartBand, .fixedBands, .lowNightsCount, .method],
+            hero: .movingAverage7,
+            baselineCfg: nil,
+            populationRange: 90...100,
+            clinicalBands: true,
+            lowThreshold: 95,
+            chartDomain: 88...100
         )
     }
 
