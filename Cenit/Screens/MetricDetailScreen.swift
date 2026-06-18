@@ -96,7 +96,7 @@ struct MetricDetailScreen: View {
         // Derive the window ONCE here, then hand it to every block — instead of each block
         // re-deriving `effectiveRange`/`windowed`/`windowValues` and re-parsing the whole
         // history on every redraw. (FER-216)
-        let window = makeWindow()
+        let window = MetricWindowMath.make(parsedSeries, selected: range)
         return ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 hero
@@ -147,7 +147,7 @@ struct MetricDetailScreen: View {
 
     /// The blocks the spec declares, separated by a hairline divider so they don't read as one slab.
     /// The window is computed once in `body` and threaded through. (FER-216)
-    @ViewBuilder private func content(_ window: Window) -> some View {
+    @ViewBuilder private func content(_ window: MetricWindow) -> some View {
         let hasMethod = visibleBlocks.contains(.method) && spec.info.method != nil
         // Heart Rate's intraday blocks (curve always renders something; zones only when there's
         // elevation to report, so its divider is gated to avoid a dangling rule). (FER-253)
@@ -223,49 +223,10 @@ struct MetricDetailScreen: View {
 
     private var allValues: [Double] { series.map(\.value) }
 
-    /// One render's worth of window derivation — the active range, its rows, their values and whether the
-    /// selection auto-widened — computed ONCE in `body` and handed to every block. Previously each block
-    /// re-derived `effectiveRange`/`windowed`/`windowValues` independently, and each re-ran `slice(for:)`,
-    /// which re-parsed every day string with a `DateFormatter` (thousands of parses per redraw on long
-    /// ranges). (FER-216)
-    struct Window {
-        let range: ExploreRange
-        let rows: [(day: String, value: Double)]
-        let values: [Double]
-        let fellBack: Bool
-    }
-
     /// The series with each `day` string parsed to a `Date` exactly ONCE per series (not per slice,
-    /// not per render). The window math reads `date` straight from here instead of re-parsing. Built in
-    /// `.task` alongside `series`. (FER-216)
+    /// not per render). The shared window math (`MetricWindowMath`) reads `date` straight from here instead
+    /// of re-parsing. Built in `.task` alongside `series`. (FER-216 / FER-269)
     @State private var parsedSeries: [(day: String, date: Date?, value: Double)] = []
-
-    /// The effective range: the selected range when its window holds ≥1 point, else the smallest larger
-    /// range that does (Explorer's auto-widen). Taken RELATIVE TO THE LATEST point, not "now".
-    private func effectiveRange() -> ExploreRange {
-        guard !parsedSeries.isEmpty else { return range }
-        for r in range.widening where !slice(for: r).isEmpty { return r }
-        return .all
-    }
-
-    /// Trailing-N-days slice for `r`, taken relative to the latest point. Reads the memoized `date`
-    /// from `parsedSeries` — no `DateFormatter` work here.
-    private func slice(for r: ExploreRange) -> [(day: String, value: Double)] {
-        guard let days = r.days else { return parsedSeries.map { ($0.day, $0.value) } }
-        guard let last = parsedSeries.last?.date else { return [] }
-        let cutoff = last.addingTimeInterval(-Double(days - 1) * 86_400)
-        return parsedSeries.compactMap { row in
-            guard let d = row.date, d >= cutoff else { return nil }
-            return (row.day, row.value)
-        }
-    }
-
-    /// Compute the whole window ONCE per render and pass it to the blocks.
-    private func makeWindow() -> Window {
-        let eff = effectiveRange()
-        let rows = slice(for: eff)
-        return Window(range: eff, rows: rows, values: rows.map(\.value), fellBack: eff != range)
-    }
 
     /// The hero figure: the 7-day moving average over the FULL series (not just the window), so it
     /// reads as "your current 7-day level" regardless of the selected range. `.latest` falls back to
@@ -453,7 +414,7 @@ struct MetricDetailScreen: View {
 
     // MARK: - Period selector
 
-    private func periodSelector(_ window: Window) -> some View {
+    private func periodSelector(_ window: MetricWindow) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             // The selector owns its own full-width row (the night count lives in "Your normal range",
             // so no "N readings" label crowds it). (FER-211)
@@ -469,35 +430,47 @@ struct MetricDetailScreen: View {
 
     // MARK: - Chart (7-day moving average · area + date axes)
 
-    @ViewBuilder private func chartBlock(_ window: Window) -> some View {
+    @ViewBuilder private func chartBlock(_ window: MetricWindow) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            if window.values.count > 1 {
-                // Clinically-anchored metrics (SpO₂) plot RAW nightly values behind a fixed band so a
-                // single low night stays visible; the noisy vitals (HRV/RHR/resp) plot the 7-day MA. (FER-252)
-                let lineValues = plotsRawValues ? window.values : SeriesShape.movingAverage(window.values, window: 7)
-                // Decimate to ~80 points for DRAWING only (a year is 365 days → 365 marks Charts must
-                // stroke + animate, which is what made the chart stick on long ranges). The hero/stats
-                // above still read the FULL series; this only thins what the line draws. Short ranges
-                // (≤80 days: week/month) pass through untouched, so they look identical. (FER-219)
-                let points = Self.decimatedPoints(rows: window.rows, values: lineValues, maxPoints: 80)
-                TrendChart(
-                    points: points,
+            // The selector lives in its own (divider-separated) `periodSelector` block above, so the chart
+            // hides its own picker. Clinically-anchored metrics (SpO₂) plot RAW nightly values behind a
+            // fixed band so a single low night stays visible; the noisy vitals plot the 7-day MA. (FER-252)
+            MetricTrendChart(
+                range: $range,
+                window: window,
+                theme: theme,
+                showsSelector: false,
+                style: .init(
+                    smoothing: plotsRawValues ? nil : 7,
                     gradient: chartGradient,
-                    valueRange: spec.chartDomain ?? chartRange(lineValues),
-                    showsArea: true,
-                    height: 200,
-                    showsHover: true,
+                    valueRange: { spec.chartDomain ?? chartRange($0) },
                     valueFormat: { "\(fmt($0)) \(unit)" },
-                    axisLabelColor: theme.inkTertiary,
-                    gridLineColor: theme.hairline,
-                    bands: clinicalChartBands,
-                    bandColor: theme.verdict,
+                    bands: { _ in clinicalChartBands },
+                    bandColor: { _ in theme.verdict },
                     yAxisValues: clinicalYAxisValues,
                     alertThreshold: spec.clinicalBands ? spec.lowThreshold : nil,
-                    alertColor: theme.critical
+                    alertColor: theme.critical,
+                    accessibilityLabel: chartAccessibilityLabel
                 )
-                .accessibilityElement()
-                .accessibilityLabel(Text(chartAccessibilityLabel))
+            ) {
+                if let only = window.values.first {
+                    // A single point in the window: no line. Show the value plainly with a note.
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("\(fmt(only)) \(unit)")
+                            .font(StrandFont.bodyNumber)
+                            .foregroundStyle(metricHue)
+                        Text("Only one reading in this range — not enough to draw a line yet.")
+                            .font(StrandFont.footnote)
+                            .foregroundStyle(theme.inkTertiary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(16)
+                    .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                } else {
+                    emptyWell(text: "No readings in this range.")
+                }
+            }
+            if window.values.count > 1 {
                 Text(chartCaption(window.range))
                     .font(StrandFont.footnote)
                     .foregroundStyle(theme.inkTertiary)
@@ -509,52 +482,8 @@ struct MetricDetailScreen: View {
                         .foregroundStyle(theme.inkTertiary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-            } else if let only = window.values.first {
-                // A single point in the window: no line. Show the value plainly with a note.
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("\(fmt(only)) \(unit)")
-                        .font(StrandFont.bodyNumber)
-                        .foregroundStyle(metricHue)
-                    Text("Only one reading in this range — not enough to draw a line yet.")
-                        .font(StrandFont.footnote)
-                        .foregroundStyle(theme.inkTertiary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(16)
-                .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            } else {
-                emptyWell(text: "No readings in this range.")
             }
         }
-    }
-
-    /// Build the chart's `[TrendPoint]`, decimating long series to ≤`maxPoints` for DRAWING only. Both the
-    /// values and their dates are bucketed with the SAME contiguous `n*b/maxPoints` partition that
-    /// `SeriesShape.decimate` uses, so each averaged value keeps a representative date (the bucket's
-    /// CENTER day) and the date↔value pairing stays consistent. When `rows.count <= maxPoints` nothing is
-    /// thinned — every day maps to its own point exactly as before — so short ranges are unchanged. (FER-219)
-    private static func decimatedPoints(rows: [(day: String, value: Double)], values: [Double], maxPoints: Int) -> [TrendPoint] {
-        let n = min(rows.count, values.count)
-        guard n > maxPoints, maxPoints > 1 else {
-            // Short series (or degenerate maxPoints): one point per day, like before decimation existed.
-            return zip(rows, values).compactMap { row, value in
-                dayParser.date(from: row.day).map { TrendPoint(date: $0, value: value) }
-            }
-        }
-        let decimated = SeriesShape.decimate(Array(values.prefix(n)), maxPoints: maxPoints)
-        var out: [TrendPoint] = []
-        out.reserveCapacity(decimated.count)
-        for b in 0..<decimated.count {
-            // The SAME partition decimate uses: bucket b spans indices [lo, hi). Pick the bucket's center
-            // row for the representative date so the x-position sits in the middle of what it averages.
-            let lo = (n * b) / maxPoints
-            let hi = (n * (b + 1)) / maxPoints
-            let mid = min(lo + (hi - lo) / 2, n - 1)
-            if let date = dayParser.date(from: rows[mid].day) {
-                out.append(TrendPoint(date: date, value: decimated[b]))
-            }
-        }
-        return out
     }
 
     /// The fixed clinical bands drawn behind the line (FER-244 mechanism), built from the metric's own
@@ -739,7 +668,7 @@ struct MetricDetailScreen: View {
     /// count is the figure that actually reads.
     @ViewBuilder private var lowNightsBlock: some View {
         if let threshold = spec.lowThreshold {
-            let recent = slice(for: .month)
+            let recent = MetricWindowMath.slice(parsedSeries, for: .month)
             let low = recent.reduce(0) { $0 + ($1.value < threshold ? 1 : 0) }
             block(title: "Nights below \(fmt(threshold))\(unit)") {
                 VStack(alignment: .leading, spacing: 6) {
@@ -964,7 +893,7 @@ struct MetricDetailScreen: View {
 
     // MARK: - Trend (month over month)
 
-    @ViewBuilder private func trendBlock(_ window: Window) -> some View {
+    @ViewBuilder private func trendBlock(_ window: MetricWindow) -> some View {
         // Figures read over COMPLETED days: for a running daily total (steps) drop the in-progress
         // current day, else it's always the floor of the range and drags the average. (FER-264)
         let s = ComparisonEngine.stat(trendStatRows(window).map(\.value))
@@ -1009,7 +938,7 @@ struct MetricDetailScreen: View {
 
     /// The window's rows used for the range/average, with the in-progress current day removed for a
     /// cumulative metric. (FER-264)
-    private func trendStatRows(_ window: Window) -> [(day: String, value: Double)] {
+    private func trendStatRows(_ window: MetricWindow) -> [(day: String, value: Double)] {
         dropsIncompleteToday ? window.rows.filter { $0.day != todayKey } : window.rows
     }
 
@@ -1174,7 +1103,7 @@ struct MetricDetailScreen: View {
     /// The age/sex-anchored extras the user asked for, between the chart and the method (FER-257): how it
     /// changed over the period (≥2 readings), the fitness category, the cardiorespiratory-equivalent age,
     /// and why VO₂max matters. Each emits its own leading divider only when it renders.
-    @ViewBuilder private func vo2maxExtras(_ window: Window) -> some View {
+    @ViewBuilder private func vo2maxExtras(_ window: MetricWindow) -> some View {
         if window.values.count >= 2 {
             blockDivider
             vo2maxChangeBlock(window)
@@ -1191,7 +1120,7 @@ struct MetricDetailScreen: View {
 
     /// How much VO₂max moved across the selected window (last − first measured value). Framed as a long-run
     /// change ("up since your first reading"), NOT a noisy month-over-month %, because the data is sparse.
-    @ViewBuilder private func vo2maxChangeBlock(_ window: Window) -> some View {
+    @ViewBuilder private func vo2maxChangeBlock(_ window: MetricWindow) -> some View {
         if let first = window.values.first, let last = window.values.last {
             let delta = Int((last - first).rounded())
             let color = delta > 0 ? theme.dataRecovery : (delta < 0 ? theme.warning : theme.ink)
