@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-18 · FER-238</span>
+  <span class="tb-updated">Actualizado 2026-06-18 · FER-241</span>
 </div>
 
 <div id="wrapper">
@@ -420,16 +420,17 @@ const SCREENS = [
   },
   {
     id: 'stress', x: 792, y: 60,
-    name: 'Stress', desc: 'Monitor de estrés 0–3',
-    file: 'Cenit/Screens/StressView.swift',
+    name: 'Detalle de Estrés', desc: 'Detalle «Instrumento» (FER-241) · solo desde Cuerpo',
+    file: 'Cenit/Screens/StressDetailScreen.swift',
     icon: '🌡', color: '#F5A623',
     states: [
-      { label: 'Calculando', type: 'loading' },
-      { label: 'Sin datos', type: 'empty' },
-      { label: 'Score calculado', type: 'data' },
+      { label: 'Con datos: hero = valor de HOY (0–3) en color de banda + bandas universales + qué lo mueve (RHR/HRV) + tendencia + consistencia + tiempo en calma', type: 'data' },
+      { label: 'Sin datos (model == nil): hero «—» + cómo obtener datos', type: 'empty' },
+      { label: 'Pocos días (<2): se ocultan tendencia/consistencia', type: 'loading' },
+      { label: 'Placeholder «Estrés por momento del día» deshabilitado (cruce con calendario = FER-38)', type: 'empty' },
     ],
     nav: [],
-    components: ['Hero Gauge Card', 'StatTile ×2 (RHR / HRV)', 'ChartCard (tendencia)', 'Metodología (z-score)'],
+    components: ['InfoAccordion (ⓘ por concepto)', 'TrendChart (línea 0–3 sobre bandas)', 'SegmentedPillControl', 'StressModel/StressMath/StressBand', 'ComparisonEngine', 'SeriesShape (CV/decimación)'],
   },
 
   // ── ROW 1: Actividad (y = 710) ────────────
@@ -467,8 +468,9 @@ const SCREENS = [
     nav: [
       { to: 'recovery-detail', label: 'Recuperación (héroe) → RecoveryDetailScreen «Instrumento» (FER-225)', type: 'sheet' },
       { to: 'strain-detail', label: 'Esfuerzo del día → StrainDetailScreen «Instrumento» (FER-238)', type: 'sheet' },
-      { to: 'metric-info', label: 'Tap fila con hoja clara (SpO₂/FC/Pasos/Estrés)', type: 'sheet' },
+      { to: 'metric-info', label: 'Tap fila con hoja clara (SpO₂/FC/Pasos)', type: 'sheet' },
       { to: 'metric-detail-screen', label: 'HRV / FC reposo / Respiración → MetricDetailScreen unificado (.full, sheet claro — FER-185)', type: 'sheet' },
+      { to: 'stress', label: 'Estrés → StressDetailScreen (sheet claro «Instrumento» — FER-241)', type: 'sheet' },
       { to: 'sleep', label: 'Sueño → SleepDetailScreen (sheet claro «Instrumento» — FER-212)', type: 'sheet' },
       { to: 'workouts', label: 'Entrenamientos → WorkoutsView (sheet oscuro)', type: 'sheet' },
       { to: 'metricdetail', label: 'Temp. piel → MetricDetailView (sheet oscuro)', type: 'sheet' },

@@ -42,8 +42,9 @@ SettingsView → WhatsNewView (sheet)
 TodayView   → LiveView (sheet, detente grande) · MetricInfoSheet (sheet; incl. Recuperación — hoja resumida, FER-232) · MetricDetailScreen (sheet, .focus: HRV/FC reposo — FER-185) · WhyVerdictSheet (sheet) · SupportView (toolbar)
 CuerpoView  → RecoveryDetailScreen (sheet «Instrumento»: Recuperación — FER-225) ·
              StrainDetailScreen (sheet claro «Instrumento»: Esfuerzo del día — FER-238) ·
-             MetricInfoSheet (sheet claro: SpO₂/FC/Pasos/Estrés) ·
+             MetricInfoSheet (sheet claro: SpO₂/FC/Pasos) ·
              MetricDetailScreen (sheet claro, .full: HRV/FC reposo/Respiración — FER-185) ·
+             StressDetailScreen (sheet claro «Instrumento»: Estrés — valor de hoy + bandas universales + qué lo mueve + ⓘ por concepto — FER-241) ·
              BodyAgeSheet (sheet claro: Edad corporal + Vitalidad — FER-145) ·
              SleepDetailScreen (sheet claro «Instrumento»: Sueño + regularidad del horario — FER-212) ·
              WorkoutsView · CompareView · MetricExplorerView · DataSourcesView ·
@@ -194,17 +195,21 @@ Los 8 bloques (orden), **cada uno con su ⓘ `InfoAccordion`** salvo el método:
 
 ---
 
-### StressView
-**Archivo:** `Cenit/Screens/StressView.swift`  
-**Descripción:** Monitor de estrés 0–3 basado en RHR + HRV vs. baseline 30 días.
+### StressDetailScreen
+**Archivo:** `Cenit/Screens/StressDetailScreen.swift`  
+**Descripción:** Detalle de Estrés en lenguaje «Instrumento» (FER-241). Lo abre **solo** la fila «Stress» de `CuerpoView` (el tile de Estrés en **Hoy** NO cambia — sigue abriendo la hoja resumida `MetricInfoSheet`). Hermano de `RecoveryDetailScreen`/`SleepDetailScreen`: pantalla dedicada, no extiende `MetricDetailScreen` (ese es para vitales de serie escalar). Consume `StressModel` tal cual (no crea matemática). Hero = **valor de HOY** (no media 7d) en color de banda, porque el índice ya viene normalizado a la base de cada quien; las bandas son **universales** (0–1/1–2/2–3) por la misma razón.
 
 | Estado | Condición de entrada |
 |--------|---------------------|
-| Calculando | `StressModel` en cálculo |
-| Sin datos | Historial vacío |
-| Score calculado | z-score disponible |
+| Con datos | `StressModel` válido (score + tendencia) |
+| Sin datos | `model == nil` → hero «—» + cómo obtener datos |
+| Pocos días | `fullTrend.count < 2` → se ocultan tendencia/consistencia |
 
-**Componentes:** `Hero Gauge Card`, `StatTile ×2 (RHR / HRV vs. 30d)`, `ChartCard (tendencia)`, `Metodología (z-score)`
+**Bloques (cada uno con su ⓘ vía `InfoAccordion`, salvo placeholder y método):** Hero (valor de hoy + banda + lectura) · Tendencia (selector de periodo + línea diaria 0–3 sobre las bandas + mes-vs-mes + Prom/Mín/Máx) · Rango normal (bandas universales, la de hoy resaltada) · Qué lo mueve (RHR/HRV de hoy vs base, en tarjetas) · Consistencia (CV) · Tiempo en calma (% días en banda baja, 30d) · **Estrés por momento del día (PLACEHOLDER deshabilitado** — el cruce con calendario es FER-38) · Ver el método.
+
+**Componentes:** `InfoAccordion`, `TrendChart`, `SegmentedPillControl`, `InstrumentoTheme`. **Analytics:** `StressModel`/`StressMath`/`StressBand` (de `StressView.swift`), `ComparisonEngine` (estadísticas + mes-vs-mes), `SeriesShape` (CV, decimación).
+
+> Nota: `StressView` (la pantalla oscura completa, `Cenit/Screens/StressView.swift`) es **código heredado no referenciado**; se conserva porque alberga `StressModel`/`StressBand`/`StressRamp`/`StressMath`, que sí usan Hoy y Cuerpo.
 
 ---
 
