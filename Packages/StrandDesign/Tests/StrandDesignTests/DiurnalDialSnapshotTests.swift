@@ -25,10 +25,11 @@ final class DiurnalDialSnapshotTests: XCTestCase {
         let sun = SolarWindow(sunrise: 6.2, sunset: 19.8)
         let bed = SleepWindow(bedtime: 23.5, wake: 7.25)
 
-        func panel(_ label: String, _ date: Date, solar: SolarWindow?) -> some View {
+        func panel(_ label: String, _ date: Date, solar: SolarWindow?, syncing: Bool = false) -> some View {
             let theme = InstrumentoThemeEngine.theme(at: date, calendar: utc(), solar: solar)
             return VStack(spacing: 12) {
-                DiurnalDial(now: date, calendar: utc(), solar: solar, sleep: bed, diameter: 170, animated: false)
+                DiurnalDial(now: date, calendar: utc(), solar: solar, sleep: bed, diameter: 170,
+                            syncing: syncing, animated: false)
                 Text(label).font(InstrumentoType.overline).tracking(InstrumentoType.overlineTracking)
                     .textCase(.uppercase).foregroundStyle(theme.inkTertiary)
             }
@@ -47,6 +48,12 @@ final class DiurnalDialSnapshotTests: XCTestCase {
             HStack(spacing: 16) {
                 panel("23:30 · noche", at(23, 30), solar: sun)
                 panel("14:00 · sin sol (polar)", at(14), solar: nil)
+            }
+            // FER-221: el modo «sincronizando» — el arco verde reposa estático (sin animación) para
+            // que el render sea determinista; el reloj de abajo debe permanecer legible.
+            HStack(spacing: 16) {
+                panel("12:30 · sincronizando", at(12, 30), solar: sun, syncing: true)
+                panel("23:30 · sincronizando", at(23, 30), solar: sun, syncing: true)
             }
         }
         .padding(28)
