@@ -4,6 +4,14 @@ import StrandAnalytics
 import WhoopStore
 import Foundation
 
+/// Publica el offset vertical del tope del contenido de Hoy para el pull-to-refresh propio (FER-222).
+/// En el tope vale 0; al jalar hacia abajo (overscroll) crece > 0; con scroll normal es < 0. Solo se
+/// conserva el último valor (un único productor), así que `reduce` toma el más reciente.
+private struct TodayScrollOffsetKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
+}
+
 // MARK: - Control Center (the home dashboard) — HomeDensity rewrite
 //
 // The owner's complaint was "cards then random space". This rebuild is a tight,
@@ -46,6 +54,29 @@ struct TodayView: View {
     /// Cuenta cada pull-to-refresh para disparar la háptica declarativa (`.sensoryFeedback`) al
     /// provocar el gesto de sincronización (FER-204).
     @State private var syncHaptic = 0
+
+    // MARK: - Pull-to-refresh propio (FER-222)
+    //
+    // Reemplaza el `.refreshable` nativo (su ruedita gris de ~1 s) por un gesto que DIBUJA el
+    // dial: al jalar Hoy hacia abajo, `pullProgress` (0→1) arma el arco verde del `DiurnalDial`
+    // proporcional al desplazamiento; al cruzar `pullThreshold` se dispara UNA vez la misma
+    // sincronización de antes (`pullToSync`) y el dial pasa a girar (modo `syncing` de FER-221).
+    // El offset del tope del scroll se lee con un `GeometryReader` en un coordinate space propio
+    // (no toca el scroll normal). Bajo Reduce Motion no se dibuja el arco (el llamador deja
+    // `pullProgress` en 0), pero el gesto sigue armando + disparando con su háptica.
+
+    /// Progreso del tirón (0→1): arma el arco del dial. Se queda en 0 bajo Reduce Motion.
+    @State private var pullProgress: Double = 0
+    /// El tirón ya cruzó el umbral en ESTE gesto (ya disparó el sync) — evita re-disparar hasta
+    /// que el scroll vuelve al tope.
+    @State private var pullCommitted = false
+    /// Sync en curso DISPARADO por el tirón: hace girar el dial de inmediato (sin esperar a que
+    /// `live.backfilling` arranque, p. ej. offline). Se apaga al terminar `pullToSync()`; para
+    /// entonces, si arrancó un offload real, `live.backfilling` releva el giro.
+    @State private var pullSyncing = false
+    /// Distancia de tirón (pt) para armar y disparar. Calibrado para sentirse deliberado sin
+    /// agotar el pulgar (el dial mide 180); el «feel» fino se confirma en el iPhone (FER-222).
+    private let pullThreshold: CGFloat = 96
     #endif
 
     // Imperial/Metric display preference (D#103). Only the Weight tile carries a convertible unit here.
@@ -65,7 +96,7 @@ struct TodayView: View {
     @State private var hrPoints: [TrendPoint] = []
 
     // Today's stress (0–3 autonomic proxy) for the «Estrés» tile — the same transparent model
-    // StressView builds, computed once per load from `repo.days` + the stored "stress" series. (FER-180)
+    // StressView builds, computed once per load from `repo.displayDays` + the stored "stress" series. (FER-180)
     @State private var stress: StressModel? = nil
 
     // Support sheet (donate + contact) — always reachable from the home toolbar.
@@ -297,13 +328,28 @@ struct TodayView: View {
                 // Llena al menos el alto visible para que los `Spacer` tengan sobrante que repartir; si el
                 // contenido lo excede (p. ej. calibrando en pantalla chica), crece y hace scroll igual.
                 .frame(maxWidth: .infinity, minHeight: proxy.size.height, alignment: .leading)
+                // FER-222: el fondo del bloque de contenido publica el offset de su tope en el
+                // coordinate space propio del scroll. En el tope, minY = 0; al jalar hacia abajo
+                // (overscroll) minY > 0; al hacer scroll normal minY < 0. `Color.clear` no afecta
+                // layout ni intercepta toques, así que el scroll de siempre queda intacto.
+                .background(
+                    GeometryReader { geo in
+                        Color.clear.preference(key: TodayScrollOffsetKey.self,
+                                               value: geo.frame(in: .named("todayPullScroll")).minY)
+                    }
+                )
             }
+            // FER-222: el scroll siempre rebota (aunque el contenido quepa exacto), para que el
+            // tirón en el tope funcione sin el `.refreshable` nativo que antes forzaba ese rebote.
+            .scrollBounceBehavior(.always)
+            .coordinateSpace(name: "todayPullScroll")
+            .onPreferenceChange(TodayScrollOffsetKey.self) { handlePullOffset($0) }
         }
-        // Pull-to-refresh (FER-204): jala hacia abajo para forzar una sincronización con la banda. El
-        // indicador es el nativo de `.refreshable` (estándar de la industria, no animación propia); la
-        // háptica al provocar la dispara `.sensoryFeedback` por el cambio de `syncHaptic`. El gesto
-        // retorna pronto (tope corto): el offload largo sigue en segundo plano, reflejado en `syncMeta`.
-        .refreshable { await pullToSync() }
+        // Pull-to-refresh propio (FER-222): reemplaza el `.refreshable` nativo (su ruedita gris de
+        // ~1 s). El gesto de jalar DIBUJA el dial —`handlePullOffset` arma el arco verde proporcional
+        // al tirón— y al cruzar el umbral dispara la MISMA sincronización de antes (`pullToSync`) y el
+        // dial pasa a girar (modo `syncing` de FER-221). La háptica `.medium` la dispara
+        // `.sensoryFeedback` por el cambio de `syncHaptic` que hace `pullToSync` (heredado de FER-204).
         .sensoryFeedback(.impact(weight: .medium), trigger: syncHaptic)
         // El fondo es el papel del tema (`PaperBackground` lee `\.instrumentoTheme` DENTRO del subárbol
         // tematizado, así que el lienzo también se recolorea por hora). El tema por hora se inyecta aquí,
@@ -349,8 +395,9 @@ struct TodayView: View {
         }
     }
 
-    /// La acción del pull-to-refresh de `iosBody` (FER-204). Fuerza una sincronización con la banda
-    /// según su estado, SIN esperar al offload largo:
+    /// La acción de sincronización del pull-to-refresh de `iosBody` (FER-204; la reusa el gesto
+    /// propio de FER-222 vía `triggerPullSync`, y la acción accesible de VoiceOver). Fuerza una
+    /// sincronización con la banda según su estado, SIN esperar al offload largo:
     /// - Conectada → `syncNow()` (offload `.manual`, sin rate-limit).
     /// - Banda conocida pero desconectada (hubo un sync previo: `lastSyncedAt != nil`) → `scan()`; el
     ///   handshake de reconexión auto-dispara el sync (`requestSync(.connect)`), sin orquestarlo a mano.
@@ -359,8 +406,8 @@ struct TodayView: View {
     /// persiste entre lanzamientos); `selectedWhoopModel` no sirve aquí (su default pasa el onboarding
     /// aunque el usuario no tenga banda).
     /// El `repo.refresh()` final asegura que la pantalla refleje lo último (los scores se recalculan
-    /// solos vía `repo.refreshSeq` → `.task(id:)`). El `sleep` corto da sensación de trabajo y deja que
-    /// el spinner se retire pronto (~1.2 s); el offload sigue en segundo plano, visible en `syncMeta`.
+    /// solos vía `repo.refreshSeq` → `.task(id:)`). El `sleep` corto conserva el «soltar pronto» (~1.2 s)
+    /// de FER-204; el offload largo sigue en segundo plano, reflejado en el dial girando + `syncMeta`.
     @MainActor
     private func pullToSync() async {
         syncHaptic += 1                       // dispara la háptica `.medium` al provocar el gesto
@@ -373,6 +420,45 @@ struct TodayView: View {
         // Sin banda conocida (`lastSyncedAt == nil`) no se escanea: cae directo al refresh local.
         try? await Task.sleep(for: .seconds(1.2))
         await repo.refresh()
+    }
+
+    /// Procesa el offset del tope del scroll (FER-222) para el pull-to-refresh propio. `minY` > 0 = el
+    /// contenido se jaló hacia abajo (overscroll en el tope): mapea el tirón a `pullProgress` (0→1), que
+    /// arma el arco del dial, y al cruzar `pullThreshold` dispara la sincronización UNA vez por gesto.
+    /// Bajo Reduce Motion NO dibuja el arco (`pullProgress` se queda en 0), pero el gesto sigue armando y
+    /// disparando con su háptica. El scroll normal (`minY ≤ 0`) no escribe estado → sin recomputar el body.
+    @MainActor
+    private func handlePullOffset(_ minY: CGFloat) {
+        let pull = max(0, minY)
+        guard pull > 0 else {
+            if pullProgress != 0 { pullProgress = 0 }
+            if pullCommitted { pullCommitted = false }   // de vuelta en el tope: listo para re-armar
+            return
+        }
+        if !reduceMotion {
+            let progress = Double(min(pull / pullThreshold, 1))
+            if progress != pullProgress { pullProgress = progress }
+        }
+        if pull >= pullThreshold, !pullCommitted, !pullSyncing {
+            pullCommitted = true
+            triggerPullSync()
+        }
+    }
+
+    /// Dispara la sincronización desde el gesto propio (FER-222) o desde la acción accesible de VoiceOver.
+    /// Enciende `pullSyncing` (el dial gira de inmediato, sin esperar al offload) y corre la MISMA acción
+    /// de siempre (`pullToSync`: háptica + `syncNow`/`scan` + «soltar pronto» + refresh local). Al terminar
+    /// apaga `pullSyncing`; si arrancó un offload real, `live.backfilling` releva el giro. El guard evita
+    /// apilar syncs (gesto + VoiceOver, o un re-cruce de umbral).
+    @MainActor
+    private func triggerPullSync() {
+        guard !pullSyncing else { return }
+        pullProgress = 0
+        pullSyncing = true
+        Task {
+            await pullToSync()
+            pullSyncing = false
+        }
     }
 
     /// Recovery score driving the hero numeral (0–100). nil while calibrating.
@@ -414,8 +500,15 @@ struct TodayView: View {
     }
 
     /// Date + honesty line — the screen's calm header (overline date + quiet sync provenance).
+    /// FER-222: como el pull-to-refresh propio reemplaza al `.refreshable` nativo (que regalaba una
+    /// acción de refrescar accesible), aquí se reinstala esa afordancia para VoiceOver: la línea de
+    /// estado de sincronización —su hogar semántico— expone una acción personalizada «Sincronizar»
+    /// equivalente al gesto, vía `triggerPullSync`. Se combinan fecha + estado en un solo elemento
+    /// para que la acción sea descubrible al enfocar el encabezado.
     private var headerBlock: some View {
         utilityRow
+            .accessibilityElement(children: .combine)
+            .accessibilityAction(named: Text("Sincronizar")) { triggerPullSync() }
     }
 
     // MARK: - Héroe unificado «Instrumento diurno» (FER-160)
@@ -465,8 +558,12 @@ struct TodayView: View {
                 // FER-221: mientras la banda descarga (`backfilling`) el dial cobra vida —un arco
                 // verde gira sobre el bezel— y el numeral se atenúa («recalculando»). La honesty line
                 // del header no cambia. Al terminar, vuelve al reposo.
+                // FER-222: el mismo arco se «arma» con el tirón (`pullProgress`, 0→1) antes de girar; al
+                // disparar el sync por el gesto (`pullSyncing`) el dial gira de inmediato, sin esperar a
+                // que arranque el offload. `syncing` manda sobre `armProgress` cuando ambos coinciden.
                 DiurnalDial(now: Date(), solar: solarWindow, sleep: sleepWindow,
-                            diameter: 180, syncing: live.backfilling)
+                            diameter: 180, syncing: live.backfilling || pullSyncing,
+                            armProgress: pullProgress)
                 heroNumeral(state)
             }
             heroBody(state)
@@ -484,7 +581,7 @@ struct TodayView: View {
 
     /// El color del numeral del héroe — tinta normal, atenuado a tertiary mientras sincroniza
     /// (FER-221): «recalculando», en sintonía con el dial girando. Vuelve a tinta al terminar.
-    private var heroNumeralInk: Color { live.backfilling ? theme.inkTertiary : theme.ink }
+    private var heroNumeralInk: Color { (live.backfilling || pullSyncing) ? theme.inkTertiary : theme.ink }
 
     /// El numeral dominante — lo único que “grita” el estado. Veredicto → recuperación SIEMPRE en TINTA:
     /// el color por nivel lo lleva la PALABRA del veredicto, no el número, así nunca se contradicen
@@ -1532,8 +1629,10 @@ struct TodayView: View {
         hrPoints  = await hrBucketRows
             .map { TrendPoint(date: Date(timeIntervalSince1970: TimeInterval($0.ts)), value: $0.bpm) }
         // Build today's stress model from the day rows + stored series (nil when there's no usable
-        // signal yet — the tile then placeholders "—").
-        stress = StressModel(days: repo.days, stored: await stressRows)
+        // signal yet — the tile then placeholders "—"). Reads `displayDays` (Apple-health fallback,
+        // FER-149) so a strap-partial night still derives, and anchors "today" to the local day so a
+        // UTC-bucketed "tomorrow" row (FER-226) can't blank the tile.
+        stress = StressModel(days: repo.displayDays, stored: await stressRows, todayKey: Repository.localDayKey(Date()))
     }
 
     // MARK: - 14-day trend loader (all platforms)

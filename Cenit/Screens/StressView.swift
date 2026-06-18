@@ -23,7 +23,7 @@ import WhoopStore
 //
 // Bands:  0–1 LOW · 1–2 MEDIUM · 2–3 HIGH.
 //
-// Everything is computed live from `repo.days` (+ the stored series), so the math
+// Everything is computed live from `repo.displayDays` (+ the stored series), so the math
 // is fully inspectable — see the "How this is computed" card at the bottom.
 
 struct StressView: View {
@@ -64,14 +64,15 @@ struct StressView: View {
         rebuildModelIfNeeded()
     }
 
-    /// Recompute the cached `StressModel` only when (repo.days, storedSeries)
-    /// actually changed since the last build. Equality is an O(n) value compare,
-    /// far cheaper than the model rebuild it guards.
+    /// Recompute the cached `StressModel` only when (repo.displayDays, storedSeries,
+    /// today's local day) actually changed since the last build. Equality is an O(n)
+    /// value compare, far cheaper than the model rebuild it guards.
     private func rebuildModelIfNeeded() {
-        let signature = StressInputs(days: repo.days, stored: storedSeries)
+        let todayKey = Repository.localDayKey(Date())
+        let signature = StressInputs(days: repo.displayDays, stored: storedSeries, todayKey: todayKey)
         guard signature != modelSignature else { return }
         modelSignature = signature
-        model = StressModel(days: repo.days, stored: storedSeries)
+        model = StressModel(days: repo.displayDays, stored: storedSeries, todayKey: todayKey)
     }
 
     // MARK: Loaded content
@@ -348,15 +349,17 @@ enum StressRamp {
 private struct StressInputs: Equatable {
     let days: [DailyMetric]
     let stored: [StoredPoint]
+    let todayKey: String   // a local-midnight rollover must rebuild even if the rows didn't change
 
     struct StoredPoint: Equatable {
         let day: String
         let value: Double
     }
 
-    init(days: [DailyMetric], stored: [(day: String, value: Double)]) {
+    init(days: [DailyMetric], stored: [(day: String, value: Double)], todayKey: String) {
         self.days = days
         self.stored = stored.map { StoredPoint(day: $0.day, value: $0.value) }
+        self.todayKey = todayKey
     }
 }
 
@@ -388,8 +391,13 @@ struct StressModel {
 
     /// Build from oldest→newest daily metrics plus any stored "stress" series.
     /// Returns nil only when there is no usable signal at all.
-    init?(days: [DailyMetric], stored: [(day: String, value: Double)]) {
-        guard let today = days.last else { return nil }
+    init?(days: [DailyMetric], stored: [(day: String, value: Double)], todayKey: String) {
+        // Anchor "today" to the device's LOCAL day and ignore any future-dated row: a daily can be
+        // bucketed under "tomorrow" in UTC (FER-226), and `days.last` would then read its empty
+        // RHR/HRV and drop the tile to "—". Take the most recent row at or before today instead —
+        // the same local-day anchoring ReadinessEngine uses (#23/#24).
+        let usable = days.filter { $0.day <= todayKey }
+        guard let today = usable.last else { return nil }
 
         // Stored values keyed by day, clamped to 0–3.
         let storedByDay: [String: Double] = Dictionary(
@@ -399,7 +407,7 @@ struct StressModel {
 
         // Baseline window: up to 30 days ending the day BEFORE today, so "today"
         // is measured against its own recent past rather than itself.
-        let history = Array(days.dropLast())
+        let history = Array(usable.dropLast())
         let baseline = Array(history.suffix(30))
 
         let rhrBase = baseline.compactMap { $0.restingHr }.map(Double.init)
@@ -443,7 +451,7 @@ struct StressModel {
         // Full daily proxy history: stored value if present for the day, else the
         // z-score derivation against the SAME baseline so the line is comparable.
         var pts: [TrendPoint] = []
-        for d in days {
+        for d in usable {
             guard let date = Self.dayParser.date(from: d.day) else { continue }
             if let v = storedByDay[d.day] {
                 pts.append(TrendPoint(date: date, value: v))

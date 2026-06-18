@@ -371,7 +371,7 @@ const SCREENS = [
       { label: 'Veredicto listo — modo verdict: recuperación en color de banda + palabra + «i»', type: 'live' },
       { label: 'Hay número, sin contexto (insufficient) — numeral en tinta + "aún sin contexto", ya no cae al anillo (FER-160)', type: 'warn' },
       { label: 'Sincronizando (transversal iOS) — syncMeta muestra "Sincronizando historial…" en utility row; sin pill', type: 'warn' },
-      { label: 'Pull-to-refresh (FER-204): jala hacia abajo para forzar el sync de la banda + háptica .medium al provocar; indicador nativo de .refreshable; reconecta si hay banda conocida (lastSyncedAt), spinner corto (~1.2s) sin esperar el offload', type: 'live' },
+      { label: 'Pull-to-refresh propio que dibuja el dial (FER-222 · reemplaza el nativo FER-204): jalar arma el arco verde del dial (armProgress 0→1, sin ruedita nativa); cruzar el umbral (96pt) dispara el sync + háptica .medium y el dial gira (modo syncing FER-221); soltar antes no dispara; VoiceOver: acción «Sincronizar»; Reduce Motion: sin dibujo del arco; offline: solo refresh local', type: 'live' },
       { label: '«Métricas de hoy» (FER-180): rejilla 2×4 de 8 tiles intradía (valor en color de dato + Δ vs ayer), sin sparkline 14d; Recuperación NO es tile', type: 'live' },
       { label: 'Cabe en una pantalla (FER-189): sin sección Fuentes, tiles 76pt — sin scroll en 6.1"+', type: 'live' },
       { label: 'Pulso vivo en el encabezado (FER-194): pastilla heart.fill + punto + bpm en el trailing de «Métricas de hoy» (sólo si strapSeen), abre el monitor; la fila del pie se eliminó', type: 'live' },
@@ -401,7 +401,7 @@ const SCREENS = [
   },
   {
     id: 'sleep', x: 538, y: 60,
-    name: 'Detalle de Sueño', desc: 'Detalle de Sueño «Instrumento» + regularidad del horario (FER-212)',
+    name: 'Detalle de Sueño', desc: 'Detalle de Sueño «Instrumento» + regularidad + tarjetas ⓘ por métrica/etapa (FER-212 · pasada de UI FER-227)',
     file: 'Cenit/Screens/SleepDetailScreen.swift',
     icon: '🌙', color: '#7B8FFF',
     states: [
@@ -412,8 +412,11 @@ const SCREENS = [
       { label: 'WHOOP · estimado (barra apilada)', type: 'data' },
       { label: 'Regularidad afinándose (N noches por venir)', type: 'empty' },
     ],
-    nav: [],
-    components: ['Hypnogram', 'TrendChart (30d + banda + deuda)', 'Regularidad del horario (SleepRegularity)', 'Anoche vs típico (en %)', 'Rejilla de métricas (Latencia se omite sin dato)', 'See the method'],
+    nav: [
+      { to: 'sleep', label: 'Tile de métrica → MetricInfoSheet (mini-tendencia 14d + bandas — FER-227)', type: 'sheet' },
+      { to: 'sleep', label: 'ⓘ junto a «Anoche» → SleepStagesInfoSheet (qué es cada etapa — FER-227)', type: 'sheet' },
+    ],
+    components: ['Hypnogram', 'TrendChart (30d + banda + deuda etiquetada)', 'Regularidad del horario (SleepRegularity)', 'Anoche vs típico (en %)', 'Rejilla de métricas tocables (ⓘ → MetricInfoSheet)', 'SleepStagesInfoSheet (tarjeta de etapas)', 'See the method'],
   },
   {
     id: 'stress', x: 792, y: 60,

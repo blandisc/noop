@@ -104,6 +104,12 @@ public struct DiurnalDial: View {
     /// clock stays put. Indeterminate by design — no percentage (the protocol never
     /// reveals the total pending). `prefers-reduced-motion` rests the arc (no spin).
     public var syncing: Bool
+    /// Progreso determinado de «armado» (0…1) del pull-to-refresh propio de Hoy (FER-222):
+    /// 0 = en reposo; (0,1] dibuja un arco `dataRecovery` que crece hacia casi todo el aro
+    /// conforme el usuario jala, guiado por un punto-cabeza. Al cruzar el umbral el llamador
+    /// enciende `syncing` y este arco cede al cometa que gira (FER-221). Se ignora mientras
+    /// `syncing` (el giro manda) y el llamador lo deja en 0 bajo reduce-motion (sin dibujo).
+    public var armProgress: Double
 
     public init(
         now: Date = Date(),
@@ -112,6 +118,7 @@ public struct DiurnalDial: View {
         sleep: SleepWindow? = nil,
         diameter: CGFloat = 240,
         syncing: Bool = false,
+        armProgress: Double = 0,
         animated: Bool = true
     ) {
         self.now = now
@@ -120,6 +127,7 @@ public struct DiurnalDial: View {
         self.sleep = sleep
         self.diameter = diameter
         self.syncing = syncing
+        self.armProgress = armProgress
         self.animated = animated
     }
 
@@ -153,6 +161,11 @@ public struct DiurnalDial: View {
     /// Fraction of the ring the sync arc spans (a comet, not a full ring) — a fixed
     /// design constant, not a measure derived from `diameter`.
     private let syncArcFraction: CGFloat = 0.30
+    /// Fraction of the ring the determinate «arming» arc reaches at full pull (FER-222) —
+    /// nearly a full ring (the owner chose «casi todo el aro»), so the pull reads as charging
+    /// the dial before it collapses to the `syncArcFraction` comet that spins. A design
+    /// constant, not derived from `diameter`.
+    private let armMaxFraction: CGFloat = 0.90
 
     private var nowHour: Double { InstrumentoThemeEngine.localHour(of: now, calendar: calendar) }
 
@@ -165,9 +178,12 @@ public struct DiurnalDial: View {
         ZStack {
             staticFace
             // While syncing, the spinning arc replaces the fixed now-dot (the green
-            // moves to the arc); at rest, the now-dot marks the current hour.
+            // moves to the arc). While arming (pull-to-refresh, FER-222), a determinate
+            // arc grows with the pull. At rest, the now-dot marks the current hour.
             if syncing {
                 syncLayer
+            } else if armProgress > 0 {
+                armingLayer
             } else {
                 nowLayer
             }
@@ -286,6 +302,33 @@ public struct DiurnalDial: View {
         .accessibilityHidden(true)
     }
 
+    // MARK: Arming layer — the determinate pull-to-refresh arc (FER-222)
+
+    /// A determinate `dataRecovery` arc from the top that grows with `armProgress` toward
+    /// `armMaxFraction` (nearly a full ring), led by a head dot — the same green that will
+    /// spin once the pull commits to `syncing`. Static: the motion IS the gesture driving
+    /// `armProgress`, so it follows the finger with no animation of its own (and the caller
+    /// keeps `armProgress` at 0 under reduced-motion, resting the dial). Replaces the now-dot
+    /// while arming; geometry mirrors `syncLayer` so the handoff to the spinning comet lands
+    /// on the same green.
+    private var armingLayer: some View {
+        let frac = armMaxFraction * CGFloat(min(max(armProgress, 0), 1))
+        return ZStack {
+            Circle()
+                .trim(from: 0, to: frac)
+                .stroke(theme.dataRecovery,
+                        style: StrokeStyle(lineWidth: syncArcWidth, lineCap: .round))
+                .rotationEffect(.degrees(-90))                            // start at the top
+            Circle()
+                .fill(theme.dataRecovery)
+                .frame(width: dotDiameter, height: dotDiameter)
+                .offset(y: -ringRadius)
+                .rotationEffect(.degrees(Double(frac) * 360))             // head of the arc
+        }
+        .frame(width: ringRadius * 2, height: ringRadius * 2)
+        .accessibilityHidden(true)
+    }
+
     /// Start/stop the spin from the current `syncing` + motion state. Reduced-motion
     /// leaves the arc at rest — an honest, still indicator.
     private func updateSpin() {
@@ -387,6 +430,46 @@ public struct DiurnalDial: View {
             HStack(spacing: 14) {
                 panel("23:30 · noche", at(23, 30), solar: sun)
                 panel("14:00 · sin sol (polar)", at(14), solar: nil)
+            }
+        }
+        .padding(16)
+    }
+    .background(Color(hex: "#E8E2D6"))
+}
+
+#Preview("DiurnalDial · armado + sync (FER-222)") {
+    func utc() -> Calendar {
+        var c = Calendar(identifier: .gregorian)
+        c.timeZone = TimeZone(identifier: "UTC")!
+        return c
+    }
+    let date = utc().date(from: DateComponents(year: 2026, month: 6, day: 16, hour: 14))!
+    let sun = SolarWindow(sunrise: 6.2, sunset: 19.8)
+    let bed = SleepWindow(bedtime: 23.5, wake: 7.25)
+    let theme = InstrumentoThemeEngine.theme(at: date, calendar: utc(), solar: sun)
+
+    func panel(_ label: String, armProgress: Double = 0, syncing: Bool = false) -> some View {
+        VStack(spacing: 10) {
+            DiurnalDial(now: date, calendar: utc(), solar: sun, sleep: bed,
+                        diameter: 150, syncing: syncing, armProgress: armProgress)
+            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity)
+        .background(theme.paper)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .instrumentoTheme(theme)
+    }
+
+    return ScrollView {
+        VStack(spacing: 14) {
+            HStack(spacing: 14) {
+                panel("reposo")
+                panel("armando 50%", armProgress: 0.5)
+            }
+            HStack(spacing: 14) {
+                panel("umbral · 100%", armProgress: 1.0)
+                panel("sincronizando", syncing: true)
             }
         }
         .padding(16)

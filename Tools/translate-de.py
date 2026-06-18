@@ -58,6 +58,27 @@ DE: dict[str, str] = {
     "Each signal becomes a score of how far above or below your personal average it sits (a z-score). They're combined with the weights above and mapped onto a 0–100 scale through a logistic curve, calibrated so a typical day lands near 58. It's an estimate, not a diagnosis.": 'Jedes Signal wird zu einem Wert dafür, wie weit über oder unter deinem persönlichen Durchschnitt es liegt (ein z-Wert). Sie werden mit den obigen Gewichten kombiniert und über eine logistische Kurve auf eine Skala von 0–100 abgebildet, kalibriert so, dass ein typischer Tag nahe 58 liegt. Es ist eine Schätzung, keine Diagnose.',
     '%lld / %lld nights': '%lld / %lld Nächte',
     "We need a few more nights with your strap to learn your baseline before we score your recovery. We'd rather not show a made-up number.": 'Wir brauchen noch ein paar Nächte mit deinem Band, um deine Basislinie zu lernen, bevor wir deine Erholung berechnen. Wir zeigen lieber keine erfundene Zahl.',
+    # Detalle de Sueño — pasada de UI: etapas + métricas con tarjeta + copy (FER-227).
+    "Each point is one night. The recommended zone for an adult is 7–9 h.": "Jeder Punkt ist eine Nacht. Der empfohlene Bereich für Erwachsene liegt bei 7–9 h.",
+    "Weekly debt": "Wochenschuld",
+    "What you missed versus what your body needs. One good night won't clear it.": "Was dir gegenüber dem Bedarf deines Körpers gefehlt hat. Eine gute Nacht gleicht das nicht aus.",
+    "What the stages mean": "Was die Phasen bedeuten",
+    "Shows what this means": "Zeigt, was das bedeutet",
+    "Sleep stages": "Schlafphasen",
+    "Your night moves through four phases. The watch estimates them from your movement and heart rate, so they're approximate — it gets about 2 of 3 right.": "Deine Nacht durchläuft vier Phasen. Die Uhr schätzt sie aus Bewegung und Herzfrequenz, daher sind sie ungefähr – etwa 2 von 3 stimmen.",
+    "Dreams and memory. It consolidates what you learned and processes emotion.": "Träume und Gedächtnis. Festigt Gelerntes und verarbeitet Emotionen.",
+    "Physical repair. Your body restores itself and releases growth hormone.": "Körperliche Reparatur. Dein Körper erholt sich und schüttet Wachstumshormon aus.",
+    "Most of the night. A transition in which your body winds down.": "Der größte Teil der Nacht. Ein Übergang, in dem dein Körper herunterfährt.",
+    "Brief awakenings. They're normal and don't mean a bad night.": "Kurzes Aufwachen. Das ist normal und bedeutet keine schlechte Nacht.",
+    "Proportions, not minutes. A clinical measurement needs a sleep study.": "Anteile, keine Minuten. Eine klinische Messung erfordert eine Schlafstudie.",
+    "How much you slept versus what your body needs. At 100% you fully covered last night's need.": "Wie viel du im Vergleich zum Bedarf deines Körpers geschlafen hast. Bei 100% hast du den Bedarf der letzten Nacht voll gedeckt.",
+    "Your need is your own rolling average of recent nights, never under 7.5 h.": "Dein Bedarf ist dein eigener gleitender Durchschnitt der letzten Nächte, nie unter 7,5 h.",
+    "Of the time you spent in bed, how much you actually spent asleep. Above about 85% is considered healthy.": "Von der Zeit im Bett: wie viel du tatsächlich geschlafen hast. Über etwa 85% gilt als gesund.",
+    "The share of your sleep spent in deep and REM — the stages that physically and mentally restore you. Around 40–50% is typical for a healthy adult.": "Der Anteil deines Schlafs in Tief- und REM-Schlaf – die Phasen, die dich körperlich und mental erholen. Etwa 40–50% sind bei gesunden Erwachsenen typisch.",
+    "How many times you briefly woke during the night. A few are completely normal — everyone surfaces between sleep cycles.": "Wie oft du nachts kurz aufgewacht bist. Ein paar Mal ist völlig normal – jeder taucht zwischen den Schlafzyklen auf.",
+    "Brief awakenings are normal and often not remembered. What matters is the trend, not a single night.": "Kurzes Aufwachen ist normal und wird oft nicht erinnert. Wichtig ist der Trend, nicht eine einzelne Nacht.",
+    "How long it took you to fall asleep after lights out. Ten to twenty minutes is a healthy range.": "Wie lange du nach dem Lichtausschalten zum Einschlafen gebraucht hast. Zehn bis zwanzig Minuten sind ein gesunder Bereich.",
+
     # SettingsView — strap-log empty placeholder (FER-199).
     "No activity yet. The log fills in as your strap connects.": "Noch keine Aktivität. Das Protokoll füllt sich, sobald sich dein Strap verbindet.",
     # Cuerpo landing — the «historia / entre-días» tab (FER-186).

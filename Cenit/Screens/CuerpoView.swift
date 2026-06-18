@@ -719,7 +719,8 @@ private struct CuerpoLanding: View {
         hrPoints = await hrRows.map {
             TrendPoint(date: Date(timeIntervalSince1970: TimeInterval($0.ts)), value: $0.bpm)
         }
-        let stress = StressModel(days: repo.days, stored: await stressRows)
+        // displayDays = Apple-health fallback (FER-149); local todayKey ignores a UTC "tomorrow" row (FER-226).
+        let stress = StressModel(days: repo.displayDays, stored: await stressRows, todayKey: Repository.localDayKey(Date()))
         stressScore = stress?.score
         sparks["stress"] = stress.map { Array($0.fullTrend.suffix(14).map(\.value)) } ?? []
 
