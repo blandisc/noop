@@ -64,19 +64,20 @@ struct RecoveryDetailScreen: View {
                     whatExplainsItBlock
                     blockDivider
                     normalRangeBlock
-                    if model.series.count >= 2 {
-                        blockDivider
-                        trendBlock
-                    }
+                    // Calendar reads in the trend's old spot; the trend moves to the bottom (FER-237).
+                    blockDivider
+                    calendarBlock
                     if consistency != nil {
                         blockDivider
                         consistencyBlock
                     }
-                    blockDivider
-                    calendarBlock
                     if model.load != nil {
                         blockDivider
                         loadBlock
+                    }
+                    if model.series.count >= 2 {
+                        blockDivider
+                        trendBlock
                     }
                     blockDivider
                     methodDisclosure
