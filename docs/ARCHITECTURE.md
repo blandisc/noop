@@ -408,6 +408,12 @@ reader so multi-hundred-MB files don't blow up memory.
   circular standard deviation of the mid-sleep point (Roenneberg 2006; Mardia & Jupp 2000) plus the
   weekend "social-jetlag" shift. Pure + DB-free like the rest; the app feeds it onset/wake out of
   `repo.sleeps`. The SD (minutes) is the validated figure; the 0–100 score is presentation only.
+- **`RecoveryForecast`** (FER-188) projects tomorrow's recovery one day ahead from the recent
+  recovery series — a damped level+slope trend plus a bounded sleep-debt drag — returning an
+  `estimate` with a deliberately wide confidence range, or `nil` below ~two weeks of base (the UI
+  then hides the block). A trend projection, never a guarantee; simple by design per the
+  short-term autoregressive-forecasting evidence (De Sabbata & Simonini, *J Healthc Inform Res*
+  2025). Pure + DB-free; the app feeds it the recovery column out of `repo.days`.
 
 Because the engine never touches the database, the same code runs over live-collected streams,
 backfilled streams, or imported data interchangeably. **All derived values are approximate.**
