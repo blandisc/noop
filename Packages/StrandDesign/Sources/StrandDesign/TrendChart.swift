@@ -168,7 +168,7 @@ public struct TrendChart: View {
         .chartYScale(domain: valueRange, range: .plotDimension(startPadding: NoopMetrics.chartXLabelBand, endPadding: 0))
         .chartXScale(range: .plotDimension(startPadding: 0, endPadding: NoopMetrics.chartXTrailingInset))
         .chartXAxis {
-            AxisMarks(values: .automatic(desiredCount: 5)) { _ in
+            AxisMarks(values: .automatic(desiredCount: 3)) { _ in
                 AxisGridLine().foregroundStyle(gridLineColor.opacity(0.4))
                 AxisValueLabel().foregroundStyle(axisLabelColor)
                     .font(StrandFont.footnote)
