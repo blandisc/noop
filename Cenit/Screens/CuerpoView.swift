@@ -568,9 +568,13 @@ private struct CuerpoLanding: View {
     /// SPARSELY measured, so there's no sparkline (`sparkKey: "vo2max"` stays unpopulated) and the value
     /// uses the most recent reading (`latestAppleVO2max`), no today/yesterday freshness gate. «—» + no
     /// badge when there's no reading; the detail then shows the explanatory empty state.
+    ///
+    /// No unit in the dense row: `MetricRow`'s value column is a fixed 88pt (to align decimals across
+    /// rows), and "ml/kg/min" is far too long for it — it truncated the number itself ("35…"). The unit
+    /// lives in full in the detail (hero + blocks), so the row shows just the number. (FER-263)
     private var vo2maxRow: some View {
         let v = latestAppleVO2max
-        return metricRow("VO₂ Max", value: v.map { String(format: "%.1f", $0) }, unit: "ml/kg/min",
+        return metricRow("VO₂ Max", value: v.map { String(format: "%.1f", $0) },
                          color: theme.dataSpO2, sparkKey: "vo2max", fromApple: v != nil) {
             metricSpec = .vo2max(value: v, age: model.profile.age, sex: model.profile.sex)
         }
