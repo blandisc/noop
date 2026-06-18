@@ -98,10 +98,12 @@ extension MetricInfo {
                  isActive: hours.map { $0 < 6 } ?? false, lower: nil, upper: 6),
             Band(label: "Adequate", range: "6 – 7 h",
                  isActive: hours.map { $0 >= 6 && $0 < 7 } ?? false, lower: 6, upper: 7),
+            // Half-open to match the chart's band math (TrendBand.contains): exactly 9.00 h reads as
+            // Extended in both the table and the chart's bracket, never one each. (FER-244)
             Band(label: "Optimal", range: "7 – 9 h",
-                 isActive: hours.map { $0 >= 7 && $0 <= 9 } ?? false, lower: 7, upper: 9),
+                 isActive: hours.map { $0 >= 7 && $0 < 9 } ?? false, lower: 7, upper: 9),
             Band(label: "Extended", range: "> 9 h",
-                 isActive: hours.map { $0 > 9 } ?? false, lower: 9, upper: nil),
+                 isActive: hours.map { $0 >= 9 } ?? false, lower: 9, upper: nil),
         ]
         let display: String
         if let m = totalMinutes {
