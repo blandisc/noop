@@ -315,6 +315,11 @@ struct MetricDetailScreen: View {
         case ("heart_rate", .header):
             return "Your heart rate across the day, in 5-minute averages. Your resting heart rate — the low while you sleep — is its own metric."
 
+        case ("steps", .header):
+            return "Your step count for today. Steady activity — even a short walk — supports your heart, your mood and your recovery."
+        case ("steps", .trend):
+            return "Where your steps are headed this month compared with last month."
+
         default:
             return nil
         }
@@ -333,17 +338,7 @@ struct MetricDetailScreen: View {
                     Text(unit).font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
                 }
             }
-            if loaded, isIntraday, let context = intradayHeroContext {
-                Text(context)
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            } else if loaded, !isIntraday, let today = todayValue {
-                Text(heroContext(today))
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            if loaded { heroSecondary }
             if let reading = readingCopy(for: .header) {
                 Text(reading)
                     .font(StrandFont.caption)
@@ -354,6 +349,30 @@ struct MetricDetailScreen: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    /// The secondary line under the hero numeral. For the vitals (hero = 7-day average) it frames TODAY's
+    /// single reading against the band. For steps the hero IS today's count, so the secondary instead
+    /// carries the 7-day daily average — the stable context for a noisy daily count. (FER-254)
+    @ViewBuilder private var heroSecondary: some View {
+        if let text = heroSecondaryText {
+            Text(text)
+                .font(StrandFont.subhead)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// Heart Rate (intraday) → today's range + resting floor; steps → its 7-day daily average; the
+    /// vitals → today's reading framed against the band.
+    private var heroSecondaryText: LocalizedStringKey? {
+        if isIntraday { return intradayHeroContext }
+        if spec.descriptor.key == "steps" {
+            guard let avg = SeriesShape.latestMovingAverage(allValues, window: 7) else { return nil }
+            return "7-day average · \(fmt(avg)) steps"
+        }
+        guard let today = todayValue else { return nil }
+        return heroContext(today)
+    }
+
     private var heroOverline: LocalizedStringKey {
         switch spec.descriptor.key {
         case "hrv":        return "Heart rate variability · 7-day average"
@@ -361,6 +380,7 @@ struct MetricDetailScreen: View {
         case "resp_rate":  return "Respiratory rate · 7-day average"
         case "spo2":       return "Blood oxygen · 7-day average"
         case "heart_rate": return "Heart rate · today"
+        case "steps":      return "Steps · today"
         default:           return "7-day average"
         }
     }
@@ -1024,14 +1044,17 @@ struct MetricDetailScreen: View {
 
     private var calibrationBlock: some View {
         let nights = series.count
+        // Steps are an Apple-sourced daily count, not a calibrated night vital: its empty state speaks in
+        // "days" and omits the "normal range" the vitals promise (steps carries none). (FER-254)
+        let isSteps = spec.descriptor.key == "steps"
         return VStack(alignment: .leading, spacing: 12) {
             Text("Not enough history yet")
                 .font(StrandFont.headline)
                 .foregroundStyle(theme.ink)
             HStack(alignment: .firstTextBaseline) {
-                Text("Calibrating").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text(isSteps ? "Gathering" : "Calibrating").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Spacer()
-                Text("\(nights) / 7 nights")
+                Text(isSteps ? "\(nights) / 7 days" : "\(nights) / 7 nights")
                     .font(StrandFont.captionNumber)
                     .foregroundStyle(theme.inkSecondary)
             }
@@ -1043,7 +1066,9 @@ struct MetricDetailScreen: View {
                 }
             }
             .frame(height: 6)
-            Text("We need a few more nights to show your 7-day average, your normal range and the trend.")
+            Text(isSteps
+                 ? "Connect Apple Salud and walk a few days to see your daily average and your trend."
+                 : "We need a few more nights to show your 7-day average, your normal range and the trend.")
                 .font(StrandFont.caption)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -1096,16 +1121,24 @@ struct MetricDetailScreen: View {
         case "resp_rate":         return theme.dataSpO2
         case "spo2":              return theme.dataSpO2
         case "heart_rate":        return theme.dataHeart
+        case "steps":             return theme.dataSteps
         default:                  return theme.dataRecovery
         }
     }
 
     private var chartGradient: Gradient { Gradient(colors: [metricHue.opacity(0.5), metricHue]) }
 
-    /// Format a value with the descriptor's own decimal precision.
+    /// Format a value with the descriptor's own decimal precision. Integers get locale grouping so a
+    /// four-figure step count reads "9,210", not "9210"; the vitals stay under 1,000 so they're
+    /// visually unchanged. (FER-254)
     private func fmt(_ v: Double) -> String {
-        spec.descriptor.decimals == 0 ? "\(Int(v.rounded()))" : String(format: "%.\(spec.descriptor.decimals)f", v)
+        guard spec.descriptor.decimals == 0 else { return String(format: "%.\(spec.descriptor.decimals)f", v) }
+        return Self.groupedInt.string(from: NSNumber(value: Int(v.rounded()))) ?? "\(Int(v.rounded()))"
     }
+
+    private static let groupedInt: NumberFormatter = {
+        let f = NumberFormatter(); f.numberStyle = .decimal; f.maximumFractionDigits = 0; return f
+    }()
 
     static let dayParser: DateFormatter = {
         let f = DateFormatter()

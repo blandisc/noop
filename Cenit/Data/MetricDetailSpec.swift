@@ -170,6 +170,22 @@ struct MetricDetailSpec: Identifiable {
         )
     }
 
+    /// Steps detail. NOT a clinical or night vital: hero = today's accumulated count (the figure people
+    /// actually track), with the 7-day daily average as secondary context. The protagonist block is the
+    /// daily trend (chart + month-over-month) — no personal "normal range", no consistency, and NO
+    /// classificatory bands (the issue is explicit: steps carry no invented clinical band). Apple-sourced,
+    /// so `baselineCfg`/`populationRange` are nil. (FER-254)
+    static func steps(_ value: Int?) -> MetricDetailSpec {
+        MetricDetailSpec(
+            descriptor: Self.catalog("steps"),
+            info: .steps(value),
+            blocks: [.periodSelector, .seriesChartBand, .trend, .method],
+            hero: .latest,
+            baselineCfg: nil,
+            populationRange: nil
+        )
+    }
+
     private static func catalog(_ key: String) -> MetricDescriptor {
         // Every key here is a known catalog entry; the fallback keeps the call non-optional.
         MetricCatalog.all.first { $0.key == key }

@@ -320,7 +320,7 @@ struct TodayView: View {
     }
 
     /// The "Ver más" hand-off for a metric: returns nil when there's no rich detail destination yet
-    /// (SpO₂ / Heart Rate / Steps → no link shown). Otherwise returns a closure that defers presenting
+    /// (SpO₂ / Heart Rate → no link shown). Otherwise returns a closure that defers presenting
     /// the rich detail until the summary dismisses (`pendingSeeMore` + `metricDetail = nil`). The detail
     /// reuses the SAME static factories / specs Cuerpo uses, so it's identical from both tabs. (FER-251)
     private func seeMoreAction(for id: String) -> (() -> Void)? {
@@ -354,8 +354,10 @@ struct TodayView: View {
                 .map { Int($0.value.rounded()) }) }
         case "heart_rate":
             present = { metricSpec = .heartRate(hrTodayAvg) }
+        case "steps":
+            present = { metricSpec = .steps(freshSteps) }
         default:
-            present = nil   // spo2 / steps — no "Ver más" rich detail from Today yet (FER-252/254)
+            present = nil   // spo2 — no "Ver más" rich detail from Today yet (FER-252)
         }
         guard let present else { return nil }
         return { pendingSeeMore = present; metricDetail = nil }
@@ -1978,6 +1980,13 @@ struct TodayView: View {
     // feeds it, so the screen is identical from either tab. They read the same layered source the rows
     // already use (`repo.displayDays` / `resolveMeasured`); mirror of `CuerpoView`.
 
+    /// Today's step total from the Apple daily rows, within the same freshness window the tile uses, so
+    /// «Ver más» opens the steps detail on the value the tile shows. (FER-254)
+    private var freshSteps: Int? {
+        let cutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -13, to: Date()) ?? Date())
+        return appleDays.last(where: { $0.day >= cutoff })?.steps
+    }
+
     /// The FULL daily series (oldest → newest) for a vital — the detail carries its own range selector,
     /// so it needs all history, not just the trailing window.
     private func vitalSeries(for key: String) -> [(day: String, value: Double)] {
@@ -1986,6 +1995,7 @@ struct TodayView: View {
         case "hrv":       pick = { $0.avgHrv }
         case "rhr":       pick = { $0.restingHr.map(Double.init) }
         case "resp_rate": pick = { $0.respRateBpm }
+        case "steps":     pick = { $0.steps.map(Double.init) }
         default:          return []
         }
         return repo.displayDays

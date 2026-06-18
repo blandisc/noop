@@ -449,7 +449,7 @@ private struct CuerpoLanding: View {
         let steps = freshSteps
         return metricRow("Steps", value: steps.map { intString(Double($0)) },
                          color: theme.dataSteps, sparkKey: "steps") {
-            metricInfo = .steps(steps)
+            metricSpec = .steps(steps)
         }
     }
 
@@ -813,6 +813,7 @@ private struct CuerpoLanding: View {
         case "resp_rate": pick = { $0.respRateBpm }
         case "spo2":      pick = { $0.spo2Pct }
         case "skin_temp": pick = { $0.skinTempDevC }
+        case "steps":     pick = { $0.steps.map(Double.init) }
         default:          return []
         }
         return repo.displayDays
