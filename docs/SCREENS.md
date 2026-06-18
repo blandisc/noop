@@ -46,6 +46,7 @@ CuerpoView  → RecoveryDetailScreen (sheet «Instrumento»: Recuperación — F
              MetricInfoSheet (sheet claro: FC/Pasos) ·
              MetricDetailScreen (sheet claro, .full: HRV/FC reposo/Respiración/SpO₂ — FER-185; SpO₂ con banda clínica fija 95–100% + «Noches bajo 95%» — FER-252) ·
              StressDetailScreen (sheet claro «Instrumento»: Estrés — valor de hoy + bandas universales + qué lo mueve + ⓘ por concepto — FER-241) ·
+             SkinTempDetailScreen (sheet claro «Instrumento»: Temperatura de la piel — última lectura + tendencia con banda ±típica + consistencia en SD °C — FER-256) ·
              BodyAgeSheet (sheet claro: Edad corporal + Vitalidad — FER-145) ·
              SleepDetailScreen (sheet claro «Instrumento»: Sueño + regularidad del horario — FER-212) ·
              WorkoutsView · CompareView · MetricExplorerView · DataSourcesView ·
@@ -220,6 +221,22 @@ Los 8 bloques (orden), **cada uno con su ⓘ `InfoAccordion`** salvo el método:
 
 ---
 
+### SkinTempDetailScreen
+**Archivo:** `Cenit/Screens/SkinTempDetailScreen.swift`  
+**Descripción:** Detalle de Temperatura de la piel en lenguaje «Instrumento» (FER-256). Lo abre la fila «Skin Temperature» de `CuerpoView`, reemplazando la antigua hoja **oscura** del catálogo (`MetricExplorerView`). Hermano de `StrainDetailScreen`/`StressDetailScreen`: pantalla dedicada, no extiende `MetricDetailScreen`. El dato es una **desviación** (±°C) respecto a la base nocturna, centrada en ~0 y de polaridad **neutral** (más no es bueno ni malo); eso dicta sus decisiones: hero = **última lectura** con signo (coincide con la fila), chip mes-vs-mes en **delta absoluto °C** (un % sobre media ≈0 mentiría), consistencia en **SD °C** (no CV%), y una banda de **variación típica** (±1 SD) alrededor de 0 en vez de umbrales clínicos inventados. Construido desde `repo.displayDays` (DB-free); no crea matemática.
+
+| Estado | Condición de entrada |
+|--------|---------------------|
+| Con datos | `today` y/o serie de `skin_temp` con ≥2 puntos |
+| Sin datos | `today == nil` y serie vacía → hero «—» + cómo obtener datos |
+| Pocos días | serie `< 2` puntos → se ocultan tendencia/consistencia |
+
+**Bloques (cada uno con su ⓘ vía `InfoAccordion`, salvo el método):** Hero (última lectura ±°C en ink neutral + lectura no clínica) · Tendencia (selector de periodo + línea diaria sobre la **banda ±típica** dibujada por la propia `TrendChart` vía `bands:` + **`TrendStatSummary`** con chip en **delta absoluto °C** — `absoluteChange`, polaridad **neutral**) · Consistencia (**SD en °C** como dato protagonista, sin veredicto Estable/Variable porque skin temp no tiene umbral validado) · Ver el método. *(Descarta «Rango normal» con umbrales fijos, «Qué lo mueve» y el placeholder de calendario — no aplican honestamente a una desviación neutral.)*
+
+**Componentes:** `InfoAccordion`, `TrendChart`, `SegmentedPillControl`, `TrendStatSummary` (modo `absoluteChange`, FER-256), `InstrumentoTheme`. **Analytics:** `ComparisonEngine` (media, rango, SD vía `stat.stdev`, mes-vs-mes), `SeriesShape` (decimación).
+
+---
+
 ## Actividad
 
 ### WorkoutsView
@@ -252,7 +269,7 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 | Calibrando | Recuperación muestra «N/4» + «Calibrando tu base»; el resto en «—» con esqueleto |
 | Sin permiso / offline | Muestra lo guardado; las métricas solo-Apple (Pasos) invitan a conectar sin prometer datos |
 
-**Apertura del detalle (FER-185 ya aterrizó para los 3 vitales):** **HRV · FC en reposo · Respiración** abren el **`MetricDetailScreen`** unificado (sheet claro «Instrumento», `depth: .full`, tema explícito, sin `NavigationStack` anidado); **Sueño** abre el **`SleepDetailScreen`** claro «Instrumento» (sheet, tema explícito, sin stack anidado — FER-212); **Recuperación** (la fila héroe) abre el **`RecoveryDetailScreen`** «Instrumento» (sheet, tema explícito, sin stack anidado — FER-225), ya no la `MetricInfoSheet`. **Esfuerzo del día** abre el **`StrainDetailScreen`** «Instrumento» (sheet, tema explícito, sin stack anidado — FER-238), ya no la `MetricInfoSheet` (Hoy sí la conserva). El resto sigue su puente: SpO₂/FC/Pasos/Estrés→`MetricInfoSheet` claro; Entrenamientos→`WorkoutsView`, Temp. piel→`MetricDetailView` del catálogo, Comparar→`CompareView`, Ver todas→`MetricExplorerView` — estos últimos como **sheet oscuro fijado a `.dark`** (un tab claro no puede empujar una pantalla oscura sin romper la barra de estado). El mini-bloque **«Cómo amaneces tras cada deporte»** (Activity Cost, FER-139) en «Actividad» abre su propia **hoja clara** `ActivityRecoverySheet` (hermana de `MetricInfoSheet`, tema explícito): una tarjeta por deporte —en el orden del motor— con la frase de **asociación** (no causa), badge de confianza (`Sólido`/`Juntando datos`) y «n sesiones», más «Ver el método» con los confusores; sin datos suficientes → estado «Juntando datos».
+**Apertura del detalle (FER-185 ya aterrizó para los 3 vitales):** **HRV · FC en reposo · Respiración** abren el **`MetricDetailScreen`** unificado (sheet claro «Instrumento», `depth: .full`, tema explícito, sin `NavigationStack` anidado); **Sueño** abre el **`SleepDetailScreen`** claro «Instrumento» (sheet, tema explícito, sin stack anidado — FER-212); **Recuperación** (la fila héroe) abre el **`RecoveryDetailScreen`** «Instrumento» (sheet, tema explícito, sin stack anidado — FER-225), ya no la `MetricInfoSheet`. **Esfuerzo del día** abre el **`StrainDetailScreen`** «Instrumento» (sheet, tema explícito, sin stack anidado — FER-238), ya no la `MetricInfoSheet` (Hoy sí la conserva). **Temperatura de la piel** abre el **`SkinTempDetailScreen`** «Instrumento» (sheet, tema explícito, sin stack anidado — FER-256), ya no la pantalla oscura del catálogo. El resto sigue su puente: FC/Pasos→`MetricInfoSheet` claro; Entrenamientos→`WorkoutsView`, Comparar→`CompareView`, Ver todas→`MetricExplorerView` — estos últimos como **sheet oscuro fijado a `.dark`** (un tab claro no puede empujar una pantalla oscura sin romper la barra de estado). El mini-bloque **«Cómo amaneces tras cada deporte»** (Activity Cost, FER-139) en «Actividad» abre su propia **hoja clara** `ActivityRecoverySheet` (hermana de `MetricInfoSheet`, tema explícito): una tarjeta por deporte —en el orden del motor— con la frase de **asociación** (no causa), badge de confianza (`Sólido`/`Juntando datos`) y «n sesiones», más «Ver el método» con los confusores; sin datos suficientes → estado «Juntando datos».
 
 **Componentes:** `MetricRow`, `Sparkline` (+ `ReferenceRange.interquartile`), `MetricInfoSheet`, `MetricDetailScreen` (+ `MetricDetailSpec`), `ActivityRecoverySheet` (FER-139), `FitnessAgeDetailView`, `InlineFlagChip`, `InstrumentoTheme` (`instrumentoThemeByHour`). **Analytics:** `ActivityCostEngine` + `ActivityCostInputs` (StrandAnalytics, vía `Repository.activityCosts()`).
 
