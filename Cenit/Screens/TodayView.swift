@@ -1049,6 +1049,7 @@ struct TodayView: View {
                     label: "Steps",
                     value: stepsT.map { intString($0) } ?? "—",
                     valueColor: theme.dataSteps,
+                    fromApple: true,
                     delta: tileDelta(today: stepsT, yesterday: yesterdayValue { $0.steps.map(Double.init) },
                                      betterHigher: true, deadband: 100) { intString($0) }
                 )) { metricDetail = .steps(stepsFresh) }
@@ -1062,6 +1063,22 @@ struct TodayView: View {
                                      betterHigher: false, deadband: 0.1) { String(format: "%.1f", $0) }
                 )) { metricDetail = .stress(stressT) }
             }
+            // Leyenda de fuente (FER-233): caption discreto alineado a la derecha, al nivel de
+            // «Sincronizado · strap 77%». Sin fondo ni borde — solo tinta tertiary.
+            HStack {
+                Spacer(minLength: 0)
+                HStack(spacing: NoopMetrics.space2) {
+                    Text("W banda")
+                    Text("·")
+                    HStack(spacing: NoopMetrics.space1) {
+                        Image(systemName: "heart.fill").font(.system(size: 9))
+                        Text("Apple Salud")
+                    }
+                }
+                .font(StrandFont.caption)
+                .foregroundStyle(theme.inkTertiary)
+            }
+            .accessibilityHidden(true)
             if notConnected && anyMeasuredMissing {
                 Button { showDataSources = true } label: {
                     HStack(spacing: NoopMetrics.space2) {
@@ -1151,9 +1168,9 @@ struct TodayView: View {
     }
 
     /// Un tile de «Métricas de hoy»: etiqueta (overline en tinta) · valor en color de dato + unidad ·
-    /// pie con la Δ vs ayer, el badge «Apple Salud» (cuando el valor vino de Apple), o nada. Tematizado
-    /// con tokens de `InstrumentoTheme` sobre el papel `surface` con hairline — sin el `NoopCard` oscuro,
-    /// que no lee sobre el papel claro. Lee el tema del entorno (vive dentro del subárbol tematizado).
+    /// pie partido — Δ vs ayer (izquierda) + badge de fuente (derecha): W = banda, ♥ = Apple Salud (FER-233).
+    /// Tematizado con tokens de `InstrumentoTheme` sobre el papel `surface` con hairline — sin el
+    /// `NoopCard` oscuro, que no lee sobre el papel claro. Lee el tema del entorno.
     private struct TodayMetricTile: View {
         let label: LocalizedStringKey
         let value: String
@@ -1191,39 +1208,46 @@ struct TodayView: View {
             .accessibilityElement(children: .combine)
         }
 
-        /// El pie del tile: provenance de Apple Salud manda (cuando el valor es un fallback de Apple, la
-        /// Δ vs ayer compara fuentes distintas y se omite), luego la Δ, luego una línea vacía que
-        /// preserva la altura (estados sin-ayer / sin-valor).
+        /// El pie del tile (FER-233): Δ a la izquierda + badge de fuente a la derecha, siempre en la
+        /// misma línea. La fuente ya no desplaza la Δ — conviven. Línea vacía preserva la altura.
         @ViewBuilder private var footer: some View {
-            if fromApple {
-                HStack(spacing: NoopMetrics.space1) {
-                    Image(systemName: "heart.fill").font(.system(size: 10))
-                    Text("Apple Salud")
-                }
-                .font(StrandFont.caption)
-                .foregroundStyle(theme.inkTertiary)
-                .lineLimit(1).minimumScaleFactor(0.8)
-            } else if let delta {
-                switch delta {
-                case let .change(up, magnitude, color):
-                    HStack(spacing: NoopMetrics.space1) {
-                        Image(systemName: up ? "arrow.up" : "arrow.down")
-                            .font(.system(size: 10, weight: .semibold))
-                        Text(verbatim: magnitude)
-                        Text("vs yesterday")
-                    }
-                    .font(StrandFont.caption)
-                    .foregroundStyle(color)
-                    .lineLimit(1).minimumScaleFactor(0.75)
-                case let .equal(color):
-                    Text("Same as yesterday")
+            HStack(spacing: 0) {
+                // Delta (izquierda) — siempre visible cuando existe, independiente de la fuente.
+                if let delta {
+                    switch delta {
+                    case let .change(up, magnitude, color):
+                        HStack(spacing: NoopMetrics.space1) {
+                            Image(systemName: up ? "arrow.up" : "arrow.down")
+                                .font(.system(size: 10, weight: .semibold))
+                            Text(verbatim: magnitude)
+                            Text("vs yesterday")
+                        }
                         .font(StrandFont.caption)
                         .foregroundStyle(color)
-                        .lineLimit(1).minimumScaleFactor(0.8)
+                        .lineLimit(1).minimumScaleFactor(0.75)
+                    case let .equal(color):
+                        Text("Same as yesterday")
+                            .font(StrandFont.caption)
+                            .foregroundStyle(color)
+                            .lineLimit(1).minimumScaleFactor(0.8)
+                    }
+                } else {
+                    // Sin ayer / sin valor de hoy: línea vacía mantiene parejos los tiles del renglón.
+                    Text(verbatim: " ").font(StrandFont.caption).foregroundStyle(.clear)
                 }
-            } else {
-                // Sin ayer / sin valor de hoy: una línea vacía mantiene parejos los tiles del renglón.
-                Text(verbatim: " ").font(StrandFont.caption).foregroundStyle(.clear)
+                Spacer(minLength: 0)
+                // Badge de fuente (derecha) — solo cuando hay dato; siempre inkTertiary, nunca color de dato.
+                if fromApple {
+                    Image(systemName: "heart.fill")
+                        .font(.system(size: 10))
+                        .foregroundStyle(theme.inkTertiary)
+                        .accessibilityLabel(Text("de Apple Salud"))
+                } else if value != "—" {
+                    Text("W")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(theme.inkTertiary)
+                        .accessibilityLabel(Text("de banda"))
+                }
             }
         }
     }
