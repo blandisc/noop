@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **«Ver más» en Hoy abre el detalle completo / "See more" in Today opens the full detail.**
+  **ES** — Al tocar una métrica en **Hoy** y abrir su tarjeta de resumen, ahora aparece un enlace **«Ver más»** abajo a la derecha que te lleva directo a su **detalle completo** (el mismo que ves en Cuerpo) sin salir de Hoy: al cerrarlo, vuelves justo donde estabas. Disponible en Recuperación, Sueño, Esfuerzo, Estrés, HRV y Frecuencia cardíaca en reposo.
+  **EN** — When you tap a metric in **Today** and open its summary card, a **"See more"** link now sits at the bottom right and takes you straight to its **full detail** (the same one you see in Body) without leaving Today: close it and you're right back where you were. Available on Recovery, Sleep, Strain, Stress, HRV and Resting heart rate.
+  ([Cenit/Screens/MetricInfoSheet.swift](Cenit/Screens/MetricInfoSheet.swift), [Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **Detalle de Estrés: arreglo del eje y del texto de tendencia / Stress detail: trend axis & headline fix.**
   **ES** — En la hoja de **Estrés** (en Cuerpo): la gráfica de tendencia vuelve a tener su **eje Y (0–3) alineado con las bandas** y reaparece la **línea de comparación mes-a-mes** debajo, que se había quedado en blanco. Las zonas Bajo/Moderado/Alto ahora las dibuja la propia gráfica (no un fondo aparte que se desfasaba del eje), igual que en Sueño.
   **EN** — In the **Stress** sheet (in Body): the trend chart's **Y axis (0–3) is aligned with the bands** again and the **month-over-month line** below it is back (it had gone blank). The Low/Moderate/High zones are now drawn by the chart itself (not a separate backdrop drifting off the axis), matching the Sleep sheet.
