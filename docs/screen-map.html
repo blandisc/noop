@@ -433,6 +433,19 @@ const SCREENS = [
     nav: [],
     components: ['InfoAccordion (ⓘ por concepto)', 'TrendChart (línea 0–3 sobre bandas)', 'SegmentedPillControl', 'StressModel/StressMath/StressBand', 'ComparisonEngine', 'SeriesShape (CV/decimación)'],
   },
+  {
+    id: 'skintemp-detail', x: 1052, y: 60,
+    name: 'Detalle de Temp. de piel', desc: 'Detalle «Instrumento» (FER-256) · desde Cuerpo · reemplaza la hoja oscura del catálogo',
+    file: 'Cenit/Screens/SkinTempDetailScreen.swift',
+    icon: '🌡', color: '#C4631F',
+    states: [
+      { label: 'Con datos: hero = última lectura (±°C, ink neutral) + tendencia diaria sobre banda ±típica + TrendStatSummary (chip mes-vs-mes en delta absoluto °C, neutral) + consistencia (SD °C)', type: 'data' },
+      { label: 'Sin datos (today nil + serie vacía): hero «—» + cómo obtener datos', type: 'empty' },
+      { label: 'Pocos días (<2): se ocultan tendencia/consistencia', type: 'loading' },
+    ],
+    nav: [],
+    components: ['InfoAccordion (ⓘ por bloque)', 'TrendChart (línea diaria + banda ±típica)', 'SegmentedPillControl', 'TrendStatSummary (modo absoluteChange — FER-256)', 'ComparisonEngine (media/rango/SD/mes-vs-mes)', 'SeriesShape (decimación)'],
+  },
 
   // ── ROW 1: Actividad (y = 710) ────────────
   {
@@ -474,7 +487,7 @@ const SCREENS = [
       { to: 'stress', label: 'Estrés → StressDetailScreen (sheet claro «Instrumento» — FER-241)', type: 'sheet' },
       { to: 'sleep', label: 'Sueño → SleepDetailScreen (sheet claro «Instrumento» — FER-212)', type: 'sheet' },
       { to: 'workouts', label: 'Entrenamientos → WorkoutsView (sheet oscuro)', type: 'sheet' },
-      { to: 'metricdetail', label: 'Temp. piel → MetricDetailView (sheet oscuro)', type: 'sheet' },
+      { to: 'skintemp-detail', label: 'Temp. de piel → SkinTempDetailScreen (sheet claro «Instrumento» — FER-256)', type: 'sheet' },
       { to: 'compare', label: 'Comparar (sheet oscuro)', type: 'sheet' },
       { to: 'explore', label: 'Ver todas las métricas → MetricExplorerView (sheet oscuro)', type: 'sheet' },
       { to: 'fitness-age', label: 'Edad física → FitnessAgeDetailView (sheet claro «Instrumento»)', type: 'sheet' },
