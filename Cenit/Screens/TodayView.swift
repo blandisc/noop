@@ -62,6 +62,10 @@ struct TodayView: View {
     /// provocar el gesto de sincronización (FER-204).
     @State private var syncHaptic = 0
 
+    /// El usuario ya hizo al menos un pull-to-sync con strap (FER-270): apaga para siempre la pista
+    /// «Desliza para sincronizar» del héroe — ya aprendió el gesto. Persiste entre lanzamientos.
+    @AppStorage("today.didFirstPullSync") private var didFirstPullSync = false
+
     // MARK: - Pull-to-refresh propio (FER-222)
     //
     // Reemplaza el `.refreshable` nativo (su ruedita gris de ~1 s) por un gesto que DIBUJA el
@@ -534,6 +538,11 @@ struct TodayView: View {
         // Sin banda conocida (`lastSyncedAt == nil`) no se escanea: cae directo al refresh local.
         try? await Task.sleep(for: .seconds(1.2))
         await repo.refresh()
+        // FER-270: el usuario ya ejecutó un pull-to-sync con strap → ya aprendió el gesto; apaga la
+        // pista «Desliza para sincronizar» para siempre (con desvanecido salvo Reduce Motion).
+        if strapSeen, !didFirstPullSync {
+            withAnimation(reduceMotion ? nil : StrandMotion.fade) { didFirstPullSync = true }
+        }
     }
 
     /// Procesa el overscroll del tope del scroll (FER-222) para el pull-to-refresh propio. `overscroll` > 0
@@ -690,6 +699,7 @@ struct TodayView: View {
     @ViewBuilder private var heroInstrument: some View {
         let state = heroState
         VStack(spacing: NoopMetrics.gap) {
+            if showsSyncHint { syncHint }
             Text(heroOverline(state)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 .frame(maxWidth: .infinity, alignment: .center)
             // Instrumento concéntrico (FER-169): el numeral domina el CENTRO del dial de 24h, no a su lado.
@@ -715,6 +725,31 @@ struct TodayView: View {
             heroFooter(state)
         }
         .frame(maxWidth: .infinity)
+        // FER-270: la pista de sincronización entra/sale con un desvanecido; bajo Reduce Motion el
+        // cambio es instantáneo (cue estático).
+        .animation(reduceMotion ? nil : StrandMotion.fade, value: showsSyncHint)
+    }
+
+    /// Muestra la pista «Desliza para sincronizar» (FER-270): solo cuando hay strap (jalar SÍ
+    /// sincroniza algo), el usuario aún no ha hecho su primer pull-to-sync, y no se está sincronizando
+    /// ya (el dial girando — FER-221 — comunica ese estado). Sin strap no se muestra: jalar sería un
+    /// no-op y el estado de espera ya ofrece «Buscar strap».
+    private var showsSyncHint: Bool {
+        strapSeen && !didFirstPullSync && !(live.backfilling || pullSyncing)
+    }
+
+    /// La pista de sincronización: chevron-abajo + texto, en TINTA (regla «color solo en el dato»).
+    /// Oculta a VoiceOver — su equivalente accesible es la acción «Sincronizar» del encabezado (FER-222),
+    /// así que el cue visual no se anuncia dos veces.
+    private var syncHint: some View {
+        HStack(spacing: NoopMetrics.space1) {
+            Image(systemName: "chevron.down").font(.system(size: 10, weight: .semibold))
+            Text("Pull to sync").font(StrandFont.caption)
+        }
+        .foregroundStyle(theme.inkTertiary)
+        .frame(maxWidth: .infinity, alignment: .center)
+        .transition(.opacity)
+        .accessibilityHidden(true)
     }
 
     private func heroOverline(_ s: HeroState) -> LocalizedStringKey {
@@ -747,6 +782,7 @@ struct TodayView: View {
                         Text("\(score)").instrumentoHero(60)
                             .foregroundStyle(heroNumeralInk)
                         Text("/100").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                        seeRecoveryCue
                     }
                 } else {
                     Text("—").instrumentoHero(60).foregroundStyle(theme.inkTertiary)
@@ -771,6 +807,20 @@ struct TodayView: View {
         case .importedBaseline, .waiting:
             Text("—").instrumentoHero(60).foregroundStyle(theme.inkTertiary)
         }
+    }
+
+    /// Pista quieta de que el numeral del veredicto es tocable (FER-270): «Ver recuperación» + chevron,
+    /// en TINTA (regla «color solo en el dato»). Vive DENTRO del objetivo tocable del numeral, así que es
+    /// parte del mismo tap que abre la hoja de recuperación. Oculta a VoiceOver (el numeral ya es el
+    /// objetivo; el cue es solo afordancia visual).
+    private var seeRecoveryCue: some View {
+        HStack(spacing: NoopMetrics.space1) {
+            Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
+            Text("See recovery").font(StrandFont.caption)
+        }
+        .foregroundStyle(theme.inkTertiary)
+        .padding(.top, NoopMetrics.space1)
+        .accessibilityHidden(true)
     }
 
     /// El cuerpo bajo el numeral: la palabra del veredicto + «i» + modificadores (veredicto), o la línea
