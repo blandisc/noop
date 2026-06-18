@@ -521,7 +521,7 @@ struct TodayView: View {
     /// aunque el usuario no tenga banda).
     /// El `repo.refresh()` final asegura que la pantalla refleje lo último (los scores se recalculan
     /// solos vía `repo.refreshSeq` → `.task(id:)`). El `sleep` corto conserva el «soltar pronto» (~1.2 s)
-    /// de FER-204; el offload largo sigue en segundo plano, reflejado en el dial girando + `syncMeta`.
+    /// de FER-204; el offload largo sigue en segundo plano, reflejado en el dial girando + `SyncInline`.
     @MainActor
     private func pullToSync() async {
         syncHaptic += 1                       // dispara la háptica `.medium` al provocar el gesto
@@ -970,21 +970,19 @@ struct TodayView: View {
 
         var body: some View {
             Button(action: onTap) {
-                HStack(alignment: .center, spacing: NoopMetrics.space2) {
-                    Image(systemName: "heart.fill")
-                        .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                // Chip compacto (FER-265): punto que late + bpm + chevron. La cápsula + el chevron son
+                // el lenguaje iOS de «esto se toca»; el punto en color de dato (vivo) es el único color.
+                HStack(alignment: .center, spacing: NoopMetrics.space1) {
                     Circle().fill(isLiveHR ? theme.dataHeart : theme.inkTertiary)
                         .frame(width: 7, height: 7)
-                    if let bpm = liveBpm {
-                        Text("\(bpm)").font(StrandFont.number(15, weight: .semibold))
-                            .foregroundStyle(theme.ink)
-                    } else {
-                        Text("—").font(StrandFont.number(15, weight: .semibold))
-                            .foregroundStyle(theme.inkTertiary)
-                    }
-                    Text("bpm").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    Text(liveBpm.map { "\($0)" } ?? "—").font(StrandFont.number(13, weight: .semibold))
+                        .foregroundStyle(liveBpm == nil ? theme.inkTertiary : theme.ink)
+                    Text("bpm").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 9, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                 }
-                .padding(.horizontal, NoopMetrics.gap).padding(.vertical, NoopMetrics.space1)
+                .padding(.leading, NoopMetrics.space2).padding(.trailing, NoopMetrics.space1)
+                .padding(.vertical, 3)
                 .background(theme.surface, in: Capsule())
                 .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
             }
@@ -997,45 +995,54 @@ struct TodayView: View {
         }
     }
 
+    /// Línea de sincronización inline (FER-265): vive junto al sello «Hoy», ya no al pie. Reposo →
+    /// glifo + tiempo relativo («hace 3 min»); sincronizando → glifo GIRANDO + conteo de paquetes
+    /// («12 paquetes») o «Sincronizando…» con 0. El dial del héroe gira en paralelo (FER-221).
+    private struct SyncInline: View {
+        let backfilling: Bool
+        let chunks: Int
+        let lastSyncedAt: Double?
+        @Environment(\.instrumentoTheme) private var theme
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
+        @State private var spin = false
+
+        var body: some View {
+            HStack(spacing: NoopMetrics.space1) {
+                Image(systemName: "arrow.triangle.2.circlepath")
+                    .font(.system(size: 10))
+                    .foregroundStyle(backfilling ? theme.verdict : theme.inkTertiary)
+                    .rotationEffect(.degrees(spin && backfilling ? 360 : 0))
+                    .animation(backfilling && !reduceMotion ? StrandMotion.spin() : nil, value: spin)
+                label
+            }
+            .font(StrandFont.caption)
+            .foregroundStyle(theme.inkTertiary)
+            .lineLimit(1)
+            .onAppear { spin = backfilling }
+            .onChange(of: backfilling) { _, now in spin = now }
+            .accessibilityElement(children: .combine)
+        }
+
+        @ViewBuilder private var label: some View {
+            if backfilling {
+                Text(chunks > 0 ? "\(chunks) packets" : String(localized: "Syncing…")).monospacedDigit()
+            } else if let at = lastSyncedAt {
+                TimelineView(.periodic(from: .now, by: 60)) { context in
+                    Text(RelativeDateTimeFormatter().localizedString(
+                        fromTimeInterval: at - context.date.timeIntervalSince1970))
+                }
+            } else {
+                Text("Last sync — never")
+            }
+        }
+    }
+
     /// Top utility row: compact date only — sync status moved to the grid footer (FER-233).
     @ViewBuilder private var utilityRow: some View {
         Text(shortDate)
             .font(StrandFont.overline)
             .tracking(StrandFont.overlineTracking)
             .foregroundStyle(theme.inkTertiary)
-    }
-
-    /// Honesty line — "Synced 2 min. ago · strap 87%" / "Last sync — never".
-    /// Uses RelativeDateTimeFormatter so the time respects the device locale (es/en/…).
-    /// Keys match the xcstrings catalog so the surrounding text is also translated.
-    @ViewBuilder private var syncMeta: some View {
-        if live.backfilling {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Syncing strap history…")
-                    .font(StrandFont.mono(10))
-                    .foregroundStyle(theme.inkTertiary)
-                    .lineLimit(1)
-                Text(live.syncChunksThisSession > 0 ? "\(live.syncChunksThisSession) paquetes" : "···")
-                    .font(StrandFont.mono(10))
-                    .foregroundStyle(theme.inkTertiary)
-                    .monospacedDigit()
-            }
-        } else {
-            TimelineView(.periodic(from: .now, by: 60)) { context in
-                Group {
-                    if let at = live.lastSyncedAt {
-                        let rel = RelativeDateTimeFormatter().localizedString(
-                            fromTimeInterval: at - context.date.timeIntervalSince1970)
-                        Text("Synced \(rel)")
-                    } else {
-                        Text("Last sync — never")
-                    }
-                }
-                .font(StrandFont.mono(10))
-                .foregroundStyle(theme.inkTertiary)
-                .fixedSize(horizontal: false, vertical: true)
-            }
-        }
     }
 
     /// Whether the personal baseline draws on imported Apple Health history — drives the
@@ -1121,19 +1128,10 @@ struct TodayView: View {
         let anyMeasuredMissing = hrvR == nil || sleepR == nil || rhrR == nil || spo2R == nil || stepsFresh == nil
 
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-            // Encabezado en TINTA del tema (no el `SectionHeader` compartido, casi blanco sobre el papel
-            // claro). Sin trailing "Tendencia 14 días": esta sección ya no es tendencia. Clave en inglés
-            // (es-MX/de en el catálogo) — mismo patrón que los nombres de las hojas de métrica. Al trailing
-            // lleva la pastilla de pulso vivo (FER-194): el acceso al monitor latido a latido se mudó aquí
-            // desde la fila del pie (FER-189), liberando el pie de Hoy. Solo aparece cuando ya se vio un
-            // strap; si no, el encabezado queda solo con el título (el héroe ofrece «Buscar strap»).
-            HStack {
-                Text("Today's metrics").font(StrandFont.title1).foregroundStyle(theme.ink)
-                Spacer(minLength: NoopMetrics.space2)
-                if strapSeen {
-                    LivePulsePill(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
-                }
-            }
+            // Encabezado compacto (FER-265): sello «Hoy» + sincronización inline (sube del pie), y el
+            // pulso vivo como chip tocable a la derecha. El título grande de 28pt se retiró para que el
+            // dato mande y la sección quepa. Ver `metricsHeader`.
+            metricsHeader
             // Rejilla fija 2×8 (2 columnas, 8 tiles → 4 renglones), separación `NoopMetrics.gap`.
             LazyVGrid(columns: tileGrid, alignment: .leading, spacing: NoopMetrics.gap) {
                 // Esfuerzo del día — carga del día, sin valencia (Δ en tinta neutra).
@@ -1206,9 +1204,9 @@ struct TodayView: View {
                                          betterHigher: false, deadband: 0.1) { String(format: "%.1f", $0) }
                 )) { metricDetail = .stress(stressT) }
             }
-            // Pie de cuadrícula (FER-233): sincronización a la izquierda, leyenda de fuente a la derecha.
-            HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space2) {
-                syncMeta
+            // Pie de cuadrícula (FER-265): solo la leyenda de fuente, a la derecha. La sincronización se
+            // mudó al encabezado (`SyncInline` junto al sello «Hoy»), así que el pie queda más limpio.
+            HStack(spacing: NoopMetrics.space2) {
                 Spacer(minLength: 0)
                 HStack(spacing: NoopMetrics.space2) {
                     Text(verbatim: "W Strap")
@@ -1235,6 +1233,32 @@ struct TodayView: View {
                     .foregroundStyle(theme.inkSecondary)
                 }
                 .buttonStyle(.plain)
+            }
+        }
+    }
+
+    /// El encabezado compacto de «Métricas de hoy» (FER-265): sello «Hoy» (overline discreto) + la
+    /// sincronización inline, y el chip de pulso vivo a la derecha. En Dynamic Type grande el chip baja
+    /// a una segunda línea (`ViewThatFits`). El sello dice «hoy» sin repetir la palabra que ya traen la
+    /// fecha de arriba y el veredicto; la hora vive en `SyncInline` como última sync, no como reloj.
+    @ViewBuilder private var metricsHeader: some View {
+        let sello = HStack(spacing: NoopMetrics.space1) {
+            Text("Today").font(StrandFont.overline).tracking(StrandFont.overlineTracking)
+                .foregroundStyle(theme.inkSecondary)
+            Text(verbatim: "·").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            SyncInline(backfilling: live.backfilling, chunks: live.syncChunksThisSession,
+                       lastSyncedAt: live.lastSyncedAt)
+        }
+        let chip = Group {
+            if strapSeen {
+                LivePulsePill(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
+            }
+        }
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: NoopMetrics.space2) { sello; Spacer(minLength: NoopMetrics.space2); chip }
+            VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+                HStack(spacing: NoopMetrics.space1) { sello; Spacer(minLength: 0) }
+                chip
             }
         }
     }
@@ -1380,83 +1404,78 @@ struct TodayView: View {
                     }
                 }
                 Spacer(minLength: NoopMetrics.space1)
-                // Mini-banda del rango típico — solo cuando hay base (estado ready). Sin base / sin hoy
-                // no se dibuja; el alto fijo del tile mantiene parejos los renglones.
-                if case let .ready(_, band) = context {
-                    MetricBand(band: band)
-                    Spacer(minLength: NoopMetrics.space1)
-                }
                 footer
             }
             .padding(.horizontal, NoopMetrics.gap).padding(.vertical, NoopMetrics.space2)
-            // Alto fijo (FER-258): 70 → 88 para acomodar la mini-banda + el pie sin apretar el valor;
-            // todos los tiles miden igual aunque a algunos les falte banda (sin base / sin hoy).
-            .frame(maxWidth: .infinity, minHeight: 88, maxHeight: 88, alignment: .topLeading)
+            // Alto fijo (FER-265): 88 → 76 — la mini-banda y el cambio caben en UNA línea de pie, así
+            // que el tile vuelve a ser compacto y la sección no se desborda.
+            .frame(maxWidth: .infinity, minHeight: 76, maxHeight: 76, alignment: .topLeading)
             .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
                 .strokeBorder(theme.hairline, lineWidth: 1))
             .accessibilityElement(children: .combine)
         }
 
-        /// El pie del tile: cambio vs tu media de 7 días a la izquierda + badge de fuente a la derecha,
-        /// en la misma línea. La fuente no desplaza el cambio — conviven. Línea vacía preserva la altura.
+        /// El pie del tile en UNA línea (FER-265): la mini-banda (flexible, izquierda) + el cambio vs la
+        /// media + el badge de fuente. Con base → banda + cambio; sin base → texto «armando» / vacío,
+        /// con la fuente siempre a la derecha. Antes la banda iba en su propio renglón (FER-258).
         @ViewBuilder private var footer: some View {
-            HStack(spacing: 0) {
-                contextLine
-                Spacer(minLength: 0)
-                // Badge de fuente (derecha) — solo cuando hay dato; siempre inkTertiary, nunca color de dato.
-                if fromApple {
-                    Image(systemName: "heart.fill")
-                        .font(.system(size: 10))
-                        .foregroundStyle(theme.inkTertiary)
-                        .accessibilityLabel(Text("de Apple Salud"))
-                } else if value != "—" {
-                    Text(verbatim: "W")
-                        .font(.system(size: 9, weight: .semibold))
-                        .foregroundStyle(theme.inkTertiary)
-                        .accessibilityLabel(Text("de strap"))
+            HStack(spacing: NoopMetrics.space1) {
+                switch context {
+                case let .ready(change, band):
+                    MetricBand(band: band).frame(maxWidth: .infinity)
+                    changeText(change)
+                case .building:
+                    Text("Still building your average")
+                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        .lineLimit(1).minimumScaleFactor(0.7)
+                    Spacer(minLength: 0)
+                case .none:
+                    Spacer(minLength: 0)
                 }
+                sourceBadge
             }
         }
 
-        /// El texto de pie por estado: cambio con flecha (sobre/bajo tu media), «En tu media de 7 días»
-        /// (deadband), «Aún construyendo tu media» (poca historia) o línea vacía (sin valor de hoy).
-        @ViewBuilder private var contextLine: some View {
-            switch context {
-            case let .ready(change, _):
-                switch change {
-                case let .above(magnitude, color): changeText(up: true, magnitude: magnitude, color: color)
-                case let .below(magnitude, color): changeText(up: false, magnitude: magnitude, color: color)
-                case let .equal(color):
-                    Text("At your 7-day average")
-                        .font(StrandFont.caption).foregroundStyle(color)
-                        .lineLimit(1).minimumScaleFactor(0.8)
-                }
-            case .building:
-                Text("Still building your average")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    .lineLimit(1).minimumScaleFactor(0.8)
-            case .none:
-                // Sin valor de hoy: línea vacía mantiene parejos los tiles del renglón.
-                Text(verbatim: " ").font(StrandFont.caption).foregroundStyle(.clear)
-            }
-        }
-
-        /// La línea de cambio vs la media: flecha + magnitud + «vs tu media 7d» (compacta para el tile).
+        /// El cambio vs la media: deadband → «En tu media»; subir/bajar → flecha + magnitud + «vs media».
         /// VoiceOver lee la frase completa «sobre/bajo tu media de 7 días» (la flecha va oculta).
-        private func changeText(up: Bool, magnitude: String, color: Color) -> some View {
+        @ViewBuilder private func changeText(_ change: TileChange) -> some View {
+            switch change {
+            case let .above(magnitude, color): deltaLabel(up: true, magnitude: magnitude, color: color)
+            case let .below(magnitude, color): deltaLabel(up: false, magnitude: magnitude, color: color)
+            case let .equal(color):
+                Text("At your average")
+                    .font(StrandFont.caption).foregroundStyle(color)
+                    .lineLimit(1).minimumScaleFactor(0.7).layoutPriority(1)
+            }
+        }
+
+        private func deltaLabel(up: Bool, magnitude: String, color: Color) -> some View {
             HStack(spacing: NoopMetrics.space1) {
                 Image(systemName: up ? "arrow.up" : "arrow.down")
                     .font(.system(size: 10, weight: .semibold))
                 Text(verbatim: magnitude)
-                Text("vs 7-day avg")
+                Text("vs avg")
             }
             .font(StrandFont.caption)
             .foregroundStyle(color)
-            .lineLimit(1).minimumScaleFactor(0.75)
+            .lineLimit(1).minimumScaleFactor(0.7).layoutPriority(1)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text(up ? "\(magnitude) above your 7-day average"
                                          : "\(magnitude) below your 7-day average"))
+        }
+
+        /// Badge de fuente (derecha) — solo cuando hay dato; siempre inkTertiary, nunca color de dato.
+        @ViewBuilder private var sourceBadge: some View {
+            if fromApple {
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 10)).foregroundStyle(theme.inkTertiary)
+                    .accessibilityLabel(Text("de Apple Salud"))
+            } else if value != "—" {
+                Text(verbatim: "W")
+                    .font(.system(size: 9, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    .accessibilityLabel(Text("de strap"))
+            }
         }
     }
 
