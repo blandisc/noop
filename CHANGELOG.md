@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **La pantalla «Comparar» ahora es clara, como el resto de la app / The "Compare" screen is now light, like the rest of the app.**
+  **ES** — Al tocar **«Comparar»** en Cuerpo, la pantalla ya no salta oscura sobre el fondo claro: se rediseñó al estilo «Instrumento» —papel cálido, números que mandan, color solo en el dato—. Cada una de las 2–4 líneas del gráfico usa una tinta profunda y legible (verde, cian, índigo, ámbar), y el valor de correlación se pinta verde cuando suben juntas o rojo cuando una sube y la otra baja. Mismo funcionamiento de siempre: elegir métricas, rango de tiempo, superponer y leer la correlación.
+  **EN** — Tapping **"Compare"** in Body no longer pops a dark screen over the light background: it was redesigned to the "Instrumento" style — warm paper, numbers lead, color only on the datum. Each of the 2–4 chart lines uses a deep, legible hue (green, cyan, indigo, amber), and the correlation value turns green when they rise together or red when one rises as the other falls. Works exactly as before: pick metrics, a time range, overlay them and read the correlation.
+  ([Cenit/Screens/CompareView.swift](Cenit/Screens/CompareView.swift))
+
 - **El formulario para agregar o editar un entrenamiento ahora es claro, como el resto / The add/edit-workout form is now light, like everything else.**
   **ES** — Al tocar **«Agregar entrenamiento»** (o **Editar/Duplicar** desde el detalle), la hoja ya no salta oscura y angosta sobre la pantalla clara: se rediseñó al estilo «Instrumento» —papel cálido, campos claros— y ahora **llena el ancho** en el iPhone. Mismos campos y validaciones de siempre (deporte, inicio, duración, FC media, calorías), ahora en español.
   **EN** — Tapping **"Add workout"** (or **Edit/Duplicate** from the detail) no longer pops a dark, narrow sheet over the light screen: it was redesigned to the "Instrumento" style — warm paper, light fields — and now **fills the width** on iPhone. Same fields and validations as always (sport, start, duration, avg HR, calories), now localized.

@@ -387,7 +387,7 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 
 ### CompareView
 **Archivo:** `Cenit/Screens/CompareView.swift`  
-**Descripción:** Superponer 2–4 métricas en gráfica normalizada (0–1) + Pearson r entre pares.
+**Descripción:** Superponer 2–4 métricas en gráfica normalizada (0–1) + Pearson r entre pares. En lenguaje «Instrumento diurno» claro (FER-268): papel cálido, color SOLO en el dato (las líneas del overlay + el valor r), jerarquía por espacio. Se abre desde el pie de Cuerpo como `.sheet` claro (tema inyectado en la raíz, sin `NavigationStack` anidado; se cierra arrastrando). Las 4 líneas usan las tintas de dato profundas (`verdict` / `dataHrv` / `dataSleep` / `dataStrain`), legibles sobre el papel.
 
 | Estado | Condición de entrada |
 |--------|---------------------|
@@ -395,7 +395,7 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 | < 2 métricas | Solo 1 métrica seleccionada |
 | 2+ métricas | Gráfica overlay + tarjetas de correlación |
 
-**Componentes:** `Multi-select picker`, `SegmentedPillControl`, `Overlay ChartCard (normalizado 0–1)`, `Correlation rows (Pearson r + p-value)`
+**Componentes:** `Multi-select picker (addMenu)`, `SegmentedPillControl (theme:)`, `OverlayChart (normalizado 0–1, multi-línea)`, `MultiTooltip`, `Correlation cards (Pearson r)`
 
 ---
 

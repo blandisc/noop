@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-18 · FER-265</span>
+  <span class="tb-updated">Actualizado 2026-06-18 · FER-268</span>
 </div>
 
 <div id="wrapper">
@@ -507,7 +507,7 @@ const SCREENS = [
       { to: 'sleep', label: 'Sueño → SleepDetailScreen (sheet claro «Instrumento» — FER-212)', type: 'sheet' },
       { to: 'workouts', label: 'Entrenamientos → WorkoutsView (sheet claro «Instrumento» + stack propio — FER-260)', type: 'sheet' },
       { to: 'skintemp-detail', label: 'Temp. de piel → SkinTempDetailScreen (sheet claro «Instrumento» — FER-256)', type: 'sheet' },
-      { to: 'compare', label: 'Comparar (sheet oscuro)', type: 'sheet' },
+      { to: 'compare', label: 'Comparar → CompareView (sheet claro «Instrumento» — FER-268)', type: 'sheet' },
       { to: 'explore', label: 'Ver todas las métricas → MetricExplorerView (sheet oscuro)', type: 'sheet' },
       { to: 'fitness-age', label: 'Edad física → FitnessAgeDetailView (sheet claro «Instrumento»)', type: 'sheet' },
     ],
@@ -547,7 +547,7 @@ const SCREENS = [
   },
   {
     id: 'compare', x: 284, y: 1360,
-    name: 'Compare', desc: 'Superponer 2–4 métricas',
+    name: 'Compare', desc: 'Superponer 2–4 métricas (sheet claro «Instrumento» — FER-268)',
     file: 'Cenit/Screens/CompareView.swift',
     icon: '⚖', color: '#9B8FFF',
     states: [
@@ -556,7 +556,7 @@ const SCREENS = [
       { label: '2+ métricas', type: 'data' },
     ],
     nav: [],
-    components: ['Multi-select picker', 'SegmentedPillControl', 'Overlay ChartCard (normalizado 0–1)', 'Correlation rows (Pearson r + p-value)'],
+    components: ['Multi-select picker (addMenu)', 'SegmentedPillControl (theme:)', 'OverlayChart (normalizado 0–1, multi-línea con tintas de dato)', 'MultiTooltip', 'Correlation cards (Pearson r)', 'InstrumentoTheme'],
   },
   {
     id: 'apple-health', x: 538, y: 1360,
