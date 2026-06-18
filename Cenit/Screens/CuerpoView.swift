@@ -82,6 +82,10 @@ private struct CuerpoLanding: View {
     /// Unified Detalle de Métrica (FER-185): the three vitals (HRV / FC reposo / Respiración) open this
     /// at `.full` depth instead of the legacy `MetricInfoSheet` / dark `MetricDetailView` bridge.
     @State private var metricSpec: MetricDetailSpec? = nil
+    /// Light «Instrumento» Detalle de Recuperación (FER-225): the recovery hero now opens this rich detail
+    /// (superset of the old `MetricInfoSheet`), built fresh on tap from the in-memory dashboard, theme
+    /// passed explicitly.
+    @State private var recoveryDetail: RecoveryDetailItem? = nil
     /// Dark screen / catalog-detail sheet, for everything without a light sheet yet.
     @State private var darkSheet: CuerpoSheet? = nil
     /// Light «Instrumento» Detalle de Sueño (FER-212) — the «Sueño» row now opens this superset of the
@@ -178,6 +182,11 @@ private struct CuerpoLanding: View {
                     : nil
             )
         }
+        .sheet(item: $recoveryDetail) { item in
+            // Light «Instrumento» Detalle de Recuperación — theme passed explicitly (it doesn't propagate
+            // through `.sheet`), NO nested NavigationStack (FER-171). (FER-225)
+            RecoveryDetailScreen(theme: theme, model: item.model)
+        }
         .sheet(item: $darkSheet) { sheet in darkSheetContent(sheet) }
         .sheet(item: $sleepDetail) { item in
             // Light «Instrumento» sheet — pass the resolved theme explicitly (it doesn't propagate
@@ -263,7 +272,12 @@ private struct CuerpoLanding: View {
         let showSpark = (spark?.count ?? 0) > 1 && score != nil
         let color = score.map(recoveryColor) ?? theme.inkTertiary
         return Button {
-            metricInfo = .recovery(score: score, calibrationNights: cal, nightsNeeded: Self.recoverySeed)
+            recoveryDetail = RecoveryDetailItem(model: RecoveryDetailModel.build(
+                days: repo.days,
+                today: repo.today,
+                todayKey: Repository.localDayKey(Date()),
+                appleHealthDays: repo.appleHealthDays,
+                loaded: repo.loaded))
         } label: {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {

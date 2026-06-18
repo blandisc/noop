@@ -29,6 +29,18 @@ public struct YearHeatStrip: View {
     /// Whether hovering a cell highlights it with a ring and shows a tooltip
     /// (date + score + recovery state word). Defaults on.
     public var showsHover: Bool
+    /// Tints a day's cell from its recovery score. Defaults to the dark-system recovery gradient so
+    /// the shipped (dark) Trends caller is unchanged; the light «Instrumento» detail passes a warm
+    /// band-color closure instead, so the calendar reads on warm paper. (FER-225)
+    public var tint: (Double) -> Color
+    /// Fill for an in-range day that has no data. Defaults to the dark `surfaceInset`; the light
+    /// detail passes a warm hairline so empty days don't render as near-black squares on paper. (FER-225)
+    public var emptyFill: Color
+    /// Hairline stroke around an empty-but-in-range day. (FER-225)
+    public var emptyStroke: Color
+    /// Color of the month + weekday gutter labels. Defaults to the dark `textTertiary`; the light
+    /// detail passes warm `inkTertiary`. (FER-225)
+    public var labelColor: Color
     /// Formats a day's score for the tooltip's bold line.
     public var valueFormat: (Double) -> String
 
@@ -38,6 +50,10 @@ public struct YearHeatStrip: View {
         spacing: CGFloat = 3,
         showsMonthLabels: Bool = true,
         showsHover: Bool = true,
+        tint: @escaping (Double) -> Color = { StrandPalette.recoveryColor($0) },
+        emptyFill: Color = StrandPalette.surfaceInset,
+        emptyStroke: Color = StrandPalette.hairline.opacity(0.6),
+        labelColor: Color = StrandPalette.textTertiary,
         valueFormat: @escaping (Double) -> String = { "Recovery \(Int($0.rounded()))" }
     ) {
         self.days = days.sorted { $0.date < $1.date }
@@ -45,7 +61,24 @@ public struct YearHeatStrip: View {
         self.spacing = spacing
         self.showsMonthLabels = showsMonthLabels
         self.showsHover = showsHover
+        self.tint = tint
+        self.emptyFill = emptyFill
+        self.emptyStroke = emptyStroke
+        self.labelColor = labelColor
         self.valueFormat = valueFormat
+    }
+
+    /// The number of week columns the grid will draw for `days` (Monday-first weeks). Exposed so a
+    /// caller that wants the grid to fill a known width can size `cellSize` to it without duplicating
+    /// the bucketing. Returns 0 for an empty set. (FER-225)
+    public static func weekColumns(for days: [RecoveryDay]) -> Int {
+        let sorted = days.sorted { $0.date < $1.date }
+        guard let first = sorted.first?.date else { return 0 }
+        var c = Calendar(identifier: .gregorian)
+        c.firstWeekday = 2
+        let wd = c.component(.weekday, from: first)
+        let firstRow = (wd + 5) % 7                       // Monday-first 0…6
+        return Int(ceil(Double(firstRow + sorted.count) / 7.0))
     }
 
     // The grid layout constants used both for drawing and hover hit-testing.
@@ -126,7 +159,7 @@ public struct YearHeatStrip: View {
                     ForEach(weeks) { week in
                         Text(week.monthLabel ?? "")
                             .font(.system(size: 8))
-                            .foregroundStyle(StrandPalette.textTertiary)
+                            .foregroundStyle(labelColor)
                             .frame(width: cellSize, alignment: .leading)
                     }
                 }
@@ -137,7 +170,7 @@ public struct YearHeatStrip: View {
                     ForEach(0..<7, id: \.self) { r in
                         Text(rowLabels[r])
                             .font(.system(size: 8))
-                            .foregroundStyle(StrandPalette.textTertiary)
+                            .foregroundStyle(labelColor)
                             .frame(width: gutterWidth, height: cellSize, alignment: .trailing)
                     }
                 }
@@ -222,7 +255,7 @@ public struct YearHeatStrip: View {
                     tooltip: ChartTooltip(
                         value: valueFormat(score),
                         label: "\(DateFormatterCache.day.string(from: day.date)) · \(StrandPalette.recoveryState(score))",
-                        accent: StrandPalette.recoveryColor(score)
+                        accent: tint(score)
                     )
                 )
             }
@@ -237,14 +270,14 @@ public struct YearHeatStrip: View {
         let shape = RoundedRectangle(cornerRadius: 2.5)
         if let day, let score = day.score {
             shape
-                .fill(StrandPalette.recoveryColor(score))
+                .fill(tint(score))
                 .frame(width: cellSize, height: cellSize)
                 .opacity(isHovered ? 1.0 : (hoverCell == nil ? 1.0 : 0.78))
                 .help("\(DateFormatterCache.day.string(from: day.date)) · recovery \(Int(score.rounded()))")
         } else if day != nil {
             shape
-                .fill(StrandPalette.surfaceInset)
-                .overlay(shape.stroke(StrandPalette.hairline.opacity(0.6), lineWidth: 0.5))
+                .fill(emptyFill)
+                .overlay(shape.stroke(emptyStroke, lineWidth: 0.5))
                 .frame(width: cellSize, height: cellSize)
         } else {
             shape

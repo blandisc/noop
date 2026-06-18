@@ -39,8 +39,9 @@ Tab shell (FER-182) → 5 pestañas: Hoy · Cuerpo · Coach · Entrenar · Ajust
              WorkoutsView · AppleHealthView · DataSourcesView · AutomationsView · SupportView
              (Sueño · Health · Stress se mudaron a «Cuerpo» como métricas — FER-186)
 SettingsView → WhatsNewView (sheet)
-TodayView   → LiveView (sheet, detente grande) · MetricInfoSheet (sheet) · MetricDetailScreen (sheet, .focus: HRV/FC reposo — FER-185) · WhyVerdictSheet (sheet) · SupportView (toolbar)
-CuerpoView  → MetricInfoSheet (sheet claro: Recuperación/Esfuerzo/SpO₂/FC/Pasos/Estrés) ·
+TodayView   → LiveView (sheet, detente grande) · MetricInfoSheet (sheet) · MetricDetailScreen (sheet, .focus: HRV/FC reposo — FER-185) · RecoveryDetailScreen (sheet «Instrumento»: Recuperación — FER-225) · WhyVerdictSheet (sheet) · SupportView (toolbar)
+CuerpoView  → RecoveryDetailScreen (sheet «Instrumento»: Recuperación — FER-225) ·
+             MetricInfoSheet (sheet claro: Esfuerzo/SpO₂/FC/Pasos/Estrés) ·
              MetricDetailScreen (sheet claro, .full: HRV/FC reposo/Respiración — FER-185) ·
              BodyAgeSheet (sheet claro: Edad corporal + Vitalidad — FER-145) ·
              SleepDetailScreen (sheet claro «Instrumento»: Sueño + regularidad del horario — FER-212) ·
@@ -123,7 +124,7 @@ de En vivo en FER-184; **no toca `LiveView`**.
 **Nota — dial del veredicto de vuelta a 180 (iOS, FER-205 · revierte el punto (1) de FER-202):** al dueño no le gustó el dial encogido, así que el `DiurnalDial` regresó **118 → 180px** y el numeral **52 → 60** (`heroNumeral`, los 4 estados). Se **conserva** el «/100»/«N/seed» apilado y centrado de FER-202 y las demás compactaciones (calibración a 2 renglones, tiles 70pt, ritmo 18/12/11). Con el dial grande, Hoy puede volver a requerir algo de scroll en estado calibrando — trade-off aceptado por el dueño.
 
 **Componentes:** `HealthAlertBanner`, `PaperBackground` (lienzo de papel por hora, FER-135), `heroInstrument` (héroe unificado de 4 modos vía `HeroState`, FER-160), `DiurnalDial` (dial 24h del héroe, FER-135), `LivePulsePill` (pastilla de pulso en el encabezado de «Métricas de hoy», FER-194 · reemplaza `LiveHeartbeatRow`), `WhyVerdictSheet`, `TodayMetricTile`/`TileButtonStyle` (rejilla «Métricas de hoy» 2×4, valor + Δ vs ayer, tiles 70pt, realce al pulsar FER-213, FER-180/189/202) · macOS (heredado): `MetricRow`, `RecoveryRing`, `StatTile ×10`, `ChartCard (HR Trend)`, `SourcesSummaryCard`, `ReadinessGaugeBar`, `readinessSection`  
-**Navegación:** → `LiveView` (sheet detente grande, "beat by beat" — FER-190) · → `MetricInfoSheet` (sheet, tap de cualquier **tile** de «Métricas de hoy» —incl. la variante **`stress`** nueva, FER-180— · tap del **número de recuperación** del héroe → explicador «cómo se calcula», FER-108/109) · → `WhyVerdictSheet` (sheet, **«i»** junto a la palabra del veredicto) · → `DataSourcesView` (sheet, «Conectar Apple Salud») · → `SupportView` (toolbar ❤)
+**Navegación:** → `LiveView` (sheet detente grande, "beat by beat" — FER-190) · → `MetricInfoSheet` (sheet, tap de cualquier **tile** de «Métricas de hoy» —incl. la variante **`stress`** nueva, FER-180—) · → `RecoveryDetailScreen` (sheet «Instrumento», tap del **número de recuperación** del héroe — FER-225, antes abría el explicador `MetricInfoSheet`) · → `WhyVerdictSheet` (sheet, **«i»** junto a la palabra del veredicto) · → `DataSourcesView` (sheet, «Conectar Apple Salud») · → `SupportView` (toolbar ❤)
 
 **Nota — `WhyVerdictSheet` en tema claro (FER-167):** el sheet «¿Por qué {veredicto}?» se migró del fondo oscuro `StrandPalette.surfaceBase` al **tema claro «Instrumento»** (igual que `MetricInfoSheet` en FER-162). `TodayView` le pasa el `InstrumentoTheme` **explícito** (no se propaga por `.sheet`); papel/tinta/superficies del tema. Los colores de nivel del chip y la leyenda **espejean `TodayView.verdictDataColor`** (primed/balanced → `verdict`, strained → `warning`, rundown → `critical`, insufficient → `inkTertiary`) para que el héroe y el sheet nunca discrepen; el `colorName` del chip sigue ese mapeo (verde/ámbar/rojo/gris). Copy es-MX + de (FER-113 ya tenía es; FER-167 añade el `de` de los nombres de nivel y el color «rojo»).
 
@@ -163,6 +164,23 @@ Las 8 secciones (orden): Hero (horas dormidas) · Anoche (hipnograma + etapas en
 | Regularidad afinándose | `< SleepRegularity.minNights` noches con horario → «Se está afinando · N noches por venir» (sin número falso) |
 
 **Componentes:** `Hypnogram`, `TrendChart`, barra de etapas apilada, fila etapa-vs-típico (con marcador en el promedio personal), bloque de regularidad, rejilla `metricTile`, `DisclosureGroup` («Ver el método»). El tile de **Latencia se omite** de la rejilla cuando no hay dato (el caché no trae latencia de onset), reacomodando sin hueco.
+
+---
+
+### RecoveryDetailScreen
+**Archivo:** `Cenit/Screens/RecoveryDetailScreen.swift`  
+**Descripción:** Detalle de Recuperación «Instrumento» (claro) — el siguiente «sabor» del Detalle de Métrica tras Sueño (FER-225). Hermana de `MetricDetailScreen` (igual que `SleepDetailScreen`): reusa su lenguaje visual (scaffold `block`/`hero`/`InfoAccordion`/`SheetPaperBackground`/`methodDisclosure`/`statCell`) pero con su propio `RecoveryDetailModel`, porque la recuperación es un **score compuesto** con bloques propios, no un vital de serie escalar. **Reemplaza** —para recuperación— la vieja `MetricInfoSheet`: ahora **Cuerpo** (hero) y **Hoy** (el número del veredicto) abren esta pantalla. Sheet con `InstrumentoTheme` **explícito** (no se propaga por `.sheet`, FER-162), **sin `NavigationStack` anidado** (FER-171). Consume `StrandAnalytics` tal cual (no crea matemática nueva; el pronóstico es FER-188): score + banda de `RecoveryScorer`, estado por driver + carga de `ReadinessEngine` (sus señales comparten la base del scorer), calibración de `RecoveryScorer.calibrationNights`, estadísticas de `ComparisonEngine`. Presentación pura sobre un `RecoveryDetailModel` que el llamador construye desde `repo` (sin DB).
+
+Los 8 bloques (orden), **cada uno con su ⓘ `InfoAccordion`** salvo el método: 1) **Hero** — score 0–100 en color de banda (verde ≥67 `verdict` / ámbar 34–67 `warning` / rojo <34 `critical`, por `RecoveryScorer.band`) + lectura · 2) **Qué lo explica** — cada driver (HRV 60 / FC reposo 20 / Sueño 15 / Temp 10 / Respiración 5, pesos de `RecoveryScorer.w*`) con su **estado vs tu base** (flag de `ReadinessEngine.signals`; Sueño se deriva de la eficiencia vs `sleepPerfCenter`) y una barra peso=largo, estado=color · 3) **Tu rango normal** — media ± σ de los últimos 30 días (`ComparisonEngine.stat`) · 4) **Selector de periodo + Tendencia** — `SegmentedPillControl`(`ExploreRange`) + `TrendChart` (media móvil 7d, decimada) + **Prom/Mediana/Mín/Máx/σ** · 5) **Consistencia (CV)** — `SeriesShape.coefficientOfVariation` · 6) **Calendario · 90 días** — `YearHeatStrip` **re-tintado** (chrome cálido, celdas vacías en `hairline`, bandas de Instrumento) y **a todo el ancho** · 7) **Carga reciente** — `acwr`/`monotony`/`loadBand` de `ReadinessEngine` como **contexto honesto, sin claim de lesión** (Impellizzeri 2020) · 8) **Ver el método** (z-score + logística + cita).
+
+| Estado | Condición de entrada |
+|--------|---------------------|
+| Cargando | `model.loaded == false` (well con spinner) |
+| Calibrando | `model.calibration != nil` (`RecoveryScorer.calibrationNights` en [1,4)) → «N / 4 noches» + barra, sin gráficas |
+| Con datos | hay score o serie de recuperación → los 8 bloques |
+| Sin datos / offline | cargó, sin score y sin historia → hero «—» con copy honesto (usa la banda; no promete datos) |
+
+**Componentes:** `InfoAccordion`, `TrendChart`, `YearHeatStrip` (+ `YearHeatStrip.weekColumns` para llenar el ancho), `SegmentedPillControl`, `RecoveryDay`, `InstrumentoTheme`. **Analytics:** `RecoveryScorer` (banda, pesos, calibración), `ReadinessEngine` (señales por driver + carga/monotonía), `ComparisonEngine` (estadísticas + mes-vs-mes), `SeriesShape` (media móvil, CV, decimación), `Baselines.minNightsSeed`.
 
 ---
 
@@ -212,7 +230,7 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 | Calibrando | Recuperación muestra «N/4» + «Calibrando tu base»; el resto en «—» con esqueleto |
 | Sin permiso / offline | Muestra lo guardado; las métricas solo-Apple (Pasos) invitan a conectar sin prometer datos |
 
-**Apertura del detalle (FER-185 ya aterrizó para los 3 vitales):** **HRV · FC en reposo · Respiración** abren el **`MetricDetailScreen`** unificado (sheet claro «Instrumento», `depth: .full`, tema explícito, sin `NavigationStack` anidado); **Sueño** abre el **`SleepDetailScreen`** claro «Instrumento» (sheet, tema explícito, sin stack anidado — FER-212). El resto sigue su puente: Recuperación/Esfuerzo/SpO₂/FC/Pasos/Estrés→`MetricInfoSheet` claro; Entrenamientos→`WorkoutsView`, Temp. piel→`MetricDetailView` del catálogo, Comparar→`CompareView`, Ver todas→`MetricExplorerView` — estos últimos como **sheet oscuro fijado a `.dark`** (un tab claro no puede empujar una pantalla oscura sin romper la barra de estado). El mini-bloque **«Cómo amaneces tras cada deporte»** (Activity Cost, FER-139) en «Actividad» abre su propia **hoja clara** `ActivityRecoverySheet` (hermana de `MetricInfoSheet`, tema explícito): una tarjeta por deporte —en el orden del motor— con la frase de **asociación** (no causa), badge de confianza (`Sólido`/`Juntando datos`) y «n sesiones», más «Ver el método» con los confusores; sin datos suficientes → estado «Juntando datos».
+**Apertura del detalle (FER-185 ya aterrizó para los 3 vitales):** **HRV · FC en reposo · Respiración** abren el **`MetricDetailScreen`** unificado (sheet claro «Instrumento», `depth: .full`, tema explícito, sin `NavigationStack` anidado); **Sueño** abre el **`SleepDetailScreen`** claro «Instrumento» (sheet, tema explícito, sin stack anidado — FER-212); **Recuperación** (la fila héroe) abre el **`RecoveryDetailScreen`** «Instrumento» (sheet, tema explícito, sin stack anidado — FER-225), ya no la `MetricInfoSheet`. El resto sigue su puente: Esfuerzo/SpO₂/FC/Pasos/Estrés→`MetricInfoSheet` claro; Entrenamientos→`WorkoutsView`, Temp. piel→`MetricDetailView` del catálogo, Comparar→`CompareView`, Ver todas→`MetricExplorerView` — estos últimos como **sheet oscuro fijado a `.dark`** (un tab claro no puede empujar una pantalla oscura sin romper la barra de estado). El mini-bloque **«Cómo amaneces tras cada deporte»** (Activity Cost, FER-139) en «Actividad» abre su propia **hoja clara** `ActivityRecoverySheet` (hermana de `MetricInfoSheet`, tema explícito): una tarjeta por deporte —en el orden del motor— con la frase de **asociación** (no causa), badge de confianza (`Sólido`/`Juntando datos`) y «n sesiones», más «Ver el método» con los confusores; sin datos suficientes → estado «Juntando datos».
 
 **Componentes:** `MetricRow`, `Sparkline` (+ `ReferenceRange.interquartile`), `MetricInfoSheet`, `MetricDetailScreen` (+ `MetricDetailSpec`), `ActivityRecoverySheet` (FER-139), `FitnessAgeDetailView`, `InlineFlagChip`, `InstrumentoTheme` (`instrumentoThemeByHour`). **Analytics:** `ActivityCostEngine` + `ActivityCostInputs` (StrandAnalytics, vía `Repository.activityCosts()`).
 
@@ -484,7 +502,7 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 
 ### MetricInfoSheet
 **Archivo:** `Cenit/Screens/MetricInfoSheet.swift`  
-**Presentado por:** `TodayView` (tap cualquier métrica del grid · tap de los stats **Recuperación** / **HRV** en la fila de síntesis)
+**Presentado por:** `TodayView` (tap de un **tile** de «Métricas de hoy») y `CuerpoView` (filas con hoja clara). **Recuperación ya no usa esta hoja** — desde FER-225 abre `RecoveryDetailScreen` «Instrumento» (Hoy y Cuerpo); la variante `recovery` de `MetricInfo` (las dos filas de Recuperación de abajo) queda sin call sites.
 
 | Estado | Condición de entrada |
 |--------|---------------------|

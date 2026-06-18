@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-17 · FER-212</span>
+  <span class="tb-updated">Actualizado 2026-06-17 · FER-225</span>
 </div>
 
 <div id="wrapper">
@@ -380,7 +380,7 @@ const SCREENS = [
       { to: 'live', label: 'beat by beat (hoja · FER-190)', type: 'sheet' },
       { to: 'metric-info', label: 'Tap tile de «Métricas de hoy» (Esfuerzo/Sueño/FC/SpO₂/Pasos/Estrés · FER-180)', type: 'sheet' },
       { to: 'metric-detail-screen', label: 'Tap tile HRV / FC reposo → MetricDetailScreen unificado (.focus · FER-185)', type: 'sheet' },
-      { to: 'metric-info', label: 'Tap número de recuperación (héroe) → cómo se calcula', type: 'sheet' },
+      { to: 'recovery-detail', label: 'Tap número de recuperación (héroe) → RecoveryDetailScreen «Instrumento» (FER-225)', type: 'sheet' },
       { to: 'why-verdict', label: '«i» junto a la palabra del veredicto', type: 'sheet' },
       { to: 'support', label: 'Toolbar ❤', type: 'toolbar' },
     ],
@@ -462,7 +462,8 @@ const SCREENS = [
       { label: 'Longevidad: Edad corporal (FER-145) — años teñidos por signo → BodyAgeSheet (banda ±5 · Vitalidad 0–100 · «Qué la mueve»); sin 3 señales → checklist honesto', type: 'data' },
     ],
     nav: [
-      { to: 'metric-info', label: 'Tap fila con hoja clara (Recuperación/Esfuerzo/SpO₂/FC/Pasos/Estrés)', type: 'sheet' },
+      { to: 'recovery-detail', label: 'Recuperación (héroe) → RecoveryDetailScreen «Instrumento» (FER-225)', type: 'sheet' },
+      { to: 'metric-info', label: 'Tap fila con hoja clara (Esfuerzo/SpO₂/FC/Pasos/Estrés)', type: 'sheet' },
       { to: 'metric-detail-screen', label: 'HRV / FC reposo / Respiración → MetricDetailScreen unificado (.full, sheet claro — FER-185)', type: 'sheet' },
       { to: 'sleep', label: 'Sueño → SleepDetailScreen (sheet claro «Instrumento» — FER-212)', type: 'sheet' },
       { to: 'workouts', label: 'Entrenamientos → WorkoutsView (sheet oscuro)', type: 'sheet' },
@@ -725,6 +726,21 @@ const SCREENS = [
     ],
     nav: [],
     components: ['Héroe = media móvil 7d (SeriesShape.latestMovingAverage), hoy como contexto', 'SegmentedPillControl (ExploreRange → Cenit/Data/ExploreRange.swift)', 'Sparkline + ReferenceRange.interquartile (banda)', 'MetricDetailSpec (BlockSet/HeroKind/baselineCfg) reutiliza MetricInfo', 'SeriesShape (StrandAnalytics: SMA/CV) + Baselines + ComparisonEngine', 'WhatMovesItEngine (Cenit/Data/WhatMovesIt.swift) + CorrelationEngine.trend/MetricTrend (StrandAnalytics: gate r→dirección · FER-209) + InlineFlagChip', 'InstrumentoTheme (explícito · sin NavigationStack anidado FER-171)'],
+  },
+  {
+    id: 'recovery-detail', x: 792, y: 3310,
+    name: 'Detalle de Recuperación', desc: 'Sheet: Detalle de Recuperación «Instrumento» — score compuesto + ⓘ científico por bloque (desde Cuerpo y Hoy · FER-225)',
+    file: 'Cenit/Screens/RecoveryDetailScreen.swift',
+    icon: '🟢', color: '#0C8F62',
+    isSheet: true,
+    states: [
+      { label: 'Con datos: 8 bloques con ⓘ — Hero (score por banda) · Qué lo explica (driver vs base + peso) · Rango normal · Tendencia (pills + Prom/Mediana/Mín/Máx/σ) · Consistencia (CV) · Calendario 90d (YearHeatStrip re-tintado, a todo el ancho) · Carga reciente (ACWR/monotonía, contexto SIN claim de lesión · Impellizzeri 2020) · Ver el método', type: 'data' },
+      { label: 'Calibrando: RecoveryScorer.calibrationNights en [1,4) → «N / 4 noches» + barra, sin gráficas', type: 'loading' },
+      { label: 'Cargando: model.loaded == false (well con spinner)', type: 'loading' },
+      { label: 'Sin datos / offline: sin score y sin historia → hero «—» con copy honesto (no promete datos)', type: 'empty' },
+    ],
+    nav: [],
+    components: ['InfoAccordion (ⓘ por bloque)', 'Hero en color de banda (RecoveryScorer.band: verdict/warning/critical)', 'Drivers (ReadinessEngine.signals + pesos RecoveryScorer.w*) con barra peso=largo/estado=color', 'TrendChart (media móvil 7d decimada) + ComparisonEngine (Prom/Mediana/Mín/Máx/σ)', 'YearHeatStrip re-tintado + YearHeatStrip.weekColumns (a todo el ancho)', 'SegmentedPillControl (ExploreRange)', 'RecoveryDetailModel (build desde repo · sin DB)', 'InstrumentoTheme explícito · sin NavigationStack anidado (FER-171)'],
   },
   {
     id: 'fitness-age', x: 284, y: 3310,
