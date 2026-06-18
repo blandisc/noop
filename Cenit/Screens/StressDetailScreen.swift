@@ -173,10 +173,14 @@ struct StressDetailScreen: View {
                 }
                 if window.values.count > 1 {
                     stressChart(window)
-                    Text(verbatim: trendHeadline(mom))
-                        .font(StrandFont.bodyNumber)
-                        .foregroundStyle(theme.ink)
-                    statStrip(stat)
+                    TrendStatSummary(
+                        average: fmt(stat.mean),
+                        pctChange: mom.pctChange,
+                        polarity: .lowerIsBetter,
+                        rangeLow: fmt(stat.min),
+                        rangeHigh: fmt(stat.max),
+                        theme: theme
+                    )
                 } else {
                     emptyWell(text: "Not enough days in this range to draw a trend.")
                 }
@@ -222,36 +226,6 @@ struct StressDetailScreen: View {
     /// Map a 0–3 value to its band (mirrors the model's fixed 0–1 / 1–2 / 2–3 thresholds).
     private func band(forValue v: Double) -> StressBand {
         v < 1 ? .low : (v < 2 ? .medium : .high)
-    }
-
-    /// Three statistics over the selected window — Average · Lowest · Highest — mirroring the siblings.
-    private func statStrip(_ s: SeriesStat) -> some View {
-        HStack(alignment: .top, spacing: 0) {
-            statCell("Average", fmt(s.mean))
-            Spacer(minLength: 0)
-            statCell("Lowest", fmt(s.min))
-            Spacer(minLength: 0)
-            statCell("Highest", fmt(s.max))
-        }
-    }
-
-    private func statCell(_ label: LocalizedStringKey, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label).textCase(.uppercase)
-                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-            Text(value).font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
-        }
-    }
-
-    /// Resolve the localized headline to a plain `String` (rendered via `Text(verbatim:)`), instead of
-    /// handing an interpolated `LocalizedStringKey` to `Text`: building the signed percentage into the key
-    /// at the View layer was resolving to a blank line on device. `String(localized:)` looks up the same
-    /// "%@ vs last month" key explicitly and reliably. (FER-247)
-    private func trendHeadline(_ mom: PeriodComparison) -> String {
-        guard let pct = mom.pctChange, abs(pct) >= 1 else { return String(localized: "Stable this month") }
-        let v = Int(abs(pct).rounded())
-        let pctStr = pct >= 0 ? "+\(v)%" : "−\(v)%"
-        return String(localized: "\(pctStr) vs last month")
     }
 
     // MARK: - 3. Rango normal — bandas UNIVERSALES (no baseline personal)

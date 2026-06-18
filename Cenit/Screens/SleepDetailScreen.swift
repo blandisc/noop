@@ -439,28 +439,22 @@ struct SleepDetailScreen: View {
     }()
     private static func weekdayNarrow(_ date: Date) -> String { weekdayFormatter.string(from: date) }
 
-    /// Avg · Min · Max · Nights, in hours — ported from the old sleep screen's ChartFooter to Instrumento ink.
+    /// The shared «Instrumento» trend summary — average as the protagonist + the night range — in hours.
+    /// Sleep's duration trend is a fixed 30-night view with no month-over-month series, so no trend chip
+    /// (`pctChange: nil` hides it); higher sleep is better, which colours the chip on the screens that have it.
     @ViewBuilder
     private func durationStats(_ pts: [TrendPoint]) -> some View {
         let vals = pts.map(\.value)
         let avg = vals.isEmpty ? nil : vals.reduce(0, +) / Double(vals.count)
-        HStack(alignment: .top) {
-            statCell("Avg", avg.map { String(format: "%.1f h", $0) } ?? "—")
-            Spacer()
-            statCell("Min", vals.min().map { String(format: "%.1f h", $0) } ?? "—")
-            Spacer()
-            statCell("Max", vals.max().map { String(format: "%.1f h", $0) } ?? "—")
-            Spacer()
-            statCell("Nights", "\(pts.count)")
-        }
-    }
-
-    private func statCell(_ label: LocalizedStringKey, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label).textCase(.uppercase)
-                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-            Text(value).font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
-        }
+        TrendStatSummary(
+            average: avg.map { String(format: "%.1f", $0) } ?? "—",
+            unit: "h",
+            pctChange: nil,
+            polarity: .higherIsBetter,
+            rangeLow: vals.min().map { String(format: "%.1f", $0) } ?? "—",
+            rangeHigh: vals.max().map { String(format: "%.1f h", $0) } ?? "—",
+            theme: theme
+        )
     }
 
     // MARK: - 6. Métricas de la noche (grid 2-col)

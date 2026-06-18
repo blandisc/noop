@@ -267,7 +267,7 @@ struct RecoveryDetailScreen: View {
         let mom = ComparisonEngine.monthOverMonth(byDay: model.series, referenceDay: model.series.last?.day ?? "")
         return InfoAccordion(
             title: "Trend",
-            explanation: "The line is your 7-day moving average over the period you pick. The percentage compares this month's average with last month's. Average, Median, Lowest, Highest and σ (how spread out your days are) come from the range you selected.",
+            explanation: "The line is your 7-day moving average over the period you pick. The percentage compares this month's average with last month's. The average and range come from the range you selected.",
             accessibilityLabel: "Information about the trend",
             theme: theme
         ) {
@@ -293,54 +293,19 @@ struct RecoveryDetailScreen: View {
                     )
                     .accessibilityElement()
                     .accessibilityLabel(Text("Recovery, 7-day moving average"))
-                    Text(trendHeadline(mom))
-                        .font(StrandFont.bodyNumber)
-                        .foregroundStyle(theme.ink)
-                    statStrip(stat)
+                    TrendStatSummary(
+                        average: "\(Int(stat.mean.rounded()))",
+                        pctChange: mom.pctChange,
+                        polarity: .higherIsBetter,
+                        rangeLow: "\(Int(stat.min.rounded()))",
+                        rangeHigh: "\(Int(stat.max.rounded()))",
+                        theme: theme
+                    )
                 } else {
                     emptyWell(text: "Not enough days in this range to draw a trend.")
                 }
             }
         }
-    }
-
-    /// The five statistics the issue calls for — Average · Median · Lowest · Highest · σ — over the
-    /// selected window. σ is a symbol (verbatim), the rest localize.
-    private func statStrip(_ s: SeriesStat) -> some View {
-        HStack(alignment: .top, spacing: 0) {
-            statCell("Avg", "\(Int(s.mean.rounded()))")
-            Spacer(minLength: 0)
-            statCell("Median", "\(Int(s.median.rounded()))")
-            Spacer(minLength: 0)
-            statCell("Min", "\(Int(s.min.rounded()))")
-            Spacer(minLength: 0)
-            statCell("Max", "\(Int(s.max.rounded()))")
-            Spacer(minLength: 0)
-            statCellVerbatim("σ", String(format: "%.1f", s.stdev))
-        }
-    }
-
-    private func statCell(_ label: LocalizedStringKey, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label).textCase(.uppercase)
-                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-            Text(value).font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
-        }
-    }
-
-    private func statCellVerbatim(_ label: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(verbatim: label)
-                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-            Text(value).font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
-        }
-    }
-
-    private func trendHeadline(_ mom: PeriodComparison) -> LocalizedStringKey {
-        guard let pct = mom.pctChange, abs(pct) >= 1 else { return "Stable this month" }
-        let v = Int(abs(pct).rounded())
-        // Two explicit signed keys so each localizes cleanly (no "%@%lld" nested-sign key — FER-211).
-        return pct >= 0 ? "+\(v)% vs last month" : "−\(v)% vs last month"
     }
 
     // MARK: - 5. Consistencia (coeficiente de variación)
