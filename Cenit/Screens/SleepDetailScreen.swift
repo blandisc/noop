@@ -838,7 +838,12 @@ struct SleepDetailModel {
                       sleeps: [CachedSleepSession],
                       importedSleep: [String: ImportedSleepFigures],
                       appleHealthDays: Set<String>,
-                      loaded: Bool) -> SleepDetailModel {
+                      loaded: Bool,
+                      todayKey: String) -> SleepDetailModel {
+        // Ignore any future-dated row: a daily can be bucketed under "tomorrow" in UTC (FER-226),
+        // and a `.last` read would surface that empty row as "last night". Anchor to the device's
+        // local day, mirroring StressModel (FER-224) / ReadinessEngine.
+        let days = days.filter { $0.day <= todayKey }
         // --- Latest night: strap session wins, else Apple Health stage minutes (FER-62). ---
         let strap = latestStrapNight(sleeps)
         let night: Night? = strap ?? appleHealthNight(days: days, appleHealthDays: appleHealthDays)
