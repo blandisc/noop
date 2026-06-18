@@ -16,12 +16,13 @@ import Foundation
 // context (it fought the «color only in the datum» DNA). The `Sparkline`/`MetricRow` band API stays
 // for any future large-chart caller; these dense rows just don't pass it.
 //
-// Detail bridge until the unified Detalle de Métrica (FER-185) lands: the metrics that already have a
-// light sheet open the same `MetricInfoSheet` Today uses; Sueño/Entrenamientos and the two vitals
-// without a sheet (Respiración, Temp. de piel) plus Comparar / Ver todas open the existing dark screens
-// as `.sheet`s pinned to `.dark` — a light tab pushing a dark screen would leave the status bar's dark
-// ink on a near-black panel, so a self-contained dark sheet is the honest bridge (same pattern Today
-// uses for Live / Data Sources). When FER-185 unifies the detail, these destinations swap for free.
+// Detail bridge: every vital now opens a light «Instrumento» sheet — the scalar vitals (HRV / Resting HR /
+// Respiración / SpO₂) through the unified `MetricDetailScreen` (FER-185), and the composite/own-shaped ones
+// through their dedicated screens (Recovery / Sueño / Esfuerzo / Estrés, and Temp. de piel via
+// `SkinTempDetailScreen`, FER-256). Only the non-metric destinations left — Entrenamientos, Comparar, Ver
+// todas, Data Sources — still open the legacy dark screens as `.sheet`s pinned to `.dark` (a light tab
+// pushing a dark screen would leave the status bar's dark ink on a near-black panel, so a self-contained
+// dark sheet is the honest bridge, same pattern Today uses for Live / Data Sources).
 //
 // Values + sparklines read from `repo.displayDays` (the merged dashboard), NOT `series()`: the
 // on-device computed scores live in daily-metrics under `my-whoop-noop`, so `series("my-whoop")` is
@@ -98,6 +99,10 @@ private struct CuerpoLanding: View {
     /// (valor de hoy + bandas universales + qué lo mueve + ⓘ por concepto), theme passed explicitly. SOLO
     /// en Cuerpo: el tile de Estrés en Hoy NO cambia.
     @State private var stressDetail: StressDetailItem? = nil
+    /// Light «Instrumento» Detalle de Temperatura de la piel (FER-256) — the «Skin Temperature» row now
+    /// opens this dedicated screen (última lectura + tendencia con banda ±típica + consistencia en SD °C +
+    /// método) instead of the legacy dark catalog sheet; theme passed explicitly.
+    @State private var skinTempDetail: SkinTempDetailItem? = nil
     /// «How you wake after each sport» — ranked ActivityCost per sport (FER-139); empty = "gathering data".
     @State private var activityCosts: [ActivityCost] = []
     /// Presents the light Activity-recovery detail sheet.
@@ -212,6 +217,11 @@ private struct CuerpoLanding: View {
             // Light «Instrumento» Detalle de Estrés — theme passed explicitly (it doesn't propagate
             // through `.sheet`), NO nested NavigationStack (FER-171). SOLO Cuerpo. (FER-241)
             StressDetailScreen(theme: theme, model: item.model)
+        }
+        .sheet(item: $skinTempDetail) { item in
+            // Light «Instrumento» Detalle de Temperatura de la piel — theme passed explicitly (it doesn't
+            // propagate through `.sheet`), NO nested NavigationStack (FER-171). (FER-256)
+            SkinTempDetailScreen(theme: theme, model: item.model)
         }
         .sheet(isPresented: $showActivityCost) { activityRecoverySheet }
         .sheet(isPresented: $showFitnessAge) {
@@ -425,7 +435,10 @@ private struct CuerpoLanding: View {
         let r = resolveMeasured { $0.skinTempDevC }
         return metricRow("Skin Temperature", value: r.map { String(format: "%+.1f", $0.value) }, unit: "°C",
                          color: theme.dataStrain, sparkKey: "skin_temp", fromApple: r?.fromApple == true) {
-            if let m = Self.descriptor("skin_temp") { darkSheet = .metric(m) }
+            // Opens the rich light Detalle de Temperatura de la piel (FER-256) — built fresh from the
+            // in-memory dashboard (última lectura resuelta + serie completa de `displayDays`).
+            skinTempDetail = SkinTempDetailItem(model: SkinTempDetailModel.build(
+                latest: r?.value, series: vitalSeries(for: "skin_temp"), loaded: repo.loaded))
         }
     }
 
@@ -796,6 +809,7 @@ private struct CuerpoLanding: View {
         case "rhr":       pick = { $0.restingHr.map(Double.init) }
         case "resp_rate": pick = { $0.respRateBpm }
         case "spo2":      pick = { $0.spo2Pct }
+        case "skin_temp": pick = { $0.skinTempDevC }
         default:          return []
         }
         return repo.displayDays
