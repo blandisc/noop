@@ -350,6 +350,25 @@ watermarks such as `strap_trim`.
 `"apple-health"` for imported Apple Health, so per-source pages and cross-source "consensus" views
 read the same tables filtered by source.
 
+### Day-key convention (local civil day)
+
+`dailyMetric.day` (and the additive-totals window behind it) is the device's **local civil day** in
+**every** source — on-device computed (`my-whoop-noop`), Apple Health (`apple-health`), and imported
+WHOOP (`my-whoop`, already local-of-cycle). The local day is derived by shifting the instant by the
+device's UTC offset and formatting in UTC — the pure `AnalyticsEngine.dayString(_:tzOffsetSeconds:)` /
+`localMidnight(_:tzOffsetSeconds:)` (offset passed explicitly so the math stays testable), the same
+trick `WhoopImporter` uses with `tzOffsetMin`. Consumers pick "today" by the matching local key
+(`Repository.localDayKey`); `IntelligenceEngine` sums steps/calories over `[localMidnight, +24h)`.
+This is what makes the evening's strain/steps/HRV/sleep count for the correct day in a UTC− zone
+instead of rolling into a "future-in-local" row (FER-226; consumer shielding in FER-224 / FER-228).
+
+This **supersedes the UTC choice of FER-32** (which dated Apple Health by UTC to avoid duplicate rows
+on time-zone travel). The cross-zone duplicate is now handled by last-writer-wins on the `(deviceId,
+day)` PK — at most one defined seam on a travel day, never a silent duplicate. On update, a one-time,
+flag-gated re-bucket (`cursors.dayKeyV2Done`, no schema change) re-groups the bounded recent window
+from the still-stored raw streams / Apple Health onto the local day and prunes the spurious
+future-in-local rows; days whose raw was already pruned keep their date (accepted seam, no data loss).
+
 ---
 
 ## 8. Imports (StrandImport)

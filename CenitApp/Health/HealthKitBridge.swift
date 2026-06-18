@@ -148,16 +148,18 @@ final class HealthKitBridge: ObservableObject {
 
     /// Pull the last `days` of Apple Health into the on-device store under the `apple-health` source,
     /// then write NOOP's own computed metrics back into Health. Safe to call repeatedly (idempotent
-    /// upserts keyed by day).
-    func sync(days: Int = 30) async {
-        guard auth == .authorized, !syncing else { return }
+    /// upserts keyed by day). Returns the set of local `day` keys written this run — the FER-226
+    /// re-bucket uses it to prune UTC orphans; empty on an early-out or a failed store write.
+    @discardableResult
+    func sync(days: Int = 30) async -> Set<String> {
+        guard auth == .authorized, !syncing else { return [] }
         syncing = true
         defer { syncing = false; syncProgress = nil }
-        guard let store = await repo.storeHandle() else { return }
+        guard let store = await repo.storeHandle() else { return [] }
 
         let cal = Calendar.current
         let end = Date()
-        guard let start = cal.date(byAdding: .day, value: -days, to: cal.startOfDay(for: end)) else { return }
+        guard let start = cal.date(byAdding: .day, value: -days, to: cal.startOfDay(for: end)) else { return [] }
 
         var byDay: [String: DayAgg] = [:]
         func agg(_ day: String) -> DayAgg { byDay[day] ?? DayAgg() }
@@ -278,8 +280,10 @@ final class HealthKitBridge: ObservableObject {
             await repo.refresh()   // surface the freshly-synced Apple Health days in the dashboard
             coverage = try? await store.appleHealthCoverage(deviceId: appleDeviceId)
             refreshPermissions()   // a denied scope may have changed between runs
+            return Set(byDay.keys)   // FER-226: the local days written this run (for the re-bucket prune)
         } catch {
             lastError = "Apple Health sync failed: \(error.localizedDescription)"
+            return []   // nothing durably written → the re-bucket must NOT prune apple rows this run
         }
     }
 
@@ -566,15 +570,17 @@ final class HealthKitBridge: ObservableObject {
 
     // MARK: - Date helpers
 
-    // UTC: the rest of the store keys days by UTC (Repository's compareDayParser, the
-    // dailyMetric primary key). Using .current here would split the same physical day across
-    // two `yyyy-MM-dd` keys when the user crosses a time zone, causing duplicate daily rows.
-    // These helpers are `nonisolated` so they can run on HealthKit's query-callback queue without
-    // hopping to the main actor (`HealthKitBridge` is `@MainActor`); the formatter is an immutable,
-    // Sendable constant, safe to read from any context.
+    // LOCAL civil day (FER-226): every source now keys `dailyMetric.day` by the device's local civil
+    // day (same convention as Repository.localDayKey), so the evening's data counts for the correct day
+    // in a UTC− zone instead of rolling into tomorrow. This REVERSES FER-32's UTC choice; the
+    // cross-time-zone duplicate it guarded against is now handled by last-writer-wins on the
+    // (deviceId, day) PK plus the one-time re-bucket's future-row prune — at most one defined seam on a
+    // travel day, never silent duplicates. These helpers are `nonisolated` so they can run on
+    // HealthKit's query-callback queue without hopping to the main actor (`HealthKitBridge` is
+    // `@MainActor`); the formatter is an immutable, Sendable constant, safe to read from any context.
     nonisolated private static let dayFormatter: DateFormatter = {
         let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX")
-        f.dateFormat = "yyyy-MM-dd"; f.timeZone = TimeZone(identifier: "UTC")!; return f
+        f.dateFormat = "yyyy-MM-dd"; return f   // no timeZone → device-local, matching Repository.dayKeyFormatter
     }()
     nonisolated private static func dayString(_ date: Date) -> String { dayFormatter.string(from: date) }
     nonisolated private static func date(from day: String) -> Date? { dayFormatter.date(from: day) }
