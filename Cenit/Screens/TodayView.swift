@@ -629,10 +629,17 @@ struct TodayView: View {
     /// equivalente al gesto, vía `triggerPullSync`. Se combinan fecha + estado en un solo elemento
     /// para que la acción sea descubrible al enfocar el encabezado.
     private var headerBlock: some View {
-        HStack(alignment: .center) {
+        // Hogar 1 de estado/procedencia (FER-278): UNA línea arriba reúne todo el estado del
+        // instrumento — fecha a la izquierda; a la derecha la sincronización (sube del encabezado de
+        // métricas, FER-265) + la batería del strap. Antes la frescura de sync vivía a media pantalla y
+        // la batería suelta arriba-derecha; aquí quedan juntas como «qué tan al día está tu instrumento».
+        HStack(alignment: .center, spacing: NoopMetrics.space2) {
             utilityRow
-            Spacer(minLength: 0)
+            Spacer(minLength: NoopMetrics.space2)
+            SyncInline(backfilling: live.backfilling, chunks: live.syncChunksThisSession,
+                       lastSyncedAt: live.lastSyncedAt)
             if let pct = live.batteryPct {
+                Text(verbatim: "·").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 HStack(spacing: 4) {
                     Image(systemName: batteryIcon(pct: pct, charging: live.charging == true))
                         .font(StrandFont.overline)
@@ -1097,7 +1104,8 @@ struct TodayView: View {
         }
     }
 
-    /// Top utility row: compact date only — sync status moved to the grid footer (FER-233).
+    /// Top utility row: compact date only — la sincronización + batería viven a su derecha en la línea
+    /// de estado del `headerBlock` (FER-278).
     @ViewBuilder private var utilityRow: some View {
         Text(shortDate)
             .font(StrandFont.overline)
@@ -1269,22 +1277,9 @@ struct TodayView: View {
                                          betterHigher: false, deadband: 0.1, positive: positiveDelta) { String(format: "%.1f", $0) }
                 )) { metricDetail = .stress(stressT) }
             }
-            // Pie de cuadrícula (FER-265): solo la leyenda de fuente, a la derecha. La sincronización se
-            // mudó al encabezado (`SyncInline` junto al sello «Hoy»), así que el pie queda más limpio.
-            HStack(spacing: NoopMetrics.space2) {
-                Spacer(minLength: 0)
-                HStack(spacing: NoopMetrics.space2) {
-                    Text(verbatim: "W Strap")
-                    Text("·")
-                    HStack(spacing: NoopMetrics.space1) {
-                        Image(systemName: "heart.fill").font(.system(size: 9))
-                        Text("Apple Salud")
-                    }
-                }
-                .font(StrandFont.caption)
-                .foregroundStyle(theme.inkTertiary)
-                .accessibilityHidden(true)
-            }
+            // FER-278: la leyenda de fuente «W Strap · Apple Salud» del pie se quitó. Ahora el strap es
+            // la fuente esperada (sin marca) y solo lo prestado de Apple Salud lleva ♥ en su tile, así
+            // que la leyenda explícita era redundante (y ya estaba oculta a VoiceOver).
             if notConnected && anyMeasuredMissing {
                 Button { showDataSources = true } label: {
                     HStack(spacing: NoopMetrics.space2) {
@@ -1302,18 +1297,15 @@ struct TodayView: View {
         }
     }
 
-    /// El encabezado compacto de «Métricas de hoy» (FER-265): sello «Hoy» (overline discreto) + la
-    /// sincronización inline, y el chip de pulso vivo a la derecha. En Dynamic Type grande el chip baja
-    /// a una segunda línea (`ViewThatFits`). El sello dice «hoy» sin repetir la palabra que ya traen la
-    /// fecha de arriba y el veredicto; la hora vive en `SyncInline` como última sync, no como reloj.
+    /// El encabezado compacto de «Métricas de hoy» (FER-265/FER-278): sello «Hoy» (overline discreto) +
+    /// el chip de pulso vivo a la derecha. En Dynamic Type grande el chip baja a una segunda línea
+    /// (`ViewThatFits`). La sincronización ya NO vive aquí — subió a la línea de estado del `headerBlock`
+    /// (FER-278), así que el encabezado no la repite.
     @ViewBuilder private var metricsHeader: some View {
-        let sello = HStack(spacing: NoopMetrics.space1) {
-            Text("Today").font(StrandFont.overline).tracking(StrandFont.overlineTracking)
-                .foregroundStyle(theme.inkSecondary)
-            Text(verbatim: "·").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            SyncInline(backfilling: live.backfilling, chunks: live.syncChunksThisSession,
-                       lastSyncedAt: live.lastSyncedAt)
-        }
+        // FER-278: el sello queda solo «Hoy» — la sincronización subió a la línea de estado del
+        // `headerBlock` (Hogar 1), así que el encabezado de métricas ya no la repite.
+        let sello = Text("Today").font(StrandFont.overline).tracking(StrandFont.overlineTracking)
+            .foregroundStyle(theme.inkSecondary)
         let chip = Group {
             if strapSeen {
                 LivePulsePill(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
@@ -1536,16 +1528,14 @@ struct TodayView: View {
                                          : "\(magnitude) below your 7-day average"))
         }
 
-        /// Badge de fuente (derecha) — solo cuando hay dato; siempre inkTertiary, nunca color de dato.
+        /// Badge de fuente por EXCEPCIÓN (FER-278): el strap es la fuente esperada → sin marca; solo lo
+        /// prestado de Apple Salud lleva ♥ (en tinta, nunca color de dato). Antes el strap mostraba una
+        /// «W» redundante en cada tile; ahora «sin badge = tu strap».
         @ViewBuilder private var sourceBadge: some View {
             if fromApple {
                 Image(systemName: "heart.fill")
                     .font(.system(size: 10)).foregroundStyle(theme.inkTertiary)
                     .accessibilityLabel(Text("de Apple Salud"))
-            } else if value != "—" {
-                Text(verbatim: "W")
-                    .font(.system(size: 9, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-                    .accessibilityLabel(Text("de strap"))
             }
         }
     }
