@@ -149,6 +149,12 @@ public enum AnalyticsEngine {
                                   // baseline from these means across nights and re-derives
                                   // skinTempDevC in pass 2 (same two-pass shape as avgHrv→recovery).
                                   skinTemp: [SkinTempSample] = [],
+                                  // Additive per-band skin-temp calibration (°C). Default 0 = the
+                                  // 5.0's full AS6221 register; IntelligenceEngine passes +28.5 for a
+                                  // 4.0 (whose v24 record drops the integer part). See
+                                  // wornNightlySkinTempC. Default keeps pure-function callers/tests
+                                  // and the 5.0 path unchanged.
+                                  skinTempOffsetC: Double = 0,
                                   profile: UserProfile,
                                   baselines: ProfileBaselines = ProfileBaselines(),
                                   maxHROverride: Double? = nil,
@@ -283,7 +289,8 @@ public enum AnalyticsEngine {
         // against the personal baseline. In pass 1 baselines.skinTemp is nil so the deviation is
         // nil and the mean is harvested; IntelligenceEngine seeds the baseline from those means
         // and re-derives the deviation in pass 2 (mirrors avgHrv→recovery). APPROXIMATE.
-        let nightlySkinTempC = wornNightlySkinTempC(matched, hr: hr, skinTemp: skinTemp)
+        let nightlySkinTempC = wornNightlySkinTempC(matched, hr: hr, skinTemp: skinTemp,
+                                                    skinTempOffsetC: skinTempOffsetC)
         let skinTempDevC: Double? = nightlySkinTempC.flatMap { (v: Double) -> Double? in
             guard let b = baselines.skinTemp, b.usable else { return nil }
             return round2(Baselines.deviation(v, state: b).delta)
@@ -341,13 +348,23 @@ public enum AnalyticsEngine {
     /// samples. A sample counts when (a) its timestamp falls inside a detected in-bed `sessions`
     /// span, (b) a concurrent HR sample reads a worn, alive BPM (the strap streams HR only
     /// on-wrist), and (c) the value is in the plausible worn range — so an on-charger interval
-    /// drifting to ambient can't poison the nightly mean. °C = raw/128 — the Swift decoder's
-    /// AS6221-native scale (Interpreter.swift skin_temp_raw@73), NOT the /100 the Android decoder
-    /// uses for the same register; using /100 here would put every real worn night (~33–35 °C)
-    /// outside the 28–42 gate. All values APPROXIMATE.
+    /// drifting to ambient can't poison the nightly mean. °C = raw/128 + `skinTempOffsetC` — the
+    /// AS6221's native 7.8125 m°C/LSB scale (Interpreter.swift skin_temp_raw@73), NOT the /100 the
+    /// Android decoder uses for the same register; using /100 here would put every real worn night
+    /// (~33–35 °C) outside the 28–42 gate.
+    ///
+    /// `skinTempOffsetC` is an additive per-band calibration the caller supplies (default 0). The
+    /// WHOOP 5.0 streams the full AS6221 register, so offset 0 lands a worn night at ~33–35 °C. The
+    /// WHOOP 4.0's historical (v24) record drops the integer part of the register, so its raw is
+    /// ~28 °C too low (raw≈652 → 5.1 °C) and every sample falls under the 28 °C gate; a +28.5 °C
+    /// offset (anchored to a real 4.0 backup: worn night min 32.5 / mean 33.9 / max 35.7 °C) restores
+    /// it. The offset is a documented physiological approximation, not a per-unit calibration — and
+    /// because the UI shows the deviation against a personal baseline, a constant offset cancels, so
+    /// its only job is to let the samples survive the gate. All values APPROXIMATE.
     static func wornNightlySkinTempC(_ sessions: [SleepSession],
                                      hr: [HRSample],
                                      skinTemp: [SkinTempSample],
+                                     skinTempOffsetC: Double = 0,
                                      minSamples: Int = minSkinTempSamples) -> Double? {
         if sessions.isEmpty || skinTemp.isEmpty { return nil }
         var wornSeconds = Set<Int>(minimumCapacity: hr.count)
@@ -357,7 +374,7 @@ public enum AnalyticsEngine {
         for t in skinTemp {
             if !wornSeconds.contains(t.ts) { continue }
             if !sessions.contains(where: { t.ts >= $0.start && t.ts <= $0.end }) { continue }
-            let c = Double(t.raw) / 128.0
+            let c = Double(t.raw) / 128.0 + skinTempOffsetC
             if c < skinTempMinC || c > skinTempMaxC { continue }
             sum += c
             n += 1

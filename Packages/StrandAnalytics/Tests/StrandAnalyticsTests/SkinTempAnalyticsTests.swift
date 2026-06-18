@@ -104,4 +104,68 @@ final class SkinTempAnalyticsTests: XCTestCase {
         let dev = Baselines.deviation(34.3, state: base).delta
         XCTAssertGreaterThan(dev, 0.5, "a +0.8 °C night must read as a clear positive deviation")
     }
+
+    // MARK: - WHOOP 4.0 offset (FER-240)
+
+    /// The raw distribution from a real WHOOP 4.0 backup's worn sleep window (p05=559, p50=652,
+    /// p95=907). The 4.0's v24 record drops the integer part of the AS6221 register, so raw/128 ≈ 5 °C
+    /// — under the 28 °C gate — and the un-offset path discards every sample. A representative spread
+    /// repeated past minSkinTempSamples.
+    private func whoop4WornNight(start: Int)
+        -> (sessions: [SleepSession], hr: [HRSample], skin: [SkinTempSample]) {
+        let raws = [559, 600, 624, 652, 690, 762, 850, 907]  // spans the real p05…p95
+        let n = 600  // > minSkinTempSamples (300)
+        let sess = [session(start: start, durSec: n)]
+        let hrs = (0..<n).map { hr(start + $0) }
+        let skins = (0..<n).map { SkinTempSample(ts: start + $0, raw: raws[$0 % raws.count]) }
+        return (sess, hrs, skins)
+    }
+
+    func testWhoop4RawIsDiscardedWithoutOffset() {
+        // Bug state: with offset 0 (the 5.0 path), every 4.0 sample converts to ~5 °C and falls under
+        // the 28 °C floor → nil → skinTempDevC never computes. This is what the user saw.
+        let night = whoop4WornNight(start: 6_000_000)
+        XCTAssertNil(AnalyticsEngine.wornNightlySkinTempC(
+            night.sessions, hr: night.hr, skinTemp: night.skin, skinTempOffsetC: 0))
+    }
+
+    func testWhoop4OffsetRestoresPhysiologicalMean() throws {
+        // Fix: +28.5 °C lands the worn night in the physiological 32–36 °C band, so it survives the
+        // gate and the nightly mean (hence skinTempDevC) is non-nil.
+        let night = whoop4WornNight(start: 7_000_000)
+        let mean = try XCTUnwrap(AnalyticsEngine.wornNightlySkinTempC(
+            night.sessions, hr: night.hr, skinTemp: night.skin, skinTempOffsetC: 28.5))
+        XCTAssertGreaterThanOrEqual(mean, 32.0)
+        XCTAssertLessThanOrEqual(mean, 36.0)
+    }
+
+    func testWhoop5PathUnchangedAtOffsetZero() throws {
+        // The 5.0 streams the full register → offset 0 must reproduce the existing 34.0 °C result,
+        // so the default keeps the 5.0 path identical.
+        let start = 8_000_000
+        let sess = [session(start: start, durSec: 600)]
+        let hrs = (0..<600).map { hr(start + $0) }
+        let temps = (0..<600).map { skin(start + $0, rawX128: 4352) }  // 34.00 °C
+        let mean = try XCTUnwrap(AnalyticsEngine.wornNightlySkinTempC(
+            sess, hr: hrs, skinTemp: temps, skinTempOffsetC: 0))
+        XCTAssertEqual(mean, 34.0, accuracy: 1e-9)
+    }
+
+    func testConstantOffsetCancelsInDeviation() {
+        // The UI shows deviation (nightly − baseline). A constant per-band offset added to BOTH the
+        // night and the baseline cancels, so the displayed value is robust to the exact offset — its
+        // only job is to clear the gate. The cancellation is linear (independent of magnitude); we use
+        // a small in-band shift so both baselines stay inside foldHistory's plausibility band and are
+        // seeded identically (a large shift like +28.5 would push the base nights to ~62 °C, outside
+        // that band — a test artifact, not the production path, where the offset keeps nights ~33–35 °C).
+        let nights: [Double?] = [33.5, 33.4, 33.6, 33.5]
+        let tonight = 34.3
+        let devNoOffset = Baselines.deviation(
+            tonight, state: Baselines.foldHistory(nights, cfg: skinCfg)).delta
+        let k = 0.5
+        let devShifted = Baselines.deviation(
+            tonight + k, state: Baselines.foldHistory(nights.map { $0.map { $0 + k } }, cfg: skinCfg)).delta
+        XCTAssertEqual(devNoOffset, devShifted, accuracy: 1e-9,
+                       "a constant offset must cancel in the baseline deviation")
+    }
 }

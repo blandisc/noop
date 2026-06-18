@@ -14,6 +14,19 @@ final class IntelligenceEngine: ObservableObject {
     private let repo: Repository
     private let profile: ProfileStore
     private let deviceId: String
+    private let family: DeviceFamily
+
+    /// Additive skin-temp calibration (°C) for this band, handed to `AnalyticsEngine.analyzeDay`.
+    /// The 4.0's historical (v24) record drops the integer part of the AS6221 register, so its raw
+    /// reads ~28 °C too low; +28.5 °C (anchored to a real 4.0 backup) restores a worn night to
+    /// ~32–36 °C so it survives the analytics gate. The 5.0 streams the full register → offset 0.
+    /// This is band-calibration knowledge (the app's), kept out of the pure analytics package.
+    private var skinTempOffsetC: Double {
+        switch family {
+        case .whoop4: return 28.5
+        case .whoop5: return 0
+        }
+    }
 
     @Published var results: [Computed] = []      // newest first
     @Published var computing = false
@@ -37,8 +50,8 @@ final class IntelligenceEngine: ObservableObject {
         var id: String { day }
     }
 
-    init(repo: Repository, profile: ProfileStore, deviceId: String) {
-        self.repo = repo; self.profile = profile; self.deviceId = deviceId
+    init(repo: Repository, profile: ProfileStore, deviceId: String, family: DeviceFamily = .whoop4) {
+        self.repo = repo; self.profile = profile; self.deviceId = deviceId; self.family = family
     }
 
     /// Compute on-device scores for each of the last `maxDays` that actually has raw HR data.
@@ -93,6 +106,7 @@ final class IntelligenceEngine: ObservableObject {
         let hrvBase1 = Baselines.foldHistory(hist.map { $0.avgHrv }, cfg: hrvCfg)
         let rhrBase1 = Baselines.foldHistory(hist.map { $0.restingHr.map(Double.init) }, cfg: rhrCfg)
         let baselines1 = AnalyticsEngine.ProfileBaselines(hrv: hrvBase1, restingHR: rhrBase1)
+        let skinOffset = skinTempOffsetC  // captured as a value for the detached analyze task
 
         // Keep each night's small result (daily metrics + sessions), NOT the raw streams — every field
         // except recovery is baseline-independent, so pass 2 only re-scores the cheap recovery
@@ -141,7 +155,7 @@ final class IntelligenceEngine: ObservableObject {
             let res = await Task.detached(priority: .utility) {
                 AnalyticsEngine.analyzeDay(day: day, hr: hr, rr: rr, resp: resp, gravity: grav,
                                            steps: steps, dayHr: dayHr, daySteps: daySteps,
-                                           skinTemp: skin,
+                                           skinTemp: skin, skinTempOffsetC: skinOffset,
                                            profile: up, baselines: baselines1, maxHROverride: maxHR,
                                            tzOffsetSeconds: tzOffset)
             }.value
