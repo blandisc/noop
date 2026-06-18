@@ -120,6 +120,9 @@ private struct CuerpoLanding: View {
     @State private var appleDays: [AppleDaily] = []
     @State private var appleMetricDays: [DailyMetric] = []
     @State private var workoutCount: Int = 0
+    /// Sessions in the trailing 14 days — the «Entrenamientos» row's protagonist (recent training, not
+    /// the unbounded all-time total). `workoutCount` stays the lifetime count for the Apple-connect hint.
+    @State private var recentWorkoutCount: Int = 0
     /// Today's stress model (0–3 autonomic proxy + markers + trend) — the same transparent model Hoy builds.
     /// Held whole (not just the score) so the «Stress» row can open the dedicated detail (FER-241).
     @State private var stressModel: StressModel? = nil
@@ -460,9 +463,20 @@ private struct CuerpoLanding: View {
         }
     }
 
-    private var workoutsRow: some View {
-        metricRow("Workouts", value: "\(workoutCount)", color: theme.ink, sparkKey: "_none") {
+    /// «Entrenamientos» — now consistent with the other Activity rows: the recent-session count tinted in
+    /// the effort hue (`dataStrain`), not the neutral ink it used before. No sparkline — workout volume is
+    /// too sparse/spiky to read as a trend at this size, so the number carries it alone (like Heart Rate).
+    /// No recent sessions → honest "—"; VoiceOver says it plainly, not "dash". (FER-259)
+    @ViewBuilder private var workoutsRow: some View {
+        let n = recentWorkoutCount
+        let row = metricRow("Workouts", value: n > 0 ? "\(n)" : nil,
+                            color: theme.dataStrain, sparkKey: "_none") {
             darkSheet = .screen(.workouts)
+        }
+        if n > 0 {
+            row
+        } else {
+            row.accessibilityLabel(Text("sin entrenamientos aún"))
         }
     }
 
@@ -775,6 +789,12 @@ private struct CuerpoLanding: View {
         appleMetricDays = (await amRows).sorted { $0.day < $1.day }
         let workouts = await wkRows
         workoutCount = workouts.count
+        // Sessions in the trailing 14 calendar days for the «Entrenamientos» row (FER-259) — start-of-day
+        // 13 days ago through now, matching the app's standard trailing-14 window.
+        let recentCutoff = Calendar.current.startOfDay(
+            for: Calendar.current.date(byAdding: .day, value: -13, to: Date()) ?? Date())
+        let recentCutoffTs = Int(recentCutoff.timeIntervalSince1970)
+        recentWorkoutCount = workouts.filter { $0.startTs >= recentCutoffTs }.count
         activityCosts = repo.activityCosts(from: workouts)   // reuses the rows above — no second query
         hrPoints = await hrRows.map {
             TrendPoint(date: Date(timeIntervalSince1970: TimeInterval($0.ts)), value: $0.bpm)
