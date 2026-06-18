@@ -1,5 +1,6 @@
 #if os(iOS)
 import SwiftUI
+import Charts
 import StrandDesign
 import StrandAnalytics
 import WhoopStore
@@ -50,6 +51,7 @@ struct SleepDetailScreen: View {
                     regularityBlock
                     stagesVsTypicalBlock(night)
                     durationTrendBlock
+                    weeklyDebtBlock
                     nightMetricsBlock(night)
                     methodDisclosure
                 } else {
@@ -313,44 +315,73 @@ struct SleepDetailScreen: View {
         return head + Text(", typical \(Int(typicalPct.rounded()))%")
     }
 
-    // MARK: - 5. Tendencia de duración (30d + banda objetivo + deuda)
+    // MARK: - 5. Tendencia de duración (14 noches + 4 bandas de clasificación)
+    //
+    // Misma lectura que la hoja de Sueño en Hoy (`MetricInfoSheet`, FER-244): 14 noches, las bandas
+    // Short/Adequate/Optimal/Extended con la activa resaltada, un encabezado de conteo y ticks en los
+    // umbrales 6/7/9 h. Unifica las dos gráficas de sueño que antes divergían (Hoy 14d/4-bandas vs.
+    // Cuerpo 30d/1-banda). (FER-249 v2)
 
     @ViewBuilder
     private var durationTrendBlock: some View {
         let pts = model.trendPoints
         block(title: "Duration trend") {
             VStack(alignment: .leading, spacing: 10) {
-                if pts.count >= 2 {
+                if pts.count >= 2, let bt = bandedDuration(pts) {
+                    // Active-band header: which band the latest nights sit in, and how many of the
+                    // window land there — the same one-liner the Today sheet shows.
+                    HStack(spacing: 6) {
+                        Text(bt.activeLabel).foregroundStyle(theme.dataSleep)
+                        Text(verbatim: "·").foregroundStyle(theme.inkTertiary)
+                        Text("\(bt.count) of the last \(bt.total) nights in this range")
+                            .foregroundStyle(theme.inkSecondary)
+                    }
+                    .font(StrandFont.subhead)
                     TrendChart(
                         points: pts,
                         gradient: Gradient(colors: [theme.dataSleep.opacity(0.5), theme.dataSleep]),
-                        valueRange: trendRange(pts),
+                        valueRange: bt.range,
                         showsArea: true,
-                        height: 200,
+                        height: 160,
                         showsHover: true,
-                        valueFormat: { String(format: "%.1f h", $0) },
+                        valueFormat: bt.valueFormat,
                         axisLabelColor: theme.inkTertiary,
                         gridLineColor: theme.hairline,
-                        bands: durationBands(pts),
-                        bandColor: theme.dataSleep
+                        bands: bt.bands,
+                        bandColor: theme.dataSleep,
+                        yAxisValues: bt.yTicks
                     )
                     .accessibilityElement()
-                    .accessibilityLabel(Text("Hours asleep per night, last 30 days"))
+                    .accessibilityLabel(Text("Hours asleep per night, last 14 nights, with classification bands"))
                     durationStats(pts)
                 } else {
                     emptyWell(text: "Not enough nights yet to draw a trend.")
                 }
-                // Sleep debt as a labeled datum (was a bare "−8h 51m this week …" that read ambiguously).
-                // The hairline divides WITHIN this group, which is allowed. (FER-227)
-                if let debt = model.weeklyDebtMinutes, debt >= 15 {
-                    Divider().overlay(theme.hairline)
-                    HStack(alignment: .firstTextBaseline) {
-                        Text("Weekly debt").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                        Spacer()
-                        Text(debtText(debt))
-                            .font(StrandFont.captionNumber)
+            }
+        }
+    }
+
+    // MARK: - 5b. Deuda semanal (cifra dominante + barras por noche)
+    //
+    // La deuda dejó de ser una línea de texto suelta: ahora es su propio bloque con la cifra acumulada
+    // de la semana como dato dominante (en `warning`) y, debajo, una barra por noche que muestra qué
+    // noche se quedó corta (`warning`, abajo de tu necesidad) o la superó (`verdict`, arriba). Se oculta
+    // cuando no hay deuda significativa que mostrar. (FER-249 v2)
+
+    @ViewBuilder
+    private var weeklyDebtBlock: some View {
+        if let debt = model.weeklyDebtMinutes, debt >= 15, model.weeklyDebtNights.count >= 2 {
+            block(title: "Weekly debt") {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text(hoursMinutes(debt))
+                            .font(StrandFont.number(30))
                             .foregroundStyle(theme.warning)
+                        Text("behind this week")
+                            .font(StrandFont.subhead)
+                            .foregroundStyle(theme.inkTertiary)
                     }
+                    weeklyDebtBars
                     Text("What you missed versus what your body needs. One good night won't clear it.")
                         .font(StrandFont.caption)
                         .foregroundStyle(theme.inkSecondary)
@@ -360,28 +391,70 @@ struct SleepDetailScreen: View {
         }
     }
 
-    /// Avg · Min · Max · Nights, in hours — ported from the old sleep screen's ChartFooter to Instrumento ink.
+    /// One bar per night for the trailing week: hours above (`verdict`) or below (`warning`) your need,
+    /// with the need itself as the zero rule. The dates are UTC day-keys (FER-226), so the weekday label
+    /// formats in UTC to avoid an off-by-one shift.
+    private var weeklyDebtBars: some View {
+        Chart {
+            RuleMark(y: .value("Need", 0))
+                .foregroundStyle(theme.hairlineStrong)
+                .lineStyle(StrokeStyle(lineWidth: 1))
+                .annotation(position: .top, alignment: .trailing, spacing: 2) {
+                    Text("your need")
+                        .font(StrandFont.footnote)
+                        .foregroundStyle(theme.inkTertiary)
+                }
+            ForEach(model.weeklyDebtNights, id: \.date) { n in
+                BarMark(
+                    x: .value("Night", n.date, unit: .day),
+                    y: .value("vs need", n.vsNeedMin / 60)
+                )
+                .foregroundStyle(n.vsNeedMin < 0 ? theme.warning : theme.verdict)
+                .cornerRadius(2)
+            }
+        }
+        .frame(height: 96)
+        .chartYAxis(.hidden)
+        .chartXAxis {
+            AxisMarks(values: .stride(by: .day)) { value in
+                if let d = value.as(Date.self) {
+                    AxisValueLabel {
+                        Text(Self.weekdayNarrow(d))
+                            .font(StrandFont.footnote)
+                            .foregroundStyle(theme.inkTertiary)
+                    }
+                }
+            }
+        }
+        .accessibilityElement()
+        .accessibilityLabel(Text("Hours above or below your sleep need, each of the last 7 nights"))
+    }
+
+    /// Single-letter weekday in UTC (matches the UTC day-keys the model stores). "L M M J V S D" in es-MX.
+    private static let weekdayFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.timeZone = TimeZone(identifier: "UTC")
+        f.setLocalizedDateFormatFromTemplate("EEEEE")
+        return f
+    }()
+    private static func weekdayNarrow(_ date: Date) -> String { weekdayFormatter.string(from: date) }
+
+    /// The shared «Instrumento» trend summary — average as the protagonist + the night range — in hours.
+    /// Sleep's duration trend is a fixed 30-night view with no month-over-month series, so no trend chip
+    /// (`pctChange: nil` hides it); higher sleep is better, which colours the chip on the screens that have it.
     @ViewBuilder
     private func durationStats(_ pts: [TrendPoint]) -> some View {
         let vals = pts.map(\.value)
         let avg = vals.isEmpty ? nil : vals.reduce(0, +) / Double(vals.count)
-        HStack(alignment: .top) {
-            statCell("Avg", avg.map { String(format: "%.1f h", $0) } ?? "—")
-            Spacer()
-            statCell("Min", vals.min().map { String(format: "%.1f h", $0) } ?? "—")
-            Spacer()
-            statCell("Max", vals.max().map { String(format: "%.1f h", $0) } ?? "—")
-            Spacer()
-            statCell("Nights", "\(pts.count)")
-        }
-    }
-
-    private func statCell(_ label: LocalizedStringKey, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label).textCase(.uppercase)
-                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-            Text(value).font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
-        }
+        TrendStatSummary(
+            average: avg.map { String(format: "%.1f", $0) } ?? "—",
+            unit: "h",
+            pctChange: nil,
+            polarity: .higherIsBetter,
+            rangeLow: vals.min().map { String(format: "%.1f", $0) } ?? "—",
+            rangeHigh: vals.max().map { String(format: "%.1f h", $0) } ?? "—",
+            theme: theme
+        )
     }
 
     // MARK: - 6. Métricas de la noche (grid 2-col)
@@ -608,10 +681,6 @@ struct SleepDetailScreen: View {
         return "−\(hoursMinutes(missing)) vs your need"
     }
 
-    private func debtText(_ minutes: Double) -> String {
-        "−\(hoursMinutes(minutes))"
-    }
-
     /// Restorative % = (deep + REM) / asleep — the share of the night that does the work.
     private func restorativePct(_ s: SleepDetailModel.Stages) -> Double? {
         guard s.asleep > 0 else { return nil }
@@ -628,16 +697,43 @@ struct SleepDetailScreen: View {
         return Swift.min(100, night.stages.asleep / bed * 100)
     }
 
-    private func trendRange(_ pts: [TrendPoint]) -> ClosedRange<Double> {
-        let vals = pts.map(\.value)
-        let lo = Swift.max(0, Swift.min(vals.min() ?? 7, 7) - 1)
-        let hi = Swift.max(vals.max() ?? 9, 9) + 1
-        return lo...Swift.max(hi, lo + 1)
+    /// The 4-band classification config for the duration trend — the same reading as the Today sleep
+    /// sheet (`MetricInfoSheet.bandedTrend`, FER-244): Short/Adequate/Optimal/Extended, the active band
+    /// the latest night sits in, the Y range anchored to the 6/7/9 h thresholds, ticks at those
+    /// thresholds, and an hours-and-minutes value format. `nil` when the latest value matches no band,
+    /// so the chart falls back to its empty well. (FER-249 v2)
+    private struct BandedDuration {
+        var bands: [TrendBand]
+        var range: ClosedRange<Double>
+        var yTicks: [Double]
+        var valueFormat: (Double) -> String
+        var activeLabel: LocalizedStringKey
+        var count: Int
+        var total: Int
     }
 
-    private func durationBands(_ pts: [TrendPoint]) -> [TrendBand] {
-        let last = pts.last?.value ?? 0
-        return [TrendBand(label: "Recomendado 7–9 h", lower: 7, upper: 9, isActive: last >= 7 && last < 9)]
+    private func bandedDuration(_ pts: [TrendPoint]) -> BandedDuration? {
+        let values = pts.map(\.value)
+        // Half-open bounds [lower, upper) match TrendBand.contains and the Today sheet's bands exactly.
+        var bands: [TrendBand] = [
+            TrendBand(label: "Short",    lower: nil, upper: 6),
+            TrendBand(label: "Adequate", lower: 6,   upper: 7),
+            TrendBand(label: "Optimal",  lower: 7,   upper: 9),
+            TrendBand(label: "Extended", lower: 9,   upper: nil),
+        ]
+        guard let active = TrendBands.activeBand(values: values, bands: bands) else { return nil }
+        bands[active.index].isActive = true
+        let thresholds: [Double] = [6, 7, 9]
+        let lo = Swift.min(values.min() ?? 6, 6)
+        let hi = Swift.max(values.max() ?? 9, 9)
+        let pad = Swift.max((hi - lo) * 0.08, 0.25)
+        let range = Swift.max(0, lo - pad)...(hi + pad)
+        let fmt: (Double) -> String = { v in
+            let m = Int((v * 60).rounded())
+            return m % 60 > 0 ? "\(m / 60)h \(m % 60)m" : "\(m / 60)h"
+        }
+        return BandedDuration(bands: bands, range: range, yTicks: thresholds, valueFormat: fmt,
+                              activeLabel: bands[active.index].label, count: active.count, total: values.count)
     }
 }
 
@@ -808,6 +904,15 @@ struct SleepDetailModel {
     /// Accumulated sleep debt over the trailing 7 days, in minutes (sum of per-night need − asleep,
     /// floored per night). `nil` when there's nothing to sum.
     let weeklyDebtMinutes: Double?
+    /// Per-night sleep-vs-need for the trailing 7 days, feeding the debt bars. `vsNeedMin` is signed:
+    /// negative = fell short of need (debt), positive = beat it (surplus). (FER-249 v2)
+    let weeklyDebtNights: [DebtNight]
+
+    /// One night's sleep relative to your personal need, in minutes (signed). Drives a single debt bar.
+    struct DebtNight: Equatable {
+        let date: Date
+        let vsNeedMin: Double
+    }
 
     // Per-metric 14-day mini-trends for the metric info cards (FER-227). Derived from `repo.days`;
     // empty when there's no series, so the sheet shows its "no data" well rather than a fake line.
@@ -905,6 +1010,13 @@ struct SleepDetailModel {
             }
             return debts.isEmpty ? nil : debts.reduce(0, +)
         }()
+        // Per-night sleep-vs-need for the debt bars (signed: < 0 = short of need). Derived on-device from
+        // total sleep so it carries surplus too; the headline total above still honours imported debt.
+        let debtNights: [DebtNight] = days.suffix(7).compactMap { d in
+            guard let asleep = d.totalSleepMin, asleep > 0, need > 0,
+                  let date = dayParser.date(from: d.day) else { return nil }
+            return DebtNight(date: date, vsNeedMin: asleep - need)
+        }
 
         // --- Per-metric 14-day mini-trends for the info cards (FER-227). Same derivations as the tiles,
         // over history; each skips nights missing that value. ---
@@ -940,6 +1052,7 @@ struct SleepDetailModel {
             awakenings: awakenings,
             trendPoints: trend,
             weeklyDebtMinutes: weeklyDebt,
+            weeklyDebtNights: debtNights,
             performanceTrend: performanceTrend,
             efficiencyTrend: efficiencyTrend,
             restorativeTrend: restorativeTrend,
@@ -990,7 +1103,8 @@ struct SleepDetailModel {
                      respRate: d.respRateBpm, stages: stages)
     }
 
-    /// Trailing 30 nights of total sleep, in HOURS. Falls back to all nights when the window is sparse.
+    /// Trailing 14 nights of total sleep, in HOURS — the same window the Today sleep sheet charts, so
+    /// both screens read identically (FER-249 v2). Falls back to all nights when the window is sparse.
     private static func durationTrendPoints(_ days: [DailyMetric]) -> [TrendPoint] {
         func build(_ slice: ArraySlice<DailyMetric>) -> [TrendPoint] {
             slice.compactMap { d -> TrendPoint? in
@@ -999,7 +1113,7 @@ struct SleepDetailModel {
                 return TrendPoint(date: date, value: mins / 60.0)
             }
         }
-        let recent = build(days.suffix(30))
+        let recent = build(days.suffix(14))
         if recent.count >= 2 { return recent }
         return build(days[...])
     }

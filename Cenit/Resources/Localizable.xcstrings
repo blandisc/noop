@@ -20292,25 +20292,25 @@
         }
       }
     },
-    "The line is your 7-day moving average over the period you pick. The percentage compares this month's average with last month's. Average, Median, Lowest, Highest and σ (how spread out your days are) come from the range you selected.": {
+    "The line is your 7-day moving average over the period you pick. The percentage compares this month's average with last month's. The average and range come from the range you selected.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The line is your 7-day moving average over the period you pick. The percentage compares this month's average with last month's. Average, Median, Lowest, Highest and σ (how spread out your days are) come from the range you selected."
+            "value": "The line is your 7-day moving average over the period you pick. The percentage compares this month's average with last month's. The average and range come from the range you selected."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "La línea es tu promedio móvil de 7 días en el periodo que elijas. El porcentaje compara el promedio de este mes con el del mes pasado. Promedio, mediana, mínimo, máximo y σ (qué tan dispersos están tus días) salen del rango que seleccionaste."
+            "value": "La línea es tu promedio móvil de 7 días en el periodo que elijas. El porcentaje compara el promedio de este mes con el del mes pasado. El promedio y el rango salen del periodo que seleccionaste."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die Linie ist dein gleitender 7-Tage-Durchschnitt im gewählten Zeitraum. Der Prozentwert vergleicht den Durchschnitt dieses Monats mit dem des Vormonats. Durchschnitt, Median, Minimum, Maximum und σ (wie stark deine Tage streuen) stammen aus dem gewählten Bereich."
+            "value": "Die Linie ist dein gleitender 7-Tage-Durchschnitt im gewählten Zeitraum. Der Prozentwert vergleicht den Durchschnitt dieses Monats mit dem des Vormonats. Durchschnitt und Bereich stammen aus dem gewählten Zeitraum."
           }
         }
       }
@@ -21429,6 +21429,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Variabilidad (R-R)"
+          }
+        }
+      }
+    },
+    "Varied between %@ and %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Varied between %@ and %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Varió entre %@ y %@"
           }
         }
       }
@@ -23211,6 +23228,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Estás alrededor de tu línea base autonómica típica — estrés moderado, un día normal y equilibrado."
+          }
+        }
+      }
+    },
+    "Your average": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your average"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu promedio"
           }
         }
       }
@@ -27077,6 +27111,121 @@
           "stringUnit": {
             "state": "translated",
             "value": "✓"
+          }
+        }
+      }
+    },
+    "behind this week": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "behind this week"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "de retraso esta semana"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "im Rückstand diese Woche"
+          }
+        }
+      }
+    },
+    "your need": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "your need"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tu necesidad"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "dein Bedarf"
+          }
+        }
+      }
+    },
+    "%lld of the last %lld nights in this range": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of the last %lld nights in this range"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld de las últimas %2$lld noches en este rango"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld der letzten %2$lld Nächte in diesem Bereich"
+          }
+        }
+      }
+    },
+    "Hours above or below your sleep need, each of the last 7 nights": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hours above or below your sleep need, each of the last 7 nights"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Horas por encima o por debajo de tu necesidad de sueño, cada una de las últimas 7 noches"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stunden über oder unter deinem Schlafbedarf, in jeder der letzten 7 Nächte"
+          }
+        }
+      }
+    },
+    "Hours asleep per night, last 14 nights, with classification bands": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hours asleep per night, last 14 nights, with classification bands"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Horas dormidas por noche, últimas 14 noches, con bandas de clasificación"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schlafstunden pro Nacht, letzte 14 Nächte, mit Klassifizierungsbändern"
           }
         }
       }
