@@ -47,7 +47,7 @@ struct CuerpoView: View {
 // MARK: - Sheet routing
 
 /// A dark, existing screen presented as a self-contained sheet (pinned to `.dark`).
-private enum CuerpoScreen: Hashable { case workouts, compare, explore, dataSources }
+private enum CuerpoScreen: Hashable { case compare, explore, dataSources }
 
 /// Identifiable wrapper so the light «Instrumento» Detalle de Sueño can ride `.sheet(item:)`
 /// (the model itself isn't Identifiable). One per presentation. (FER-212)
@@ -89,6 +89,10 @@ private struct CuerpoLanding: View {
     @State private var recoveryDetail: RecoveryDetailItem? = nil
     /// Dark screen / catalog-detail sheet, for everything without a light sheet yet.
     @State private var darkSheet: CuerpoSheet? = nil
+    /// Light «Instrumento» Entrenamientos (FER-260) — the «Workouts» row now opens the reskinned list as a
+    /// light sheet with its own NavigationStack (so a session row can push the detail), theme injected at
+    /// the sheet root. Replaces the old dark `.screen(.workouts)` bridge.
+    @State private var showWorkouts = false
     /// Light «Instrumento» Detalle de Sueño (FER-212) — the «Sueño» row now opens this superset of the
     /// old dark sleep screen (built fresh on tap from the in-memory dashboard), theme passed explicitly.
     @State private var sleepDetail: SleepDetailItem? = nil
@@ -215,6 +219,18 @@ private struct CuerpoLanding: View {
             RecoveryDetailScreen(theme: theme, model: item.model)
         }
         .sheet(item: $darkSheet) { sheet in darkSheetContent(sheet) }
+        .sheet(isPresented: $showWorkouts) {
+            // Light «Instrumento» Entrenamientos — its OWN NavigationStack lives inside the sheet so each
+            // session row pushes the detail (NOT a stack nested across the tab path, FER-171). The theme is
+            // injected at the root (it doesn't cross the `.sheet` boundary, FER-162), and the screen's env
+            // objects are re-supplied (a sheet starts a fresh environment branch). (FER-260)
+            NavigationStack { WorkoutsView() }
+                .instrumentoTheme(theme)
+                .environmentObject(repo)
+                .environmentObject(live)
+                .environmentObject(model)
+                .environmentObject(health)
+        }
         .sheet(item: $strainDetail) { item in
             // Light «Instrumento» Detalle de Esfuerzo — theme passed explicitly (it doesn't propagate
             // through `.sheet`), NO nested NavigationStack (FER-171). The intraday curve is loaded the
@@ -472,7 +488,7 @@ private struct CuerpoLanding: View {
         let n = recentWorkoutCount
         let row = metricRow("Workouts", value: n > 0 ? "\(n)" : nil,
                             color: theme.dataStrain, sparkKey: "_none") {
-            darkSheet = .screen(.workouts)
+            showWorkouts = true
         }
         if n > 0 {
             row
@@ -736,7 +752,6 @@ private struct CuerpoLanding: View {
         NavigationStack {
             Group {
                 switch sheet {
-                case .screen(.workouts):    WorkoutsView()
                 case .screen(.compare):     CompareView()
                 case .screen(.explore):     MetricExplorerView()
                 case .screen(.dataSources): DataSourcesView()

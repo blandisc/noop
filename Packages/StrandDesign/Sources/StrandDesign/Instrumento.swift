@@ -111,6 +111,21 @@ public struct InstrumentoTheme: Equatable {
     )
 }
 
+// MARK: - HR-zone ramp (workout detail)
+
+public extension InstrumentoTheme {
+    /// The five heart-rate-zone colors for the «Instrumento» language (Z1 calm → Z5 intense), used by
+    /// the workout-session detail's zone bar. The legacy `StrandPalette.hrZoneColor` is tuned for the
+    /// dark system (bright hues on near-black) and muddies on warm paper, so the daytime detail uses
+    /// this warm ramp instead — cool-calm at the bottom, rising into the ember `dataStrain` family at
+    /// the top. Computed (not stored) so it needs no change to the theme's init or the hour engine. A
+    /// bar fill, not text, so AA-on-paper isn't required; the zone % carries the meaning. (FER-261)
+    var hrZoneRamp: [Color] {
+        [Color(hex: "#8FA98C"), Color(hex: "#C8A24A"), Color(hex: "#D98A3D"),
+         Color(hex: "#C4631F"), Color(hex: "#9C3D14")]
+    }
+}
+
 // MARK: - Environment injection
 
 private struct InstrumentoThemeKey: EnvironmentKey {

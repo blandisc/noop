@@ -48,9 +48,9 @@ CuerpoView  → RecoveryDetailScreen (sheet «Instrumento»: Recuperación — F
              SkinTempDetailScreen (sheet claro «Instrumento»: Temperatura de la piel — última lectura + tendencia con banda ±típica + consistencia en SD °C — FER-256) ·
              BodyAgeSheet (sheet claro: Edad corporal + Vitalidad — FER-145) ·
              SleepDetailScreen (sheet claro «Instrumento»: Sueño + regularidad del horario — FER-212) ·
-             WorkoutsView · CompareView · MetricExplorerView · DataSourcesView ·
-             MetricDetailView (Temp. piel) — los oscuros como sheet fijado a .dark (FER-186)
-WorkoutsView → ManualWorkoutSheet (sheet: add / edit)
+             WorkoutsView (sheet claro «Instrumento» + NavigationStack propio — FER-260) ·
+             CompareView · MetricExplorerView · DataSourcesView — estos oscuros como sheet fijado a .dark (FER-186)
+WorkoutsView → WorkoutDetailScreen (push, detalle de sesión — FER-261) · ManualWorkoutSheet (sheet: add / edit)
 LiveWorkoutHubRow → LiveWorkoutSheet (sheet, detente medio — grabación en vivo, FER-197)
 MetricExplorerView → MetricDetailView (NavigationLink push, sobre el stack de la pestaña «Ajustes» — FER-171)
 ```
@@ -242,17 +242,34 @@ Los 8 bloques (orden), **cada uno con su ⓘ `InfoAccordion`** salvo el método:
 
 ### WorkoutsView
 **Archivo:** `Cenit/Screens/WorkoutsView.swift`  
-**Descripción:** Log de actividad — importado (WHOOP, Apple), detectado automáticamente, manual.
+**Descripción:** Bitácora de actividad — importado (WHOOP, Apple), detectado automáticamente, manual. Rediseñada al «Instrumento diurno» (FER-260): pantalla **clara** (ya no oscura), presentada como `.sheet` desde Cuerpo con su propio `NavigationStack` (tema explícito inyectado al raíz). Destilada: **un número protagonista** (sesiones del periodo, ember) + filtro de rango con auto-ampliación · apoyos quietos (tiempo activo · más frecuente) · lista **«Por deporte»** (sin cards anidadas) · lista de **«Sesiones»** tap-eables. Se retiró la tabla de 7 columnas, el grid de StatTiles y la barra de zonas agregada (esta última se movió al detalle de sesión).
 
 | Estado | Condición de entrada |
 |--------|---------------------|
-| Cargando | `loaded == false` |
-| Sin sesiones | `allRows.isEmpty` |
-| Ventana vacía (auto-widen) | Rango seleccionado sin sesiones, expande a siguiente |
+| Cargando | `loaded == false` → `LoadingStateView` |
+| Sin sesiones | `allRows.isEmpty` → onboarding (`EmptyStateView`-style: Agregar entrenamiento · Orígenes de datos) |
+| Ventana vacía (auto-widen) | Rango seleccionado sin sesiones, expande al siguiente (caption en `warning`) |
 | Con sesiones | Sesiones en el rango actual |
+| Sin permiso HealthKit | No es muro: muestra lo local + línea opcional al pie «Conecta Apple Salud…» |
 
-**Componentes:** `SegmentedPillControl (7D–All)`, `StatTile ×5`, `Activity Breakdown`, `HR Zones`, `Sessions table`  
-**Navegación:** → `ManualWorkoutSheet` (sheet: add · edit vía context menu)
+**Componentes:** `instrumentoHero`, `SegmentedPillControl (7D–All, theme)`, `SourceBadge`, `QuietButton`, `LoadingStateView`  
+**Navegación:** cada fila de sesión → `WorkoutDetailScreen` (push en el stack de la sheet, FER-261); `+` / Agregar → `ManualWorkoutSheet` (sheet: add · edit); Orígenes de datos → `DataSourcesView` (sheet oscuro autocontenido)
+
+---
+
+### WorkoutDetailScreen
+**Archivo:** `Cenit/Screens/WorkoutDetailScreen.swift`  
+**Descripción:** Detalle de **una** sesión, «Instrumento» claro (FER-261). Se pushea dentro del `NavigationStack` de `WorkoutsView` (sin stack anidado, FER-171), tema explícito. Héroe que **degrada con honestidad**: esfuerzo (strain) → FC media → duración (nunca un 0/«—» falso). Bloques por hairline: **Zonas de FC** (solo si la sesión las trae, rampa cálida `hrZoneRamp`) · FC media/máx · distancia/energía (apoyos en tinta, con disclaimer «Estimado por la fuente» si no es WHOOP) · notas (si manual) · origen (`SourceBadge`) · nota de método. CRUD por **menú •••** según fuente (manual: editar/borrar · detectada: re-etiquetar/descartar · importada: duplicar como manual); reusa `Repository` tal cual.
+
+| Estado | Condición de entrada |
+|--------|---------------------|
+| Esfuerzo | `row.strain != nil` (héroe ember `/ 21` + nota 0–21) |
+| FC media (degradado) | sin strain, `avgHr != nil` (héroe rosa + nota «solo WHOOP calcula esfuerzo») |
+| Duración (último recurso) | sin strain ni FC (héroe en tinta) |
+| Con zonas / sin zonas | bloque de zonas presente solo si `zonesJSON` parsea |
+
+**Componentes:** `instrumentoHero`, barra de zonas (`hrZoneRamp`), `SourceBadge`, `ManualWorkoutSheet` (edit/duplicate), menú `ellipsis.circle`  
+**Navegación:** back → `WorkoutsView`; menú ••• → `ManualWorkoutSheet` (edit / duplicate)
 
 ---
 
@@ -270,7 +287,7 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 | Calibrando | Recuperación muestra «N/4» + «Calibrando tu base»; el resto en «—» con esqueleto |
 | Sin permiso / offline | Muestra lo guardado; las métricas solo-Apple (Pasos) invitan a conectar sin prometer datos |
 
-**Apertura del detalle (FER-185 ya aterrizó para los 3 vitales):** **HRV · FC en reposo · Respiración** abren el **`MetricDetailScreen`** unificado (sheet claro «Instrumento», `depth: .full`, tema explícito, sin `NavigationStack` anidado); **Sueño** abre el **`SleepDetailScreen`** claro «Instrumento» (sheet, tema explícito, sin stack anidado — FER-212); **Recuperación** (la fila héroe) abre el **`RecoveryDetailScreen`** «Instrumento» (sheet, tema explícito, sin stack anidado — FER-225), ya no la `MetricInfoSheet`. **Esfuerzo del día** abre el **`StrainDetailScreen`** «Instrumento» (sheet, tema explícito, sin stack anidado — FER-238), ya no la `MetricInfoSheet` (Hoy sí la conserva). **SpO₂** (FER-252) y **Frecuencia cardíaca** (FER-253) también abren ya el **`MetricDetailScreen`** unificado (Frecuencia cardíaca con curva intradía + pico + piso de reposo + «Tiempo en zonas»). **Temperatura de la piel** abre el **`SkinTempDetailScreen`** «Instrumento» (sheet, tema explícito, sin stack anidado — FER-256), ya no la pantalla oscura del catálogo. **VO₂ máx** (Longevidad) abre el **`MetricDetailScreen`** con la factory `.vo2max` (dato esporádico de Apple Salud, hero = última lectura leída contra tus pares por edad/sexo — FER-257). El resto sigue su puente: Pasos/Estrés→`MetricInfoSheet` claro; Entrenamientos→`WorkoutsView`, Comparar→`CompareView`, Ver todas→`MetricExplorerView` — estos últimos como **sheet oscuro fijado a `.dark`** (un tab claro no puede empujar una pantalla oscura sin romper la barra de estado). El mini-bloque **«Cómo amaneces tras cada deporte»** (Activity Cost, FER-139) en «Actividad» abre su propia **hoja clara** `ActivityRecoverySheet` (hermana de `MetricInfoSheet`, tema explícito): una tarjeta por deporte —en el orden del motor— con la frase de **asociación** (no causa), badge de confianza (`Sólido`/`Juntando datos`) y «n sesiones», más «Ver el método» con los confusores; sin datos suficientes → estado «Juntando datos».
+**Apertura del detalle (FER-185 ya aterrizó para los 3 vitales):** **HRV · FC en reposo · Respiración** abren el **`MetricDetailScreen`** unificado (sheet claro «Instrumento», `depth: .full`, tema explícito, sin `NavigationStack` anidado); **Sueño** abre el **`SleepDetailScreen`** claro «Instrumento» (sheet, tema explícito, sin stack anidado — FER-212); **Recuperación** (la fila héroe) abre el **`RecoveryDetailScreen`** «Instrumento» (sheet, tema explícito, sin stack anidado — FER-225), ya no la `MetricInfoSheet`. **Esfuerzo del día** abre el **`StrainDetailScreen`** «Instrumento» (sheet, tema explícito, sin stack anidado — FER-238), ya no la `MetricInfoSheet` (Hoy sí la conserva). **SpO₂** (FER-252) y **Frecuencia cardíaca** (FER-253) también abren ya el **`MetricDetailScreen`** unificado (Frecuencia cardíaca con curva intradía + pico + piso de reposo + «Tiempo en zonas»). **Temperatura de la piel** abre el **`SkinTempDetailScreen`** «Instrumento» (sheet, tema explícito, sin stack anidado — FER-256), ya no la pantalla oscura del catálogo. **VO₂ máx** (Longevidad) abre el **`MetricDetailScreen`** con la factory `.vo2max` (dato esporádico de Apple Salud, hero = última lectura leída contra tus pares por edad/sexo — FER-257). El resto sigue su puente: Pasos/Estrés→`MetricInfoSheet` claro; **Entrenamientos→`WorkoutsView`** ahora es **sheet claro «Instrumento»** con su propio `NavigationStack` (FER-260), no oscuro; Comparar→`CompareView`, Ver todas→`MetricExplorerView` siguen como **sheet oscuro fijado a `.dark`** (un tab claro no puede empujar una pantalla oscura sin romper la barra de estado). El mini-bloque **«Cómo amaneces tras cada deporte»** (Activity Cost, FER-139) en «Actividad» abre su propia **hoja clara** `ActivityRecoverySheet` (hermana de `MetricInfoSheet`, tema explícito): una tarjeta por deporte —en el orden del motor— con la frase de **asociación** (no causa), badge de confianza (`Sólido`/`Juntando datos`) y «n sesiones», más «Ver el método» con los confusores; sin datos suficientes → estado «Juntando datos».
 
 **Componentes:** `MetricRow`, `Sparkline` (+ `ReferenceRange.interquartile`), `MetricInfoSheet`, `MetricDetailScreen` (+ `MetricDetailSpec`), `ActivityRecoverySheet` (FER-139), `FitnessAgeDetailView`, `InlineFlagChip`, `InstrumentoTheme` (`instrumentoThemeByHour`). **Analytics:** `ActivityCostEngine` + `ActivityCostInputs` (StrandAnalytics, vía `Repository.activityCosts()`).
 
@@ -531,7 +548,7 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 
 ### ManualWorkoutSheet
 **Archivo:** `Cenit/Screens/ManualWorkoutSheet.swift`  
-**Presentado por:** `WorkoutsView` (add / edit via context menu)
+**Presentado por:** `WorkoutsView` (add: botón «+») · `WorkoutDetailScreen` (edit / duplicate vía menú •••)
 
 | Estado | Condición de entrada |
 |--------|---------------------|
