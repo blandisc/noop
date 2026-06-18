@@ -875,22 +875,12 @@ struct TodayView: View {
             .foregroundStyle(theme.inkTertiary)
     }
 
-    /// Spanish relative-time label used by syncMeta — keeps the rest of the app's relativeAgo intact.
-    private func relativeAgoES(_ epochSeconds: TimeInterval, now: TimeInterval) -> String {
-        let d = max(0, Int(now - epochSeconds))
-        switch d {
-        case ..<60:     return "ahora mismo"
-        case ..<3600:   return "hace \(d / 60) min"
-        case ..<86_400: return "hace \(d / 3600) h"
-        default:        return "hace \(d / 86_400) d"
-        }
-    }
-
-    /// Honesty line — "Sincronizado hace 2 min · strap 87%" / "Última sincronización: nunca".
-    /// Shows "Sincronizando historial…" during a history offload. Mono + tertiary in all states.
+    /// Honesty line — "Synced 2 min. ago · strap 87%" / "Last sync — never".
+    /// Uses RelativeDateTimeFormatter so the time respects the device locale (es/en/…).
+    /// Keys match the xcstrings catalog so the surrounding text is also translated.
     @ViewBuilder private var syncMeta: some View {
         if live.backfilling {
-            Text("Sincronizando historial…")
+            Text("Syncing strap history…")
                 .font(StrandFont.mono(10))
                 .foregroundStyle(theme.inkTertiary)
                 .lineLimit(1)
@@ -898,14 +888,15 @@ struct TodayView: View {
             TimelineView(.periodic(from: .now, by: 60)) { context in
                 Group {
                     if let at = live.lastSyncedAt {
-                        let rel = relativeAgoES(at, now: context.date.timeIntervalSince1970)
+                        let rel = RelativeDateTimeFormatter().localizedString(
+                            fromTimeInterval: at - context.date.timeIntervalSince1970)
                         if let pct = live.batteryPct {
-                            Text("Sincronizado \(rel) · strap \(Int(pct.rounded()))%")
+                            Text("Synced \(rel) · strap \(Int(pct.rounded()))%")
                         } else {
-                            Text("Sincronizado \(rel)")
+                            Text("Synced \(rel)")
                         }
                     } else {
-                        Text("Última sincronización: nunca")
+                        Text("Last sync — never")
                     }
                 }
                 .font(StrandFont.mono(10))
