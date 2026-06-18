@@ -101,7 +101,7 @@ public enum StrandPalette {
     public static let sleepAwake = Color(hex: "#E0476B") // rose
     public static let sleepLight = Color(hex: "#5C6FB1") // periwinkle
     public static let sleepDeep  = Color(hex: "#2C3A7A") // deep indigo
-    public static let sleepREM   = Color(hex: "#5BE0C7") // mint (glows)
+    public static let sleepREM   = Color(hex: "#3E9E8C") // muted teal (calmer than the old #5BE0C7 mint — FER-234)
 
     // MARK: HR zones (§9.1)
     public static let zone1 = Color(hex: "#4FA9C9")
