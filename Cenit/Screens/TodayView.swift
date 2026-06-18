@@ -521,9 +521,16 @@ struct TodayView: View {
     /// equivalente al gesto, vía `triggerPullSync`. Se combinan fecha + estado en un solo elemento
     /// para que la acción sea descubrible al enfocar el encabezado.
     private var headerBlock: some View {
-        utilityRow
-            .accessibilityElement(children: .combine)
-            .accessibilityAction(named: Text("Sincronizar")) { triggerPullSync() }
+        HStack(alignment: .center) {
+            utilityRow
+            Spacer(minLength: 0)
+            if live.backfilling || pullSyncing {
+                ConnectionDot(tone: .accent, pulsing: true, size: 6)
+                    .accessibilityHidden(true)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityAction(named: Text("Sincronizar")) { triggerPullSync() }
     }
 
     // MARK: - Héroe unificado «Instrumento diurno» (FER-160)
@@ -880,10 +887,16 @@ struct TodayView: View {
     /// Keys match the xcstrings catalog so the surrounding text is also translated.
     @ViewBuilder private var syncMeta: some View {
         if live.backfilling {
-            Text("Syncing strap history…")
-                .font(StrandFont.mono(10))
-                .foregroundStyle(theme.inkTertiary)
-                .lineLimit(1)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Syncing strap history…")
+                    .font(StrandFont.mono(10))
+                    .foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(live.syncChunksThisSession > 0 ? "\(live.syncChunksThisSession) paquetes" : "···")
+                    .font(StrandFont.mono(10))
+                    .foregroundStyle(theme.inkTertiary)
+                    .monospacedDigit()
+            }
         } else {
             TimelineView(.periodic(from: .now, by: 60)) { context in
                 Group {
@@ -901,7 +914,7 @@ struct TodayView: View {
                 }
                 .font(StrandFont.mono(10))
                 .foregroundStyle(theme.inkTertiary)
-                .lineLimit(1)
+                .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
