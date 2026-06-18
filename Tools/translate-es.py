@@ -90,6 +90,12 @@ ES: dict[str, str] = {
     "Each point is one night. The recommended zone for an adult is 7–9 h.": "Cada punto es una noche. La zona recomendada para un adulto es de 7 a 9 h.",
     "Weekly debt": "Deuda de la semana",
     "What you missed versus what your body needs. One good night won't clear it.": "Lo que te faltó dormir frente a lo que tu cuerpo necesita. No se salda con una sola noche buena.",
+    # Detalle de Sueño — tendencia unificada con Hoy + gráfica de deuda (FER-249 v2).
+    "behind this week": "de retraso esta semana",
+    "your need": "tu necesidad",
+    "%lld of the last %lld nights in this range": "%1$lld de las últimas %2$lld noches en este rango",
+    "Hours above or below your sleep need, each of the last 7 nights": "Horas por encima o por debajo de tu necesidad de sueño, cada una de las últimas 7 noches",
+    "Hours asleep per night, last 14 nights, with classification bands": "Horas dormidas por noche, últimas 14 noches, con bandas de clasificación",
     "What the stages mean": "Qué significan las etapas",
     "Shows what this means": "Muestra qué significa esto",
     "Sleep stages": "Etapas del sueño",
