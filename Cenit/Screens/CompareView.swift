@@ -126,8 +126,10 @@ struct CompareView: View {
         [theme.verdict, theme.dataHrv, theme.dataSleep, theme.dataStrain]
     }
 
-    /// Default starter selection (falls back gracefully if a key is missing).
-    private static let defaultKeys = ["recovery", "sleep_performance", "weight"]
+    /// Default starter selection (falls back gracefully if a key is missing). All three resolve from the
+    /// merged dashboard (`displayDays`), so a strap user sees an overlay on first open — not an empty
+    /// well — without importing a CSV. (FER-275)
+    private static let defaultKeys = ["recovery", "strain", "hrv"]
 
     @State private var range: CompareRange = .year
     /// Ordered selection (max 4). Drives both the legend order and color mapping.
@@ -272,58 +274,103 @@ struct CompareView: View {
 
     /// Load (and cache) the full history for any selected metric not yet fetched.
     ///
-    /// Fetches the (up to 4) uncached selections concurrently instead of serially. Full history is
-    /// kept on purpose: `slice`/`effectiveRange` auto-widen a sparse series past the selected range
-    /// to ALL, so the cache must hold every row — the window is applied in-view, not in SQL (FER-27).
+    /// Two data paths (FER-275): metrics that are nightly dashboard fields read from `repo.displayDays`
+    /// — the merged source Cuerpo/Today use, which resolves for **strap users** (their computed scores
+    /// live under "<deviceId>-noop", which the import-only `repo.series()` never sees). Everything else
+    /// (Apple-Health body metrics, HR-zone splits, derived sleep percentages) falls back to `series()`.
+    /// Full history is kept on purpose: `slice`/`effectiveRange` auto-widen a sparse series past the
+    /// selected range to ALL, so the cache must hold every row — the window is applied in-view (FER-27).
     private func loadSelected() async {
         let missing = selected.filter { fullSeries[$0.id] == nil }
+        // Dashboard-resolvable metrics: extract synchronously from the in-memory merged dashboard.
+        var resolved: [(id: String, series: [(day: String, value: Double)])] = []
+        var needsSeries: [MetricDescriptor] = []
+        for metric in missing {
+            if let pick = Self.dailyPicker(for: metric.key) {
+                resolved.append((metric.id, dailySeries(pick)))
+            } else {
+                needsSeries.append(metric)
+            }
+        }
+        // The genuinely import-/Apple-only metrics still load (concurrently) from `series()`.
         let fetched = await withTaskGroup(of: (String, [(day: String, value: Double)]).self) { group in
-            for metric in missing {
+            for metric in needsSeries {
                 group.addTask { (metric.id, await repo.series(key: metric.key, source: metric.source)) }
             }
             var out: [(id: String, series: [(day: String, value: Double)])] = []
             for await (id, s) in group { out.append((id, s)) }
             return out
         }
-        for (id, s) in fetched { fullSeries[id] = s }
+        for (id, s) in resolved { fullSeries[id] = s }
+        for (id, s) in fetched  { fullSeries[id] = s }
         loadedOnce = true
+    }
+
+    /// A metric's full daily history (ascending by day) from the merged dashboard — same contract as
+    /// `repo.series()`, but resolving for strap users too. (FER-275)
+    private func dailySeries(_ pick: (DailyMetric) -> Double?) -> [(day: String, value: Double)] {
+        repo.displayDays
+            .compactMap { row in pick(row).map { (row.day, $0) } }
+            .sorted { $0.day < $1.day }
+    }
+
+    /// The nightly-dashboard field for a metric key, or `nil` for keys that aren't computed on-device
+    /// (body composition, HR-zone splits, derived sleep percentages) — those keep the import-/Apple-only
+    /// `series()` path. Mirrors the per-metric extraction Cuerpo's rows + `vitalSeries` already use. (FER-275)
+    private static func dailyPicker(for key: String) -> ((DailyMetric) -> Double?)? {
+        switch key {
+        case "recovery":         return { $0.recovery }
+        case "strain":           return { $0.strain }
+        case "hrv":              return { $0.avgHrv }
+        case "rhr":              return { $0.restingHr.map(Double.init) }
+        case "resp_rate":        return { $0.respRateBpm }
+        case "spo2":             return { $0.spo2Pct }
+        case "skin_temp":        return { $0.skinTempDevC }
+        case "steps":            return { $0.steps.map(Double.init) }
+        case "sleep_total_min":  return { $0.totalSleepMin }
+        case "sleep_deep_min":   return { $0.deepMin }
+        case "sleep_rem_min":    return { $0.remMin }
+        case "sleep_light_min":  return { $0.lightMin }
+        case "sleep_efficiency": return { $0.efficiency.map { $0 <= 1.0 ? $0 * 100 : $0 } }
+        case "active_kcal":      return { $0.activeKcalEst }
+        default:                 return nil
+        }
     }
 
     // MARK: - Metric picker section (range control + chips, on a contained surface)
 
+    // The controls live directly on the paper (no surface card): hierarchy by space, not boxes
+    // (Instrumento rule 3), and the full screen width keeps the 6-segment range control from wrapping
+    // — the earlier card padding squeezed "ALL"/«TODO» onto a second line. (FER-275)
     private var metricSection: some View {
-        block(title: "Metrics") {
-            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-                SegmentedPillControl(CompareRange.allCases, selection: $range, theme: theme) { $0.label }
-                    .accessibilityLabel("Time range")
+        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            Text("Metrics").instrumentoOverline().foregroundStyle(theme.inkTertiary)
 
-                HStack(alignment: .firstTextBaseline) {
-                    if selected.count >= minSelection {
-                        Text(rangeCaption)
-                            .font(StrandFont.footnote)
-                            .foregroundStyle(anyWidened ? theme.warning : theme.inkTertiary)
-                            .accessibilityLabel(rangeCaption)
-                    }
-                    Spacer(minLength: 8)
-                    addMenu
+            SegmentedPillControl(CompareRange.allCases, selection: $range, theme: theme) { $0.label }
+                .accessibilityLabel("Time range")
+
+            HStack(alignment: .firstTextBaseline) {
+                if selected.count >= minSelection {
+                    Text(rangeCaption)
+                        .font(StrandFont.footnote)
+                        .foregroundStyle(anyWidened ? theme.warning : theme.inkTertiary)
+                        .accessibilityLabel(rangeCaption)
                 }
+                Spacer(minLength: 8)
+                addMenu
+            }
 
-                if selected.isEmpty {
-                    Text("Nothing selected yet.")
-                        .font(StrandFont.subhead)
-                        .foregroundStyle(theme.inkTertiary)
-                } else {
-                    FlowChips(metrics: selected, colorFor: colorFor, theme: theme) { metric in
-                        remove(metric)
-                    }
+            if selected.isEmpty {
+                Text("Nothing selected yet.")
+                    .font(StrandFont.subhead)
+                    .foregroundStyle(theme.inkTertiary)
+            } else {
+                FlowChips(metrics: selected, colorFor: colorFor, theme: theme) { metric in
+                    remove(metric)
                 }
             }
-            .padding(NoopMetrics.cardPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                .strokeBorder(theme.hairline, lineWidth: 1))
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// Grouped "add metric" menu, sectioned by catalog category. Disables already-
