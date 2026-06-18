@@ -10828,6 +10828,29 @@
         }
       }
     },
+    "%lld of the last %lld days in this range": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld of the last %2$lld days in this range"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld de los últimos %2$lld días en este rango"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld der letzten %2$lld Tage in diesem Bereich"
+          }
+        }
+      }
+    },
     "Last 14 days": {
       "extractionState": "manual",
       "localizations": {

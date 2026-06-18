@@ -20,6 +20,48 @@ public struct TrendPoint: Identifiable, Sendable, Equatable {
     }
 }
 
+// MARK: - Classification bands (FER-244)
+
+/// One classification band drawn behind a trend line — e.g. sleep "Optimal 7–9 h" or stress "Medium".
+/// Bounds are a half-open interval `[lower, upper)`; `nil` = open on that side. Only the band the latest
+/// value falls into is shaded (the "active" bracket); the rest are hinted by the axis grid lines.
+public struct TrendBand: Identifiable, Equatable {
+    public let id = UUID()
+    public var label: LocalizedStringKey
+    public var lower: Double?
+    public var upper: Double?
+    public var isActive: Bool
+
+    public init(label: LocalizedStringKey, lower: Double?, upper: Double?, isActive: Bool = false) {
+        self.label = label
+        self.lower = lower
+        self.upper = upper
+        self.isActive = isActive
+    }
+
+    /// True when `value` falls in this band's half-open interval `[lower, upper)`.
+    public func contains(_ value: Double) -> Bool {
+        (lower == nil || value >= lower!) && (upper == nil || value < upper!)
+    }
+}
+
+/// Pure band math, kept free of SwiftUI so it can be unit-tested (FER-244).
+public enum TrendBands {
+    /// Index of the band containing `value`, or `nil` if none does.
+    public static func index(containing value: Double, in bands: [TrendBand]) -> Int? {
+        bands.firstIndex { $0.contains(value) }
+    }
+
+    /// The band the **last** value falls into, plus how many of `values` land in that same band.
+    /// `nil` when there are no values or the last value matches no band.
+    public static func activeBand(values: [Double], bands: [TrendBand]) -> (index: Int, count: Int)? {
+        guard let last = values.last, let idx = index(containing: last, in: bands) else { return nil }
+        let band = bands[idx]
+        let count = values.reduce(0) { $0 + (band.contains($1) ? 1 : 0) }
+        return (idx, count)
+    }
+}
+
 public struct TrendChart: View {
 
     public var points: [TrendPoint]
@@ -42,6 +84,13 @@ public struct TrendChart: View {
     public var axisLabelColor: Color
     /// Axis grid-line color (drawn at 0.4 opacity). Defaults to the dark hairline. (FER-162)
     public var gridLineColor: Color
+    /// Classification bands to draw behind the line; the active one is shaded. Empty = no bands (the
+    /// chart behaves exactly as before). (FER-244)
+    public var bands: [TrendBand]
+    /// The hue of the active band's shading, label and edge lines. (FER-244)
+    public var bandColor: Color
+    /// Explicit Y-axis tick values (e.g. the band thresholds). `nil` = automatic ticks. (FER-244)
+    public var yAxisValues: [Double]?
 
     public init(
         points: [TrendPoint],
@@ -53,7 +102,10 @@ public struct TrendChart: View {
         valueFormat: @escaping (Double) -> String = { String(Int($0.rounded())) },
         dateFormat: @escaping (Date) -> String = { TrendChart.defaultDateString($0) },
         axisLabelColor: Color = StrandPalette.textTertiary,
-        gridLineColor: Color = StrandPalette.hairline
+        gridLineColor: Color = StrandPalette.hairline,
+        bands: [TrendBand] = [],
+        bandColor: Color = .clear,
+        yAxisValues: [Double]? = nil
     ) {
         self.points = points.sorted { $0.date < $1.date }
         self.gradient = gradient
@@ -65,6 +117,9 @@ public struct TrendChart: View {
         self.dateFormat = dateFormat
         self.axisLabelColor = axisLabelColor
         self.gridLineColor = gridLineColor
+        self.bands = bands
+        self.bandColor = bandColor
+        self.yAxisValues = yAxisValues
     }
 
     /// The x-position the cursor is hovering, in chart-local coordinates.
@@ -166,7 +221,8 @@ public struct TrendChart: View {
         // Reserve a clean band below the fill for the X-axis labels (startPadding on the Y-scale's
         // bottom), and inset the X-scale's trailing edge so the last label isn't clipped. (FER-82)
         .chartYScale(domain: valueRange, range: .plotDimension(startPadding: NoopMetrics.chartXLabelBand, endPadding: 0))
-        .chartXScale(range: .plotDimension(startPadding: 0, endPadding: NoopMetrics.chartXTrailingInset))
+        // With bands, reserve a wider right gutter so the band labels sit clear of the line. (FER-244)
+        .chartXScale(range: .plotDimension(startPadding: 0, endPadding: bands.isEmpty ? NoopMetrics.chartXTrailingInset : 64))
         .chartXAxis {
             AxisMarks(values: .automatic(desiredCount: 3)) { _ in
                 AxisGridLine().foregroundStyle(gridLineColor.opacity(0.4))
@@ -175,10 +231,30 @@ public struct TrendChart: View {
             }
         }
         .chartYAxis {
-            AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { _ in
-                AxisGridLine().foregroundStyle(gridLineColor.opacity(0.4))
-                AxisValueLabel().foregroundStyle(axisLabelColor)
-                    .font(StrandFont.footnote)
+            // Explicit ticks at the band thresholds when bands are present (the grid lines double as the
+            // soft "neighbour" hints); automatic ticks otherwise. (FER-244)
+            if let yv = yAxisValues {
+                AxisMarks(position: .leading, values: yv) { _ in
+                    AxisGridLine().foregroundStyle(gridLineColor.opacity(0.4))
+                    AxisValueLabel().foregroundStyle(axisLabelColor)
+                        .font(StrandFont.footnote)
+                }
+            } else {
+                AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { _ in
+                    AxisGridLine().foregroundStyle(gridLineColor.opacity(0.4))
+                    AxisValueLabel().foregroundStyle(axisLabelColor)
+                        .font(StrandFont.footnote)
+                }
+            }
+        }
+        .chartBackground { proxy in
+            GeometryReader { geo in
+                let plot = geo[proxy.plotAreaFrame]
+                ZStack(alignment: .topLeading) {
+                    ForEach(bands) { band in
+                        bandLayer(band, proxy: proxy, plot: plot)
+                    }
+                }
             }
         }
         .chartOverlay { proxy in
@@ -232,6 +308,41 @@ public struct TrendChart: View {
     private var averageValue: Double {
         guard !points.isEmpty else { return valueRange.lowerBound }
         return points.map(\.value).reduce(0, +) / Double(points.count)
+    }
+
+    /// Draws one classification band behind the line: the active band gets a soft fill + coloured edge
+    /// lines (the "bracket"); every band wide enough gets a right-aligned label (active in the band hue,
+    /// the rest in quiet ink). Open bounds clamp to the value domain. (FER-244)
+    @ViewBuilder
+    private func bandLayer(_ band: TrendBand, proxy: ChartProxy, plot: CGRect) -> some View {
+        let topV = min(band.upper ?? valueRange.upperBound, valueRange.upperBound)
+        let botV = max(band.lower ?? valueRange.lowerBound, valueRange.lowerBound)
+        if let pTop = proxy.position(forY: topV), let pBot = proxy.position(forY: botV) {
+            let yTop = plot.minY + min(pTop, pBot)
+            let h = abs(pBot - pTop)
+            if band.isActive {
+                Rectangle()
+                    .fill(bandColor.opacity(0.12))
+                    .frame(width: plot.width, height: h)
+                    .offset(x: plot.minX, y: yTop)
+                Rectangle()
+                    .fill(bandColor.opacity(0.5))
+                    .frame(width: plot.width, height: 1)
+                    .offset(x: plot.minX, y: yTop)
+                Rectangle()
+                    .fill(bandColor.opacity(0.5))
+                    .frame(width: plot.width, height: 1)
+                    .offset(x: plot.minX, y: yTop + h - 1)
+            }
+            if h >= 16 {
+                Text(band.label)
+                    .font(StrandFont.footnote)
+                    .lineLimit(1)
+                    .foregroundStyle(band.isActive ? bandColor : axisLabelColor.opacity(0.8))
+                    .frame(width: plot.width - 6, alignment: .trailing)
+                    .offset(x: plot.minX, y: yTop + h / 2 - 8)
+            }
+        }
     }
 }
 
