@@ -42,4 +42,56 @@ final class VO2maxReferenceTests: XCTestCase {
     func testNeverImplausiblyLow() {
         XCTAssertGreaterThanOrEqual(VO2maxReference.expected(age: 80, sex: "female"), 15)
     }
+
+    // MARK: - Category (FER-257)
+
+    func testCategoryThresholdsAscending() {
+        let t = VO2maxReference.categoryThresholds(age: 35, sex: "male")
+        XCTAssertLessThan(t.low, t.good)
+        XCTAssertLessThan(t.good, t.excellent)
+    }
+
+    func testMedianValueLandsAverage() {
+        // A value equal to the age/sex median sits in the middle band.
+        for (age, sex) in [(30, "male"), (45, "female"), (60, "male")] {
+            let mid = VO2maxReference.expected(age: age, sex: sex)
+            XCTAssertEqual(VO2maxReference.category(value: mid, age: age, sex: sex), .average, "age \(age) \(sex)")
+        }
+    }
+
+    func testHighValueIsExcellentLowValueIsLow() {
+        let age = 35, sex = "male"
+        let mid = VO2maxReference.expected(age: age, sex: sex)
+        XCTAssertEqual(VO2maxReference.category(value: mid + 25, age: age, sex: sex), .excellent)
+        XCTAssertEqual(VO2maxReference.category(value: mid - 25, age: age, sex: sex), .low)
+    }
+
+    func testCategoryMonotonicInValue() {
+        // Higher VO₂max never lands in a worse band.
+        let age = 40, sex = "female"
+        let order: [VO2maxReference.Category] = [.low, .average, .good, .excellent]
+        func rank(_ v: Double) -> Int { order.firstIndex(of: VO2maxReference.category(value: v, age: age, sex: sex))! }
+        var last = -1
+        for v in stride(from: 15.0, through: 70.0, by: 1.0) {
+            let r = rank(v)
+            XCTAssertGreaterThanOrEqual(r, last, "value \(v) dropped a band")
+            last = r
+        }
+    }
+
+    // MARK: - Equivalent age (FER-257)
+
+    func testEquivalentAgeInvertsExpected() {
+        // The median value for age A maps back to age A (within rounding).
+        for (age, sex) in [(25, "male"), (40, "male"), (50, "female")] {
+            let mid = VO2maxReference.expected(age: age, sex: sex)
+            XCTAssertEqual(VO2maxReference.equivalentAge(value: mid, sex: sex), age, accuracy: 1, "age \(age) \(sex)")
+        }
+    }
+
+    func testEquivalentAgeClampedToCohort() {
+        // A sky-high value can't read younger than 20; a near-zero one no older than 80.
+        XCTAssertEqual(VO2maxReference.equivalentAge(value: 90, sex: "male"), 20)
+        XCTAssertEqual(VO2maxReference.equivalentAge(value: 5, sex: "male"), 80)
+    }
 }

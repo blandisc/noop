@@ -2,121 +2,6 @@
   "sourceLanguage": "en",
   "strings": {
     "": {},
-    "%@ above your 7-day average": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ über deinem 7-Tage-Schnitt"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ above your 7-day average"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ sobre tu media de 7 días"
-          }
-        }
-      }
-    },
-    "%@ below your 7-day average": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ unter deinem 7-Tage-Schnitt"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ below your 7-day average"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ bajo tu media de 7 días"
-          }
-        }
-      }
-    },
-    "At your 7-day average": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Im 7-Tage-Schnitt"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "At your 7-day average"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "En tu media de 7 días"
-          }
-        }
-      }
-    },
-    "Still building your average": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Schnitt wird noch ermittelt"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Still building your average"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aún construyendo tu media"
-          }
-        }
-      }
-    },
-    "vs 7-day avg": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ggü. 7-Tage-Schnitt"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "vs 7-day avg"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "vs tu media 7d"
-          }
-        }
-      }
-    },
     " No clear relationship — they move largely independently.": {
       "localizations": {
         "en": {
@@ -27612,6 +27497,696 @@
         }
       }
     },
+    "VO₂ Max · latest reading": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VO₂ Max · latest reading"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VO₂ máx · última lectura"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VO₂ Max · letzte Messung"
+          }
+        }
+      }
+    },
+    "Above what's expected for your age.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Above what's expected for your age."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por encima de lo esperado para tu edad."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Über dem für dein Alter Erwarteten."
+          }
+        }
+      }
+    },
+    "Below what's expected for your age.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Below what's expected for your age."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por debajo de lo esperado para tu edad."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unter dem für dein Alter Erwarteten."
+          }
+        }
+      }
+    },
+    "In line with what's expected for your age.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In line with what's expected for your age."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En línea con lo esperado para tu edad."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Im Einklang mit dem für dein Alter Erwarteten."
+          }
+        }
+      }
+    },
+    "Expected for your age: ~%lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expected for your age: ~%lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esperado a tu edad: ~%lld"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Für dein Alter erwartet: ~%lld"
+          }
+        }
+      }
+    },
+    "Measured today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Measured today"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medido hoy"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heute gemessen"
+          }
+        }
+      }
+    },
+    "Measured yesterday": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Measured yesterday"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medido ayer"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestern gemessen"
+          }
+        }
+      }
+    },
+    "Measured %lld days ago": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Measured %lld days ago"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medido hace %lld días"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vor %lld Tagen gemessen"
+          }
+        }
+      }
+    },
+    "Measured readings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Measured readings"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lecturas medidas"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gemessene Werte"
+          }
+        }
+      }
+    },
+    "Measured values.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Measured values."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valores medidos."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gemessene Werte."
+          }
+        }
+      }
+    },
+    "Measured values · last %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Measured values · last %@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valores medidos · últimos %@."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gemessene Werte · letzte %@."
+          }
+        }
+      }
+    },
+    "Change": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cambio"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Veränderung"
+          }
+        }
+      }
+    },
+    "Up since your first reading in this range. VO₂max responds to training.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Up since your first reading in this range. VO₂max responds to training."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subió desde tu primera lectura en este rango. El VO₂max responde al entrenamiento."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestiegen seit deiner ersten Messung in diesem Bereich. VO₂max reagiert auf Training."
+          }
+        }
+      }
+    },
+    "Down since your first reading in this range.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Down since your first reading in this range."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bajó desde tu primera lectura en este rango."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gesunken seit deiner ersten Messung in diesem Bereich."
+          }
+        }
+      }
+    },
+    "About the same across this range.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About the same across this range."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Casi igual en este rango."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In diesem Bereich nahezu unverändert."
+          }
+        }
+      }
+    },
+    "Your level for your age": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your level for your age"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu nivel para tu edad"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Niveau für dein Alter"
+          }
+        }
+      }
+    },
+    "Good": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Good"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bueno"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gut"
+          }
+        }
+      }
+    },
+    "· you": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· you"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· tú"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· du"
+          }
+        }
+      }
+    },
+    "Cardiorespiratory age": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardiorespiratory age"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edad cardiorrespiratoria"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kardiorespiratorisches Alter"
+          }
+        }
+      }
+    },
+    "Your VO₂max matches the median for someone aged %lld. It's a different basis from your Physical age.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your VO₂max matches the median for someone aged %lld. It's a different basis from your Physical age."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu VO₂max equivale a la mediana de alguien de %lld años. Es una base distinta de tu Edad física."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein VO₂max entspricht dem Median einer Person mit %lld Jahren. Das ist eine andere Grundlage als dein körperliches Alter."
+          }
+        }
+      }
+    },
+    "Why it matters": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Why it matters"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por qué importa"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warum es zählt"
+          }
+        }
+      }
+    },
+    "A higher VO₂max is associated with a lower risk of all-cause mortality. It's one of the best-evidenced predictors of long-term health.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A higher VO₂max is associated with a lower risk of all-cause mortality. It's one of the best-evidenced predictors of long-term health."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un VO₂max más alto se asocia con menor riesgo de mortalidad por todas las causas. Es uno de los predictores de salud a largo plazo mejor fundamentados."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein höherer VO₂max ist mit einem geringeren Risiko der Gesamtmortalität verbunden. Er ist einer der am besten belegten Prädiktoren für langfristige Gesundheit."
+          }
+        }
+      }
+    },
+    "Mandsager 2018 (JAMA) · Kodama 2009": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mandsager 2018 (JAMA) · Kodama 2009"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mandsager 2018 (JAMA) · Kodama 2009"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mandsager 2018 (JAMA) · Kodama 2009"
+          }
+        }
+      }
+    },
+    "No VO₂max yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No VO₂max yet"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no hay VO₂max"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch kein VO₂max"
+          }
+        }
+      }
+    },
+    "Your Apple Watch estimates VO₂max during outdoor walks and runs with a good GPS signal — it isn't recorded by the WHOOP strap.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Apple Watch estimates VO₂max during outdoor walks and runs with a good GPS signal — it isn't recorded by the WHOOP strap."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu Apple Watch estima el VO₂max en caminatas y carreras al aire libre con buena señal de GPS — la banda WHOOP no lo registra."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Apple Watch schätzt VO₂max bei Spaziergängen und Läufen im Freien mit gutem GPS-Signal – die WHOOP-Band erfasst ihn nicht."
+          }
+        }
+      }
+    },
+    "ml/kg/min": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ml/kg/min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ml/kg/min"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ml/kg/min"
+          }
+        }
+      }
+    },
+    "The most oxygen your body can use during hard exercise, per kilo of body weight. It's the single best measure of cardiorespiratory fitness — and one of the best-evidenced predictors of long-term health.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The most oxygen your body can use during hard exercise, per kilo of body weight. It's the single best measure of cardiorespiratory fitness — and one of the best-evidenced predictors of long-term health."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El máximo de oxígeno que tu cuerpo puede usar en ejercicio intenso, por kilo de peso. Es la mejor medida de tu condición cardiorrespiratoria — y uno de los predictores de salud a largo plazo mejor fundamentados."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die maximale Sauerstoffmenge, die dein Körper bei intensiver Belastung pro Kilo Körpergewicht nutzen kann. Es ist das beste Einzelmaß für die kardiorespiratorische Fitness – und einer der am besten belegten Prädiktoren für langfristige Gesundheit."
+          }
+        }
+      }
+    },
+    "Measured by your Apple Watch during outdoor walks and runs — it isn't recorded by the WHOOP strap.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Measured by your Apple Watch during outdoor walks and runs — it isn't recorded by the WHOOP strap."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lo mide tu Apple Watch en caminatas y carreras al aire libre — la banda WHOOP no lo registra."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Von deiner Apple Watch bei Spaziergängen und Läufen im Freien gemessen – die WHOOP-Band erfasst ihn nicht."
+          }
+        }
+      }
+    },
+    "Your Apple Watch estimates VO₂max from your heart rate and pace during brisk outdoor walks and runs with a good GPS signal, so it updates every so often rather than daily. We read where it sits among healthy adults of your age and sex (the FRIEND reference median), and translate that into a plain band. A higher VO₂max is associated with a lower risk of all-cause mortality — it's one of the best-evidenced markers of long-term health.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Apple Watch estimates VO₂max from your heart rate and pace during brisk outdoor walks and runs with a good GPS signal, so it updates every so often rather than daily. We read where it sits among healthy adults of your age and sex (the FRIEND reference median), and translate that into a plain band. A higher VO₂max is associated with a lower risk of all-cause mortality — it's one of the best-evidenced markers of long-term health."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu Apple Watch estima el VO₂max a partir de tu frecuencia cardiaca y tu ritmo en caminatas y carreras al aire libre con buena señal de GPS, así que se actualiza de vez en cuando, no a diario. Leemos dónde cae entre adultos sanos de tu edad y sexo (la mediana de referencia FRIEND) y lo traducimos en una banda sencilla. Un VO₂max más alto se asocia con menor riesgo de mortalidad por todas las causas — es uno de los marcadores de salud a largo plazo mejor fundamentados."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Apple Watch schätzt VO₂max aus Herzfrequenz und Tempo bei zügigen Spaziergängen und Läufen im Freien mit gutem GPS-Signal, daher aktualisiert er sich gelegentlich statt täglich. Wir lesen ab, wo er unter gesunden Erwachsenen deines Alters und Geschlechts liegt (der FRIEND-Referenzmedian), und übersetzen das in eine einfache Einstufung. Ein höherer VO₂max ist mit einem geringeren Risiko der Gesamtmortalität verbunden – er ist einer der am besten belegten Marker für langfristige Gesundheit."
+          }
+        }
+      }
+    },
+    "Reference: Kaminsky et al., FRIEND Registry (Mayo Clin Proc 2015). Longevity association: Mandsager et al. (JAMA 2018), Kodama et al. (JAMA 2009). A coarse population reference, not a clinical measurement — NOOP is not a medical device.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reference: Kaminsky et al., FRIEND Registry (Mayo Clin Proc 2015). Longevity association: Mandsager et al. (JAMA 2018), Kodama et al. (JAMA 2009). A coarse population reference, not a clinical measurement — NOOP is not a medical device."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Referencia: Kaminsky et al., Registro FRIEND (Mayo Clin Proc 2015). Asociación con longevidad: Mandsager et al. (JAMA 2018), Kodama et al. (JAMA 2009). Es una referencia poblacional aproximada, no una medición clínica — NOOP no es un dispositivo médico."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Referenz: Kaminsky et al., FRIEND-Register (Mayo Clin Proc 2015). Zusammenhang mit Langlebigkeit: Mandsager et al. (JAMA 2018), Kodama et al. (JAMA 2009). Eine grobe Bevölkerungsreferenz, keine klinische Messung – NOOP ist kein Medizinprodukt."
+          }
+        }
+      }
+    },
     "How far last night's skin temperature ran from your own recent baseline, in °C. We learn your normal over recent nights, so 0 is your usual and the number is the shift up or down. A single warm or cool night rarely means much — what's worth noticing is several nights in a row drifting the same way. It's a comfort signal, not a thermometer or a diagnosis.": {
       "extractionState": "manual",
       "localizations": {
@@ -27907,380 +28482,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nächtliche Abweichung der Hauttemperatur, in Grad Celsius"
-          }
-        }
-      }
-    },
-    "Heart rate · today": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Herzfrequenz · heute"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Heart rate · today"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Frecuencia cardiaca · hoy"
-          }
-        }
-      }
-    },
-    "Average today · min %@ · max %@ bpm · resting %lld": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Heute im Schnitt · min. %@ · max. %@ bpm · Ruhe %lld"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Average today · min %@ · max %@ bpm · resting %lld"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Promedio de hoy · mín %@ · máx %@ bpm · reposo %lld"
-          }
-        }
-      }
-    },
-    "Average today · min %@ · max %@ bpm": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Heute im Schnitt · min. %@ · max. %@ bpm"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Average today · min %@ · max %@ bpm"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Promedio de hoy · mín %@ · máx %@ bpm"
-          }
-        }
-      }
-    },
-    "Your heart rate across the day, in 5-minute averages. Your resting heart rate — the low while you sleep — is its own metric.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Deine Herzfrequenz über den Tag, in 5-Minuten-Mittelwerten. Deine Ruheherzfrequenz – der Tiefpunkt im Schlaf – ist eine eigene Kennzahl."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your heart rate across the day, in 5-minute averages. Your resting heart rate — the low while you sleep — is its own metric."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu frecuencia cardiaca a lo largo del día, en promedios de 5 minutos. Tu frecuencia en reposo —la más baja mientras duermes— es una métrica aparte."
-          }
-        }
-      }
-    },
-    "Today's heart rate, 5-minute averages": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Herzfrequenz heute, 5-Minuten-Mittelwerte"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Today's heart rate, 5-minute averages"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Frecuencia cardiaca de hoy, promedios de 5 minutos"
-          }
-        }
-      }
-    },
-    "Peak %lld bpm · %@": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Spitze %lld bpm · %@"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Peak %lld bpm · %@"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pico %lld bpm · %@"
-          }
-        }
-      }
-    },
-    "Resting %lld": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ruhe %lld"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Resting %lld"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reposo %lld"
-          }
-        }
-      }
-    },
-    "Time in zones · today": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zeit in Zonen · heute"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Time in zones · today"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tiempo en zonas · hoy"
-          }
-        }
-      }
-    },
-    "min elevated (zone 3+)": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Min. erhöht (Zone 3+)"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "min elevated (zone 3+)"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "min elevado (zona 3+)"
-          }
-        }
-      }
-    },
-    "Zone 1 · very light": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zone 1 · sehr leicht"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zone 1 · very light"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zona 1 · muy ligero"
-          }
-        }
-      }
-    },
-    "Zone 2 · light": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zone 2 · leicht"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zone 2 · light"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zona 2 · ligero"
-          }
-        }
-      }
-    },
-    "Zone 3 · moderate": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zone 3 · moderat"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zone 3 · moderate"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zona 3 · moderado"
-          }
-        }
-      }
-    },
-    "Zone 4 · hard": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zone 4 · hart"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zone 4 · hard"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zona 4 · fuerte"
-          }
-        }
-      }
-    },
-    "Zone 5 · max": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zone 5 · maximal"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zone 5 · max"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zona 5 · máximo"
-          }
-        }
-      }
-    },
-    "Zones as a percentage of your max heart rate (%lld bpm, Tanaka). The rest of the day you were resting or very light.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zonen als Prozentsatz deiner maximalen Herzfrequenz (%lld bpm, Tanaka). Den Rest des Tages warst du in Ruhe oder sehr leicht."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zones as a percentage of your max heart rate (%lld bpm, Tanaka). The rest of the day you were resting or very light."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zonas como porcentaje de tu frecuencia cardiaca máxima (%lld bpm, Tanaka). El resto del día estuviste en reposo o muy ligero."
-          }
-        }
-      }
-    },
-    "We average your heart rate in 5-minute buckets across the day, from midnight. Your resting heart rate — the low while you sleep — is its own metric. The zones split the day by how hard your heart worked, as a percentage of your estimated maximum heart rate (zone 1 is 50–60%, zone 5 is 90–100%).": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wir mitteln deine Herzfrequenz über den Tag in 5-Minuten-Abschnitten, ab Mitternacht. Deine Ruheherzfrequenz – der Tiefpunkt im Schlaf – ist eine eigene Kennzahl. Die Zonen teilen den Tag danach auf, wie stark dein Herz gearbeitet hat, als Prozentsatz deiner geschätzten maximalen Herzfrequenz (Zone 1 ist 50–60 %, Zone 5 ist 90–100 %)."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "We average your heart rate in 5-minute buckets across the day, from midnight. Your resting heart rate — the low while you sleep — is its own metric. The zones split the day by how hard your heart worked, as a percentage of your estimated maximum heart rate (zone 1 is 50–60%, zone 5 is 90–100%)."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Promediamos tu frecuencia cardiaca en tramos de 5 minutos a lo largo del día, desde medianoche. Tu frecuencia en reposo —la más baja mientras duermes— es una métrica aparte. Las zonas dividen el día según qué tan fuerte trabajó tu corazón, como porcentaje de tu frecuencia cardiaca máxima estimada (la zona 1 es 50–60%, la zona 5 es 90–100%)."
-          }
-        }
-      }
-    },
-    "Max HR estimated by Tanaka et al. (2001): 208 − 0.7 × age.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Maximale HF geschätzt nach Tanaka et al. (2001): 208 − 0,7 × Alter."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Max HR estimated by Tanaka et al. (2001): 208 − 0.7 × age."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "FC máxima estimada con Tanaka et al. (2001): 208 − 0.7 × edad."
           }
         }
       }

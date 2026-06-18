@@ -13,6 +13,12 @@ import StrandAnalytics
 // duplicate it. Respiration had no `MetricInfo` factory; one is added (in `MetricInfoSheet.swift`,
 // next to the others) and reused here.
 
+/// The user's age & sex for the VO₂max detail's population reading (`VO2maxReference`). (FER-257)
+struct VO2maxProfile {
+    let age: Int
+    let sex: String
+}
+
 /// Which presentation blocks the unified detail renders. A spec lists every block the metric *can*
 /// show at full depth; `MetricDetailScreen` filters this set by `Depth` (Hoy = focus, Cuerpo = full).
 struct BlockSet: OptionSet {
@@ -87,6 +93,15 @@ struct MetricDetailSpec: Identifiable {
     /// Explicit Y-domain for the chart (e.g. SpO₂ 88…100 so the 95% band reads clearly). `nil` =
     /// auto-fit to the line, as the vitals do. (FER-252)
     var chartDomain: ClosedRange<Double>? = nil
+    /// When true, the metric is measured SPARSELY (Apple's VO₂max — updated every so often, not nightly):
+    /// the hero reads the latest reading, the chart plots the RAW measured points (not a 7-day MA), a
+    /// single reading is enough to render (no "calibrating" gate), and zero readings show a dedicated
+    /// explanatory empty state instead of the nights-history calibration block. (FER-257)
+    var sparseMeasured: Bool = false
+    /// The user's age & sex, so the VO₂max detail can read the measured value against its age/sex peers
+    /// (`VO2maxReference`: expected median, fitness category, cardiorespiratory-equivalent age). Only set
+    /// for the VO₂max spec. (FER-257)
+    var vo2maxProfile: VO2maxProfile? = nil
 
     var id: String { descriptor.id }
 
@@ -183,6 +198,24 @@ struct MetricDetailSpec: Identifiable {
             hero: .latest,
             baselineCfg: nil,
             populationRange: nil
+        )
+    }
+
+    /// VO₂max detail (Apple Health, measured · FER-257). A SPARSE measured metric: hero = latest reading
+    /// read against age/sex peers, the chart plots the raw measured points over months, plus the extras
+    /// the user asked for — change over the period, fitness category, cardiorespiratory-equivalent age,
+    /// "why it matters" — and the method. No personal baseline (`baselineCfg: nil`), no fixed band table
+    /// (VO₂max norms are age/sex-specific — that's the category block), no night/consistency blocks.
+    static func vo2max(value: Double?, age: Int, sex: String) -> MetricDetailSpec {
+        MetricDetailSpec(
+            descriptor: Self.catalog("vo2max"),
+            info: .vo2max(value),
+            blocks: [.periodSelector, .seriesChartBand, .method],
+            hero: .latest,
+            baselineCfg: nil,
+            populationRange: nil,
+            sparseMeasured: true,
+            vo2maxProfile: VO2maxProfile(age: age, sex: sex)
         )
     }
 

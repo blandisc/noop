@@ -170,6 +170,8 @@ private struct CuerpoLanding: View {
                     physicalAgeRow
                     divider
                     bodyAgeRow
+                    divider
+                    vo2maxRow
                 }
 
                 connectNudge
@@ -188,6 +190,11 @@ private struct CuerpoLanding: View {
                 spec: spec,
                 depth: .full,
                 theme: theme,
+                // VO₂max is Apple-only: invite connecting Apple Health from its empty state when nothing's
+                // connected and there's no reading (mirrors the Fitness Age VO₂max nudge). (FER-257)
+                appleConnectHint: spec.descriptor.key == "vo2max"
+                    && health.auth != .authorized && health.auth != .unavailable
+                    && latestAppleVO2max == nil,
                 seriesLoader: { vitalSeries(for: spec.descriptor.key) },
                 nightVitalsLoader: spec.blocks.contains(.nightVitals) ? { await loadNightVitals() } : nil,
                 whatMovesItLoader: spec.blocks.contains(.whatMovesIt)
@@ -557,6 +564,18 @@ private struct CuerpoLanding: View {
         }
     }
 
+    /// VO₂max (Apple Health, measured · FER-257): the Longevity row opening the rich detail. Apple-only and
+    /// SPARSELY measured, so there's no sparkline (`sparkKey: "vo2max"` stays unpopulated) and the value
+    /// uses the most recent reading (`latestAppleVO2max`), no today/yesterday freshness gate. «—» + no
+    /// badge when there's no reading; the detail then shows the explanatory empty state.
+    private var vo2maxRow: some View {
+        let v = latestAppleVO2max
+        return metricRow("VO₂ Max", value: v.map { String(format: "%.1f", $0) }, unit: "ml/kg/min",
+                         color: theme.dataSpO2, sparkKey: "vo2max", fromApple: v != nil) {
+            metricSpec = .vo2max(value: v, age: model.profile.age, sex: model.profile.sex)
+        }
+    }
+
     // MARK: - Connect nudge + footer
 
     /// Apple-only metrics (Steps) invite connecting Apple Health when it isn't authorized and there's no
@@ -806,6 +825,13 @@ private struct CuerpoLanding: View {
     /// Detalle de Métrica (FER-185) carries its own range selector, so it needs all history. Same
     /// layered source the rows draw from (resolves for both import and BLE users; FER-149).
     private func vitalSeries(for key: String) -> [(day: String, value: Double)] {
+        // VO₂max isn't a nightly dashboard metric — it lives in the Apple daily rows, measured sparsely
+        // (FER-257). Every reading is a real measurement, so no freshness gate / no displayDays merge.
+        if key == "vo2max" {
+            return appleDays
+                .compactMap { row in row.vo2max.map { (row.day, $0) } }
+                .sorted { $0.day < $1.day }
+        }
         let pick: (DailyMetric) -> Double?
         switch key {
         case "hrv":       pick = { $0.avgHrv }

@@ -322,6 +322,26 @@ extension MetricInfo {
         )
     }
 
+    /// VO₂max (Apple Health, measured · FER-257). No fixed band table — VO₂max norms are age- & sex-
+    /// specific, so the "where you stand" reading lives in the detail's category block (`VO2maxReference`),
+    /// not a one-size table here. The method disclosure carries the source (Apple Watch), the reference
+    /// method (FRIEND p50, Kaminsky 2015) and the longevity context (Mandsager 2018 / Kodama 2009).
+    static func vo2max(_ value: Double?) -> MetricInfo {
+        MetricInfo(
+            id: "vo2max",
+            name: "VO₂ Max",
+            headline: "The most oxygen your body can use during hard exercise, per kilo of body weight. It's the single best measure of cardiorespiratory fitness — and one of the best-evidenced predictors of long-term health.",
+            displayValue: value.map { String(format: "%.0f", $0) } ?? "—",
+            unit: "ml/kg/min",
+            headerTint: value == nil ? .neutral : .metric,
+            bands: [],
+            note: "Measured by your Apple Watch during outdoor walks and runs — it isn't recorded by the WHOOP strap.",
+            method: Method(
+                prose: "Your Apple Watch estimates VO₂max from your heart rate and pace during brisk outdoor walks and runs with a good GPS signal, so it updates every so often rather than daily. We read where it sits among healthy adults of your age and sex (the FRIEND reference median), and translate that into a plain band. A higher VO₂max is associated with a lower risk of all-cause mortality — it's one of the best-evidenced markers of long-term health.",
+                citation: "Reference: Kaminsky et al., FRIEND Registry (Mayo Clin Proc 2015). Longevity association: Mandsager et al. (JAMA 2018), Kodama et al. (JAMA 2009). A coarse population reference, not a clinical measurement — NOOP is not a medical device.")
+        )
+    }
+
     static func steps(_ value: Int?) -> MetricInfo {
         let bands: [Band] = [
             Band(label: "Sedentary", range: "< 5 000",
