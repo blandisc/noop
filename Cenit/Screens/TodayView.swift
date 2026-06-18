@@ -288,54 +288,7 @@ struct TodayView: View {
         // FER-202 y el scroll de siempre. Los modifiers de la pantalla (refresh, tema, hojas) cuelgan del
         // `GeometryReader`, que envuelve al `ScrollView`, así que pull-to-refresh y el papel siguen igual.
         GeometryReader { proxy in
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    // El grupo superior conserva el ritmo de sección compacto (FER-202): gap de 16
-                    // (`NoopMetrics.sectionGapCompact`) entre fecha, alerta y héroe.
-                    VStack(alignment: .leading, spacing: NoopMetrics.sectionGapCompact) {
-                        headerBlock
-                        HealthAlertBanner()
-                        // Héroe unificado (FER-160): UN solo instrumento de estado adaptable cubre los
-                        // cuatro modos (veredicto / base sembrada por Apple Health / calibrando / espera).
-                        // Lo único que cambia entre modos es QUÉ valor lleva el numeral, su color (regla
-                        // «color = listo / tinta = en espera») y el pie. Ver `heroInstrument` + `heroState`.
-                        heroInstrument
-                    }
-                    // Gap mínimo héroe→«Métricas de hoy»: 8 (`NoopMetrics.space2`), el mismo ~8 compacto que
-                    // daba el inset negativo de antes (FER-202/FER-217). Cuando sobra espacio, este Spacer
-                    // crece a la par del de abajo y despega las métricas del héroe.
-                    // El acceso al monitor en vivo «latido a latido» vive como pastilla de pulso en el
-                    // encabezado de «Métricas de hoy» (FER-194), no como fila al pie. Ver `iosMetricsSection`.
-                    Spacer(minLength: NoopMetrics.space2)
-                    iosMetricsSection
-                    // Gap mínimo bajo las métricas: 0 — el margen inferior lo da `.padding(.bottom)`. Cuando
-                    // sobra espacio, este Spacer crece igual que el de arriba y «Métricas de hoy» queda
-                    // centrada en el sobrante (opción aprobada por el dueño, FER-217).
-                    Spacer(minLength: 0)
-                }
-                // Inset superior `gap` (FER-202): el héroe queda alto pero respira; márgenes h/inferior estándar.
-                .padding(.horizontal, NoopMetrics.screenPadding)
-                .padding(.bottom, NoopMetrics.screenPadding)
-                .padding(.top, NoopMetrics.gap)
-                // Llena al menos el alto visible para que los `Spacer` tengan sobrante que repartir; si el
-                // contenido lo excede (p. ej. calibrando en pantalla chica), crece y hace scroll igual.
-                .frame(maxWidth: .infinity, minHeight: proxy.size.height, alignment: .leading)
-                // FER-222: el fondo del bloque de contenido publica el offset de su tope en el
-                // coordinate space propio del scroll. En el tope, minY = 0; al jalar hacia abajo
-                // (overscroll) minY > 0; al hacer scroll normal minY < 0. `Color.clear` no afecta
-                // layout ni intercepta toques, así que el scroll de siempre queda intacto.
-                .background(
-                    GeometryReader { geo in
-                        Color.clear.preference(key: TodayScrollOffsetKey.self,
-                                               value: geo.frame(in: .named("todayPullScroll")).minY)
-                    }
-                )
-            }
-            // FER-222: el scroll siempre rebota (aunque el contenido quepa exacto), para que el
-            // tirón en el tope funcione sin el `.refreshable` nativo que antes forzaba ese rebote.
-            .scrollBounceBehavior(.always)
-            .coordinateSpace(name: "todayPullScroll")
-            .onPreferenceChange(TodayScrollOffsetKey.self) { handlePullOffset($0) }
+            todayScroll(proxy)
         }
         // Pull-to-refresh propio (FER-222): reemplaza el `.refreshable` nativo (su ruedita gris de
         // ~1 s). El gesto de jalar DIBUJA el dial —`handlePullOffset` arma el arco verde proporcional
@@ -387,6 +340,75 @@ struct TodayView: View {
         }
     }
 
+    /// El `ScrollView` de Hoy + el rastreo del tirón del pull-to-refresh propio (FER-222). El offset del
+    /// scroll se lee de la fuente MÁS confiable según versión: en iOS 18+ con `onScrollGeometryChange`
+    /// (lee el `contentOffset` real del scroll — robusto), y como respaldo en iOS 17 con el lector por
+    /// `GeometryReader`/coordinate space (`TodayScrollOffsetKey`). En ambos casos el valor que se pasa a
+    /// `handlePullOffset` es positivo cuando el contenido se jala hacia abajo (overscroll en el tope).
+    /// `.scrollBounceBehavior(.always)` garantiza el rebote en el tope aunque el contenido quepa exacto.
+    @ViewBuilder
+    private func todayScroll(_ proxy: GeometryProxy) -> some View {
+        let scroll = ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                // El grupo superior conserva el ritmo de sección compacto (FER-202): gap de 16
+                // (`NoopMetrics.sectionGapCompact`) entre fecha, alerta y héroe.
+                VStack(alignment: .leading, spacing: NoopMetrics.sectionGapCompact) {
+                    headerBlock
+                    HealthAlertBanner()
+                    // Héroe unificado (FER-160): UN solo instrumento de estado adaptable cubre los
+                    // cuatro modos (veredicto / base sembrada por Apple Health / calibrando / espera).
+                    // Lo único que cambia entre modos es QUÉ valor lleva el numeral, su color (regla
+                    // «color = listo / tinta = en espera») y el pie. Ver `heroInstrument` + `heroState`.
+                    heroInstrument
+                }
+                // Gap mínimo héroe→«Métricas de hoy»: 8 (`NoopMetrics.space2`), el mismo ~8 compacto que
+                // daba el inset negativo de antes (FER-202/FER-217). Cuando sobra espacio, este Spacer
+                // crece a la par del de abajo y despega las métricas del héroe.
+                // El acceso al monitor en vivo «latido a latido» vive como pastilla de pulso en el
+                // encabezado de «Métricas de hoy» (FER-194), no como fila al pie. Ver `iosMetricsSection`.
+                Spacer(minLength: NoopMetrics.space2)
+                iosMetricsSection
+                // Gap mínimo bajo las métricas: 0 — el margen inferior lo da `.padding(.bottom)`. Cuando
+                // sobra espacio, este Spacer crece igual que el de arriba y «Métricas de hoy» queda
+                // centrada en el sobrante (opción aprobada por el dueño, FER-217).
+                Spacer(minLength: 0)
+            }
+            // Inset superior `gap` (FER-202): el héroe queda alto pero respira; márgenes h/inferior estándar.
+            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.top, NoopMetrics.gap)
+            // Llena al menos el alto visible para que los `Spacer` tengan sobrante que repartir; si el
+            // contenido lo excede (p. ej. calibrando en pantalla chica), crece y hace scroll igual.
+            .frame(maxWidth: .infinity, minHeight: proxy.size.height, alignment: .leading)
+            // FER-222 (respaldo iOS 17): el fondo del bloque publica el offset de su tope en el coordinate
+            // space propio del scroll. En iOS 18+ esta preferencia se ignora (manda `onScrollGeometryChange`).
+            .background(
+                GeometryReader { geo in
+                    Color.clear.preference(key: TodayScrollOffsetKey.self,
+                                           value: geo.frame(in: .named("todayPullScroll")).minY)
+                }
+            )
+        }
+        // FER-222: el scroll siempre rebota (aunque el contenido quepa exacto), para que el tirón en el
+        // tope funcione sin el `.refreshable` nativo que antes forzaba ese rebote.
+        .scrollBounceBehavior(.always)
+
+        if #available(iOS 18.0, *) {
+            // iOS 18+: lee el `contentOffset` real del scroll. En reposo `contentOffset.y == -contentInsets.top`,
+            // así que `-(offset.y + insets.top)` es 0 en el tope y POSITIVO al jalar hacia abajo (overscroll).
+            scroll.onScrollGeometryChange(for: CGFloat.self) { geometry in
+                -(geometry.contentOffset.y + geometry.contentInsets.top)
+            } action: { _, pull in
+                handlePullOffset(pull)
+            }
+        } else {
+            // iOS 17: respaldo por coordinate space + el lector de fondo de arriba.
+            scroll
+                .coordinateSpace(name: "todayPullScroll")
+                .onPreferenceChange(TodayScrollOffsetKey.self) { handlePullOffset($0) }
+        }
+    }
+
     /// La acción de sincronización del pull-to-refresh de `iosBody` (FER-204; la reusa el gesto
     /// propio de FER-222 vía `triggerPullSync`, y la acción accesible de VoiceOver). Fuerza una
     /// sincronización con la banda según su estado, SIN esperar al offload largo:
@@ -414,14 +436,15 @@ struct TodayView: View {
         await repo.refresh()
     }
 
-    /// Procesa el offset del tope del scroll (FER-222) para el pull-to-refresh propio. `minY` > 0 = el
-    /// contenido se jaló hacia abajo (overscroll en el tope): mapea el tirón a `pullProgress` (0→1), que
-    /// arma el arco del dial, y al cruzar `pullThreshold` dispara la sincronización UNA vez por gesto.
+    /// Procesa el overscroll del tope del scroll (FER-222) para el pull-to-refresh propio. `overscroll` > 0
+    /// = el contenido se jaló hacia abajo (overscroll en el tope): mapea el tirón a `pullProgress` (0→1),
+    /// que arma el arco del dial, y al cruzar `pullThreshold` dispara la sincronización UNA vez por gesto.
     /// Bajo Reduce Motion NO dibuja el arco (`pullProgress` se queda en 0), pero el gesto sigue armando y
-    /// disparando con su háptica. El scroll normal (`minY ≤ 0`) no escribe estado → sin recomputar el body.
+    /// disparando con su háptica. El scroll normal (`overscroll ≤ 0`) no escribe estado → sin recomputar el
+    /// body. Lo alimenta `todayScroll` desde `onScrollGeometryChange` (iOS 18+) o el lector de offset (iOS 17).
     @MainActor
-    private func handlePullOffset(_ minY: CGFloat) {
-        let pull = max(0, minY)
+    private func handlePullOffset(_ overscroll: CGFloat) {
+        let pull = max(0, overscroll)
         guard pull > 0 else {
             if pullProgress != 0 { pullProgress = 0 }
             if pullCommitted { pullCommitted = false }   // de vuelta en el tope: listo para re-armar
