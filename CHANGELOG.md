@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Detalle de Estrés: arreglo del eje y del texto de tendencia / Stress detail: trend axis & headline fix.**
+  **ES** — En la hoja de **Estrés** (en Cuerpo): la gráfica de tendencia vuelve a tener su **eje Y (0–3) alineado con las bandas** y reaparece la **línea de comparación mes-a-mes** debajo, que se había quedado en blanco. Las zonas Bajo/Moderado/Alto ahora las dibuja la propia gráfica (no un fondo aparte que se desfasaba del eje), igual que en Sueño.
+  **EN** — In the **Stress** sheet (in Body): the trend chart's **Y axis (0–3) is aligned with the bands** again and the **month-over-month line** below it is back (it had gone blank). The Low/Moderate/High zones are now drawn by the chart itself (not a separate backdrop drifting off the axis), matching the Sleep sheet.
+  ([Cenit/Screens/StressDetailScreen.swift](Cenit/Screens/StressDetailScreen.swift))
+
 - **Detalle de Sueño: zona recomendada 7–9 h dentro de la gráfica / Sleep detail: recommended zone inside the chart.**
   **ES** — En la hoja de **Sueño** (en Cuerpo): la zona recomendada para adultos (7–9 h) ya no es texto suelto debajo de la gráfica de tendencia. Ahora es una **banda horizontal dentro de la propia gráfica**: con relleno suave y bordes en índigo cuando tu última noche cae en la zona, o solo el label tenue cuando queda fuera. La gráfica también ajusta su escala para que la banda siempre sea visible.
   **EN** — In the **Sleep** sheet (in Body): the recommended adult sleep range (7–9 h) is no longer a loose text line below the trend chart. It is now a **horizontal band inside the chart itself**: with a soft fill and indigo edge lines when your last night falls in the zone, or just a quiet label when it doesn't. The chart scale also adjusts to always keep the band in view.
