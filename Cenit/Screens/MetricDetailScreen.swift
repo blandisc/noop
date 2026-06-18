@@ -640,11 +640,15 @@ struct MetricDetailScreen: View {
                 theme: theme
             ) {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text(trendHeadline(mom: mom))
-                        .font(StrandFont.bodyNumber)
-                        .foregroundStyle(theme.ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                    trendStrip(s)
+                    TrendStatSummary(
+                        average: fmt(s.mean),
+                        unit: unit.isEmpty ? nil : unit,
+                        pctChange: mom.pctChange,
+                        polarity: trendPolarity,
+                        rangeLow: fmt(s.min),
+                        rangeHigh: unit.isEmpty ? fmt(s.max) : "\(fmt(s.max)) \(unit)",
+                        theme: theme
+                    )
                     if let reading = readingCopy(for: .trend) {
                         Text(reading)
                             .font(StrandFont.caption)
@@ -656,51 +660,13 @@ struct MetricDetailScreen: View {
         }
     }
 
-    private func trendHeadline(mom: PeriodComparison) -> LocalizedStringKey {
-        let slope = mom.current.slopePerDay
-        // A slope that rounds to "0"/"0.0" at the metric's precision is no movement — say so in words
-        // instead of "+0 ms/day". Same for a sub-1% month-over-month change. (FER-211)
-        let slopeMagnitude = fmt(abs(slope))
-        let slopeIsFlat = Double(slopeMagnitude) == 0
-        let slopeStr = (slope >= 0 ? "+" : "−") + slopeMagnitude
-
-        if let pct = mom.pctChange {
-            let pctIsFlat = abs(pct) < 1
-            switch (slopeIsFlat, pctIsFlat) {
-            case (true, true):
-                return "Stable this month"
-            case (true, false):
-                let pctStr = "\(pct >= 0 ? "+" : "−")\(String(format: "%.0f", abs(pct)))%"
-                return "\(pctStr) vs last month"
-            case (false, true):
-                return "\(slopeStr) \(unit)/day this month"
-            case (false, false):
-                let pctStr = "\(pct >= 0 ? "+" : "−")\(String(format: "%.0f", abs(pct)))%"
-                return "\(slopeStr) \(unit)/day this month · \(pctStr) vs last month"
-            }
-        }
-        // No month-over-month %: just the slope, or "Stable" when it's flat.
-        return slopeIsFlat ? "Stable this month" : "\(slopeStr) \(unit)/day this month"
-    }
-
-    /// Three plain-language statistics — Average · Lowest · Highest — instead of the old five
-    /// (Avg · Median · Min · Max · σ). Median and σ are still computed (the headline's slope reads
-    /// from the same stat), just no longer shown. (FER-216)
-    private func trendStrip(_ s: SeriesStat) -> some View {
-        HStack(alignment: .top) {
-            statCell("Average", fmt(s.mean))
-            Spacer()
-            statCell("Lowest", fmt(s.min))
-            Spacer()
-            statCell("Highest", fmt(s.max))
-        }
-    }
-
-    private func statCell(_ label: LocalizedStringKey, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label).textCase(.uppercase)
-                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-            Text(value).font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
+    /// Whether a rise is good for this metric, from the catalog's `higherIsBetter` — drives the trend
+    /// chip's colour in `TrendStatSummary`. HRV rises = good, resting HR rises = bad, respiration neutral.
+    private var trendPolarity: TrendStatSummary.Polarity {
+        switch spec.descriptor.higherIsBetter {
+        case .some(true):  return .higherIsBetter
+        case .some(false): return .lowerIsBetter
+        case .none:        return .neutral
         }
     }
 

@@ -253,41 +253,19 @@ struct StrainDetailScreen: View {
                     )
                     .accessibilityElement()
                     .accessibilityLabel(Text("Day strain, 7-day moving average"))
-                    Text(trendHeadline(mom))
-                        .font(StrandFont.bodyNumber)
-                        .foregroundStyle(theme.ink)
-                    statStrip(stat)
+                    TrendStatSummary(
+                        average: fmt(stat.mean),
+                        pctChange: mom.pctChange,
+                        polarity: .neutral,
+                        rangeLow: fmt(stat.min),
+                        rangeHigh: fmt(stat.max),
+                        theme: theme
+                    )
                 } else {
                     emptyWell(text: "Not enough days in this range to draw a trend.")
                 }
             }
         }
-    }
-
-    /// Three plain-language statistics — Average · Lowest · Highest — over the selected window.
-    private func statStrip(_ s: SeriesStat) -> some View {
-        HStack(alignment: .top) {
-            statCell("Average", fmt(s.mean))
-            Spacer()
-            statCell("Lowest", fmt(s.min))
-            Spacer()
-            statCell("Highest", fmt(s.max))
-        }
-    }
-
-    private func statCell(_ label: LocalizedStringKey, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label).textCase(.uppercase)
-                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-            Text(value).font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
-        }
-    }
-
-    private func trendHeadline(_ mom: PeriodComparison) -> LocalizedStringKey {
-        guard let pct = mom.pctChange, abs(pct) >= 1 else { return "Stable this month" }
-        let v = Int(abs(pct).rounded())
-        // Two explicit signed keys so each localizes cleanly (no "%@%lld" nested-sign key — FER-211).
-        return pct >= 0 ? "+\(v)% vs last month" : "−\(v)% vs last month"
     }
 
     // MARK: - 4.5 Qué mueve tu esfuerzo (correlación direccional, gated — FER-239)

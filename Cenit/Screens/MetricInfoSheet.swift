@@ -498,6 +498,12 @@ struct MetricInfoSheet: View {
     /// Loads the 14-day trend for this metric. Supplied for all key metrics; triggers lazily on appear.
     var trendLoader: (() async -> [TrendPoint])? = nil
 
+    /// "Ver más" affordance: when non-nil, a trailing link at the foot of the sheet opens this metric's
+    /// rich Detalle (the same screen Cuerpo opens), so Today can drill from the summary into the full
+    /// detail in place. nil → no link (metrics without a rich detail destination yet: SpO₂, Heart Rate,
+    /// Steps). (FER-251)
+    var onSeeMore: (() -> Void)? = nil
+
     @State private var strainCurve: [TrendPoint] = []
     @State private var strainLoading = false
     @State private var heartRateCurve: [TrendPoint] = []
@@ -598,6 +604,7 @@ struct MetricInfoSheet: View {
                         .foregroundStyle(theme.inkTertiary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+                if let onSeeMore { seeMoreLink(onSeeMore) }
             }
             .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -1125,6 +1132,30 @@ struct MetricInfoSheet: View {
         .tint(theme.inkTertiary)
         .padding(14)
         .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    /// Trailing "Ver más" link at the foot of the sheet: drills from this summary into the metric's rich
+    /// Detalle. Tinted with the metric hue (the one place colour lives on an action here) so it reads as
+    /// tappable and ties to the metric. Right-aligned. (FER-251)
+    private func seeMoreLink(_ action: @escaping () -> Void) -> some View {
+        HStack {
+            Spacer(minLength: 0)
+            Button(action: action) {
+                HStack(spacing: 4) {
+                    Text("See more")
+                        .font(StrandFont.subhead.weight(.medium))
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold))
+                }
+                .foregroundStyle(metricHue)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 9)
+                .background(metricHue.opacity(0.10), in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("See more"))
+            .accessibilityHint(Text("Opens the full detail"))
+        }
     }
 }
 
