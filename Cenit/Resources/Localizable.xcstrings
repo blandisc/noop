@@ -15676,6 +15676,12 @@
             "state": "translated",
             "value": "Estable este mes"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diesen Monat stabil"
+          }
         }
       }
     },
@@ -20733,6 +20739,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "estable"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "gleichmäßig"
           }
         }
       }
@@ -26147,6 +26159,673 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zonen"
+          }
+        }
+      }
+    },
+    "Your autonomic load for the day: how activated your body is. We take today's resting heart rate and HRV, compare each with your own 30-day baseline as a z-score, and map the combined shift onto a 0–3 scale through a logistic curve (0 calm · 1.5 your baseline · 3 highly activated). It's an estimate, not a diagnosis.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your autonomic load for the day: how activated your body is. We take today's resting heart rate and HRV, compare each with your own 30-day baseline as a z-score, and map the combined shift onto a 0–3 scale through a logistic curve (0 calm · 1.5 your baseline · 3 highly activated). It's an estimate, not a diagnosis."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu carga autonómica del día: qué tan activado está tu cuerpo. Tomamos tu frecuencia en reposo y tu HRV de hoy, comparamos cada una con tu propia base de 30 días como z-score, y mapeamos el desplazamiento combinado a una escala 0–3 con una curva logística (0 en calma · 1.5 tu base · 3 muy activado). Es una estimación, no un diagnóstico."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine autonome Belastung für den Tag: wie aktiviert dein Körper ist. Wir nehmen deinen heutigen Ruhepuls und deine HRV, vergleichen beide als z-Wert mit deiner eigenen 30-Tage-Basislinie und bilden die kombinierte Verschiebung über eine logistische Kurve auf eine Skala von 0–3 ab (0 ruhig · 1,5 deine Basislinie · 3 stark aktiviert). Es ist eine Schätzung, keine Diagnose."
+          }
+        }
+      }
+    },
+    "Information about stress": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Information about stress"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Información sobre el estrés"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informationen zum Stress"
+          }
+        }
+      }
+    },
+    "/ 3": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "/ 3"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "/ 3"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "/ 3"
+          }
+        }
+      }
+    },
+    "No stress reading yet. Wear your strap overnight and open this again after it syncs — or import your WHOOP history in Data Sources. Stress is read from your resting heart rate and HRV.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No stress reading yet. Wear your strap overnight and open this again after it syncs — or import your WHOOP history in Data Sources. Stress is read from your resting heart rate and HRV."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no hay lectura de estrés. Usa tu banda de noche y vuelve a abrir esto cuando sincronice — o importa tu historial de WHOOP en Fuentes de datos. El estrés se lee de tu frecuencia en reposo y tu HRV."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Stressmessung. Trage dein Band über Nacht und öffne dies erneut nach der Synchronisierung – oder importiere deinen WHOOP-Verlauf unter Datenquellen. Stress wird aus deinem Ruhepuls und deiner HRV abgeleitet."
+          }
+        }
+      }
+    },
+    "Each point is your daily stress index. The bands behind it are the fixed Low / Moderate / High zones (0–1 / 1–2 / 2–3). The percentage compares this month's average with last month's; Average, Lowest and Highest come from the range you selected. What matters isn't a single day — it's several days in a row drifting into a higher band.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Each point is your daily stress index. The bands behind it are the fixed Low / Moderate / High zones (0–1 / 1–2 / 2–3). The percentage compares this month's average with last month's; Average, Lowest and Highest come from the range you selected. What matters isn't a single day — it's several days in a row drifting into a higher band."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada punto es tu índice de estrés diario. Las bandas detrás son las zonas fijas Bajo / Moderado / Alto (0–1 / 1–2 / 2–3). El porcentaje compara el promedio de este mes con el del mes pasado; Promedio, Mínimo y Máximo salen del rango que seleccionaste. Lo que importa no es un día suelto — son varios días seguidos subiendo de banda."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jeder Punkt ist dein täglicher Stressindex. Die Bänder dahinter sind die festen Zonen Niedrig / Mittel / Hoch (0–1 / 1–2 / 2–3). Der Prozentsatz vergleicht den Durchschnitt dieses Monats mit dem des Vormonats; Durchschnitt, Tiefster und Höchster stammen aus dem gewählten Bereich. Entscheidend ist nicht ein einzelner Tag – sondern mehrere Tage in Folge, die in ein höheres Band rutschen."
+          }
+        }
+      }
+    },
+    "Information about the stress trend": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Information about the stress trend"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Información sobre la tendencia del estrés"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informationen zum Stresstrend"
+          }
+        }
+      }
+    },
+    "Daily stress index, 0 to 3": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daily stress index, 0 to 3"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Índice de estrés diario, 0 a 3"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Täglicher Stressindex, 0 bis 3"
+          }
+        }
+      }
+    },
+    "Normal range": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Normal range"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rango normal"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Normalbereich"
+          }
+        }
+      }
+    },
+    "These bands are the same for everyone because the index is already adjusted to your own baseline, not to the population — a 1.5 sits at YOUR normal. So there's no personal ± range to compute: what's worth watching is drifting into «High» for several days in a row.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These bands are the same for everyone because the index is already adjusted to your own baseline, not to the population — a 1.5 sits at YOUR normal. So there's no personal ± range to compute: what's worth watching is drifting into «High» for several days in a row."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estas bandas son iguales para todos porque el índice ya viene ajustado a tu propia base, no a la población — un 1.5 cae en TU normal. Por eso no hay un rango personal ± que calcular: lo que vale la pena vigilar es pasar a «Alto» varios días seguidos."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Bänder sind für alle gleich, weil der Index bereits an deine eigene Basislinie angepasst ist, nicht an die Bevölkerung – eine 1,5 liegt bei DEINEM Normalwert. Deshalb gibt es keinen persönlichen ±-Bereich zu berechnen: zu beobachten ist, ob du mehrere Tage in Folge ins «Hoch» rutschst."
+          }
+        }
+      }
+    },
+    "· today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· today"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· hoy"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· heute"
+          }
+        }
+      }
+    },
+    "Stress rises when your resting heart rate runs higher than usual OR your HRV drops below usual — both are classic signs your nervous system is activated. We measure each against your own 30-day baseline. RMSSD for HRV (Task Force, 1996).": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stress rises when your resting heart rate runs higher than usual OR your HRV drops below usual — both are classic signs your nervous system is activated. We measure each against your own 30-day baseline. RMSSD for HRV (Task Force, 1996)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El estrés sube cuando tu frecuencia en reposo está más alta de lo usual O tu HRV cae por debajo de lo usual — ambas son señales clásicas de que tu sistema nervioso está activado. Medimos cada una contra tu propia base de 30 días. RMSSD para la HRV (Task Force, 1996)."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stress steigt, wenn dein Ruhepuls höher als üblich läuft ODER deine HRV unter das Übliche fällt – beides sind klassische Zeichen dafür, dass dein Nervensystem aktiviert ist. Wir messen beides gegen deine eigene 30-Tage-Basislinie. RMSSD für die HRV (Task Force, 1996)."
+          }
+        }
+      }
+    },
+    "Information about what moves stress": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Information about what moves stress"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Información sobre qué mueve el estrés"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informationen dazu, was Stress bewegt"
+          }
+        }
+      }
+    },
+    "▲ +%lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "▲ +%lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "▲ +%lld"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "▲ +%lld"
+          }
+        }
+      }
+    },
+    "▼ −%lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "▼ −%lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "▼ −%lld"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "▼ −%lld"
+          }
+        }
+      }
+    },
+    "at base": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "at base"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "en base"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "auf Basislinie"
+          }
+        }
+      }
+    },
+    "below your base": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "below your base"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "por debajo de tu base"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "unter deiner Basislinie"
+          }
+        }
+      }
+    },
+    "at your base": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "at your base"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "en tu base"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "auf deiner Basislinie"
+          }
+        }
+      }
+    },
+    "Coefficient of variation = how spread out your daily stress is around its own average, as a percentage. Low = steady. A steadier signal usually means your load and recovery are in balance. (Plews 2013)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coefficient of variation = how spread out your daily stress is around its own average, as a percentage. Low = steady. A steadier signal usually means your load and recovery are in balance. (Plews 2013)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coeficiente de variación = qué tan disperso está tu estrés diario alrededor de su propio promedio, en porcentaje. Bajo = estable. Una señal más estable suele significar que tu carga y tu recuperación están en equilibrio. (Plews 2013)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variationskoeffizient = wie stark dein täglicher Stress um seinen eigenen Durchschnitt streut, in Prozent. Niedrig = gleichmäßig. Ein gleichmäßigeres Signal bedeutet meist, dass Belastung und Erholung im Gleichgewicht sind. (Plews 2013)"
+          }
+        }
+      }
+    },
+    "How steady your stress stays from one week to the next.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How steady your stress stays from one week to the next."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qué tan estable se mantiene tu estrés de una semana a otra."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wie gleichmäßig dein Stress von einer Woche zur nächsten bleibt."
+          }
+        }
+      }
+    },
+    "The share of your recent days that sat in the Low band (under 1.0). Higher is better — it means your body had room to recover. It's a count of days, not a measure of how low any single day went.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The share of your recent days that sat in the Low band (under 1.0). Higher is better — it means your body had room to recover. It's a count of days, not a measure of how low any single day went."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La proporción de tus días recientes que cayeron en la banda Baja (menos de 1.0). Más alto es mejor — significa que tu cuerpo tuvo margen para recuperarse. Es un conteo de días, no una medida de qué tan bajo llegó un día en particular."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Anteil deiner letzten Tage, die im Band Niedrig lagen (unter 1,0). Höher ist besser – es bedeutet, dein Körper hatte Raum zur Erholung. Es ist eine Anzahl von Tagen, kein Maß dafür, wie niedrig ein einzelner Tag war."
+          }
+        }
+      }
+    },
+    "Information about calm time": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Information about calm time"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Información sobre el tiempo en calma"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informationen zur Ruhezeit"
+          }
+        }
+      }
+    },
+    "How much of the last month you spent with low autonomic load.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How much of the last month you spent with low autonomic load."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuánto del último mes pasaste con carga autonómica baja."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wie viel des letzten Monats du mit niedriger autonomer Belastung verbracht hast."
+          }
+        }
+      }
+    },
+    "Stress by time of day": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stress by time of day"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estrés por momento del día"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stress nach Tageszeit"
+          }
+        }
+      }
+    },
+    "Coming soon, mapped against your calendar": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coming soon, mapped against your calendar"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pronto, cruzado con tu calendario"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bald verfügbar, abgeglichen mit deinem Kalender"
+          }
+        }
+      }
+    },
+    "Soon": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Soon"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pronto"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bald"
+          }
+        }
+      }
+    },
+    "Stress by time of day, coming soon": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stress by time of day, coming soon"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estrés por momento del día, próximamente"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stress nach Tageszeit, bald verfügbar"
+          }
+        }
+      }
+    },
+    "We compare today's resting heart rate and HRV with your own 30-day baseline. A higher-than-usual resting HR and a lower-than-usual HRV both push the score up — classic signs the body is activated. The combined shift becomes a z-score sum, squashed onto 0–3 by a logistic curve: 0 calm, 1.5 at your baseline, 3 highly activated.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We compare today's resting heart rate and HRV with your own 30-day baseline. A higher-than-usual resting HR and a lower-than-usual HRV both push the score up — classic signs the body is activated. The combined shift becomes a z-score sum, squashed onto 0–3 by a logistic curve: 0 calm, 1.5 at your baseline, 3 highly activated."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comparamos tu frecuencia en reposo y tu HRV de hoy con tu propia base de 30 días. Una frecuencia en reposo más alta de lo usual y una HRV más baja de lo usual empujan el número hacia arriba — señales clásicas de que el cuerpo está activado. El desplazamiento combinado se vuelve una suma de z-scores, comprimida a 0–3 por una curva logística: 0 en calma, 1.5 en tu base, 3 muy activado."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wir vergleichen deinen heutigen Ruhepuls und deine HRV mit deiner eigenen 30-Tage-Basislinie. Ein höherer Ruhepuls als üblich und eine niedrigere HRV als üblich treiben den Wert nach oben – klassische Zeichen dafür, dass der Körper aktiviert ist. Die kombinierte Verschiebung wird zu einer Summe von z-Werten, durch eine logistische Kurve auf 0–3 gestaucht: 0 ruhig, 1,5 auf deiner Basislinie, 3 stark aktiviert."
+          }
+        }
+      }
+    },
+    "Today's value is your recorded daily stress score (0–3). The trend, bands and markers are derived the same way.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today's value is your recorded daily stress score (0–3). The trend, bands and markers are derived the same way."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El valor de hoy es tu puntaje de estrés diario registrado (0–3). La tendencia, las bandas y los marcadores se derivan de la misma forma."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der heutige Wert ist dein erfasster täglicher Stresswert (0–3). Trend, Bänder und Marker werden auf dieselbe Weise abgeleitet."
+          }
+        }
+      }
+    },
+    "Combined resting-HR / HRV z-score through a logistic curve. HRV via RMSSD (Task Force, 1996). An estimate, not a diagnosis.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Combined resting-HR / HRV z-score through a logistic curve. HRV via RMSSD (Task Force, 1996). An estimate, not a diagnosis."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Z-score combinado de frecuencia en reposo / HRV a través de una curva logística. HRV vía RMSSD (Task Force, 1996). Una estimación, no un diagnóstico."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kombinierter z-Wert aus Ruhepuls / HRV über eine logistische Kurve. HRV via RMSSD (Task Force, 1996). Eine Schätzung, keine Diagnose."
           }
         }
       }

@@ -94,6 +94,10 @@ private struct CuerpoLanding: View {
     /// Light «Instrumento» Detalle de Esfuerzo (FER-238) — the «Day Strain» row now opens this rich detail
     /// (curva intradía + zonas + tendencia + método) instead of the legacy `MetricInfoSheet`. Hoy unchanged.
     @State private var strainDetail: StrainDetailItem? = nil
+    /// Light «Instrumento» Detalle de Estrés (FER-241) — the «Stress» row now opens this dedicated screen
+    /// (valor de hoy + bandas universales + qué lo mueve + ⓘ por concepto), theme passed explicitly. SOLO
+    /// en Cuerpo: el tile de Estrés en Hoy NO cambia.
+    @State private var stressDetail: StressDetailItem? = nil
     /// «How you wake after each sport» — ranked ActivityCost per sport (FER-139); empty = "gathering data".
     @State private var activityCosts: [ActivityCost] = []
     /// Presents the light Activity-recovery detail sheet.
@@ -111,8 +115,9 @@ private struct CuerpoLanding: View {
     @State private var appleDays: [AppleDaily] = []
     @State private var appleMetricDays: [DailyMetric] = []
     @State private var workoutCount: Int = 0
-    /// Today's stress (0–3 autonomic proxy) — same transparent model StressView/Today build.
-    @State private var stressScore: Double? = nil
+    /// Today's stress model (0–3 autonomic proxy + markers + trend) — the same transparent model Hoy builds.
+    /// Held whole (not just the score) so the «Stress» row can open the dedicated detail (FER-241).
+    @State private var stressModel: StressModel? = nil
     /// Recovery cold-start: nights banked toward the seed gate while the baseline calibrates; nil once
     /// recovery is scored. Drives the hero's "N/4" + "Calibrating" copy instead of a fake number.
     @State private var recoveryCalibration: Int? = nil
@@ -202,6 +207,11 @@ private struct CuerpoLanding: View {
             // Light «Instrumento» sheet — pass the resolved theme explicitly (it doesn't propagate
             // through `.sheet`), NO nested NavigationStack (FER-171). (FER-212)
             SleepDetailScreen(theme: theme, model: item.model)
+        }
+        .sheet(item: $stressDetail) { item in
+            // Light «Instrumento» Detalle de Estrés — theme passed explicitly (it doesn't propagate
+            // through `.sheet`), NO nested NavigationStack (FER-171). SOLO Cuerpo. (FER-241)
+            StressDetailScreen(theme: theme, model: item.model)
         }
         .sheet(isPresented: $showActivityCost) { activityRecoverySheet }
         .sheet(isPresented: $showFitnessAge) {
@@ -363,11 +373,11 @@ private struct CuerpoLanding: View {
     }
 
     private var stressRow: some View {
-        let s = stressScore
+        let s = stressModel?.score
         return metricRow("Stress", value: s.map { String(format: "%.1f", $0) },
                          unit: s == nil ? nil : "/ 3",
                          color: s.map(stressDataColor) ?? theme.inkTertiary, sparkKey: "stress") {
-            metricInfo = .stress(s)
+            stressDetail = StressDetailItem(model: stressModel)
         }
     }
 
@@ -736,7 +746,7 @@ private struct CuerpoLanding: View {
         }
         // displayDays = Apple-health fallback (FER-149); local todayKey ignores a UTC "tomorrow" row (FER-226).
         let stress = StressModel(days: repo.displayDays, stored: await stressRows, todayKey: Repository.localDayKey(Date()))
-        stressScore = stress?.score
+        stressModel = stress
         sparks["stress"] = stress.map { Array($0.fullTrend.suffix(14).map(\.value)) } ?? []
 
         fitnessAge = computeFitnessAge()
