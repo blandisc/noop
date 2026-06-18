@@ -57,13 +57,13 @@ struct StressDetailScreen: View {
                     blockDivider
                     normalRangeBlock(model)
                     blockDivider
+                    calmTimeBlock(model)
+                    blockDivider
                     whatMovesItBlock(model)
                     if consistency(model) != nil {
                         blockDivider
                         consistencyBlock(model)
                     }
-                    blockDivider
-                    calmTimeBlock(model)
                     blockDivider
                     calendarPlaceholderBlock
                     blockDivider
@@ -191,7 +191,7 @@ struct StressDetailScreen: View {
         ZStack {
             GeometryReader { geo in
                 let h = geo.size.height
-                let axis: CGFloat = 26               // room TrendChart leaves for the date axis
+                let axis: CGFloat = NoopMetrics.chartXLabelBand  // must match TrendChart's own startPadding
                 let plot = max(0, h - axis)
                 VStack(spacing: 0) {
                     Rectangle().fill(theme.critical).opacity(0.07)
@@ -240,8 +240,11 @@ struct StressDetailScreen: View {
     private func trendHeadline(_ mom: PeriodComparison) -> LocalizedStringKey {
         guard let pct = mom.pctChange, abs(pct) >= 1 else { return "Stable this month" }
         let v = Int(abs(pct).rounded())
-        // Two explicit signed keys so each localizes cleanly (no nested-sign key — FER-211).
-        return pct >= 0 ? "+\(v)% vs last month" : "−\(v)% vs last month"
+        // Build the signed percentage as a String so the LocalizedStringKey key becomes
+        // "%@ vs last month" (String arg → %@), which has an xcstrings translation.
+        // The previous "+%lld% vs last month" key (Int arg + literal %) didn't match reliably. (FER-247)
+        let pctStr = pct >= 0 ? "+\(v)%" : "−\(v)%"
+        return "\(pctStr) vs last month"
     }
 
     // MARK: - 3. Rango normal — bandas UNIVERSALES (no baseline personal)
