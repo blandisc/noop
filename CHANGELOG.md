@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Toca un día del calendario de recuperación para ver su puntaje / Tap a day in the recovery calendar to see its score.**
+  **ES** — En el Detalle de Recuperación (en Cuerpo), el **calendario de 90 días** ahora responde al **tacto**: toca cualquier día y se marca con un aro, y justo debajo aparece su **fecha, su puntaje** (en su color de banda) **y su estado** (Listo / Recuperándote / Bajo). Un día sin lectura lo dice con honestidad («sin lectura»). Antes solo se podía con el puntero en Mac/iPad; en el iPhone no había forma de ver un día.
+  **EN** — In the Recovery detail (in Body), the **90-day calendar** now responds to **touch**: tap any day and it gets a ring, with its **date, score** (in its band color) **and state** (Ready / Recovering / Low) shown right below. A day with no reading says so honestly ("no reading"). Before, this only worked with a pointer on Mac/iPad; on iPhone there was no way to inspect a day.
+  ([Cenit/Screens/RecoveryDetailScreen.swift](Cenit/Screens/RecoveryDetailScreen.swift), [Packages/StrandDesign/Sources/StrandDesign/YearHeatStrip.swift](Packages/StrandDesign/Sources/StrandDesign/YearHeatStrip.swift))
+
 - **Tres ajustes finos al Detalle de Sueño / Three small fixes to the Sleep detail.**
   **ES** — Ahora puedes **arrastrar el dedo sobre el hipnograma** de «Anoche» para ver en qué momento y por cuánto tiempo entraste en cada etapa (igual que en las gráficas de métricas). **Respiración** ya muestra el valor de anoche en su tarjeta —antes salía en «—» aunque sí había dato—. Y el color de **REM** pasó de un verde menta muy brillante a un **teal más calmado**, para que no jale tanto la vista.
   **EN** — You can now **drag your finger across the "Last night" hypnogram** to see when and for how long you entered each stage (just like the metric charts). **Respiration** now shows last night's value on its tile —it used to read "—" even when there was data—. And the **REM** colour went from a bright mint to a **calmer teal**, so it no longer pulls the eye.

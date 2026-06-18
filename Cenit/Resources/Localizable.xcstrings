@@ -20140,7 +20140,22 @@
         }
       }
     },
-    "no reading": {},
+    "no reading": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sin lectura"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "keine Messung"
+          }
+        }
+      }
+    },
     "not yet": {
       "extractionState": "manual",
       "localizations": {
@@ -25654,6 +25669,75 @@
           "stringUnit": {
             "state": "translated",
             "value": "Wir brauchen noch ein paar Nächte mit deinem Band, um deine Basislinie zu lernen, bevor wir deine Erholung berechnen. Wir zeigen lieber keine erfundene Zahl."
+          }
+        }
+      }
+    },
+    "Tap a day to see its recovery.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap a day to see its recovery."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca un día para ver su recuperación."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tippe einen Tag an, um seine Erholung zu sehen."
+          }
+        }
+      }
+    },
+    "%@ · recovery %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · recovery %lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · recuperación %lld"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · Erholung %lld"
+          }
+        }
+      }
+    },
+    "%@ · no reading": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · no reading"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · sin lectura"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · keine Messung"
           }
         }
       }

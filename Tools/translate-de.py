@@ -13,6 +13,11 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> German value. Keys must match the catalog exactly.
 DE: dict[str, str] = {
+    # FER-235 — calendario táctil
+    'no reading': 'keine Messung',
+    'Tap a day to see its recovery.': 'Tippe einen Tag an, um seine Erholung zu sehen.',
+    '%@ · recovery %lld': '%@ · Erholung %lld',
+    '%@ · no reading': '%@ · keine Messung',
     # FER-225 — Detalle de Recuperación
     'No reading from last night yet — your recent history is below.': 'Noch keine Messung von letzter Nacht – dein bisheriger Verlauf steht unten.',
     "Recovery blends several signals from your nervous system — your HRV above all, plus resting heart rate, sleep and breathing — and compares them with your own baseline from recent weeks. It's an estimate of how ready your body is today, not a diagnosis. (Buchheit 2014)": 'Die Erholung verbindet mehrere Signale deines Nervensystems – vor allem deine HRV, dazu Ruhepuls, Schlaf und Atmung – und vergleicht sie mit deiner eigenen Basislinie der letzten Wochen. Es ist eine Schätzung, wie bereit dein Körper heute ist, keine Diagnose. (Buchheit 2014)',

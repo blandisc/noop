@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-17 · FER-234</span>
+  <span class="tb-updated">Actualizado 2026-06-17 · FER-235</span>
 </div>
 
 <div id="wrapper">
@@ -738,6 +738,7 @@ const SCREENS = [
     isSheet: true,
     states: [
       { label: 'Con datos: 8 bloques con ⓘ — Hero (score por banda) · Qué lo explica (driver vs base + peso) · Rango normal · Tendencia (pills + Prom/Mediana/Mín/Máx/σ) · Consistencia (CV) · Calendario 90d (YearHeatStrip re-tintado, a todo el ancho) · Carga reciente (ACWR/monotonía, contexto SIN claim de lesión · Impellizzeri 2020) · Ver el método', type: 'data' },
+      { label: 'Calendario táctil (FER-235): tocar un día → aro de selección + lectura «fecha · puntaje (color de banda) · estado» debajo; sin lectura → «sin lectura». YearHeatStrip.onSelect (tap-only, no rompe el scroll).', type: 'data' },
       { label: 'Calibrando: RecoveryScorer.calibrationNights en [1,4) → «N / 4 noches» + barra, sin gráficas', type: 'loading' },
       { label: 'Cargando: model.loaded == false (well con spinner)', type: 'loading' },
       { label: 'Sin datos / offline: sin score y sin historia → hero «—» con copy honesto (no promete datos)', type: 'empty' },
