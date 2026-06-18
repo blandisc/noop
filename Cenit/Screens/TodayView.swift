@@ -525,16 +525,14 @@ struct TodayView: View {
             utilityRow
             Spacer(minLength: 0)
             if let pct = live.batteryPct {
-                HStack(spacing: 3) {
-                    if live.charging == true {
-                        Image(systemName: "bolt.fill")
-                            .font(.system(size: 8, weight: .semibold))
-                            .foregroundStyle(theme.inkTertiary)
-                    }
-                    Text("\(Int(pct.rounded()))%")
-                        .font(StrandFont.mono(10))
+                HStack(spacing: 4) {
+                    Image(systemName: batteryIcon(pct: pct, charging: live.charging == true))
+                        .font(StrandFont.overline)
                         .foregroundStyle(theme.inkTertiary)
-                        .monospacedDigit()
+                    Text("\(Int(pct.rounded()))%")
+                        .font(StrandFont.overline)
+                        .tracking(StrandFont.overlineTracking)
+                        .foregroundStyle(theme.inkTertiary)
                 }
                 .accessibilityLabel(live.charging == true
                     ? Text("Batería del strap: \(Int(pct.rounded()))%, cargando")
@@ -543,6 +541,19 @@ struct TodayView: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityAction(named: Text("Sincronizar")) { triggerPullSync() }
+    }
+
+    /// SF Symbol name for a battery-level icon at the given percentage, with an
+    /// optional charging bolt (uses the `.bolt` suffix variants from SF Symbols 3+).
+    private func batteryIcon(pct: Double, charging: Bool) -> String {
+        let level: String
+        switch pct {
+        case 75...: level = "battery.100"
+        case 50..<75: level = "battery.75"
+        case 25..<50: level = "battery.50"
+        default:      level = "battery.25"
+        }
+        return charging ? "\(level).bolt" : level
     }
 
     // MARK: - Héroe unificado «Instrumento diurno» (FER-160)
@@ -903,7 +914,7 @@ struct TodayView: View {
                 Text("Syncing strap history…")
                     .font(StrandFont.mono(10))
                     .foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(1)
                 Text(live.syncChunksThisSession > 0 ? "\(live.syncChunksThisSession) paquetes" : "···")
                     .font(StrandFont.mono(10))
                     .foregroundStyle(theme.inkTertiary)
