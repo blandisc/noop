@@ -211,7 +211,7 @@ struct WorkoutsView: View {
                     Text(WorkoutSource.displaySport(row.sport)).font(StrandFont.body).foregroundStyle(theme.ink)
                         .lineLimit(1)
                 }
-                Text("\(WorkoutDetailScreen.dateLabel(row.startTs)) · \(WorkoutDetailScreen.timeLabel(row.startTs))")
+                Text("\(WorkoutFormat.date(row.startTs)) · \(WorkoutFormat.time(row.startTs))")
                     .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
             }
             Spacer(minLength: 8)
@@ -228,7 +228,7 @@ struct WorkoutsView: View {
     /// The per-session protagonist on the right: effort if the session carries it, else avg HR, else
     /// duration. Effort/HR read in the ember effort hue; duration stays ink (not a saturated datum).
     @ViewBuilder private func sessionDatum(_ row: WorkoutRow) -> some View {
-        if let s = row.strain {
+        if let s = row.strain, s > 0 {
             Text(String(format: "%.1f", s)).font(StrandFont.number(17)).foregroundStyle(theme.dataStrain)
         } else if let hr = row.avgHr {
             HStack(alignment: .firstTextBaseline, spacing: 3) {
@@ -236,7 +236,7 @@ struct WorkoutsView: View {
                 Text("bpm").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
             }
         } else {
-            Text(durationLabel(row.durationS ?? Double(max(0, row.endTs - row.startTs))))
+            Text(WorkoutFormat.duration(row.durationS ?? Double(max(0, row.endTs - row.startTs))))
                 .font(StrandFont.number(17)).foregroundStyle(theme.ink)
         }
     }
@@ -397,11 +397,6 @@ struct WorkoutsView: View {
 
     // MARK: - Formatting
 
-    private func durationLabel(_ s: Double) -> String {
-        let total = Int(s.rounded())
-        let h = total / 3600, m = (total % 3600) / 60
-        return h > 0 ? "\(h)h \(m)m" : "\(m)m"
-    }
     private func oneDecimal(_ v: Double) -> String { String(format: "%.1f", v) }
 }
 

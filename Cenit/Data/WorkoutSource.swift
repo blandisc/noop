@@ -1,6 +1,25 @@
 import Foundation
 import WhoopStore
 
+/// Locale-aware display formatting shared by the workouts list and the session detail (so the two never
+/// drift, and the list doesn't reach into the detail's private statics). Dates/times render in the device
+/// locale (es-MX → «mié 18 jun» / 24h per region).
+enum WorkoutFormat {
+    static func duration(_ s: Double) -> String {
+        let total = Int(s.rounded()), h = total / 3600, m = (total % 3600) / 60
+        return h > 0 ? "\(h)h \(m)m" : "\(m)m"
+    }
+    static func date(_ ts: Int) -> String { dateFmt.string(from: Date(timeIntervalSince1970: TimeInterval(ts))) }
+    static func time(_ ts: Int) -> String { timeFmt.string(from: Date(timeIntervalSince1970: TimeInterval(ts))) }
+
+    private static let dateFmt: DateFormatter = {
+        let f = DateFormatter(); f.locale = .current; f.setLocalizedDateFormatFromTemplate("EEE d MMM"); return f
+    }()
+    private static let timeFmt: DateFormatter = {
+        let f = DateFormatter(); f.locale = .current; f.setLocalizedDateFormatFromTemplate("j:mm"); return f
+    }()
+}
+
 /// Origin of a workout row, classified from its stored `source` column. The macOS read model
 /// (`WorkoutRow`) carries no `deviceId`, so the row's origin has to be recovered from `source`.
 /// Stored values today:

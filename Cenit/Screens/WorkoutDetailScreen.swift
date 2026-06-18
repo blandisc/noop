@@ -90,11 +90,17 @@ struct WorkoutDetailScreen: View {
 
     private enum Hero { case strain(Double), heartRate(Int), duration(Double) }
 
-    /// The protagonist datum, picked by what the session actually carries — never a fabricated 0/«—».
+    /// Session length from the stored duration, or the span when it's missing. Computed once; reused by the
+    /// hero (when it degrades to duration) and the context line.
+    private var sessionDuration: Double { row.durationS ?? Double(max(0, row.endTs - row.startTs)) }
+
+    /// The protagonist datum, picked by what the session actually carries — never a fabricated 0/«—». A
+    /// stored `strain` of 0 isn't a real effort reading (WHOOP strain is logarithmic and > 0; a manual row
+    /// leaves it nil), so it degrades like a missing value rather than showing "0.0 / 21".
     private var heroKind: Hero {
-        if let s = row.strain { return .strain(s) }
+        if let s = row.strain, s > 0 { return .strain(s) }
         if let hr = row.avgHr { return .heartRate(hr) }
-        return .duration(row.durationS ?? Double(max(0, row.endTs - row.startTs)))
+        return .duration(sessionDuration)
     }
 
     private var hero: some View {
@@ -123,7 +129,7 @@ struct WorkoutDetailScreen: View {
         switch heroKind {
         case .strain(let s):    return String(format: "%.1f", s)
         case .heartRate(let hr): return "\(hr)"
-        case .duration(let s):  return durationLabel(s)
+        case .duration(let s):  return WorkoutFormat.duration(s)
         }
     }
     private var heroUnit: String? {
@@ -150,8 +156,7 @@ struct WorkoutDetailScreen: View {
             .fixedSize(horizontal: false, vertical: true)
     }
     private var contextText: String {
-        let dur = durationLabel(row.durationS ?? Double(max(0, row.endTs - row.startTs)))
-        return "\(WorkoutSource.displaySport(row.sport)) · \(Self.dateLabel(row.startTs)) · \(Self.timeLabel(row.startTs)) · \(dur)"
+        "\(WorkoutSource.displaySport(row.sport)) · \(WorkoutFormat.date(row.startTs)) · \(WorkoutFormat.time(row.startTs)) · \(WorkoutFormat.duration(sessionDuration))"
     }
 
     // MARK: - Zonas de FC (solo si la sesión las trae)
@@ -261,9 +266,12 @@ struct WorkoutDetailScreen: View {
             .fixedSize(horizontal: false, vertical: true)
     }
     private var strainMethodNote: LocalizedStringKey {
-        row.strain != nil
-            ? "Scale 0–21, WHOOP-style: it grows logarithmically — not a physical unit."
-            : "Effort (0–21 scale) is computed only by your WHOOP — this session doesn't carry it."
+        // Keyed off the hero so the note never disagrees with the degraded value (a 0/absent strain reads
+        // as "no effort number", not as a 0–21 reading).
+        if case .strain = heroKind {
+            return "Scale 0–21, WHOOP-style: it grows logarithmically — not a physical unit."
+        }
+        return "Effort (0–21 scale) is computed only by your WHOOP — this session doesn't carry it."
     }
 
     // MARK: - Acciones (menú ••• según fuente)
@@ -310,27 +318,13 @@ struct WorkoutDetailScreen: View {
 
     // MARK: - Formatting
 
-    private func durationLabel(_ s: Double) -> String {
-        let total = Int(s.rounded())
-        let h = total / 3600, m = (total % 3600) / 60
-        return h > 0 ? "\(h)h \(m)m" : "\(m)m"
-    }
+    /// Thousands-grouped integer for the energy support (e.g. "1,240").
     private func grouped(_ v: Double) -> String {
         Self.intFmt.string(from: NSNumber(value: Int(v.rounded()))) ?? "\(Int(v.rounded()))"
     }
     private static let intFmt: NumberFormatter = {
         let f = NumberFormatter(); f.numberStyle = .decimal; f.maximumFractionDigits = 0; return f
     }()
-
-    /// Locale-aware date/time (es-MX shows "mié 18 jun" / 24h per region) — unlike the old en_US_POSIX log.
-    static let dateFmt: DateFormatter = {
-        let f = DateFormatter(); f.locale = .current; f.setLocalizedDateFormatFromTemplate("EEE d MMM"); return f
-    }()
-    static let timeFmt: DateFormatter = {
-        let f = DateFormatter(); f.locale = .current; f.setLocalizedDateFormatFromTemplate("j:mm"); return f
-    }()
-    static func dateLabel(_ ts: Int) -> String { dateFmt.string(from: Date(timeIntervalSince1970: TimeInterval(ts))) }
-    static func timeLabel(_ ts: Int) -> String { timeFmt.string(from: Date(timeIntervalSince1970: TimeInterval(ts))) }
 }
 
 // MARK: - Shared source badge (list + detail)
