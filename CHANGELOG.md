@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Hoy te dice cómo abrir tu recuperación y cómo sincronizar / Today now shows you how to open your recovery and how to sync.**
+  **ES** — Dos gestos que ya existían pero estaban escondidos ahora se anuncian solos. Bajo el número grande de tu veredicto aparece **«Ver recuperación»** con una flechita: te dice que ese número se toca para ver el detalle. Y arriba del veredicto, mientras tu strap está en reposo, una pista discreta **«Desliza para sincronizar»** te enseña que jalando la pantalla hacia abajo fuerzas una sincronización; la pista **desaparece para siempre** la primera vez que la usas, para no estorbar. Ambas son señales quietas, en tinta, fieles al estilo «Instrumento».
+  **EN** — Two gestures that already existed but were hidden now announce themselves. Under the big verdict number, a **"See recovery"** cue with a little arrow tells you that number is tappable for the detail. And above the verdict, while your strap is idle, a quiet **"Pull to sync"** hint teaches you that pulling the screen down forces a sync; the hint **goes away for good** the first time you use it, so it never nags. Both are calm, ink-colored cues, true to the "Instrumento" style.
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **El formulario para agregar o editar un entrenamiento ahora es claro, como el resto / The add/edit-workout form is now light, like everything else.**
   **ES** — Al tocar **«Agregar entrenamiento»** (o **Editar/Duplicar** desde el detalle), la hoja ya no salta oscura y angosta sobre la pantalla clara: se rediseñó al estilo «Instrumento» —papel cálido, campos claros— y ahora **llena el ancho** en el iPhone. Mismos campos y validaciones de siempre (deporte, inicio, duración, FC media, calorías), ahora en español.
   **EN** — Tapping **"Add workout"** (or **Edit/Duplicate** from the detail) no longer pops a dark, narrow sheet over the light screen: it was redesigned to the "Instrumento" style — warm paper, light fields — and now **fills the width** on iPhone. Same fields and validations as always (sport, start, duration, avg HR, calories), now localized.
