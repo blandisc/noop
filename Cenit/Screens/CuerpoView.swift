@@ -91,6 +91,9 @@ private struct CuerpoLanding: View {
     /// Light «Instrumento» Detalle de Sueño (FER-212) — the «Sueño» row now opens this superset of the
     /// old dark sleep screen (built fresh on tap from the in-memory dashboard), theme passed explicitly.
     @State private var sleepDetail: SleepDetailItem? = nil
+    /// Light «Instrumento» Detalle de Esfuerzo (FER-238) — the «Day Strain» row now opens this rich detail
+    /// (curva intradía + zonas + tendencia + método) instead of the legacy `MetricInfoSheet`. Hoy unchanged.
+    @State private var strainDetail: StrainDetailItem? = nil
     /// «How you wake after each sport» — ranked ActivityCost per sport (FER-139); empty = "gathering data".
     @State private var activityCosts: [ActivityCost] = []
     /// Presents the light Activity-recovery detail sheet.
@@ -188,6 +191,13 @@ private struct CuerpoLanding: View {
             RecoveryDetailScreen(theme: theme, model: item.model)
         }
         .sheet(item: $darkSheet) { sheet in darkSheetContent(sheet) }
+        .sheet(item: $strainDetail) { item in
+            // Light «Instrumento» Detalle de Esfuerzo — theme passed explicitly (it doesn't propagate
+            // through `.sheet`), NO nested NavigationStack (FER-171). The intraday curve is loaded the
+            // same way the legacy sheet did (`loadStrainCurve`). (FER-238)
+            StrainDetailScreen(theme: theme, model: item.model,
+                               curveLoader: { await loadStrainCurve() })
+        }
         .sheet(item: $sleepDetail) { item in
             // Light «Instrumento» sheet — pass the resolved theme explicitly (it doesn't propagate
             // through `.sheet`), NO nested NavigationStack (FER-171). (FER-212)
@@ -344,7 +354,11 @@ private struct CuerpoLanding: View {
         let v = repo.today?.strain
         return metricRow("Day Strain", value: v.map { String(format: "%.1f", $0) },
                          color: theme.dataStrain, sparkKey: "strain") {
-            metricInfo = .strain(v)
+            // Opens the rich Detalle de Esfuerzo (FER-238) — built fresh from the in-memory dashboard;
+            // the intraday curve loads async in the screen via `loadStrainCurve`. (Hoy still uses
+            // `MetricInfo.strain`/`MetricInfoSheet`.)
+            strainDetail = StrainDetailItem(model: StrainDetailModel.build(
+                days: repo.days, today: repo.today, loaded: repo.loaded))
         }
     }
 

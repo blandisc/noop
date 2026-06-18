@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-17 · FER-237</span>
+  <span class="tb-updated">Actualizado 2026-06-18 · FER-238</span>
 </div>
 
 <div id="wrapper">
@@ -466,7 +466,8 @@ const SCREENS = [
     ],
     nav: [
       { to: 'recovery-detail', label: 'Recuperación (héroe) → RecoveryDetailScreen «Instrumento» (FER-225)', type: 'sheet' },
-      { to: 'metric-info', label: 'Tap fila con hoja clara (Esfuerzo/SpO₂/FC/Pasos/Estrés)', type: 'sheet' },
+      { to: 'strain-detail', label: 'Esfuerzo del día → StrainDetailScreen «Instrumento» (FER-238)', type: 'sheet' },
+      { to: 'metric-info', label: 'Tap fila con hoja clara (SpO₂/FC/Pasos/Estrés)', type: 'sheet' },
       { to: 'metric-detail-screen', label: 'HRV / FC reposo / Respiración → MetricDetailScreen unificado (.full, sheet claro — FER-185)', type: 'sheet' },
       { to: 'sleep', label: 'Sueño → SleepDetailScreen (sheet claro «Instrumento» — FER-212)', type: 'sheet' },
       { to: 'workouts', label: 'Entrenamientos → WorkoutsView (sheet oscuro)', type: 'sheet' },
@@ -745,6 +746,22 @@ const SCREENS = [
     ],
     nav: [],
     components: ['InfoAccordion (ⓘ por bloque)', 'Hero en color de banda (RecoveryScorer.band: verdict/warning/critical)', 'Drivers (ReadinessEngine.signals + pesos RecoveryScorer.w*) con barra peso=largo/estado=color', 'TrendChart (media móvil 7d decimada) + ComparisonEngine (Prom/Mediana/Mín/Máx/σ)', 'YearHeatStrip re-tintado + YearHeatStrip.weekColumns (a todo el ancho)', 'SegmentedPillControl (ExploreRange)', 'RecoveryDetailModel (build desde repo · sin DB)', 'InstrumentoTheme explícito · sin NavigationStack anidado (FER-171)'],
+  },
+  {
+    id: 'strain-detail', x: 792, y: 3470,
+    name: 'Detalle de Esfuerzo', desc: 'Sheet: Detalle de Esfuerzo «Instrumento» — métrica compuesta (hoy 0–21 + curva intradía + zonas + tendencia) con ⓘ por bloque (desde Cuerpo · FER-238; Hoy abre la hoja resumida MetricInfoSheet)',
+    file: 'Cenit/Screens/StrainDetailScreen.swift',
+    icon: '🔥', color: '#C4631F',
+    isSheet: true,
+    states: [
+      { label: 'Con datos: Hero (hoy 0–21 en dataStrain + lectura por zona) · Cómo se acumuló hoy (curva intradía) · Zonas (4 bandas fijas, activa marcada) · Tendencia (pills + media móvil 7d + Prom/Mín/Máx + % vs mes pasado) · Ver el método (TRIMP/log · Edwards 1993 / Banister 1991), cada bloque con ⓘ', type: 'data' },
+      { label: 'Curva intradía: curveLoader async (CuerpoView.loadStrainCurve → StrainScorer.cumulativeStrain); cargando → well; sin actividad → «sin datos para graficar»', type: 'loading' },
+      { label: 'Tendencia <2 puntos → bloque omitido', type: 'empty' },
+      { label: 'Cargando: model.loaded == false (well con spinner)', type: 'loading' },
+      { label: 'Sin datos: sin score y sin historia → hero «—» con copy honesto (strain es solo-strap, sin fallback de Apple)', type: 'empty' },
+    ],
+    nav: [],
+    components: ['InfoAccordion (ⓘ por bloque)', 'Hero en dataStrain (valor de hoy, no media móvil)', 'TrendChart (curva intradía por hora + tendencia 7d decimada)', 'Zonas de MetricInfo.strain (4 bandas fijas)', 'SegmentedPillControl (ExploreRange) + ComparisonEngine/SeriesShape', 'StrainDetailModel (build desde repo · sin DB) + curveLoader async', 'InstrumentoTheme explícito · sin NavigationStack anidado (FER-171)'],
   },
   {
     id: 'fitness-age', x: 284, y: 3310,

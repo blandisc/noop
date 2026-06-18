@@ -13,6 +13,24 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> German value. Keys must match the catalog exactly.
 DE: dict[str, str] = {
+    # FER-238 — Detalle de Esfuerzo (StrainDetailScreen)
+    'All-out day — about as much strain as you carry.': 'Volle Pulle – fast so viel Belastung, wie du verträgst.',
+    "Day Strain is your cardiovascular load on a 0–21 scale. Each second your heart rate is recorded, it's placed in an intensity zone (1–5); higher zones weigh more, and the total is compressed logarithmically so 21 is a theoretical maximum — a full day at peak intensity. (Edwards 1993; Banister 1991)": 'Day Strain ist deine kardiovaskuläre Belastung auf einer Skala von 0–21. Jede Sekunde, in der deine Herzfrequenz erfasst wird, wird einer Intensitätszone (1–5) zugeordnet; höhere Zonen zählen mehr, und die Summe wird logarithmisch komprimiert, sodass 21 ein theoretisches Maximum ist – ein ganzer Tag bei Höchstintensität. (Edwards 1993; Banister 1991)',
+    'Day strain, 7-day moving average': 'Day Strain, gleitender 7-Tage-Durchschnitt',
+    'Each second of heart rate is mapped to one of five intensity zones; time in the higher zones counts for much more. The weighted total is compressed onto a 0–21 scale through a logarithmic curve, so the top of the scale represents a theoretical full day at peak intensity.': 'Jede Sekunde der Herzfrequenz wird einer von fünf Intensitätszonen zugeordnet; Zeit in den höheren Zonen zählt deutlich mehr. Die gewichtete Summe wird über eine logarithmische Kurve auf eine Skala von 0–21 komprimiert, sodass das obere Ende einen theoretischen ganzen Tag bei Höchstintensität darstellt.',
+    'Hard effort today — solid work.': 'Harte Anstrengung heute – starke Arbeit.',
+    'Heart-rate-zone load (TRIMP), compressed logarithmically. (Edwards 1993; Banister 1991)': 'Belastung nach Herzfrequenzzonen (TRIMP), logarithmisch komprimiert. (Edwards 1993; Banister 1991)',
+    'Information about day strain': 'Informationen zum Day Strain',
+    "Information about how today's strain added up": 'Informationen dazu, wie sich deine Belastung heute summiert hat',
+    'Information about the strain zones': 'Informationen zu den Belastungszonen',
+    'Light load today — plenty left in the tank.': 'Leichte Belastung heute – noch viel im Tank.',
+    'Moderate effort today.': 'Moderate Anstrengung heute.',
+    'No strain from today yet — your recent history is below.': 'Noch keine Belastung von heute – dein bisheriger Verlauf steht unten.',
+    'No strain yet. Wear your strap through the day and open this again after it syncs.': 'Noch keine Belastung. Trage deine Band über den Tag und öffne dies erneut, sobald sie synchronisiert.',
+    "The line is your 7-day moving average over the period you pick. The percentage compares this month's average with last month's. Average, Lowest and Highest come from the range you selected.": 'Die Linie ist dein gleitender 7-Tage-Durchschnitt über den gewählten Zeitraum. Der Prozentwert vergleicht den Durchschnitt dieses Monats mit dem des Vormonats. Durchschnitt, Tiefst- und Höchstwert stammen aus dem gewählten Bereich.',
+    "The line shows how your strain piled up through the day — each second of heart rate adds to the running total, so it only ever rises. It ends on today's score above.": 'Die Linie zeigt, wie sich deine Belastung über den Tag aufgebaut hat – jede Sekunde Herzfrequenz zählt zur laufenden Summe, daher steigt sie nur. Sie endet bei deinem heutigen Wert oben.',
+    "Your heart rate falls into one of four intensity zones through the day. The highlighted row is where today's score lands on the 0–21 scale.": 'Deine Herzfrequenz fällt über den Tag in eine von vier Intensitätszonen. Die hervorgehobene Zeile zeigt, wo dein heutiger Wert auf der Skala von 0–21 liegt.',
+    'Zones': 'Zonen',
     # FER-235 — calendario táctil
     'no reading': 'keine Messung',
     'Tap a day to see its recovery.': 'Tippe einen Tag an, um seine Erholung zu sehen.',
