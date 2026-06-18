@@ -74,7 +74,7 @@ struct WorkoutDetailScreen: View {
         .toolbarBackground(theme.paper, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .sheet(item: $editTarget) { target in
-            ManualWorkoutSheet(editing: target.row) { saved, replacing in
+            ManualWorkoutSheet(editing: target.row, theme: theme) { saved, replacing in
                 Task {
                     await repo.saveManualWorkout(saved, replacing: replacing)
                     await onChange()

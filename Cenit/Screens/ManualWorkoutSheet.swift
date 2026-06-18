@@ -2,7 +2,7 @@ import SwiftUI
 import StrandDesign
 import WhoopStore
 
-// MARK: - Manual workout sheet
+// MARK: - Manual workout sheet — «Instrumento diurno» (FER-266)
 //
 // Add a workout you tracked elsewhere, or edit one you already logged. Five inputs — sport,
 // start, duration, average HR, calories — validated by WorkoutSource.buildManualRow (the same
@@ -13,12 +13,19 @@ import WhoopStore
 //
 // `editing` is non-nil when editing an existing row (its values pre-fill the form and it is passed
 // as `replacing:` so a changed natural key deletes the old row). nil = a fresh add.
+//
+// Reskinned to the light «Instrumento» language: warm paper, ink text, `surface` inputs, hairline
+// borders. The theme is passed EXPLICITLY (it doesn't propagate through `.sheet`, FER-162) by the two
+// callers (the workouts list's Add, the detail's Edit/Duplicate). The old fixed `frame(width: 420)`
+// (a macOS-era width) is gone — the form fills the sheet's width on iPhone.
 
 struct ManualWorkoutSheet: View {
     /// The row being edited, or nil for a new manual workout.
     let editing: WorkoutRow?
     /// Called with the validated row (and the original, when editing) once the user taps Save.
     let onSave: (_ row: WorkoutRow, _ replacing: WorkoutRow?) -> Void
+    /// The live «Instrumento» theme, passed explicitly (sheets start a fresh environment). (FER-162)
+    var theme: InstrumentoTheme = .base
 
     @Environment(\.dismiss) private var dismiss
 
@@ -29,8 +36,10 @@ struct ManualWorkoutSheet: View {
     @State private var kcalText: String
 
     init(editing: WorkoutRow? = nil,
+         theme: InstrumentoTheme = .base,
          onSave: @escaping (_ row: WorkoutRow, _ replacing: WorkoutRow?) -> Void) {
         self.editing = editing
+        self.theme = theme
         self.onSave = onSave
         // Pre-fill from the edited row (display "detected" as "Activity" so a re-label starts clean).
         let e = editing
@@ -42,52 +51,55 @@ struct ManualWorkoutSheet: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            header
-            VStack(alignment: .leading, spacing: 14) {
-                field("Sport") {
-                    TextField("e.g. Running", text: $sport)
-                        .textFieldStyle(.plain)
-                        .font(StrandFont.body)
-                        .foregroundStyle(StrandPalette.textPrimary)
-                        .padding(.horizontal, 12).padding(.vertical, 9)
-                        .background(StrandPalette.surfaceInset, in: inputShape)
-                        .overlay(inputShape.strokeBorder(StrandPalette.hairline, lineWidth: 1))
-                        .accessibilityLabel("Sport")
-                }
-                field("Start") {
-                    DatePicker("", selection: $start, in: ...Date(),
-                               displayedComponents: [.date, .hourAndMinute])
-                        .labelsHidden()
-                        .accessibilityLabel("Start date and time")
-                }
-                field("Duration") {
-                    HStack(spacing: 12) {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                header
+                VStack(alignment: .leading, spacing: 14) {
+                    field("Sport") {
+                        TextField("e.g. Running", text: $sport)
+                            .textFieldStyle(.plain)
+                            .font(StrandFont.body)
+                            .foregroundStyle(theme.ink)
+                            .padding(.horizontal, 12).padding(.vertical, 10)
+                            .background(theme.surface, in: inputShape)
+                            .overlay(inputShape.strokeBorder(theme.hairline, lineWidth: 1))
+                            .accessibilityLabel("Sport")
+                    }
+                    field("Start") {
+                        DatePicker("", selection: $start, in: ...Date(),
+                                   displayedComponents: [.date, .hourAndMinute])
+                            .labelsHidden()
+                            .tint(theme.verdict)
+                            .accessibilityLabel("Start date and time")
+                    }
+                    field("Duration") {
                         Stepper(value: $durationMin, in: 1...(24 * 60), step: 5) {
                             Text(durationLabel)
                                 .font(StrandFont.bodyNumber)
-                                .foregroundStyle(StrandPalette.textPrimary)
+                                .foregroundStyle(theme.ink)
                         }
                         .accessibilityLabel("Duration in minutes")
                     }
-                }
-                HStack(spacing: 14) {
-                    field("Avg HR") {
-                        numberInput("optional", text: $avgHrText, unit: String(localized: "bpm"))
-                            .accessibilityLabel("Average heart rate in beats per minute, optional")
+                    HStack(alignment: .top, spacing: 14) {
+                        field("Avg HR") {
+                            numberInput("optional", text: $avgHrText, unit: String(localized: "bpm"))
+                                .accessibilityLabel("Average heart rate in beats per minute, optional")
+                        }
+                        field("Calories") {
+                            numberInput("optional", text: $kcalText, unit: "kcal")
+                                .accessibilityLabel("Calories in kilocalories, optional")
+                        }
                     }
-                    field("Calories") {
-                        numberInput("optional", text: $kcalText, unit: "kcal")
-                            .accessibilityLabel("Calories in kilocalories, optional")
-                    }
                 }
+                if let validationNote { noteRow(validationNote) }
+                footer
             }
-            if let validationNote { noteRow(validationNote) }
-            footer
+            .padding(24)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(24)
-        .frame(width: 420)
-        .background(StrandPalette.surfaceOverlay)
+        .background(theme.paper.ignoresSafeArea())
+        .presentationDragIndicator(.visible)
+        .modifier(SheetPaperBackground(paper: theme.paper))
     }
 
     // MARK: - Sections
@@ -96,12 +108,12 @@ struct ManualWorkoutSheet: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(editing == nil ? "Add Workout" : "Edit Workout")
                 .font(StrandFont.title2)
-                .foregroundStyle(StrandPalette.textPrimary)
+                .foregroundStyle(theme.ink)
             Text(editing == nil
                  ? "Log a session you tracked elsewhere."
                  : "Adjust this session's details.")
                 .font(StrandFont.subhead)
-                .foregroundStyle(StrandPalette.textSecondary)
+                .foregroundStyle(theme.inkSecondary)
         }
     }
 
@@ -110,43 +122,58 @@ struct ManualWorkoutSheet: View {
             Button("Cancel") { dismiss() }
                 .buttonStyle(.plain)
                 .font(StrandFont.body)
-                .foregroundStyle(StrandPalette.textSecondary)
+                .foregroundStyle(theme.inkSecondary)
             Spacer()
-            Button(editing == nil ? "Add" : "Save") { save() }
-                .buttonStyle(.borderedProminent)
-                .tint(StrandPalette.accent)
-                .disabled(builtRow == nil)
-                .accessibilityLabel(editing == nil ? "Add workout" : "Save workout")
+            saveButton
         }
+        .padding(.top, 4)
     }
 
-    private func field<Content: View>(_ label: String, @ViewBuilder _ content: () -> Content) -> some View {
+    /// Prominent primary — verdict-green capsule when the inputs make an honest row, a quiet disabled
+    /// surface otherwise (mirrors the disabled Save the form has always had, in the light language).
+    private var saveButton: some View {
+        let enabled = builtRow != nil
+        return Button { save() } label: {
+            Text(editing == nil ? "Add" : "Save")
+                .font(StrandFont.headline)
+                .foregroundStyle(enabled ? theme.paper : theme.inkTertiary)
+                .padding(.horizontal, 20).padding(.vertical, 9)
+                .background(enabled ? theme.verdict : theme.surface, in: Capsule(style: .continuous))
+                .overlay(Capsule(style: .continuous)
+                    .strokeBorder(enabled ? Color.clear : theme.hairlineStrong, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
+        .accessibilityLabel(editing == nil ? "Add workout" : "Save workout")
+    }
+
+    private func field<Content: View>(_ label: LocalizedStringKey, @ViewBuilder _ content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(label).strandOverline()
+            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
             content()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func numberInput(_ placeholder: String, text: Binding<String>, unit: String) -> some View {
+    private func numberInput(_ placeholder: LocalizedStringKey, text: Binding<String>, unit: String) -> some View {
         HStack(spacing: 6) {
             TextField(placeholder, text: text)
                 .textFieldStyle(.plain)
+                .keyboardType(.numberPad)
                 .font(StrandFont.bodyNumber)
-                .foregroundStyle(StrandPalette.textPrimary)
-            Text(unit).font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
+                .foregroundStyle(theme.ink)
+            Text(unit).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
         }
-        .padding(.horizontal, 12).padding(.vertical, 9)
-        .background(StrandPalette.surfaceInset, in: inputShape)
-        .overlay(inputShape.strokeBorder(StrandPalette.hairline, lineWidth: 1))
+        .padding(.horizontal, 12).padding(.vertical, 10)
+        .background(theme.surface, in: inputShape)
+        .overlay(inputShape.strokeBorder(theme.hairline, lineWidth: 1))
     }
 
-    private func noteRow(_ text: String) -> some View {
+    private func noteRow(_ text: LocalizedStringKey) -> some View {
         Text(text)
             .font(StrandFont.footnote)
-            .foregroundStyle(StrandPalette.statusWarning)
+            .foregroundStyle(theme.warning)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .accessibilityLabel(text)
     }
 
     // MARK: - Validation / build
@@ -177,12 +204,12 @@ struct ManualWorkoutSheet: View {
         return WorkoutSource.preservingCaptured(base, from: editing)
     }
 
-    private var validationNote: String? {
+    private var validationNote: LocalizedStringKey? {
         guard builtRow == nil else { return nil }
         if sport.trimmingCharacters(in: .whitespaces).isEmpty { return "Enter a sport." }
         if start > Date() { return "Start can't be in the future." }
         if !avgHrText.trimmingCharacters(in: .whitespaces).isEmpty, avgHr == nil || !(25...250).contains(avgHr ?? -1) {
-            return String(localized: "Average HR must be 25–250 bpm.")
+            return "Average HR must be 25–250 bpm."
         }
         if !kcalText.trimmingCharacters(in: .whitespaces).isEmpty, kcal == nil || (kcal ?? -1) < 0 || (kcal ?? 0) > 20_000 {
             return "Calories must be 0–20,000."
@@ -197,17 +224,28 @@ struct ManualWorkoutSheet: View {
     }
 }
 
+// MARK: - Sheet paper background (iOS 16.4+ presentationBackground)
+
+private struct SheetPaperBackground: ViewModifier {
+    let paper: Color
+    func body(content: Content) -> some View {
+        if #available(iOS 16.4, *) { content.presentationBackground(paper) } else { content }
+    }
+}
+
 #if DEBUG
 #Preview("Add") {
-    ManualWorkoutSheet { _, _ in }
-        .preferredColorScheme(.dark)
+    Color.clear.sheet(isPresented: .constant(true)) {
+        ManualWorkoutSheet { _, _ in }
+    }
 }
 
 #Preview("Edit") {
-    ManualWorkoutSheet(editing: WorkoutRow(
-        startTs: Int(Date().timeIntervalSince1970) - 3600, endTs: Int(Date().timeIntervalSince1970),
-        sport: "Running", source: "manual", durationS: 3600, energyKcal: 540,
-        avgHr: 148, maxHr: 172, strain: 12.4, distanceM: nil, zonesJSON: nil, notes: nil)) { _, _ in }
-        .preferredColorScheme(.dark)
+    Color.clear.sheet(isPresented: .constant(true)) {
+        ManualWorkoutSheet(editing: WorkoutRow(
+            startTs: Int(Date().timeIntervalSince1970) - 3600, endTs: Int(Date().timeIntervalSince1970),
+            sport: "Running", source: "manual", durationS: 3600, energyKcal: 540,
+            avgHr: 148, maxHr: 172, strain: 12.4, distanceM: nil, zonesJSON: nil, notes: nil)) { _, _ in }
+    }
 }
 #endif
