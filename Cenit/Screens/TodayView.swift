@@ -245,8 +245,12 @@ struct TodayView: View {
             .toolbar {
                 ToolbarItem {
                     Button { showingSupport = true } label: {
+                        // Rojo del TEMA, no `StrandPalette.metricRose` (token del sistema oscuro #FF4F73,
+                        // ≈2.7:1 sobre el papel claro de Hoy → falla 3:1 no-textual y rompe la disciplina
+                        // «Instrumento»). `theme.critical` es un rojo contenido theme-native (4.9:1) que
+                        // sigue leyéndose como corazón. (FER-273)
                         Image(systemName: "heart.fill")
-                            .foregroundStyle(StrandPalette.metricRose)
+                            .foregroundStyle(theme.critical)
                             .attentionWiggle(period: 4)
                     }
                     .help("Support Cénit — donate or get in touch")
@@ -1035,6 +1039,11 @@ struct TodayView: View {
                 .padding(.vertical, 3)
                 .background(theme.surface, in: Capsule())
                 .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
+                // Objetivo táctil HIG de 44pt SIN agrandar la cápsula (FER-273): la cápsula compacta de
+                // FER-265 queda centrada en un área tocable de ≥44pt de alto. `contentShape` hace tocable
+                // todo el marco, no solo la cápsula.
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityElement(children: .ignore)
@@ -1471,8 +1480,12 @@ struct TodayView: View {
                     .lineLimit(1).minimumScaleFactor(0.7)
                 Spacer(minLength: NoopMetrics.space1)
                 HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
+                    // Piso de escala 0.82 = 18/22 (FER-273): el valor lleva color de DATO (3.5–3.6:1), que
+                    // solo cumple AA como texto GRANDE (≥18pt, 3:1). Encogerlo más (el 0.6 previo → ~13pt)
+                    // lo volvía texto normal, donde AA pide 4.5:1 que esos roles no alcanzan. A 0.82 nunca
+                    // baja de 18pt, así el color de dato siempre cumple.
                     Text(value).font(StrandFont.number(22)).foregroundStyle(valueColor)
-                        .lineLimit(1).minimumScaleFactor(0.6)
+                        .lineLimit(1).minimumScaleFactor(0.82)
                     if let unit {
                         Text(unit).font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
                     }
