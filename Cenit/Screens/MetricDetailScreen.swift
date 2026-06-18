@@ -167,7 +167,7 @@ struct MetricDetailScreen: View {
             blockDivider
             chartBlock(window)
         }
-        if visibleBlocks.contains(.normalRange) {
+        if visibleBlocks.contains(.normalRange), spec.descriptor.key != "hrv" {
             blockDivider
             normalRangeBlock
         }
@@ -186,6 +186,10 @@ struct MetricDetailScreen: View {
         if visibleBlocks.contains(.trend) {
             blockDivider
             trendBlock(window)
+        }
+        if visibleBlocks.contains(.normalRange), spec.descriptor.key == "hrv" {
+            blockDivider
+            normalRangeBlock
         }
         if visibleBlocks.contains(.nightVitals) {
             blockDivider
