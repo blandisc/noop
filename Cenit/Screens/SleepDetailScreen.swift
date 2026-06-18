@@ -556,7 +556,7 @@ struct SleepDetailScreen: View {
         return "−\(hoursMinutes(missing)) vs your need"
     }
 
-    private func debtText(_ minutes: Double) -> LocalizedStringKey {
+    private func debtText(_ minutes: Double) -> String {
         "−\(hoursMinutes(minutes))"
     }
 
