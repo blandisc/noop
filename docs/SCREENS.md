@@ -43,7 +43,8 @@ TodayView   → LiveView (sheet, detente grande) · MetricInfoSheet (sheet) · M
 CuerpoView  → MetricInfoSheet (sheet claro: Recuperación/Esfuerzo/SpO₂/FC/Pasos/Estrés) ·
              MetricDetailScreen (sheet claro, .full: HRV/FC reposo/Respiración — FER-185) ·
              BodyAgeSheet (sheet claro: Edad corporal + Vitalidad — FER-145) ·
-             SleepView · WorkoutsView · CompareView · MetricExplorerView · DataSourcesView ·
+             SleepDetailScreen (sheet claro «Instrumento»: Sueño + regularidad del horario — FER-212) ·
+             WorkoutsView · CompareView · MetricExplorerView · DataSourcesView ·
              MetricDetailView (Temp. piel) — los oscuros como sheet fijado a .dark (FER-186)
 WorkoutsView → ManualWorkoutSheet (sheet: add / edit)
 LiveWorkoutHubRow → LiveWorkoutSheet (sheet, detente medio — grabación en vivo, FER-197)
@@ -144,18 +145,22 @@ de En vivo en FER-184; **no toca `LiveView`**.
 
 ---
 
-### SleepView
-**Archivo:** `Cenit/Screens/SleepView.swift`  
-**Descripción:** Análisis de sueño — etapas, eficiencia, consistencia, vs. típico.
+### SleepDetailScreen
+**Archivo:** `Cenit/Screens/SleepDetailScreen.swift`  
+**Descripción:** Detalle de Sueño «Instrumento» (claro) — el sueño migrado del viejo `SleepView` oscuro al lenguaje «Instrumento» (FER-212). Se abre desde **Cuerpo** como **sheet** con el `InstrumentoTheme` pasado **explícito** (no se propaga por `.sheet`, FER-162) y **sin `NavigationStack` anidado** (FER-171). Es un **superset** del viejo SleepView (hipnograma, etapas —ahora en **%**, no minutos—, anoche-vs-típico, tendencia de duración con banda 7–9 h + deuda, métricas de la noche: rendimiento, eficiencia, restaurador, respiración, despertares) **más un bloque nuevo de regularidad del horario** (motor `SleepRegularity`, FER-218: score 0–100 vía SD del punto medio + desfase de fin de semana + estado «se está afinando»). Reusa `Hypnogram`/`TrendChart` de `StrandDesign` y el scaffold de `MetricDetailScreen` (`block`/`hero`/`SheetPaperBackground`/`methodDisclosure`). Es presentación pura sobre un `SleepDetailModel` que el llamador (Cuerpo) construye desde `repo` (la pantalla queda sin DB).
+
+Las 8 secciones (orden): Hero (horas dormidas) · Anoche (hipnograma + etapas en %) · **Regularidad del horario** (destacado, en `surface`) · Anoche vs lo típico (por etapa, en %) · Tendencia de duración (30d + banda + deuda) · Métricas de la noche (rejilla) · Ver el método · Footer de fuente.
 
 | Estado | Condición de entrada |
 |--------|---------------------|
-| Sin datos de noche | Sin intervalos de sueño registrados (muestra `ComingSoon`, sin pill de sincronización) |
-| Apple Health | Fuente `apple-health` (sin duración en cama) |
-| WHOOP · hipnograma | Intervalos WHOOP persistidos |
-| WHOOP · estimado | Hipnograma aproximado (stacked bar) |
+| Cargando | `model.loaded == false` (sin noche → copy «Cargando tu historial de sueño…») |
+| Sin datos de noche | `model.night == nil` y ya cargó (invita a importar / conectar Apple Salud / dormir con la correa) |
+| Apple Health | Noche desde Apple Salud (sin reloj real → barra proporcional + badge «Apple Health») |
+| WHOOP · hipnograma | Intervalos de etapa persistidos (`model.intervals.count >= 2`) |
+| WHOOP · estimado | Sin segmentos por época → barra apilada proporcional |
+| Regularidad afinándose | `< SleepRegularity.minNights` noches con horario → «Se está afinando · N noches por venir» (sin número falso) |
 
-**Componentes:** `ChartCard (hipnograma/stacked bar)`, `StatTile ×7`, `Stages vs Typical Card`, `Duration Trend ChartCard`
+**Componentes:** `Hypnogram`, `TrendChart`, barra de etapas apilada, fila etapa-vs-típico (con marcador en el promedio personal), bloque de regularidad, rejilla `metricTile`, `DisclosureGroup` («Ver el método»). El tile de **Latencia se omite** de la rejilla cuando no hay dato (el caché no trae latencia de onset), reacomodando sin hueco.
 
 ---
 
@@ -205,7 +210,7 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 | Calibrando | Recuperación muestra «N/4» + «Calibrando tu base»; el resto en «—» con esqueleto |
 | Sin permiso / offline | Muestra lo guardado; las métricas solo-Apple (Pasos) invitan a conectar sin prometer datos |
 
-**Apertura del detalle (FER-185 ya aterrizó para los 3 vitales):** **HRV · FC en reposo · Respiración** abren el **`MetricDetailScreen`** unificado (sheet claro «Instrumento», `depth: .full`, tema explícito, sin `NavigationStack` anidado). El resto sigue su puente: Recuperación/Esfuerzo/SpO₂/FC/Pasos/Estrés→`MetricInfoSheet` claro; Sueño→`SleepView`, Entrenamientos→`WorkoutsView`, Temp. piel→`MetricDetailView` del catálogo, Comparar→`CompareView`, Ver todas→`MetricExplorerView` — estos últimos como **sheet oscuro fijado a `.dark`** (un tab claro no puede empujar una pantalla oscura sin romper la barra de estado). El mini-bloque **«Cómo amaneces tras cada deporte»** (Activity Cost, FER-139) en «Actividad» abre su propia **hoja clara** `ActivityRecoverySheet` (hermana de `MetricInfoSheet`, tema explícito): una tarjeta por deporte —en el orden del motor— con la frase de **asociación** (no causa), badge de confianza (`Sólido`/`Juntando datos`) y «n sesiones», más «Ver el método» con los confusores; sin datos suficientes → estado «Juntando datos».
+**Apertura del detalle (FER-185 ya aterrizó para los 3 vitales):** **HRV · FC en reposo · Respiración** abren el **`MetricDetailScreen`** unificado (sheet claro «Instrumento», `depth: .full`, tema explícito, sin `NavigationStack` anidado); **Sueño** abre el **`SleepDetailScreen`** claro «Instrumento» (sheet, tema explícito, sin stack anidado — FER-212). El resto sigue su puente: Recuperación/Esfuerzo/SpO₂/FC/Pasos/Estrés→`MetricInfoSheet` claro; Entrenamientos→`WorkoutsView`, Temp. piel→`MetricDetailView` del catálogo, Comparar→`CompareView`, Ver todas→`MetricExplorerView` — estos últimos como **sheet oscuro fijado a `.dark`** (un tab claro no puede empujar una pantalla oscura sin romper la barra de estado). El mini-bloque **«Cómo amaneces tras cada deporte»** (Activity Cost, FER-139) en «Actividad» abre su propia **hoja clara** `ActivityRecoverySheet` (hermana de `MetricInfoSheet`, tema explícito): una tarjeta por deporte —en el orden del motor— con la frase de **asociación** (no causa), badge de confianza (`Sólido`/`Juntando datos`) y «n sesiones», más «Ver el método» con los confusores; sin datos suficientes → estado «Juntando datos».
 
 **Componentes:** `MetricRow`, `Sparkline` (+ `ReferenceRange.interquartile`), `MetricInfoSheet`, `MetricDetailScreen` (+ `MetricDetailSpec`), `ActivityRecoverySheet` (FER-139), `FitnessAgeDetailView`, `InlineFlagChip`, `InstrumentoTheme` (`instrumentoThemeByHour`). **Analytics:** `ActivityCostEngine` + `ActivityCostInputs` (StrandAnalytics, vía `Repository.activityCosts()`).
 

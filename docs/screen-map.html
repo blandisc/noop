@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-17 · FER-209</span>
+  <span class="tb-updated">Actualizado 2026-06-17 · FER-212</span>
 </div>
 
 <div id="wrapper">
@@ -401,17 +401,19 @@ const SCREENS = [
   },
   {
     id: 'sleep', x: 538, y: 60,
-    name: 'Sleep', desc: 'Análisis de sueño',
-    file: 'Cenit/Screens/SleepView.swift',
+    name: 'Detalle de Sueño', desc: 'Detalle de Sueño «Instrumento» + regularidad del horario (FER-212)',
+    file: 'Cenit/Screens/SleepDetailScreen.swift',
     icon: '🌙', color: '#7B8FFF',
     states: [
-      { label: 'Sin datos de noche (sin pill de backfilling)', type: 'empty' },
-      { label: 'Apple Health', type: 'data' },
+      { label: 'Cargando (model.loaded == false)', type: 'empty' },
+      { label: 'Sin datos de noche', type: 'empty' },
+      { label: 'Apple Health (barra proporcional)', type: 'data' },
       { label: 'WHOOP · hipnograma', type: 'live' },
-      { label: 'WHOOP · estimado', type: 'data' },
+      { label: 'WHOOP · estimado (barra apilada)', type: 'data' },
+      { label: 'Regularidad afinándose (N noches por venir)', type: 'empty' },
     ],
     nav: [],
-    components: ['ChartCard (hipnograma/stacked)', 'StatTile ×7', 'Stages vs Typical Card', 'Duration Trend ChartCard'],
+    components: ['Hypnogram', 'TrendChart (30d + banda + deuda)', 'Regularidad del horario (SleepRegularity)', 'Anoche vs típico (en %)', 'Rejilla de métricas (Latencia se omite sin dato)', 'See the method'],
   },
   {
     id: 'stress', x: 792, y: 60,
@@ -462,7 +464,7 @@ const SCREENS = [
     nav: [
       { to: 'metric-info', label: 'Tap fila con hoja clara (Recuperación/Esfuerzo/SpO₂/FC/Pasos/Estrés)', type: 'sheet' },
       { to: 'metric-detail-screen', label: 'HRV / FC reposo / Respiración → MetricDetailScreen unificado (.full, sheet claro — FER-185)', type: 'sheet' },
-      { to: 'sleep', label: 'Sueño → SleepView (sheet oscuro .dark)', type: 'sheet' },
+      { to: 'sleep', label: 'Sueño → SleepDetailScreen (sheet claro «Instrumento» — FER-212)', type: 'sheet' },
       { to: 'workouts', label: 'Entrenamientos → WorkoutsView (sheet oscuro)', type: 'sheet' },
       { to: 'metricdetail', label: 'Temp. piel → MetricDetailView (sheet oscuro)', type: 'sheet' },
       { to: 'compare', label: 'Comparar (sheet oscuro)', type: 'sheet' },

@@ -5,7 +5,7 @@ import WhoopProtocol
 import StrandAnalytics
 
 /// Per-day sleep figures the WHOOP export carried verbatim (metricSeries rows written by
-/// WhoopImporter under the imported deviceId). SleepView prefers these over its on-device
+/// WhoopImporter under the imported deviceId). The Detalle de Sueño prefers these over its on-device
 /// APPROXIMATE recomputations.
 struct ImportedSleepFigures: Equatable {
     var performancePct: Double?   // "sleep_performance", 0–100
@@ -153,7 +153,7 @@ final class Repository: ObservableObject {
         let compSleep = (try? await store.sleepSessions(deviceId: computedDeviceId, from: lo, to: hi, limit: 4000)) ?? []
 
         // Export-verbatim sleep figures (long-format metricSeries rows from WhoopImporter).
-        // SleepView prefers these per day over its APPROXIMATE recomputations.
+        // The Detalle de Sueño prefers these per day over its APPROXIMATE recomputations.
         let perf = (try? await store.metricSeries(deviceId: deviceId, key: "sleep_performance", from: fromDay, to: toDay)) ?? []
         let cons = (try? await store.metricSeries(deviceId: deviceId, key: "sleep_consistency", from: fromDay, to: toDay)) ?? []
         let need = (try? await store.metricSeries(deviceId: deviceId, key: "sleep_need_min", from: fromDay, to: toDay)) ?? []

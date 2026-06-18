@@ -46,7 +46,14 @@ struct CuerpoView: View {
 // MARK: - Sheet routing
 
 /// A dark, existing screen presented as a self-contained sheet (pinned to `.dark`).
-private enum CuerpoScreen: Hashable { case sleep, workouts, compare, explore, dataSources }
+private enum CuerpoScreen: Hashable { case workouts, compare, explore, dataSources }
+
+/// Identifiable wrapper so the light «Instrumento» Detalle de Sueño can ride `.sheet(item:)`
+/// (the model itself isn't Identifiable). One per presentation. (FER-212)
+private struct SleepDetailItem: Identifiable {
+    let id = UUID()
+    let model: SleepDetailModel
+}
 
 /// The dark-sheet driver — either a full screen, or a catalog metric detail (Respiración / Temp. de
 /// piel, which have no light sheet of their own yet).
@@ -77,6 +84,9 @@ private struct CuerpoLanding: View {
     @State private var metricSpec: MetricDetailSpec? = nil
     /// Dark screen / catalog-detail sheet, for everything without a light sheet yet.
     @State private var darkSheet: CuerpoSheet? = nil
+    /// Light «Instrumento» Detalle de Sueño (FER-212) — the «Sueño» row now opens this superset of the
+    /// old dark sleep screen (built fresh on tap from the in-memory dashboard), theme passed explicitly.
+    @State private var sleepDetail: SleepDetailItem? = nil
     /// «How you wake after each sport» — ranked ActivityCost per sport (FER-139); empty = "gathering data".
     @State private var activityCosts: [ActivityCost] = []
     /// Presents the light Activity-recovery detail sheet.
@@ -169,6 +179,11 @@ private struct CuerpoLanding: View {
             )
         }
         .sheet(item: $darkSheet) { sheet in darkSheetContent(sheet) }
+        .sheet(item: $sleepDetail) { item in
+            // Light «Instrumento» sheet — pass the resolved theme explicitly (it doesn't propagate
+            // through `.sheet`), NO nested NavigationStack (FER-171). (FER-212)
+            SleepDetailScreen(theme: theme, model: item.model)
+        }
         .sheet(isPresented: $showActivityCost) { activityRecoverySheet }
         .sheet(isPresented: $showFitnessAge) {
             // Light «Instrumento» sheet — pass the resolved theme explicitly (it doesn't propagate
@@ -301,7 +316,12 @@ private struct CuerpoLanding: View {
         let r = resolveMeasured { $0.totalSleepMin }
         return metricRow("Sleep", value: r.map { sleepText($0.value) }, color: theme.dataSleep,
                          sparkKey: "sleep_total_min", fromApple: r?.fromApple == true) {
-            darkSheet = .screen(.sleep)
+            sleepDetail = SleepDetailItem(model: SleepDetailModel.build(
+                days: repo.days,
+                sleeps: repo.sleeps,
+                importedSleep: repo.importedSleep,
+                appleHealthDays: repo.appleHealthDays,
+                loaded: repo.loaded))
         }
     }
 
@@ -623,7 +643,6 @@ private struct CuerpoLanding: View {
         NavigationStack {
             Group {
                 switch sheet {
-                case .screen(.sleep):       SleepView()
                 case .screen(.workouts):    WorkoutsView()
                 case .screen(.compare):     CompareView()
                 case .screen(.explore):     MetricExplorerView()
