@@ -140,7 +140,8 @@ final class AppModel: ObservableObject {
         self.ble = BLEManager(state: live, deviceId: "my-whoop")
         self.repo = Repository(deviceId: "my-whoop")
         self.coach = AICoachEngine(repo: repo)
-        self.intelligence = IntelligenceEngine(repo: repo, profile: profile, deviceId: "my-whoop")
+        self.intelligence = IntelligenceEngine(repo: repo, profile: profile, deviceId: "my-whoop",
+                                               family: WhoopModel.persisted.deviceFamily)
         // Smooth HR centrally so it's solid everywhere it's shown.
         live.$heartRate.sink { [weak self] _ in self?.ingestHR() }.store(in: &hrCancellables)
         live.$rr.sink { [weak self] _ in self?.ingestHR() }.store(in: &hrCancellables)
