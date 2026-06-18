@@ -209,7 +209,7 @@ Los 8 bloques (orden), **cada uno con su ⓘ `InfoAccordion`** salvo el método:
 | Sin datos | `model == nil` → hero «—» + cómo obtener datos |
 | Pocos días | `fullTrend.count < 2` → se ocultan tendencia/consistencia |
 
-**Bloques (cada uno con su ⓘ vía `InfoAccordion`, salvo placeholder y método):** Hero (valor de hoy + banda + lectura) · Tendencia (selector de periodo + línea diaria 0–3 sobre las bandas + mes-vs-mes + Prom/Mín/Máx) · Rango normal (bandas universales, la de hoy resaltada) · Qué lo mueve (RHR/HRV de hoy vs base, en tarjetas) · Consistencia (CV) · Tiempo en calma (% días en banda baja, 30d) · **Estrés por momento del día (PLACEHOLDER deshabilitado** — el cruce con calendario es FER-38) · Ver el método.
+**Bloques (cada uno con su ⓘ vía `InfoAccordion`, salvo placeholder y método):** Hero (valor de hoy + banda + lectura) · Tendencia (selector de periodo + línea diaria 0–3 sobre las bandas + mes-vs-mes en es-MX + Prom/Mín/Máx) · Rango normal (bandas universales, la de hoy resaltada) · **Tiempo en calma** (% días en banda baja, 30d) · Qué lo mueve (RHR/HRV de hoy vs base, en tarjetas) · Consistencia (CV) · **Estrés por momento del día (PLACEHOLDER deshabilitado** — el cruce con calendario es FER-38) · Ver el método. *(Tiempo en calma sube antes de Qué lo mueve — FER-247)*
 
 **Componentes:** `InfoAccordion`, `TrendChart`, `SegmentedPillControl`, `InstrumentoTheme`. **Analytics:** `StressModel`/`StressMath`/`StressBand` (de `StressView.swift`), `ComparisonEngine` (estadísticas + mes-vs-mes), `SeriesShape` (CV, decimación).
 
