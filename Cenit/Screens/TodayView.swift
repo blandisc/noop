@@ -12,24 +12,21 @@ private struct TodayScrollOffsetKey: PreferenceKey {
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }
 
-// MARK: - Control Center (the home dashboard) — HomeDensity rewrite
+// MARK: - Hoy «Instrumento diurno» (FER-135 redesign)
 //
-// The owner's complaint was "cards then random space". This rebuild is a tight,
-// GAPLESS dashboard grid: one column of uniform sections, every gap == NoopMetrics.gap,
-// every section break == NoopMetrics.sectionGap, equal margins from ScreenScaffold.
+// The home screen, written in the «Instrumento diurno» language (warm paper, theme by hour,
+// one dominant number, color only in the datum, hierarchy by space — see DESIGN.md §8).
 //
-// Composition (top → bottom):
-//   (a) HERO  — full-width HStack that fills the width EQUALLY: RecoveryRing (left card)
-//               + InsightCard "Today's Synthesis" (right card). No lone card, no gap.
-//   (b) METRICS — one adaptive LazyVGrid of fixed-104pt StatTiles (Recovery, Strain,
-//               Sleep, HRV, RHR, SpO2, Respiratory, Steps, Weight, Calories) each with
-//               a 14-day sparkline so the grid tiles perfectly with no empty cells.
-//   (c) LAST WORKOUTS — the SAME adaptive grid of fixed-104pt workout StatTiles.
-//   (d) DATA SOURCES — a compact "Sources" NoopCard: one row per source (tinted glyph +
-//               name + count) over a hairline-divided sync-status footer.
+// Composition (top → bottom), all inside `iosBody`:
+//   (a) HEADER — compact date overline + strap battery (`headerBlock`).
+//   (b) HERO   — the unified state instrument (`heroInstrument`): a 24h `DiurnalDial` with the
+//                recovery numeral concentric inside it, the verdict word, and a per-mode foot.
+//                One skeleton covers four modes (verdict / Apple-seeded base / calibrating / waiting).
+//   (c) METRICS — «Métricas de hoy» (`iosMetricsSection`): a 2×4 grid of themed tiles, each value
+//                in its data colour with a Δ-vs-7-day-average and a p25–p75 typical-range mini-band.
 //
-// Sparse series (weight) fall back to ALL history so a tile never shows an empty
-// state when data exists. Only locked StrandDesign components are used.
+// The dark legacy dashboard (RecoveryRing/StatTile grid/workouts) was removed once the redesign
+// shipped; this file is now «Instrumento»-only.
 
 /// Identifiable wrapper so the light «Instrumento» Detalle de Sueño can ride `.sheet(item:)` from Today
 /// (the model itself isn't Identifiable). Mirrors the one Cuerpo uses. (FER-251)
@@ -89,10 +86,6 @@ struct TodayView: View {
     /// agotar el pulgar (el dial mide 180); el «feel» fino se confirma en el iPhone (FER-222).
     private let pullThreshold: CGFloat = 96
     #endif
-
-    // Imperial/Metric display preference (D#103). Only the Weight tile carries a convertible unit here.
-    @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
-    private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
 
     @State private var appleDays: [AppleDaily] = []
     // Apple-Health daily metric rows (sleep/HRV/RHR/SpO₂) read straight from the apple-health source,
