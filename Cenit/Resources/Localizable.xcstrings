@@ -30182,6 +30182,213 @@
           }
         }
       }
+    },
+    "Tomorrow, if you rest the same": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tomorrow, if you rest the same"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mañana, si descansas igual"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Morgen, bei gleicher Erholung"
+          }
+        }
+      }
+    },
+    "A simple projection from your recent recovery trend (a moving average plus a damped recent slope), nudged down a little by any standing sleep debt. It's a trend, not a guarantee — what you do today matters most — and it needs about two weeks of history before it'll show. (De Sabbata & Simonini, J Healthcare Informatics Research, 2025)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A simple projection from your recent recovery trend (a moving average plus a damped recent slope), nudged down a little by any standing sleep debt. It's a trend, not a guarantee — what you do today matters most — and it needs about two weeks of history before it'll show. (De Sabbata & Simonini, J Healthcare Informatics Research, 2025)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una proyección simple desde tu tendencia reciente de recuperación (un promedio móvil más una pendiente reciente amortiguada), ajustada un poco hacia abajo por la deuda de sueño acumulada. Es una tendencia, no una garantía —lo que hagas hoy es lo que más cuenta— y necesita unas dos semanas de historial antes de aparecer. (De Sabbata & Simonini, J Healthcare Informatics Research, 2025)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eine einfache Projektion aus deinem jüngsten Erholungstrend (ein gleitender Durchschnitt plus eine gedämpfte jüngste Steigung), leicht nach unten korrigiert durch ein bestehendes Schlafdefizit. Es ist ein Trend, keine Garantie – was du heute tust, zählt am meisten – und es braucht etwa zwei Wochen Verlauf, bevor es erscheint. (De Sabbata & Simonini, J Healthcare Informatics Research, 2025)"
+          }
+        }
+      }
+    },
+    "Information about tomorrow's forecast": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Information about tomorrow's forecast"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Información sobre el pronóstico de mañana"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informationen zur Prognose für morgen"
+          }
+        }
+      }
+    },
+    "likely range": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "likely range"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "rango probable"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "wahrscheinlicher Bereich"
+          }
+        }
+      }
+    },
+    "A trend projection, not a guarantee. Tomorrow depends most on what you do today.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A trend projection, not a guarantee. Tomorrow depends most on what you do today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Proyección de tendencia, no una garantía. Lo de mañana depende sobre todo de lo que hagas hoy."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eine Trendprojektion, keine Garantie. Morgen hängt vor allem davon ab, was du heute tust."
+          }
+        }
+      }
+    },
+    "Still calibrating": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Still calibrating"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún calibrando"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch in Kalibrierung"
+          }
+        }
+      }
+    },
+    "We need about two weeks of data to project this.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We need about two weeks of data to project this."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Necesita ~2 semanas de datos para proyectar."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wir brauchen etwa zwei Wochen Daten für eine Projektion."
+          }
+        }
+      }
+    },
+    "rising": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "rising"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "subiendo"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "steigend"
+          }
+        }
+      }
+    },
+    "falling": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "falling"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bajando"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "fallend"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

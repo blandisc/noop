@@ -18,6 +18,16 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
+    # FER-277 — Detalle de Recuperación: bloque de pronóstico «Mañana, si descansas igual»
+    'Tomorrow, if you rest the same': 'Mañana, si descansas igual',
+    "A simple projection from your recent recovery trend (a moving average plus a damped recent slope), nudged down a little by any standing sleep debt. It's a trend, not a guarantee — what you do today matters most — and it needs about two weeks of history before it'll show. (De Sabbata & Simonini, J Healthcare Informatics Research, 2025)": 'Una proyección simple desde tu tendencia reciente de recuperación (un promedio móvil más una pendiente reciente amortiguada), ajustada un poco hacia abajo por la deuda de sueño acumulada. Es una tendencia, no una garantía —lo que hagas hoy es lo que más cuenta— y necesita unas dos semanas de historial antes de aparecer. (De Sabbata & Simonini, J Healthcare Informatics Research, 2025)',
+    "Information about tomorrow's forecast": 'Información sobre el pronóstico de mañana',
+    'likely range': 'rango probable',
+    'A trend projection, not a guarantee. Tomorrow depends most on what you do today.': 'Proyección de tendencia, no una garantía. Lo de mañana depende sobre todo de lo que hagas hoy.',
+    'Still calibrating': 'Aún calibrando',
+    'We need about two weeks of data to project this.': 'Necesita ~2 semanas de datos para proyectar.',
+    'rising': 'subiendo',
+    'falling': 'bajando',
     # FER-264 — Tendencia: comparar contra el periodo previo del mismo largo + excluir el día en curso
     '%@ vs last week': '%@ vs la semana pasada',
     '%@ vs last quarter': '%@ vs el trimestre pasado',

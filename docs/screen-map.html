@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-18 · detalle: procedencia Apple Salud</span>
+  <span class="tb-updated">Actualizado 2026-06-18 · FER-277</span>
 </div>
 
 <div id="wrapper">
@@ -781,14 +781,15 @@ const SCREENS = [
     icon: '🟢', color: '#0C8F62',
     isSheet: true,
     states: [
-      { label: 'Con datos: 8 bloques con ⓘ (orden FER-237) — Hero (score por banda) · Qué lo explica (driver vs base + peso) · Rango normal · Calendario 90d (YearHeatStrip re-tintado, a todo el ancho) · Consistencia (CV) · Carga reciente (ACWR/monotonía, contexto SIN claim de lesión · Impellizzeri 2020) · Tendencia (pills + Prom/Mediana/Mín/Máx/σ) · Ver el método', type: 'data' },
+      { label: 'Con datos: 9 bloques con ⓘ (orden FER-237/277) — Hero (score por banda) · Qué lo explica (driver vs base + peso) · Mañana si descansas igual (pronóstico RecoveryForecast: ~X + rango + dirección en tinta + «no garantía» · FER-188/277) · Rango normal · Calendario 90d (YearHeatStrip re-tintado, a todo el ancho) · Consistencia (CV) · Carga reciente (ACWR/monotonía, contexto SIN claim de lesión · Impellizzeri 2020) · Tendencia (pills + Prom/Mediana/Mín/Máx/σ) · Ver el método', type: 'data' },
+      { label: 'Pronóstico calibrando (FER-277): en «Con datos» pero sin ~2 semanas de base válida → el bloque «Mañana, si descansas igual» muestra «Aún calibrando» en su lugar', type: 'loading' },
       { label: 'Calendario táctil (FER-235): tocar un día → aro de selección + lectura «fecha · puntaje (color de banda) · estado» debajo; sin lectura → «sin lectura». YearHeatStrip.onSelect (tap-only, no rompe el scroll).', type: 'data' },
       { label: 'Calibrando: RecoveryScorer.calibrationNights en [1,4) → «N / 4 noches» + barra, sin gráficas', type: 'loading' },
       { label: 'Cargando: model.loaded == false (well con spinner)', type: 'loading' },
       { label: 'Sin datos / offline: sin score y sin historia → hero «—» con copy honesto (no promete datos)', type: 'empty' },
     ],
     nav: [],
-    components: ['InfoAccordion (ⓘ por bloque)', 'Hero en color de banda (RecoveryScorer.band: verdict/warning/critical)', 'Drivers (ReadinessEngine.signals + pesos RecoveryScorer.w*) con barra peso=largo/estado=color', 'TrendChart (media móvil 7d decimada) + ComparisonEngine (Prom/Mediana/Mín/Máx/σ)', 'YearHeatStrip re-tintado + YearHeatStrip.weekColumns (a todo el ancho)', 'SegmentedPillControl (ExploreRange)', 'RecoveryDetailModel (build desde repo · sin DB)', 'InstrumentoTheme explícito · sin NavigationStack anidado (FER-171)'],
+    components: ['InfoAccordion (ⓘ por bloque)', 'Hero en color de banda (RecoveryScorer.band: verdict/warning/critical)', 'Drivers (ReadinessEngine.signals + pesos RecoveryScorer.w*) con barra peso=largo/estado=color', 'TrendChart (media móvil 7d decimada) + ComparisonEngine (Prom/Mediana/Mín/Máx/σ)', 'YearHeatStrip re-tintado + YearHeatStrip.weekColumns (a todo el ancho)', 'SegmentedPillControl (ExploreRange)', 'RecoveryForecast (StrandAnalytics: pronóstico a 1 día · FER-188) + chip de dirección en tinta', 'RecoveryDetailModel (build desde repo · sin DB · recibe importedSleep para la deuda del pronóstico)', 'InstrumentoTheme explícito · sin NavigationStack anidado (FER-171)'],
   },
   {
     id: 'strain-detail', x: 792, y: 3470,
