@@ -32,6 +32,34 @@ final class StrainScorerTests: XCTestCase {
         XCTAssertEqual(s!, 9.3, accuracy: 1e-2)
     }
 
+    func testSampleDurationUsesMedianNotFirstPair() {
+        // First pair is a 60 s gap (strap reconnect); the rest are 1 Hz.
+        // The robust estimate is the MEDIAN plausible spacing (1 s), not the
+        // first pair (60 s). 1 s = 1/60 min.
+        var samples = [HRSample(ts: 0, bpm: 100)]
+        samples += (0..<10).map { HRSample(ts: 60 + $0, bpm: 100) }
+        XCTAssertEqual(StrainScorer.sampleDurationMinutes(samples), 1.0 / 60.0, accuracy: 1e-9)
+    }
+
+    func testStrainUnaffectedByInitialGap() {
+        // TRIMP load via the Edwards 5-zone summation (Edwards 1993). A single
+        // early gap (strap reconnect; a distant first sample at ~1 Hz) must NOT
+        // rescale the whole day's strain — per-sample duration now derives from
+        // the median plausible spacing, not the first timestamp pair.
+        let clean = hr(185, 600)                            // 600 z5 samples @ 1 Hz
+        let baseline = StrainScorer.strain(clean, maxHR: 190, restingHR: 60)!
+        XCTAssertEqual(baseline, 9.3, accuracy: 1e-2)       // golden reference
+
+        // Same 600 samples, but the first sits 60 s before the rest.
+        var gapped = [HRSample(ts: 0, bpm: 185)]
+        gapped += (0..<599).map { HRSample(ts: 60 + $0, bpm: 185) }
+        let withGap = StrainScorer.strain(gapped, maxHR: 190, restingHR: 60)!
+
+        // Before the fix this jumped to 18.93 (≈2×). Now within ±1% of baseline.
+        XCTAssertEqual(withGap, baseline, accuracy: baseline * 0.01)
+        XCTAssertLessThan(withGap, 10.0)                    // nowhere near the old 18.93
+    }
+
     func testStrainReturnsNilTooFewReadings() {
         XCTAssertNil(StrainScorer.strain(hr(150, 599), maxHR: 190, restingHR: 60))
     }
