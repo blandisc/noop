@@ -661,18 +661,17 @@ const SCREENS = [
   // ── ROW 4: App (y = 2660) ─────────────────
   {
     id: 'coach', x: 30, y: 2660,
-    name: 'Coach', desc: 'LLM coaching (OpenAI / Anthropic)',
-    file: 'Cenit/Screens/CoachView.swift',
-    icon: '🤖', color: '#9B8FFF',
+    name: 'Coach · el Bucle', desc: 'Una pantalla «Instrumento»: Decisión de hoy + palancas + hallazgos + registro + efectos (InsightEngine, FER-292)',
+    file: 'Cenit/Screens/BucleView.swift',
+    icon: '✨', color: '#9B8FFF',
     states: [
-      { label: 'Sin clave API', type: 'empty' },
-      { label: 'Sin consentimiento', type: 'warn' },
-      { label: 'Vacío (consentido)', type: 'data' },
-      { label: 'Con mensajes', type: 'data' },
-      { label: 'Error (API / red)', type: 'err' },
+      { label: 'Arranque en frío (X de 14 noches)', type: 'empty' },
+      { label: 'Con datos', type: 'data' },
+      { label: 'Sin hallazgos', type: 'data' },
+      { label: 'Pregúntale → chat LLM externo (CoachView, preservado)', type: 'data' },
     ],
     nav: [],
-    components: ['Setup Card (provider/model/key)', 'Consent Bar (toggle)', 'Transcript (bubbles)', 'Suggestion Chips (scroll H)', 'Composer + send button', 'Privacy Footnote'],
+    components: ['Decisión de hoy (héroe-frase + % recuperación)', 'Pregúntale entry → CoachView (.sheet)', 'Lo que funciona en ti (leverRow + Ver las N)', 'Hallazgos (findingRow + Ver los N)', 'Anota tu día (resumen → AnotaTuDiaSheet Sí/No)', 'Efectos de tus hábitos (EfectosExplorerSheet + SegmentedPillControl)', 'PalancaDetailSheet (evidencia)'],
   },
   {
     id: 'settings', x: 284, y: 2660,

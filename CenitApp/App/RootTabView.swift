@@ -56,14 +56,11 @@ struct RootTabView: View {
             lazyTab(.today, "Today", "circle.hexagongrid.fill") { TodayView() }
             lazyTab(.body,  "Body",  "chart.xyaxis.line") { CuerpoView() }
 
-            // Coach — interim hub: the three insight surfaces, seed of the unified Coach layer.
-            hubTab(.coach, "Coach", "sparkles", path: $coachStack) {
-                Section {
-                    row(.intelligence, "Intelligence", "brain.head.profile")
-                    row(.insights,     "Insights",     "lightbulb.fill")
-                    row(.coach,        "Coach",        "sparkles")
-                }
-            }
+            // Coach — «el Bucle» (FER-292): one «Instrumento diurno» screen fed by the InsightEngine
+            // (FER-290), replacing the old 3-row hub (Intelligence · Insights · Coach). It's a LIGHT
+            // tab now (warm paper), so it joins Hoy/Cuerpo in `isLightTab`. The external LLM chat is
+            // preserved — «Pregúntale a tus datos» opens `CoachView` as a sheet from inside BucleView.
+            lazyTab(.coach, "Coach", "sparkles") { BucleView() }
 
             // Entrenar — interim hub: live workout (FER-197) + the active-session tools.
             hubTab(.train, "Train", "figure.strengthtraining.functional", path: $trainStack) {
@@ -174,7 +171,7 @@ struct RootTabView: View {
     /// via `isTodayActive` and the instrument bar's `isLight`). Hoy and Cuerpo — the «historia» landing
     /// is warm paper too (FER-186), color only on the datum; every other tab is the dark instrument
     /// panel. (En vivo's light paper lives in a cover over Hoy, not a tab.)
-    private func isLightTab(_ tab: Tab) -> Bool { tab == .today || tab == .body }
+    private func isLightTab(_ tab: Tab) -> Bool { tab == .today || tab == .body || tab == .coach }
 
     /// The hub tab that owns a given secondary screen (for debug navigation).
     private func hub(for screen: SecondaryScreen) -> Tab {
