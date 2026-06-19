@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Hoy: el rótulo «El veredicto de hoy» se lee un poco más / Today: the "Today's verdict" label reads a touch louder.**
+  **ES** — El pequeño rótulo arriba del dial, «El veredicto de hoy», ahora es un punto más grande y con un poco más de peso, para que oriente mejor de un vistazo — sin robarle protagonismo al número grande de recuperación.
+  **EN** — The small label above the dial, "Today's verdict," is now a touch larger and a bit heavier so it orients you better at a glance — without stealing focus from the big recovery number.
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift), [Packages/StrandDesign/Sources/StrandDesign/Instrumento.swift](Packages/StrandDesign/Sources/StrandDesign/Instrumento.swift))
+
 - **Hoy: el pulso vivo sube junto al veredicto y la pantalla cabe mejor / Today: the live pulse moves up beside the verdict, and the screen fits better.**
   **ES** — La pequeña etiqueta «Today» que estaba sobre los recuadros se quitó, así que la rejilla de métricas sube y Hoy cabe mejor en una pantalla. Y el **pulso vivo** (la pastilla con tus bpm) dejó de vivir sobre los recuadros: ahora se sienta **junto a la palabra del veredicto** —«Exigido», «Equilibrado»…—, que sigue centrada, con el pulso anclado a la derecha. Sigue tocable para abrir el monitor latido a latido. Si la palabra es muy larga (o usas letra grande), el pulso baja debajo en vez de encimarse.
   **EN** — The small "Today" label that sat above the tiles is gone, so the metrics grid moves up and Today fits a screen better. And the **live pulse** (the pill with your bpm) no longer lives above the tiles: it now sits **next to the verdict word** — "Strained," "Balanced"… — which stays centered, with the pulse anchored to the right. Still tappable to open the beat-by-beat monitor. If the word is long (or you use large text), the pulse drops below instead of overlapping.

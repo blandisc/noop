@@ -714,7 +714,9 @@ struct TodayView: View {
     @ViewBuilder private var heroInstrument: some View {
         let state = heroState
         VStack(spacing: NoopMetrics.gap) {
-            Text(heroOverline(state)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            // FER-283: la overline del héroe sube a `instrumentoOverlineProminent` (13/semibold) en tinta
+            // secundaria — un punto más de presencia, sin competir con el numeral dominante.
+            Text(heroOverline(state)).instrumentoOverlineProminent().foregroundStyle(theme.inkSecondary)
                 .frame(maxWidth: .infinity, alignment: .center)
             // Instrumento concéntrico (FER-169): el numeral domina el CENTRO del dial de 24h, no a su lado.
             // Sin número que medir (em-dash) el dial es el protagonista; con número, el dato vive dentro del
