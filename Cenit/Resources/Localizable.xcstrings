@@ -2,6 +2,52 @@
   "sourceLanguage": "en",
   "strings": {
     "": {},
+    "Descargando la noche…": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Letzte Nacht wird heruntergeladen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloading last night…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descargando la noche…"
+          }
+        }
+      }
+    },
+    "Tus datos de anoche están llegando. La primera sincronización del día puede tardar unos minutos.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Daten von letzter Nacht treffen ein. Die erste Synchronisierung des Tages kann ein paar Minuten dauern."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your data from last night is arriving. The first sync of the day can take a few minutes."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus datos de anoche están llegando. La primera sincronización del día puede tardar unos minutos."
+          }
+        }
+      }
+    },
     "%lld packets": {
       "extractionState": "manual",
       "localizations": {

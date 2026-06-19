@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Hoy: «Descargando la noche…» en vez de «Falta la lectura de hoy» mientras sincroniza / Today: "Downloading last night…" instead of "Today's reading is missing" while it syncs.**
+  **ES** — En la mañana, mientras tu banda todavía está bajando el historial de la noche, Hoy decía «Falta la lectura de hoy / Usa tu banda…» —confuso, porque sí traes la banda y el dato viene en camino—. Ahora, mientras descarga, el Hero dice la verdad: **«Descargando la noche…»**, con el dial girando, y «Tus datos de anoche están llegando. La primera sincronización del día puede tardar unos minutos.». En cuanto termina y se calcula tu recuperación, aparece el veredicto.
+  **EN** — In the morning, while your strap is still pulling down the night's history, Today used to say "Today's reading is missing / Wear your strap…" — confusing, since you *are* wearing it and the data is on its way. Now, while it downloads, the hero tells the truth: **"Downloading last night…"**, with the dial spinning, and "Your data from last night is arriving. The first sync of the day can take a few minutes." As soon as it finishes and your recovery is computed, the verdict appears.
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **Hoy: el rótulo «El veredicto de hoy» se lee un poco más / Today: the "Today's verdict" label reads a touch louder.**
   **ES** — El pequeño rótulo arriba del dial, «El veredicto de hoy», ahora es un punto más grande (no más pesado) y respira un poco más de aire arriba, para que oriente mejor de un vistazo — sin robarle protagonismo al número grande de recuperación.
   **EN** — The small label above the dial, "Today's verdict," is now a touch larger (not heavier) and sits with a bit more breathing room up top, so it orients you better at a glance — without stealing focus from the big recovery number.
