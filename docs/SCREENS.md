@@ -33,7 +33,7 @@ git config core.hooksPath .githooks
 Tab shell (FER-182) → 5 pestañas: Hoy · Cuerpo · Coach · Entrenar · Ajustes
   Hoy      → TodayView
   Cuerpo   → CuerpoView (landing curado de la capa «historia», FER-186)
-  Coach    → hub-lista → IntelligenceView · InsightsView · CoachView
+  Coach    → BucleView (pantalla única «el Bucle», FER-292; reemplaza el hub Intelligence · Insights · Coach)
   Entrenar → hub-lista → «Iniciar en vivo» (LiveWorkoutHubRow) · BreathingView · IntervalTimerView
   Ajustes  → SettingsView + sección «Más» → MetricExplorerView · CompareView ·
              WorkoutsView · AppleHealthView · DataSourcesView · AutomationsView · SupportView
@@ -364,18 +364,31 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 
 ---
 
-### InsightsView
-**Archivo:** `Cenit/Screens/InsightsView.swift`  
-**Descripción:** Correlaciones — comportamientos que afectan recovery/HRV/sleep/RHR (Pearson r, Cohen's d).
+### BucleView — «el Bucle» (Coach)
+**Archivo:** `Cenit/Screens/BucleView.swift` (+ `Cenit/Screens/BucleSheets.swift`)  
+**Descripción:** La pestaña Coach como **una sola pantalla «Instrumento diurno»** (FER-292), alimentada por el `InsightEngine` determinista (FER-290). Reemplaza el hub de 3 filas (Intelligence · Insights · Coach). Tab **clara** (papel cálido; entra en `isLightTab` → status bar correcto). Color SOLO en el dato: el % del veredicto, los efectos con signo (verde = te ayuda / rojo = te cuesta) y el datum de los hallazgos.
 
 | Estado | Condición de entrada |
 |--------|---------------------|
-| Calculando | Correlaciones en proceso |
-| Sin journal | Sin entradas de journal |
-| Con comportamientos | Journal + outcomes disponibles |
-| Correlaciones (Pearson r) | Métricas cruzadas calculadas |
+| Arranque en frío | Sin veredicto aún (`ReadinessEngine.insufficient`) → «Aún reuniendo señal · X de 14 noches»; solo se muestra «Pregúntale» |
+| Con datos | Veredicto + palancas + hallazgos + registro + efectos |
+| Sin hallazgos | Hay datos pero el motor no encontró hallazgos → «Todo en orden, sin hallazgos nuevos» |
 
-**Componentes:** `JournalLogCard`, `Behavior Effects Cards (Cohen's d)`, `RBar chart (Pearson r)`, `Metric Relationships Card`
+**Secciones:** Header (`Coach · fecha` + badge «On-device») · **Decisión de hoy** (héroe-frase del `ReadinessEngine` + recuperación como evidencia) · **Pregúntale a tus datos** (única puerta al chat LLM externo `CoachView`, presentado como `.sheet`) · **Lo que funciona en ti** (palancas curadas del `InsightEngine`, top 2 + «Ver las N») · **Hallazgos** (anomalía/tendencia/relación/pronóstico, topados + «Ver los N») · **Anota tu día** (resumen → hoja Sí/No tri-estado, escribe al journal existente) · **Efectos de tus hábitos** (explorador histórico por métrica).  
+**Hojas (`BucleSheets.swift`):** `PalancaDetailSheet` (evidencia: muestra, significancia, tamaño de efecto, confianza) · `HallazgosListSheet` · `EfectosExplorerSheet` (selector de métrica) · `AnotaTuDiaSheet` (Hoy/Ayer + Sí/No).  
+**Navegación:** `RootTabView` la monta como `lazyTab(.coach)` directo (ya no `hubTab`). El chat LLM externo se preserva intacto (`AICoachEngine` + Keychain).
+
+---
+
+### InsightsView — retirada de navegación (FER-292)
+**Archivo:** `Cenit/Screens/InsightsView.swift`  
+**Descripción:** Correlaciones — comportamientos que afectan recovery/HRV/sleep/RHR (Pearson r, Cohen's d). **Ya no está en la navegación:** su contenido lo surte ahora el Bucle (Lo que funciona en ti / Hallazgos / Efectos de tus hábitos) vía el `InsightEngine`. El archivo se conserva (no se borra en FER-292).
+
+---
+
+### IntelligenceView — retirada de navegación (FER-292)
+**Archivo:** `Cenit/Screens/IntelligenceView.swift`  
+**Descripción:** Explicador de cómo se computan los scores on-device. **Ya no está en la navegación** tras el rediseño del Bucle; el archivo se conserva.
 
 ---
 
