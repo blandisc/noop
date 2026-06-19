@@ -85,8 +85,11 @@ public enum SleepRegularity {
     ///   - calendar: injected for testability (weekday classification + minute-of-day). Defaults to `.current`.
     public static func compute(_ nights: [NightTiming],
                                calendar: Calendar = .current) -> Result? {
+        // Drop naps before anything else: a nap is near anti-phase to the nocturnal mid-sleep and
+        // would wreck the SD, so only "main nights" feed schedule regularity (FER-298, SleepMainNight).
+        let mainNights = nights.filter { SleepMainNight.qualifies(startTs: $0.onset, endTs: $0.wake) }
         // Most-recent-first, then take the rolling window.
-        let ordered = nights.sorted { $0.onset > $1.onset }
+        let ordered = mainNights.sorted { $0.onset > $1.onset }
         let window = Array(ordered.prefix(windowNights))
         guard window.count >= minNights else { return nil }
 

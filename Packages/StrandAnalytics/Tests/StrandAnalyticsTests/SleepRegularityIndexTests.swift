@@ -72,6 +72,29 @@ final class SleepRegularityIndexTests: XCTestCase {
         XCTAssertNil(AnalyticsEngine.decodeStages("[]"))
     }
 
+    // MARK: a nap is excluded so it can't tank the SRI (FER-298)
+    //
+    // fromSessions applies the "main night" gate (≥ 3 h, SleepMainNight): a short daytime sleep is
+    // near anti-phase to the nocturnal sleep (Phillips 2017 / Windred 2024 measure the MAIN sleep
+    // period) and would drag the 24 h concordance down. Fixed vector: 8 steady nights + one 2 h nap →
+    // the same SRI as the 8 nights alone.
+
+    func test_fromSessions_napExcluded() {
+        func session(day: Int, startH: Double, durH: Double) -> CachedSleepSession {
+            let start = base + day * 86_400 + Int(startH * 3600)
+            return .init(startTs: start, endTs: start + Int(durH * 3600), efficiency: nil,
+                         restingHr: nil, avgHrv: nil, stagesJSON: nil)
+        }
+        let nights = (0..<8).map { session(day: $0, startH: 23, durH: 8) }   // 23:00–07:00 every night
+        let nap = session(day: 3, startH: 15, durH: 2)                       // 2 h afternoon nap
+
+        let withoutNap = SleepRegularityIndex.fromSessions(nights)
+        let withNap = SleepRegularityIndex.fromSessions(nights + [nap])
+        XCTAssertNotNil(withNap)
+        XCTAssertEqual(withNap!, withoutNap!, accuracy: 1e-6, "the 2 h nap must not change the SRI")
+        XCTAssertGreaterThan(withNap!, 98, "a steady schedule stays steady despite the nap")
+    }
+
     // MARK: the builder prefers a real SRI over the duration proxy
 
     func test_builder_sriOverridesProxy() {
