@@ -76,7 +76,11 @@ public enum SleepRegularityIndex {
     /// stage totals). nil → insufficient coverage. Pure: the app layer only supplies `repo.sleeps`.
     public static func fromSessions(_ sessions: [CachedSleepSession]) -> Double? {
         var intervals: [AsleepInterval] = []
-        for s in sessions where s.endTs > s.startTs {
+        // Same "main night" gate as SleepRegularity (FER-298): a nap is near anti-phase to the
+        // nocturnal sleep and must not count as a night when scoring schedule regularity. Filtered at
+        // the SESSION level (one session = one night/nap), never inside `compute(asleepIntervals:)` —
+        // that one receives sub-night hypnogram spans, which are legitimately short.
+        for s in sessions where SleepMainNight.qualifies(startTs: s.startTs, endTs: s.endTs) {
             if let segs = AnalyticsEngine.decodeStages(s.stagesJSON) {
                 for seg in segs where seg.stage != "wake" && seg.stage != "awake" && seg.end > seg.start {
                     intervals.append(.init(start: seg.start, end: seg.end))

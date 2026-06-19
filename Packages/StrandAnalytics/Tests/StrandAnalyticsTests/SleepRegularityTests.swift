@@ -122,6 +122,30 @@ final class SleepRegularityTests: XCTestCase {
         XCTAssertNil(r.weekendShiftMinutes, "no weekend nights → shift undefined")
     }
 
+    // MARK: - Naps must not degrade schedule regularity (FER-298)
+    //
+    // A nap is a short daytime sleep whose mid-point sits ~11 h from the nocturnal mid-sleep — near
+    // anti-phase on the 24 h clock circle (Roenneberg 2006; Mardia & Jupp 2000). Counted as a "night"
+    // it would explode the circular SD. The "main night" gate (≥ 3 h, SleepMainNight) drops it, so a
+    // perfectly steady sleeper stays steady. Fixed vector: 13 identical nights + one 2 h afternoon nap
+    // → the same score as the 13 nights alone (regression of the reported SD 126.9 / score 0).
+
+    func testNapDoesNotDegradeRegularity() {
+        let steady = (0..<13).map { i in
+            night(String(format: "2026-03-%02d", i + 1), onsetHour: 23, hours: 8)
+        }
+        let nap = night("2026-03-07", onsetHour: 15, hours: 2)   // 15:00–17:00, ~11 h off the night mid
+
+        let withoutNap = SleepRegularity.compute(steady, calendar: cal)!
+        let withNap = SleepRegularity.compute(steady + [nap], calendar: cal)!
+
+        XCTAssertEqual(withNap.midSleepSDMinutes, withoutNap.midSleepSDMinutes, accuracy: 1e-6,
+                       "a 2 h nap must not change the mid-sleep SD")
+        XCTAssertEqual(withNap.score, withoutNap.score, "a 2 h nap must not change the score")
+        XCTAssertEqual(withNap.score, 100, "13 identical nights stay perfectly regular despite the nap")
+        XCTAssertEqual(withNap.nights, 13, "the nap is excluded from the window")
+    }
+
     // MARK: - Rolling window: only the most recent 14 nights count
 
     func testUsesOnlyMostRecentWindow() {
