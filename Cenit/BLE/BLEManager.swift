@@ -110,6 +110,11 @@ public final class BLEManager: NSObject, ObservableObject {
     private var backfiller: Backfiller?
     /// True while a historical offload session is in progress (frames route to Backfiller).
     private var backfilling = false
+    /// FER-287: decides whether to auto-fire the next offload session immediately when one closes with a
+    /// large backlog still pending — so a full disconnected night drains hands-off instead of the user
+    /// tapping "Sync" dozens of times. Pure policy (`WhoopProtocol`); re-armed on every non-`.drain`
+    /// (rate-limited) start in `requestSync`, consumed in `exitBackfilling`.
+    private var drainPolicy = DrainContinuationPolicy()
     /// Safety-net detector: strap reports newer data than us AND our frontier frozen 10 min ⇒ flag for
     /// reboot. behindGapSeconds avoids false positives when off-wrist / caught up. Insurance only.
     private var stuckDetector = StuckStrapDetector(stuckAfterSeconds: 600, behindGapSeconds: 300)
@@ -757,11 +762,15 @@ public final class BLEManager: NSObject, ObservableObject {
         backfillAbsoluteTimeout = nil
         backfillFrameQueue.removeAll()
         log("Backfill: session ended — reason=\(reason)")
+        // FER-287: capture this session's type-47 total BEFORE any re-fire below resets the receipt
+        // (beginBackfill clears it). This is the "how much backlog did we just drain?" signal.
+        let sessionBiometricFrames = state.syncReceipt.biometricFrames
         // Honest sync outcome for a cloud-free user (mirrors Android exitBackfilling, ed6a31d). The
         // reason→outcome policy is the pure `syncSessionOutcome` below so it's unit-testable without a
         // strap. A disconnect mid-sync bypasses this path entirely (didDisconnectPeripheral resets the
         // flags directly) — that's `.silent`, not a sync failure, and the next connect re-offloads.
-        switch BLEManager.syncSessionOutcome(reason: reason) {
+        let outcome = BLEManager.syncSessionOutcome(reason: reason)
+        switch outcome {
         case .completed:
             state.lastSyncedAt = Date().timeIntervalSince1970
             state.lastSyncError = nil
@@ -773,6 +782,21 @@ public final class BLEManager: NSObject, ObservableObject {
             break
         }
         checkStrapLiveness()         // safety-net: strap ahead of us AND our frontier frozen ⇒ stuck?
+        // FER-287: a CLEAN session that still delivered a large backlog batch ⇒ fire the next session NOW,
+        // skipping the rate-limiter, until the strap comes back small / caught-up (or the chain cap). This
+        // is the whole feature: a night drains hands-off instead of tap-tap-tap. Safe by construction —
+        // re-uses SEND_HISTORICAL_DATA (no new outbound bytes), leans on the durable strap_trim cursor
+        // (zero data loss), and self-terminates (see DrainContinuationPolicy). `backfilling` is already
+        // false here, so the requestSync gate passes and beginBackfill arms a fresh session (new watchdog
+        // + 300 s cap + receipt). It's synchronous, so `state.backfilling` flips false→true within this
+        // run-loop turn — the «Descargando la noche…» hero (FER-286) never flickers between chained sessions.
+        if outcome == .completed,
+           drainPolicy.shouldContinue(completedCleanly: true,
+                                      caughtUp: reason == "caught-up",
+                                      sessionBiometricFrames: sessionBiometricFrames) {
+            log("Backfill: drain-continue #\(drainPolicy.chainLength) — last session had \(sessionBiometricFrames) type-47 frames")
+            requestSync(.drain)
+        }
     }
 
     /// What a finished offload session means to the user, by teardown reason — pure, so the policy is
@@ -924,6 +948,9 @@ public final class BLEManager: NSObject, ObservableObject {
         }
         if beginBackfill() {
             UserDefaults.standard.set(now, forKey: BLEManager.backfillLastAtKey)
+            // FER-287: a fresh, rate-limited start (anything but a chained .drain) re-arms the drain chain
+            // so each new drain gets the full maxChain budget; a .drain keeps the running count.
+            if trigger != .drain { drainPolicy.reset() }
         }
     }
 
