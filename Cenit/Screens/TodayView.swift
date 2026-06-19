@@ -832,7 +832,7 @@ struct TodayView: View {
             verdictBody
         case .importedBaseline:
             VStack(alignment: .center, spacing: NoopMetrics.space2) {
-                appleBaseChip
+                withPulsePill { appleBaseChip }   // FER-282: pulso a la derecha si hay strap visto
                 Text("Falta la lectura de hoy")
                     .font(StrandFont.headline).foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
@@ -844,7 +844,7 @@ struct TodayView: View {
             .frame(maxWidth: .infinity)
         case .calibrating(let nights):
             VStack(alignment: .center, spacing: NoopMetrics.gap) {
-                calibrationDots(nights: nights)
+                withPulsePill { calibrationDots(nights: nights) }   // FER-282
                 Text(calibrationDetailCopy(nights: nights))
                     .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -853,9 +853,11 @@ struct TodayView: View {
             .frame(maxWidth: .infinity)
         case .waiting:
             VStack(alignment: .center, spacing: NoopMetrics.space2) {
-                Text(strapSeen ? "Aún no hay lectura de hoy" : "Aún no hay lectura")
-                    .font(StrandFont.headline).foregroundStyle(theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
+                withPulsePill {   // FER-282: con strap visto, el pulso vivo acompaña el titular
+                    Text(strapSeen ? "Aún no hay lectura de hoy" : "Aún no hay lectura")
+                        .font(StrandFont.headline).foregroundStyle(theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 Text(strapSeen
                      ? "Tu base está lista. Usa el strap esta noche y la recuperación, el esfuerzo y el sueño de la mañana aparecen al sincronizar."
                      : "Conecta tu strap WHOOP para ver la disposición, la recuperación y la frecuencia cardiaca de la mañana.")
@@ -873,22 +875,26 @@ struct TodayView: View {
     @ViewBuilder private var verdictBody: some View {
         let r = readiness
         if r.level != .insufficient {
-            Button { showWhyVerdict = true } label: {
-                HStack(spacing: NoopMetrics.space2) {
-                    Text(r.headline).font(StrandFont.title2).fontWeight(.semibold)
-                        .foregroundStyle(verdictDataColor(r.level))
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Image(systemName: "info.circle").font(.system(size: 15))
-                        .foregroundStyle(theme.inkTertiary)
+            // FER-282: la palabra del veredicto + «i» quedan CENTRADAS en el eje del dial y la pastilla
+            // de pulso vivo se ancla a la derecha en la misma línea (`withPulsePill`).
+            withPulsePill {
+                Button { showWhyVerdict = true } label: {
+                    HStack(spacing: NoopMetrics.space2) {
+                        Text(r.headline).font(StrandFont.title2).fontWeight(.semibold)
+                            .foregroundStyle(verdictDataColor(r.level))
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Image(systemName: "info.circle").font(.system(size: 15))
+                            .foregroundStyle(theme.inkTertiary)
+                    }
+                    // Objetivo táctil HIG de 44pt (FER-276): el titular del veredicto + la «i» quedan
+                    // centrados en un área tocable de ≥44pt de alto, sin cambiar su tamaño visual.
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
                 }
-                // Objetivo táctil HIG de 44pt (FER-276): el titular del veredicto + la «i» quedan
-                // centrados en un área tocable de ≥44pt de alto, sin cambiar su tamaño visual.
-                .frame(minHeight: 44)
-                .contentShape(Rectangle())
+                .buttonStyle(.plain)
+                .accessibilityHint(Text("Abre por qué el veredicto se lee así"))
             }
-            .buttonStyle(.plain)
-            .accessibilityHint(Text("Abre por qué el veredicto se lee así"))
             if let bridge = r.bridge {
                 Text(bridge).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .multilineTextAlignment(.center)
@@ -1210,10 +1216,8 @@ struct TodayView: View {
         let anyMeasuredMissing = hrvR == nil || sleepR == nil || rhrR == nil || spo2R == nil || stepsFresh == nil
 
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-            // Encabezado compacto (FER-265): sello «Hoy» + sincronización inline (sube del pie), y el
-            // pulso vivo como chip tocable a la derecha. El título grande de 28pt se retiró para que el
-            // dato mande y la sección quepa. Ver `metricsHeader`.
-            metricsHeader
+            // FER-282: el sello «Today» se quitó y el pulso vivo se mudó a la línea del veredicto, así
+            // que el encabezado de métricas desaparece como fila y los tiles suben pegados al héroe.
             // Rejilla fija 2×8 (2 columnas, 8 tiles → 4 renglones), separación `NoopMetrics.gap`.
             LazyVGrid(columns: tileGrid, alignment: .leading, spacing: NoopMetrics.gap) {
                 // Esfuerzo del día — carga del día, sin valencia (Δ en tinta neutra).
@@ -1306,26 +1310,32 @@ struct TodayView: View {
         }
     }
 
-    /// El encabezado compacto de «Métricas de hoy» (FER-265/FER-278): sello «Hoy» (overline discreto) +
-    /// el chip de pulso vivo a la derecha. En Dynamic Type grande el chip baja a una segunda línea
-    /// (`ViewThatFits`). La sincronización ya NO vive aquí — subió a la línea de estado del `headerBlock`
-    /// (FER-278), así que el encabezado no la repite.
-    @ViewBuilder private var metricsHeader: some View {
-        // FER-278: el sello queda solo «Hoy» — la sincronización subió a la línea de estado del
-        // `headerBlock` (Hogar 1), así que el encabezado de métricas ya no la repite.
-        let sello = Text("Today").font(StrandFont.overline).tracking(StrandFont.overlineTracking)
-            .foregroundStyle(theme.inkSecondary)
-        let chip = Group {
-            if strapSeen {
-                LivePulsePill(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
+    /// La pastilla de pulso vivo (FER-194), reubicada del encabezado de métricas a la línea del héroe
+    /// (FER-282). Solo aparece con strap visto; tocarla abre el monitor latido-a-latido.
+    private var pulsePill: some View {
+        LivePulsePill(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
+    }
+
+    /// Ancla la pastilla de pulso a la DERECHA de una línea del héroe manteniendo el contenido CENTRADO
+    /// en el eje del dial: un placeholder invisible del mismo ancho a la izquierda hace de espejo. En
+    /// Dynamic Type grande, si la línea + la pastilla no caben, la pastilla baja debajo (`ViewThatFits`),
+    /// así la palabra nunca se descentra ni se encima. Sin strap, la línea va tal cual. (FER-282)
+    @ViewBuilder
+    private func withPulsePill<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        let line = content()
+        if strapSeen {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: NoopMetrics.space2) {
+                    pulsePill.hidden().accessibilityHidden(true)
+                    Spacer(minLength: NoopMetrics.space2)
+                    line
+                    Spacer(minLength: NoopMetrics.space2)
+                    pulsePill
+                }
+                VStack(spacing: NoopMetrics.space2) { line; pulsePill }
             }
-        }
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: NoopMetrics.space2) { sello; Spacer(minLength: NoopMetrics.space2); chip }
-            VStack(alignment: .leading, spacing: NoopMetrics.space2) {
-                HStack(spacing: NoopMetrics.space1) { sello; Spacer(minLength: 0) }
-                chip
-            }
+        } else {
+            line
         }
     }
 
