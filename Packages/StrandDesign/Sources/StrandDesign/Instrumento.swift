@@ -192,10 +192,11 @@ public enum InstrumentoType {
     /// Recommended tracking for `overline`.
     public static let overlineTracking: CGFloat = 0.6
 
-    /// One step up from `overline` (13pt semibold) for a section header that should
-    /// read a touch louder — e.g. the Today verdict's «EL VEREDICTO DE HOY». Still
-    /// clearly subordinate to the hero numeral (rule 1). Same tracking as `overline`. (FER-283)
-    public static let overlineProminent = Font.system(size: 13, weight: .semibold)
+    /// One step up from `overline` (14pt medium) for a section header that should
+    /// read a touch louder — e.g. the Today verdict's «EL VEREDICTO DE HOY». Bigger,
+    /// not heavier (medium, not semibold), so it stays clearly subordinate to the hero
+    /// numeral (rule 1). Same tracking as `overline`. (FER-283/284)
+    public static let overlineProminent = Font.system(size: 14, weight: .medium)
 }
 
 // MARK: - Text helpers
@@ -256,7 +257,7 @@ public extension Text {
                 Text("82").instrumentoHero(88).foregroundStyle(t.dataRecovery)
                 Text("Listo para un día fuerte").font(StrandFont.subhead).foregroundStyle(t.inkSecondary)
             }
-            // overline normal vs prominente (FER-283): la prominente sube a 13/semibold, tinta secundaria.
+            // overline normal vs prominente (FER-283/284): la prominente sube a 14/medium, tinta secundaria.
             VStack(alignment: .leading, spacing: 4) {
                 Text("El veredicto de hoy").instrumentoOverline().foregroundStyle(t.inkTertiary)
                 Text("El veredicto de hoy").instrumentoOverlineProminent().foregroundStyle(t.inkSecondary)

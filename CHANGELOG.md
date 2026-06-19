@@ -20,8 +20,8 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 ## Unreleased
 
 - **Hoy: el rótulo «El veredicto de hoy» se lee un poco más / Today: the "Today's verdict" label reads a touch louder.**
-  **ES** — El pequeño rótulo arriba del dial, «El veredicto de hoy», ahora es un punto más grande y con un poco más de peso, para que oriente mejor de un vistazo — sin robarle protagonismo al número grande de recuperación.
-  **EN** — The small label above the dial, "Today's verdict," is now a touch larger and a bit heavier so it orients you better at a glance — without stealing focus from the big recovery number.
+  **ES** — El pequeño rótulo arriba del dial, «El veredicto de hoy», ahora es un punto más grande (no más pesado) y respira un poco más de aire arriba, para que oriente mejor de un vistazo — sin robarle protagonismo al número grande de recuperación.
+  **EN** — The small label above the dial, "Today's verdict," is now a touch larger (not heavier) and sits with a bit more breathing room up top, so it orients you better at a glance — without stealing focus from the big recovery number.
   ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift), [Packages/StrandDesign/Sources/StrandDesign/Instrumento.swift](Packages/StrandDesign/Sources/StrandDesign/Instrumento.swift))
 
 - **Hoy: el pulso vivo sube junto al veredicto y la pantalla cabe mejor / Today: the live pulse moves up beside the verdict, and the screen fits better.**
