@@ -488,14 +488,6 @@ struct TodayView: View {
                 if showsSyncHint { syncHint }
             }
             .animation(reduceMotion ? nil : StrandMotion.fade, value: showsSyncHint)
-            // FER-294/FER-305: la frescura de sync vive abajo a la derecha (bajo el tile de Estrés), pero
-            // como OVERLAY — igual que la pista del chevron arriba — para NO consumir alto de layout. Así
-            // Hoy conserva su presupuesto vertical y cabe en una sola pantalla (FER-217); montarla como
-            // fila en flujo lo rebasaba y la barra la cortaba (regresión de FER-294).
-            .overlay(alignment: .bottomTrailing) {
-                SyncInline(backfilling: live.backfilling, chunks: live.syncChunksThisSession,
-                           lastSyncedAt: live.lastSyncedAt)
-            }
             // Inset superior `gap` (FER-202): el héroe queda alto pero respira; márgenes h/inferior estándar.
             .padding(.horizontal, NoopMetrics.screenPadding)
             .padding(.bottom, NoopMetrics.screenPadding)
@@ -1356,6 +1348,14 @@ struct TodayView: View {
                     .foregroundStyle(theme.inkSecondary)
                 }
                 .buttonStyle(.plain)
+            }
+            // FER-294: la frescura de sync (bajada del header) vive al pie de la rejilla, alineada a la
+            // derecha bajo el tile de Estrés. Reposo → glifo + «hace X»; backfill → glifo girando +
+            // «N paquetes». Apilada bajo el nudge de Apple Salud cuando éste aparece (sin encimarse).
+            HStack(spacing: 0) {
+                Spacer(minLength: 0)
+                SyncInline(backfilling: live.backfilling, chunks: live.syncChunksThisSession,
+                           lastSyncedAt: live.lastSyncedAt)
             }
         }
     }
