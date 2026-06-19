@@ -513,6 +513,12 @@ struct MetricInfoSheet: View {
     /// Strap-only metrics (strain, heart rate) never set this. (FER-162)
     var appleConnectHint: Bool = false
 
+    /// When true, the value currently shown actually came from Apple Health (not the strap) — the sheet
+    /// adds a quiet "Apple Health" line with the heart glyph at the foot, so the source reads at a
+    /// glance. Resolved dynamically by the caller per reading (never hardcoded per metric), so a strap
+    /// reading and an Apple fallback for the same metric badge differently.
+    var appleSource: Bool = false
+
     /// Loads today's accumulated-strain curve. Supplied only for the Day Strain sheet; nil for every
     /// other metric (and on macOS). Run lazily when the sheet appears. (FER-110)
     var strainCurveLoader: (() async -> [TrendPoint])? = nil
@@ -630,6 +636,7 @@ struct MetricInfoSheet: View {
                         .foregroundStyle(theme.inkTertiary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+                if appleSource { appleSourceLine }
                 if let onSeeMore { seeMoreLink(onSeeMore) }
             }
             .padding(20)
@@ -721,6 +728,22 @@ struct MetricInfoSheet: View {
         .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
             .strokeBorder(theme.hairline, lineWidth: 0.5))
+    }
+
+    /// Quiet provenance line at the foot of the sheet: the displayed reading came from Apple Health (not
+    /// the strap). The heart glyph (in the heart data hue) lets the source read at a glance, mirroring the
+    /// Today tile's Apple badge. Shown only when `appleSource` — resolved per reading by the caller.
+    private var appleSourceLine: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "heart.fill")
+                .font(.system(size: 11))
+                .foregroundStyle(theme.dataHeart)
+            Text("Apple Health")
+                .font(StrandFont.caption)
+                .foregroundStyle(theme.inkTertiary)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text("Source · Apple Health"))
     }
 
     private var bandsTable: some View {

@@ -297,10 +297,25 @@ struct TodayView: View {
     private func metricSheet(for info: MetricInfo) -> some View {
         let appleCapable = ["sleep", "hrv", "rhr", "spo2", "steps"].contains(info.id)
         let notConnected = health.auth != .authorized && health.auth != .unavailable
+        // ¿El valor que se muestra vino de Apple Salud (no del strap)? Misma resolución por-lectura que
+        // los tiles de Hoy (`resolveMeasured`), nunca hardcodeada: HRV/FCrep/Sueño/SpO₂ pueden venir de
+        // cualquiera de las dos fuentes; los pasos son Apple-only. Strap-only (esfuerzo, FC, recuperación,
+        // estrés) → false. Sólo se badgea cuando hay valor.
+        let fromApple: Bool = {
+            switch info.id {
+            case "steps": return true
+            case "hrv":   return resolveMeasured { $0.avgHrv }?.fromApple == true
+            case "rhr":   return resolveMeasured { $0.restingHr.map(Double.init) }?.fromApple == true
+            case "sleep": return resolveMeasured { $0.totalSleepMin }?.fromApple == true
+            case "spo2":  return resolveMeasured { $0.spo2Pct }?.fromApple == true
+            default:      return false
+            }
+        }()
         return MetricInfoSheet(
             info: info,
             theme: theme,
             appleConnectHint: appleCapable && notConnected && info.displayValue == "—",
+            appleSource: fromApple && info.displayValue != "—",
             strainCurveLoader: info.id == "strain" ? { await loadStrainCurve() } : nil,
             heartRateCurveLoader: info.id == "heart_rate" ? { hrPoints } : nil,
             trendLoader: trendLoader(for: info.id),
