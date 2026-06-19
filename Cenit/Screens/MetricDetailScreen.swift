@@ -549,8 +549,10 @@ struct MetricDetailScreen: View {
 
     @ViewBuilder private var normalRangeBlock: some View {
         if let baseline = baselineState, baseline.nValid >= 1 {
-            let lo = baseline.baseline - sigma(baseline)
-            let hi = baseline.baseline + sigma(baseline)
+            // log-aware ±1σ band (multiplicative in ms for HRV; plain ± for linear metrics).
+            let band = Baselines.normalRange(baseline)
+            let lo = band.lowerBound
+            let hi = band.upperBound
             // The ⓘ discloses the rolling-baseline math (FER-220); the block's overline + datum +
             // plain-language reading (FER-216) stay exactly as before, inside the accordion's content.
             InfoAccordion(
@@ -581,14 +583,11 @@ struct MetricDetailScreen: View {
         return state.nValid >= 1 ? state : nil
     }
 
-    /// Convert the baseline's internal abs-dev spread to a Gaussian σ for the displayed ± band.
-    private func sigma(_ s: BaselineState) -> Double { 1.253 * s.spread }
-
     /// The ±1σ "normal range" used to frame today's reading (nil when no baseline yet).
+    /// log-aware (multiplicative band in ms for HRV) via `Baselines.normalRange`.
     private var normalRange: ClosedRange<Double>? {
         guard let s = baselineState else { return nil }
-        let lo = s.baseline - sigma(s), hi = s.baseline + sigma(s)
-        return Swift.min(lo, hi)...Swift.max(lo, hi)
+        return Baselines.normalRange(s)
     }
 
     // MARK: - Consistency (coefficient of variation)

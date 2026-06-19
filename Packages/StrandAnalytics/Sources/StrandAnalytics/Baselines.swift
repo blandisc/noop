@@ -18,17 +18,26 @@ import Foundation
 public struct MetricCfg: Equatable, Sendable {
     public let minVal: Double       // physiological lower bound (hard reject below)
     public let maxVal: Double       // physiological upper bound (hard reject above)
-    public let floorSpread: Double  // σ_floor: minimum dispersion
+    public let floorSpread: Double  // σ_floor: minimum dispersion (in the metric's CENTER space)
     public let halfLifeB: Double    // baseline-center half-life (nights)
     public let halfLifeS: Double    // spread half-life (nights, slower than center)
+    /// Baseline in the natural-log domain. Nightly HRV (RMSSD) is ~log-normal
+    /// (Plews et al. 2013, who monitor **lnRMSSD**); centering and z-scoring on the
+    /// raw ms biases the center up and underweights low nights. When true, the center
+    /// and spread are computed on ln(value): the stored `baseline` is the geometric
+    /// mean (back in ms, so display is unchanged), `spread` is the dispersion in ln
+    /// units, and `minVal`/`maxVal` stay the ms plausibility gate applied before the
+    /// log transform. `floorSpread` is then a floor in ln units, not ms.
+    public let logDomain: Bool
 
     public init(minVal: Double, maxVal: Double, floorSpread: Double,
-                halfLifeB: Double, halfLifeS: Double) {
+                halfLifeB: Double, halfLifeS: Double, logDomain: Bool = false) {
         self.minVal = minVal
         self.maxVal = maxVal
         self.floorSpread = floorSpread
         self.halfLifeB = halfLifeB
         self.halfLifeS = halfLifeS
+        self.logDomain = logDomain
     }
 }
 
@@ -53,14 +62,20 @@ public struct BaselineState: Equatable, Sendable {
     public let nightsSinceUpdate: Int
     /// Cold-start / staleness status.
     public let status: BaselineStatus
+    /// True when this baseline was built in the natural-log domain (HRV): `baseline`
+    /// is the geometric mean (ms) and `spread` is the dispersion in ln units, so
+    /// `deviation` z-scores on ln(value). Carried so consumers (deviation, the ±σ
+    /// band) interpret `spread` in the right space without needing the `MetricCfg`.
+    public let logDomain: Bool
 
     public init(baseline: Double, spread: Double, nValid: Int,
-                nightsSinceUpdate: Int, status: BaselineStatus) {
+                nightsSinceUpdate: Int, status: BaselineStatus, logDomain: Bool = false) {
         self.baseline = baseline
         self.spread = spread
         self.nValid = nValid
         self.nightsSinceUpdate = nightsSinceUpdate
         self.status = status
+        self.logDomain = logDomain
     }
 
     /// True iff fully trusted (not calibrating or stale).
@@ -103,8 +118,11 @@ public enum Baselines {
 
     /// Default per-metric configurations (HRV, resting HR, respiration, skin temp).
     public static let metricCfg: [String: MetricCfg] = [
-        "hrv": MetricCfg(minVal: 5.0, maxVal: 250.0, floorSpread: 5.0,
-                         halfLifeB: 14.0, halfLifeS: 21.0),
+        // HRV is baselined in ln(RMSSD): nightly RMSSD is ~log-normal (Plews 2013).
+        // floorSpread is now a ln-unit dispersion floor (σ_floor ≈ 1.253 × 0.08 ≈ 0.10,
+        // ~a 10% night-to-night band) instead of the old 5 ms.
+        "hrv": MetricCfg(minVal: 5.0, maxVal: 250.0, floorSpread: 0.08,
+                         halfLifeB: 14.0, halfLifeS: 21.0, logDomain: true),
         "resting_hr": MetricCfg(minVal: 30.0, maxVal: 120.0, floorSpread: 2.0,
                                 halfLifeB: 14.0, halfLifeS: 21.0),
         "resp": MetricCfg(minVal: 4.0, maxVal: 40.0, floorSpread: 0.5,
@@ -123,6 +141,19 @@ public enum Baselines {
     /// Convert a half-life in nights to an EWMA smoothing factor.
     static func lambda(halfLife: Double) -> Double {
         1.0 - pow(0.5, 1.0 / halfLife)
+    }
+
+    /// Map a metric value into the space the center/spread live in: ln(value) for a
+    /// log-domain metric (HRV), identity otherwise. Inverse of `fromCenter`. Takes the
+    /// flag directly so both the build path (`cfg.logDomain`) and the read path
+    /// (`state.logDomain`, where no `MetricCfg` is in hand) share one definition.
+    static func toCenter(_ v: Double, logDomain: Bool) -> Double {
+        logDomain ? Foundation.log(v) : v
+    }
+
+    /// Map a center-space value back to the metric's display units (ms for HRV).
+    static func fromCenter(_ c: Double, logDomain: Bool) -> Double {
+        logDomain ? Foundation.exp(c) : c
     }
 
     static func computeStatus(nValid: Int, nightsSinceUpdate: Int) -> BaselineStatus {
@@ -168,11 +199,13 @@ public enum Baselines {
         guard let state = state else {
             if let v = value, cfg.minVal <= v && v <= cfg.maxVal {
                 return BaselineState(baseline: v, spread: cfg.floorSpread, nValid: 1,
-                                     nightsSinceUpdate: 0, status: .calibrating)
+                                     nightsSinceUpdate: 0, status: .calibrating,
+                                     logDomain: cfg.logDomain)
             }
             let seed = (cfg.minVal + cfg.maxVal) / 2.0
             return BaselineState(baseline: seed, spread: cfg.floorSpread, nValid: 0,
-                                 nightsSinceUpdate: 1, status: .calibrating)
+                                 nightsSinceUpdate: 1, status: .calibrating,
+                                 logDomain: cfg.logDomain)
         }
 
         // Missing night: skip-and-hold.
@@ -180,47 +213,58 @@ public enum Baselines {
             let m = state.nightsSinceUpdate + 1
             return BaselineState(baseline: state.baseline, spread: state.spread,
                                  nValid: state.nValid, nightsSinceUpdate: m,
-                                 status: computeStatus(nValid: state.nValid, nightsSinceUpdate: m))
+                                 status: computeStatus(nValid: state.nValid, nightsSinceUpdate: m),
+                                 logDomain: state.logDomain)
         }
 
-        // Step 0: sanity gate — physiologically implausible → skip-and-hold.
+        // Step 0: sanity gate — physiologically implausible → skip-and-hold. The bounds
+        // are ms either way; for a log-domain metric the transform happens only after this.
         if !(cfg.minVal <= value && value <= cfg.maxVal) {
             let m = state.nightsSinceUpdate + 1
             return BaselineState(baseline: state.baseline, spread: state.spread,
                                  nValid: state.nValid, nightsSinceUpdate: m,
-                                 status: computeStatus(nValid: state.nValid, nightsSinceUpdate: m))
+                                 status: computeStatus(nValid: state.nValid, nightsSinceUpdate: m),
+                                 logDomain: state.logDomain)
         }
+
+        // All center/spread math runs in CENTER space: ln(value) for a log-domain
+        // metric (HRV), the raw value otherwise.
+        let center = toCenter(value, logDomain: cfg.logDomain)
+        let baseCenter = toCenter(state.baseline, logDomain: cfg.logDomain)
 
         // Hard outlier rejection (only once seeded): seen, but not folded.
         if state.nValid >= minNightsSeed {
-            let dev = abs(value - state.baseline)
+            let dev = abs(center - baseCenter)
             if dev > hardOutlierK * state.spread {
                 return BaselineState(baseline: state.baseline, spread: state.spread,
                                      nValid: state.nValid, nightsSinceUpdate: 0,
-                                     status: computeStatus(nValid: state.nValid, nightsSinceUpdate: 0))
+                                     status: computeStatus(nValid: state.nValid, nightsSinceUpdate: 0),
+                                     logDomain: state.logDomain)
             }
         }
 
         // First real value after a None-placeholder seed: treat as clean first night.
         if state.nValid == 0 {
             return BaselineState(baseline: value, spread: cfg.floorSpread, nValid: 1,
-                                 nightsSinceUpdate: 0, status: .calibrating)
+                                 nightsSinceUpdate: 0, status: .calibrating,
+                                 logDomain: cfg.logDomain)
         }
 
-        // Step 1: Winsorized EWMA update.
-        let lo = state.baseline - winsorK * state.spread
-        let hi = state.baseline + winsorK * state.spread
-        let clamped = max(lo, min(hi, value))
-        let newBaseline = lb * clamped + (1.0 - lb) * state.baseline
+        // Step 1: Winsorized EWMA update (in center space).
+        let lo = baseCenter - winsorK * state.spread
+        let hi = baseCenter + winsorK * state.spread
+        let clamped = max(lo, min(hi, center))
+        let newCenter = lb * clamped + (1.0 - lb) * baseCenter
 
         // Spread uses the UNCLAMPED value so true deviations are tracked.
-        let absDev = abs(value - newBaseline)
+        let absDev = abs(center - newCenter)
         let newSpread = max(cfg.floorSpread, ls * absDev + (1.0 - ls) * state.spread)
         let newN = state.nValid + 1
 
-        return BaselineState(baseline: newBaseline, spread: newSpread, nValid: newN,
+        return BaselineState(baseline: fromCenter(newCenter, logDomain: cfg.logDomain), spread: newSpread, nValid: newN,
                              nightsSinceUpdate: 0,
-                             status: computeStatus(nValid: newN, nightsSinceUpdate: 0))
+                             status: computeStatus(nValid: newN, nightsSinceUpdate: 0),
+                             logDomain: cfg.logDomain)
     }
 
     /// Replay an ordered sequence of nightly values (oldest first) to build state.
@@ -231,20 +275,39 @@ public enum Baselines {
         if let s = state { return s }
         let seed = (cfg.minVal + cfg.maxVal) / 2.0
         return BaselineState(baseline: seed, spread: cfg.floorSpread, nValid: 0,
-                             nightsSinceUpdate: 0, status: .calibrating)
+                             nightsSinceUpdate: 0, status: .calibrating,
+                             logDomain: cfg.logDomain)
     }
 
     // MARK: - Deviation
 
     /// Compute z / delta / ratio / in-normal-range for a value vs a baseline.
-    /// z uses (value − baseline) / (1.253 × spread); 1.253 converts EWMA-abs-dev
-    /// to an approximate Gaussian σ (E[|X−μ|] = σ·√(2/π) ≈ σ/1.253).
+    /// z uses (centerValue − centerBaseline) / (1.253 × spread); 1.253 converts
+    /// EWMA-abs-dev to an approximate Gaussian σ (E[|X−μ|] = σ·√(2/π) ≈ σ/1.253).
+    /// For a log-domain baseline (HRV) the z is taken on ln(value) vs ln(baseline),
+    /// so a value at −1σ_ln scores z = −1 symmetrically; `delta` and `ratio` stay in
+    /// the metric's display units (ms) for surfaces that show them.
     public static func deviation(_ value: Double, state: BaselineState) -> Deviation {
         let sigma = max(1.253 * state.spread, 1e-9)
-        let z = (value - state.baseline) / sigma
+        let center = toCenter(value, logDomain: state.logDomain)
+        let baseCenter = toCenter(state.baseline, logDomain: state.logDomain)
+        let z = (center - baseCenter) / sigma
         let delta = value - state.baseline
         let ratio = state.baseline != 0 ? (value / state.baseline - 1.0) : 0.0
         return Deviation(z: z, delta: delta, ratio: ratio, inNormalRange: abs(z) <= 1.0)
+    }
+
+    /// The ±k·σ "normal range" around the baseline, in the metric's display units.
+    /// For a log-domain baseline (HRV) the band is multiplicative — exp(lnBaseline ± k·σ_ln)
+    /// — so it stays positive and asymmetric in ms, matching the log-normal shape; for a
+    /// linear baseline it is the plain baseline ± k·σ. Centralizes the band math so
+    /// consumers don't hand-roll `baseline ± 1.253·spread` (which is wrong in log space).
+    public static func normalRange(_ state: BaselineState, k: Double = 1.0) -> ClosedRange<Double> {
+        let sigma = 1.253 * state.spread
+        let c = toCenter(state.baseline, logDomain: state.logDomain)
+        let lo = fromCenter(c - k * sigma, logDomain: state.logDomain)
+        let hi = fromCenter(c + k * sigma, logDomain: state.logDomain)
+        return Swift.min(lo, hi)...Swift.max(lo, hi)
     }
 
     // MARK: - Trailing-window mean/SD (simple, auditable)
@@ -270,16 +333,21 @@ public enum Baselines {
         guard !valid.isEmpty else {
             let seed = (cfg.minVal + cfg.maxVal) / 2.0
             return BaselineState(baseline: seed, spread: cfg.floorSpread, nValid: 0,
-                                 nightsSinceUpdate: 0, status: .calibrating)
+                                 nightsSinceUpdate: 0, status: .calibrating,
+                                 logDomain: cfg.logDomain)
         }
         let trailing = valid.suffix(window)
         let n = trailing.count
-        let mean = trailing.reduce(0, +) / Double(n)
+        // Center space: ln(value) for a log-domain metric (HRV), the raw value otherwise.
+        // The center maps back to display units via exp() so HRV's baseline is the
+        // geometric mean (Plews 2013), not the up-biased arithmetic mean.
+        let centers = trailing.map { toCenter($0, logDomain: cfg.logDomain) }
+        let mean = centers.reduce(0, +) / Double(n)
 
         let sd: Double
         if n >= 2 {
             var ss = 0.0
-            for v in trailing { let d = v - mean; ss += d * d }
+            for c in centers { let d = c - mean; ss += d * d }
             sd = (ss / Double(n - 1)).squareRoot()
         } else {
             // Single sample: no dispersion estimate; fall back to the σ floor.
@@ -290,8 +358,9 @@ public enum Baselines {
         let sigmaFloored = max(cfg.floorSpread, sd)
         let spreadInternal = sigmaFloored / 1.253
 
-        return BaselineState(baseline: mean, spread: spreadInternal, nValid: n,
+        return BaselineState(baseline: fromCenter(mean, logDomain: cfg.logDomain), spread: spreadInternal, nValid: n,
                              nightsSinceUpdate: 0,
-                             status: computeStatus(nValid: n, nightsSinceUpdate: 0))
+                             status: computeStatus(nValid: n, nightsSinceUpdate: 0),
+                             logDomain: cfg.logDomain)
     }
 }
