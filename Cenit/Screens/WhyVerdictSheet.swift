@@ -18,6 +18,10 @@ struct WhyVerdictSheet: View {
     /// because `Readiness` doesn't carry it (FER-285). nil → the block says «menos de 6 h» without a figure.
     var sleepMinutes: Double? = nil
 
+    /// Measured natural height of the content, so the sheet opens exactly as tall as it needs to be —
+    /// all of the explanation is visible without dragging the sheet up. Capped at `.large`.
+    @State private var contentHeight: CGFloat = 0
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -37,9 +41,13 @@ struct WhyVerdictSheet: View {
             }
             .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .background(GeometryReader { g in
+                Color.clear.preference(key: WhySheetHeightKey.self, value: g.size.height)
+            })
         }
+        .onPreferenceChange(WhySheetHeightKey.self) { contentHeight = $0 }
         .background(theme.paper)
-        .presentationDetents([.medium, .large])
+        .presentationDetents(contentHeight > 0 ? [.height(contentHeight), .large] : [.large])
         .presentationDragIndicator(.visible)
         .modifier(WhySheetBackground(paper: theme.paper))
     }
@@ -182,6 +190,12 @@ struct WhyVerdictSheet: View {
         case .insufficient: return String(localized: "gray")
         }
     }
+}
+
+/// Carries the sheet content's measured natural height up so the detent fits it exactly.
+private struct WhySheetHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
 }
 
 private struct WhySheetBackground: ViewModifier {

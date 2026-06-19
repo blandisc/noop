@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Hoy: la explicación del veredicto abre completa, sin tener que jalarla / Today: the verdict explainer opens fully, no dragging.**
+  **ES** — La hoja **«¿Por qué [veredicto]?»** (la que abre la **«i»** del veredicto) salía cortada y había que arrastrarla hacia arriba para leer todo. Ahora abre a la altura exacta de su contenido, así ves toda la explicación —noche corta, tus señales y la leyenda de colores— de un vistazo.
+  **EN** — The **"Why [verdict]?"** sheet (opened from the verdict's **"i"**) used to open cut off, forcing you to drag it up to read everything. Now it opens at its content's exact height, so you see the whole explanation — short night, your signals, and the color legend — at a glance.
+  ([Cenit/Screens/WhyVerdictSheet.swift](Cenit/Screens/WhyVerdictSheet.swift))
+
 - **Hoy: el veredicto explica la «noche corta» con tus horas reales / Today: the verdict explains a "short night" with your real hours.**
   **ES** — Cuando duermes menos de 6 h, Hoy marca el veredicto con **«Noche corta — confianza baja»** (una noche corta deprime tu HRV e infla tu frecuencia en reposo, así que el número se lee con menos certeza). Antes esa línea no explicaba nada; ahora, al tocar la **«i»** del veredicto, una explicación te dice **cuántas horas dormiste anoche** y por qué eso baja la confianza —recalcando que no es que estés peor, solo que una noche corta se mide con menos certeza—.
   **EN** — When you sleep under 6 h, Today flags the verdict with **"Short night — low confidence"** (a short night suppresses your HRV and inflates your resting heart rate, so the number reads with less certainty). That line used to explain nothing; now, tapping the verdict's **"i"** shows an explanation with **how many hours you slept last night** and why that lowers confidence — stressing it doesn't mean you're worse off, just that a short night is measured with less certainty.
