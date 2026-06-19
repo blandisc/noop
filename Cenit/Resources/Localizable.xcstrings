@@ -2,6 +2,98 @@
   "sourceLanguage": "en",
   "strings": {
     "": {},
+    "Anoche dormiste %@, por debajo de las 6 h. Una noche corta deprime tu HRV e infla tu frecuencia en reposo aunque tu recuperación real sea mejor — así que hoy el número se lee con menos certeza. No es que estés peor: una noche corta se mide con menos confianza.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Letzte Nacht hast du %@ geschlafen, unter 6 Std. Eine kurze Nacht senkt deine HRV und erhöht deinen Ruhepuls, selbst wenn deine tatsächliche Erholung besser ist — daher ist die heutige Zahl weniger sicher. Es heißt nicht, dass es dir schlechter geht: Eine kurze Nacht wird einfach mit geringerer Konfidenz gemessen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last night you slept %@, under 6 h. A short night suppresses your HRV and inflates your resting heart rate even when your real recovery is better — so today's number reads with less certainty. It doesn't mean you're worse off: a short night is just measured with less confidence."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anoche dormiste %@, por debajo de las 6 h. Una noche corta deprime tu HRV e infla tu frecuencia en reposo aunque tu recuperación real sea mejor — así que hoy el número se lee con menos certeza. No es que estés peor: una noche corta se mide con menos confianza."
+          }
+        }
+      }
+    },
+    "Anoche dormiste menos de 6 h. Una noche corta deprime tu HRV e infla tu frecuencia en reposo aunque tu recuperación real sea mejor — así que hoy el número se lee con menos certeza. No es que estés peor: una noche corta se mide con menos confianza.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Letzte Nacht hast du weniger als 6 Std. geschlafen. Eine kurze Nacht senkt deine HRV und erhöht deinen Ruhepuls, selbst wenn deine tatsächliche Erholung besser ist — daher ist die heutige Zahl weniger sicher. Es heißt nicht, dass es dir schlechter geht: Eine kurze Nacht wird einfach mit geringerer Konfidenz gemessen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last night you slept under 6 h. A short night suppresses your HRV and inflates your resting heart rate even when your real recovery is better — so today's number reads with less certainty. It doesn't mean you're worse off: a short night is just measured with less confidence."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anoche dormiste menos de 6 h. Una noche corta deprime tu HRV e infla tu frecuencia en reposo aunque tu recuperación real sea mejor — así que hoy el número se lee con menos certeza. No es que estés peor: una noche corta se mide con menos confianza."
+          }
+        }
+      }
+    },
+    "Confianza baja — noche corta": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geringe Konfidenz — kurze Nacht"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Low confidence — short night"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confianza baja — noche corta"
+          }
+        }
+      }
+    },
+    "Noche corta — confianza baja": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kurze Nacht — geringe Konfidenz"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Short night — low confidence"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noche corta — confianza baja"
+          }
+        }
+      }
+    },
     "Descargando la noche…": {
       "extractionState": "manual",
       "localizations": {

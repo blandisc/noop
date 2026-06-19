@@ -14,6 +14,9 @@ struct WhyVerdictSheet: View {
     let readiness: ReadinessEngine.Readiness
     /// The active «Instrumento diurno» theme, passed from `TodayView` (does not propagate through `.sheet`).
     var theme: InstrumentoTheme = .base
+    /// Last night's sleep minutes (today's row), for the short-night caveat block — passed explicitly
+    /// because `Readiness` doesn't carry it (FER-285). nil → the block says «menos de 6 h» without a figure.
+    var sleepMinutes: Double? = nil
 
     var body: some View {
         ScrollView {
@@ -28,6 +31,7 @@ struct WhyVerdictSheet: View {
                         .foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+                if readiness.confidenceLow { shortNightBlock }   // FER-285
                 if !readiness.signals.isEmpty { signalsSection }
                 legendSection
             }
@@ -55,6 +59,39 @@ struct WhyVerdictSheet: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(c.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(c.opacity(0.30), lineWidth: 0.5))
+    }
+
+    /// FER-285 — the short-night caveat, explained. Surfaces *why* a night under 6 h lowers confidence
+    /// (it suppresses HRV / inflates resting HR regardless of true recovery), with last night's real
+    /// hours when we have them. The Hero shows only the short line; this is where the reasoning lives.
+    private var shortNightBlock: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Image(systemName: "moon.zzz.fill").font(.system(size: 12)).foregroundStyle(theme.warning)
+                Text("Confianza baja — noche corta")
+                    .font(StrandFont.subhead).fontWeight(.semibold)
+                    .foregroundStyle(theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Text(shortNightExplanation)
+                .font(StrandFont.footnote)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, 11).padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.warning.opacity(0.10), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(theme.warning.opacity(0.28), lineWidth: 0.5))
+    }
+
+    /// The caveat copy, with last night's real hours when available (else «menos de 6 h»). Built as a
+    /// `LocalizedStringKey` so the hours interpolate into a `%@` placeholder the catalog can localize.
+    private var shortNightExplanation: LocalizedStringKey {
+        guard let mins = sleepMinutes, mins > 0 else {
+            return "Anoche dormiste menos de 6 h. Una noche corta deprime tu HRV e infla tu frecuencia en reposo aunque tu recuperación real sea mejor — así que hoy el número se lee con menos certeza. No es que estés peor: una noche corta se mide con menos confianza."
+        }
+        let dur = "\(Int(mins) / 60) h \(Int(mins) % 60) min"
+        return "Anoche dormiste \(dur), por debajo de las 6 h. Una noche corta deprime tu HRV e infla tu frecuencia en reposo aunque tu recuperación real sea mejor — así que hoy el número se lee con menos certeza. No es que estés peor: una noche corta se mide con menos confianza."
     }
 
     /// The full driver list — this is what was macOS-only before; FER-113 brings it to the phone.
