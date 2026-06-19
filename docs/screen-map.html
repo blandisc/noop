@@ -508,7 +508,7 @@ const SCREENS = [
       { to: 'workouts', label: 'Entrenamientos → WorkoutsView (sheet claro «Instrumento» + stack propio — FER-260)', type: 'sheet' },
       { to: 'skintemp-detail', label: 'Temp. de piel → SkinTempDetailScreen (sheet claro «Instrumento» — FER-256)', type: 'sheet' },
       { to: 'compare', label: 'Comparar → CompareView (sheet claro «Instrumento» — FER-268)', type: 'sheet' },
-      { to: 'explore', label: 'Ver todas las métricas → MetricExplorerView (sheet oscuro)', type: 'sheet' },
+      { to: 'explore', label: 'Ver todas las métricas → MetricExplorerView (sheet claro «Instrumento» — FER-272)', type: 'sheet' },
       { to: 'fitness-age', label: 'Edad física → FitnessAgeDetailView (sheet claro «Instrumento»)', type: 'sheet' },
     ],
     components: ['MetricRow (label · sparkline 14d + banda p25–p75 · valor en color de dato · chevron)', 'Sparkline + ReferenceRange.interquartile', 'fila héroe Recuperación (surface)', 'fila Edad física custom (delta bajo etiqueta + chip «Estimado»)', 'MetricInfoSheet + MetricDetailScreen (Detalle unificado FER-185)', 'FitnessAgeDetailView (Edad física · FER-141)', 'InstrumentoTheme (instrumentoThemeByHour)'],
@@ -531,7 +531,7 @@ const SCREENS = [
   // ── ROW 2: Análisis (y = 1360) ────────────
   {
     id: 'explore', x: 30, y: 1360,
-    name: 'Explore', desc: 'Catálogo de métricas',
+    name: 'Explore', desc: 'Catálogo de métricas (claro «Instrumento» — FER-272)',
     file: 'Cenit/Screens/MetricExplorerView.swift',
     icon: '🔍', color: '#4A9EFF',
     states: [
@@ -541,9 +541,9 @@ const SCREENS = [
       { label: 'Detalle · tendencia', type: 'data' },
     ],
     nav: [
-      { to: 'explore', label: 'Tap métrica → MetricDetailView', type: 'push' },
+      { to: 'explore', label: 'Tap métrica → MetricDetailView (push, claro)', type: 'push' },
     ],
-    components: ['MetricCatalog grouped list', 'Hero StatTile', 'ChartCard (tendencia)', 'Avg/Min/Max footer', 'Banding vs baseline'],
+    components: ['Lista por categoría sobre papel (sin NoopCard)', 'MetricRow claro (ícono en theme.surface · color solo en el dato)', 'Hero (instrumentoHero + «al …»)', 'MetricTrendChart (selector + línea cruda — FER-269)', 'TrendStatSummary (Prom · rango · Δ)', 'What correlates (Pearson r · barras verdict/critical)', 'InstrumentoTheme (theme inyectado, sheet claro)'],
   },
   {
     id: 'compare', x: 284, y: 1360,

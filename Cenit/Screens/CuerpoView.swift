@@ -19,10 +19,11 @@ import Foundation
 // Detail bridge: every vital now opens a light «Instrumento» sheet — the scalar vitals (HRV / Resting HR /
 // Respiración / SpO₂) through the unified `MetricDetailScreen` (FER-185), and the composite/own-shaped ones
 // through their dedicated screens (Recovery / Sueño / Esfuerzo / Estrés, and Temp. de piel via
-// `SkinTempDetailScreen`, FER-256). Only the non-metric destinations left — Entrenamientos, Comparar, Ver
-// todas, Data Sources — still open the legacy dark screens as `.sheet`s pinned to `.dark` (a light tab
-// pushing a dark screen would leave the status bar's dark ink on a near-black panel, so a self-contained
-// dark sheet is the honest bridge, same pattern Today uses for Live / Data Sources).
+// `SkinTempDetailScreen`, FER-256). Entrenamientos, Comparar and «Ver todas» (Explore, FER-272) now also
+// open light «Instrumento» sheets. Only Data Sources still opens the legacy dark screen as a `.sheet`
+// pinned to `.dark` (a light tab pushing a dark screen would leave the status bar's dark ink on a
+// near-black panel, so a self-contained dark sheet is the honest bridge, same pattern Today uses for
+// Live / Data Sources).
 //
 // Values + sparklines read from `repo.displayDays` (the merged dashboard), NOT `series()`: the
 // on-device computed scores live in daily-metrics under `my-whoop-noop`, so `series("my-whoop")` is
@@ -47,7 +48,7 @@ struct CuerpoView: View {
 // MARK: - Sheet routing
 
 /// A dark, existing screen presented as a self-contained sheet (pinned to `.dark`).
-private enum CuerpoScreen: Hashable { case explore, dataSources }
+private enum CuerpoScreen: Hashable { case dataSources }
 
 /// Identifiable wrapper so the light «Instrumento» Detalle de Sueño can ride `.sheet(item:)`
 /// (the model itself isn't Identifiable). One per presentation. (FER-212)
@@ -56,15 +57,12 @@ private struct SleepDetailItem: Identifiable {
     let model: SleepDetailModel
 }
 
-/// The dark-sheet driver — either a full screen, or a catalog metric detail (Respiración / Temp. de
-/// piel, which have no light sheet of their own yet).
+/// The dark-sheet driver — the remaining legacy dark screen without a light sheet yet (Data Sources).
 private enum CuerpoSheet: Identifiable {
     case screen(CuerpoScreen)
-    case metric(MetricDescriptor)
     var id: String {
         switch self {
         case .screen(let s): return "screen-\(s)"
-        case .metric(let m): return "metric-\(m.id)"
         }
     }
 }
@@ -93,6 +91,11 @@ private struct CuerpoLanding: View {
     /// as a light sheet (theme injected at the root; it doesn't cross the `.sheet` boundary, FER-162), NO
     /// nested NavigationStack (FER-171). Replaces the old dark `.screen(.compare)` bridge.
     @State private var showCompare = false
+    /// Light «Instrumento» Explore (FER-272) — the «See all metrics» row now opens the reskinned metric
+    /// catalog as a light sheet with its OWN NavigationStack (so a metric row pushes its detail), theme
+    /// injected at the sheet root (it doesn't cross the `.sheet` boundary, FER-162). Replaces the old dark
+    /// `.screen(.explore)` bridge.
+    @State private var showExplore = false
     /// Light «Instrumento» Entrenamientos (FER-260) — the «Workouts» row now opens the reskinned list as a
     /// light sheet with its own NavigationStack (so a session row can push the detail), theme injected at
     /// the sheet root. Replaces the old dark `.screen(.workouts)` bridge.
@@ -245,6 +248,26 @@ private struct CuerpoLanding: View {
                 .environmentObject(live)
                 .environmentObject(model)
                 .environmentObject(health)
+        }
+        .sheet(isPresented: $showExplore) {
+            // Light «Instrumento» Explore (FER-272) — its OWN NavigationStack lives inside the sheet so a
+            // metric row pushes its detail (NOT a stack nested across the tab path, FER-171). The theme is
+            // passed explicitly to the screen AND injected at the root (it doesn't cross the `.sheet`
+            // boundary, FER-162); the env objects are re-supplied (a sheet starts a fresh environment).
+            // A light sheet from a light tab keeps the status bar honest (no dark pin needed).
+            NavigationStack {
+                MetricExplorerView(theme: theme)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") { showExplore = false }.foregroundStyle(theme.ink)
+                        }
+                    }
+            }
+            .instrumentoTheme(theme)
+            .environmentObject(repo)
+            .environmentObject(live)
+            .environmentObject(model)
+            .environmentObject(health)
         }
         .sheet(item: $strainDetail) { item in
             // Light «Instrumento» Detalle de Esfuerzo — theme passed explicitly (it doesn't propagate
@@ -652,7 +675,7 @@ private struct CuerpoLanding: View {
         VStack(spacing: 0) {
             actionRow("Compare", icon: "arrow.left.arrow.right") { showCompare = true }
             Divider().overlay(theme.hairline).padding(.leading, 46)
-            actionRow("See all metrics", icon: "square.grid.2x2") { darkSheet = .screen(.explore) }
+            actionRow("See all metrics", icon: "square.grid.2x2") { showExplore = true }
         }
         .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
@@ -768,9 +791,7 @@ private struct CuerpoLanding: View {
         NavigationStack {
             Group {
                 switch sheet {
-                case .screen(.explore):     MetricExplorerView()
                 case .screen(.dataSources): DataSourcesView()
-                case .metric(let m):        MetricDetailView(metric: m)
                 }
             }
             .background(StrandPalette.surfaceBase.ignoresSafeArea())

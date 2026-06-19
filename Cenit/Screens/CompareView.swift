@@ -134,6 +134,11 @@ struct CompareView: View {
     @State private var range: CompareRange = .year
     /// Ordered selection (max 4). Drives both the legend order and color mapping.
     @State private var selected: [MetricDescriptor] = []
+    /// Presents the metric picker as a scroll-stable sheet. A SwiftUI `Menu` rebuilds (and resets its
+    /// scroll to the top) every time the parent re-renders — and Compare re-renders on each `repo` tick
+    /// while the strap syncs — so a long catalog menu was unusable: scrolling down snapped back up. A
+    /// `.sheet` keeps its own scroll state across parent re-renders. (FER-279)
+    @State private var showPicker = false
     /// Full-history series per selected metric id (ascending by day).
     @State private var fullSeries: [String: [(day: String, value: Double)]] = [:]
     @State private var loadedOnce = false
@@ -178,6 +183,9 @@ struct CompareView: View {
         .background(theme.paper)
         .presentationDragIndicator(.visible)
         .modifier(CompareSheetPaperBackground(paper: theme.paper))
+        .sheet(isPresented: $showPicker) {
+            MetricPickerSheet(selected: $selected, maxSelection: maxSelection, theme: theme)
+        }
         .task { await loadIfNeeded() }
         .task(id: selectionKey) {
             await loadSelected()
@@ -359,7 +367,7 @@ struct CompareView: View {
                         .accessibilityLabel(rangeCaption)
                 }
                 Spacer(minLength: 8)
-                addMenu
+                addButton
             }
 
             if selected.isEmpty {
@@ -375,26 +383,12 @@ struct CompareView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// Grouped "add metric" menu, sectioned by catalog category. Disables already-
-    /// picked metrics and the whole control once the cap is reached.
-    private var addMenu: some View {
-        Menu {
-            ForEach(MetricCatalog.categories, id: \.self) { category in
-                let metrics = MetricCatalog.inCategory(category)
-                if !metrics.isEmpty {
-                    Section(category) {
-                        ForEach(metrics) { metric in
-                            let isOn = selected.contains(metric)
-                            Button {
-                                toggle(metric)
-                            } label: {
-                                Label(metric.title, systemImage: isOn ? "checkmark" : metric.icon)
-                            }
-                            .disabled(!isOn && selected.count >= maxSelection)
-                        }
-                    }
-                }
-            }
+    /// Opens the metric picker sheet. (A button, not a `Menu`: a long `Menu` resets its scroll on every
+    /// parent re-render — unusable while the strap syncs. See `showPicker`. FER-279.) Always tappable —
+    /// the picker is where you both add and remove, so it stays reachable at the 4-metric cap.
+    private var addButton: some View {
+        Button {
+            showPicker = true
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "plus.circle.fill")
@@ -403,23 +397,14 @@ struct CompareView: View {
             }
             .foregroundStyle(selected.count >= maxSelection ? theme.inkTertiary : theme.verdict)
         }
-        .menuStyle(.borderlessButton)
+        .buttonStyle(.plain)
         .fixedSize()
-        .disabled(selected.count >= maxSelection)
-        .accessibilityLabel("Add a metric to compare")
+        .accessibilityLabel("Add or remove metrics")
     }
 
     private func colorFor(_ metric: MetricDescriptor) -> Color {
         guard let idx = selected.firstIndex(of: metric) else { return theme.inkSecondary }
         return seriesPalette[idx % seriesPalette.count]
-    }
-
-    private func toggle(_ metric: MetricDescriptor) {
-        if selected.contains(metric) {
-            remove(metric)
-        } else if selected.count < maxSelection {
-            withAnimation(StrandMotion.gentle) { selected.append(metric) }
-        }
     }
 
     private func remove(_ metric: MetricDescriptor) {
@@ -709,6 +694,86 @@ private struct FlowChips: View {
                 )
             }
         }
+    }
+}
+
+// MARK: - Metric picker sheet (scroll-stable replacement for the catalog Menu)
+
+/// The "add / remove metrics" picker, as a light «Instrumento» sheet (FER-279). Replaces the old
+/// catalog `Menu`, which reset its scroll to the top on every parent re-render — so on a syncing strap
+/// you couldn't scroll it. A `.sheet` owns its scroll state across re-renders. Grouped by catalog
+/// category; tap a row to toggle (a checkmark marks the picked ones); rows disable at the 4-metric cap,
+/// but already-picked rows stay tappable so you can swap. Mutates the shared `selected` binding; you
+/// drag down to dismiss.
+private struct MetricPickerSheet: View {
+    @Binding var selected: [MetricDescriptor]
+    let maxSelection: Int
+    var theme: InstrumentoTheme
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+                Text("Metrics").font(StrandFont.title2).foregroundStyle(theme.ink)
+                Text("Pick 2–4 to overlay.")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .padding(.bottom, 4)
+
+                ForEach(MetricCatalog.categories, id: \.self) { category in
+                    let metrics = MetricCatalog.inCategory(category)
+                    if !metrics.isEmpty {
+                        Text(MetricCatalog.localizedCategory(category))
+                            .instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                            .padding(.top, 10)
+                        VStack(spacing: 0) {
+                            ForEach(Array(metrics.enumerated()), id: \.element.id) { i, metric in
+                                row(metric)
+                                if i < metrics.count - 1 { Divider().overlay(theme.hairline) }
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(NoopMetrics.screenPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(theme.paper)
+        .presentationDragIndicator(.visible)
+        .presentationDetents([.large])
+        .modifier(CompareSheetPaperBackground(paper: theme.paper))
+    }
+
+    private func row(_ metric: MetricDescriptor) -> some View {
+        let isOn = selected.contains(metric)
+        let atCap = !isOn && selected.count >= maxSelection
+        return Button {
+            withAnimation(StrandMotion.gentle) {
+                if isOn { selected.removeAll { $0 == metric } }
+                else if selected.count < maxSelection { selected.append(metric) }
+            }
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: metric.icon)
+                    .font(.system(size: 15))
+                    .foregroundStyle(atCap ? theme.inkTertiary : theme.inkSecondary)
+                    .frame(width: 24)
+                Text(metric.title)
+                    .font(StrandFont.body)
+                    .foregroundStyle(atCap ? theme.inkTertiary : theme.ink)
+                Spacer(minLength: 8)
+                if isOn {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(theme.verdict)
+                }
+            }
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(atCap)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(metric.title)
+        .accessibilityAddTraits(isOn ? [.isButton, .isSelected] : .isButton)
     }
 }
 
