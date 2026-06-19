@@ -642,17 +642,13 @@ struct TodayView: View {
     /// equivalente al gesto, vía `triggerPullSync`. Se combinan fecha + estado en un solo elemento
     /// para que la acción sea descubrible al enfocar el encabezado.
     private var headerBlock: some View {
-        // Hogar 1 de estado/procedencia (FER-278): UNA línea arriba reúne todo el estado del
-        // instrumento — fecha a la izquierda; a la derecha la sincronización (sube del encabezado de
-        // métricas, FER-265) + la batería del strap. Antes la frescura de sync vivía a media pantalla y
-        // la batería suelta arriba-derecha; aquí quedan juntas como «qué tan al día está tu instrumento».
+        // Encabezado de estado (FER-278 · FER-294): fecha a la izquierda; a la derecha la batería del
+        // strap. La frescura de sync (`SyncInline`) vivía aquí (FER-278), pero el dueño la bajó al pie de
+        // «Métricas de hoy» (FER-294); la batería se queda como única señal de estado arriba-derecha.
         HStack(alignment: .center, spacing: NoopMetrics.space2) {
             utilityRow
             Spacer(minLength: NoopMetrics.space2)
-            SyncInline(backfilling: live.backfilling, chunks: live.syncChunksThisSession,
-                       lastSyncedAt: live.lastSyncedAt)
             if let pct = live.batteryPct {
-                Text(verbatim: "·").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 HStack(spacing: 4) {
                     Image(systemName: batteryIcon(pct: pct, charging: live.charging == true))
                         .font(StrandFont.overline)
@@ -1165,8 +1161,8 @@ struct TodayView: View {
         }
     }
 
-    /// Top utility row: compact date only — la sincronización + batería viven a su derecha en la línea
-    /// de estado del `headerBlock` (FER-278).
+    /// Top utility row: compact date only — la batería vive a su derecha en la línea de estado del
+    /// `headerBlock` (FER-278); la frescura de sync se bajó al pie de «Métricas de hoy» (FER-294).
     @ViewBuilder private var utilityRow: some View {
         Text(shortDate)
             .font(StrandFont.overline)
@@ -1352,6 +1348,14 @@ struct TodayView: View {
                     .foregroundStyle(theme.inkSecondary)
                 }
                 .buttonStyle(.plain)
+            }
+            // FER-294: la frescura de sync (bajada del header) vive al pie de la rejilla, alineada a la
+            // derecha bajo el tile de Estrés. Reposo → glifo + «hace X»; backfill → glifo girando +
+            // «N paquetes». Apilada bajo el nudge de Apple Salud cuando éste aparece (sin encimarse).
+            HStack(spacing: 0) {
+                Spacer(minLength: 0)
+                SyncInline(backfilling: live.backfilling, chunks: live.syncChunksThisSession,
+                           lastSyncedAt: live.lastSyncedAt)
             }
         }
     }
