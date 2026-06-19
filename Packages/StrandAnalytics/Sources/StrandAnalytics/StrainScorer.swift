@@ -119,12 +119,16 @@ public enum StrainScorer {
 
     // MARK: - TRIMP accumulation
 
-    /// Infer per-sample duration (minutes) from the first two timestamps. Falls
-    /// back to 1 s when fewer than two samples or coincident timestamps.
+    /// Infer per-sample duration (minutes) from the MEDIAN plausible spacing
+    /// between consecutive timestamps — not the first pair. A single early gap
+    /// (strap reconnect, a distant first sample at ~1 Hz) must not inflate the
+    /// duration applied to every sample of the day. Reuses `HRZones.medianInterval`
+    /// (median of gaps in `(0, 300) s`; gaps beyond that are disconnections, not
+    /// active time), so the whole module shares one robust spacing estimate.
+    /// Falls back to 1 s when fewer than two samples or no plausible gap.
     static func sampleDurationMinutes(_ hr: [HRSample]) -> Double {
         guard hr.count >= 2 else { return fallbackSampleMin }
-        let deltaS = abs(Double(hr[1].ts - hr[0].ts))
-        return deltaS > 0 ? deltaS / 60.0 : fallbackSampleMin
+        return HRZones.medianInterval(hr) / 60.0
     }
 
     static func edwardsTRIMP(_ hr: [HRSample], restingHR: Double, hrReserve: Double,

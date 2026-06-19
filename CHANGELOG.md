@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Estrés: un hueco al inicio del día ya no infla tu Estrés / Strain: an early gap no longer inflates your Strain.**
+  **ES** — Si tu banda se reconectaba o la primera lectura del día llegaba con retraso, ese hueco hacía que Cénit creyera que cada lectura duraba mucho más y, por error, **inflaba el Estrés del día entero** (en un caso medido, casi lo duplicaba). Ahora la duración por lectura se calcula con el espaciado **típico** de tus datos, no con el primer par de lecturas, así que un hueco aislado deja tu Estrés intacto.
+  **EN** — If your strap reconnected or the day's first reading arrived late, that gap made Cénit think every reading lasted much longer and wrongly **inflated the whole day's Strain** (nearly doubling it in one measured case). Strain now derives each reading's duration from your data's **typical** spacing rather than the first pair of readings, so an isolated gap leaves your Strain unchanged.
+  ([Packages/StrandAnalytics/Sources/StrandAnalytics/StrainScorer.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/StrainScorer.swift))
+
 - **Hoy: la hora de la última sincronización baja al pie / Today: the last-sync time moves to the bottom.**
   **ES** — El renglón **«hace X minutos»** con su ícono de actualización pasó del encabezado al **pie de tus métricas**, abajo a la derecha bajo Estrés. Arriba queda solo la fecha y la batería del strap; durante una sincronización el ícono gira ahí abajo. Es solo un reacomodo visual: el gesto de jalar para actualizar y los datos no cambian.
   **EN** — The **"X minutes ago"** line with its refresh icon moved from the header to the **bottom of your metrics**, lower-right under Stress. The top now shows just the date and your strap's battery; during a sync the icon spins down there. It's a visual rearrangement only — the pull-to-refresh gesture and your data are unchanged.

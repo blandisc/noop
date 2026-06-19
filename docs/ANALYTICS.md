@@ -223,7 +223,7 @@ strain = 21 · ln(TRIMP + 1) / ln(D),    D = strainDenominator = 7201
 ### Guards & gates
 
 - Returns `nil` with fewer than `minReadings = 600` samples (≈ 10 min at 1 Hz) or when `HRmax ≤ RHR` (invalid HRR).
-- Per-sample duration is inferred from the first two timestamps, falling back to `1 s`.
+- Per-sample duration is inferred from the **median plausible spacing** between consecutive timestamps (gaps in `(0, 300) s`; shared with `HRZones.medianInterval`), falling back to `1 s`. Using the median rather than the first timestamp pair keeps an isolated early gap (strap reconnect at ~1 Hz) from inflating the duration applied to the whole day.
 
 ### Denominator calibration (`fitStrainDenominator`)
 
