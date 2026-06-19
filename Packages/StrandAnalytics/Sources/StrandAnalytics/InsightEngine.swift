@@ -231,7 +231,10 @@ public enum InsightEngine {
                        evidence: evidence,
                        confidence: significant ? .candidate : .medium,
                        relevance: relevance(significant: significant, qAdjusted: qAdjusted,
-                                            effectMag: abs(e.cohensD), effectRef: 0.8, recency: 0.5))
+                                            effectMag: abs(e.cohensD), effectRef: 0.8, recency: 0.5),
+                       behaviorBreakdown: BehaviorBreakdown(meanWith: round1(e.meanWith),
+                                                            meanWithout: round1(e.meanWithout),
+                                                            nWith: e.nWith, nWithout: e.nWithout))
     }
 
     private static func correlationInsight(_ c: Correlation, x: Metric, y: Metric,

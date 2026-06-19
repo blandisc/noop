@@ -1,18 +1,22 @@
 import SwiftUI
 import StrandDesign
 
-/// Coach — the one feature in NOOP that talks to the network.
+/// Coach — «Pregúntale a tus datos», the one feature in NOOP that talks to the network.
 ///
-/// It is strictly opt-in and bring-your-own-key: the user pastes their own OpenAI
-/// or Anthropic API key (stored in the macOS Keychain by `AICoachEngine`), and only
-/// a compact text summary of their metrics plus their question ever leaves the Mac.
-/// Nothing is sent until a key is saved and a question asked.
+/// Strictly opt-in and bring-your-own-key: the user pastes their own OpenAI or Anthropic API key
+/// (stored in the device Keychain by `AICoachEngine`), and only a compact text summary of their
+/// metrics plus their question ever leaves the device. Nothing is sent until a key is saved and a
+/// question asked.
 ///
-/// This screen compiles against `AICoachEngine`'s public API (the macos-core agent's
-/// contract): `hasKey`, `provider` / `provider.modelOptions`, `model`, `messages`,
-/// `sending`, `errorText`, `setKey(_:)`, `clearKey()`, and `send(_:)`.
+/// Rendered in «Instrumento diurno» (FER-309): warm paper, ink type, color only on a datum. The
+/// network capability (`AICoachEngine`, Keychain, consent) is unchanged — only the skin. Opened as a
+/// light sheet from the Bucle (theme injected at the sheet root, FER-162).
+///
+/// Compiles against `AICoachEngine`'s public API: `hasKey`, `provider` / `provider.modelOptions`,
+/// `model`, `messages`, `sending`, `errorText`, `setKey(_:)`, `clearKey()`, and `send(_:)`.
 struct CoachView: View {
     @EnvironmentObject var coach: AICoachEngine
+    @Environment(\.instrumentoTheme) private var theme
 
     /// Draft text in the composer (the question being typed).
     @State private var draft: String = ""
@@ -35,36 +39,30 @@ struct CoachView: View {
     ]
 
     var body: some View {
-        ScreenScaffold(title: "Coach",
-                       subtitle: "Ask about your recovery, strain, sleep and workouts — grounded in your own numbers.") {
-            if coach.hasKey {
-                connectedHeader
-                consentBar
-                transcript
-                if let error = coach.errorText, !error.isEmpty {
-                    errorBanner(error)
+        ScrollView {
+            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Coach").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text("Pregúntale a tus datos").font(StrandFont.title1).foregroundStyle(theme.ink)
                 }
-                suggestionChips
-                composer
-                privacyFootnote
-            } else {
-                setupCard
-            }
-        }
-        .toolbar {
-            if coach.hasKey {
-                ToolbarItem {
-                    Button(role: .destructive) {
-                        coach.clearKey()
-                        keyDraft = ""
-                    } label: {
-                        Label("Reset key", systemImage: "gearshape")
+                if coach.hasKey {
+                    connectedHeader
+                    consentBar
+                    transcript
+                    if let error = coach.errorText, !error.isEmpty {
+                        errorBanner(error)
                     }
-                    .help("Forget the saved key and disconnect")
-                    .accessibilityLabel("Reset API key")
+                    suggestionChips
+                    composer
+                    privacyFootnote
+                } else {
+                    setupCard
                 }
             }
+            .padding(NoopMetrics.screenPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .background(theme.paper.ignoresSafeArea())
         .task(id: coach.dataConsent) { await coach.startBriefIfNeeded() }
     }
 
@@ -72,50 +70,50 @@ struct CoachView: View {
     private var consentBar: some View {
         HStack(spacing: 10) {
             Image(systemName: coach.dataConsent ? "lock.open.fill" : "lock.fill")
-                .foregroundStyle(coach.dataConsent ? StrandPalette.accent : StrandPalette.textTertiary)
+                .foregroundStyle(coach.dataConsent ? theme.dataRecovery : theme.inkTertiary)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 1) {
                 Text("Let the coach use my data")
-                    .font(StrandFont.subhead).foregroundStyle(StrandPalette.textPrimary)
+                    .font(StrandFont.subhead).foregroundStyle(theme.ink)
                 Text(coach.dataConsent
                      ? "On — your recovery, sleep, HRV and workouts are shared with the provider for tailored coaching."
                      : "Off — the coach answers generally and sends none of your metrics.")
-                    .font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
+                    .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 8)
             Toggle("", isOn: $coach.dataConsent)
-                .labelsHidden().toggleStyle(.switch).tint(StrandPalette.accent)
+                .labelsHidden().toggleStyle(.switch).tint(theme.dataRecovery)
                 .accessibilityLabel("Let the coach use my data")
         }
         .padding(12)
-        .background(StrandPalette.surfaceRaised, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .strokeBorder(StrandPalette.hairline, lineWidth: 1))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+            .strokeBorder(theme.hairlineStrong, lineWidth: 1))
     }
 
     // MARK: - Setup (no key yet)
 
     private var setupCard: some View {
-        StrandCard(padding: 20) {
+        card {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(spacing: 10) {
                     Image(systemName: "sparkles")
-                        .foregroundStyle(StrandPalette.accent)
+                        .foregroundStyle(theme.inkSecondary)
                         .accessibilityHidden(true)
                     Text("Connect a provider")
                         .font(StrandFont.headline)
-                        .foregroundStyle(StrandPalette.textPrimary)
+                        .foregroundStyle(theme.ink)
                 }
 
-                Text("Coach uses your own API key. Pick a provider, paste a key, and choose a model. Your key is stored securely in the macOS Keychain and never leaves your Mac except as the request you make.")
+                Text("Coach uses your own API key. Pick a provider, paste a key, and choose a model. Your key is stored securely in the device Keychain and never leaves your phone except as the request you make.")
                     .font(StrandFont.subhead)
-                    .foregroundStyle(StrandPalette.textSecondary)
+                    .foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
 
                 // Provider
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Provider").strandOverline()
+                    Text("Provider").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     Picker("Provider", selection: $coach.provider) {
                         ForEach(AIProvider.allCases) { p in
                             Text(p.displayName).tag(p)
@@ -131,31 +129,27 @@ struct CoachView: View {
 
                 // Key
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("API key").strandOverline()
+                    Text("API key").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     SecureField("Paste your \(coach.provider.displayName) API key", text: $keyDraft)
                         .textFieldStyle(.plain)
                         .font(StrandFont.body)
-                        .foregroundStyle(StrandPalette.textPrimary)
+                        .foregroundStyle(theme.ink)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 9)
-                        .background(StrandPalette.surfaceInset, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .background(theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .strokeBorder(StrandPalette.hairline, lineWidth: 1))
+                            .strokeBorder(theme.hairlineStrong, lineWidth: 1))
                         .onSubmit(saveKey)
                         .accessibilityLabel("API key")
                 }
 
                 HStack {
-                    Button(action: saveKey) {
-                        Text("Save key").frame(minWidth: 90)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(StrandPalette.accent)
-                    .disabled(keyDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    inkButton("Save key", action: saveKey,
+                              disabled: keyDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     Spacer()
                 }
 
-                Divider().overlay(StrandPalette.hairline)
+                Divider().overlay(theme.hairline)
                 privacyFootnote
             }
         }
@@ -166,7 +160,7 @@ struct CoachView: View {
     private var modelSelector: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text("Model").strandOverline()
+                Text("Model").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Spacer()
                 Button {
                     Task { await coach.refreshModels() }
@@ -176,9 +170,8 @@ struct CoachView: View {
                         .labelStyle(.titleAndIcon)
                 }
                 .buttonStyle(.plain)
-                .foregroundStyle(StrandPalette.accent)
+                .foregroundStyle(theme.inkSecondary)
                 .disabled(!coach.hasKey)
-                .help("Fetch the available models from \(coach.provider.displayName) using your saved key")
                 .accessibilityLabel("Refresh models from provider")
             }
 
@@ -191,6 +184,7 @@ struct CoachView: View {
             }
             .labelsHidden()
             .pickerStyle(.menu)
+            .tint(theme.ink)
             .fixedSize()
             .accessibilityLabel("Model")
 
@@ -199,19 +193,17 @@ struct CoachView: View {
                     TextField("Enter a model id", text: $customModelDraft)
                         .textFieldStyle(.plain)
                         .font(StrandFont.body)
-                        .foregroundStyle(StrandPalette.textPrimary)
+                        .foregroundStyle(theme.ink)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 9)
-                        .background(StrandPalette.surfaceInset, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .background(theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .strokeBorder(StrandPalette.hairline, lineWidth: 1))
+                            .strokeBorder(theme.hairlineStrong, lineWidth: 1))
                         .onSubmit(applyCustomModel)
                         .accessibilityLabel("Custom model id")
 
-                    Button("Use", action: applyCustomModel)
-                        .buttonStyle(.bordered)
-                        .tint(StrandPalette.accent)
-                        .disabled(customModelDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    inkButton("Use", action: applyCustomModel,
+                              disabled: customModelDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         .accessibilityLabel("Use custom model")
                 }
             }
@@ -246,16 +238,28 @@ struct CoachView: View {
 
     private var connectedHeader: some View {
         HStack(spacing: 10) {
-            StatePill("\(coach.provider.displayName) · \(coach.model)", tone: .accent, showsDot: true)
-            Spacer()
+            Text("\(coach.provider.displayName) · \(coach.model)")
+                .font(StrandFont.captionNumber)
+                .foregroundStyle(theme.inkSecondary)
+                .padding(.horizontal, 10).padding(.vertical, 4)
+                .overlay(Capsule().stroke(theme.hairlineStrong, lineWidth: 1))
             if coach.sending {
-                StatePill("Thinking", tone: .accent, pulsing: true)
+                Text("Pensando…").font(StrandFont.captionNumber).foregroundStyle(theme.inkTertiary)
             }
+            Spacer()
+            Button {
+                coach.clearKey()
+                keyDraft = ""
+            } label: {
+                Text("Quitar clave").font(StrandFont.footnote).foregroundStyle(theme.critical)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Reset API key")
         }
     }
 
     private var transcript: some View {
-        StrandCard(padding: 16) {
+        card(padding: 16) {
             if coach.messages.isEmpty {
                 emptyTranscript
             } else {
@@ -288,10 +292,10 @@ struct CoachView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Ask your first question")
                 .font(StrandFont.headline)
-                .foregroundStyle(StrandPalette.textPrimary)
+                .foregroundStyle(theme.ink)
             Text("Coach reads a summary of your last two weeks plus 30-day averages and recent workouts, then answers in plain language. Try a suggestion below.")
                 .font(StrandFont.subhead)
-                .foregroundStyle(StrandPalette.textSecondary)
+                .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, minHeight: 180, alignment: .topLeading)
@@ -305,12 +309,14 @@ struct CoachView: View {
                 Spacer(minLength: 48)
                 Text(message.text)
                     .font(StrandFont.body)
-                    .foregroundStyle(StrandPalette.surfaceBase)
+                    .foregroundStyle(theme.ink)
                     .textSelection(.enabled)
                     .multilineTextAlignment(.leading)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
-                    .background(StrandPalette.accent, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .background(theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(theme.hairlineStrong, lineWidth: 1))
                     .frame(maxWidth: 520, alignment: .trailing)
             }
             .accessibilityElement(children: .combine)
@@ -319,15 +325,10 @@ struct CoachView: View {
             HStack {
                 Text(message.text)
                     .font(StrandFont.body)
-                    .foregroundStyle(StrandPalette.textPrimary)
+                    .foregroundStyle(theme.ink)
                     .textSelection(.enabled)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(StrandPalette.surfaceOverlay, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .strokeBorder(StrandPalette.hairline, lineWidth: 1))
                     .frame(maxWidth: 560, alignment: .leading)
                 Spacer(minLength: 48)
             }
@@ -341,25 +342,23 @@ struct CoachView: View {
             ProgressView().controlSize(.small)
             Text("Coach is thinking…")
                 .font(StrandFont.subhead)
-                .foregroundStyle(StrandPalette.textSecondary)
+                .foregroundStyle(theme.inkSecondary)
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .background(StrandPalette.surfaceOverlay, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .frame(maxWidth: 320, alignment: .leading)
         .accessibilityLabel("Coach is thinking")
     }
 
     private func errorBanner(_ message: String) -> some View {
-        StrandCard(padding: 14) {
+        card(padding: 14) {
             HStack(alignment: .top, spacing: 10) {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(StrandPalette.statusCritical)
+                    .foregroundStyle(theme.critical)
                     .accessibilityHidden(true)
                 Text(message)
                     .font(StrandFont.subhead)
-                    .foregroundStyle(StrandPalette.statusCritical)
+                    .foregroundStyle(theme.critical)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
             }
@@ -377,11 +376,11 @@ struct CoachView: View {
                     } label: {
                         Text(prompt)
                             .font(StrandFont.captionNumber)
-                            .foregroundStyle(StrandPalette.textSecondary)
+                            .foregroundStyle(theme.inkSecondary)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 7)
-                            .background(StrandPalette.surfaceInset, in: Capsule(style: .continuous))
-                            .overlay(Capsule(style: .continuous).strokeBorder(StrandPalette.hairline, lineWidth: 1))
+                            .background(theme.surface, in: Capsule(style: .continuous))
+                            .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
                     }
                     .buttonStyle(.plain)
                     .disabled(coach.sending)
@@ -397,47 +396,81 @@ struct CoachView: View {
             TextField("Ask Coach about your data…", text: $draft, axis: .vertical)
                 .textFieldStyle(.plain)
                 .font(StrandFont.body)
-                .foregroundStyle(StrandPalette.textPrimary)
+                .foregroundStyle(theme.ink)
                 .lineLimit(1...5)
                 .focused($composerFocused)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 9)
-                .background(StrandPalette.surfaceInset, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .strokeBorder(composerFocused ? StrandPalette.focusRing : StrandPalette.hairline, lineWidth: 1))
+                    .strokeBorder(composerFocused ? theme.ink.opacity(0.4) : theme.hairlineStrong, lineWidth: 1))
                 .onSubmit { send(draft) }
                 .accessibilityLabel("Question")
 
             Button {
                 send(draft)
             } label: {
-                if coach.sending {
-                    ProgressView().controlSize(.small)
-                        .frame(width: 44, height: 36)
-                } else {
-                    Image(systemName: "arrow.up")
-                        .font(.system(size: 15, weight: .semibold))
-                        .frame(width: 44, height: 36)
+                Group {
+                    if coach.sending {
+                        ProgressView().controlSize(.small).tint(theme.paper)
+                    } else {
+                        Image(systemName: "arrow.up").font(.system(size: 15, weight: .semibold))
+                    }
                 }
+                .frame(width: 44, height: 36)
+                .foregroundStyle(theme.paper)
+                .background(sendDisabled ? theme.inkTertiary : theme.ink,
+                            in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
-            .buttonStyle(.borderedProminent)
-            .tint(StrandPalette.accent)
-            .disabled(coach.sending || draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            .buttonStyle(.plain)
+            .disabled(sendDisabled)
             .accessibilityLabel("Send")
         }
     }
 
+    private var sendDisabled: Bool {
+        coach.sending || draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     private var privacyFootnote: some View {
         Label {
-            Text("This is the only feature that leaves your Mac — it sends a summary of your metrics to \(coach.provider.displayName) using your own key. Nothing is sent until you ask.")
+            Text("This is the only feature that leaves your phone — it sends a summary of your metrics to \(coach.provider.displayName) using your own key. Nothing is sent until you ask.")
                 .font(StrandFont.footnote)
-                .foregroundStyle(StrandPalette.textTertiary)
+                .foregroundStyle(theme.inkTertiary)
                 .fixedSize(horizontal: false, vertical: true)
         } icon: {
             Image(systemName: "lock.shield")
-                .foregroundStyle(StrandPalette.textTertiary)
+                .foregroundStyle(theme.inkTertiary)
         }
         .accessibilityElement(children: .combine)
+    }
+
+    // MARK: - Instrumento building blocks
+
+    /// A warm-paper card: surface fill + hairline border, no nesting. Replaces the legacy dark StrandCard.
+    @ViewBuilder private func card<Content: View>(padding: CGFloat = 20,
+                                                  @ViewBuilder _ content: () -> Content) -> some View {
+        content()
+            .padding(padding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+    }
+
+    /// A sober ink-filled CTA (the one prominent action; chrome otherwise stays quiet).
+    private func inkButton(_ title: LocalizedStringKey, action: @escaping () -> Void,
+                           disabled: Bool) -> some View {
+        Button(action: action) {
+            Text(title).font(StrandFont.subhead).fontWeight(.medium)
+                .foregroundStyle(theme.paper)
+                .frame(minWidth: 90)
+                .padding(.horizontal, 16).padding(.vertical, 9)
+                .background(disabled ? theme.inkTertiary : theme.ink,
+                            in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .disabled(disabled)
     }
 
     // MARK: - Actions

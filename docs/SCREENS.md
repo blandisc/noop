@@ -376,7 +376,7 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 
 **Secciones:** Header (`Coach · fecha` + badge «On-device») · **Decisión de hoy** (héroe-frase del `ReadinessEngine` + recuperación como evidencia) · **Pregúntale a tus datos** (única puerta al chat LLM externo `CoachView`, presentado como `.sheet`) · **Lo que funciona en ti** (palancas curadas del `InsightEngine`, top 2 + «Ver las N») · **Hallazgos** (anomalía/tendencia/relación/pronóstico, topados + «Ver los N») · **Anota tu día** (resumen → hoja Sí/No tri-estado, escribe al journal existente) · **Efectos de tus hábitos** (explorador histórico por métrica).  
 **Hojas (`BucleSheets.swift`):** `PalancaDetailSheet` (evidencia: muestra, significancia, tamaño de efecto, confianza) · `HallazgosListSheet` · `EfectosExplorerSheet` (selector de métrica) · `AnotaTuDiaSheet` (Hoy/Ayer + Sí/No).  
-**Navegación:** `RootTabView` la monta como `lazyTab(.coach)` directo (ya no `hubTab`). El chat LLM externo se preserva intacto (`AICoachEngine` + Keychain).
+**Navegación:** `RootTabView` la monta como `lazyTab(.coach)` directo (ya no `hubTab`). El chat LLM externo se preserva intacto (`AICoachEngine` + Keychain); `CoachView` se rediseñó a «Instrumento diurno» claro (FER-309) y se abre como `.sheet` con el tema inyectado (sin pin `.dark`). Los hallazgos de tendencia llevan sparkline a color por hue (FER-147) y el detalle de palanca muestra barras con/sin desde el campo `Insight.behaviorBreakdown` (FER-309).
 
 ---
 
