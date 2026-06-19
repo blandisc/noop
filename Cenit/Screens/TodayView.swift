@@ -488,14 +488,6 @@ struct TodayView: View {
                 if showsSyncHint { syncHint }
             }
             .animation(reduceMotion ? nil : StrandMotion.fade, value: showsSyncHint)
-            // FER-294/FER-305: la frescura de sync vive abajo a la derecha (bajo el tile de Estrés), pero
-            // como OVERLAY — igual que la pista del chevron arriba — para NO consumir alto de layout. Así
-            // Hoy conserva su presupuesto vertical y cabe en una sola pantalla (FER-217); montarla como
-            // fila en flujo lo rebasaba y la barra la cortaba (regresión de FER-294).
-            .overlay(alignment: .bottomTrailing) {
-                SyncInline(backfilling: live.backfilling, chunks: live.syncChunksThisSession,
-                           lastSyncedAt: live.lastSyncedAt)
-            }
             // Inset superior `gap` (FER-202): el héroe queda alto pero respira; márgenes h/inferior estándar.
             .padding(.horizontal, NoopMetrics.screenPadding)
             .padding(.bottom, NoopMetrics.screenPadding)
@@ -650,13 +642,17 @@ struct TodayView: View {
     /// equivalente al gesto, vía `triggerPullSync`. Se combinan fecha + estado en un solo elemento
     /// para que la acción sea descubrible al enfocar el encabezado.
     private var headerBlock: some View {
-        // Encabezado de estado (FER-278 · FER-294): fecha a la izquierda; a la derecha la batería del
-        // strap. La frescura de sync (`SyncInline`) vivía aquí (FER-278), pero el dueño la bajó al pie de
-        // «Métricas de hoy» (FER-294); la batería se queda como única señal de estado arriba-derecha.
+        // Hogar 1 de estado/procedencia (FER-278): UNA línea arriba reúne todo el estado del
+        // instrumento — fecha a la izquierda; a la derecha la sincronización (sube del encabezado de
+        // métricas, FER-265) + la batería del strap. Antes la frescura de sync vivía a media pantalla y
+        // la batería suelta arriba-derecha; aquí quedan juntas como «qué tan al día está tu instrumento».
         HStack(alignment: .center, spacing: NoopMetrics.space2) {
             utilityRow
             Spacer(minLength: NoopMetrics.space2)
+            SyncInline(backfilling: live.backfilling, chunks: live.syncChunksThisSession,
+                       lastSyncedAt: live.lastSyncedAt)
             if let pct = live.batteryPct {
+                Text(verbatim: "·").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 HStack(spacing: 4) {
                     Image(systemName: batteryIcon(pct: pct, charging: live.charging == true))
                         .font(StrandFont.overline)
@@ -1169,8 +1165,8 @@ struct TodayView: View {
         }
     }
 
-    /// Top utility row: compact date only — la batería vive a su derecha en la línea de estado del
-    /// `headerBlock` (FER-278); la frescura de sync se bajó al pie de «Métricas de hoy» (FER-294).
+    /// Top utility row: compact date only — la sincronización + batería viven a su derecha en la línea
+    /// de estado del `headerBlock` (FER-278).
     @ViewBuilder private var utilityRow: some View {
         Text(shortDate)
             .font(StrandFont.overline)
