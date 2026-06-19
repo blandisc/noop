@@ -54,6 +54,13 @@ public enum StrandMotion {
     public static func spin(period: Double = 1.5) -> Animation {
         .linear(duration: period).repeatForever(autoreverses: false)
     }
+
+    /// Gentle looping vertical bob for an affordance hint that invites a gesture —
+    /// e.g. the pull-to-refresh chevron nudging the eye downward (FER-293). Slower
+    /// and softer than `pulse`, quieter than `breathe`.
+    public static var bob: Animation {
+        .easeInOut(duration: 1.2).repeatForever(autoreverses: true)
+    }
 }
 
 #if DEBUG

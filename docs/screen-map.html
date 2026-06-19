@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-19 · FER-286</span>
+  <span class="tb-updated">Actualizado 2026-06-19 · FER-293</span>
 </div>
 
 <div id="wrapper">
@@ -373,6 +373,7 @@ const SCREENS = [
       { label: 'Hay número, sin contexto (insufficient) — numeral en tinta + "aún sin contexto", ya no cae al anillo (FER-160)', type: 'warn' },
       { label: 'Sincronizando (transversal iOS) — syncMeta muestra "Sincronizando historial…" en utility row; sin pill', type: 'warn' },
       { label: 'Pull-to-refresh propio que dibuja el dial (FER-222 · reemplaza el nativo FER-204): jalar arma el arco verde del dial (armProgress 0→1, sin ruedita nativa); cruzar el umbral (96pt) dispara el sync + háptica .medium y el dial gira (modo syncing FER-221); soltar antes no dispara; VoiceOver: acción «Sincronizar»; Reduce Motion: sin dibujo del arco; offline: solo refresh local', type: 'live' },
+      { label: 'Pista descubrible del gesto (FER-293 · supersede FER-270/274): chevron.down que rebota suave (StrandMotion.bob) + microcopy «Desliza para actualizar», overlay arriba sin empujar el héroe; se muestra con o sin strap; se desvanece al iniciar el tirón y al sincronizar; tras el primer pull queda solo el chevron (cue sutil persistente, no desaparece para siempre); Reduce Motion: estático; VoiceOver: oculta (equiv. acción «Sincronizar»)', type: 'live' },
       { label: '«Métricas de hoy» (FER-180/258/265/282): el encabezado (sello «Hoy» + chip de pulso) se eliminó — los tiles suben pegados al héroe; rejilla 2×4 de 8 tiles intradía (valor + mini-banda p25–p75 + cambio vs media en una línea, tiles 76pt), sin sparkline 14d; Recuperación NO es tile', type: 'live' },
       { label: 'Cabe en una pantalla (FER-189): sin sección Fuentes, tiles 76pt — sin scroll en 6.1"+', type: 'live' },
       { label: 'Pulso vivo en la línea del veredicto (FER-194/282): pastilla de pulso (punto + bpm) anclada a la derecha de la palabra del veredicto, que sigue centrada en el eje del dial (sólo si strapSeen); abre el monitor', type: 'live' },

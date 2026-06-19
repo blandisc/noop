@@ -19,6 +19,11 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Hoy: una pista te invita a deslizar para actualizar / Today: a hint invites you to swipe to refresh.**
+  **ES** — Hoy ya tenía un gesto para actualizar (jalar la pantalla hacia abajo sincroniza tu strap y recalcula), pero casi no se notaba: solo una flechita muda que además desaparecía para siempre tras usarla una vez. Ahora, en reposo, aparece una **flecha que rebota suave** con el texto **«Desliza para actualizar»**, así descubres el gesto. Una vez que lo aprendes, el texto y el rebote se retiran pero queda una flecha discreta, para que la pista nunca se pierda del todo. Aparece tengas o no strap (jalar igual recarga tus datos) y respeta Reduce Motion y VoiceOver.
+  **EN** — Today already had a refresh gesture (pull the screen down to sync your strap and recompute), but it was nearly invisible: just a silent little arrow that also vanished forever after one use. Now, at rest, a **gently bouncing arrow** with the label **"Swipe to refresh"** shows up, so you discover the gesture. Once you've learned it, the text and bounce retire but a discreet arrow stays, so the hint is never fully lost. It appears with or without a strap (pulling refreshes your data either way) and respects Reduce Motion and VoiceOver.
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift), [Packages/StrandDesign/Sources/StrandDesign/Motion.swift](Packages/StrandDesign/Sources/StrandDesign/Motion.swift))
+
 - **Hoy: la explicación del veredicto abre completa, sin tener que jalarla / Today: the verdict explainer opens fully, no dragging.**
   **ES** — La hoja **«¿Por qué [veredicto]?»** (la que abre la **«i»** del veredicto) salía cortada y había que arrastrarla hacia arriba para leer todo. Ahora abre a la altura exacta de su contenido, así ves toda la explicación —noche corta, tus señales y la leyenda de colores— de un vistazo.
   **EN** — The **"Why [verdict]?"** sheet (opened from the verdict's **"i"**) used to open cut off, forcing you to drag it up to read everything. Now it opens at its content's exact height, so you see the whole explanation — short night, your signals, and the color legend — at a glance.
