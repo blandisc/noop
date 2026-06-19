@@ -191,6 +191,11 @@ public enum InstrumentoType {
     public static let overline = Font.system(size: 12, weight: .medium)
     /// Recommended tracking for `overline`.
     public static let overlineTracking: CGFloat = 0.6
+
+    /// One step up from `overline` (13pt semibold) for a section header that should
+    /// read a touch louder — e.g. the Today verdict's «EL VEREDICTO DE HOY». Still
+    /// clearly subordinate to the hero numeral (rule 1). Same tracking as `overline`. (FER-283)
+    public static let overlineProminent = Font.system(size: 13, weight: .semibold)
 }
 
 // MARK: - Text helpers
@@ -209,6 +214,15 @@ public extension Text {
     /// only when the overline itself is the datum.
     func instrumentoOverline() -> some View {
         self.font(InstrumentoType.overline)
+            .tracking(InstrumentoType.overlineTracking)
+            .textCase(.uppercase)
+    }
+
+    /// Like `instrumentoOverline` but a touch more prominent (13pt semibold) for a
+    /// section header that should read louder — still subordinate to the hero numeral.
+    /// Color it with a tint only when the overline itself is the datum. (FER-283)
+    func instrumentoOverlineProminent() -> some View {
+        self.font(InstrumentoType.overlineProminent)
             .tracking(InstrumentoType.overlineTracking)
             .textCase(.uppercase)
     }
@@ -241,6 +255,11 @@ public extension Text {
                 Text("RECUPERACIÓN").instrumentoOverline().foregroundStyle(t.inkTertiary)
                 Text("82").instrumentoHero(88).foregroundStyle(t.dataRecovery)
                 Text("Listo para un día fuerte").font(StrandFont.subhead).foregroundStyle(t.inkSecondary)
+            }
+            // overline normal vs prominente (FER-283): la prominente sube a 13/semibold, tinta secundaria.
+            VStack(alignment: .leading, spacing: 4) {
+                Text("El veredicto de hoy").instrumentoOverline().foregroundStyle(t.inkTertiary)
+                Text("El veredicto de hoy").instrumentoOverlineProminent().foregroundStyle(t.inkSecondary)
             }
             Divider().overlay(t.hairline)
             swatches("Papel", [("paper", t.paper), ("surface", t.surface), ("hairline", t.hairline), ("strong", t.hairlineStrong)], t)
