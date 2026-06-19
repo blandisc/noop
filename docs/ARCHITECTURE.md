@@ -414,6 +414,17 @@ reader so multi-hundred-MB files don't blow up memory.
   then hides the block). A trend projection, never a guarantee; simple by design per the
   short-term autoregressive-forecasting evidence (De Sabbata & Simonini, *J Healthc Inform Res*
   2025). Pure + DB-free; the app feeds it the recovery column out of `repo.days`.
+- **`InsightEngine`** (FER-290) is the single orchestrator behind the redesigned Coach ("el Bucle"):
+  it takes data already read from the store (`DailyMetric`, logged behaviours, sleep sessions) and
+  runs a catalog of detectors — each a thin wrapper over one of the engines above (`BehaviorInsights`,
+  `CorrelationEngine`, `Baselines`, `ComparisonEngine`, `RecoveryForecast`, `SleepRegularityIndex`,
+  `ActivityCostEngine`, `ReadinessEngine`, `FitnessAgeEngine`, plus a sleep-debt aggregate) — and
+  returns ranked `Insight`s with es-MX templates. It **re-implements no math**; its only new logic is
+  statistical hygiene: every inferential detector feeds ONE Benjamini-Hochberg family
+  (`MultipleComparisons`) so a finding is "significant" only when its FDR-adjusted q-value clears α
+  alongside per-side sample and effect-size floors. A synthetic suite proves planted effects are
+  recovered and pure noise is not (family-wise false-positive rate held near α). The LLM step
+  (issue E) only rewrites the templates — it never produces a figure. Pure + DB-free.
 
 Because the engine never touches the database, the same code runs over live-collected streams,
 backfilled streams, or imported data interchangeably. **All derived values are approximate.**
