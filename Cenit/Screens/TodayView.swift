@@ -250,7 +250,7 @@ struct TodayView: View {
                 metricSheet(for: info)
             }
             .sheet(isPresented: $showWhyVerdict) {
-                WhyVerdictSheet(readiness: readiness, theme: theme)
+                WhyVerdictSheet(readiness: readiness, theme: theme, sleepMinutes: repo.today?.totalSleepMin)
             }
             // Rich «Instrumento» Detalle, drilled into from a summary sheet's "Ver más" — the SAME screens
             // Cuerpo presents, theme passed explicitly (it doesn't propagate through `.sheet`), NO nested
@@ -922,10 +922,13 @@ struct TodayView: View {
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            if r.confidenceLow, let note = r.confidenceNote {
+            if r.confidenceLow {
+                // FER-285: en el Hero, una línea CORTA; la explicación con las horas reales de anoche
+                // vive en WhyVerdictSheet (la «i» de arriba la abre). El `confidenceNote` del engine se
+                // conserva (a11y / otros consumidores), pero el Hero ya no lo muestra entero.
                 HStack(spacing: NoopMetrics.space2) {
                     Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 10))
-                    Text(note).font(StrandFont.caption)
+                    Text("Noche corta — confianza baja").font(StrandFont.caption)
                 }
                 .foregroundStyle(theme.warning)
             }
