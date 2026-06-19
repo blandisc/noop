@@ -322,7 +322,7 @@ UI doesn't re-render on every beat.
 
 ## 7. Storage model (WhoopStore / SQLite)
 
-GRDB drives a migrator (`WhoopStoreInfo.schemaVersion`, currently `11`). The schema groups into four
+GRDB drives a migrator (`WhoopStoreInfo.schemaVersion`, currently `12`). The schema groups into four
 concerns:
 
 **Durable decoded streams** — natural key `(deviceId, ts)`, one row per sample:
@@ -336,6 +336,10 @@ concerns:
   a JSON `stagesJSON` hypnogram.
 - `journal`, `workout`, `appleDaily` — imported journal answers, workouts (WHOOP + Apple Health),
   and Apple-Health daily aggregates.
+- `experiment` (v12, FER-307) — one row per N-of-1 experiment, natural key `id` (UUID): the lever
+  (`behavior` × `outcome`), `startDay`/`windowDays`, `status` (running/completed/canceled), and the
+  verdict columns filled on completion. Additive only; one experiment runs at a time (app-enforced),
+  but the table keeps the full history.
 
 **Generic metric series** — `metricSeries(deviceId, day, key, value REAL)`: a tall, long-format
 table so *any* scalar metric from *any* source can be queried/compared uniformly (the substrate for
@@ -425,6 +429,15 @@ reader so multi-hundred-MB files don't blow up memory.
   alongside per-side sample and effect-size floors. A synthetic suite proves planted effects are
   recovered and pure noise is not (family-wise false-positive rate held near α). The LLM step
   (issue E) only rewrites the templates — it never produces a figure. Pure + DB-free.
+
+- **`ExperimentVerdict`** (FER-307) is the N-of-1 "Prueba" engine behind the redesigned Coach: it
+  judges whether a candidate lever (a logged behaviour × an outcome) *reproduced* prospectively over
+  an experiment window. It re-implements no math — it delegates to `BehaviorInsights.effect` (Welch +
+  pooled Cohen's d + the `minGroup` floor), comparing the window's adherent days (derived from the
+  existing journal) against the user's baseline, and classifies a `Verdict` (`sustained` /
+  `notSustained` / `insufficient`). A `sustained` verdict promotes the lever candidate→proven, which
+  `InsightEngine.promoteProven` then projects onto the engine's output (the engine stays stateless;
+  "proven" lives in the `experiment` table, not on the `Insight`). Pure + DB-free.
 
 Because the engine never touches the database, the same code runs over live-collected streams,
 backfilled streams, or imported data interchangeably. **All derived values are approximate.**

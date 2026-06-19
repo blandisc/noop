@@ -40,6 +40,20 @@ final class MigrationTests: XCTestCase {
             let cols = try await store.columnNamesForTest(table: table)
             XCTAssertTrue(cols.contains("synced"), "\(table) missing synced column")
         }
-        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 11)
+        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 12)
+    }
+
+    /// v12 (FER-307) creates the `experiment` table with `id` as the sole primary key.
+    func testV12CreatesExperimentTable() async throws {
+        let store = try await WhoopStore.inMemory()
+        let tables = try await store.tableNames()
+        XCTAssertTrue(tables.contains("experiment"), "missing experiment table")
+        let pk = try await store.primaryKeyColumns("experiment")
+        XCTAssertEqual(pk, ["id"])
+        let cols = try await store.columnNamesForTest(table: "experiment")
+        for expected in ["behavior", "outcome", "expectedSign", "startDay", "windowDays",
+                         "status", "result", "createdAt"] {
+            XCTAssertTrue(cols.contains(expected), "experiment missing column \(expected)")
+        }
     }
 }

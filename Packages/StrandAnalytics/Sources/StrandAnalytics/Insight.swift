@@ -100,6 +100,20 @@ public struct BehaviorBreakdown: Equatable, Sendable {
     }
 }
 
+/// The identity of a behavior lever: a logged behavior tested against an outcome metric. It is the
+/// unit an N-of-1 experiment runs on (issue D) and the key by which a candidate is promoted to
+/// `.proven`. Only `.behavior` insights carry one.
+public struct Lever: Hashable, Sendable {
+    /// The logged behavior (the journal question), e.g. "Meditación".
+    public let behavior: String
+    /// The outcome metric label, e.g. "Recuperación".
+    public let outcome: String
+    public init(behavior: String, outcome: String) {
+        self.behavior = behavior
+        self.outcome = outcome
+    }
+}
+
 /// One ranked finding from the InsightEngine.
 public struct Insight: Equatable, Sendable {
     public let kind: InsightKind
@@ -110,6 +124,9 @@ public struct Insight: Equatable, Sendable {
     public let datum: InsightDatum
     public let evidence: InsightEvidence
     public let confidence: InsightConfidence
+    /// The lever this finding is about, for `.behavior` insights — the handle an N-of-1 experiment
+    /// runs on and the key for candidate→proven promotion. nil for every other kind.
+    public let lever: Lever?
     /// Ranking score (higher = more relevant): significance × effect size × recency.
     /// Used only to order the list; not shown to the user.
     public let relevance: Double
@@ -119,7 +136,7 @@ public struct Insight: Equatable, Sendable {
 
     public init(kind: InsightKind, title: String, reading: String,
                 datum: InsightDatum, evidence: InsightEvidence,
-                confidence: InsightConfidence, relevance: Double,
+                confidence: InsightConfidence, relevance: Double, lever: Lever? = nil,
                 behaviorBreakdown: BehaviorBreakdown? = nil) {
         self.kind = kind
         self.title = title
@@ -127,6 +144,7 @@ public struct Insight: Equatable, Sendable {
         self.datum = datum
         self.evidence = evidence
         self.confidence = confidence
+        self.lever = lever
         self.relevance = relevance
         self.behaviorBreakdown = behaviorBreakdown
     }
