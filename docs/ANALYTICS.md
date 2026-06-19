@@ -475,9 +475,9 @@ It assembles a `DailyMetric` (the `WhoopStore` cache shape) plus rich `SleepSess
 
 ---
 
-## `ActivityCostEngine` — per-sport recovery association (not yet surfaced)
+## `ActivityCostEngine` — per-sport recovery association
 
-Source: `ActivityCostEngine.swift`. A pure, DB-free engine that describes, **per sport**, how far your next-morning Charge (recovery) tends to sit *below* your rest-day baseline after a session, and roughly how long it tends to take to climb back. **Ported and tested, but not yet wired into any screen** — surfacing it (data sources + UI) is tracked separately (FER-139), and the Kotlin/Android mirror in FER-140.
+Source: `ActivityCostEngine.swift`. A pure, DB-free engine that describes, **per sport**, how far your next-morning Charge (recovery) tends to sit *below* your rest-day baseline after a session, and roughly how long it tends to take to climb back. **Live.** Surfaced in `ActivityRecoverySheet` (presented from `CuerpoView`), evaluated in `Repository` via `ActivityCostEngine.evaluate` (FER-139). The Kotlin/Android mirror is tracked in FER-140.
 
 Given `activityDaysBySport` (per sport, the set of `yyyy-MM-dd` day keys it was tagged on) and `recoveryByDay` (daily Charge 0–100), for each sport S:
 
