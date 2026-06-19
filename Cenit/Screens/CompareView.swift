@@ -522,6 +522,13 @@ struct CompareView: View {
                     .font(StrandFont.footnote)
                     .foregroundStyle(theme.inkTertiary)
 
+                // Association, not cause: overlapping trends move together; that's not
+                // one causing the other. (FER-299)
+                Text("Association, not cause — moving together isn't one driving the other.")
+                    .font(StrandFont.footnote)
+                    .foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+
                 if pairs.isEmpty {
                     emptyWell(text: "Not enough overlapping days between these metrics in \(range.phrase). Widen the range.")
                 } else {

@@ -18,6 +18,13 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
+    # FER-299 — Honestidad estadística de Insights: framing de asociación + autocorrelación
+    'Association, not cause — these signals move together; neither makes the other happen.': 'Asociación, no causa — estas señales se mueven juntas; ninguna hace que ocurra la otra.',
+    'Association, not cause. ‘Significant’ accounts for testing every behaviour at once.': 'Asociación, no causa. ‘Significativo’ ya considera que se prueban todos los comportamientos a la vez.',
+    "Association, not cause — moving together isn't one driving the other.": 'Asociación, no causa — moverse juntas no es que una empuje a la otra.',
+    'Association, not cause — these move together, neither drives the other.': 'Asociación, no causa — se mueven juntas, ninguna empuja a la otra.',
+    'carry-over': 'arrastre',
+    "Day-to-day persistence (r = %@, n = %lld) — the same signal compared with itself, so there's no independent significance to report.": 'Persistencia de un día a otro (r = %@, n = %lld) — la misma señal comparada consigo misma, así que no hay una significancia independiente que reportar.',
     # FER-277 — Detalle de Recuperación: bloque de pronóstico «Mañana, si descansas igual»
     'Tomorrow, if you rest the same': 'Mañana, si descansas igual',
     "A simple projection from your recent recovery trend (a moving average plus a damped recent slope), nudged down a little by any standing sleep debt. It's a trend, not a guarantee — what you do today matters most — and it needs about two weeks of history before it'll show. (De Sabbata & Simonini, J Healthcare Informatics Research, 2025)": 'Una proyección simple desde tu tendencia reciente de recuperación (un promedio móvil más una pendiente reciente amortiguada), ajustada un poco hacia abajo por la deuda de sueño acumulada. Es una tendencia, no una garantía —lo que hagas hoy es lo que más cuenta— y necesita unas dos semanas de historial antes de aparecer. (De Sabbata & Simonini, J Healthcare Informatics Research, 2025)',

@@ -382,7 +382,7 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 
 ### InsightsView — retirada de navegación (FER-292)
 **Archivo:** `Cenit/Screens/InsightsView.swift`  
-**Descripción:** Correlaciones — comportamientos que afectan recovery/HRV/sleep/RHR (Pearson r, Cohen's d). **Ya no está en la navegación:** su contenido lo surte ahora el Bucle (Lo que funciona en ti / Hallazgos / Efectos de tus hábitos) vía el `InsightEngine`. El archivo se conserva (no se borra en FER-292).
+**Descripción:** Correlaciones — comportamientos que afectan recovery/HRV/sleep/RHR (Pearson r, Cohen's d). **Ya no está en la navegación:** su contenido lo surte ahora el Bucle (Lo que funciona en ti / Hallazgos / Efectos de tus hábitos) vía el `InsightEngine`. El archivo se conserva (no se borra en FER-292). **Honestidad estadística (FER-299):** el mismo motor que ahora alimenta al Bucle (`CorrelationEngine`/`BehaviorInsights`) usa la cola **Student-t** real para la p y decide significancia por **FDR (Benjamini-Hochberg)** sobre toda la familia, no por prueba individual; las relaciones autocorrelacionadas (recovery→recovery) se marcan «arrastre» y **no muestran p**; el copy de Insights/Compare/Explore enmarca todo como «asociación, no causa».
 
 ---
 

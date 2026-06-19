@@ -1,4 +1,5 @@
 import XCTest
+import Foundation
 @testable import StrandAnalytics
 
 final class CorrelationEngineTests: XCTestCase {
@@ -34,14 +35,49 @@ final class CorrelationEngineTests: XCTestCase {
     }
 
     func testPearsonGoldenValues() {
-        // x=[1..5], y=[2,4,5,4,5] → r=0.7745966692, slope 0.6, intercept 2.2,
-        // pApprox (A&S-erf normal approx) ≈ 0.0338947336.
+        // x=[1..5], y=[2,4,5,4,5] → r=0.7745966692, slope 0.6, intercept 2.2.
+        // p uses the EXACT Student-t tail (df=3): t = r·sqrt(3/(1−r²)) ≈ 2.12132 →
+        // two-sided p ≈ 0.12402706 (matches SciPy stats.pearsonr to 1e-8). The old
+        // normal approximation gave 0.03389 — a 3.66× understatement at n=5.
         let xy: [(Double, Double)] = [(1, 2), (2, 4), (3, 5), (4, 4), (5, 5)]
         let c = CorrelationEngine.pearson(xy)!
         XCTAssertEqual(c.r, 0.7745966692414834, accuracy: 1e-9)
         XCTAssertEqual(c.slope, 0.6, accuracy: 1e-9)
         XCTAssertEqual(c.intercept, 2.2, accuracy: 1e-9)
-        XCTAssertEqual(c.pApprox, 0.033894733597028104, accuracy: 1e-6)
+        XCTAssertEqual(c.pApprox, 0.12402706265755416, accuracy: 1e-8)
+    }
+
+    func testStudentTTailMatchesKnownValues() {
+        // Cross-checked against SciPy's stats.t.sf(|t|, df)*2 (Student 1908).
+        XCTAssertEqual(CorrelationEngine.studentTTwoSided(t: 2.0, df: 10),
+                       0.07338803477, accuracy: 1e-8)   // SciPy 0.073388…
+        XCTAssertEqual(CorrelationEngine.studentTTwoSided(t: 2.121320343559643, df: 3),
+                       0.12402706266, accuracy: 1e-8)   // the n=5 golden case
+        // t = 0 → no evidence; df ≤ 0 → no evidence.
+        XCTAssertEqual(CorrelationEngine.studentTTwoSided(t: 0, df: 3), 1.0, accuracy: 1e-12)
+        XCTAssertEqual(CorrelationEngine.studentTTwoSided(t: 5, df: 0), 1.0, accuracy: 1e-12)
+    }
+
+    func testStudentTTailIsHeavierThanNormal() {
+        // The whole point of the fix: at small df the t tail (p) is strictly larger
+        // than the old normal approximation 2·(1−Φ(|t|)) — i.e. more conservative.
+        func normalTwoSided(_ t: Double) -> Double {
+            // Φ via the same A&S erf the engine used before the fix.
+            func erf(_ x: Double) -> Double {
+                let s = x < 0 ? -1.0 : 1.0, ax = abs(x)
+                let u = 1.0 / (1.0 + 0.3275911 * ax)
+                let y = 1.0 - (((((1.061405429 * u - 1.453152027) * u) + 1.421413741) * u
+                                - 0.284496736) * u + 0.254829592) * u * Foundation.exp(-ax * ax)
+                return s * y
+            }
+            return 2.0 * (1.0 - 0.5 * (1.0 + erf(t / 2.0.squareRoot())))
+        }
+        for df in [3.0, 5.0, 10.0] {
+            let t = 2.2
+            XCTAssertGreaterThan(CorrelationEngine.studentTTwoSided(t: t, df: df),
+                                 normalTwoSided(t),
+                                 "t tail must exceed the normal tail at df=\(df)")
+        }
     }
 
     func testPearsonTooFewReturnsNil() {
