@@ -80,6 +80,26 @@ public struct InsightEvidence: Equatable, Sendable {
     }
 }
 
+/// The with/without group means behind a behavior finding — the comparison the detail surface
+/// shows ("Recuperación 71 sin alcohol vs 63 con"). Only behavior insights carry it; every other
+/// detector leaves it nil. The engine computes these (via `BehaviorInsights`); the UI never recomputes.
+public struct BehaviorBreakdown: Equatable, Sendable {
+    /// Mean outcome on days the behavior WAS logged.
+    public let meanWith: Double
+    /// Mean outcome on days the behavior was NOT logged.
+    public let meanWithout: Double
+    /// Days in each group (with an outcome value).
+    public let nWith: Int
+    public let nWithout: Int
+
+    public init(meanWith: Double, meanWithout: Double, nWith: Int, nWithout: Int) {
+        self.meanWith = meanWith
+        self.meanWithout = meanWithout
+        self.nWith = nWith
+        self.nWithout = nWithout
+    }
+}
+
 /// One ranked finding from the InsightEngine.
 public struct Insight: Equatable, Sendable {
     public let kind: InsightKind
@@ -93,10 +113,14 @@ public struct Insight: Equatable, Sendable {
     /// Ranking score (higher = more relevant): significance × effect size × recency.
     /// Used only to order the list; not shown to the user.
     public let relevance: Double
+    /// For `.behavior` findings: the with/without group means, so the lever detail can draw a
+    /// comparison. nil for every other detector. Append-only (FER-309).
+    public let behaviorBreakdown: BehaviorBreakdown?
 
     public init(kind: InsightKind, title: String, reading: String,
                 datum: InsightDatum, evidence: InsightEvidence,
-                confidence: InsightConfidence, relevance: Double) {
+                confidence: InsightConfidence, relevance: Double,
+                behaviorBreakdown: BehaviorBreakdown? = nil) {
         self.kind = kind
         self.title = title
         self.reading = reading
@@ -104,5 +128,6 @@ public struct Insight: Equatable, Sendable {
         self.evidence = evidence
         self.confidence = confidence
         self.relevance = relevance
+        self.behaviorBreakdown = behaviorBreakdown
     }
 }

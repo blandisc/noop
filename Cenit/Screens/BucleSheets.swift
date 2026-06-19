@@ -43,6 +43,11 @@ struct PalancaDetailSheet: View {
                     .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
 
+                // With / without comparison (behavior findings only) — the means the engine measured.
+                if let bd = insight.behaviorBreakdown {
+                    breakdownBars(bd)
+                }
+
                 // Evidence.
                 VStack(spacing: 0) {
                     evidenceRow("Muestra", "\(insight.evidence.n)")
@@ -80,6 +85,40 @@ struct PalancaDetailSheet: View {
         }
         .padding(.vertical, 11)
         .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
+    }
+
+    /// Two bars: the outcome mean on days WITH vs WITHOUT the behavior. The better group (respecting
+    /// metric direction) carries the data hue; the other stays quiet ink. Color only on the datum.
+    @ViewBuilder private func breakdownBars(_ bd: BehaviorBreakdown) -> some View {
+        let higherBetter = insight.datum.metric != "FC en reposo"
+        let withIsBetter = higherBetter ? (bd.meanWith >= bd.meanWithout) : (bd.meanWith <= bd.meanWithout)
+        let maxMean = max(bd.meanWith, bd.meanWithout, 1)
+        VStack(alignment: .leading, spacing: 12) {
+            breakdownBar(label: "Con el hábito", mean: bd.meanWith, n: bd.nWith,
+                         frac: bd.meanWith / maxMean, good: withIsBetter)
+            breakdownBar(label: "Sin el hábito", mean: bd.meanWithout, n: bd.nWithout,
+                         frac: bd.meanWithout / maxMean, good: !withIsBetter)
+        }
+        .padding(.top, 4)
+    }
+
+    private func breakdownBar(label: String, mean: Double, n: Int, frac: Double, good: Bool) -> some View {
+        HStack(spacing: 11) {
+            Text(label).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .frame(width: 108, alignment: .leading)
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(theme.hairline)
+                    Capsule().fill(good ? theme.dataRecovery : theme.inkTertiary.opacity(0.5))
+                        .frame(width: max(4, geo.size.width * CGFloat(min(1, frac))))
+                }
+            }
+            .frame(height: 10)
+            Text("\(Int(mean.rounded()))").font(StrandFont.captionNumber).monospacedDigit()
+                .foregroundStyle(theme.ink).frame(width: 34, alignment: .trailing)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(label): \(Int(mean.rounded())), \(n) días")
     }
 
     private var datumText: String {
@@ -121,6 +160,8 @@ struct PalancaDetailSheet: View {
 struct HallazgosListSheet: View {
     let insights: [Insight]
     let theme: InstrumentoTheme
+    /// Recent recovery series for the trend sparkline (passed by the Bucle).
+    var trendSpark: [Double] = []
     let onPick: (Insight) -> Void
 
     var body: some View {
@@ -144,6 +185,11 @@ struct HallazgosListSheet: View {
                                     .fixedSize(horizontal: false, vertical: true)
                                 Text(insight.reading).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
                                     .fixedSize(horizontal: false, vertical: true)
+                                if insight.kind == .trend {
+                                    BucleFormat.trendSparkline(trendSpark,
+                                                               color: BucleFormat.metricColor(insight.datum.metric, theme))
+                                        .padding(.top, 4)
+                                }
                             }
                             Spacer()
                             Image(systemName: "chevron.right").font(.system(size: 15))
@@ -379,6 +425,26 @@ enum BucleFormat {
         let v = abs(insight.datum.value)
         let mag = v >= 10 ? String(Int(v.rounded())) : String(format: "%.1f", v)
         return "\(mag) \(insight.datum.unit)"
+    }
+
+    /// The per-metric data hue (FER-147) for a finding's datum — color stays on the measured series.
+    static func metricColor(_ metric: String, _ theme: InstrumentoTheme) -> Color {
+        switch metric {
+        case "HRV":                                  return theme.dataHrv
+        case "Sueño", "Deuda de sueño",
+             "Regularidad de sueño":                 return theme.dataSleep
+        case "FC en reposo":                         return theme.dataHeart
+        default:                                     return theme.dataRecovery
+        }
+    }
+
+    /// A compact, single-hue trend sparkline for «Instrumento» rows. Quiet: no area, no hover.
+    @ViewBuilder static func trendSparkline(_ values: [Double], color: Color) -> some View {
+        if values.count >= 2 {
+            Sparkline(values: values, gradient: Gradient(colors: [color, color]),
+                      lineWidth: 2, showsArea: false, showsHead: true, showsHover: false)
+                .frame(width: 80, height: 24)
+        }
     }
 
     static func magnitudeWord(_ d: Double) -> String {
