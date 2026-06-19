@@ -75,12 +75,39 @@ final class BaselinesTests: XCTestCase {
     }
 
     func testRollingMeanSD() {
-        // Trailing mean/SD over a small known set: [40, 50, 60] → mean 50, sample SD 10.
+        // HRV is log-domain (Plews 2013): the center of [40, 50, 60] is the GEOMETRIC
+        // mean exp((ln40+ln50+ln60)/3) ≈ 49.32 ms, NOT the arithmetic mean 50.
         let s = Baselines.rollingMeanSD([40, 50, 60], cfg: Baselines.hrvCfg)
-        XCTAssertEqual(s.baseline, 50.0, accuracy: 1e-9)
-        // spread is stored as SD/1.253, so deviation() recovers σ = SD = 10.
+        let geo = exp((log(40.0) + log(50.0) + log(60.0)) / 3.0)
+        XCTAssertEqual(s.baseline, geo, accuracy: 1e-9)
+        XCTAssertEqual(s.baseline, 49.324, accuracy: 1e-3)
+        // spread is SD(ln)/1.253, so deviation() recovers σ_ln; z is on ln(value).
+        let sdLn = (( pow(log(40.0) - log(geo), 2) + pow(log(50.0) - log(geo), 2)
+                    + pow(log(60.0) - log(geo), 2)) / 2.0).squareRoot()
         let dev = Baselines.deviation(60.0, state: s)
-        XCTAssertEqual(dev.z, 1.0, accuracy: 1e-6)  // (60-50)/10
+        XCTAssertEqual(dev.z, (log(60.0) - log(geo)) / sdLn, accuracy: 1e-6)
+    }
+
+    /// Fixed-vector test for the log-domain HRV baseline.
+    /// Method: RMSSD per Task Force 1996 (HRV measurement standard); baselined and
+    /// z-scored in ln(RMSSD) because nightly HRV is ~log-normal (Plews et al. 2013).
+    func testHrvLogDomainGeometricCenterAndSymmetricZ() {
+        // A log-SYMMETRIC series around 50 ms (×/÷ 1.2 and ×/÷ 1.5) has geometric mean
+        // exactly 50 — the arithmetic mean (≈51.3) would sit above it. This is the
+        // acceptance criterion: the center lands on the geometric mean, not the arithmetic.
+        let series: [Double?] = [50.0 / 1.5, 50.0 / 1.2, 50.0, 50.0 * 1.2, 50.0 * 1.5]
+        let s = Baselines.rollingMeanSD(series, cfg: Baselines.hrvCfg)
+        XCTAssertTrue(s.logDomain)
+        XCTAssertEqual(s.baseline, 50.0, accuracy: 1e-9)             // geometric mean
+        let arithmetic = series.compactMap { $0 }.reduce(0, +) / 5.0
+        XCTAssertGreaterThan(arithmetic, s.baseline)                 // arithmetic is biased up
+
+        // z is symmetric in the log domain: a multiplicative drop scores the mirror of
+        // the matching rise. A linear z would underweight the low night (the audit's bug).
+        let up = Baselines.deviation(50.0 * 1.3, state: s).z
+        let down = Baselines.deviation(50.0 / 1.3, state: s).z
+        XCTAssertEqual(up, -down, accuracy: 1e-9)
+        XCTAssertEqual(Baselines.deviation(50.0, state: s).z, 0.0, accuracy: 1e-9)
     }
 
     func testRollingMeanSDWindowTruncates() {

@@ -316,6 +316,15 @@ let newSpread   = max(cfg.floorSpread, ls * abs(value - newBaseline) + (1 - ls) 
 
 The simple, maximally auditable path: plain mean and sample SD (ddof = 1) over the trailing N (default 30) valid nights, with the σ floor applied and converted back into abs-dev space (`÷ 1.253`) so `deviation()` recovers the intended Gaussian σ unchanged.
 
+### Log-domain baseline for HRV (`logDomain`)
+
+Nightly HRV (RMSSD) is **~log-normal**, so HRV is baselined and z-scored on **`ln(RMSSD)`**, not raw ms (Plews et al. 2013, who monitor **lnRMSSD**; RMSSD itself per Task Force 1996). A `MetricCfg.logDomain` flag drives this — set only for `hrv`. Everything happens in "center space" (`ln(value)` for HRV, the raw value for every other metric), so the Winsor/EWMA/trailing math above is unchanged; only the space differs:
+
+- **Center** — the stored `baseline` is the **geometric mean** (back in ms, so display is untouched), not the arithmetic mean. On a log-symmetric series the geometric mean is the true center; the arithmetic mean sits above it.
+- **Spread** — kept in **ln units**; `deviation()` and the ±σ band (`Baselines.normalRange`) read `state.logDomain` to z-score on `ln(value)` and to make the normal-range band **multiplicative** (`exp(lnBaseline ± k·σ)`), so it stays positive and asymmetric in ms.
+- **Plausibility gate** — `minVal`/`maxVal` stay the ms bounds, applied *before* the log transform.
+- **Why it matters** — a raw-ms baseline biases the center **up** and underweights low nights (a −1σ_ln night scored z ≈ −0.89 instead of −1.0). Since HRV weighs `0.60` in `RecoveryScorer`, that bias propagated into both Recovery and Readiness. Measured on 58 real nights: center bias **+1.9 %**, recovery shifted **−1.4 pts** on average (median |Δ| ≈ 1.8, max ≈ 9.5 pts on the lowest nights — exactly where the linear z under-reacted).
+
 ### Status lifecycle (`BaselineStatus`)
 
 | Status | Condition |
@@ -329,14 +338,14 @@ The simple, maximally auditable path: plain mean and sample SD (ddof = 1) over t
 
 | Metric | min | max | floor spread | center / spread half-life |
 |---|---|---|---|---|
-| `hrv` | 5 | 250 | 5.0 | 14 / 21 |
+| `hrv` | 5 | 250 | 0.08 (ln units, **log-domain**) | 14 / 21 |
 | `resting_hr` | 30 | 120 | 2.0 | 14 / 21 |
 | `resp` | 4 | 40 | 0.5 | 14 / 21 |
 | `skin_temp` | 20 | 42 | 0.3 | 14 / 21 |
 
 ### Deviation
 
-`deviation(_:state:)` returns a robust z-score, a signed physical-units delta, a fractional ratio (`value/baseline − 1`), and an `inNormalRange` flag (`|z| ≤ 1`).
+`deviation(_:state:)` returns a robust z-score, a signed physical-units delta, a fractional ratio (`value/baseline − 1`), and an `inNormalRange` flag (`|z| ≤ 1`). For a log-domain baseline (HRV) the z is taken on `ln(value)` vs `ln(baseline)`; `delta` and `ratio` stay in ms.
 
 ---
 

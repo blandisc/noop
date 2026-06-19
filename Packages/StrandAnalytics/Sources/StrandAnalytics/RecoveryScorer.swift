@@ -128,17 +128,26 @@ public enum RecoveryScorer {
         /// Defaults to `minNightsTrust` so callers that build a baseline directly
         /// (e.g. fixed population priors) are treated as fully trusted (no shrinkage).
         public let nValid: Int
-        public init(mean: Double, spread: Double, nValid: Int = Baselines.minNightsTrust) {
-            self.mean = mean; self.spread = spread; self.nValid = nValid
+        /// True when this driver's baseline lives in the natural-log domain (HRV):
+        /// `mean` is the geometric mean (ms), `spread` the dispersion in ln units, so
+        /// the z is taken on ln(value) vs ln(mean).
+        public let logDomain: Bool
+        public init(mean: Double, spread: Double, nValid: Int = Baselines.minNightsTrust,
+                    logDomain: Bool = false) {
+            self.mean = mean; self.spread = spread; self.nValid = nValid; self.logDomain = logDomain
         }
         public init(_ state: BaselineState) {
-            self.mean = state.baseline; self.spread = state.spread; self.nValid = state.nValid
+            self.mean = state.baseline; self.spread = state.spread
+            self.nValid = state.nValid; self.logDomain = state.logDomain
         }
     }
 
-    /// Robust z-score using EWMA spread: (value − mean) / (1.253 × spread).
-    static func zScore(_ value: Double, mean: Double, spread: Double) -> Double {
+    /// Robust z-score using EWMA spread: (value − mean) / (1.253 × spread). For a
+    /// log-domain baseline (HRV) the z is taken on ln(value) vs ln(mean), so a value
+    /// at −1σ_ln scores z = −1 symmetrically (Plews 2013).
+    static func zScore(_ value: Double, mean: Double, spread: Double, logDomain: Bool = false) -> Double {
         let sigma = max(1.253 * spread, 1e-9)
+        if logDomain { return (Foundation.log(value) - Foundation.log(mean)) / sigma }
         return (value - mean) / sigma
     }
 
@@ -179,9 +188,9 @@ public enum RecoveryScorer {
         // so a thin baseline (few valid nights) can't swing the score (FER-13). A trusted
         // baseline returns confidence 1.0, leaving established users' scores unchanged.
 
-        // HRV term: higher is better.
+        // HRV term: higher is better. z on ln(HRV) when the baseline is log-domain.
         if let b = hrvBaseline {
-            let z = zScore(hrv, mean: b.mean, spread: b.spread) * Baselines.confidence(nValid: b.nValid)
+            let z = zScore(hrv, mean: b.mean, spread: b.spread, logDomain: b.logDomain) * Baselines.confidence(nValid: b.nValid)
             terms.append((z, wHRV))
         }
         // RHR term: lower is better → (μ − x) / σ.
