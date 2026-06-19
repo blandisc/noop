@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-18 · FER-277</span>
+  <span class="tb-updated">Actualizado 2026-06-19 · FER-282</span>
 </div>
 
 <div id="wrapper">
@@ -372,9 +372,9 @@ const SCREENS = [
       { label: 'Hay número, sin contexto (insufficient) — numeral en tinta + "aún sin contexto", ya no cae al anillo (FER-160)', type: 'warn' },
       { label: 'Sincronizando (transversal iOS) — syncMeta muestra "Sincronizando historial…" en utility row; sin pill', type: 'warn' },
       { label: 'Pull-to-refresh propio que dibuja el dial (FER-222 · reemplaza el nativo FER-204): jalar arma el arco verde del dial (armProgress 0→1, sin ruedita nativa); cruzar el umbral (96pt) dispara el sync + háptica .medium y el dial gira (modo syncing FER-221); soltar antes no dispara; VoiceOver: acción «Sincronizar»; Reduce Motion: sin dibujo del arco; offline: solo refresh local', type: 'live' },
-      { label: '«Métricas de hoy» (FER-180/258/265): encabezado compacto — sello «Hoy» + sync inline + chip de pulso tocable; rejilla 2×4 de 8 tiles intradía (valor + mini-banda p25–p75 + cambio vs media en una línea, tiles 76pt), sin sparkline 14d; Recuperación NO es tile', type: 'live' },
+      { label: '«Métricas de hoy» (FER-180/258/265/282): el encabezado (sello «Hoy» + chip de pulso) se eliminó — los tiles suben pegados al héroe; rejilla 2×4 de 8 tiles intradía (valor + mini-banda p25–p75 + cambio vs media en una línea, tiles 76pt), sin sparkline 14d; Recuperación NO es tile', type: 'live' },
       { label: 'Cabe en una pantalla (FER-189): sin sección Fuentes, tiles 76pt — sin scroll en 6.1"+', type: 'live' },
-      { label: 'Pulso vivo en el encabezado (FER-194): pastilla heart.fill + punto + bpm en el trailing de «Métricas de hoy» (sólo si strapSeen), abre el monitor; la fila del pie se eliminó', type: 'live' },
+      { label: 'Pulso vivo en la línea del veredicto (FER-194/282): pastilla de pulso (punto + bpm) anclada a la derecha de la palabra del veredicto, que sigue centrada en el eje del dial (sólo si strapSeen); abre el monitor', type: 'live' },
     ],
     nav: [
       { to: 'live', label: 'beat by beat (hoja · FER-190)', type: 'sheet' },
@@ -385,7 +385,7 @@ const SCREENS = [
       { to: 'why-verdict', label: '«i» junto a la palabra del veredicto', type: 'sheet' },
       { to: 'support', label: 'Toolbar ❤', type: 'toolbar' },
     ],
-    components: ['HealthAlertBanner', 'PaperBackground (lienzo por hora · FER-135)', 'heroInstrument (héroe unificado, 4 modos vía HeroState · concéntrico FER-169)', 'DiurnalDial (dial 24h del héroe · 180px con numeral 60 + «/100» apilado · FER-135/169/202/205)', 'LivePulsePill (chip de pulso tocable en el encabezado · punto + bpm + chevron · FER-194/265)', 'SyncInline (sincronización inline junto al sello «Hoy» · FER-265)', 'WhyVerdictSheet (héroe «Instrumento diurno»: número + dial + veredicto + «i» · FER-135)', 'TodayMetricTile + TileButtonStyle + MetricBand (rejilla «Métricas de hoy» 2×4 · valor + mini-banda p25–p75 + cambio vs media en una línea · sin sparkline · tiles 76pt · tile «stress» nuevo, FER-180/189/202/258/265)', 'MetricRow (macOS · Métricas clave heredado)', 'SourcesSummaryCard (Sources · en Data Sources, FER-137)', 'RecoveryRing (macOS)', 'StatTile ×10 (macOS)', 'ChartCard (HR Trend · macOS)', 'ReadinessGaugeBar (solo macOS)'],
+    components: ['HealthAlertBanner', 'PaperBackground (lienzo por hora · FER-135)', 'heroInstrument (héroe unificado, 4 modos vía HeroState · concéntrico FER-169)', 'DiurnalDial (dial 24h del héroe · 180px con numeral 60 + «/100» apilado · FER-135/169/202/205)', 'LivePulsePill (pastilla de pulso tocable en la línea del veredicto, anclada a la derecha · punto + bpm + chevron · FER-194/265/282)', 'SyncInline (sincronización inline en la línea de estado del header · FER-265/278)', 'WhyVerdictSheet (héroe «Instrumento diurno»: número + dial + veredicto + «i» · FER-135)', 'TodayMetricTile + TileButtonStyle + MetricBand (rejilla «Métricas de hoy» 2×4 · valor + mini-banda p25–p75 + cambio vs media en una línea · sin sparkline · tiles 76pt · tile «stress» nuevo, FER-180/189/202/258/265)', 'MetricRow (macOS · Métricas clave heredado)', 'SourcesSummaryCard (Sources · en Data Sources, FER-137)', 'RecoveryRing (macOS)', 'StatTile ×10 (macOS)', 'ChartCard (HR Trend · macOS)', 'ReadinessGaugeBar (solo macOS)'],
   },
   {
     id: 'health', x: 284, y: 60,
