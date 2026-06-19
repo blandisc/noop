@@ -85,6 +85,9 @@ struct TodayView: View {
     /// Distancia de tirón (pt) para armar y disparar. Calibrado para sentirse deliberado sin
     /// agotar el pulgar (el dial mide 180); el «feel» fino se confirma en el iPhone (FER-222).
     private let pullThreshold: CGFloat = 96
+    /// Enciende el rebote de la pista del pull-to-refresh (FER-293). Se pone en `true` al aparecer;
+    /// con la animación `bob` (repeatForever autoreverses) eso basta para que el chevron oscile.
+    @State private var hintBob = false
     #endif
 
     @State private var appleDays: [AppleDaily] = []
@@ -477,12 +480,12 @@ struct TodayView: View {
                 // centrada en el sobrante (opción aprobada por el dueño, FER-217).
                 Spacer(minLength: 0)
             }
-            // FER-274: la pista de sync (chevron.down) flota en el TOPE como overlay — NO ocupa alto de
-            // layout, así que no empuja el héroe ni desborda la pantalla (a diferencia del renglón de texto
-            // de FER-270). Centrada arriba, donde se inicia el tirón. Entra/sale con un desvanecido;
-            // estático bajo Reduce Motion.
+            // FER-274/FER-293: la pista del pull-to-refresh (chevron + microcopy) flota en el TOPE como
+            // overlay — NO ocupa alto de layout, así que no empuja el héroe ni desborda la pantalla (a
+            // diferencia del renglón de texto de FER-270). Centrada arriba, donde se inicia el tirón.
+            // Entra/sale con un desvanecido; estática bajo Reduce Motion.
             .overlay(alignment: .top) {
-                if showsSyncHint { syncChevron }
+                if showsSyncHint { syncHint }
             }
             .animation(reduceMotion ? nil : StrandMotion.fade, value: showsSyncHint)
             // Inset superior `gap` (FER-202): el héroe queda alto pero respira; márgenes h/inferior estándar.
@@ -546,9 +549,10 @@ struct TodayView: View {
         // Sin banda conocida (`lastSyncedAt == nil`) no se escanea: cae directo al refresh local.
         try? await Task.sleep(for: .seconds(1.2))
         await repo.refresh()
-        // FER-270: el usuario ya ejecutó un pull-to-sync con strap → ya aprendió el gesto; apaga la
-        // pista «Desliza para sincronizar» para siempre (con desvanecido salvo Reduce Motion).
-        if strapSeen, !didFirstPullSync {
+        // FER-293: el usuario ya ejecutó un pull-to-sync → ya aprendió el gesto; retira el microcopy y el
+        // rebote (con desvanecido salvo Reduce Motion). El chevron permanece como cue sutil, así el gesto
+        // sigue siendo descubrible (a diferencia de FER-270, que lo apagaba por completo para siempre).
+        if !didFirstPullSync {
             withAnimation(reduceMotion ? nil : StrandMotion.fade) { didFirstPullSync = true }
         }
     }
@@ -751,24 +755,41 @@ struct TodayView: View {
         .frame(maxWidth: .infinity)
     }
 
-    /// Muestra la pista de sincronización (FER-270/FER-274): solo cuando hay strap (jalar SÍ sincroniza
-    /// algo), el usuario aún no ha hecho su primer pull-to-sync, y no se está sincronizando ya (el dial
-    /// girando — FER-221 — comunica ese estado). Sin strap no se muestra: jalar sería un no-op y el
-    /// estado de espera ya ofrece «Buscar strap».
+    /// Muestra la pista del pull-to-refresh (FER-293): en reposo (sin tirón en curso) y mientras NO se
+    /// está sincronizando ya (el dial girando — FER-221 — comunica ese estado). Se muestra SIEMPRE en
+    /// reposo —con o sin strap— porque jalar igual recarga los datos locales (`repo.refresh()`), no solo
+    /// sincroniza la banda. Se desvanece al iniciar el gesto (`pullProgress > 0`), revelando el arco del
+    /// dial. (Antes —FER-270/FER-274— solo aparecía con strap y se apagaba para siempre al primer pull;
+    /// eso la volvía indescubrible para quien ya había jalado una vez.)
     private var showsSyncHint: Bool {
-        strapSeen && !didFirstPullSync && !(live.backfilling || pullSyncing)
+        pullProgress == 0 && !(live.backfilling || pullSyncing)
     }
 
-    /// La pista de sincronización (FER-274): un `chevron.down` TENUE, sin texto, en tinta. Se monta como
-    /// `.overlay` en el tope del scroll, así que NO ocupa alto de layout (antes era un renglón de texto
-    /// que empujaba el héroe y desbordaba la pantalla — FER-270). Oculta a VoiceOver — su equivalente
+    /// La pista del pull-to-refresh (FER-293): un `chevron.down` que rebota suave y, mientras el usuario
+    /// aún no aprende el gesto (`!didFirstPullSync`), el microcopy «Desliza para actualizar». Tras el
+    /// primer pull-to-sync el texto y el rebote se retiran, pero el chevron PERMANECE como cue sutil —
+    /// así el gesto sigue siendo descubrible en vez de desaparecer para siempre (FER-270). Se monta como
+    /// `.overlay` en el tope del scroll, así que NO ocupa alto de layout (no empuja el héroe ni desborda
+    /// la pantalla). Bajo Reduce Motion no rebota (estático). Oculta a VoiceOver — su equivalente
     /// accesible es la acción «Sincronizar» del encabezado (FER-222).
-    private var syncChevron: some View {
-        Image(systemName: "chevron.down")
-            .font(.system(size: 11, weight: .semibold))
-            .foregroundStyle(theme.inkTertiary)
-            .transition(.opacity)
-            .accessibilityHidden(true)
+    private var syncHint: some View {
+        let learning = !didFirstPullSync
+        let bobbing = learning && !reduceMotion && hintBob
+        return VStack(spacing: NoopMetrics.space1) {
+            Image(systemName: "chevron.down")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(theme.inkTertiary)
+                .offset(y: bobbing ? 4 : 0)
+                .animation(bobbing ? StrandMotion.bob : nil, value: bobbing)
+            if learning {
+                Text("Desliza para actualizar")
+                    .font(StrandFont.caption)
+                    .foregroundStyle(theme.inkTertiary)
+            }
+        }
+        .transition(.opacity)
+        .accessibilityHidden(true)
+        .onAppear { hintBob = true }
     }
 
     private func heroOverline(_ s: HeroState) -> LocalizedStringKey {
