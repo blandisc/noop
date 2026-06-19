@@ -132,6 +132,26 @@ public enum InsightEngine {
         }
     }
 
+    // MARK: - Candidate → proven overlay (N-of-1 experiments, issue D)
+
+    /// Promote candidate findings whose lever an N-of-1 experiment has confirmed. The engine is
+    /// stateless and recomputes confidence from the data every run, so "proven" can't live on the
+    /// `Insight`; it lives in the experiment table and is projected back here. A finding is promoted
+    /// only when it carries a `lever` in `provenLevers` AND is currently a `.candidate` (a finding
+    /// that didn't survive FDR this run is `.medium` — it isn't shown as a lever, so it isn't
+    /// promoted). Every other field, including `relevance`, is preserved.
+    public static func promoteProven(_ insights: [Insight], provenLevers: Set<Lever>) -> [Insight] {
+        guard !provenLevers.isEmpty else { return insights }
+        return insights.map { i in
+            guard i.confidence == .candidate, let lever = i.lever, provenLevers.contains(lever) else {
+                return i
+            }
+            return Insight(kind: i.kind, title: i.title, reading: i.reading, datum: i.datum,
+                           evidence: i.evidence, confidence: .proven, relevance: i.relevance,
+                           lever: i.lever)
+        }
+    }
+
     // MARK: - Association family (FDR-corrected): behaviors × outcomes + correlations
 
     /// A pending inferential finding, built lazily once its FDR-adjusted q is known.
@@ -232,6 +252,7 @@ public enum InsightEngine {
                        confidence: significant ? .candidate : .medium,
                        relevance: relevance(significant: significant, qAdjusted: qAdjusted,
                                             effectMag: abs(e.cohensD), effectRef: 0.8, recency: 0.5),
+                       lever: Lever(behavior: e.behavior, outcome: metric.label),
                        behaviorBreakdown: BehaviorBreakdown(meanWith: round1(e.meanWith),
                                                             meanWithout: round1(e.meanWithout),
                                                             nWith: e.nWith, nWithout: e.nWithout))

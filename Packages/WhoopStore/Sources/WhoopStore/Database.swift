@@ -236,6 +236,34 @@ extension WhoopStore {
                 t.add(column: "activeKcalEst", .double)
             }
         }
+
+        // v12 (FER-307): N-of-1 experiments. One row per experiment, natural key `id` (UUID).
+        // An experiment runs a candidate lever (a logged behavior × an outcome metric) for a fixed
+        // window, then a verdict compares the outcome on adherent days against baseline and may
+        // promote the lever candidate→proven. Additive only; no existing row is touched. Row status
+        // transitions (running → completed/canceled) are ordinary data mutation, like `journal`.
+        // MVP is one experiment at a time (enforced by the app), but the table keeps the full history
+        // of past experiments. Nullable result columns are filled only when a verdict is computed.
+        migrator.registerMigration("v12") { db in
+            try db.create(table: "experiment") { t in
+                t.column("id", .text).primaryKey()           // UUID string
+                t.column("deviceId", .text).notNull()         // source partition (consistent w/ schema)
+                t.column("behavior", .text).notNull()         // lever: journal question
+                t.column("outcome", .text).notNull()          // target metric label (es-MX)
+                t.column("expectedSign", .integer).notNull()  // +1/-1: sign of the candidate's effect
+                t.column("startDay", .text).notNull()         // YYYY-MM-DD (local civil day)
+                t.column("windowDays", .integer).notNull()    // experiment length (MVP default 7)
+                t.column("status", .text).notNull()           // running | completed | canceled
+                t.column("result", .text)                     // sustained | notSustained | insufficient
+                t.column("effectDelta", .double)              // verdict: meanWith − meanWithout
+                t.column("effectSize", .double)               // verdict: Cohen's d
+                t.column("pValue", .double)                   // verdict: Welch p
+                t.column("nWith", .integer)                   // adherent-day count
+                t.column("nWithout", .integer)                // baseline-day count
+                t.column("createdAt", .integer).notNull()     // unix seconds
+                t.column("decidedAt", .integer)               // unix seconds (verdict time)
+            }
+        }
         return migrator
     }
 }
