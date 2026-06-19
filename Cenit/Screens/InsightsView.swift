@@ -267,6 +267,13 @@ struct InsightsView: View {
                     .accessibilityLabel("Outcome metric")
             }
 
+            // Association, not cause; "significant" already controls for testing many
+            // behaviours at once (FDR). (FER-299)
+            Text("Association, not cause. ‘Significant’ accounts for testing every behaviour at once.")
+                .font(StrandFont.footnote)
+                .foregroundStyle(StrandPalette.textTertiary)
+                .fixedSize(horizontal: false, vertical: true)
+
             if ranked.isEmpty {
                 noEffects
             } else {
@@ -386,6 +393,13 @@ struct InsightsView: View {
         return VStack(alignment: .leading, spacing: NoopMetrics.gap) {
             SectionHeader("Metric Relationships", overline: "Pearson r")
 
+            // Association, not cause: a correlation says two signals move together, not
+            // that one drives the other. (FER-299)
+            Text("Association, not cause — these signals move together; neither makes the other happen.")
+                .font(StrandFont.footnote)
+                .foregroundStyle(StrandPalette.textTertiary)
+                .fixedSize(horizontal: false, vertical: true)
+
             if rels.isEmpty {
                 NoopCard {
                     Text("Not enough overlapping history to correlate your metrics yet.")
@@ -414,6 +428,10 @@ struct InsightsView: View {
         let title: String        // "Sleep → Recovery"
         let blurb: String        // what the pairing probes
         let corr: Correlation
+        /// True when the pair correlates a series with a shifted copy of ITSELF
+        /// (recovery → next-day recovery). The t-test assumes independent samples, so
+        /// its p is invalid by construction — we never show a p for these. (FER-299)
+        var isAutocorrelated: Bool = false
     }
 
     private func computeRelationships() -> [Relationship] {
@@ -450,8 +468,9 @@ struct InsightsView: View {
         if let c = CorrelationEngine.lagged(x: series("recovery"), y: series("recovery"), lagDays: 1) {
             out.append(.init(id: "rec-lag",
                              title: "Recovery → Next-day recovery",
-                             blurb: "How much one day's recovery carries into the next.",
-                             corr: c))
+                             blurb: "Carry-over: the same signal a day apart (autocorrelation), not an independent relationship.",
+                             corr: c,
+                             isAutocorrelated: true))
         }
 
         return out
@@ -472,9 +491,13 @@ struct InsightsView: View {
                 Text(String(format: "r = %+.2f", r))
                     .font(StrandFont.number(16))
                     .foregroundStyle(strength)
-                StatePill(rel.corr.pApprox < 0.05 ? "p < 0.05" : "n.s.",
-                          tone: rel.corr.pApprox < 0.05 ? .accent : .neutral,
-                          showsDot: false)
+                // No per-relationship significance stamp: marking each of K correlations
+                // "p < 0.05" with no multiple-comparison control manufactures false
+                // positives. Autocorrelated pairs get a label instead of a (meaningless)
+                // p. (FER-299)
+                if rel.isAutocorrelated {
+                    StatePill("carry-over", tone: .neutral, showsDot: false)
+                }
             }
 
             // r bar — visual magnitude/direction (hover reveals the exact value).
@@ -553,6 +576,11 @@ struct InsightsView: View {
 
     private func relationshipSentence(_ rel: Relationship) -> String {
         let r = rel.corr.r
+        // Autocorrelation: the signal vs a shifted copy of itself. Frame as day-to-day
+        // persistence, never as an independent relationship with a p-value. (FER-299)
+        if rel.isAutocorrelated {
+            return String(localized: "Day-to-day persistence (r = \(String(format: "%.2f", r)), n = \(rel.corr.n)) — the same signal compared with itself, so there's no independent significance to report.")
+        }
         let dir = r > 0 ? String(localized: "positive") : (r < 0 ? String(localized: "negative") : String(localized: "flat"))
         let strength = strengthWord(r)
         return String(localized: "\(strength.capitalizedFirst) \(dir) relationship (r = \(String(format: "%.2f", r)), n = \(rel.corr.n)).")

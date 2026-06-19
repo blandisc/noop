@@ -488,6 +488,11 @@ struct MetricDetailView: View {
                 Text("Pearson r over the visible window · |r| ≥ 0.30, n ≥ 10")
                     .font(StrandFont.footnote)
                     .foregroundStyle(theme.inkTertiary)
+                // Association, not cause. (FER-299)
+                Text("Association, not cause — these move together, neither drives the other.")
+                    .font(StrandFont.footnote)
+                    .foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             if rows.isEmpty {
                 Text("Nothing in the catalog moves clearly with \(metric.title.lowercased()) over this window. Widen the range to surface relationships.")

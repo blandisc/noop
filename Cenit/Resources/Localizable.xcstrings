@@ -30527,6 +30527,108 @@
           }
         }
       }
+    },
+    "Association, not cause — these signals move together; neither makes the other happen.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Association, not cause — these signals move together; neither makes the other happen."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Asociación, no causa — estas señales se mueven juntas; ninguna hace que ocurra la otra."
+          }
+        }
+      }
+    },
+    "Association, not cause. ‘Significant’ accounts for testing every behaviour at once.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Association, not cause. ‘Significant’ accounts for testing every behaviour at once."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Asociación, no causa. ‘Significativo’ ya considera que se prueban todos los comportamientos a la vez."
+          }
+        }
+      }
+    },
+    "Association, not cause — moving together isn't one driving the other.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Association, not cause — moving together isn't one driving the other."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Asociación, no causa — moverse juntas no es que una empuje a la otra."
+          }
+        }
+      }
+    },
+    "Association, not cause — these move together, neither drives the other.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Association, not cause — these move together, neither drives the other."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Asociación, no causa — se mueven juntas, ninguna empuja a la otra."
+          }
+        }
+      }
+    },
+    "carry-over": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "carry-over"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "arrastre"
+          }
+        }
+      }
+    },
+    "Day-to-day persistence (r = %@, n = %lld) — the same signal compared with itself, so there's no independent significance to report.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day-to-day persistence (r = %@, n = %lld) — the same signal compared with itself, so there's no independent significance to report."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Persistencia de un día a otro (r = %@, n = %lld) — la misma señal comparada consigo misma, así que no hay una significancia independiente que reportar."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

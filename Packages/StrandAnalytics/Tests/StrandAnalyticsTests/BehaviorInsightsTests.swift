@@ -143,6 +143,61 @@ final class BehaviorInsightsTests: XCTestCase {
         XCTAssertEqual(ranked.first?.behavior, "Half")
     }
 
+    // MARK: - Welch p-value (exact Student-t at the Welch df)
+
+    func testWelchPUsesStudentTAtWelchDf() {
+        // with=[60,62,58] (m=60, v=4), without=[70,72,68] (m=70, v=4). Equal groups
+        // → Welch df = 4, t = −6.1237. Cross-checked vs SciPy
+        // ttest_ind(equal_var=False) → p ≈ 0.0036022. The old normal tail returned a
+        // much smaller p here (it ignored the df the header always documented).
+        let p = BehaviorInsights.welchP(m1: 60, v1: 4, n1: 3, m2: 70, v2: 4, n2: 3)
+        XCTAssertEqual(p, 0.0036022326091, accuracy: 1e-9)
+    }
+
+    func testWelchPNoSpreadEdgeCases() {
+        // No variance anywhere: identical means → p = 1; differing means → p = 0.
+        XCTAssertEqual(BehaviorInsights.welchP(m1: 5, v1: 0, n1: 4, m2: 5, v2: 0, n2: 4), 1.0)
+        XCTAssertEqual(BehaviorInsights.welchP(m1: 5, v1: 0, n1: 4, m2: 9, v2: 0, n2: 4), 0.0)
+    }
+
+    // MARK: - multiple-comparisons (FDR) correction in rank
+
+    func testRankAppliesFDRSoSignificanceDependsOnFamilySize() {
+        // ‘B’ separates the outcome modestly: single-test p ≈ 0.022 (< 0.05), n≥5
+        // both sides — significant when tested ALONE.
+        let outcome: [String: Double] = [
+            "b1": 66, "b2": 71, "b3": 64, "b4": 70, "b5": 67,                       // with B
+            "x1": 72, "x2": 74, "x3": 70, "x4": 73, "x5": 71,
+            "x6": 75, "x7": 69, "x8": 72, "x9": 74, "x10": 70,                       // without
+        ]
+        let B = Set(["b1", "b2", "b3", "b4", "b5"])
+
+        let alone = BehaviorInsights.rank(behaviors: ["B": B], outcomeByDay: outcome, outcome: "Rec")
+        XCTAssertLessThan(alone[0].pApprox, 0.05)
+        XCTAssertTrue(alone[0].significant, "a single test with p<0.05 and n≥5 is significant alone")
+
+        // Same ‘B’, but now ranked inside a family of 10 simultaneous behaviour tests.
+        // Benjamini-Hochberg raises the bar → the SAME effect no longer clears it.
+        let all = Array(outcome.keys).sorted()
+        var family: [String: Set<String>] = ["B": B]
+        for k in 0..<9 {
+            family["N\(k)"] = Set((0..<7).map { all[(k * 5 + $0 * 2) % all.count] })
+        }
+        let ranked = BehaviorInsights.rank(behaviors: family, outcomeByDay: outcome, outcome: "Rec")
+        let bInFamily = ranked.first { $0.behavior == "B" }!
+        XCTAssertEqual(bInFamily.pApprox, alone[0].pApprox, accuracy: 1e-12)   // same raw p…
+        XCTAssertFalse(bInFamily.significant, "…but FDR over the family demotes it")
+
+        // The displayed `significant` matches a hand-applied Benjamini-Hochberg on the
+        // raw p-values (proving rank corrects, not single-tests).
+        let q = MultipleComparisons.benjaminiHochberg(ranked.map(\.pApprox))
+        for (e, qVal) in zip(ranked, q) {
+            let expected = qVal < BehaviorInsights.alpha
+                && Swift.min(e.nWith, e.nWithout) >= BehaviorInsights.minGroupForSignificance
+            XCTAssertEqual(e.significant, expected, "‘\(e.behavior)’ significance must equal its FDR verdict")
+        }
+    }
+
     // MARK: - sentence
 
     func testSentenceLowerWithPercent() {

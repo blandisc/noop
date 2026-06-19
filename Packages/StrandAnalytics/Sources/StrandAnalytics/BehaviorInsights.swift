@@ -15,10 +15,15 @@ import Foundation
 //   - pApprox : a two-sided p-value from Welch's t-test (unequal variances),
 //       t  = (m1 − m2) / sqrt(s1²/n1 + s2²/n2),
 //       df = (s1²/n1 + s2²/n2)² / ( (s1²/n1)²/(n1−1) + (s2²/n2)²/(n2−1) )  [Welch–Satterthwaite],
-//     converted to a tail probability with a normal approximation (deterministic,
-//     no special-function tables; slightly understates p for small samples).
-//   - significant : pApprox < 0.05 AND min(nWith, nWithout) ≥ 5 (guards against
-//     spurious "significance" from a handful of days).
+//     converted to the EXACT Student-t tail at that df (via the regularised
+//     incomplete beta in CorrelationEngine) — NOT a normal approximation. The df is
+//     the one this header always documented but the code previously ignored; the
+//     normal tail it used understated p at small samples.
+//   - significant : computed by `rank` only, via Benjamini-Hochberg FDR across the
+//     whole ranked family (NOT per test) AND min(nWith, nWithout) ≥ 5. `effect`
+//     alone sets a provisional single-test flag (p < 0.05 AND the group floor);
+//     never display that one directly — display `rank`'s, which controls for the
+//     multiple comparisons a screen makes at once (Benjamini-Hochberg 1995).
 //
 // Effect direction is carried by the SIGN of delta / cohensD: a behavior that
 // lowers the outcome yields negative values. `rank` orders behaviors by |cohensD|
@@ -46,9 +51,11 @@ public struct BehaviorEffect: Equatable, Sendable {
     public let nWithout: Int
     /// Cohen's d using the pooled SD (signed; sign matches delta).
     public let cohensD: Double
-    /// Two-sided p-value (Welch t-test, normal approximation).
+    /// Two-sided p-value (Welch t-test, exact Student-t tail at the Welch df).
     public let pApprox: Double
-    /// pApprox < 0.05 AND min(nWith, nWithout) ≥ 5.
+    /// Whether this effect cleared the significance bar. From `effect` this is the
+    /// provisional single-test flag (pApprox < 0.05 AND min group ≥ 5); `rank`
+    /// REPLACES it with the FDR-corrected verdict — display only the latter.
     public let significant: Bool
 
     public init(behavior: String, outcome: String, meanWith: Double, meanWithout: Double,
@@ -111,6 +118,9 @@ public enum BehaviorInsights {
         let d = cohensD(m1: m1, m2: m2, n1: n1, v1: v1, n2: n2, v2: v2)
         let p = welchP(m1: m1, v1: v1, n1: n1, m2: m2, v2: v2, n2: n2)
 
+        // Provisional single-test flag — `rank` overrides it with the FDR-corrected
+        // verdict. Never display this one (it ignores the multiple comparisons a
+        // screen makes at once).
         let sig = p < alpha && Swift.min(n1, n2) >= minGroupForSignificance
 
         return BehaviorEffect(behavior: behavior, outcome: outcome,
@@ -124,16 +134,36 @@ public enum BehaviorInsights {
     /// Compute effects for every behavior in `behaviors` against one outcome and
     /// return them sorted by |cohensD| descending, with significant effects first.
     /// Behaviors that don't yield a computable effect are dropped.
+    ///
+    /// Significance is decided HERE, across the whole family at once: ranking K
+    /// behaviors is K simultaneous hypothesis tests, so at α = 0.05 a few would test
+    /// "significant" by chance. We rescale every effect's p with Benjamini-Hochberg
+    /// (`MultipleComparisons`) into an FDR q-value and flag an effect significant only
+    /// when q < α AND its smaller group clears the floor — overwriting the provisional
+    /// single-test flag `effect` set. (Benjamini-Hochberg 1995.)
     public static func rank(behaviors: [String: Set<String>],
                             outcomeByDay: [String: Double],
                             outcome: String) -> [BehaviorEffect] {
-        var effects: [BehaviorEffect] = []
+        var raw: [BehaviorEffect] = []
         for (name, days) in behaviors {
             if let e = effect(behaviorDays: days, outcomeByDay: outcomeByDay,
                               behavior: name, outcome: outcome) {
-                effects.append(e)
+                raw.append(e)
             }
         }
+
+        // FDR-correct the family, then re-stamp `significant` from the q-value.
+        let q = MultipleComparisons.benjaminiHochberg(raw.map(\.pApprox))
+        let effects: [BehaviorEffect] = zip(raw, q).map { e, qVal in
+            let sig = qVal < alpha && Swift.min(e.nWith, e.nWithout) >= minGroupForSignificance
+            guard sig != e.significant else { return e }
+            return BehaviorEffect(behavior: e.behavior, outcome: e.outcome,
+                                  meanWith: e.meanWith, meanWithout: e.meanWithout,
+                                  delta: e.delta, pctChange: e.pctChange,
+                                  nWith: e.nWith, nWithout: e.nWithout,
+                                  cohensD: e.cohensD, pApprox: e.pApprox, significant: sig)
+        }
+
         return effects.sorted { a, b in
             if a.significant != b.significant { return a.significant }  // significant first
             let la = abs(a.cohensD), lb = abs(b.cohensD)
@@ -194,17 +224,27 @@ public enum BehaviorInsights {
         return (m1 - m2) / sp
     }
 
-    /// Two-sided Welch t-test p-value with a normal-approximation tail.
-    /// Returns 1.0 (no evidence) when neither group has a usable standard error.
+    /// Two-sided Welch t-test p-value using the EXACT Student-t tail at the
+    /// Welch–Satterthwaite df. Returns 1.0 (no evidence) when neither group has a
+    /// usable standard error.
     static func welchP(m1: Double, v1: Double, n1: Int,
                        m2: Double, v2: Double, n2: Int) -> Double {
-        let se2 = v1 / Double(n1) + v2 / Double(n2)
-        guard se2 > 0 else {
+        let se1 = v1 / Double(n1)
+        let se2 = v2 / Double(n2)
+        let seSum = se1 + se2
+        guard seSum > 0 else {
             // No spread anywhere: identical means → p=1; differing means → p≈0.
             return m1 == m2 ? 1.0 : 0.0
         }
-        let t = (m1 - m2) / se2.squareRoot()
-        return 2.0 * (1.0 - CorrelationEngine.normalCDF(abs(t)))
+        let t = (m1 - m2) / seSum.squareRoot()
+        // Welch–Satterthwaite degrees of freedom (fractional). A group with n=1
+        // contributes no variance term (its se is 0), so the surviving group sets df.
+        let d1 = n1 > 1 ? (se1 * se1) / Double(n1 - 1) : 0
+        let d2 = n2 > 1 ? (se2 * se2) / Double(n2 - 1) : 0
+        let denom = d1 + d2
+        guard denom > 0 else { return m1 == m2 ? 1.0 : 0.0 }
+        let df = (seSum * seSum) / denom
+        return CorrelationEngine.studentTTwoSided(t: t, df: df)
     }
 
     // MARK: - Formatting helpers

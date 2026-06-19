@@ -366,7 +366,7 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 
 ### InsightsView
 **Archivo:** `Cenit/Screens/InsightsView.swift`  
-**Descripción:** Correlaciones — comportamientos que afectan recovery/HRV/sleep/RHR (Pearson r, Cohen's d).
+**Descripción:** Correlaciones — comportamientos que afectan recovery/HRV/sleep/RHR (Pearson r, Cohen's d). **Honestidad estadística (FER-299):** la significancia de los comportamientos se decide por FDR (Benjamini-Hochberg) sobre toda la familia, no por prueba individual; las relaciones ya **no** estampan «p < 0.05» por fila; la relación autocorrelacionada recovery→recovery se marca «arrastre» y **no muestra p**; cada sección lleva el copy «Asociación, no causa».
 
 | Estado | Condición de entrada |
 |--------|---------------------|
@@ -375,7 +375,7 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 | Con comportamientos | Journal + outcomes disponibles |
 | Correlaciones (Pearson r) | Métricas cruzadas calculadas |
 
-**Componentes:** `JournalLogCard`, `Behavior Effects Cards (Cohen's d)`, `RBar chart (Pearson r)`, `Metric Relationships Card`
+**Componentes:** `JournalLogCard`, `Behavior Effects Cards (Cohen's d, significancia FDR)`, `RBar chart (Pearson r)`, `Metric Relationships Card (framing de asociación, sin sello p por fila)`
 
 ---
 
