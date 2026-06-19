@@ -175,7 +175,7 @@ score = 100 / (1 + exp(−logisticK · (z − logisticZ0)))
         logisticZ0 = −0.20   (anchors z = 0 → ~58 %)
 ```
 
-The `58%` anchor matches WHOOP's published population-average recovery (`populationMean = 58.0`).
+The `58%` anchor matches WHOOP's self-reported member-average recovery (`populationMean = 58.0`) — a calibration anchor taken from WHOOP's own (self-selected) user base, not a peer-reviewed population norm.
 
 ### Cold-start
 
@@ -285,7 +285,7 @@ Consecutive same-stage epochs are merged into `StageSegment`s tiling `[start, en
 
 ## `SleepRegularityIndex` — sleep-timing regularity (SRI)
 
-Source: `SleepRegularityIndex.swift` (FER-214). The **Sleep Regularity Index** (Phillips et al. 2017, *Sci Rep* 7:3216) scores how repeatable your sleep TIMING is, independent of duration or quality: the probability of being in the same state (asleep vs awake) at two instants exactly 24 h apart, averaged over the window and rescaled `SRI = (2·P − 1)·100` (100 = a perfectly repeated schedule; 0 = chance; negatives clamped to 0). Windred et al. 2024 (*Sleep* 47:zsae015) found the SRI predicts all-cause mortality **above** sleep duration — which is why `VitalityEngine`'s regularity hazard prefers it to the `1 − CV` duration proxy it ships with.
+Source: `SleepRegularityIndex.swift` (FER-214). The **Sleep Regularity Index** (Phillips et al. 2017, *Sci Rep* 7:3216) scores how repeatable your sleep TIMING is, independent of duration or quality: the probability of being in the same state (asleep vs awake) at two instants exactly 24 h apart, averaged over the window and rescaled `SRI = (2·P − 1)·100` (100 = a perfectly repeated schedule; 0 = chance; negatives clamped to 0). Windred et al. 2024 (*Sleep* 47(1):zsad253, DOI 10.1093/sleep/zsad253) found the SRI predicts all-cause mortality **above** sleep duration — which is why `VitalityEngine`'s regularity hazard prefers it to the `1 − CV` duration proxy it ships with.
 
 NOOP records only during sleep sessions (a night wearable, not 24/7 actigraphy), so the index compares consecutive nights over a **±12 h coverage window** around each night's onset rather than a continuous round-the-clock timeline: daytime reads as awake on both days (a match), and a missing night drops out of the 24 h pairing instead of reading as an all-awake day. Coverage gate: fewer than `minNights` (7) → `nil`, and the orchestration falls back to the duration proxy.
 
@@ -406,7 +406,7 @@ An expert review against current primary literature found the upstream coefficie
 2. **Sleep duration — asymmetric.** Optimum 7.0 h (±0.5 neutral); short arm 0.060, long arm 0.120 (Yin 2017; Cappuccio 2010), replacing the symmetric 0.110 that over-penalized short sleep.
 3. **Overlap shrink — factor-count-dependent.** `1/(1+0.35·(n−1))` instead of a fixed 0.75, which over-counted correlated signals and unfairly cut users with few inputs (e.g. steps only, no strap).
 4. **HRV — attenuated.** Weight 0.160 → 0.110, in log form (`ln(norm/rmssd)`, Hillebrand 2013) — the HRs come from clinical short-term ECG, not nocturnal PPG, and the daytime-calibrated norm table already makes the factor conservative. Carries a mandatory non-clinical domain caveat.
-5. **Sleep regularity — reference.** Slope kept (Windred 2024 — regularity predicts mortality more strongly than duration); ref 0.75 → 0.60 (the SRI population median). The engine's `sleepConsistency` (1 − CV of durations) is an interim proxy; orchestration should pass a real SRI/100.
+5. **Sleep regularity — reference.** Slope kept (Windred 2024 — regularity predicts mortality more strongly than duration); ref 0.75 → 0.60 (the SRI population median). The orchestration (FER-145, `CuerpoView.computeSleepRegularity` → `SleepRegularityIndex.fromSessions`) passes a **real SRI/100**; the engine's `sleepConsistency` (1 − CV of durations) remains only as a cold-start fallback.
 6. **Steps — age-aware threshold.** Reference `age ≥ 60 ? 7000 : 8500` (Paluch 2022); per-1,000 weight 0.064 and the 11k protection cap kept (conservative vs Jayedi 2022).
 
 Kept **verbatim** (well-centered, documented): VO₂max 0.130/MET (Kodama 2009 / Singh 2025; estimated ≈ measured); Gompertz MRDT 8 yr (within the human 7.7–9.9 range, a global ±~15% scale). The full per-coefficient review with primary sources is logged on the FER-124 issue. References: **Zhang 2016 / Aune 2017** (RHR), **Kodama 2009 / Singh 2025** (VO₂max), **Yin 2017 / Cappuccio 2010** (sleep), **Windred 2024** (regularity), **Jarczok 2022 / Hillebrand 2013** (HRV), **Paluch 2022 / Jayedi 2022** (steps).

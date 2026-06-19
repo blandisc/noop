@@ -7,7 +7,7 @@ import WhoopStore
 // sleep TIMING is, independent of how long or how well you sleep: the probability that you are in
 // the same state (asleep vs awake) at two instants exactly 24 h apart, averaged over the window,
 // rescaled `SRI = (2·P − 1)·100` so 100 = a perfectly repeated schedule and 0 = no better than
-// chance (negatives, anti-phase, are clamped to 0). Windred et al. 2024 (Sleep) showed the SRI
+// chance (negatives, anti-phase, are clamped to 0). Windred et al. 2024 (Sleep 47(1):zsad253) showed the SRI
 // predicts all-cause mortality ABOVE sleep duration — which is why `VitalityEngine`'s regularity
 // hazard wants a real SRI, not the duration proxy it ships with.
 //

@@ -19,7 +19,8 @@ import WhoopProtocol
 // Each metric is standardized to a robust z-score against the personal baseline
 // (mean + EWMA-abs-dev spread). Missing terms are dropped and the weights
 // renormalized. The composite z is squashed through a logistic anchored so that
-// Z = 0 → ~58% (WHOOP's published population-average recovery).
+// Z = 0 → ~58% (WHOOP's self-reported member-average recovery — a calibration
+// anchor from WHOOP's own user base, not a peer-reviewed population norm).
 //
 // Cold-start: if the HRV baseline (dominant driver) is not yet usable
 // (< MIN_NIGHTS_SEED valid nights), recovery() returns nil. Callers may use
@@ -43,7 +44,8 @@ public enum RecoveryScorer {
     public static let logisticK: Double = 1.6
     /// Logistic offset so Z=0 → 58%.
     public static let logisticZ0: Double = -0.20
-    /// WHOOP-published population-average recovery (%). Cold-start fallback.
+    /// WHOOP self-reported member-average recovery (~58%) — a calibration anchor,
+    /// not a peer-reviewed population norm. Cold-start fallback.
     public static let populationMean: Double = 58.0
 
     /// Recovery band thresholds (WHOOP color scheme).

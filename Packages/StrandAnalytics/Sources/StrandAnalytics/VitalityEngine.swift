@@ -49,12 +49,12 @@ import Foundation
 //      the old fraction-of-mean, and require adequate nocturnal coverage upstream (orchestration,
 //      FER-145). No mortality HR has ever been validated for nocturnal-PPG RMSSD — a soft, capped input.
 //
-//   5. SLEEP REGULARITY — reference. Slope kept (0.450; Windred 2024, PMID 37131603, SRI p5-vs-median
+//   5. SLEEP REGULARITY — reference. Slope kept (0.450; Windred 2024, Sleep 47(1):zsad253, SRI p5-vs-median
 //      HR 1.53 — regularity predicts mortality MORE strongly than duration). But the upstream ref 0.75
 //      is the ~p95, not the population median: on an SRI/100 scale the typical value is ≈0.60. Fix:
 //      ref 0.75 → 0.60 so the average user is neutral. NOTE: `sleepConsistency(nightlyHours:)` below
 //      (1 − CV of durations) is an INTERIM proxy, not the real Sleep Regularity Index the HR is drawn
-//      from — the orchestrator should pass a real SRI/100 (FER-145).
+//      from — the orchestrator passes a real SRI/100 (FER-145, done; CV proxy is the cold-start fallback).
 //
 //   6. STEPS — age-aware threshold. The benefit plateau is age-dependent (Paluch 2022, PMC9289978:
 //      ≥60 yr 6–8k, <60 yr 8–10k); a fixed 7,000 under-penalizes younger users. Fix: reference
