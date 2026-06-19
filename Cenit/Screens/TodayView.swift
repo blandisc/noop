@@ -692,6 +692,7 @@ struct TodayView: View {
     /// el motor). El orden de prioridad replica el árbol previo del `iosBody`.
     private enum HeroState: Equatable {
         case verdict                    // repo.today?.recovery != nil → hay número
+        case downloading                // pre-veredicto: la banda está drenando el historial de la noche (FER-286)
         case importedBaseline           // pre-veredicto: base sembrada por Apple Health (FER-106)
         case calibrating(nights: Int)   // pre-veredicto: strap visto, ownNights < seed
         case waiting                    // pre-veredicto: sin strap nunca, o base propia sin lectura de hoy
@@ -699,6 +700,10 @@ struct TodayView: View {
 
     private var heroState: HeroState {
         if repo.today?.recovery != nil { return .verdict }
+        // FER-286: mientras la banda drena el historial de la noche y aún no hay recovery, el Hero dice la
+        // verdad —«Descargando la noche…»— en vez de «Falta la lectura de hoy»: el dato viene en camino,
+        // no falta. Reusa la misma señal que ya hace girar el dial (FER-221), sin agregar otra.
+        if live.backfilling || pullSyncing { return .downloading }
         if hasImportedBaseline { return .importedBaseline }
         let strapSeen = live.lastSyncedAt != nil || liveBpm != nil
         if strapSeen && ownNights < Baselines.minNightsSeed { return .calibrating(nights: ownNights) }
@@ -824,7 +829,7 @@ struct TodayView: View {
                 Text("/\(Baselines.minNightsSeed)").font(StrandFont.subhead)
                     .foregroundStyle(theme.inkTertiary)
             }
-        case .importedBaseline, .waiting:
+        case .importedBaseline, .waiting, .downloading:
             Text("—").instrumentoHero(60).foregroundStyle(theme.inkTertiary)
         }
     }
@@ -835,6 +840,18 @@ struct TodayView: View {
         switch s {
         case .verdict:
             verdictBody
+        case .downloading:
+            // FER-286: el dial ya gira (FER-221); aquí el copy honesto de que el dato viene en camino.
+            VStack(alignment: .center, spacing: NoopMetrics.space2) {
+                Text("Descargando la noche…")
+                    .font(StrandFont.headline).foregroundStyle(theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("Tus datos de anoche están llegando. La primera sincronización del día puede tardar unos minutos.")
+                    .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
         case .importedBaseline:
             VStack(alignment: .center, spacing: NoopMetrics.space2) {
                 withPulsePill { appleBaseChip }   // FER-282: pulso a la derecha si hay strap visto
@@ -931,7 +948,7 @@ struct TodayView: View {
     /// limpio: número + veredicto. En veredicto / espera-con-strap el pie del héroe no muestra nada.
     @ViewBuilder private func heroFooter(_ s: HeroState) -> some View {
         switch s {
-        case .verdict:
+        case .verdict, .downloading:
             EmptyView()
         case .calibrating:
             appleHealthShortcut { showDataSources = true }
