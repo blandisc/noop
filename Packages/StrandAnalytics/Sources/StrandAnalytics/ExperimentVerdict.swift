@@ -67,13 +67,10 @@ public enum ExperimentVerdict {
                                               outcome: outcome) else {
             return ExperimentResult(verdict: .insufficient, effect: nil)
         }
-        let sameDirection = sign(e.delta) == normalizedSign(expectedSign)
+        // A `.sustained` verdict needs `significant`, which implies a nonzero delta, so comparing the
+        // sign of the (positive/negative) delta against the candidate's expected sign is enough.
+        let sameDirection = (e.delta > 0) == (expectedSign > 0)
         let verdict: Verdict = (e.significant && sameDirection) ? .sustained : .notSustained
         return ExperimentResult(verdict: verdict, effect: e)
     }
-
-    /// −1, 0, or +1 for a Double.
-    private static func sign(_ x: Double) -> Int { x > 0 ? 1 : (x < 0 ? -1 : 0) }
-    /// Clamp any nonzero Int to ±1; 0 stays 0.
-    private static func normalizedSign(_ x: Int) -> Int { x > 0 ? 1 : (x < 0 ? -1 : 0) }
 }
