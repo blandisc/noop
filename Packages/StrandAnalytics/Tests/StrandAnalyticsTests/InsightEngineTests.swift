@@ -78,6 +78,39 @@ final class InsightEngineTests: XCTestCase {
         XCTAssertEqual(out.first?.kind, .behavior)
     }
 
+    // MARK: - Test 1b — a behavior insight exposes the with/without breakdown (FER-309)
+
+    func testBehaviorBreakdownExposed() {
+        var rng = LCG(seed: 7)
+        var days: [DailyMetric] = []
+        var alcoholDays: Set<String> = []
+        let n = 140
+        for i in 0..<n {
+            let logged = (i % 3 == 0)
+            let rec = logged ? rng.gauss(55, 9) : rng.gauss(70, 9)
+            if logged { alcoholDays.insert(day(i)) }
+            days.append(metric(i, recovery: rec))
+        }
+
+        let out = InsightEngine.generate(.init(days: days, behaviors: ["Alcohol": alcoholDays]))
+        let hit = out.first { $0.kind == .behavior && $0.title.contains("Alcohol") && $0.datum.metric == "Recuperación" }
+        guard let found = try? XCTUnwrap(hit) else { return }
+
+        // Behavior findings carry the with/without means; the UI draws them, it never recomputes.
+        let bd = try? XCTUnwrap(found.behaviorBreakdown, "a behavior insight must expose its breakdown")
+        guard let bd else { return }
+        XCTAssertGreaterThan(bd.nWith, 0)
+        XCTAssertGreaterThan(bd.nWithout, 0)
+        // Planted: ~55 with alcohol vs ~70 without, so meanWith < meanWithout and the gap ≈ the delta.
+        XCTAssertLessThan(bd.meanWith, bd.meanWithout, "alcohol days recover lower")
+        XCTAssertEqual(bd.meanWith - bd.meanWithout, found.datum.value, accuracy: 0.2,
+                       "the with/without gap equals the reported delta")
+
+        // Non-behavior detectors leave it nil (a trend/forecast has no with/without groups).
+        let descriptive = out.first { $0.kind == .trend || $0.kind == .forecast }
+        if let descriptive { XCTAssertNil(descriptive.behaviorBreakdown) }
+    }
+
     // MARK: - Test 2 — noise produces no significant effect; FP rate ≈ α after FDR
 
     func testNoiseFalsePositiveRateNearAlpha() {

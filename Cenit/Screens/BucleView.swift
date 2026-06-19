@@ -51,6 +51,8 @@ private struct BucleLanding: View {
     @State private var usableNights = 0
     @State private var journalAnswered = 0
     @State private var journalTotal = 0
+    /// Recent recovery series (last 14 nights) for the trend-finding sparkline — trends are recovery.
+    @State private var trendSpark: [Double] = []
     @State private var loaded = false
 
     // Sheets.
@@ -94,19 +96,19 @@ private struct BucleLanding: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .task(id: repo.refreshSeq) { await load() }
-        // Pregúntale — the external LLM chat, preserved. Presented as a self-contained sheet so its
-        // own (legacy) chrome doesn't fight the light tab's status bar (light-tab/dark-screen pattern).
+        // Pregúntale — the external LLM chat, preserved. Now «Instrumento» light (FER-309): the theme
+        // is injected at the sheet root (it doesn't cross the `.sheet` boundary, FER-162); no `.dark` pin.
         .sheet(isPresented: $showPreguntale) {
             CoachView()
+                .instrumentoTheme(theme)
                 .environmentObject(coach)
                 .environmentObject(repo)
-                .preferredColorScheme(.dark)
         }
         .sheet(item: $detail) { item in
             PalancaDetailSheet(insight: item.insight, theme: theme)
         }
         .sheet(isPresented: $showHallazgos) {
-            HallazgosListSheet(insights: hallazgosInsights, theme: theme) { picked in
+            HallazgosListSheet(insights: hallazgosInsights, theme: theme, trendSpark: trendSpark) { picked in
                 detail = InsightItem(insight: picked)
             }
             .instrumentoTheme(theme)
@@ -312,6 +314,11 @@ private struct BucleLanding: View {
                         .fixedSize(horizontal: false, vertical: true)
                     Text(insight.reading).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
+                    if insight.kind == .trend {
+                        BucleFormat.trendSparkline(trendSpark,
+                                                   color: BucleFormat.metricColor(insight.datum.metric, theme))
+                            .padding(.top, 4)
+                    }
                 }
                 Spacer()
                 Image(systemName: "chevron.right").font(.system(size: 15))
@@ -465,6 +472,7 @@ private struct BucleLanding: View {
         let importedQs = NSOrderedSet(array: imported.map(\.question)).array as? [String] ?? []
         let catalog = JournalCatalogStore.mergeCatalog(imported: importedQs, custom: [])
         let nights = days.filter { $0.avgHrv != nil }.count
+        let spark = Array(days.compactMap { $0.recovery }.suffix(14))
 
         await MainActor.run {
             self.insights = generated
@@ -473,6 +481,7 @@ private struct BucleLanding: View {
             self.usableNights = nights
             self.journalAnswered = todayAnswers.count
             self.journalTotal = max(catalog.count, 1)
+            self.trendSpark = spark
             self.loaded = true
         }
     }
