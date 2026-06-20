@@ -1,24 +1,27 @@
 import SwiftUI
 import StrandDesign
+import StrandAnalytics
 import WhoopStore
 import Foundation
 
-// MARK: - Apple Health (per-source page) — locked component system
+// MARK: - Apple Health (per-source page) — light «Instrumento diurno» (FER-338)
 //
-// Vitaltrends-style, instrument-grade, uniform. ONE range control at the top
-// (SegmentedPillControl), a LazyVGrid of fixed-height StatTiles (every metric the
-// same 104pt tall), then ChartCard sections — Heart & Vitals, Activity & Energy,
-// Body Composition, Sleep — each chart the same height with an avg/min/max footer.
+// Reskin of the legacy dark per-source viewer to warm paper: one range control at the top
+// (`SegmentedPillControl` in its themed light mode), a grid of uniform metric tiles (every tile the
+// same height, value in its metric hue, label a quiet overline), then chart sections — Corazón y
+// vitales · Actividad y energía · Composición corporal · Sueño — each a light chart on paper with an
+// avg/min/max footer. Color lives ONLY on the data (the tile hero, the chart line); chrome is ink,
+// groups are separated by space + hairlines (no card-in-card). The data plumbing is UNCHANGED:
+// everything reads from the "apple-health" source, all history loads once, the range control windows
+// it client-side relative to the latest point, and sparse series auto-widen exactly as before.
 //
-// Everything reads from the "apple-health" source. ALL history is loaded once; the
-// range control simply windows it client-side, RELATIVE TO THE LATEST data point
-// (not "now"). Per the data contract a series may be SPARSE (weight/body-fat are
-// weekly): if the selected window holds ≥1 point we SHOW THAT WINDOW (so W/M/3M stay
-// visibly distinct); only when it holds ZERO points do we auto-expand to the smallest
-// larger range that does. Tile heroes show the LATEST point with "as of <date>".
+// The light tiles/charts are built inline (the shared `StatTile`/`ChartCard`/`SectionHeader`/`ChartFooter`
+// are tuned for the dark `StrandPalette` and render as dark cards on paper). The shared `TrendChart`
+// and `Sparkline` ARE paper-aware (flat, paper-legible axes), so they're reused with light tokens.
 
 struct AppleHealthView: View {
     @EnvironmentObject var repo: Repository
+    @Environment(\.instrumentoTheme) private var theme
 
     // Imperial/Metric display preference (D#103). Weight and lean mass (stored kg) re-label to lb here;
     // every other Apple Health metric is unit-agnostic. Display-only.
@@ -49,7 +52,7 @@ struct AppleHealthView: View {
     /// Memoized per-metric resolved window. Resolving a key (effective range +
     /// trimmed rows) re-slices the full multi-year series and, on auto-widen, slices
     /// it once per candidate range. The view body asks for the same key many times
-    /// per render (every StatTile, every ChartCard, plus rangeNote/rangeSummary), and
+    /// per render (every tile, every chart, plus rangeNote/rangeSummary), and
     /// SwiftUI re-evaluates the body on hover / animation / 1Hz HR ticks. The inputs
     /// (`series`, `range`) only change on load or pill tap, so we compute once and
     /// cache, recomputing via .onChange(of:) when an input actually changes.
@@ -147,13 +150,17 @@ struct AppleHealthView: View {
     }
 
     var body: some View {
-        ScreenScaffold(title: "Apple Health", subtitle: spanSubtitle.map { LocalizedStringKey($0) }) {
-            if loaded && !hasAnyData {
-                ComingSoon(what: "Nothing imported yet. On an iPhone: Health app, tap your photo, Export All Health Data, then import the .zip here in Data Sources.")
-            } else if !loaded {
-                loadingState
-            } else {
-                VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        ScrollView {
+            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+                header
+                if loaded && !hasAnyData {
+                    EmptyStateView(
+                        systemImage: "heart.text.square",
+                        title: "Nothing imported yet",
+                        message: "On an iPhone: Health app, tap your photo, Export All Health Data, then import the .zip here in Data Sources.")
+                } else if !loaded {
+                    LoadingStateView("Reading your Apple Health history…")
+                } else {
                     rangeControl
                     tileGrid
                     heartSection
@@ -162,9 +169,26 @@ struct AppleHealthView: View {
                     sleepSection
                 }
             }
+            .padding(.top, 20)
+            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.bottom, NoopMetrics.screenPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .background(theme.paper.ignoresSafeArea())
         .task { await load() }
         .onChange(of: range) { rebuildWindowCache() }
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Apple Health").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("Apple Health").font(StrandFont.title1).foregroundStyle(theme.ink)
+            if let s = spanSubtitle {
+                Text(verbatim: s).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 2)
+            }
+        }
     }
 
     /// Rebuild the per-metric resolved-window cache from scratch. Called once after
@@ -230,13 +254,13 @@ struct AppleHealthView: View {
     private var rangeControl: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
-                SegmentedPillControl(RangeWindow.allCases, selection: $range) { $0.label }
+                SegmentedPillControl(RangeWindow.allCases, selection: $range, theme: theme) { $0.label }
                 Spacer()
-                Text(range.caption).strandOverline()
+                Text(range.caption).instrumentoOverline().foregroundStyle(theme.inkTertiary)
             }
-            Text(rangeSummaryCaption)
+            Text(verbatim: rangeSummaryCaption)
                 .font(StrandFont.footnote)
-                .foregroundStyle(StrandPalette.textTertiary)
+                .foregroundStyle(theme.inkTertiary)
                 .accessibilityLabel(rangeSummaryCaption)
         }
     }
@@ -256,7 +280,7 @@ struct AppleHealthView: View {
         let rows = loaded ? windowedRows : appleRows
         guard let first = rows.first?.day, let last = rows.last?.day,
               let lo = date(first), let hi = date(last) else {
-            return "Steps, heart, sleep, body composition and VO₂ max — read locally on this Mac."
+            return String(localized: "Steps, heart, sleep, body composition and VO₂ max — read locally on this iPhone.")
         }
         let loS = Self.spanFormatter.string(from: lo)
         let hiS = Self.spanFormatter.string(from: hi)
@@ -283,17 +307,7 @@ struct AppleHealthView: View {
         }
     }
 
-    private var loadingState: some View {
-        NoopCard {
-            HStack(spacing: 10) {
-                ProgressView().controlSize(.small)
-                Text("Reading your Apple Health history…")
-                    .font(StrandFont.subhead).foregroundStyle(StrandPalette.textSecondary)
-            }
-        }
-    }
-
-    // MARK: - Metric tiles (uniform 104pt StatTiles in an adaptive grid)
+    // MARK: - Metric tiles (uniform-height light tiles in an adaptive grid)
 
     private var tileGrid: some View {
         LazyVGrid(
@@ -302,27 +316,27 @@ struct AppleHealthView: View {
             spacing: NoopMetrics.gap
         ) {
             statTile(key: "steps", label: "Steps",
-                     accent: StrandPalette.metricCyan, fmt: { intString($0) })
+                     accent: theme.dataSteps, fmt: { intString($0) })
             statTile(key: "resting_hr", label: "Resting HR",
-                     accent: StrandPalette.metricRose, unit: String(localized: "bpm"),
+                     accent: theme.dataHeart, unit: String(localized: "bpm"),
                      fmt: { "\(Int($0.rounded()))" })
             statTile(key: "hrv", label: "HRV",
-                     accent: StrandPalette.metricPurple, unit: String(localized: "ms"),
+                     accent: theme.dataHrv, unit: String(localized: "ms"),
                      fmt: { "\(Int($0.rounded()))" })
             statTile(key: "vo2max", label: "VO₂ Max",
-                     accent: StrandPalette.accent, unit: String(localized: "ml/kg"),
+                     accent: theme.dataSpO2, unit: String(localized: "ml/kg"),
                      fmt: { String(format: "%.1f", $0) })
             statTile(key: "weight", label: "Weight",
-                     accent: StrandPalette.accent,
+                     accent: theme.dataSteps,
                      fmt: { massLabel($0) })
             statTile(key: "body_fat", label: "Body Fat",
-                     accent: StrandPalette.metricAmber, unit: "%",
+                     accent: theme.dataStrain, unit: "%",
                      fmt: { String(format: "%.1f", $0) })
             statTile(key: "lean_mass", label: "Lean Mass",
-                     accent: StrandPalette.accent,
+                     accent: theme.dataSteps,
                      fmt: { massLabel($0) })
             statTile(key: "asleep_min", label: "Asleep avg",
-                     accent: StrandPalette.metricPurple,
+                     accent: theme.dataSleep,
                      aggregate: .mean, fmt: { durationString($0) })
             workoutsTile
         }
@@ -331,9 +345,10 @@ struct AppleHealthView: View {
     /// How a tile's hero value is derived from its window.
     private enum Aggregate { case latest, mean }
 
-    /// A StatTile for one metric. Sparse-safe: the window auto-falls-back to ALL,
-    /// the hero is the LATEST point ("as of <date>") unless a mean is requested,
-    /// and the sparkline + caption track the same resolved window.
+    /// A light metric tile: a quiet overline label, the value in its metric hue (ink when empty), an
+    /// optional sparkline, and a caption — on paper, hairline-bordered, uniform height. Sparse-safe:
+    /// the window auto-falls-back to ALL, the hero is the LATEST point ("as of <date>") unless a mean
+    /// is requested, and the sparkline + caption track the same resolved window.
     private func statTile(key: String, label: LocalizedStringKey,
                           accent: Color, unit: String = "",
                           aggregate: Aggregate = .latest,
@@ -350,145 +365,212 @@ struct AppleHealthView: View {
             case .latest:
                 let v = values.last ?? 0
                 value = unit.isEmpty ? fmt(v) : "\(fmt(v)) \(unit)"
-                caption = rows.last.flatMap { date($0.day) }.map { "as of \(Self.asOfFormatter.string(from: $0))" }
+                caption = rows.last.flatMap { date($0.day) }.map { String(localized: "as of \(Self.asOfFormatter.string(from: $0))") }
             case .mean:
                 let m = mean(values) ?? 0
                 value = unit.isEmpty ? fmt(m) : "\(fmt(m)) \(unit)"
                 caption = "avg · \(values.count)d"
             }
         }
-        return StatTile(
-            label: label,
-            value: value,
-            caption: caption,
-            accent: values.isEmpty ? StrandPalette.textTertiary : accent,
-            sparkline: values.count > 1 ? sparkValues(values) : nil,
-            sparkColor: accent
-        )
+        return lightTile(label: label, value: value, caption: caption,
+                         accent: values.isEmpty ? theme.inkTertiary : accent,
+                         sparkline: values.count > 1 ? sparkValues(values) : nil,
+                         sparkColor: accent)
     }
 
-    /// Workouts is a count, not a series — its own fixed-height StatTile.
+    /// Workouts is a count, not a series — its own tile.
     private var workoutsTile: some View {
-        StatTile(
-            label: "Workouts",
-            value: "\(workoutCount)",
-            caption: workoutCount > 0 ? "Apple-logged" : nil,
-            accent: workoutCount > 0 ? StrandPalette.strainColor(12) : StrandPalette.textTertiary
-        )
+        lightTile(label: "Workouts",
+                  value: "\(workoutCount)",
+                  caption: workoutCount > 0 ? String(localized: "Apple-logged") : nil,
+                  accent: workoutCount > 0 ? theme.dataStrain : theme.inkTertiary,
+                  sparkline: nil, sparkColor: theme.dataStrain)
     }
 
-    // MARK: - Chart sections (uniform ChartCard, same height per page)
+    /// One light tile, uniform height, on paper with a hairline border (no nested fill). Value carries
+    /// the metric hue (the datum); label + caption stay ink.
+    private func lightTile(label: LocalizedStringKey, value: String, caption: String?,
+                           accent: Color, sparkline: [Double]?, sparkColor: Color) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                .lineLimit(2).minimumScaleFactor(0.8)
+            Spacer(minLength: 4)
+            Text(value).font(StrandFont.number(26)).foregroundStyle(accent)
+                .lineLimit(1).minimumScaleFactor(0.6)
+            if let sparkline, sparkline.count > 1 {
+                Sparkline(values: sparkline,
+                          gradient: Gradient(colors: [sparkColor.opacity(0.55), sparkColor]),
+                          showsArea: false, showsHead: false, showsScrub: false)
+                    .frame(height: 22).padding(.top, 4)
+            }
+            if let caption {
+                Text(verbatim: caption).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    .lineLimit(1).padding(.top, 2)
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, minHeight: NoopMetrics.tileHeight, alignment: .topLeading)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+            .strokeBorder(theme.hairline, lineWidth: 1))
+    }
+
+    // MARK: - Chart sections (light chart cards, uniform per page)
 
     private var heartSection: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-            SectionHeader("Heart & Vitals", overline: "Cardiac",
-                          trailing: range.caption)
+        chartSection("Heart & Vitals", overline: "Cardiac") {
             chartCard(title: "Resting heart rate", key: "resting_hr",
-                      gradient: roseGradient, fallback: 40...80,
+                      hue: theme.dataHeart, fallback: 40...80,
                       fmt: { "\(Int($0.rounded())) \(String(localized: "bpm"))" })
             chartCard(title: "Heart rate variability", key: "hrv",
-                      gradient: purpleGradient, fallback: 20...120,
+                      hue: theme.dataHrv, fallback: 20...120,
                       fmt: { "\(Int($0.rounded())) ms" })
             chartCard(title: "Blood oxygen", key: "spo2",
-                      gradient: cyanGradient, fallback: 90...100,
+                      hue: theme.dataSpO2, fallback: 90...100,
                       fmt: { String(format: "%.1f%%", $0) })
             chartCard(title: "Respiratory rate", key: "resp_rate",
-                      gradient: accentGradient, fallback: 10...22,
+                      hue: theme.dataSpO2, fallback: 10...22,
                       fmt: { String(format: "%.1f rpm", $0) })
         }
     }
 
     private var activitySection: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-            SectionHeader("Activity & Energy", overline: "Movement",
-                          trailing: range.caption)
+        chartSection("Activity & Energy", overline: "Movement") {
             chartCard(title: "Steps", key: "steps",
-                      gradient: cyanGradient, fallback: 0...12000,
+                      hue: theme.dataSteps, fallback: 0...12000,
                       fmt: { intString($0) })
             chartCard(title: "Active energy", key: "active_kcal",
-                      gradient: amberGradient, fallback: 0...1000,
+                      hue: theme.dataStrain, fallback: 0...1000,
                       fmt: { "\(intString($0)) kcal" })
         }
     }
 
     private var bodySection: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-            SectionHeader("Body Composition", overline: "Slow threads",
-                          trailing: range.caption)
+        chartSection("Body Composition", overline: "Slow threads") {
             chartCard(title: "Weight", key: "weight",
-                      gradient: accentGradient, fallback: 50...100,
+                      hue: theme.dataSteps, fallback: 50...100,
                       fmt: { massLabel($0) })
             chartCard(title: "Body fat", key: "body_fat",
-                      gradient: amberGradient, fallback: 8...35,
+                      hue: theme.dataStrain, fallback: 8...35,
                       fmt: { String(format: "%.1f%%", $0) })
             chartCard(title: "Lean body mass", key: "lean_mass",
-                      gradient: accentGradient, fallback: 40...80,
+                      hue: theme.dataSteps, fallback: 40...80,
                       fmt: { massLabel($0) })
             chartCard(title: "BMI", key: "bmi",
-                      gradient: purpleGradient, fallback: 16...35,
+                      hue: theme.dataHrv, fallback: 16...35,
                       fmt: { String(format: "%.1f", $0) })
         }
     }
 
     private var sleepSection: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-            SectionHeader("Sleep", overline: "Rest",
-                          trailing: range.caption)
+        chartSection("Sleep", overline: "Rest") {
             chartCard(title: "Asleep", key: "asleep_min",
-                      gradient: purpleGradient, fallback: 240...600,
+                      hue: theme.dataSleep, fallback: 240...600,
                       fmt: { durationString($0) })
         }
     }
 
-    /// One uniform ChartCard for a metric series: header + TrendChart body (same
-    /// height) + avg/min/max ChartFooter. Sparse-safe via resolvedWindow.
+    /// A light chart section: a quiet overline + title + the range caption, then its cards. Hierarchy by
+    /// space — no surrounding box.
     @ViewBuilder
-    private func chartCard(title: LocalizedStringKey, key: String, gradient: Gradient,
+    private func chartSection<Cards: View>(_ title: LocalizedStringKey, overline: LocalizedStringKey,
+                                           @ViewBuilder cards: () -> Cards) -> some View {
+        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(overline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text(title).font(StrandFont.title2).foregroundStyle(theme.ink)
+                }
+                Spacer()
+                Text(range.caption).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            }
+            cards()
+        }
+    }
+
+    /// One light chart card for a metric series: header (title + "N readings · range" + avg) + the
+    /// shared `TrendChart` with paper-legible axes and a single-hue line + avg/min/max footer, on paper
+    /// with a hairline border. Sparse-safe via resolvedWindow.
+    @ViewBuilder
+    private func chartCard(title: LocalizedStringKey, key: String, hue: Color,
                            fallback: ClosedRange<Double>,
                            fmt: @escaping (Double) -> String) -> some View {
         let rows = resolvedWindow(key)
         let pts = trendPoints(rows)
         let vals = rows.map(\.value)
         let trailing = mean(vals).map { fmt($0) }
-        // One concrete footer type (ChartFooter) keeps every card uniform — avg /
-        // min / max / point-count, with dashes only in the defensive no-data case.
+        // A single concrete footer (avg / min / max / point-count) keeps every card uniform, with
+        // dashes only in the defensive no-data case.
         let footerItems: [(LocalizedStringKey, String)] = {
             guard let avg = mean(vals), let lo = vals.min(), let hi = vals.max() else {
                 return [("Avg", "—"), ("Min", "—"), ("Max", "—"), ("Points", "0")]
             }
             return [("Avg", fmt(avg)), ("Min", fmt(lo)), ("Max", fmt(hi)), ("Points", "\(vals.count)")]
         }()
-        ChartCard(
-            title: title,
-            subtitle: rangeNote(forKey: key),
-            trailing: trailing,
-            chart: {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text(verbatim: rangeNote(forKey: key)).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                }
+                Spacer()
+                if let trailing {
+                    Text(verbatim: trailing).font(StrandFont.bodyNumber).foregroundStyle(hue)
+                }
+            }
+            Group {
                 if pts.count >= 2 {
                     TrendChart(
                         points: pts,
-                        gradient: gradient,
+                        gradient: Gradient(colors: [hue.opacity(0.55), hue]),
                         valueRange: valueRange(pts, fallback: fallback),
                         showsArea: true,
                         height: NoopMetrics.chartHeight,
-                        valueFormat: fmt
+                        valueFormat: fmt,
+                        axisLabelColor: theme.inkTertiary,
+                        gridLineColor: theme.hairline
                     )
                 } else if let only = vals.last {
-                    // A single point is not a line — present the lone reading,
-                    // never an "empty" state when the series has data.
-                    singlePoint(only, fmt: fmt, accent: StrandPalette.sample(stops: gradient.stops, at: 0.85))
+                    // A single point is not a line — present the lone reading, never an "empty" state
+                    // when the series has data.
+                    singlePoint(only, fmt: fmt, accent: hue)
                 } else {
                     emptyChart
                 }
-            },
-            footer: { ChartFooter(footerItems) }
-        )
+            }
+            .frame(height: NoopMetrics.chartHeight)
+            .clipped()
+            divider
+            lightFooter(footerItems)
+        }
+        .padding(NoopMetrics.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+            .strokeBorder(theme.hairline, lineWidth: 1))
+    }
+
+    private var divider: some View { Divider().overlay(theme.hairline) }
+
+    /// A light footer row of small "label / value" stats (avg/min/max/points). Labels ink-quiet, values
+    /// ink-secondary — no color here (the chart line carries the hue).
+    private func lightFooter(_ items: [(LocalizedStringKey, String)]) -> some View {
+        HStack(spacing: 0) {
+            ForEach(Array(items.enumerated()), id: \.offset) { _, it in
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(it.0).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text(verbatim: it.1).font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
     }
 
     /// Lone-reading body for series with exactly one point in range.
     private func singlePoint(_ value: Double, fmt: (Double) -> String, accent: Color) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Latest reading").strandOverline()
-            Text(fmt(value)).font(StrandFont.number(34)).foregroundStyle(accent)
+            Text("Latest reading").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(verbatim: fmt(value)).font(StrandFont.number(34)).foregroundStyle(accent)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
@@ -496,26 +578,8 @@ struct AppleHealthView: View {
     private var emptyChart: some View {
         Text("No readings recorded.")
             .font(StrandFont.subhead)
-            .foregroundStyle(StrandPalette.textTertiary)
+            .foregroundStyle(theme.inkTertiary)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-    }
-
-    // MARK: - Per-metric gradients (colour communicates category only)
-
-    private var accentGradient: Gradient {
-        Gradient(colors: [StrandPalette.accentMuted, StrandPalette.accent, StrandPalette.accentHover])
-    }
-    private var roseGradient: Gradient {
-        Gradient(colors: [StrandPalette.statusWarning, StrandPalette.statusCritical])
-    }
-    private var cyanGradient: Gradient {
-        Gradient(colors: [StrandPalette.metricCyan.opacity(0.55), StrandPalette.metricCyan])
-    }
-    private var amberGradient: Gradient {
-        Gradient(colors: [StrandPalette.metricAmber.opacity(0.55), StrandPalette.metricAmber])
-    }
-    private var purpleGradient: Gradient {
-        Gradient(colors: [StrandPalette.metricPurple.opacity(0.55), StrandPalette.metricPurple])
     }
 
     // MARK: - Series helpers (sparse-data fallback to ALL)
@@ -696,13 +760,11 @@ private func appleHealthPreviewData() -> AppleHealthView.PreviewData {
     AppleHealthView(previewData: appleHealthPreviewData())
         .environmentObject(Repository(deviceId: "preview"))
         .frame(width: 920, height: 980)
-        .preferredColorScheme(.dark)
 }
 
 #Preview("Apple Health — empty") {
     AppleHealthView(previewData: .init(rows: [], workoutCount: 0, series: [:]))
         .environmentObject(Repository(deviceId: "preview"))
         .frame(width: 920, height: 600)
-        .preferredColorScheme(.dark)
 }
 #endif

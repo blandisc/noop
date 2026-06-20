@@ -280,23 +280,27 @@ struct WorkoutsView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    // MARK: - Data Sources bridge (legacy dark screen, self-contained sheet)
+    // MARK: - Data Sources bridge (light «Instrumento» screen, self-contained sheet)
 
+    /// Data Sources, reskinned to the light «Instrumento» language (FER-338): a light sheet with its own
+    /// NavigationStack (so «Ver datos importados» pushes the Apple Health viewer), the theme injected at
+    /// the root (it doesn't cross the `.sheet` boundary, FER-162). A light sheet from a light tab keeps
+    /// the status bar honest (no dark pin needed).
     private var dataSourcesSheet: some View {
         NavigationStack {
             DataSourcesView()
-                .background(StrandPalette.surfaceBase.ignoresSafeArea())
                 .navigationBarTitleDisplayMode(.inline)
-                .toolbarBackground(StrandPalette.surfaceBase, for: .navigationBar)
+                .toolbarBackground(theme.paper, for: .navigationBar)
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {
-                        Button("Done") { showDataSources = false }.foregroundStyle(StrandPalette.accent)
+                        Button("Done") { showDataSources = false }.foregroundStyle(theme.ink)
                     }
                 }
         }
+        .instrumentoTheme(theme)
         .environmentObject(repo)
         .environmentObject(health)
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(.light)
     }
 
     // MARK: - Actions

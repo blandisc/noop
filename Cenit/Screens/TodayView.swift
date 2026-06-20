@@ -427,23 +427,28 @@ struct TodayView: View {
         }
         .sheet(isPresented: $showDataSources) {
             // Present Data Sources directly so the Key Metrics nudge connects Apple Health in one tap,
-            // without sending the user to dig through the More tab. A sheet starts a fresh environment
-            // branch, so re-inject the objects DataSourcesView needs (same pattern as the cover above).
+            // without sending the user to dig through the More tab. Reskinned to the light «Instrumento»
+            // language (FER-338): a light sheet with its own NavigationStack (so «Ver datos importados»
+            // pushes the Apple Health viewer), the theme injected at the root (it doesn't cross the
+            // `.sheet` boundary, FER-162). A sheet starts a fresh environment branch, so re-inject the
+            // objects DataSourcesView needs (same pattern as the cover above).
             NavigationStack {
                 DataSourcesView()
                     .navigationBarTitleDisplayMode(.inline)
+                    .toolbarBackground(theme.paper, for: .navigationBar)
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) {
                             Button("Done") { showDataSources = false }
-                                .foregroundStyle(StrandPalette.accent)
+                                .foregroundStyle(theme.ink)
                         }
                     }
             }
+            .instrumentoTheme(theme)
             .environmentObject(model)
             .environmentObject(repo)
             .environmentObject(live)
             .environmentObject(health)
-            .preferredColorScheme(.dark)
+            .preferredColorScheme(.light)
         }
     }
 
