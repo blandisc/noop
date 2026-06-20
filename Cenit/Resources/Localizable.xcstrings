@@ -16657,29 +16657,6 @@
         }
       }
     },
-    "Regularity is the night-to-night variability of your mid-sleep point (the midpoint between falling asleep and waking) — a steadier schedule predicts health more strongly than how long you sleep. Stages are estimated from movement, heart rate and HRV, so they're approximate; deep sleep repairs the body, REM consolidates memory and emotion. \"Need\" is a 7–9 h population target, not a measurement of you.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Regularity is the night-to-night variability of your mid-sleep point (the midpoint between falling asleep and waking) — a steadier schedule predicts health more strongly than how long you sleep. Stages are estimated from movement, heart rate and HRV, so they're approximate; deep sleep repairs the body, REM consolidates memory and emotion. \"Need\" is a 7–9 h population target, not a measurement of you."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "La regularidad es la variabilidad noche a noche de tu punto medio de sueño (el punto medio entre dormirte y despertar) — un horario más parejo predice tu salud con más fuerza que cuánto duermes. Las etapas se estiman del movimiento, la frecuencia cardíaca y la HRV, así que son aproximadas; el sueño profundo repara el cuerpo, el REM consolida memoria y emociones. La «necesidad» es un objetivo poblacional de 7–9 h, no una medición tuya."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Regelmäßigkeit ist die nächtliche Schwankung deines Schlafmittelpunkts (der Mitte zwischen Einschlafen und Aufwachen) — ein gleichmäßigerer Rhythmus sagt die Gesundheit stärker voraus als die Schlafdauer. Phasen werden aus Bewegung, Herzfrequenz und HRV geschätzt, also ungefähr; Tiefschlaf repariert den Körper, REM festigt Gedächtnis und Emotionen. Der „Bedarf“ ist ein Bevölkerungsziel von 7–9 Std., keine Messung an dir."
-          }
-        }
-      }
-    },
     "Relax 4-6": {
       "localizations": {
         "en": {
@@ -30626,6 +30603,75 @@
           "stringUnit": {
             "state": "translated",
             "value": "Persistencia de un día a otro (r = %@, n = %lld) — la misma señal comparada consigo misma, así que no hay una significancia independiente que reportar."
+          }
+        }
+      }
+    },
+    "Regularity is the night-to-night variability of your mid-sleep point (the midpoint between falling asleep and waking) — a steadier schedule predicts health more strongly than how long you sleep. Naps don't count: only your main night (at least 3 h) feeds regularity. Stages are estimated from movement, heart rate and HRV, so they're approximate; deep sleep repairs the body, REM consolidates memory and emotion. \"Need\" is a 7–9 h population target, not a measurement of you.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regularity is the night-to-night variability of your mid-sleep point (the midpoint between falling asleep and waking) — a steadier schedule predicts health more strongly than how long you sleep. Naps don't count: only your main night (at least 3 h) feeds regularity. Stages are estimated from movement, heart rate and HRV, so they're approximate; deep sleep repairs the body, REM consolidates memory and emotion. \"Need\" is a 7–9 h population target, not a measurement of you."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La regularidad es la variabilidad noche a noche de tu punto medio de sueño (el punto medio entre dormirte y despertar) — un horario más parejo predice tu salud con más fuerza que cuánto duermes. Las siestas no cuentan: solo tu noche principal (de al menos 3 h) entra en la regularidad. Las etapas se estiman del movimiento, la frecuencia cardíaca y la HRV, así que son aproximadas; el sueño profundo repara el cuerpo, el REM consolida memoria y emociones. La «necesidad» es un objetivo poblacional de 7–9 h, no una medición tuya."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regelmäßigkeit ist die nächtliche Schwankung deines Schlafmittelpunkts (der Mitte zwischen Einschlafen und Aufwachen) — ein gleichmäßigerer Rhythmus sagt die Gesundheit stärker voraus als die Schlafdauer. Nickerchen zählen nicht: nur deine Hauptnacht (mindestens 3 Std.) fließt in die Regelmäßigkeit ein. Phasen werden aus Bewegung, Herzfrequenz und HRV geschätzt, also ungefähr; Tiefschlaf repariert den Körper, REM festigt Gedächtnis und Emotionen. Der „Bedarf“ ist ein Bevölkerungsziel von 7–9 Std., keine Messung an dir."
+          }
+        }
+      }
+    },
+    "We didn't count your %@ nap — regularity uses only your main night.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We didn't count your %@ nap — regularity uses only your main night."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No contamos tu siesta de %@ — la regularidad usa solo tu noche principal."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Nickerchen von %@ zählt nicht — die Regelmäßigkeit nutzt nur deine Hauptnacht."
+          }
+        }
+      }
+    },
+    "We didn't count your naps (under %@) — regularity uses only your main night.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We didn't count your naps (under %@) — regularity uses only your main night."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No contamos tus siestas (menos de %@) — la regularidad usa solo tu noche principal."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Nickerchen (unter %@) zählen nicht — die Regelmäßigkeit nutzt nur deine Hauptnacht."
           }
         }
       }

@@ -19,9 +19,11 @@ import Foundation
 // ultra-short main sleep (< 3 h) is rare and isn't a stable schedule anchor anyway, so dropping it
 // from the regularity read is acceptable.
 
-enum SleepMainNight {
+public enum SleepMainNight {
     /// Minimum sleep duration (minutes) for a session to count as a "main night" rather than a nap.
-    static let minDurationMinutes = 180.0   // 3 h
+    /// Public so the app layer can label a nap it excluded ("we ignored your 2 h nap") against the
+    /// same threshold the engines use, instead of hardcoding 180 (FER-310).
+    public static let minDurationMinutes = 180.0   // 3 h
 
     /// Does the `[startTs, endTs]` span (unix seconds) qualify as a main night (vs a nap)?
     static func qualifies(startTs: Int, endTs: Int) -> Bool {

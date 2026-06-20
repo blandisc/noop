@@ -221,6 +221,18 @@ struct SleepDetailScreen: View {
                             .font(StrandFont.footnote)
                             .foregroundStyle(theme.warning)
                     }
+                    if model.excludedNapCount > 0 {
+                        Divider().overlay(theme.hairline)
+                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                            Image(systemName: "zzz")
+                                .font(StrandFont.footnote)
+                                .foregroundStyle(theme.inkTertiary)
+                            Text(napNotice)
+                                .font(StrandFont.footnote)
+                                .foregroundStyle(theme.inkTertiary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
                 } else {
                     // < minNights timing nights: honest calibration, no fake number.
                     let missing = max(0, SleepRegularity.minNights - model.regularityNights)
@@ -551,7 +563,7 @@ struct SleepDetailScreen: View {
         DisclosureGroup(isExpanded: $methodExpanded) {
             VStack(alignment: .leading, spacing: 10) {
                 Divider().overlay(theme.hairline)
-                Text("Regularity is the night-to-night variability of your mid-sleep point (the midpoint between falling asleep and waking) — a steadier schedule predicts health more strongly than how long you sleep. Stages are estimated from movement, heart rate and HRV, so they're approximate; deep sleep repairs the body, REM consolidates memory and emotion. \"Need\" is a 7–9 h population target, not a measurement of you.")
+                Text("Regularity is the night-to-night variability of your mid-sleep point (the midpoint between falling asleep and waking) — a steadier schedule predicts health more strongly than how long you sleep. Naps don't count: only your main night (at least 3 h) feeds regularity. Stages are estimated from movement, heart rate and HRV, so they're approximate; deep sleep repairs the body, REM consolidates memory and emotion. \"Need\" is a 7–9 h population target, not a measurement of you.")
                     .font(StrandFont.subhead)
                     .foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -643,6 +655,25 @@ struct SleepDetailScreen: View {
     private func hoursOnly(_ minutes: Double) -> String {
         let m = Swift.max(0, Int(minutes.rounded()))
         return String(format: "%d:%02d", m / 60, m % 60)
+    }
+
+    /// The disclosure line shown under the regularity figure when the window dropped one or more naps
+    /// (FER-310): names the duration for a single nap, generic otherwise. The "main night" threshold
+    /// comes from `SleepMainNight`, so the copy never hardcodes 3 h.
+    private var napNotice: LocalizedStringKey {
+        if let minutes = model.excludedNapMinutes {
+            return "We didn't count your \(napDurationText(minutes)) nap — regularity uses only your main night."
+        }
+        return "We didn't count your naps (under \(napDurationText(Int(SleepMainNight.minDurationMinutes)))) — regularity uses only your main night."
+    }
+
+    /// A minutes count as natural-language duration with no trailing zero minutes: "3 h", "1 h 30 min",
+    /// "45 min" — for the nap-disclosure copy.
+    private func napDurationText(_ minutes: Int) -> String {
+        let h = minutes / 60, m = minutes % 60
+        if h > 0 && m > 0 { return "\(h) h \(m) min" }
+        if h > 0 { return "\(h) h" }
+        return "\(m) min"
     }
 
     private func regularityWord(_ score: Int) -> LocalizedStringKey {
@@ -871,6 +902,12 @@ struct SleepDetailModel {
     let regularity: SleepRegularity.Result?
     /// How many timing nights fed (or would feed) the regularity read — for the "N to go" calibration.
     let regularityNights: Int
+    /// Strap naps (shorter than a main night) excluded from the regularity window, so the UI can
+    /// disclose that they didn't count (FER-310). 0 when none.
+    let excludedNapCount: Int
+    /// Duration (minutes) of the single excluded nap when `excludedNapCount == 1`, for the "your 2 h
+    /// nap" copy; `nil` otherwise (0 naps, or ≥2 → generic copy).
+    let excludedNapMinutes: Int?
 
     // "Typical" stage shares (percent of asleep, mean over history) for the vs-typical block.
     let typicalDeepPct: Double?
@@ -962,6 +999,24 @@ struct SleepDetailModel {
         // The effective window size the engine would use (so the calibration says "N nights to go").
         let regularityNights = min(timing.count, SleepRegularity.windowNights)
 
+        // --- Naps excluded from the regularity window, for the disclosure line (FER-310). ---
+        // The engine keeps only "main nights" (≥ SleepMainNight threshold) and scores the most recent
+        // `windowNights` of them. A nap counts as excluded only if it onset at/after the oldest night
+        // in that window — older naps are off-window and irrelevant to the current read.
+        let napThresholdSec = Int(SleepMainNight.minDurationMinutes * 60)
+        let strapSessions = sleeps.filter { $0.endTs > $0.startTs }   // excludes Apple-only (start == end)
+        let mainNightWindow = strapSessions
+            .filter { $0.endTs - $0.startTs >= napThresholdSec }
+            .sorted { $0.startTs > $1.startTs }
+            .prefix(SleepRegularity.windowNights)
+        let windowStart = mainNightWindow.last?.startTs ?? 0
+        let excludedNaps = mainNightWindow.isEmpty ? [] : strapSessions.filter {
+            $0.endTs - $0.startTs < napThresholdSec && $0.startTs >= windowStart
+        }
+        let excludedNapCount = excludedNaps.count
+        let excludedNapMinutes = excludedNapCount == 1
+            ? (excludedNaps[0].endTs - excludedNaps[0].startTs) / 60 : nil
+
         // --- Typical stage shares (percent of asleep), mean over days that carry all three stages. ---
         var deepPcts: [Double] = [], remPcts: [Double] = [], lightPcts: [Double] = []
         for d in days {
@@ -1033,6 +1088,8 @@ struct SleepDetailModel {
             loaded: loaded,
             regularity: regularity,
             regularityNights: regularityNights,
+            excludedNapCount: excludedNapCount,
+            excludedNapMinutes: excludedNapMinutes,
             typicalDeepPct: mean(deepPcts),
             typicalRemPct: mean(remPcts),
             typicalLightPct: mean(lightPcts),
