@@ -1568,6 +1568,12 @@ struct TodayView: View {
         var placeholder: LocalizedStringKey? = nil
         @Environment(\.instrumentoTheme) private var theme
 
+        /// Sin lectura de hoy → el valor es el em-dash «—». En ese caso el tile «no tiene nada»: el ícono
+        /// y el valor (y la unidad) se atenúan a `inkDim` (gris apagado del handoff) en vez del color de
+        /// la métrica. Es por-tile, así que en «Base Apple Salud» las filas prestadas siguen a color y las
+        /// strap-only se apagan. (handoff «Hoy · Estados»)
+        private var isEmpty: Bool { value == "—" }
+
         var body: some View {
             VStack(alignment: .leading, spacing: 0) {
                 // Glifo de la métrica + etiqueta a UNA línea (FER-189): el ícono en el color del dato
@@ -1577,7 +1583,7 @@ struct TodayView: View {
                     if let icon {
                         Image(systemName: icon)
                             .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(valueColor)
+                            .foregroundStyle(isEmpty ? theme.inkDim : valueColor)
                             .accessibilityHidden(true)
                     }
                     Text(label).instrumentoOverline()
@@ -1589,10 +1595,10 @@ struct TodayView: View {
                     // Valor 23 (handoff «Hoy · Estados», antes 22). Piso de escala = 18/23 (FER-273): el
                     // valor lleva color de DATO (3.5–3.6:1), que solo cumple AA como texto GRANDE (≥18pt,
                     // 3:1). El piso nunca lo baja de 18pt, así el color de dato siempre cumple AA-grande.
-                    Text(value).font(StrandFont.number(23)).foregroundStyle(valueColor)
+                    Text(value).font(StrandFont.number(23)).foregroundStyle(isEmpty ? theme.inkDim : valueColor)
                         .lineLimit(1).minimumScaleFactor(18.0 / 23.0)
                     if let unit {
-                        Text(unit).font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                        Text(unit).font(StrandFont.subhead).foregroundStyle(isEmpty ? theme.inkDim : theme.inkTertiary)
                     }
                 }
                 Spacer(minLength: NoopMetrics.space1)
@@ -1624,7 +1630,7 @@ struct TodayView: View {
             HStack(spacing: NoopMetrics.space1) {
                 switch context {
                 case let .ready(change, band):
-                    MetricBand(band: band).frame(maxWidth: .infinity)
+                    MetricBand(band: band, tickColor: valueColor).frame(maxWidth: .infinity)
                     changeText(change)
                 case .building:
                     Text("Still building your average")
@@ -1696,10 +1702,12 @@ struct TodayView: View {
     }
 
     /// La mini-banda del tile (FER-258): el rango típico p25–p75 en `hairlineStrong` sobre la regla
-    /// `hairline`, con un tick en `inkTertiary` donde cae el valor de hoy. Chrome en tinta pura — nunca
-    /// color de dato (regla del idioma «Instrumento»). Decorativa para VoiceOver (el pie ya lo narra).
+    /// `hairline` (chrome en gris), con el **tick del valor de hoy en el color de la métrica**
+    /// (`tickColor`, handoff «Hoy · Estados» — licencia consciente sobre «color solo en el dato», como
+    /// las pastillas y los íconos). Decorativa para VoiceOver (el pie ya lo narra).
     private struct MetricBand: View {
         let band: BandViz
+        let tickColor: Color
         @Environment(\.instrumentoTheme) private var theme
 
         var body: some View {
@@ -1713,7 +1721,7 @@ struct TodayView: View {
                         .frame(width: segW, height: 2)
                         .offset(x: w * band.lowFrac)
                         .frame(maxHeight: .infinity, alignment: .center)
-                    RoundedRectangle(cornerRadius: 1).fill(theme.inkTertiary)
+                    RoundedRectangle(cornerRadius: 1).fill(tickColor)
                         .frame(width: 2, height: 8)
                         .offset(x: Swift.min(w - 2, Swift.max(0, w * band.tickFrac - 1)))
                 }
