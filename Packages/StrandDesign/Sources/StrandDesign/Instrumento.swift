@@ -154,6 +154,24 @@ public extension InstrumentoTheme {
     /// reference) so a negative delta reads as a first-class data role, paired with
     /// `positiveText`. (FER-131 · 02)
     var negativeText: Color { critical }
+
+    // MARK: Paper gradient — warm-paper depth for the «Hoy» canvas (handoff «Hoy · Estados»)
+    //
+    // The daytime «Hoy» canvas reads as paper with a faint pool of light near the
+    // top-centre that deepens to a slightly warmer rim — a radial gradient, not a flat
+    // fill. Rather than store two more roles on every hour anchor, the two stops are
+    // DERIVED from the LIVE `paper` in OKLab (the `positiveText` technique generalized):
+    // `paperHi` lightens toward white, `paperLo` deepens toward the warm `hairline`, so
+    // the gradient "dawns" and "dims" with the by-the-hour paper for free and needs no
+    // change to the init, the four anchors, or `interpolated(to:)`. Both stops stay in
+    // the bone-paper family (never a cool white at the centre), so rule 3's "warm paper,
+    // never pure white" still holds at the surface. Computed (like `hrZoneRamp`), so the
+    // theme's `Equatable` and the engine are untouched.
+
+    /// Gradient highlight — the lighter pool of light near the top-centre of the paper.
+    var paperHi: Color { OKLab.mix(paper, Color(.sRGB, red: 1, green: 1, blue: 1), 0.5) }
+    /// Gradient rim — the paper deepening slightly toward its warm rule at the edge.
+    var paperLo: Color { OKLab.mix(paper, hairline, 0.5) }
 }
 
 // MARK: - Environment injection

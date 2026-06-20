@@ -70,6 +70,8 @@
       "surface":         { "$value": "#FBF9F2", "$description": "a sparingly-used raised surface; never nested" },
       "hairline":        { "$value": "#E6E0D2", "$description": "faint warm 1px rule" },
       "hairlineStrong":  { "$value": "#D8D0BD", "$description": "rule on emphasis" },
+      "paperHi":         { "$value": "#F9F8F3", "$description": "paper-gradient highlight — lighter pool toward top-centre (derived from paper)" },
+      "paperLo":         { "$value": "#EDE8DD", "$description": "paper-gradient rim — deeper warm edge (derived from paper)" },
       "ink":             { "$value": "#221D16", "$description": "primary text & the hero numeral — 14.8:1" },
       "inkSecondary":    { "$value": "#5C5648", "$description": "supporting copy & labels — 6.5:1" },
       "inkTertiary":     { "$value": "#6F6857", "$description": "overlines, captions, axis — 4.9:1" },

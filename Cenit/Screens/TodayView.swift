@@ -610,7 +610,24 @@ struct TodayView: View {
     /// la hora — por eso esta vista hija lo lee del entorno.)
     private struct PaperBackground: View {
         @Environment(\.instrumentoTheme) private var theme
-        var body: some View { theme.paper.ignoresSafeArea() }
+        var body: some View {
+            // Papel con profundidad (handoff «Hoy · Estados»): un gradiente radial cálido —pozo de luz
+            // arriba-centro (`paperHi`), papel medio y un borde un poco más hondo (`paperLo`)— en vez del
+            // relleno plano de antes. Los stops se derivan del `paper` vivo, así que el lienzo también
+            // amanece/anochece por hora. Elíptico (no circular) para cubrir el alto del teléfono como el
+            // `radial-gradient(125% 78% at 50% 16%)` del handoff.
+            EllipticalGradient(
+                stops: [
+                    .init(color: theme.paperHi, location: 0),
+                    .init(color: theme.paper,   location: 0.44),
+                    .init(color: theme.paperLo, location: 1.0)
+                ],
+                center: UnitPoint(x: 0.5, y: 0.16),
+                startRadiusFraction: 0,
+                endRadiusFraction: 0.9
+            )
+            .ignoresSafeArea()
+        }
     }
 
     /// Ventana solar (amanecer/atardecer) para HOY, en horas reloj, derivada de `SolarClock` para la
@@ -1231,6 +1248,20 @@ struct TodayView: View {
             : "Afinando con tu strap, \(ownNights) de \(Baselines.minNightsTrust) noches."))
     }
 
+    /// El rótulo de la sección «Métricas de hoy» (handoff «Hoy · Estados»): un overline en tinta seguido de
+    /// una regla hairline que llena la línea. FER-282 lo había quitado para pegar los tiles al héroe; el
+    /// handoff lo reintroduce como ancla de lectura. El texto va en tinta terciaria AA —el #8a8372 del mock
+    /// no pasa AA a 11pt, así que se usa el token terciario (#6F6857), visualmente equivalente—. Marcado
+    /// como encabezado para VoiceOver.
+    private var metricsSectionLabel: some View {
+        HStack(spacing: NoopMetrics.gap) {
+            Text("Métricas de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Rectangle().fill(theme.hairline).frame(height: 1)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isHeader)
+    }
+
     /// "Métricas de hoy" — la lectura intradía del día como rejilla 2×4 de 8 tiles (valor + Δ vs ayer),
     /// en el lenguaje «Instrumento diurno». Sustituye a la lista de tendencia 14d (FER-155/161): la
     /// tendencia es entre-días y migra a «Cuerpo»; aquí queda la foto de HOY. Cada tile es tematizado
@@ -1267,9 +1298,11 @@ struct TodayView: View {
         let anyMeasuredMissing = hrvR == nil || sleepR == nil || rhrR == nil || spo2R == nil || stepsFresh == nil
 
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-            // FER-282: el sello «Today» se quitó y el pulso vivo se mudó a la línea del veredicto, así
-            // que el encabezado de métricas desaparece como fila y los tiles suben pegados al héroe.
-            // Rejilla fija 2×8 (2 columnas, 8 tiles → 4 renglones), separación `NoopMetrics.gap`.
+            // El pulso vivo se mudó a la línea del veredicto (FER-282); el rótulo de sección «Métricas de
+            // hoy» —overline en tinta + regla hairline al ras— vuelve como ancla de lectura sobre la
+            // rejilla (handoff «Hoy · Estados»). Rejilla fija 2×8 (2 columnas, 8 tiles → 4 renglones),
+            // separación `NoopMetrics.gap`.
+            metricsSectionLabel
             LazyVGrid(columns: tileGrid, alignment: .leading, spacing: NoopMetrics.gap) {
                 // Esfuerzo del día — carga del día, sin valencia (Δ en tinta neutra).
                 metricTile(TodayMetricTile(
@@ -1442,10 +1475,14 @@ struct TodayView: View {
         let up = change > 0
         // Mejora → `positive` (verde AA-en-texto-chico); empeora → `negativeText` (= critical, ya pasa
         // 4.5:1); sin valencia (carga / FC) → tinta neutra. Ambos son los tokens de texto tintado <24pt.
+        // Solo las métricas CON valencia (mejora/empeora) llevan la pastilla tintada del handoff; las sin
+        // valencia (carga / FC, `betterHigher == nil`) van en tinta neutra sin pastilla (= «NEU» transparente
+        // del mock).
+        let valenced = betterHigher != nil
         let color: Color = betterHigher.map { (up == $0) ? positive : theme.negativeText } ?? theme.inkTertiary
         let mag = format(abs(change))
-        return .ready(change: up ? .above(magnitude: mag, color: color)
-                                 : .below(magnitude: mag, color: color), band: band)
+        return .ready(change: up ? .above(magnitude: mag, color: color, tinted: valenced)
+                                 : .below(magnitude: mag, color: color, tinted: valenced), band: band)
     }
 
     /// Mapea p25, p75 y el valor de hoy a fracciones 0…1 sobre el rango real (min…max) de la ventana
@@ -1488,8 +1525,8 @@ struct TodayView: View {
     /// El cambio de hoy contra la media de 7 días, ya formateado + con color por polaridad. `equal` es
     /// «En tu media de 7 días» (dentro del deadband).
     private enum TileChange {
-        case above(magnitude: String, color: Color)
-        case below(magnitude: String, color: Color)
+        case above(magnitude: String, color: Color, tinted: Bool)
+        case below(magnitude: String, color: Color, tinted: Bool)
         case equal(color: Color)
     }
 
@@ -1527,12 +1564,11 @@ struct TodayView: View {
                     .lineLimit(1).minimumScaleFactor(0.7)
                 Spacer(minLength: NoopMetrics.space1)
                 HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
-                    // Piso de escala 0.82 = 18/22 (FER-273): el valor lleva color de DATO (3.5–3.6:1), que
-                    // solo cumple AA como texto GRANDE (≥18pt, 3:1). Encogerlo más (el 0.6 previo → ~13pt)
-                    // lo volvía texto normal, donde AA pide 4.5:1 que esos roles no alcanzan. A 0.82 nunca
-                    // baja de 18pt, así el color de dato siempre cumple.
-                    Text(value).font(StrandFont.number(22)).foregroundStyle(valueColor)
-                        .lineLimit(1).minimumScaleFactor(0.82)
+                    // Valor 23 (handoff «Hoy · Estados», antes 22). Piso de escala = 18/23 (FER-273): el
+                    // valor lleva color de DATO (3.5–3.6:1), que solo cumple AA como texto GRANDE (≥18pt,
+                    // 3:1). El piso nunca lo baja de 18pt, así el color de dato siempre cumple AA-grande.
+                    Text(value).font(StrandFont.number(23)).foregroundStyle(valueColor)
+                        .lineLimit(1).minimumScaleFactor(18.0 / 23.0)
                     if let unit {
                         Text(unit).font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
                     }
@@ -1544,8 +1580,17 @@ struct TodayView: View {
             // Alto fijo (FER-265): 88 → 76 — la mini-banda y el cambio caben en UNA línea de pie, así
             // que el tile vuelve a ser compacto y la sección no se desborda.
             .frame(maxWidth: .infinity, minHeight: 76, maxHeight: 76, alignment: .topLeading)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+            // Tarjeta blanca con elevación sutil (handoff «Hoy · Estados»): radio 17 + una sombra cálida
+            // tenue (`ink` al 5 %, y:1) sobre el papel — la sombra va en la SILUETA del tile (la forma del
+            // fondo), no en el contenido, así no proyecta el texto. El relleno sigue siendo el `surface`
+            // del tema (blanco cálido por el día, hora-consciente — no `#fff` literal, que destellaría de
+            // noche). Borde hairline al ras.
+            .background {
+                RoundedRectangle(cornerRadius: NoopMetrics.tileRadius, style: .continuous)
+                    .fill(theme.surface)
+                    .shadow(color: theme.ink.opacity(0.05), radius: 1.5, x: 0, y: 1)
+            }
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.tileRadius, style: .continuous)
                 .strokeBorder(theme.hairline, lineWidth: 1))
             .accessibilityElement(children: .combine)
         }
@@ -1580,8 +1625,8 @@ struct TodayView: View {
         /// VoiceOver lee la frase completa «sobre/bajo tu media de 7 días» (la flecha va oculta).
         @ViewBuilder private func changeText(_ change: TileChange) -> some View {
             switch change {
-            case let .above(magnitude, color): deltaLabel(up: true, magnitude: magnitude, color: color)
-            case let .below(magnitude, color): deltaLabel(up: false, magnitude: magnitude, color: color)
+            case let .above(magnitude, color, tinted): deltaLabel(up: true, magnitude: magnitude, color: color, tinted: tinted)
+            case let .below(magnitude, color, tinted): deltaLabel(up: false, magnitude: magnitude, color: color, tinted: tinted)
             case let .equal(color):
                 Text("At your average")
                     .font(StrandFont.caption).foregroundStyle(color)
@@ -1589,7 +1634,12 @@ struct TodayView: View {
             }
         }
 
-        private func deltaLabel(up: Bool, magnitude: String, color: Color) -> some View {
+        /// El cambio vs la media, en la pastilla tintada del handoff: flecha + magnitud + «vs avg». Con
+        /// valencia (`tinted`) el texto va en su color de delta sobre un lavado del mismo color al 12 % en
+        /// cápsula (verde para mejora, rojo para empeora); sin valencia va en tinta neutra SIN pastilla
+        /// (= «NEU» transparente del mock). La cápsula es la única excepción a «color solo en el dato» que
+        /// el dueño aprobó para este handoff.
+        private func deltaLabel(up: Bool, magnitude: String, color: Color, tinted: Bool) -> some View {
             HStack(spacing: NoopMetrics.space1) {
                 Image(systemName: up ? "arrow.up" : "arrow.down")
                     .font(.system(size: 10, weight: .semibold))
@@ -1598,7 +1648,14 @@ struct TodayView: View {
             }
             .font(StrandFont.caption)
             .foregroundStyle(color)
-            .lineLimit(1).minimumScaleFactor(0.7).layoutPriority(1)
+            .lineLimit(1).minimumScaleFactor(0.7)
+            .padding(.horizontal, tinted ? 6 : 0)
+            .padding(.vertical, tinted ? 2 : 0)
+            .background { if tinted { Capsule().fill(color.opacity(0.12)) } }
+            // `layoutPriority` va en el modifier MÁS EXTERNO (tras el padding/cápsula): así el HStack del pie
+            // le da al pastillón su ancho intrínseco completo y la mini-banda cede — sin esto el pie partía
+            // el texto («17… vs…»). El piso de escala 0.7 sigue degradando con gracia en Dynamic Type grande.
+            .layoutPriority(1)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text(up ? "\(magnitude) above your 7-day average"
                                          : "\(magnitude) below your 7-day average"))
@@ -1652,7 +1709,7 @@ struct TodayView: View {
         let liftBorder: Color
         func makeBody(configuration: Configuration) -> some View {
             configuration.label
-                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.tileRadius, style: .continuous)
                     .strokeBorder(configuration.isPressed ? liftBorder : Color.clear, lineWidth: 1))
                 .scaleEffect(configuration.isPressed ? 1.03 : 1.0)
                 .animation(.spring(response: 0.3, dampingFraction: 0.72), value: configuration.isPressed)

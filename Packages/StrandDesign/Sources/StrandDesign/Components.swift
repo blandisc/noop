@@ -21,6 +21,7 @@ public enum NoopMetrics {
     public static let sectionGapCompact: CGFloat = 16  // compact section rhythm on iPhone Today (FER-202)
     public static let controlRadius: CGFloat = 12      // buttons / CTAs
     public static let chipRadius: CGFloat = 8          // small inline chips / pills
+    public static let tileRadius: CGFloat = 17         // «Hoy» metric tile corner (handoff «Hoy · Estados»)
 
     public static let sourceGlyph: CGFloat = 13  // point size of a data-source SF Symbol glyph
     public static let tileHeight: CGFloat = 104  // every metric tile is this tall

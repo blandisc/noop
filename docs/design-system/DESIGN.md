@@ -310,6 +310,8 @@ hue against the live paper so this 3:1 floor holds at every hour (FER-131 handof
 | `surface` | `#FBF9F2` | — | a sparingly-used raised surface; never nested |
 | `hairline` | `#E6E0D2` | — | faint warm 1px rule |
 | `hairlineStrong` | `#D8D0BD` | — | rule on emphasis |
+| `paperHi` | `#F9F8F3` | — | paper-gradient highlight — lighter pool toward top-centre (derived from paper) |
+| `paperLo` | `#EDE8DD` | — | paper-gradient rim — deeper warm edge (derived from paper) |
 | `ink` | `#221D16` | 14.8:1 | primary text & the hero numeral |
 | `inkSecondary` | `#5C5648` | 6.5:1 | supporting copy & labels |
 | `inkTertiary` | `#6F6857` | 4.9:1 | overlines, captions, axis |
