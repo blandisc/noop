@@ -39,6 +39,8 @@ packages:
     path: Packages/StrandImport
   StrandDesign:
     path: Packages/StrandDesign
+  StrandTraining:
+    path: Packages/StrandTraining
 targets:
   # ---------------------------------------------------------------------------
   # iOS app target (module/product Cenit). Reuses the five shared packages and the
@@ -109,6 +111,7 @@ targets:
       - package: StrandAnalytics
       - package: StrandImport
       - package: StrandDesign
+      - package: StrandTraining
       - target: CenitWidgets
 
   # ---------------------------------------------------------------------------

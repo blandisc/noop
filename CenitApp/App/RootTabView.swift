@@ -22,6 +22,7 @@ struct RootTabView: View {
     private enum SecondaryScreen: String, Hashable {
         case intelligence, insights, coach        // Coach hub
         case breathe, intervals                   // Entrenar hub
+        case routineToday                         // Entrenar hub — «Rutina de hoy» (DEBUG screenshot-nav)
         // Reachable via DEBUG screenshot-nav (pushed onto the Ajustes stack). Explore/Compare/Workouts
         // also still open from Cuerpo's footer; the rest open as sheets from the Ajustes root (FER-337).
         case explore, compare, workouts, health, stress
@@ -63,14 +64,29 @@ struct RootTabView: View {
             // preserved — «Pregúntale a tus datos» opens `CoachView` as a sheet from inside BucleView.
             lazyTab(.coach, "Coach", "sparkles") { BucleView() }
 
-            // Entrenar — interim hub: live workout (FER-197) + the active-session tools.
-            hubTab(.train, "Train", "figure.strengthtraining.functional", path: $trainStack) {
-                LiveWorkoutHubRow(solar: barSolar)
-                Section {
-                    row(.breathe,   "Breathe",   "wind",  light: true)
-                    row(.intervals, "Intervals", "timer", light: true)
+            // Entrenar — the redesigned light «Instrumento» hub (FER-343): the «Hoy» card + recovery
+            // band, «Mis rutinas», and the Respira / Intervalos / En-vivo tools (FER-39 epic). Like
+            // Cuerpo/Ajustes the visible hub navigates by pushing onto this tab's NavigationStack; that
+            // stack also lets DEBUG screenshot-nav reach «Rutina de hoy» / Respira / Intervalos. Warm
+            // paper throughout, so there's no light-tab → dark-screen status-bar bridge to manage.
+            NavigationStack(path: $trainStack) {
+                EntrenarView(
+                    solar: barSolar,
+                    openRoutine: { id in trainStack.append(RoutineRoute(routineId: id)) },
+                    openBreathe: { trainStack.append(SecondaryScreen.breathe) },
+                    openIntervals: { trainStack.append(SecondaryScreen.intervals) }
+                )
+                .barReservation(barHeight)
+                .navigationDestination(for: SecondaryScreen.self) { screen in
+                    trainChrome(secondaryDestination(screen))
+                }
+                .navigationDestination(for: RoutineRoute.self) { route in
+                    trainChrome(RutinaDeHoyScreen(routineId: route.routineId, solar: barSolar))
                 }
             }
+            .toolbar(.hidden, for: .tabBar)
+            .tabItem { Label("Train", systemImage: "figure.strengthtraining.functional") }
+            .tag(Tab.train)
 
             // Ajustes — the redesigned light «Instrumento» Settings root (FER-337). Replaces the old
             // list → SettingsView indirection AND the «Más» drawer: the tab now opens directly here.
@@ -98,7 +114,7 @@ struct RootTabView: View {
         // inside the screens — kept for those.
         .tint(StrandPalette.accent)
         // The «Barra de instrumento» (FER-163): the native bar is hidden per page
-        // (see `lazyTab`/`hubTab`) and this custom bar takes its place.
+        // (see `lazyTab` and the per-hub NavigationStacks) and this custom bar takes its place.
         //
         // It is mounted as an `overlay` (it floats, pinned to the bottom) rather
         // than via `safeAreaInset` on the `TabView`: a bottom safe-area inset placed
@@ -178,7 +194,7 @@ struct RootTabView: View {
     private func hub(for screen: SecondaryScreen) -> Tab {
         switch screen {
         case .intelligence, .insights, .coach: return .coach
-        case .breathe, .intervals:             return .train
+        case .breathe, .intervals, .routineToday: return .train
         default:                               return .settings
         }
     }
@@ -208,42 +224,16 @@ struct RootTabView: View {
         .tag(tag)
     }
 
-    /// An interim hub tab: a `NavigationStack` over a grouped list whose rows push `SecondaryScreen`s.
-    /// Same chrome the old "More" tab used (hidden native bar, dark surface, reserved bar height).
+    /// Chrome for a screen pushed onto the Entrenar stack: warm-paper background, reserved bar height,
+    /// and a light navigation bar (the whole tab is «Instrumento» paper — FER-343).
     @ViewBuilder
-    private func hubTab<Rows: View>(_ tag: Tab, _ title: LocalizedStringKey, _ icon: String,
-                                    path: Binding<NavigationPath>,
-                                    @ViewBuilder rows: () -> Rows) -> some View {
-        // Entrenar migrated to «Instrumento» warm paper (FER-342); Ajustes stays the dark
-        // panel until its own redesign (FER-337). One surface token branches the chrome.
-        let light = isLightTab(tag)
-        let bg: Color = light ? InstrumentoTheme.base.paper : StrandPalette.surfaceBase
-        return NavigationStack(path: path) {
-            List { rows() }
-                .listStyle(.insetGrouped)
-                .scrollContentBackground(.hidden)
-                .background(bg.ignoresSafeArea())
-                .barReservation(barHeight)
-                .navigationTitle(title)
-                .navigationDestination(for: SecondaryScreen.self) { screen in
-                    secondaryDestination(screen)
-                        .background(bg.ignoresSafeArea())
-                        .barReservation(barHeight)
-                        .navigationBarTitleDisplayMode(.inline)
-                        .toolbarBackground(bg, for: .navigationBar)
-                        .toolbarColorScheme(light ? .light : .dark, for: .navigationBar)
-                }
-        }
-        .toolbar(.hidden, for: .tabBar)
-        .tabItem { Label(title, systemImage: icon) }
-        .tag(tag)
-    }
-
-    /// A grouped-list row that pushes a secondary screen onto its hub's stack.
-    private func row(_ screen: SecondaryScreen, _ title: LocalizedStringKey, _ icon: String,
-                     light: Bool = false) -> some View {
-        NavigationLink(value: screen) { Label(title, systemImage: icon) }
-            .listRowBackground(light ? InstrumentoTheme.base.surface : StrandPalette.surfaceRaised)
+    private func trainChrome<V: View>(_ screen: V) -> some View {
+        screen
+            .background(InstrumentoTheme.base.paper.ignoresSafeArea())
+            .barReservation(barHeight)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(InstrumentoTheme.base.paper, for: .navigationBar)
+            .toolbarColorScheme(.light, for: .navigationBar)
     }
 
     // MARK: - Custom bar (FER-163)
@@ -277,6 +267,7 @@ struct RootTabView: View {
         case .coach:        CoachView()
         case .breathe:      BreathingView()
         case .intervals:    IntervalTimerView()
+        case .routineToday: RutinaDeHoyScreen(routineId: nil, solar: barSolar)
         case .explore:      MetricExplorerView()
         case .compare:      CompareView()
         case .workouts:     WorkoutsView()
@@ -289,6 +280,12 @@ struct RootTabView: View {
         }
     }
 }
+
+/// A value pushed onto the Entrenar stack to open «Rutina de hoy» for a specific routine.
+/// `routineId == nil` means "today's pick" (used by DEBUG screenshot-nav, which has no id). A distinct
+/// type so the type-erased `trainStack` can carry it alongside `SecondaryScreen` without the FER-171
+/// mixed-typed-path crash.
+private struct RoutineRoute: Hashable { let routineId: String? }
 
 /// The «Barra de instrumento»'s measured height, bubbled from the floating overlay
 /// bar up to `RootTabView` so each tab can reserve exactly that much. `max` keeps
