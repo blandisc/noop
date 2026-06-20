@@ -88,6 +88,28 @@ final class CoachGroundingTests: XCTestCase {
         XCTAssertTrue(g.validate(answer: "Te doy 2 ideas: 1 sobre sueño.").isEmpty)
     }
 
+    // FER-330: the guard protects the user's OWN metrics, not normal coaching numbers.
+    func testValidateAllowsGeneralAdviceNumbers() {
+        let ins = [insight(.trend, reading: "Recuperación 70%.", value: 70, unit: "%",
+                           metric: "Recuperación", relevance: 1)]
+        let g = CoachGrounding.from(insights: ins, readiness: nil, recovery: 70, referenceDay: "d")
+        // Sleep-hour ranges, zones, intensity splits carry no user-metric unit → never flagged.
+        XCTAssertTrue(g.validate(answer: "Procura dormir entre 7 y 9 horas, en zona 2, con 80/20.").isEmpty)
+    }
+
+    func testValidateStillFlagsFabricatedMetricUnit() {
+        let ins = [insight(.trend, reading: "Tu HRV es 65 ms.", value: 65, unit: "ms",
+                           metric: "HRV", relevance: 1)]
+        let g = CoachGrounding.from(insights: ins, readiness: nil, recovery: nil, referenceDay: "d")
+        XCTAssertEqual(g.validate(answer: "Tu HRV es 80 ms, excelente."), ["80"])
+        XCTAssertTrue(g.validate(answer: "Tu HRV es 65 ms, excelente.").isEmpty)
+    }
+
+    func testMetricNumbersOnlyCatchesUnitedNumbers() {
+        let found = CoachGrounding.metricNumbers(in: "91% y 80 ms, pero 9 horas y 80/20")
+        XCTAssertEqual(found, ["91", "80"])
+    }
+
     // MARK: Cold start
 
     func testColdStartProducesValidGroundingAndChipFallbacks() {
