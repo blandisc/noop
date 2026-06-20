@@ -91,6 +91,18 @@ final class Repository: ObservableObject {
     }()
     static func localDayKey(_ date: Date) -> String { dayKeyFormatter.string(from: date) }
 
+    /// Parse a stored `yyyy-MM-dd` day key back to a Date in UTC (en_US_POSIX). Charts parse keys in
+    /// UTC for DST-stable positions — distinct from `localDayKey` (which WRITES keys in local zone).
+    /// The single shared inverse of the day-key contract (FER-325).
+    nonisolated private static let dayKeyParser: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(identifier: "UTC")
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+    nonisolated static func parseDayKey(_ s: String) -> Date? { dayKeyParser.date(from: s) }
+
     private func ensureStore() async -> WhoopStore? {
         if let store { return store }
         if let storeInit { return await storeInit.value }   // a creation is already in flight — join it

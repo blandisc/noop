@@ -74,15 +74,6 @@ struct AppleHealthView: View {
         "weight", "body_fat", "lean_mass", "bmi"
     ]
 
-    // yyyy-MM-dd → Date (en_US_POSIX / UTC), per the project's date contract.
-    private static let dayParser: DateFormatter = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "UTC")
-        f.dateFormat = "yyyy-MM-dd"
-        return f
-    }()
-
     private static let spanFormatter: DateFormatter = {
         let f = DateFormatter()
         f.locale = Locale(identifier: "en_US_POSIX")
@@ -97,7 +88,8 @@ struct AppleHealthView: View {
         return f
     }()
 
-    private func date(_ day: String) -> Date? { Self.dayParser.date(from: day) }
+    // yyyy-MM-dd → Date via the shared UTC / en_US_POSIX parser (FER-325).
+    private func date(_ day: String) -> Date? { Repository.parseDayKey(day) }
 
     // MARK: - Range control (W / M / 3M / 6M / 1Y / ALL) — the ONE pill control.
 

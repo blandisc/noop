@@ -1735,7 +1735,7 @@ struct TodayView: View {
         return repo.displayDays.compactMap { row -> TrendPoint? in
             guard row.day >= cutoff,
                   let value = pick(row),
-                  let date = Self.dayParser.date(from: row.day) else { return nil }
+                  let date = Repository.parseDayKey(row.day) else { return nil }
             return TrendPoint(date: date.addingTimeInterval(12 * 3600), value: value)
         }
     }
@@ -1888,16 +1888,6 @@ struct TodayView: View {
     private func intString(_ v: Double) -> String {
         Self.intFmt.string(from: NSNumber(value: v)) ?? "\(Int(v.rounded()))"
     }
-
-    // MARK: - Date parsing (yyyy-MM-dd, en_US_POSIX, UTC)
-
-    static let dayParser: DateFormatter = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "UTC")
-        f.dateFormat = "yyyy-MM-dd"
-        return f
-    }()
 
 }
 

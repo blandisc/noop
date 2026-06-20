@@ -136,7 +136,7 @@ struct MetricDetailScreen: View {
             }
             series = await seriesLoader()
             // Parse every day string to a Date ONCE per series (not per slice / per render). (FER-216)
-            parsedSeries = series.map { ($0.day, Self.dayParser.date(from: $0.day), $0.value) }
+            parsedSeries = series.map { ($0.day, Repository.parseDayKey($0.day), $0.value) }
             if let loader = nightVitalsLoader { nightVitals = await loader() }
             if visibleBlocks.contains(.whatMovesIt), let loader = whatMovesItLoader {
                 whatMovesItFindings = await loader()
@@ -1088,7 +1088,7 @@ struct MetricDetailScreen: View {
     /// "Measured today / yesterday / N days ago" — three legible cases so the count never reads "1 days".
     /// Apple measures VO₂max sparsely, so freshness is worth surfacing. `nil` when there's no parseable reading.
     private var vo2maxMeasuredAgoLine: LocalizedStringKey? {
-        guard let day = series.last?.day, let date = Self.dayParser.date(from: day) else { return nil }
+        guard let day = series.last?.day, let date = Repository.parseDayKey(day) else { return nil }
         let cal = Calendar.current
         guard let d = cal.dateComponents([.day], from: cal.startOfDay(for: date), to: cal.startOfDay(for: Date())).day,
               d >= 0 else { return nil }

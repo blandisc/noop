@@ -20,16 +20,8 @@ import WhoopStore
 // cross the `.sheet` boundary, FER-162) and NO nested NavigationStack (FER-171);
 // you drag to dismiss. Was a dark legacy sheet before the reskin.
 
-// yyyy-MM-dd → Date, fixed UTC / en_US_POSIX (per task spec).
-private let compareDayParser: DateFormatter = {
-    let f = DateFormatter()
-    f.locale = Locale(identifier: "en_US_POSIX")
-    f.timeZone = TimeZone(identifier: "UTC")
-    f.dateFormat = "yyyy-MM-dd"
-    return f
-}()
-
-private func parseCompareDay(_ day: String) -> Date? { compareDayParser.date(from: day) }
+// yyyy-MM-dd → Date, fixed UTC / en_US_POSIX — the shared day-key parser (FER-325).
+private func parseCompareDay(_ day: String) -> Date? { Repository.parseDayKey(day) }
 
 // MARK: - Range control (shared spec — W / M / 3M / 6M / 1Y / ALL)
 

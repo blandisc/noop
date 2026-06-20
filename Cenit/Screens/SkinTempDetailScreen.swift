@@ -71,7 +71,7 @@ struct SkinTempDetailScreen: View {
         .modifier(SkinTempSheetPaperBackground(paper: theme.paper))
         .task {
             range = .month
-            parsed = model.series.map { ($0.day, Self.dayParser.date(from: $0.day), $0.value) }
+            parsed = model.series.map { ($0.day, Repository.parseDayKey($0.day), $0.value) }
         }
     }
 

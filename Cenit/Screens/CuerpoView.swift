@@ -892,7 +892,7 @@ private struct CuerpoLanding: View {
         let cutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -(window - 1), to: Date()) ?? Date())
         return repo.displayDays.compactMap { row -> TrendPoint? in
             guard row.day >= cutoff, let value = pick(row),
-                  let date = Self.dayParser.date(from: row.day) else { return nil }
+                  let date = Repository.parseDayKey(row.day) else { return nil }
             return TrendPoint(date: date.addingTimeInterval(12 * 3600), value: value)
         }
     }
@@ -1064,13 +1064,6 @@ private struct CuerpoLanding: View {
         return all.filter { $0.day >= cutoff }.map { $0.value }
     }
 
-    static let dayParser: DateFormatter = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "UTC")
-        f.dateFormat = "yyyy-MM-dd"
-        return f
-    }()
 }
 
 // MARK: - Preview
