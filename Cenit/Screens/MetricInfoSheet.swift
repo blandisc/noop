@@ -598,7 +598,7 @@ struct MetricInfoSheet: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
+            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
                 header
                 if headlineExpanded {
                     Text(info.headline)
@@ -678,12 +678,16 @@ struct MetricInfoSheet: View {
         return contentHeight > 0 ? [.height(contentHeight)] : [.large]
     }
 
+    /// The datum leads: the name drops to a quiet overline and the value becomes the hero numeral
+    /// (rule 1 — one dominant element; rule 4 — name as overline), so the two no longer compete on the
+    /// same baseline. Tint still resolves through `headerTint` (band/level/neutral), unchanged. (FER-243)
     private var header: some View {
-        HStack(alignment: .firstTextBaseline) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
+        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+            HStack(alignment: .firstTextBaseline) {
                 Text(info.name)
-                    .font(StrandFont.title2)
-                    .foregroundStyle(theme.ink)
+                    .instrumentoOverline()
+                    .foregroundStyle(theme.inkTertiary)
+                Spacer()
                 // ⓘ reveals the plain-language explanation in-place (collapsed by default). Quiet ink
                 // when closed; the metric hue when open, signalling state. (FER-243)
                 Button {
@@ -696,14 +700,13 @@ struct MetricInfoSheet: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text(headlineExpanded ? "Hide explanation" : "Show explanation"))
             }
-            Spacer()
-            HStack(alignment: .firstTextBaseline, spacing: 3) {
+            HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
                 Text(info.displayValue)
-                    .font(StrandFont.number(28))
+                    .instrumentoHero(46)
                     .foregroundStyle(tintColor(info.headerTint))
                 if let unit = info.unit {
                     Text(unit)
-                        .font(StrandFont.subhead)
+                        .font(StrandFont.unit)
                         .foregroundStyle(theme.inkTertiary)
                 }
             }
@@ -768,17 +771,13 @@ struct MetricInfoSheet: View {
                 .font(StrandFont.subhead)
                 .foregroundStyle(band.isActive ? theme.ink : theme.inkSecondary)
             Spacer()
+            // The active band already reads from four signals (tinted dot, ink label, tinted range, row
+            // tint); the old left-pointing arrow + the 22pt it reserved on every row was redundant
+            // data-ink. Dropping it lets the range breathe in the freed width. (isActive untouched.)
             Text(band.range)
                 .font(StrandFont.captionNumber)
                 .foregroundStyle(band.isActive ? metricHue : theme.inkTertiary)
-            if band.isActive {
-                Image(systemName: "arrowshape.left.fill")
-                    .font(.system(size: 9))
-                    .foregroundStyle(metricHue)
-                    .padding(.trailing, 14)
-            } else {
-                Spacer().frame(width: 22)
-            }
+                .padding(.trailing, 14)
         }
         .padding(.vertical, 11)
         .frame(maxWidth: .infinity)
@@ -793,7 +792,7 @@ struct MetricInfoSheet: View {
     @ViewBuilder private var heartRateSection: some View {
         if heartRateCurve.count > 1 {
             let v = heartRateCurve.map(\.value)
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: NoopMetrics.space2) {
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Beats per minute")
@@ -872,7 +871,7 @@ struct MetricInfoSheet: View {
     /// clear curve instead of a flat line pinned to 0–200. Line/area use the metric hue. (FER-115 /
     /// FER-162)
     @ViewBuilder private var trendSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
             Text("Last 14 days")
                 .font(StrandFont.headline)
                 .foregroundStyle(theme.ink)
@@ -1017,7 +1016,7 @@ struct MetricInfoSheet: View {
     /// curve once loaded, a quiet placeholder while loading, and a short message when there isn't
     /// enough of today's activity to chart.
     @ViewBuilder private var strainSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
             Text("How today added up")
                 .font(StrandFont.headline)
                 .foregroundStyle(theme.ink)
