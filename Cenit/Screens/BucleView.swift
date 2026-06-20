@@ -79,6 +79,13 @@ private struct BucleLanding: View {
     /// «Decisión de hoy» explainer — opens on tapping the hero (what to do + why). FER-312.
     @State private var showDecision = false
 
+    // Meta + simulador (FER-311).
+    @EnvironmentObject private var goalStore: GoalStore
+    @State private var goalSheet: GoalSheetKind? = nil
+
+    /// Which goal sheet is open. Item-based so .picker ↔ .simulator swap cleanly.
+    private enum GoalSheetKind: Int, Identifiable { case picker, simulator; var id: Int { rawValue } }
+
     /// Nights of own history the engine needs before it speaks with confidence.
     private static let calibrationTarget = 14
 
@@ -99,6 +106,7 @@ private struct BucleLanding: View {
                     pruebaSection
                 } else {
                     decisionSection
+                    metaSection
                     preguntaleEntry
                     loQueFuncionaSection
                     pruebaSection
@@ -163,6 +171,23 @@ private struct BucleLanding: View {
         .sheet(isPresented: $showDecision) {
             if let r = readiness {
                 DecisionExplainerSheet(readiness: r, recovery: recovery, theme: theme)
+            }
+        }
+        .sheet(item: $goalSheet) { kind in
+            switch kind {
+            case .picker:
+                GoalPickerSheet(theme: theme,
+                                initialMetric: goalStore.metric, initialDate: goalStore.targetDate,
+                                onSave: { metric, date in goalStore.set(metric: metric, targetDate: date) },
+                                onClear: goalStore.isSet ? { goalStore.clear() } : nil)
+                    .instrumentoTheme(theme)
+            case .simulator:
+                if let m = goalStore.metric {
+                    SimulatorScreen(theme: theme, metric: m, targetDate: goalStore.targetDate,
+                                    onEdit: { goalSheet = .picker })
+                        .instrumentoTheme(theme)
+                        .environmentObject(repo)
+                }
             }
         }
     }
@@ -239,6 +264,45 @@ private struct BucleLanding: View {
     }
 
     private var verdictWord: String { BucleFormat.verdictWord(readiness?.level) }
+
+    // MARK: Tu meta (ancla del simulador, FER-311)
+
+    /// A quiet line under the hero: with a goal it shows the focus (+ date) and opens the simulator;
+    /// without one it invites "Ponte una meta". No surface card (hierarchy by space), no color (chrome).
+    private var metaSection: some View {
+        Button { goalSheet = goalStore.isSet ? .simulator : .picker } label: {
+            HStack(spacing: 11) {
+                Image(systemName: "target")
+                    .font(.system(size: 18))
+                    .foregroundStyle(goalStore.isSet ? theme.inkSecondary : theme.inkTertiary)
+                if let m = goalStore.metric {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Tu meta").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                        Text(metaLine(m)).font(StrandFont.subhead).foregroundStyle(theme.ink)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
+                } else {
+                    Text("Ponte una meta").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    Spacer()
+                    Image(systemName: "arrow.right").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
+                }
+            }
+            .padding(.vertical, 13)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
+    }
+
+    private func metaLine(_ m: GoalMetric) -> String {
+        if let d = goalStore.targetDate { return "\(m.focus.title) · \(Self.metaDate.string(from: d))" }
+        return m.focus.title
+    }
+
+    private static let metaDate: DateFormatter = {
+        let f = DateFormatter(); f.locale = Locale(identifier: "es_MX"); f.dateFormat = "d MMM"; return f
+    }()
 
     // MARK: Cold start
 
