@@ -80,6 +80,8 @@ ES: dict[str, str] = {
     'Followed': 'Cumplí',
     'Swapped': 'Sustituí',
     'Skipped': 'Salté',
+    # FER-385 — Coach: la dieta como palanca/experimento (etiqueta del comportamiento)
+    'I followed my diet': 'Seguí mi dieta',
     # FER-381 — Acerca de y soporte adelgazado: subtítulo acortado
     '%@ — all your data, none of the cloud.': '%@ — todos tus datos, nada en la nube.',
     # FER-371 — Dieta: pantalla de captura (BYO-LLM)

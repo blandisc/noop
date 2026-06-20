@@ -61,6 +61,11 @@ public enum InsightEngine {
         public var days: [DailyMetric]
         /// Logged behavior → the set of "yyyy-MM-dd" days it was logged.
         public var behaviors: [String: Set<String>]
+        /// Behavior → the universe of days it is even *measured* on (FER-385). A behavior present here
+        /// is restricted to that universe when split (days outside it land in NEITHER group); one absent
+        /// keeps the legacy "absence = without" split. Only diet adherence sets it — see
+        /// `BehaviorInsights.effect(... eligibleDays:)`. Keyed by the same behavior string as `behaviors`.
+        public var eligibleDaysByBehavior: [String: Set<String>]
         /// Sport → the set of "yyyy-MM-dd" days it was performed.
         public var activityDaysBySport: [String: Set<String>]
         /// Cached sleep sessions for the regularity index.
@@ -72,12 +77,14 @@ public enum InsightEngine {
 
         public init(days: [DailyMetric],
                     behaviors: [String: Set<String>] = [:],
+                    eligibleDaysByBehavior: [String: Set<String>] = [:],
                     activityDaysBySport: [String: Set<String>] = [:],
                     sleepSessions: [CachedSleepSession] = [],
                     referenceDay: String? = nil,
                     fitness: FitnessInputs? = nil) {
             self.days = days
             self.behaviors = behaviors
+            self.eligibleDaysByBehavior = eligibleDaysByBehavior
             self.activityDaysBySport = activityDaysBySport
             self.sleepSessions = sleepSessions
             self.referenceDay = referenceDay
@@ -180,7 +187,8 @@ public enum InsightEngine {
         let debtMin = sleepDebtMinutes(days)
 
         var insights: [Insight] = []
-        insights += associationInsights(days, behaviors: inputs.behaviors)  // FDR family (behaviors × M + correlations)
+        insights += associationInsights(days, behaviors: inputs.behaviors,
+                                         eligibleDaysByBehavior: inputs.eligibleDaysByBehavior)  // FDR family (behaviors × M + correlations)
         insights += nightAnomalyInsights(days)
         insights += trendInsights(days, referenceDay: refDay)
         if let f = forecastInsight(days, sleepDebtMin: debtMin) { insights.append(f) }
@@ -229,9 +237,11 @@ public enum InsightEngine {
     }
 
     private static func associationInsights(_ days: [DailyMetric],
-                                            behaviors: [String: Set<String>]) -> [Insight] {
+                                            behaviors: [String: Set<String>],
+                                            eligibleDaysByBehavior: [String: Set<String>]) -> [Insight] {
         var candidates: [Candidate] = []
-        candidates += behaviorCandidates(days, behaviors: behaviors)
+        candidates += behaviorCandidates(days, behaviors: behaviors,
+                                         eligibleDaysByBehavior: eligibleDaysByBehavior)
         candidates += correlationCandidates(days)
         guard !candidates.isEmpty else { return [] }
 
@@ -247,11 +257,13 @@ public enum InsightEngine {
     }
 
     private static func behaviorCandidates(_ days: [DailyMetric],
-                                           behaviors: [String: Set<String>]) -> [Candidate] {
+                                           behaviors: [String: Set<String>],
+                                           eligibleDaysByBehavior: [String: Set<String>]) -> [Candidate] {
         guard !days.isEmpty, !behaviors.isEmpty else { return [] }
         var cands: [Candidate] = []
         for metric in Outcome.allCases {
-            // outcomeByDay for this metric.
+            // outcomeByDay for this metric — built once and shared across every behavior, so the
+            // per-behavior universe restriction (FER-385) is applied inside `effect`, not here.
             var outcomeByDay: [String: Double] = [:]
             for d in days { if let v = metric.value(d) { outcomeByDay[d.day] = v } }
             guard outcomeByDay.count >= 2 * minGroup else { continue }
@@ -261,7 +273,8 @@ public enum InsightEngine {
                 guard let e = BehaviorInsights.effect(behaviorDays: bdays,
                                                       outcomeByDay: outcomeByDay,
                                                       behavior: behavior,
-                                                      outcome: metric.label) else { continue }
+                                                      outcome: metric.label,
+                                                      eligibleDays: eligibleDaysByBehavior[behavior]) else { continue }
                 let nMin = Swift.min(e.nWith, e.nWithout)
                 let passes = nMin >= minGroup && abs(e.cohensD) >= minCohensD
                 let n = e.nWith + e.nWithout

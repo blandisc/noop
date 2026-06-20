@@ -457,7 +457,10 @@ brings the JSON in, so NOOP still makes no network call.
   (`MultipleComparisons`) so a finding is "significant" only when its FDR-adjusted q-value clears α
   alongside per-side sample and effect-size floors. A synthetic suite proves planted effects are
   recovered and pure noise is not (family-wise false-positive rate held near α). The LLM step
-  (issue E) only rewrites the templates — it never produces a figure. Pure + DB-free.
+  (issue E) only rewrites the templates — it never produces a figure. Pure + DB-free. The behaviour
+  family accepts a per-behaviour *eligible universe* (`Inputs.eligibleDaysByBehavior`, FER-385) so a
+  source whose absence means "unknown" rather than "didn't happen" — diet adherence — only contrasts
+  the days it was actually tracked; journal behaviours pass none and keep absence = "without".
 
 - **`ExperimentVerdict`** (FER-307) is the N-of-1 "Prueba" engine behind the redesigned Coach: it
   judges whether a candidate lever (a logged behaviour × an outcome) *reproduced* prospectively over

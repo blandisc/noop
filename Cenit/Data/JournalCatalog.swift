@@ -23,6 +23,13 @@ final class JournalCatalogStore: ObservableObject {
         "Did you read before bed?",
     ]
 
+    /// The Coach's diet-adherence behavior identity (FER-385). Like the starter questions this is a
+    /// STABLE English data string — the engine join key and the value stored in an experiment row — never
+    /// localised. It is NOT a journal question (you don't answer it in the journal; it's derived from the
+    /// `diet-adherence` series), so it lives apart from `starterQuestions`. Its es-MX display label is in
+    /// `esLabels` below, exactly like the journal behaviors.
+    nonisolated static let dietBehaviorKey = "Did you follow your diet?"
+
     @Published var customQuestions: [String] { didSet { d.set(customQuestions, forKey: K.custom) } }
 
     private let d = UserDefaults.standard
@@ -48,7 +55,10 @@ final class JournalCatalogStore: ObservableObject {
     /// here as a display-only mapping (FER-312). Unknown questions (custom / imported) fall back to
     /// the verbatim string.
     nonisolated static func esLabel(for question: String) -> String {
-        Self.esLabels[question] ?? question
+        // The diet lever (FER-385) is the one native Coach behavior, so its label is fully localized es/en
+        // through the String Catalog (English source key) rather than the es-MX-only starter map.
+        if question == dietBehaviorKey { return String(localized: "I followed my diet", bundle: .main) }
+        return Self.esLabels[question] ?? question
     }
 
     private nonisolated static let esLabels: [String: String] = [

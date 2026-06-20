@@ -225,4 +225,58 @@ final class InsightEngineTests: XCTestCase {
     func testEmptyInputs() {
         XCTAssertTrue(InsightEngine.generate(.init(days: [])).isEmpty)
     }
+
+    // MARK: - Test 7 — diet adherence behaves as a restricted-universe behavior (FER-385)
+
+    /// The diet behavior's contrast must span ONLY its registered (eligible) days — the days the user
+    /// never tracked diet must not be silently dropped into the "without" group.
+    func testEngineRestrictsDietBehaviorToEligibleUniverse() {
+        let dietKey = "Did you follow your diet?"
+        var rng = LCG(seed: 99)
+        var days: [DailyMetric] = []
+        var adherent = Set<String>(), eligible = Set<String>()
+        let n = 140
+        for i in 0..<n {
+            let registered = i < 90                       // first 90 days carry a diet-adherence record
+            let isAdherent = registered && (i % 3 == 0)
+            let rec: Double = isAdherent ? rng.gauss(72, 8)
+                            : registered ? rng.gauss(58, 8)
+                            : rng.gauss(65, 10)           // untracked days are just baseline noise
+            if registered { eligible.insert(day(i)) }
+            if isAdherent { adherent.insert(day(i)) }
+            days.append(metric(i, recovery: rec))
+        }
+        let out = InsightEngine.generate(.init(days: days, behaviors: [dietKey: adherent],
+                                               eligibleDaysByBehavior: [dietKey: eligible]))
+        let hit = out.first { $0.kind == .behavior && $0.lever?.behavior == dietKey && $0.datum.metric == "Recuperación" }
+        guard let found = try? XCTUnwrap(hit, "should surface a diet→Recuperación behavior insight"),
+              let bd = found.behaviorBreakdown else { return }
+        XCTAssertEqual(bd.nWith + bd.nWithout, eligible.count,
+                       "the diet contrast spans ONLY its eligible (registered) days")
+        XCTAssertLessThan(bd.nWith + bd.nWithout, n, "untracked days are excluded from the contrast")
+    }
+
+    /// The eligible-universe map is per-behavior: a diet entry must not change a journal behavior's split.
+    func testJournalBehaviorUnaffectedByDietEligibleMap() {
+        var rng = LCG(seed: 11)
+        var days: [DailyMetric] = []
+        var alcohol = Set<String>()
+        let n = 140
+        for i in 0..<n {
+            let logged = (i % 3 == 0)
+            let rec = logged ? rng.gauss(55, 9) : rng.gauss(70, 9)
+            if logged { alcohol.insert(day(i)) }
+            days.append(metric(i, recovery: rec))
+        }
+        func alcoholDelta(_ eligibleMap: [String: Set<String>]) -> Double? {
+            InsightEngine.generate(.init(days: days, behaviors: ["Alcohol": alcohol],
+                                         eligibleDaysByBehavior: eligibleMap))
+                .first { $0.kind == .behavior && $0.lever?.behavior == "Alcohol" && $0.datum.metric == "Recuperación" }?
+                .datum.value
+        }
+        let base = alcoholDelta([:])
+        let withDiet = alcoholDelta(["Did you follow your diet?": Set(days.prefix(40).map(\.day))])
+        XCTAssertNotNil(base)
+        XCTAssertEqual(base, withDiet, "a diet eligible-universe entry must not alter a journal behavior")
+    }
 }

@@ -815,7 +815,22 @@ private struct BucleLanding: View {
         var behaviors: [String: Set<String>] = [:]
         for e in entries where e.answeredYes { behaviors[e.question, default: []].insert(e.day) }
 
-        let inputs = InsightEngine.Inputs(days: days, behaviors: behaviors, referenceDay: todayKey)
+        // Diet adherence as a Coach behavior (FER-385): «Seguí mi dieta» = days the plan was followed
+        // (adherence ≥ threshold), restricted to the days actually tracked (its eligible universe) so
+        // untracked days don't read as "didn't follow the plan". Flows into «Lo que funciona en ti» and
+        // the N-of-1 experiment like any journal behavior.
+        var eligibleDaysByBehavior: [String: Set<String>] = [:]
+        if let from = days.map(\.day).min() {
+            let dietByDay = await repo.dietAdherenceByDay(from: from, to: todayKey)
+            let dietKey = JournalCatalogStore.dietBehaviorKey
+            if !dietByDay.isEmpty, behaviors[dietKey] == nil {
+                behaviors[dietKey] = DietAdherence.adherentDays(percentByDay: dietByDay)
+                eligibleDaysByBehavior[dietKey] = Set(dietByDay.keys)
+            }
+        }
+
+        let inputs = InsightEngine.Inputs(days: days, behaviors: behaviors,
+                                          eligibleDaysByBehavior: eligibleDaysByBehavior, referenceDay: todayKey)
         let proven = await repo.provenLevers()
         let generated = InsightEngine.promoteProven(InsightEngine.generate(inputs), provenLevers: proven)
         let r = ReadinessEngine.evaluate(days: days, today: todayKey)
