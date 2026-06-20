@@ -807,21 +807,28 @@ private struct OverlayChart: View {
         let norm: Double
     }
 
-    /// All series flattened into normalized plot points (dropping unparseable days).
-    private var plots: [Plot] {
-        series.flatMap { s in
+    /// All series flattened into normalized plot points (dropping unparseable days), and the
+    /// union of all days present (ascending) for hover snapping. Both are derived purely from
+    /// `series`, so they're computed ONCE in init — not on every `body` pass. Swift Charts
+    /// re-evaluates `body` on every hover tick; recomputing the flatten/parse/sort there meant
+    /// rebuilding the whole dataset per cursor move. `init` only re-runs when the parent passes
+    /// new `series`, never when the internal `hoverX` @State changes (FER-319).
+    private let plots: [Plot]
+    private let allDays: [String]
+
+    init(series: [CompareSeries], theme: InstrumentoTheme, height: CGFloat = 260) {
+        self.series = series
+        self.theme = theme
+        self.height = height
+        self.plots = series.flatMap { s in
             s.rows.compactMap { row -> Plot? in
                 guard let d = parseCompareDay(row.day) else { return nil }
                 return Plot(title: s.metric.title, date: d, norm: s.normalized(row.value))
             }
         }
-    }
-
-    /// The union of all days present, ascending — the x-domain for hover snapping.
-    private var allDays: [String] {
         var set = Set<String>()
         for s in series { for r in s.rows { set.insert(r.day) } }
-        return set.sorted()
+        self.allDays = set.sorted()
     }
 
     var body: some View {
