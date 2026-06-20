@@ -315,9 +315,9 @@ extension MetricInfo {
             unit: "%",
             headerTint: value == nil ? .neutral : .metric,
             bands: bands,
-            note: "Wrist-based sensors have lower accuracy than medical pulse oximeters — treat values as a trend, not a clinical reading.",
+            note: "Blood oxygen comes from Apple Health. Wrist-based sensors have lower accuracy than medical pulse oximeters — treat values as a trend, not a clinical reading.",
             method: Method(
-                prose: "Each night your strap averages the oxygen saturation read at your wrist while you sleep. A healthy adult typically sits at 95–100%; readings below 90% are considered low (hypoxemia). Isolated low nights are usually noise — altitude, a cold, or how the sensor sat. A sustained run of low nights is what's worth a look with a finger pulse oximeter.",
+                prose: "Cénit reads your blood oxygen from Apple Health — your strap senses it optically at the wrist, but Cénit doesn't turn that into a percentage on its own. A healthy adult typically sits at 95–100%; readings below 90% are considered low (hypoxemia). Isolated low nights are usually noise — altitude, a cold, or how the sensor sat. A sustained run of low nights is what's worth a look with a finger pulse oximeter.",
                 citation: "Wrist optical sensors are less accurate than medical pulse oximeters — read this as a trend, not a clinical measurement. NOOP is not a medical device.")
         )
     }
@@ -364,9 +364,9 @@ extension MetricInfo {
             unit: nil,
             headerTint: value == nil ? .neutral : .metric,
             bands: bands,
-            note: "Steps come from Apple Health and are not recorded by the WHOOP strap.",
+            note: "Steps come from Apple Health.",
             method: Method(
-                prose: "Steps come from Apple Health — the WHOOP strap does not record them. The detail reads each day's total and smooths it into a 7-day trend, so weekday/weekend swings don't drown out the direction you're heading. Research links roughly 7,000–9,000 steps a day with lower mortality, with the benefit leveling off beyond that — there is nothing magic about exactly 10,000.",
+                prose: "Steps come from Apple Health. The detail reads each day's total and smooths it into a 7-day trend, so weekday/weekend swings don't drown out the direction you're heading. Research links roughly 7,000–9,000 steps a day with lower mortality, with the benefit leveling off beyond that — there is nothing magic about exactly 10,000.",
                 citation: "Paluch et al. 2022, Lancet Public Health.")
         )
     }

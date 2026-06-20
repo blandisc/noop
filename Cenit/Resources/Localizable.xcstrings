@@ -15589,19 +15589,19 @@
         }
       }
     },
-    "Steps come from Apple Health and are not recorded by the WHOOP strap.": {
+    "Steps come from Apple Health.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Steps come from Apple Health and are not recorded by the WHOOP strap."
+            "value": "Steps come from Apple Health."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Los pasos vienen de Apple Salud; el strap WHOOP no los registra."
+            "value": "Los pasos vienen de Apple Salud."
           }
         }
       }
@@ -18756,19 +18756,19 @@
         }
       }
     },
-    "Wrist-based sensors have lower accuracy than medical pulse oximeters — treat values as a trend, not a clinical reading.": {
+    "Blood oxygen comes from Apple Health. Wrist-based sensors have lower accuracy than medical pulse oximeters — treat values as a trend, not a clinical reading.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wrist-based sensors have lower accuracy than medical pulse oximeters — treat values as a trend, not a clinical reading."
+            "value": "Blood oxygen comes from Apple Health. Wrist-based sensors have lower accuracy than medical pulse oximeters — treat values as a trend, not a clinical reading."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Los sensores de muñeca son menos precisos que un oxímetro médico: tómalo como tendencia, no como una lectura clínica."
+            "value": "El oxígeno en sangre viene de Apple Salud. Los sensores de muñeca son menos precisos que un oxímetro médico: tómalo como tendencia, no como una lectura clínica."
           }
         }
       }
@@ -22351,19 +22351,19 @@
         }
       }
     },
-    "Each night your strap averages the oxygen saturation read at your wrist while you sleep. A healthy adult typically sits at 95–100%; readings below 90% are considered low (hypoxemia). Isolated low nights are usually noise — altitude, a cold, or how the sensor sat. A sustained run of low nights is what's worth a look with a finger pulse oximeter.": {
+    "Cénit reads your blood oxygen from Apple Health — your strap senses it optically at the wrist, but Cénit doesn't turn that into a percentage on its own. A healthy adult typically sits at 95–100%; readings below 90% are considered low (hypoxemia). Isolated low nights are usually noise — altitude, a cold, or how the sensor sat. A sustained run of low nights is what's worth a look with a finger pulse oximeter.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Each night your strap averages the oxygen saturation read at your wrist while you sleep. A healthy adult typically sits at 95–100%; readings below 90% are considered low (hypoxemia). Isolated low nights are usually noise — altitude, a cold, or how the sensor sat. A sustained run of low nights is what's worth a look with a finger pulse oximeter."
+            "value": "Cénit reads your blood oxygen from Apple Health — your strap senses it optically at the wrist, but Cénit doesn't turn that into a percentage on its own. A healthy adult typically sits at 95–100%; readings below 90% are considered low (hypoxemia). Isolated low nights are usually noise — altitude, a cold, or how the sensor sat. A sustained run of low nights is what's worth a look with a finger pulse oximeter."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cada noche tu banda promedia la saturación de oxígeno medida en tu muñeca mientras duermes. Un adulto sano suele estar en 95–100%; lecturas por debajo de 90% se consideran bajas (hipoxemia). Las noches bajas aisladas suelen ser ruido — altitud, un resfriado, o cómo quedó el sensor. Una racha sostenida de noches bajas es lo que amerita revisarse con un oxímetro de dedo."
+            "value": "Cénit lee tu oxígeno en sangre desde Apple Salud — tu banda lo detecta ópticamente en la muñeca, pero Cénit no lo convierte en porcentaje por su cuenta. Un adulto sano suele estar en 95–100%; lecturas por debajo de 90% se consideran bajas (hipoxemia). Las noches bajas aisladas suelen ser ruido — altitud, un resfriado, o cómo quedó el sensor. Una racha sostenida de noches bajas es lo que amerita revisarse con un oxímetro de dedo."
           }
         }
       }
@@ -23269,19 +23269,19 @@
         }
       }
     },
-    "Steps come from Apple Health — the WHOOP strap does not record them. The detail reads each day's total and smooths it into a 7-day trend, so weekday/weekend swings don't drown out the direction you're heading. Research links roughly 7,000–9,000 steps a day with lower mortality, with the benefit leveling off beyond that — there is nothing magic about exactly 10,000.": {
+    "Steps come from Apple Health. The detail reads each day's total and smooths it into a 7-day trend, so weekday/weekend swings don't drown out the direction you're heading. Research links roughly 7,000–9,000 steps a day with lower mortality, with the benefit leveling off beyond that — there is nothing magic about exactly 10,000.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Steps come from Apple Health — the WHOOP strap does not record them. The detail reads each day's total and smooths it into a 7-day trend, so weekday/weekend swings don't drown out the direction you're heading. Research links roughly 7,000–9,000 steps a day with lower mortality, with the benefit leveling off beyond that — there is nothing magic about exactly 10,000."
+            "value": "Steps come from Apple Health. The detail reads each day's total and smooths it into a 7-day trend, so weekday/weekend swings don't drown out the direction you're heading. Research links roughly 7,000–9,000 steps a day with lower mortality, with the benefit leveling off beyond that — there is nothing magic about exactly 10,000."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Los pasos vienen de Apple Salud — el strap WHOOP no los registra. El detalle toma el total de cada día y lo suaviza en una tendencia de 7 días, para que los altibajos entre semana y fin de semana no tapen hacia dónde vas. La investigación asocia entre 7,000 y 9,000 pasos al día con menor mortalidad, y el beneficio se aplana más allá de eso: no hay nada mágico en los 10,000 exactos."
+            "value": "Los pasos vienen de Apple Salud. El detalle toma el total de cada día y lo suaviza en una tendencia de 7 días, para que los altibajos entre semana y fin de semana no tapen hacia dónde vas. La investigación asocia entre 7,000 y 9,000 pasos al día con menor mortalidad, y el beneficio se aplana más allá de eso: no hay nada mágico en los 10,000 exactos."
           }
         }
       }
