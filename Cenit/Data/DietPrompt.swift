@@ -1,0 +1,70 @@
+import Foundation
+
+/// The copy-paste prompt the Diet capture screen puts on the clipboard (FER-371).
+///
+/// The user pastes it into their own LLM (ChatGPT/Claude) together with their plan (PDF/photo); the
+/// LLM returns a `noop.diet.v1` file the user then imports. Bundled here as the single source — not
+/// scattered string literals. Two languages: the device language picks one, but **each prompt accepts
+/// a plan written in Spanish OR English** (the model detects it and never translates the food names).
+/// NOOP itself never makes a network call — the user runs the LLM step.
+enum DietPrompt {
+
+    /// The prompt for the current device language (Spanish device → `es`, otherwise `en`).
+    static func forCurrentLocale() -> String {
+        (Locale.current.language.languageCode?.identifier == "es") ? es : en
+    }
+
+    static let es = """
+    Convierte el plan de alimentación que te doy en un archivo JSON para importar a una app.
+    El plan puede venir en español o en inglés (texto o imagen). Devuelve ÚNICAMENTE el JSON
+    válido, sin texto antes ni después, con EXACTAMENTE este formato:
+
+    { "schema":"noop.diet.v1", "idioma":"", "nombre":"", "ciclo":"diario",
+      "comidas":[ {"id":"","nombre":"","hora_sugerida":"",
+        "opciones":[{"alimentos":[]}], "notas":""} ],
+      "objetivos_diarios":{}, "reglas":[] }
+
+    Reglas:
+    - Detecta el idioma del plan y ponlo en "idioma": "es" o "en".
+    - NO traduzcas. Conserva los nombres de comidas y alimentos EXACTAMENTE como aparecen.
+    - Las llaves del JSON quedan en español tal como están; solo los VALORES siguen el idioma del plan.
+    - Una entrada en "comidas" por cada tiempo (desayuno/breakfast, colación/snack, comida/lunch,
+      cena/dinner…), en orden.
+    - Si una comida da equivalentes u opciones intercambiables, ponlas como varias entradas en
+      "opciones"; si no, una sola.
+    - Copia las cantidades tal cual ("150 g", "1 cup", "2 pza"); si no hay, omite el dato.
+    - NO inventes calorías ni macros. Llena "objetivos_diarios" SOLO con números que el plan
+      declare; si no, déjalo {}.
+    - "hora_sugerida" solo si el plan la indica (24h "HH:MM"). Lineamientos generales van en "reglas".
+
+    Aquí está mi plan:
+    [pega tu dieta o adjunta la foto]
+    """
+
+    static let en = """
+    Convert the meal plan I give you into a JSON file to import into an app. The plan may be
+    in Spanish or English (text or image). Return ONLY the valid JSON, with no text before or
+    after, in EXACTLY this format:
+
+    { "schema":"noop.diet.v1", "idioma":"", "nombre":"", "ciclo":"diario",
+      "comidas":[ {"id":"","nombre":"","hora_sugerida":"",
+        "opciones":[{"alimentos":[]}], "notas":""} ],
+      "objetivos_diarios":{}, "reglas":[] }
+
+    Rules:
+    - Detect the plan's language and set "idioma": "es" or "en".
+    - DO NOT translate. Keep meal and food names EXACTLY as written.
+    - The JSON keys stay in Spanish as shown; only the VALUES follow the plan's language.
+    - One "comidas" entry per eating occasion (breakfast/desayuno, snack/colación, lunch/comida,
+      dinner/cena…), in order.
+    - If a meal offers interchangeable options/equivalents, list them as multiple "opciones"
+      entries; otherwise one.
+    - Copy quantities verbatim ("150 g", "1 cup", "2 pza"); omit if absent.
+    - DO NOT invent calories or macros. Fill "objetivos_diarios" ONLY with numbers the plan
+      states; otherwise leave it {}.
+    - "hora_sugerida" only if the plan indicates it (24h "HH:MM"). General guidelines go in "reglas".
+
+    Here is my plan:
+    [paste your diet or attach the photo]
+    """
+}

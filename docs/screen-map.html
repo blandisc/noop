@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-20 · FER-381</span>
+  <span class="tb-updated">Actualizado 2026-06-20 · FER-371</span>
 </div>
 
 <div id="wrapper">
@@ -658,6 +658,21 @@ const SCREENS = [
     ],
     nav: [],
     components: ['Duration inputs (Work / Rest / Rounds)', 'Timer display grande', 'Progress ring (phase)', 'Round counter', 'Start / Pause / Reset'],
+  },
+  {
+    id: 'diet', x: 1052, y: 2010,
+    name: 'Dieta · captura', desc: 'Captura el plan recetado (BYO-LLM): copiar prompt → pegar/subir noop.diet.v1 → confirmar → guardar. «Instrumento» todo tinta, rojo solo en el error. El seguimiento diario + % de apego es aparte (FER-372). FER-371',
+    file: 'Cenit/Screens/DietCaptureView.swift',
+    icon: '🍴', color: '#6F6857',
+    states: [
+      { label: 'Vacío: sin plan → «Capturar mi plan»', type: 'empty' },
+      { label: 'Captura: copiar prompt + pegar JSON / subir .json', type: 'data' },
+      { label: 'Error: JSON inválido → mensaje accionable (critical)', type: 'error' },
+      { label: 'Confirmar: plan parseado (comidas/equivalentes) → Guardar', type: 'data' },
+      { label: 'Con plan: resumen activo + Reemplazar plan', type: 'data' },
+    ],
+    nav: [],
+    components: ['Renglón Dieta en hub Entrenar (fork.knife)', 'EmptyStateView', 'QuietButton (Copiar prompt / Subir / Continuar / Guardar)', 'TextEditor (pegar JSON)', 'fileImporter (.json)', 'Lista de comidas (equivalentes «o…»)'],
   },
 
   // ── ROW 4: App (y = 2660) ─────────────────

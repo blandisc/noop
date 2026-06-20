@@ -21,7 +21,7 @@ struct RootTabView: View {
     /// debug-navigation keys (`ScreenshotNav.swift`) so screenshot automation still reaches each one.
     private enum SecondaryScreen: String, Hashable {
         case intelligence, insights, coach        // Coach hub
-        case breathe, intervals                   // Entrenar hub
+        case breathe, intervals, dieta            // Entrenar hub
         case routineToday                         // Entrenar hub — «Rutina de hoy» (DEBUG screenshot-nav)
         // Reachable via DEBUG screenshot-nav (pushed onto the Ajustes stack). Explore/Compare/Workouts
         // also still open from Cuerpo's footer; the rest open as sheets from the Ajustes root (FER-337).
@@ -65,16 +65,17 @@ struct RootTabView: View {
             lazyTab(.coach, "Coach", "sparkles") { BucleView() }
 
             // Entrenar — the redesigned light «Instrumento» hub (FER-343): the «Hoy» card + recovery
-            // band, «Mis rutinas», and the Respira / Intervalos / En-vivo tools (FER-39 epic). Like
+            // band, «Mis rutinas», and the Respira / Intervalos / Dieta / En-vivo tools (FER-39 epic). Like
             // Cuerpo/Ajustes the visible hub navigates by pushing onto this tab's NavigationStack; that
-            // stack also lets DEBUG screenshot-nav reach «Rutina de hoy» / Respira / Intervalos. Warm
+            // stack also lets DEBUG screenshot-nav reach «Rutina de hoy» / Respira / Intervalos / Dieta. Warm
             // paper throughout, so there's no light-tab → dark-screen status-bar bridge to manage.
             NavigationStack(path: $trainStack) {
                 EntrenarView(
                     solar: barSolar,
                     openRoutine: { id in trainStack.append(RoutineRoute(routineId: id)) },
                     openBreathe: { trainStack.append(SecondaryScreen.breathe) },
-                    openIntervals: { trainStack.append(SecondaryScreen.intervals) }
+                    openIntervals: { trainStack.append(SecondaryScreen.intervals) },
+                    openDiet: { trainStack.append(SecondaryScreen.dieta) }
                 )
                 .barReservation(barHeight)
                 .navigationDestination(for: SecondaryScreen.self) { screen in
@@ -194,7 +195,7 @@ struct RootTabView: View {
     private func hub(for screen: SecondaryScreen) -> Tab {
         switch screen {
         case .intelligence, .insights, .coach: return .coach
-        case .breathe, .intervals, .routineToday: return .train
+        case .breathe, .intervals, .dieta, .routineToday: return .train
         default:                               return .settings
         }
     }
@@ -268,6 +269,7 @@ struct RootTabView: View {
         case .breathe:      BreathingView()
         case .intervals:    IntervalTimerView()
         case .routineToday: RutinaDeHoyScreen(routineId: nil, solar: barSolar)
+        case .dieta:        DietCaptureView()
         case .explore:      MetricExplorerView()
         case .compare:      CompareView()
         case .workouts:     WorkoutsView()
