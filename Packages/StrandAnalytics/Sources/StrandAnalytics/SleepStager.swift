@@ -185,13 +185,17 @@ public enum SleepStager {
         let n = grav.count
         if n < 2 { return [Bool](repeating: false, count: n) }
         let half = windowSize(grav.map { $0.ts }) / 2
+        // Prefix sum of "still" samples so the window count is prefix[hi]-prefix[lo] in O(1):
+        // the whole pass is O(n) instead of O(n·window). Same count, same denominator (hi-lo),
+        // same threshold — bit-identical to the per-sample rescan (FER-323).
+        var prefix = [Int](repeating: 0, count: n + 1)
+        for j in 0..<n { prefix[j + 1] = prefix[j] + (deltas[j] < gravityStillThresholdG ? 1 : 0) }
         var flags: [Bool] = []
         flags.reserveCapacity(n)
         for i in 0..<n {
             let lo = max(0, i - half)
             let hi = min(n, i + half + 1)
-            var stillCount = 0
-            for j in lo..<hi where deltas[j] < gravityStillThresholdG { stillCount += 1 }
+            let stillCount = prefix[hi] - prefix[lo]
             flags.append(Double(stillCount) / Double(hi - lo) >= stillFraction)
         }
         return flags
@@ -963,14 +967,26 @@ public enum SleepStager {
         let seg = hr.filter { $0.ts >= start && $0.ts <= end }
         guard !seg.isEmpty else { return nil }
         let windowS = 5 * 60
-        var means: [Double] = []
+        // Count the 5-min windows the original loop would visit (t = start, +windowS, while t < end).
+        var windowCount = 0
         var t = start
-        while t < end {
-            let win = seg.filter { $0.ts >= t && $0.ts < t + windowS }
-            if !win.isEmpty { means.append(Double(win.reduce(0) { $0 + $1.bpm }) / Double(win.count)) }
-            t += windowS
+        while t < end { windowCount += 1; t += windowS }
+        // Bucket each sample into its window in ONE O(n) pass instead of re-filtering seg per window.
+        // A sample at ts lands in window w = (ts - start)/windowS, counted iff that window is visited
+        // (w < windowCount ⇔ start + w·windowS < end) — exactly the original's inclusion rule, incl.
+        // the ts==end edge. No ordering assumption on `seg`. Same per-window mean (FER-323).
+        var sums = [Int](repeating: 0, count: windowCount)
+        var counts = [Int](repeating: 0, count: windowCount)
+        for s in seg {
+            let w = (s.ts - start) / windowS
+            if w < windowCount { sums[w] += s.bpm; counts[w] += 1 }
         }
-        if let m = means.min() { return Int(m.rounded()) }
+        var minMean: Double? = nil
+        for i in 0..<windowCount where counts[i] > 0 {
+            let mean = Double(sums[i]) / Double(counts[i])
+            if minMean == nil || mean < minMean! { minMean = mean }
+        }
+        if let m = minMean { return Int(m.rounded()) }
         let all = Double(seg.reduce(0) { $0 + $1.bpm }) / Double(seg.count)
         return Int(all.rounded())
     }
