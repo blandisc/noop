@@ -46,24 +46,29 @@ extension WhoopStore {
     }
 
     static func unpackFrames(_ data: Data) -> [[UInt8]] {
-        let bytes = [UInt8](data)
-        var off = 0
-        func readU32() -> Int? {
-            guard off + 4 <= bytes.count else { return nil }
-            let v = Int(bytes[off]) | (Int(bytes[off + 1]) << 8)
-                | (Int(bytes[off + 2]) << 16) | (Int(bytes[off + 3]) << 24)
-            off += 4
-            return v
+        // Read offsets straight off `data`'s buffer — no intermediate [UInt8](data)
+        // copy of the whole (multi-MB) blob; each frame is materialized exactly once.
+        data.withUnsafeBytes { (raw: UnsafeRawBufferPointer) -> [[UInt8]] in
+            let total = raw.count
+            var off = 0
+            func readU32() -> Int? {
+                guard off + 4 <= total else { return nil }
+                let v = Int(raw[off]) | (Int(raw[off + 1]) << 8)
+                    | (Int(raw[off + 2]) << 16) | (Int(raw[off + 3]) << 24)
+                off += 4
+                return v
+            }
+            guard let count = readU32() else { return [] }
+            var out: [[UInt8]] = []
+            out.reserveCapacity(count)
+            for _ in 0..<count {
+                guard let len = readU32(), off + len <= total else { break }
+                let frame = UnsafeRawBufferPointer(rebasing: raw[off..<off + len])
+                out.append([UInt8](frame))
+                off += len
+            }
+            return out
         }
-        guard let count = readU32() else { return [] }
-        var out: [[UInt8]] = []
-        out.reserveCapacity(count)
-        for _ in 0..<count {
-            guard let len = readU32(), off + len <= bytes.count else { break }
-            out.append(Array(bytes[off..<off + len]))
-            off += len
-        }
-        return out
     }
 
     // MARK: - zlib helpers using Apple Compression framework
