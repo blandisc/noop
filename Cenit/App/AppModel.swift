@@ -525,23 +525,32 @@ final class AppModel: ObservableObject {
     private func evaluateIllness(_ days: [DailyMetric]) {
         let previous = healthAlert
         guard behavior.illnessWatch, days.count >= 14 else { healthAlert = nil; return }
+        // `recent` is a small sample — by design 2 nights, but a single night if one is missing.
         let recent = Array(days.suffix(2))
         let base = Array(days.suffix(31).dropLast(3))    // ~28 days ending 3 days ago
         func mean(_ vals: [Double]) -> Double? { vals.isEmpty ? nil : vals.reduce(0, +) / Double(vals.count) }
         func rm(_ kp: (DailyMetric) -> Double?) -> Double? { mean(recent.compactMap(kp)) }
-        func bm(_ kp: (DailyMetric) -> Double?) -> Double? { mean(base.compactMap(kp)) }
 
+        // Each anomaly fires by z-score ≥2σ against the baseline's OWN dispersion (robust σ via
+        // IllnessWatch), not a fixed offset — so the same absolute Δ trips a stable user but not a
+        // volatile one. The flag string still reports the human-readable Δ.
         var flags: [String] = []
-        if let r = rm({ $0.restingHr.map(Double.init) }), let b = bm({ $0.restingHr.map(Double.init) }), r >= b + 5 {
-            flags.append(String(localized: "resting HR +\(Int((r - b).rounded())) bpm"))
+        func anomaly(_ kp: (DailyMetric) -> Double?, higherIsWorse: Bool) -> (r: Double, b: Double)? {
+            guard let r = rm(kp),
+                  let dev = IllnessWatch.deviation(recentMean: r, base: base.compactMap(kp), higherIsWorse: higherIsWorse),
+                  dev.z >= IllnessWatch.zThreshold else { return nil }
+            return (r, dev.baseMean)
         }
-        if let r = rm({ $0.avgHrv }), let b = bm({ $0.avgHrv }), b > 0, r <= b * 0.80 {
-            flags.append(String(localized: "HRV −\(Int(((1 - r / b) * 100).rounded()))%"))
+        if let a = anomaly({ $0.restingHr.map(Double.init) }, higherIsWorse: true) {
+            flags.append(String(localized: "resting HR +\(Int((a.r - a.b).rounded())) bpm"))
         }
-        if let r = rm({ $0.skinTempDevC }), r >= 0.6 {
-            flags.append(String(localized: "skin temp +\(String(format: "%.1f", r))°C"))
+        if let a = anomaly({ $0.avgHrv }, higherIsWorse: false), a.b > 0 {
+            flags.append(String(localized: "HRV −\(Int(((1 - a.r / a.b) * 100).rounded()))%"))
         }
-        if let r = rm({ $0.respRateBpm }), let b = bm({ $0.respRateBpm }), r >= b + 1.5 {
+        if let a = anomaly({ $0.skinTempDevC }, higherIsWorse: true) {
+            flags.append(String(localized: "skin temp +\(String(format: "%.1f", a.r))°C"))
+        }
+        if anomaly({ $0.respRateBpm }, higherIsWorse: true) != nil {
             flags.append(String(localized: "respiration up"))
         }
         healthAlert = flags.count >= 2

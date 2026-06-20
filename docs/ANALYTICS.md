@@ -99,16 +99,16 @@ let recent = Array(days.suffix(2))
 let base   = Array(days.suffix(31).dropLast(3))   // ~28 days ending 3 days ago
 ```
 
-It then flags anomalies against simple, explainable thresholds using `DailyMetric` fields:
+It then flags anomalies by **z-score**: each signal fires when its recent mean sits **≥ 2σ** from the baseline mean *in the concerning direction*, where σ is the baseline's own robust dispersion (mean-absolute-deviation × 1.253, the same `E[|X−μ|] = σ·√(2/π) ≈ σ/1.253` convention as `RecoveryScorer`/`Baselines`; the math lives in the pure `IllnessWatch` type in `StrandAnalytics`). Anchoring to each user's own σ — instead of a fixed offset — makes the trigger comparable across people: a +5 bpm jump is several σ for a very stable user (a real signal) but sub-σ noise for a volatile one.
 
-| Signal | Field(s) | Anomaly condition |
-|---|---|---|
-| Resting HR ↑ | `restingHr` | recent mean ≥ baseline mean **+ 5 bpm** |
-| HRV ↓ | `avgHrv` | recent mean ≤ baseline mean **× 0.80** (−20%) |
-| Skin temp ↑ | `skinTempDevC` | recent mean deviation **≥ +0.6 °C** |
-| Respiration ↑ | `respRateBpm` | recent mean ≥ baseline mean **+ 1.5 bpm** |
+| Signal | Field(s) | Anomaly condition | Direction |
+|---|---|---|---|
+| Resting HR ↑ | `restingHr` | recent mean **≥ baseline + 2σ** | higher is worse |
+| HRV ↓ | `avgHrv` | recent mean **≤ baseline − 2σ** | lower is worse |
+| Skin temp ↑ | `skinTempDevC` | recent mean **≥ baseline + 2σ** | higher is worse |
+| Respiration ↑ | `respRateBpm` | recent mean **≥ baseline + 2σ** | higher is worse |
 
-A banner appears only when **two or more** anomalies fire together — the classic early-illness signature is *RHR up + HRV down + skin-temp up*. Requires `behavior.illnessWatch` on and at least 14 days of history. On-device only; the message is a plain-English summary like *"Your body looks strained — resting HR +6 bpm, HRV −22%. Consider taking it easy."*
+σ is "not estimable" (no anomaly) for a flat or too-small baseline. Note the recent window is a **small sample** — 2 nights by design, but a single night if one is missing. A banner appears only when **two or more** anomalies fire together — the classic early-illness signature is *RHR up + HRV down + skin-temp up*. Requires `behavior.illnessWatch` on and at least 14 days of history. On-device only; the message is a plain-English summary like *"Your body looks strained — resting HR +6 bpm, HRV −22%. Consider taking it easy."*
 
 ---
 
