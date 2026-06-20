@@ -186,6 +186,7 @@ targets:
       - package: WhoopProtocol
       - package: WhoopStore
       - package: StrandAnalytics
+      - package: StrandTraining
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES

@@ -56,8 +56,9 @@ CuerpoView  → RecoveryDetailScreen (sheet «Instrumento»: Recuperación — F
              WorkoutsView (sheet claro «Instrumento» + NavigationStack propio — FER-260) ·
              CompareView · MetricExplorerView · DataSourcesView — estos oscuros como sheet fijado a .dark (FER-186)
 WorkoutsView → WorkoutDetailScreen (push, detalle de sesión — FER-261) · ManualWorkoutSheet (sheet: add / edit)
-EntrenarView → RutinaDeHoyScreen (push, «Rutina de hoy» — FER-343) · BreathingView (push) · IntervalTimerView (push) · TrainingSoonSheet (sheet, builder «llega pronto» — FER-346)
+EntrenarView → RutinaDeHoyScreen (push, «Rutina de hoy» — FER-343) · LiveStrengthSheet (sheet «Instrumento», sesión guiada de fuerza — FER-347) · BreathingView (push) · IntervalTimerView (push) · TrainingSoonSheet (sheet, builder «llega pronto» — FER-346)
 LiveWorkoutHubRow → LiveWorkoutSheet (sheet, detente medio — grabación en vivo, FER-197; fila «En vivo» del hub Entrenar)
+LiveStrengthSheet → SetTableDrawer (sheet anidado, `.presentationDetents` medio/grande — la tabla editable «cajón», FER-347)
 MetricExplorerView → MetricDetailView (NavigationLink push, sobre el stack de la pestaña «Ajustes» — FER-171)
 ```
 
@@ -75,9 +76,10 @@ trazo fino: **Hoy** = glifo de dial 24h (`DialTabGlyph`, StrandDesign), el resto
 `EntrenarView` (papel claro «Instrumento», puerta del tracker de fuerza — épico FER-39). Estructura: una **tarjeta
 «Hoy»** (la rutina del día — por ahora la más reciente, sin scheduler aún — + la **banda de recuperación**) que
 abre `RutinaDeHoyScreen`; la sección **«Mis rutinas»** (filas que leen `WhoopStore.routines()`, cada una abre su
-plan); y **«Herramientas»** (En vivo · Respira · Intervalos). Estado **vacío** (sin rutinas) → tarjeta con CTA
-**«Nueva rutina · o desde plantilla»**. El **builder** (FER-346) y el **inicio guiado serie por serie** (FER-347)
-están fuera de alcance: sus accesos muestran una nota honesta «llega pronto» (`TrainingSoonSheet`), sin acción real.
+plan); y **«Herramientas»** (Reanudar sesión · En vivo · Respira · Intervalos). Estado **vacío** (sin rutinas) → tarjeta con CTA
+**«Nueva rutina · o desde plantilla»**. El **builder** (FER-346) sigue fuera de alcance: su acceso muestra una nota
+honesta «llega pronto» (`TrainingSoonSheet`). El **inicio guiado serie por serie** (FER-347) ya está: «Rutina de hoy»
+abre la sesión guiada y el hub hospeda su hoja (ver nota abajo).
 La **banda de recuperación** (`RecoveryBand`, compartida con `RutinaDeHoyScreen`) es solo el **contenedor visual**:
 mapea la recuperación de hoy a **Sube / Mantén / Baja** (mapeo provisional por recuperación; la regla con evidencia
 —HRV-guided + RIR/RPE— es FER-349) y **se oculta sin recuperación** (no inventa). Navega por **push** sobre el
@@ -95,6 +97,21 @@ pestaña no la detiene; mientras corre, la fila muestra **«Grabando m:ss»** y 
 efímera confirma **«Sesión guardada …»** o avisa el **descarte** (terminó sin HR, `lastWorkoutDiscarded`); la
 sesión se guarda como `WorkoutRow` manual y aparece en Workouts (re-etiquetable). Restaura el tracker que se quitó
 de En vivo en FER-184; **no toca `LiveView`**.
+
+**Nota — Sesión guiada de fuerza (FER-347):** el corazón del tracker. Desde «Rutina de hoy», **«Empezar»** construye
+el plan de la rutina (con el prellenado **«la última vez»** por ejercicio, vía `WhoopStore.lastWorkSets`) y abre
+`LiveStrengthSheet`, una **hoja en «Instrumento» claro** (`.sheet`, sin NavigationStack anidado — FER-171). Es un
+**híbrido Foco + cajón**: el **Foco** muestra un solo dominante —el **peso, en el naranja-esfuerzo** (`dataStrain`)—
+con steppers, los reps, la referencia «la última vez · P × R» + un **sugerido** (+placa) y el botón **Registrar serie**
+(tinta). El **cajón** (`SetTableDrawer`) es la **tabla editable** completa presentada con `.presentationDetents`
+(medio/grande) y **botones** Abrir/Cerrar (no solo arrastre — a11y), con **Agregar serie** / **Saltar serie** y tap en
+una fila para editarla. Al registrar arranca un **descanso fijo** (cuenta regresiva con −15/+15/saltar; el inteligente
+por FC es FER-348) que hospeda el **puente «cambiar de ejercicio»**: el **navegador del plan** (ir a / **reordenar** /
+**saltar** ejercicio). **Terminar** confirma si hay series pendientes y guarda la sesión como `StrengthSession` +
+`SetEntry` (PRs derivan en el store — FER-345). La sesión vive en `AppModel` (`StrengthSessionModel`, global): cerrar
+la hoja o cambiar de pestaña **no la pierde** — el hub muestra **«Reanudar»**. Corre **offline y sin HealthKit**
+(registrar fuerza es manual). Dynamic Type: la tabla **refluye a bloques apilados** en tamaños AX; VoiceOver: cada
+serie es **un elemento**. Fuera de alcance: descanso por FC (FER-348) y el resumen final (FER-349).
 
 ---
 
