@@ -54,6 +54,8 @@ private struct EntrenarLanding: View {
     @State private var exerciseCounts: [String: Int] = [:]
     /// Drives the routine builder sheet (FER-346): `.new` or `.edit(routine)`.
     @State private var builderTarget: BuilderTarget? = nil
+    /// Drives the «start from a template» sheet (FER-386).
+    @State private var showTemplates = false
 
     /// Today's recovery (0–100), nil until a score exists. Drives whether the band shows.
     private var recovery: Double? { repo.today?.recovery }
@@ -84,6 +86,11 @@ private struct EntrenarLanding: View {
         .background(theme.paper.ignoresSafeArea())
         .sheet(item: $builderTarget) { target in
             RoutineBuilderScreen(routine: target.routine) { await load() }
+                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        }
+        // «Start from a template» (FER-386): a `.sheet` like the builder, reloading the hub on add.
+        .sheet(isPresented: $showTemplates) {
+            StarterTemplatesSheet { await load() }
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
         // The guided strength session (FER-347). Hosted here at the hub root so it survives pushing
@@ -169,6 +176,18 @@ private struct EntrenarLanding: View {
                     .frame(minHeight: 44).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                divider
+                Button { showTemplates = true } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "square.stack.3d.up").frame(width: 30)
+                            .font(.system(size: 17)).foregroundStyle(theme.inkSecondary)
+                        Text("Start from a template").font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                        Spacer(minLength: 0)
+                    }
+                    .frame(minHeight: 44).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint(Text("Copy a starter routine into My routines"))
             }
         }
     }
@@ -210,6 +229,11 @@ private struct EntrenarLanding: View {
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
             VStack(spacing: 8) {
                 QuietButton("New routine") { builderTarget = .new }
+                Button { showTemplates = true } label: {
+                    Text("Start from a template")
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                }
+                .buttonStyle(.plain)
                 Button { openLibrary() } label: {
                     Text("Browse the exercise library")
                         .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
