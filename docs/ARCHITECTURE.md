@@ -325,7 +325,7 @@ UI doesn't re-render on every beat.
 
 ## 7. Storage model (WhoopStore / SQLite)
 
-GRDB drives a migrator (`WhoopStoreInfo.schemaVersion`, currently `12`). The schema groups into four
+GRDB drives a migrator (`WhoopStoreInfo.schemaVersion`, currently `14`). The schema groups into four
 concerns:
 
 **Durable decoded streams** — natural key `(deviceId, ts)`, one row per sample:
@@ -343,6 +343,12 @@ concerns:
   (`behavior` × `outcome`), `startDay`/`windowDays`, `status` (running/completed/canceled), and the
   verdict columns filled on completion. Additive only; one experiment runs at a time (app-enforced),
   but the table keeps the full history.
+- `dietPlan` / `dietAdherence` (v14, FER-370) — a prescribed diet plan stored as an opaque
+  `noop.diet.v1` JSON `payloadJSON` (PK `id`, + denormalized `nombre`/`idioma`/`ciclo`/`createdAt`),
+  and per-meal daily adherence keyed `(deviceId, day, mealId)` with a tri-state `status`
+  (cumpli/sustitui/salte). WhoopStore never decodes the plan (that's `StrandImport.DietPlan`); the
+  apego % (FER-372) is computed from `dietAdherence` against the active plan's meal count. Mirrors
+  `journal`.
 
 **Generic metric series** — `metricSeries(deviceId, day, key, value REAL)`: a tall, long-format
 table so *any* scalar metric from *any* source can be queried/compared uniformly (the substrate for
@@ -393,6 +399,11 @@ URL (export.zip / *.csv / export.xml / folder)
 normalized results into `dailyMetric`, `sleepSession`, `workout`, `appleDaily`, and `metricSeries`
 rows, then calls `Repository.refresh()`. Apple Health's `export.xml` is parsed with a streaming
 reader so multi-hundred-MB files don't blow up memory.
+
+The prescribed-diet path is a third producer on the same parse-only principle: `DietPlanImporter`
+validates a `noop.diet.v1` payload — from the BYO-LLM "copy prompt" flow, a future on-device parse,
+or manual entry — into a `DietPlan`, which the app maps to a `dietPlan` row (FER-370). The user
+brings the JSON in, so NOOP still makes no network call.
 
 ---
 
