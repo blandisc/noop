@@ -10058,25 +10058,25 @@
         }
       }
     },
-    "Ideal load": {
+    "Balanced load": {
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ideale Last"
+            "value": "Ausgewogene Last"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ideal load"
+            "value": "Balanced load"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Carga ideal"
+            "value": "Carga equilibrada"
           }
         }
       }

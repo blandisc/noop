@@ -14,7 +14,11 @@ import WhoopStore
 ///   signal (Lamberts et al. 2004).
 /// - **Respiratory-rate drift** — a rise in sleeping respiratory rate is an early illness signal.
 /// - **Training Stress Balance (ACWR)** — acute (7-day) vs chronic (28-day) strain. The 0.8–1.3
-///   band is the "sweet spot"; >1.5 is associated with higher injury risk (Gabbett 2016).
+///   band reads as balanced load (Gabbett 2016). NOOP treats it as a load-balance descriptor, not an
+///   injury predictor: the "sweet spot" and the ACWR→injury link are a debated heuristic, not a
+///   validated threshold — the coupled ratio (acute is inside chronic) inflates correlation (Lolli
+///   et al. 2019, BJSM) and the metric's statistical properties undercut causal use (Impellizzeri
+///   et al. 2020, Int J Sports Physiol Perform 15(6):907).
 /// - **Training monotony** — mean/SD of daily strain over a week; high monotony (low variety) is
 ///   associated with higher strain and illness (Foster 1998).
 ///
@@ -63,7 +67,7 @@ public enum ReadinessEngine {
         public var shortLabel: String {
             switch self {
             case .rampingDown:  return String(localized: "Light load", bundle: .main)
-            case .sweetSpot:    return String(localized: "Ideal load", bundle: .main)
+            case .sweetSpot:    return String(localized: "Balanced load", bundle: .main)
             case .buildingFast: return String(localized: "Rising load", bundle: .main)
             case .spiking:      return String(localized: "High load", bundle: .main)
             }
