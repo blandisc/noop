@@ -315,6 +315,7 @@ hue against the live paper so this 3:1 floor holds at every hour (FER-131 handof
 | `ink` | `#221D16` | 14.8:1 | primary text & the hero numeral |
 | `inkSecondary` | `#5C5648` | 6.5:1 | supporting copy & labels |
 | `inkTertiary` | `#6F6857` | 4.9:1 | overlines, captions, axis |
+| `inkDim` | `#AFAA9D` | — | no-data cells — the «—» + its glyph; intentionally low-contrast, NOT AA text (derived from inkTertiary→paper) |
 | `dataRecovery` | `#0C8F62` | 3.6:1 | recovery datum — color on the numeral (AA-large, ≥24pt) |
 | `dataStrain` | `#C4631F` | 3.6:1 | strain datum — color on the numeral (AA-large, ≥24pt) |
 | `dataSleep` | `#5D5A9E` | 5.4:1 | sleep trend hue (FER-147) |

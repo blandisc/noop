@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Lo que aún no tiene lectura se hace a un lado / What has no reading yet steps back.**
+  **ES** — Dos toques de fidelidad al diseño en los tiles de **Hoy**: (1) cuando una métrica **todavía no tiene lectura**, su ícono y el «—» se ven en **gris apagado** en vez de a color — así lo que sí mediste resalta y lo que falta se hace a un lado (en «Base Apple Salud», las filas que vienen de Apple siguen a color y las que esperan tu banda se apagan); (2) el **marcador** de tu valor de hoy en la mini-barra de rango ahora va en el **color de la métrica**.
+  **EN** — Two design-fidelity touches in the **Today** tiles: (1) when a metric has **no reading yet**, its icon and the "—" show in **muted gray** instead of color — so what you did measure stands out and what's missing steps back (in "Apple Health baseline", the Apple-sourced rows stay in color and the ones waiting for your strap dim); (2) the **marker** of today's value on the range mini-bar now uses the **metric's color**.
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift), [Packages/StrandDesign/Sources/StrandDesign/Instrumento.swift](Packages/StrandDesign/Sources/StrandDesign/Instrumento.swift))
 - **Cada métrica de hoy estrena su ícono / Each of today's metrics gets its icon.**
   **ES** — En **Hoy**, cada tile de «Métricas de hoy» ahora lleva un **ícono** junto al nombre, en el color del dato: un rayo para el esfuerzo, una luna para el sueño, un corazón para la frecuencia cardíaca, una gota para el oxígeno, y así. Venía en el diseño y faltaba; ahora reconoces cada métrica de un vistazo.
   **EN** — On **Today**, each "Today's metrics" tile now shows an **icon** next to its name, in the data color: a bolt for strain, a moon for sleep, a heart for heart rate, a drop for blood oxygen, and so on. It was in the design and was missing; now you recognize each metric at a glance.
