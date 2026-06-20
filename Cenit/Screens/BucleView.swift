@@ -72,6 +72,10 @@ private struct BucleLanding: View {
     @State private var showHallazgos = false
     @State private var showEfectos = false
     @State private var showAnota = false
+    /// Generic info explainer (On-device pill + the ⓘ on each section). FER-312.
+    @State private var info: BucleInfo? = nil
+    /// «Decisión de hoy» explainer — opens on tapping the hero (what to do + why). FER-312.
+    @State private var showDecision = false
 
     /// Nights of own history the engine needs before it speaks with confidence.
     private static let calibrationTarget = 14
@@ -147,6 +151,14 @@ private struct BucleLanding: View {
                 .instrumentoTheme(theme)
                 .environmentObject(repo)
         }
+        .sheet(item: $info) { i in
+            BucleInfoSheet(info: i, theme: theme)
+        }
+        .sheet(isPresented: $showDecision) {
+            if let r = readiness {
+                DecisionExplainerSheet(readiness: r, recovery: recovery, theme: theme)
+            }
+        }
     }
 
     // MARK: Header
@@ -155,13 +167,18 @@ private struct BucleLanding: View {
         HStack(alignment: .firstTextBaseline) {
             Text(headerLabel).instrumentoOverline().foregroundStyle(theme.inkTertiary)
             Spacer()
-            HStack(spacing: 4) {
-                Image(systemName: "cpu").font(.system(size: 11, weight: .medium))
-                Text("On-device").font(StrandFont.captionNumber)
+            Button { info = .onDevice } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "cpu").font(.system(size: 11, weight: .medium))
+                    Text("On-device").font(StrandFont.captionNumber)
+                    Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold))
+                }
+                .foregroundStyle(theme.inkTertiary)
+                .padding(.horizontal, 8).padding(.vertical, 3)
+                .overlay(Capsule().stroke(theme.hairlineStrong, lineWidth: 1))
             }
-            .foregroundStyle(theme.inkTertiary)
-            .padding(.horizontal, 8).padding(.vertical, 3)
-            .overlay(Capsule().stroke(theme.hairlineStrong, lineWidth: 1))
+            .buttonStyle(.plain)
+            .accessibilityLabel("Qué significa on-device")
         }
     }
 
@@ -178,15 +195,24 @@ private struct BucleLanding: View {
     // MARK: Decisión de hoy (héroe)
 
     private var decisionSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("Decisión de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text(verdictWord)
-                .font(.system(size: 34, weight: .semibold))
-                .foregroundStyle(theme.ink)
-                .padding(.top, 10)
-            verdictReading
-                .padding(.top, 10)
+        Button { showDecision = true } label: {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 6) {
+                    Text("Decisión de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Image(systemName: "info.circle").font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
+                }
+                Text(verdictWord)
+                    .font(.system(size: 34, weight: .semibold))
+                    .foregroundStyle(theme.ink)
+                    .padding(.top, 10)
+                verdictReading
+                    .padding(.top, 10)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .accessibilityHint("Toca para ver por qué y qué hacer hoy")
     }
 
     /// The reading: the verdict summary, with the recovery datum tinted green (the one colored datum).
@@ -206,15 +232,7 @@ private struct BucleLanding: View {
         }
     }
 
-    private var verdictWord: String {
-        switch readiness?.level {
-        case .primed:   return "Empuja hoy."
-        case .balanced: return "Día parejo."
-        case .strained: return "Ve con calma."
-        case .rundown:  return "Hoy toca descansar."
-        default:        return "Día parejo."
-        }
-    }
+    private var verdictWord: String { BucleFormat.verdictWord(readiness?.level) }
 
     // MARK: Cold start
 
@@ -277,7 +295,8 @@ private struct BucleLanding: View {
                 VStack(alignment: .leading, spacing: 0) {
                     sectionLabel("Lo que funciona en ti",
                                  trailing: behaviorInsights.count > levers.count
-                                    ? "Ver las \(behaviorCount)" : nil) { showEfectos = true }
+                                    ? "Ver las \(behaviorCount)" : nil,
+                                 info: .loQueFunciona) { showEfectos = true }
                     ForEach(Array(levers.enumerated()), id: \.offset) { _, insight in
                         leverRow(insight)
                     }
@@ -462,7 +481,8 @@ private struct BucleLanding: View {
         return VStack(alignment: .leading, spacing: 0) {
             sectionLabel("Hallazgos",
                          trailing: hallazgosInsights.count > shown.count
-                            ? "Ver los \(hallazgosInsights.count)" : nil) { showHallazgos = true }
+                            ? "Ver los \(hallazgosInsights.count)" : nil,
+                         info: .hallazgos) { showHallazgos = true }
             if shown.isEmpty {
                 HStack(spacing: 8) {
                     Image(systemName: "checkmark").font(.system(size: 16)).foregroundStyle(theme.inkTertiary)
@@ -534,7 +554,14 @@ private struct BucleLanding: View {
     @ViewBuilder private var efectosEntry: some View {
         if !behaviorInsights.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Efectos de tus hábitos").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                HStack(spacing: 6) {
+                    Text("Efectos de tus hábitos").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Button { info = .efectos } label: {
+                        Image(systemName: "info.circle").font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Cómo funciona esta sección")
+                }
                 Button { showEfectos = true } label: {
                     HStack(spacing: 13) {
                         Image(systemName: "chart.bar").font(.system(size: 20)).foregroundStyle(theme.inkSecondary)
@@ -560,9 +587,17 @@ private struct BucleLanding: View {
     // MARK: Shared bits
 
     private func sectionLabel(_ title: LocalizedStringKey, trailing: String?,
+                              info infoItem: BucleInfo? = nil,
                               action: @escaping () -> Void) -> some View {
-        HStack(alignment: .firstTextBaseline) {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
             Text(title).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            if let infoItem {
+                Button { info = infoItem } label: {
+                    Image(systemName: "info.circle").font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Cómo funciona esta sección")
+            }
             Spacer()
             if let trailing {
                 Button(action: action) {
