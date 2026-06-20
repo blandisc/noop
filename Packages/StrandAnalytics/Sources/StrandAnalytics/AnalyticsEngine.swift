@@ -161,7 +161,14 @@ public enum AnalyticsEngine {
                                   // Wall-clock UTC offset (seconds) for the sleep detector's daytime
                                   // false-sleep guard (#90). Default 0 keeps pure-function callers/tests
                                   // on UTC; IntelligenceEngine passes the device's real offset.
-                                  tzOffsetSeconds: Int = 0) -> DayResult {
+                                  tzOffsetSeconds: Int = 0,
+                                  // For the IN-PROGRESS day, the ~42h night window is dominated by
+                                  // yesterday's activity (the day just started), so strain would
+                                  // mis-attribute it to today. When true, strain counts only `day`'s own
+                                  // civil day (like the additive totals); past complete days keep the
+                                  // full window. Default false preserves pure-function callers/tests.
+                                  // (FER-341)
+                                  strainCivilDayOnly: Bool = false) -> DayResult {
 
         // ── Sleep detection + staging ─────────────────────────────────────────
         let allSessions = SleepStager.detectSleep(hr: hr, rr: rr, resp: resp, gravity: gravity,
@@ -229,10 +236,18 @@ public enum AnalyticsEngine {
                 sleepPerf: sleepPerf)
         }
 
-        // ── Strain (day cardiovascular load over the full HR window) ──────────
+        // ── Strain (day cardiovascular load) ──────────────────────────────────
+        // HR scoped to `day`'s own LOCAL civil day (the same filter the additive totals use below).
+        // Computed once here and reused by the calorie estimate.
+        let dayHrFiltered = (dayHr ?? hr).filter { dayString($0.ts, tzOffsetSeconds: tzOffsetSeconds) == day }
         let effMaxHR: Double? = maxHROverride ?? (profile.age > 0 ? StrainScorer.tanakaHRmax(age: profile.age) : nil)
         let restForStrain = restingHRDaily.map(Double.init) ?? StrainScorer.defaultRestingHR
-        let strain = StrainScorer.strain(hr, maxHR: effMaxHR, restingHR: restForStrain,
+        // A past complete day scores strain over the full ~42h window centered on it. The IN-PROGRESS
+        // day must restrict to its own civil day: just after midnight the 42h window is all of
+        // YESTERDAY, which would surface as today's strain (FER-341). Default false keeps every other
+        // caller (past days, pure-function tests) on the full window.
+        let strainHr = strainCivilDayOnly ? dayHrFiltered : hr
+        let strain = StrainScorer.strain(strainHr, maxHR: effMaxHR, restingHR: restForStrain,
                                          sex: profile.sex)
 
         // ── Workouts ──────────────────────────────────────────────────────────
@@ -278,8 +293,7 @@ public enum AnalyticsEngine {
         // calendar day supplied by the caller (dayHr / daySteps), NOT the ~42h sleep-detection
         // window — which, anchored to the current time-of-day, would drop a past day's late hours
         // and double-count seconds shared with adjacent days. Fall back to the night-window hr for
-        // pure-function callers that don't supply dayHr. Strain keeps the full window (bounded log).
-        let dayHrFiltered = (dayHr ?? hr).filter { dayString($0.ts, tzOffsetSeconds: tzOffsetSeconds) == day }
+        // pure-function callers that don't supply dayHr. (`dayHrFiltered` is computed above with strain.)
         let activeKcalEst: Double? = dayHrFiltered.isEmpty ? nil : Calories.estimateDayCalories(
             dayHrFiltered, profile: profile, hrmax: effMaxHR,
             restingHR: restingHRDaily.map(Double.init))
