@@ -110,6 +110,18 @@ public enum InsightEngine {
             }
         }
 
+        /// Localized DISPLAY name for readings/titles — distinct from `label`, which is the stable es-MX
+        /// key that levers/experiments persist and `outcomeSeries`/the coach's topic filter match on.
+        /// Reuses the catalog keys the rest of the app already carries (Recovery/HRV/Sleep/Resting HR).
+        public var displayLabel: String {
+            switch self {
+            case .recovery:  return String(localized: "Recovery", bundle: .main)
+            case .hrv:       return String(localized: "HRV", bundle: .main)
+            case .sleep:     return String(localized: "Sleep", bundle: .main)
+            case .restingHr: return String(localized: "Resting HR", bundle: .main)
+            }
+        }
+
         /// Native unit of the daily value (`min` for sleep — the goal screen converts to hours for display).
         public var unit: String {
             switch self {
@@ -293,10 +305,12 @@ public enum InsightEngine {
 
     private static func behaviorInsight(_ e: BehaviorEffect, metric: Outcome,
                                         qAdjusted: Double, significant: Bool, n: Int) -> Insight {
-        let dir = e.delta < 0 ? "baja" : "sube"
         let pct = e.pctChange.map { abs($0) } ?? 0
-        let title = "‘\(e.behavior)’ y tu \(metric.label)"
-        let reading = "En los días con ‘\(e.behavior)’, tu \(metric.label) \(dir) \(Int(pct.rounded()))% (n=\(e.nWith) vs \(e.nWithout))."
+        let pctInt = Int(pct.rounded())
+        let title = String(localized: "‘\(e.behavior)’ and your \(metric.displayLabel)", bundle: .main)
+        let reading = e.delta < 0
+            ? String(localized: "On days with ‘\(e.behavior)’, your \(metric.displayLabel) drops \(pctInt)% (n=\(e.nWith) vs \(e.nWithout)).", bundle: .main)
+            : String(localized: "On days with ‘\(e.behavior)’, your \(metric.displayLabel) rises \(pctInt)% (n=\(e.nWith) vs \(e.nWithout)).", bundle: .main)
         let datum = InsightDatum(value: round1(e.delta), unit: metric.unit, metric: metric.label)
         let evidence = InsightEvidence(n: n, pValue: e.pApprox, pAdjusted: qAdjusted,
                                        effectSize: e.cohensD, significant: significant)
@@ -313,9 +327,11 @@ public enum InsightEngine {
 
     private static func correlationInsight(_ c: Correlation, x: Outcome, y: Outcome,
                                            qAdjusted: Double, significant: Bool) -> Insight {
-        let rel = c.r < 0 ? "inversa" : "directa"
-        let title = "\(x.label) y \(y.label) van juntos"
-        let reading = "Relación \(rel) entre \(x.label) y \(y.label) (r=\(round2(c.r)), n=\(c.n))."
+        let rTxt = String(round2(c.r))
+        let title = String(localized: "\(x.displayLabel) and \(y.displayLabel) go together", bundle: .main)
+        let reading = c.r < 0
+            ? String(localized: "Inverse relationship between \(x.displayLabel) and \(y.displayLabel) (r=\(rTxt), n=\(c.n)).", bundle: .main)
+            : String(localized: "Direct relationship between \(x.displayLabel) and \(y.displayLabel) (r=\(rTxt), n=\(c.n)).", bundle: .main)
         let datum = InsightDatum(value: round2(c.r), unit: "r", metric: "\(x.label)·\(y.label)")
         let evidence = InsightEvidence(n: c.n, pValue: c.pApprox, pAdjusted: qAdjusted,
                                        effectSize: c.r, significant: significant)
@@ -333,14 +349,17 @@ public enum InsightEngine {
         let history = Array(days.dropLast())
         guard history.count >= Baselines.minNightsSeed else { return [] }
 
-        struct Probe { let key: String; let label: String; let unit: String
+        // `label` stays es-MX — it's the stable key used for `datum.metric` and the coach's topic filter;
+        // `displayLabel` is the localized name shown in the title/reading.
+        struct Probe { let key: String; let label: String; let displayLabel: String; let unit: String
                        let cfg: MetricCfg; let value: (DailyMetric) -> Double? }
         let probes: [Probe] = [
-            Probe(key: "hrv", label: "HRV", unit: "ms", cfg: Baselines.hrvCfg, value: { $0.avgHrv }),
-            Probe(key: "resting_hr", label: "FC en reposo", unit: "lpm",
-                  cfg: Baselines.restingHRCfg, value: { $0.restingHr.map(Double.init) }),
-            Probe(key: "resp", label: "Respiración", unit: "rpm",
-                  cfg: Baselines.respCfg, value: { $0.respRateBpm }),
+            Probe(key: "hrv", label: "HRV", displayLabel: String(localized: "HRV", bundle: .main),
+                  unit: "ms", cfg: Baselines.hrvCfg, value: { $0.avgHrv }),
+            Probe(key: "resting_hr", label: "FC en reposo", displayLabel: String(localized: "Resting HR", bundle: .main),
+                  unit: "lpm", cfg: Baselines.restingHRCfg, value: { $0.restingHr.map(Double.init) }),
+            Probe(key: "resp", label: "Respiración", displayLabel: String(localized: "Respiration", bundle: .main),
+                  unit: "rpm", cfg: Baselines.respCfg, value: { $0.respRateBpm }),
         ]
 
         var out: [Insight] = []
@@ -350,9 +369,12 @@ public enum InsightEngine {
             guard state.usable else { continue }
             let dev = Baselines.deviation(value, state: state)
             guard abs(dev.z) >= 2.0 else { continue }   // anomaly only
-            let dir = dev.z < 0 ? "por debajo" : "por encima"
-            let title = "\(p.label) fuera de lo normal anoche"
-            let reading = "Anoche tu \(p.label) estuvo \(dir) de tu base (z=\(round1(dev.z)), base \(Int(state.baseline.rounded()))\(p.unit))."
+            let zTxt = String(round1(dev.z))
+            let baseInt = Int(state.baseline.rounded())
+            let title = String(localized: "\(p.displayLabel) was off last night", bundle: .main)
+            let reading = dev.z < 0
+                ? String(localized: "Last night your \(p.displayLabel) ran below your baseline (z=\(zTxt), baseline \(baseInt)\(p.unit)).", bundle: .main)
+                : String(localized: "Last night your \(p.displayLabel) ran above your baseline (z=\(zTxt), baseline \(baseInt)\(p.unit)).", bundle: .main)
             let datum = InsightDatum(value: round1(value), unit: p.unit, metric: p.label)
             let evidence = InsightEvidence(n: state.nValid, pValue: nil, pAdjusted: nil,
                                            effectSize: dev.z, significant: false)
@@ -379,9 +401,13 @@ public enum InsightEngine {
             guard cmp.current.n >= max(3, window / 2), cmp.previous.n >= max(3, window / 2) else { continue }
             let pct = cmp.pctChange ?? 0
             guard abs(pct) >= 5 else { continue }   // ignore trivial drift
-            let dir = cmp.direction < 0 ? "bajando" : "subiendo"
-            let title = "Tu Recuperación viene \(dir) (\(window) días)"
-            let reading = "Los últimos \(window) días tu Recuperación promedió \(Int(cmp.current.mean.rounded())) vs \(Int(cmp.previous.mean.rounded())) antes (\(Int(pct.rounded()))%)."
+            let curMean = Int(cmp.current.mean.rounded())
+            let prevMean = Int(cmp.previous.mean.rounded())
+            let pctInt = Int(pct.rounded())
+            let title = cmp.direction < 0
+                ? String(localized: "Your Recovery is trending down (\(window) days)", bundle: .main)
+                : String(localized: "Your Recovery is trending up (\(window) days)", bundle: .main)
+            let reading = String(localized: "Over the last \(window) days your Recovery averaged \(curMean) vs \(prevMean) before (\(pctInt)%).", bundle: .main)
             let datum = InsightDatum(value: round1(cmp.delta), unit: "pts", metric: "Recuperación")
             let evidence = InsightEvidence(n: cmp.current.n + cmp.previous.n, pValue: nil,
                                            pAdjusted: nil, effectSize: nil, significant: false)
@@ -399,15 +425,17 @@ public enum InsightEngine {
     private static func forecastInsight(_ days: [DailyMetric], sleepDebtMin: Double) -> Insight? {
         let recovery = days.map { $0.recovery }
         guard let r = RecoveryForecast.compute(recovery: recovery, sleepDebtMin: sleepDebtMin) else { return nil }
-        let word: String
         let step: Double   // signed direction for the test to read off evidence.effectSize
+        let title: String
         switch r.direction {
-        case .rising:  word = "al alza"; step = 1
-        case .falling: word = "a la baja"; step = -1
-        case .steady:  word = "estable"; step = 0
+        case .rising:  step = 1;  title = String(localized: "Tomorrow your Recovery looks like it's heading up", bundle: .main)
+        case .falling: step = -1; title = String(localized: "Tomorrow your Recovery looks like it's heading down", bundle: .main)
+        case .steady:  step = 0;  title = String(localized: "Tomorrow your Recovery looks steady", bundle: .main)
         }
-        let title = "Mañana tu Recuperación pinta \(word)"
-        let reading = "Proyección para mañana: \(Int(r.estimate.rounded())) (rango \(Int(r.low.rounded()))–\(Int(r.high.rounded())), \(r.basisDays) días)."
+        let est = Int(r.estimate.rounded())
+        let lo = Int(r.low.rounded())
+        let hi = Int(r.high.rounded())
+        let reading = String(localized: "Forecast for tomorrow: \(est) (range \(lo)–\(hi), \(r.basisDays) days).", bundle: .main)
         let datum = InsightDatum(value: round1(r.estimate), unit: "pts", metric: "Recuperación")
         let evidence = InsightEvidence(n: r.basisDays, pValue: nil, pAdjusted: nil,
                                        effectSize: step, significant: false)
@@ -430,8 +458,8 @@ public enum InsightEngine {
             return SleepRegularity.NightTiming(onset: s.startTs, wake: s.endTs)
         }
         guard let r = SleepRegularity.compute(timing), r.score < 55 else { return nil }
-        let title = "Tus horarios de sueño van irregulares"
-        let reading = "Tu regularidad de sueño está en \(r.score)/100 (qué tan pareja es tu hora de dormir); horarios más constantes ayudan."
+        let title = String(localized: "Your sleep schedule is drifting", bundle: .main)
+        let reading = String(localized: "Your sleep regularity is at \(r.score)/100 (how consistent your bedtime is); steadier hours help.", bundle: .main)
         let datum = InsightDatum(value: Double(r.score), unit: "/100", metric: "Regularidad de sueño")
         let evidence = InsightEvidence(n: r.nights, pValue: nil, pAdjusted: nil,
                                        effectSize: nil, significant: false)
@@ -452,8 +480,9 @@ public enum InsightEngine {
     private static func sleepDebtInsight(debtMin: Double, nights: Int) -> Insight? {
         guard debtMin >= 60, nights >= 3 else { return nil }   // < 1h debt isn't worth a card
         let hours = debtMin / 60.0
-        let title = "Llevas deuda de sueño"
-        let reading = "En las últimas noches acumulas \(round1(hours)) h por debajo de tu necesidad; la deuda no se salda de un jalón."
+        let hoursTxt = String(round1(hours))
+        let title = String(localized: "You're carrying sleep debt", bundle: .main)
+        let reading = String(localized: "Over recent nights you've built up \(hoursTxt) h below your need; debt isn't repaid in one go.", bundle: .main)
         let datum = InsightDatum(value: round1(hours), unit: "h", metric: "Deuda de sueño")
         let evidence = InsightEvidence(n: nights, pValue: nil, pAdjusted: nil,
                                        effectSize: nil, significant: false)
@@ -476,8 +505,9 @@ public enum InsightEngine {
                                                  recoveryByDay: recoveryByDay)
         var out: [Insight] = []
         for c in costs where abs(c.delta) >= ActivityCostEngine.barelyMovesPoints {
-            let title = "\(c.sport) te cuesta Recuperación"
-            let reading = "Tras \(c.sport), tu Recuperación del día siguiente cae ~\(Int(c.delta.rounded())) pts vs tus días de descanso (n=\(c.n))."
+            let deltaInt = Int(c.delta.rounded())
+            let title = String(localized: "\(c.sport) costs you Recovery", bundle: .main)
+            let reading = String(localized: "After \(c.sport), your next-day Recovery drops ~\(deltaInt) pts vs your rest days (n=\(c.n)).", bundle: .main)
             let datum = InsightDatum(value: round1(c.delta), unit: "pts", metric: "Recuperación")
             let evidence = InsightEvidence(n: c.n, pValue: nil, pAdjusted: nil,
                                            effectSize: nil, significant: false)
@@ -496,7 +526,7 @@ public enum InsightEngine {
     private static func trainingLoadInsight(_ days: [DailyMetric], today: String?) -> Insight? {
         let r = ReadinessEngine.evaluate(days: days, today: today)
         guard let acwr = r.acwr, let band = r.loadBand, band != .sweetSpot else { return nil }
-        let title = "Tu carga de entrenamiento: \(band.shortLabel)"
+        let title = String(localized: "Your training load: \(band.shortLabel)", bundle: .main)
         let datum = InsightDatum(value: round2(acwr), unit: "", metric: "Carga (ACWR)")
         let evidence = InsightEvidence(n: days.count, pValue: nil, pAdjusted: nil,
                                        effectSize: nil, significant: false)
@@ -516,8 +546,15 @@ public enum InsightEngine {
         guard let res = FitnessAgeEngine.compute(age: f.age, sex: f.sex, restingHR: restingHR,
                                                  paIndex: f.paIndex, waistCm: f.waistCm) else { return nil }
         let younger = res.deltaYears >= 0
-        let title = younger ? "Tu edad fitness es menor que tu edad" : "Tu edad fitness va por encima de tu edad"
-        let reading = "Tu edad fitness es \(Int(res.fitnessAge.rounded())) años (±\(Int(res.bandYears.rounded()))), \(abs(Int(res.deltaYears.rounded()))) \(younger ? "menos" : "más") que tu edad real."
+        let ageInt = Int(res.fitnessAge.rounded())
+        let bandInt = Int(res.bandYears.rounded())
+        let deltaInt = abs(Int(res.deltaYears.rounded()))
+        let title = younger
+            ? String(localized: "Your fitness age is lower than your age", bundle: .main)
+            : String(localized: "Your fitness age is above your age", bundle: .main)
+        let reading = younger
+            ? String(localized: "Your fitness age is \(ageInt) years (±\(bandInt)), \(deltaInt) younger than your real age.", bundle: .main)
+            : String(localized: "Your fitness age is \(ageInt) years (±\(bandInt)), \(deltaInt) older than your real age.", bundle: .main)
         let datum = InsightDatum(value: round1(res.fitnessAge), unit: "años", metric: "Edad fitness")
         let evidence = InsightEvidence(n: rhrs.count, pValue: nil, pAdjusted: nil,
                                        effectSize: nil, significant: false)

@@ -478,12 +478,11 @@ final class AppModel: ObservableObject {
         runStrapAction(behavior.doubleTapAction, shortcut: behavior.doubleTapShortcut)
     }
 
-    /// Run a configured Mac action. In-app actions (buzz/moment) stay on-device; lock + shortcuts
-    /// go through StrapActions.
+    /// Run a configured strap action. In-app actions (buzz/moment) stay on-device; shortcuts go
+    /// through StrapActions.
     func runStrapAction(_ kind: StrapActionKind, shortcut: String) {
         switch kind {
         case .none: break
-        case .lockScreen: if !StrapActions.lockScreen() { StrapActions.runShortcut("Lock Screen") }
         case .buzzBack: buzz(loops: 1)
         case .markMoment: markMoment()
         case .runShortcut: StrapActions.runShortcut(shortcut)
@@ -503,7 +502,6 @@ final class AppModel: ObservableObject {
         if worn {
             if !behavior.wristOnShortcut.isEmpty { StrapActions.runShortcut(behavior.wristOnShortcut) }
         } else {
-            if behavior.autoLockOnWristOff, !StrapActions.lockScreen() { StrapActions.runShortcut("Lock Screen") }
             if !behavior.wristOffShortcut.isEmpty { StrapActions.runShortcut(behavior.wristOffShortcut) }
         }
     }

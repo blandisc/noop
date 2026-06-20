@@ -240,7 +240,8 @@ syncs — once per connect and then every `backfillIntervalSeconds` (900s) while
 the periodic **type-47 historical offload is the primary metric source**, not the live stream.
 
 1. `requestSync(_:)` gates every kick on connection state **and** `BackfillPolicy` (the rate
-   limiter, persisted across relaunch). On a go it calls `beginBackfill()`, which sends
+   limiter, persisted across relaunch) — except the `.drain` trigger, which bypasses the limiter on
+   purpose (see step 5). On a go it calls `beginBackfill()`, which sends
    `SEND_HISTORICAL_DATA` and arms **two** timers: an *idle watchdog* (`backfillIdleTimeoutSeconds`,
    60s, re-armed on every offload frame) and an *absolute session cap*
    (`backfillAbsoluteTimeoutSeconds`, 300s, armed **once**, never re-armed by frames).
@@ -271,6 +272,19 @@ the periodic **type-47 historical offload is the primary metric source**, not th
    `BLEManager.afterBackfillIngest` tears down with `reason: "caught-up"` → `.completed` (stamps
    `lastSyncedAt`, green receipt). Completing on the heuristic is self-healing: the durable `strap_trim`
    cursor + periodic re-sync drain any remainder next tick, so safe-trim still loses nothing.
+5. **Auto-continue until drained (FER-287).** One session hands over only a few-hundred-frame batch, so
+   a night's ~19,400-frame backlog (1 Hz × hours, phone disconnected) would otherwise need *dozens* of
+   manual "Sync" taps — only `.manual` skips the rate-limiter. When a session closes **cleanly**
+   (`HISTORY_COMPLETE` or caught-up) and still delivered a **large** batch (session type-47 total >
+   `largeSessionFrames`), `BLEManager.exitBackfilling` immediately re-fires another session via the
+   `.drain` trigger — skipping the limiter — and repeats until a session comes back **small** (backlog
+   drained) or caught-up. `DrainContinuationPolicy` (`WhoopProtocol`, sibling of `CaughtUpDetector`) is
+   the pure decision plus a hard `maxChain` cap that guarantees termination; a non-clean close (idle
+   timeout / session cap) **never** chains, so an unhealthy link falls back to the rate-limited path.
+   Each chained session re-arms its own watchdog + 300 s cap, so the backstops are unchanged, and the
+   re-fire is synchronous so `state.backfilling` never flickers between links (the «Descargando la
+   noche…» hero stays steady). `.drain` re-uses `SEND_HISTORICAL_DATA` (no new outbound bytes) and never
+   touches `strap_trim`, so it changes only *when* the next session fires, never data integrity.
 
 Type-47 records carry their **own real-unix timestamps**, so the historical path does *not* depend on
 `GET_CLOCK`; if the clock correlation hasn't landed yet, `Backfiller` falls back to an identity
@@ -325,7 +339,7 @@ UI doesn't re-render on every beat.
 
 ## 7. Storage model (WhoopStore / SQLite)
 
-GRDB drives a migrator (`WhoopStoreInfo.schemaVersion`, currently `12`). The schema groups into four
+GRDB drives a migrator (`WhoopStoreInfo.schemaVersion`, currently `14`). The schema groups into four
 concerns:
 
 **Durable decoded streams** — natural key `(deviceId, ts)`, one row per sample:
@@ -343,6 +357,12 @@ concerns:
   (`behavior` × `outcome`), `startDay`/`windowDays`, `status` (running/completed/canceled), and the
   verdict columns filled on completion. Additive only; one experiment runs at a time (app-enforced),
   but the table keeps the full history.
+- `dietPlan` / `dietAdherence` (v14, FER-370) — a prescribed diet plan stored as an opaque
+  `noop.diet.v1` JSON `payloadJSON` (PK `id`, + denormalized `nombre`/`idioma`/`ciclo`/`createdAt`),
+  and per-meal daily adherence keyed `(deviceId, day, mealId)` with a tri-state `status`
+  (cumpli/sustitui/salte). WhoopStore never decodes the plan (that's `StrandImport.DietPlan`); the
+  apego % (FER-372) is computed from `dietAdherence` against the active plan's meal count. Mirrors
+  `journal`.
 
 **Generic metric series** — `metricSeries(deviceId, day, key, value REAL)`: a tall, long-format
 table so *any* scalar metric from *any* source can be queried/compared uniformly (the substrate for
@@ -393,6 +413,11 @@ URL (export.zip / *.csv / export.xml / folder)
 normalized results into `dailyMetric`, `sleepSession`, `workout`, `appleDaily`, and `metricSeries`
 rows, then calls `Repository.refresh()`. Apple Health's `export.xml` is parsed with a streaming
 reader so multi-hundred-MB files don't blow up memory.
+
+The prescribed-diet path is a third producer on the same parse-only principle: `DietPlanImporter`
+validates a `noop.diet.v1` payload — from the BYO-LLM "copy prompt" flow, a future on-device parse,
+or manual entry — into a `DietPlan`, which the app maps to a `dietPlan` row (FER-370). The user
+brings the JSON in, so NOOP still makes no network call.
 
 ---
 

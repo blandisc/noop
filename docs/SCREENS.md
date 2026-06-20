@@ -505,14 +505,14 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 
 ### AutomationsView
 **Archivo:** `Cenit/Screens/AutomationsView.swift`  
-**Descripción:** Double-tap → acción Mac, wear on/off → lock, coaching haptic, alarmas, illness watch.
+**Descripción:** «Automatizaciones» en **luz «Instrumento diurno»** (FER-69, antes oscura; **saneada iOS-only**: se quitó el toggle «Lock the Mac» y el copy de «este Mac»). Doble toque → acción (atajo / marcar momento), atajo al quitar/poner la banda, coaching háptico, alarma inteligente, aviso de enfermedad. Solo presentación + saneo; la lógica (`BehaviorStore`/alarma/hápticos) no cambia.
 
 | Estado | Condición de entrada |
 |--------|---------------------|
 | Strap no bonded | Sin strap vinculado |
 | Strap bonded | Strap vinculado |
 
-**Componentes:** `StatePill (bonded/not)`, `Action picker (None / App / Shortcut)`, `Shortcut name field`, `Test button`, `Moments list (últimos 5 double-taps)`
+**Componentes (Instrumento):** secciones por espacio (sin card-in-card) — Doble toque (`Picker` + campo de atajo + Test action `QuietButton` + estado de strap inline + momentos) · Uso y presencia (atajos off/on) · Coaching háptico · Alarma inteligente · Aviso de enfermedad; `toggleRow`/`DatePicker`/`Picker` nativos tintados a Instrumento.
 
 ---
 

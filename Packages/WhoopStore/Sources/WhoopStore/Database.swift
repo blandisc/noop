@@ -340,6 +340,32 @@ extension WhoopStore {
             try db.create(index: "idx_personalRecord_exercise",
                           on: "personalRecord", columns: ["exerciseId"])
         }
+
+        // v14 (FER-370): prescribed-diet plan + daily adherence. The plan is captured once
+        // (noop.diet.v1, via the BYO-LLM / import path in StrandImport) and stored as an OPAQUE
+        // JSON payload so WhoopStore needn't understand the nested meals/options; denormalized
+        // columns (nombre, idioma, ciclo, createdAt) allow listing without decoding. Adherence
+        // mirrors `journal`: one row per (deviceId, day, mealId), tri-state status. Additive only;
+        // no existing row is touched.
+        migrator.registerMigration("v14") { db in
+            try db.create(table: "dietPlan") { t in
+                t.column("id", .text).primaryKey()             // app-generated UUID
+                t.column("deviceId", .text).notNull()          // source partition (consistent w/ schema)
+                t.column("nombre", .text).notNull()
+                t.column("idioma", .text).notNull()            // es | en (content language)
+                t.column("ciclo", .text).notNull()             // diario
+                t.column("payloadJSON", .text).notNull()       // canonical noop.diet.v1 document
+                t.column("createdAt", .integer).notNull()      // unix seconds
+            }
+            try db.create(table: "dietAdherence") { t in
+                t.column("deviceId", .text).notNull()
+                t.column("day", .text).notNull()               // YYYY-MM-DD (local civil day)
+                t.column("mealId", .text).notNull()            // references a DietPlan meal id
+                t.column("status", .text).notNull()            // cumpli | sustitui | salte
+                t.column("note", .text)
+                t.primaryKey(["deviceId", "day", "mealId"])
+            }
+        }
         return migrator
     }
 }

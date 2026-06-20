@@ -40,7 +40,7 @@ final class MigrationTests: XCTestCase {
             let cols = try await store.columnNamesForTest(table: table)
             XCTAssertTrue(cols.contains("synced"), "\(table) missing synced column")
         }
-        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 13)
+        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 14)
     }
 
     /// v12 (FER-307) creates the `experiment` table with `id` as the sole primary key.
@@ -54,6 +54,28 @@ final class MigrationTests: XCTestCase {
         for expected in ["behavior", "outcome", "expectedSign", "startDay", "windowDays",
                          "status", "result", "createdAt"] {
             XCTAssertTrue(cols.contains(expected), "experiment missing column \(expected)")
+        }
+    }
+
+    /// v14 (FER-370) creates `dietPlan` (PK `id`) and `dietAdherence` (PK `deviceId,day,mealId`).
+    func testV14CreatesDietTables() async throws {
+        let store = try await WhoopStore.inMemory()
+        let tables = try await store.tableNames()
+        XCTAssertTrue(tables.contains("dietPlan"), "missing dietPlan table")
+        XCTAssertTrue(tables.contains("dietAdherence"), "missing dietAdherence table")
+
+        let planPK = try await store.primaryKeyColumns("dietPlan")
+        XCTAssertEqual(planPK, ["id"])
+        let planCols = try await store.columnNamesForTest(table: "dietPlan")
+        for expected in ["deviceId", "nombre", "idioma", "ciclo", "payloadJSON", "createdAt"] {
+            XCTAssertTrue(planCols.contains(expected), "dietPlan missing column \(expected)")
+        }
+
+        let adherencePK = try await store.primaryKeyColumns("dietAdherence")
+        XCTAssertEqual(adherencePK, ["deviceId", "day", "mealId"])
+        let adherenceCols = try await store.columnNamesForTest(table: "dietAdherence")
+        for expected in ["status", "note"] {
+            XCTAssertTrue(adherenceCols.contains(expected), "dietAdherence missing column \(expected)")
         }
     }
 }
