@@ -53,6 +53,8 @@ private struct BucleLanding: View {
     @State private var journalTotal = 0
     /// Recent recovery series (last 14 nights) for the trend-finding sparkline — trends are recovery.
     @State private var trendSpark: [Double] = []
+    /// The compact, engine-grounded fact summary "Pregúntale a tus datos" answers from (FER-308).
+    @State private var grounding: CoachGrounding? = nil
     @State private var loaded = false
 
     // N-of-1 experiment state (FER-307). One at a time (MVP): either a running experiment, or the
@@ -114,7 +116,9 @@ private struct BucleLanding: View {
         // Pregúntale — the external LLM chat, preserved. Now «Instrumento» light (FER-309): the theme
         // is injected at the sheet root (it doesn't cross the `.sheet` boundary, FER-162); no `.dark` pin.
         .sheet(isPresented: $showPreguntale) {
-            CoachView()
+            PreguntaleView(grounding: grounding ?? CoachGrounding.from(
+                insights: insights, readiness: readiness, recovery: recovery,
+                referenceDay: Repository.localDayKey(Date())))
                 .instrumentoTheme(theme)
                 .environmentObject(coach)
                 .environmentObject(repo)
@@ -687,6 +691,9 @@ private struct BucleLanding: View {
         let nights = days.filter { $0.avgHrv != nil }.count
         let spark = Array(days.compactMap { $0.recovery }.suffix(14))
 
+        let g = CoachGrounding.from(insights: generated, readiness: r,
+                                    recovery: repo.today?.recovery, referenceDay: todayKey)
+
         // Experiment state: a running one (with live progress + adherence), else the latest finished
         // verdict the user hasn't dismissed.
         let active = await repo.activeExperiment()
@@ -701,6 +708,7 @@ private struct BucleLanding: View {
             self.insights = generated
             self.readiness = r
             self.recovery = repo.today?.recovery
+            self.grounding = g
             self.usableNights = nights
             self.journalAnswered = todayAnswers.count
             self.journalTotal = max(catalog.count, 1)
