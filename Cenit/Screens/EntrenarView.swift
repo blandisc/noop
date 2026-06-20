@@ -2,6 +2,7 @@
 import SwiftUI
 import StrandDesign
 import StrandTraining
+import StrandAnalytics
 
 // MARK: - Entrenar (the Train tab root) — FER-343
 //
@@ -39,6 +40,7 @@ struct EntrenarView: View {
 
 private struct EntrenarLanding: View {
     @EnvironmentObject var repo: Repository
+    @EnvironmentObject var model: AppModel
     @Environment(\.instrumentoTheme) private var theme
 
     var openRoutine: (String) -> Void
@@ -83,6 +85,19 @@ private struct EntrenarLanding: View {
         .sheet(item: $builderTarget) { target in
             RoutineBuilderScreen(routine: target.routine) { await load() }
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        }
+        // The guided strength session (FER-347). Hosted here at the hub root so it survives pushing
+        // «Rutina de hoy» / switching tabs; the session itself lives in AppModel, so swiping the sheet
+        // down only hides it (the «Resume» row below re-opens). A `.sheet` — no nested NavigationStack.
+        .sheet(isPresented: $model.strengthSheetPresented) {
+            if let session = model.strengthSession {
+                LiveStrengthSheet(session: session, theme: theme)
+                    .environmentObject(model)
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.visible)
+                    .presentationBackground(theme.paper)
+                    .preferredColorScheme(.light)
+            }
         }
         .task { await load() }
     }
@@ -217,6 +232,10 @@ private struct EntrenarLanding: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Tools").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             VStack(alignment: .leading, spacing: 0) {
+                if model.strengthSession != nil {
+                    resumeStrengthRow
+                    divider
+                }
                 LiveWorkoutHubRow()
                 divider
                 toolRow("Exercise library", "book", action: openLibrary)
@@ -228,6 +247,29 @@ private struct EntrenarLanding: View {
                 toolRow("Diet", "fork.knife", action: openDiet)
             }
         }
+    }
+
+    /// «Resume» the in-progress guided session (FER-347) — shown only while a session runs but its sheet
+    /// is dismissed, so the durable session is always one tap away from the hub.
+    private var resumeStrengthRow: some View {
+        Button { model.resumeStrengthSession() } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "figure.strengthtraining.functional").frame(width: 30)
+                    .font(.system(size: 17)).foregroundStyle(theme.dataStrain)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Workout in progress").font(StrandFont.body).foregroundStyle(theme.ink)
+                    Text(model.strengthSession?.routineName ?? "")
+                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                }
+                Spacer(minLength: 8)
+                Text("Resume").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+            }
+            .frame(minHeight: 48).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("Resume workout in progress"))
     }
 
     private func toolRow(_ title: LocalizedStringKey, _ icon: String, action: @escaping () -> Void) -> some View {
@@ -268,68 +310,69 @@ private struct EntrenarLanding: View {
     }
 }
 
-// MARK: - Recovery band (the visual container; the rule is W3·bucle / FER-349)
+// MARK: - Recovery band (the «sube / mantén / baja» autoregulation suggestion — FER-349)
 
-/// The «sube / mantén / baja» recovery band. FER-343 ships only the **container**: a provisional
-/// recommendation read straight off today's recovery score. The real autoregulation rule (HRV-guided +
-/// RIR/RPE, with citations) is FER-349 — until then this stays transparent and recovery-only, and it
-/// **never appears without a recovery score** (no invented advice).
+/// The recovery band: an OPT-IN "push / hold / ease" suggestion shown before a session, driven by the
+/// cited `TrainingRegulation` rule (StrandAnalytics) rather than ad-hoc cuts. It maps today's recovery
+/// to the app's canonical recovery bands and carries a fixed "suggestion · you decide" label — it
+/// never gates training. It **never appears without a recovery score** (the rule returns nil and the
+/// caller hides the slot — no invented advice).
 struct RecoveryBand: View {
     @Environment(\.instrumentoTheme) private var theme
     let recovery: Double
 
-    private var band: TrainingBand { TrainingBand(recovery: recovery) }
+    /// The cited rule. The score-only path uses the canonical recovery bands; a personal z is preferred
+    /// when a caller has it (not plumbed here yet).
+    private var suggestion: TrainingRegulation.Suggestion? {
+        TrainingRegulation.suggest(recovery: recovery)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Recovery band").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            HStack(alignment: .firstTextBaseline, spacing: 12) {
-                Text(band.word)
-                    .font(StrandFont.title2).foregroundStyle(band.color(theme))
-                Text(band.detail(recovery))
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+            if let s = suggestion {
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    Text(word(s.adjustment))
+                        .font(StrandFont.title2).foregroundStyle(color(s.adjustment))
+                    Text(detail(s.reason))
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                HStack(spacing: 5) {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
+                        .accessibilityHidden(true)
+                    Text("Suggestion · you decide")
+                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                }
+                .padding(.top, 4)
             }
         }
         .accessibilityElement(children: .combine)
     }
-}
 
-/// Three coarse training-load bands derived from recovery. Coarse on purpose (the honesty is the
-/// feature): a provisional stand-in for FER-349's evidence-based rule.
-enum TrainingBand {
-    case push, hold, ease
-
-    init(recovery: Double) {
-        switch recovery {
-        case ..<50:  self = .ease
-        case ..<70:  self = .hold
-        default:     self = .push
+    private func word(_ a: TrainingRegulation.Adjustment) -> LocalizedStringKey {
+        switch a {
+        case .dialUp:   return "Push"
+        case .hold:     return "Hold"
+        case .dialBack: return "Ease"
         }
     }
 
-    var word: LocalizedStringKey {
-        switch self {
-        case .push: return "Push"
-        case .hold: return "Hold"
-        case .ease: return "Ease"
+    private func color(_ a: TrainingRegulation.Adjustment) -> Color {
+        switch a {
+        case .dialUp:   return theme.verdict   // recovered — push (green)
+        case .hold:     return theme.ink       // within your normal — no color
+        case .dialBack: return theme.warning   // under-recovered — ease off (amber)
         }
     }
 
-    func color(_ theme: InstrumentoTheme) -> Color {
-        switch self {
-        case .push: return theme.verdict     // ready — push (green)
-        case .hold: return theme.ink         // steady — no strong signal (no color)
-        case .ease: return theme.warning     // under-recovered — back off (amber)
-        }
-    }
-
-    func detail(_ recovery: Double) -> String {
+    private func detail(_ reason: TrainingRegulation.Reason) -> String {
         let n = Int(recovery.rounded())
-        switch self {
-        case .push: return String(localized: "Recovery \(n) · high. A good day to add load.")
-        case .hold: return String(localized: "Recovery \(n) · moderate. Keep your usual load.")
-        case .ease: return String(localized: "Recovery \(n) · low. Pull back the volume today.")
+        switch reason {
+        case .recoveryHigh:  return String(localized: "Recovery \(n) · high. A good day to add load.")
+        case .withinNormal:  return String(localized: "Recovery \(n) · moderate. Keep your usual load.")
+        case .recoveryLow:   return String(localized: "Recovery \(n) · low. Pull back the volume today.")
         }
     }
 }

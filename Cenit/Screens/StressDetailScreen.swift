@@ -24,10 +24,11 @@ import Foundation
 // modelo (z-score logístico; bandas 0–1/1–2/2–3). El hero muestra el VALOR DE HOY (no la media 7d) porque el
 // índice ya viene normalizado a la base de cada quien; las bandas son fijas por la misma razón.
 //
-// Bloques, cada uno con su ⓘ (`InfoAccordion`) salvo el placeholder y el método: 1) Hero (valor de hoy en
+// Bloques, cada uno con su ⓘ (`InfoAccordion`) salvo el método: 1) Hero (valor de hoy en
 // color de banda) · 2) Selector de periodo + Tendencia (línea 0–3 sobre las bandas) · 3) Rango normal (bandas
-// universales) · 4) Qué lo mueve (RHR/HRV vs base) · 5) Consistencia (CV) · 6) Tiempo en calma · 7) Estrés por
-// momento del día (PLACEHOLDER deshabilitado — el cruce con calendario es FER-38) · 8) Ver el método.
+// universales) · 4) Qué lo mueve (RHR/HRV vs base) · 5) Consistencia (CV) · 6) Tiempo en calma · 7) Estrés a lo
+// largo del día (el «mapa del día»: carril vertical + cruce con el calendario, `StressDayMapBlock`, FER-377) ·
+// 8) Ver el método.
 
 /// Light «Instrumento» Detalle de Estrés. Built from a `StressModel` (the caller injects it so the screen
 /// stays DB-free), themed explicitly for the sheet boundary. `model == nil` → the honest empty state.
@@ -37,6 +38,9 @@ struct StressDetailScreen: View {
     /// The transparent 0–3 stress model, built by the caller from `repo.displayDays` + the stored series.
     /// `nil` when there's no usable signal at all → the empty hero.
     let model: StressModel?
+    /// The «mapa del día» driver (EventKit permission + intraday stress curve + calendar cross), built
+    /// by the caller. `nil` in previews / when the block shouldn't show. (FER-377)
+    var dayMap: CalendarDayMap? = nil
 
     /// The trend block's period window (W/M/3M/6M/1Y/ALL). Defaults to a month.
     @State private var range: ExploreRange = .month
@@ -64,8 +68,10 @@ struct StressDetailScreen: View {
                         blockDivider
                         consistencyBlock(model)
                     }
-                    blockDivider
-                    calendarPlaceholderBlock
+                    if let dayMap {
+                        blockDivider
+                        StressDayMapBlock(model: dayMap, theme: theme)
+                    }
                     blockDivider
                     methodDisclosure(model)
                 } else {
@@ -348,41 +354,6 @@ struct StressDetailScreen: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-    }
-
-    // MARK: - 7. Estrés por momento del día — PLACEHOLDER (cruce con calendario, FER-38)
-
-    /// A visible-but-disabled stub for the future calendar cross-reference (stress by time of day, mapped
-    /// against the phone's calendars — on-device EventKit, FER-38). No logic, no permissions, no network
-    /// here: just signposts what's coming, in the same warm language as the rest. (FER-241)
-    private var calendarPlaceholderBlock: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "calendar.badge.clock")
-                .font(.system(size: 24))
-                .foregroundStyle(theme.inkTertiary)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Stress by time of day")
-                    .font(StrandFont.subhead.weight(.medium))
-                    .foregroundStyle(theme.inkSecondary)
-                Text("Coming soon, mapped against your calendar")
-                    .font(StrandFont.footnote)
-                    .foregroundStyle(theme.inkTertiary)
-            }
-            Spacer(minLength: 8)
-            Text("Soon")
-                .font(StrandFont.footnote)
-                .foregroundStyle(theme.inkTertiary)
-                .padding(.horizontal, 9).padding(.vertical, 3)
-                .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
-        }
-        .padding(NoopMetrics.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-            .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
-            .foregroundStyle(theme.hairlineStrong))
-        .opacity(0.9)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text("Stress by time of day, coming soon"))
     }
 
     // MARK: - 8. Ver el método (DisclosureGroup, patrón de las otras pantallas)

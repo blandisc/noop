@@ -57,6 +57,13 @@ final class AppModel: ObservableObject {
     /// "manual"), which then shows in the Workouts view. The day's strain already counts this HR (it's
     /// the same live stream the store persists), so this is a per-session annotation, not a double-count.
     @Published var activeWorkout: ActiveWorkout?
+    /// The guided strength session in progress (FER-347), or nil. Lives here (global) so closing its sheet
+    /// or switching tabs never loses it — the Train hub re-presents it. Saved as a `StrengthSession` + its
+    /// `SetEntry` rows on Finish. Independent of the live HR workout above.
+    @Published var strengthSession: StrengthSessionModel?
+    /// Whether the guided-session sheet is currently shown. False while a session runs but the sheet is
+    /// dismissed (the hub then offers «Resume»). Set true on start/resume, false on swipe-dismiss/finish.
+    @Published var strengthSheetPresented = false
     /// The just-ended workout, for a brief inline confirmation in the Train hub (cleared on the next start).
     @Published var lastWorkout: WorkoutRow?
     /// True when the just-ended session was discarded because no HR ever arrived (<2 samples), so the
@@ -353,6 +360,38 @@ final class AppModel: ObservableObject {
             if let store = await self.repo.storeHandle() {
                 _ = try? await store.upsertWorkouts([row], deviceId: self.deviceId)
                 await self.repo.refresh()
+            }
+        }
+    }
+
+    // MARK: - Guided strength session (FER-347)
+
+    /// Begin a guided strength session from a routine's resolved plan (built by «Rutina de hoy»), and show
+    /// its sheet. A no-op while one is already running, so re-tapping «Empezar» resumes rather than restarts.
+    func startStrengthSession(routineId: String?, routineName: String,
+                              slots: [StrengthSessionModel.PlanSlot]) {
+        guard strengthSession == nil else { strengthSheetPresented = true; return }
+        strengthSession = StrengthSessionModel.make(routineId: routineId, routineName: routineName,
+                                                    slots: slots, startTs: Int(Date().timeIntervalSince1970))
+        strengthSheetPresented = true
+    }
+
+    /// Re-show the sheet for the in-progress session (the hub's «Resume»).
+    func resumeStrengthSession() { if strengthSession != nil { strengthSheetPresented = true } }
+
+    /// Finish the guided session. When `save` is true and at least one set was logged, persist it as a
+    /// `StrengthSession` + its `SetEntry` rows (PRs derive in the store); otherwise just discard.
+    func endStrengthSession(save: Bool) {
+        let session = strengthSession
+        strengthSession = nil
+        strengthSheetPresented = false
+        guard save, let session, session.doneCount > 0 else { return }
+        let (record, sets) = session.buildForSave(deviceId: deviceId,
+                                                  endTs: Int(Date().timeIntervalSince1970))
+        Task { [weak self] in
+            guard let self else { return }
+            if let store = await self.repo.storeHandle() {
+                try? await store.saveSession(record, sets: sets)
             }
         }
     }

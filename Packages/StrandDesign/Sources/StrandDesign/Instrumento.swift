@@ -194,6 +194,13 @@ public extension InstrumentoTheme {
     var paperHi: Color { OKLab.mix(paper, Color(.sRGB, red: 1, green: 1, blue: 1), 0.5) }
     /// Gradient rim — the paper deepening slightly toward its warm rule at the edge.
     var paperLo: Color { OKLab.mix(paper, hairline, 0.5) }
+
+    /// Muted ink for NO-DATA cells — the «—» placeholder and its metric glyph when there's no reading
+    /// (handoff «Hoy · Estados»). A faded warm gray, derived from `inkTertiary` toward the live `paper`
+    /// in OKLab (like `paperHi`/`paperLo`), so it dims with the by-the-hour paper too. INTENTIONALLY
+    /// low-contrast — it signals "nothing here yet", so it is NOT held to the AA text floor (unlike the
+    /// ink roles); never use it for information the user must read.
+    var inkDim: Color { OKLab.mix(inkTertiary, paper, 0.5) }
 }
 
 // MARK: - Environment injection
