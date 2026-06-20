@@ -604,19 +604,7 @@ struct AppleHealthView: View {
         return (lo - span * pad)...(hi + span * pad)
     }
 
-    private static let intFmt: NumberFormatter = {
-        let f = NumberFormatter()
-        f.numberStyle = .decimal
-        f.maximumFractionDigits = 0
-        return f
-    }()
-    private func intString(_ v: Double) -> String {
-        let n = Int(v.rounded())
-        if abs(n) >= 1000 {
-            return Self.intFmt.string(from: NSNumber(value: n)) ?? "\(n)"
-        }
-        return "\(n)"
-    }
+    private func intString(_ v: Double) -> String { StrandFormat.groupedInt(v) }
 
     private func durationString(_ minutes: Double) -> String {
         let total = Int(minutes.rounded())

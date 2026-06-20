@@ -316,6 +316,18 @@ enum StressBand {
     }
 }
 
+extension StressBand {
+    /// The data color for this band on the active theme (low→verdict, medium→warning, high→critical).
+    /// Single source for the stress band→color mapping (FER-326).
+    func dataColor(_ theme: InstrumentoTheme) -> Color {
+        switch self {
+        case .low:    return theme.verdict
+        case .medium: return theme.warning
+        case .high:   return theme.critical
+        }
+    }
+}
+
 // MARK: - Stress model inputs (cache key)
 
 /// An `Equatable` snapshot of everything `StressModel.init` reads, used to decide

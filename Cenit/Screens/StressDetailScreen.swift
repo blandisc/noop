@@ -134,11 +134,7 @@ struct StressDetailScreen: View {
     /// The band color: low → verdict (green), medium → warning (amber), high → critical (red). The hero
     /// numeral is the datum, so it's the one element that carries saturated hue. (DESIGN.md: color in the datum)
     private func bandColor(_ band: StressBand) -> Color {
-        switch band {
-        case .low:    return theme.verdict
-        case .medium: return theme.warning
-        case .high:   return theme.critical
-        }
+        band.dataColor(theme)
     }
 
     /// Sentence-case band word for the hero / legend ("Low" / "Moderate" / "High"). Distinct from
