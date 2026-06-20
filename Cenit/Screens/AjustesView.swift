@@ -400,24 +400,39 @@ private struct AjustesLanding: View {
             .environmentObject(behavior)
             .environmentObject(autoBackup)
             .preferredColorScheme(.light)
-        case .automations, .support:
-            // Still dark (go light in FER-69 / FER-67), presented self-contained pinned to `.dark`.
+        case .support:
+            // Reskinned to light «Instrumento» (FER-67): a light sheet, theme injected at the root
+            // (it doesn't cross the `.sheet` boundary, FER-162); no dark pin needed.
             NavigationStack {
-                Group {
-                    switch screen {
-                    case .automations: AutomationsView()
-                    case .support:     SupportView()
-                    case .dataSources: EmptyView()   // handled above
+                SupportView()
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbarBackground(theme.paper, for: .navigationBar)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") { darkScreen = nil }.foregroundStyle(theme.ink)
+                        }
                     }
-                }
-                .background(StrandPalette.surfaceBase.ignoresSafeArea())
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbarBackground(StrandPalette.surfaceBase, for: .navigationBar)
-                .toolbar {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Done") { darkScreen = nil }.foregroundStyle(StrandPalette.accent)
+            }
+            .instrumentoTheme(theme)
+            .environmentObject(model)
+            .environmentObject(repo)
+            .environmentObject(live)
+            .environmentObject(health)
+            .environmentObject(behavior)
+            .environmentObject(autoBackup)
+            .preferredColorScheme(.light)
+        case .automations:
+            // Still dark (goes light in FER-69), presented self-contained pinned to `.dark`.
+            NavigationStack {
+                AutomationsView()
+                    .background(StrandPalette.surfaceBase.ignoresSafeArea())
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbarBackground(StrandPalette.surfaceBase, for: .navigationBar)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") { darkScreen = nil }.foregroundStyle(StrandPalette.accent)
+                        }
                     }
-                }
             }
             .environmentObject(model)
             .environmentObject(repo)

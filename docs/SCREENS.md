@@ -594,13 +594,15 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 
 ### SupportView
 **Archivo:** `Cenit/Screens/SupportView.swift`  
-**Descripción:** Donaciones + contacto + atribución. Contenido estático.
+**Descripción:** «Acerca de y soporte» en **luz «Instrumento diurno»** (FER-67: fusiona About + Support, antes oscura): identidad + versión + «What's new» + buscar actualizaciones (GitHub, on-demand) + misión + atribución + apoyar (donación cripto: moneda → QR → copiar) + contacto + **un solo** aviso «no afiliado / no es dispositivo médico». Se abre como sheet claro desde Ajustes; en Hoy vía `SupportModalOverlay` (panel claro).
 
 | Estado | Condición de entrada |
 |--------|---------------------|
-| Estático | Siempre |
+| Estático (mayoría) | Siempre |
+| Buscar actualizaciones | idle / checking / al día / disponible / falló |
+| Donación | moneda elegida → QR + copiar |
 
-**Componentes:** `Built On Card (atribución)`, `Donate Card (BTC/ETH + copy)`, `Contact Card (mailto)`, `Disclaimer Card`
+**Componentes (Instrumento):** secciones por espacio (sin card-in-card) — About (versión + `QuietButton` What's new/Check updates + misión) · Built on (atribución) · Support the build (picker de moneda + QR negro-sobre-blanco + copiar) · Contact (`QuietButton` Email) · disclaimer al pie; `SupportModalOverlay` (panel de papel para Hoy)
 
 ---
 

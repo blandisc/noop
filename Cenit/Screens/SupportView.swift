@@ -1,220 +1,214 @@
+#if os(iOS)
 import SwiftUI
 import StrandDesign
+import StrandAnalytics
 
-/// Support — attribution + optional crypto donations. Never a paywall; the whole app works without it.
+// MARK: - «Acerca de y soporte» — FER-67
+//
+// The merged About + Support screen, in the light «Instrumento diurno» language (warm paper, color
+// only on the datum, hierarchy by space — no card-in-card). FER-337 moved the old About card here;
+// FER-67 reskins the whole thing and keeps a single «not affiliated / not a medical device» disclaimer
+// and a single attributions block (no duplication). Identity → version → what's new → check-for-updates
+// → mission → built-on → support the build (crypto donation) → contact → disclaimer. Logic is unchanged
+// (UpdateChecker, donation/QR, contact); only presentation moved to Instrumento.
+
+/// Theme wrapper: drives `\.instrumentoTheme` by the hour, then hands to the content (which reads the
+/// resolved theme from the environment). The theme is also injected explicitly by every sheet caller
+/// (it doesn't cross the `.sheet` boundary — FER-162); the by-hour wrap here keeps it correct when
+/// presented inside an already-themed tree too.
 struct SupportView: View {
-    @State private var copied: String?
-    @State private var selected = "BTC"
-    // About — migrated here from SettingsView.aboutCard for FER-337 (no orphaned content when the old
-    // Settings screen goes away). FER-67 fully merges About + Support into one light «Instrumento» screen.
-    @State private var showWhatsNew = false
-    @StateObject private var updateChecker = UpdateChecker()
+    var body: some View {
+        SupportContent().instrumentoThemeByHour(solar: Self.solarWindow())
+    }
+
+    private static func solarWindow() -> SolarWindow? {
+        guard let w = SolarClock.sunWindow(on: Date(), in: .current) else { return nil }
+        return SolarWindow(sunrise: w.sunrise, sunset: w.sunset)
+    }
+}
+
+private struct SupportContent: View {
+    @Environment(\.instrumentoTheme) private var theme
     @Environment(\.openURL) private var openURL
 
+    @State private var copied: String?
+    @State private var selected = "BTC"
+    @State private var showWhatsNew = false
+    @StateObject private var updateChecker = UpdateChecker()
+
     var body: some View {
-        ScreenScaffold(title: "About & support",
-                       subtitle: "\(ProjectInfo.appName) — all your data, none of the cloud. Free and always will be; chipping in is optional.") {
-            aboutCard
-            builtOnCard
-            donateCard
-            contactCard
-            disclaimerCard
+        ScrollView {
+            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("About & support").font(StrandFont.title1).foregroundStyle(theme.ink)
+                    Text("\(ProjectInfo.appName) — all your data, none of the cloud. Free and always will be; chipping in is optional.")
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.bottom, -8)
+
+                aboutSection
+                divider
+                builtOnSection
+                divider
+                donateSection
+                divider
+                contactSection
+
+                disclaimer
+            }
+            .padding(.top, 20)
+            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.bottom, NoopMetrics.screenPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .background(theme.paper.ignoresSafeArea())
         .sheet(isPresented: $showWhatsNew) {
             WhatsNewView(onClose: { showWhatsNew = false })
         }
     }
 
-    /// Identity + version + "What's New" + on-demand GitHub update check + the project's mission. The
-    /// "not affiliated" / "not a medical device" disclaimer and the attributions already live in
-    /// `disclaimerCard` / `builtOnCard` below, so they are not repeated here.
-    private var aboutCard: some View {
-        StrandCard(padding: 20) {
-            VStack(alignment: .leading, spacing: 16) {
-                HStack(spacing: 10) {
-                    Text(ProjectInfo.appName).font(StrandFont.title2).foregroundStyle(StrandPalette.textPrimary)
-                    StatePill("v\(AppChangelog.currentVersion)", tone: .neutral, showsDot: false)
-                    Spacer()
-                    Button { showWhatsNew = true } label: {
-                        Label("What's new", systemImage: "sparkles").padding(.horizontal, 4)
-                    }
-                    .buttonStyle(.bordered).tint(StrandPalette.accent)
-                }
+    private var divider: some View { Divider().overlay(theme.hairline) }
 
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 10) {
-                        Button {
-                            updateChecker.check(currentVersion: AppChangelog.currentVersion)
-                        } label: {
-                            if updateChecker.state == .checking {
-                                HStack(spacing: 6) { ProgressView().controlSize(.small); Text("Checking…") }
-                            } else {
-                                Label("Check for updates", systemImage: "arrow.triangle.2.circlepath").padding(.horizontal, 4)
-                            }
-                        }
-                        .buttonStyle(.bordered).disabled(updateChecker.state == .checking)
+    // MARK: - About (identity + version + what's new + update check + mission)
 
-                        if case .upToDate(let v) = updateChecker.state {
-                            Text("You're on the latest (\(v)).")
-                                .font(StrandFont.footnote).foregroundStyle(StrandPalette.textSecondary)
-                        } else if case .failed = updateChecker.state {
-                            Text("Couldn't check. Try again.")
-                                .font(StrandFont.footnote).foregroundStyle(StrandPalette.statusWarning)
-                        }
-                        Spacer()
-                    }
-
-                    if case .available(let v, let url, let notes) = updateChecker.state {
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Text("Version \(v) is available")
-                                    .font(StrandFont.subhead).foregroundStyle(StrandPalette.textPrimary)
-                                Spacer()
-                                Button { openURL(url) } label: {
-                                    Label("Download", systemImage: "arrow.down.circle.fill").padding(.horizontal, 4)
-                                }
-                                .buttonStyle(.borderedProminent).tint(StrandPalette.accent)
-                            }
-                            if !notes.isEmpty {
-                                ScrollView {
-                                    Text(notes).font(StrandFont.footnote).foregroundStyle(StrandPalette.textSecondary)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                }
-                                .frame(maxHeight: 150)
-                            }
-                        }
-                        .padding(12).frame(maxWidth: .infinity, alignment: .leading)
-                        .background(StrandPalette.surfaceInset, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .stroke(StrandPalette.accent.opacity(0.3), lineWidth: 1))
-                    }
-
-                    Text("Checks GitHub for the latest version when you tap — nothing else is sent.")
-                        .font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
-                }
-
-                Text("A standalone companion for your WHOOP. Everything stays on this device — your history, your live stream, your numbers. Nothing is uploaded. \(ProjectInfo.appName) is an independent, experimental project, not the WHOOP app.")
-                    .font(StrandFont.subhead).foregroundStyle(StrandPalette.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+    private var aboutSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 10) {
+                Text(ProjectInfo.appName).font(StrandFont.title2).foregroundStyle(theme.ink)
+                Text("v\(AppChangelog.currentVersion)")
+                    .font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
+                    .padding(.horizontal, 9).padding(.vertical, 3)
+                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                Spacer()
+                QuietButton("What's new") { showWhatsNew = true }
             }
-        }
-    }
 
-    private var contactCard: some View {
-        StrandCard(padding: 20) {
-            HStack(spacing: 12) {
-                Image(systemName: "envelope.fill").foregroundStyle(StrandPalette.accent).accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Get in touch").font(StrandFont.headline).foregroundStyle(StrandPalette.textPrimary)
-                    Text("Questions, feedback, bugs — \(ProjectInfo.contactEmail)")
-                        .font(StrandFont.subhead).foregroundStyle(StrandPalette.textSecondary)
-                }
-                Spacer(minLength: 8)
-                Button {
-                    if let url = URL(string: "mailto:\(ProjectInfo.contactEmail)") { PlatformOpen.url(url) }
-                } label: { Label("Email", systemImage: "paperplane.fill") }
-                .buttonStyle(.bordered).tint(StrandPalette.accent)
-                .help("Email \(ProjectInfo.contactEmail)")
-            }
-        }
-    }
-
-    private var builtOnCard: some View {
-        StrandCard(padding: 20) {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 10) {
-                    Image(systemName: "hands.clap.fill").foregroundStyle(StrandPalette.accent).accessibilityHidden(true)
-                    Text("Built on").font(StrandFont.headline).foregroundStyle(StrandPalette.textPrimary)
-                }
-                Text("This stands on community reverse-engineering. Huge thanks:")
-                    .font(StrandFont.subhead).foregroundStyle(StrandPalette.textSecondary)
-                ForEach(ProjectInfo.attributions, id: \.repo) { a in
-                    HStack(spacing: 8) {
-                        Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold))
-                            .foregroundStyle(StrandPalette.accent).accessibilityHidden(true)
-                        Text(a.repo).font(StrandFont.mono(12)).foregroundStyle(StrandPalette.textPrimary)
-                        Text("· \(a.note)").font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
+                    QuietButton(updateChecker.state == .checking ? "Checking…" : "Check for updates") {
+                        updateChecker.check(currentVersion: AppChangelog.currentVersion)
                     }
-                }
-            }
-        }
-    }
-
-    private var donateCard: some View {
-        StrandCard(padding: 20) {
-            VStack(alignment: .leading, spacing: 16) {
-                HStack(spacing: 10) {
-                    Image(systemName: "heart.fill").foregroundStyle(StrandPalette.metricRose).accessibilityHidden(true)
-                    Text("Support the build").font(StrandFont.headline).foregroundStyle(StrandPalette.textPrimary)
-                    Spacer()
-                }
-                Text("Cénit is free and always will be, nothing is locked. It cost real money and a lot of unpaid hours to build, and there's a Windows app and an iOS app I want to ship next. If it's useful to you and you want to help with the development and testing costs, even a few quid in crypto genuinely keeps it moving, and honestly it keeps me motivated to keep building.")
-                    .font(StrandFont.subhead).foregroundStyle(StrandPalette.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                HStack(alignment: .top, spacing: 10) {
-                    Image(systemName: "lock.shield.fill").foregroundStyle(StrandPalette.accent)
-                        .font(.system(size: 13)).accessibilityHidden(true)
-                    Text("I keep this project anonymous, so crypto is the only way to chip in — no Patreon, no PayPal, no name attached. Quick, global, and private for both of us.")
-                        .font(StrandFont.footnote).foregroundStyle(StrandPalette.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .padding(12).frame(maxWidth: .infinity, alignment: .leading)
-                .background(StrandPalette.surfaceInset, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-
-                // Pick a coin → scan the QR or copy the address.
-                HStack(spacing: 8) {
-                    ForEach(ProjectInfo.donations) { coin in
-                        let on = selected == coin.symbol
-                        Button { withAnimation(.easeOut(duration: 0.15)) { selected = coin.symbol } } label: {
-                            Text(coin.symbol).font(.system(size: 12, weight: .bold))
-                                .padding(.horizontal, 14).padding(.vertical, 7)
-                                .background(Capsule().fill(on ? StrandPalette.accent : StrandPalette.surfaceInset))
-                                .foregroundStyle(on ? StrandPalette.surfaceBase : StrandPalette.textSecondary)
-                                .overlay(Capsule().strokeBorder(on ? Color.clear : StrandPalette.hairline, lineWidth: 1))
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Show \(coin.name) donation address")
+                    if case .upToDate(let v) = updateChecker.state {
+                        Text("You're on the latest (\(v)).")
+                            .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                    } else if case .failed = updateChecker.state {
+                        Text("Couldn't check. Try again.")
+                            .font(StrandFont.footnote).foregroundStyle(theme.warning)
                     }
                     Spacer(minLength: 0)
                 }
 
-                if let coin = ProjectInfo.donations.first(where: { $0.symbol == selected }) {
-                    HStack(alignment: .top, spacing: 16) {
-                        qrView(coin.address)
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Scan with any \(coin.name) wallet")
-                                .font(StrandFont.subhead).foregroundStyle(StrandPalette.textPrimary)
-                            Text(coin.address)
-                                .font(StrandFont.mono(11)).foregroundStyle(StrandPalette.textSecondary)
-                                .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
-                            Button {
-                                PlatformPasteboard.copy(coin.address)
-                                withAnimation { copied = coin.symbol }
-                            } label: {
-                                Label(copied == coin.symbol ? "Copied!" : "Copy address",
-                                      systemImage: copied == coin.symbol ? "checkmark" : "doc.on.doc")
-                            }
-                            .buttonStyle(.bordered).tint(StrandPalette.accent)
-                            .accessibilityLabel("Copy \(coin.name) address")
+                if case .available(let v, let url, let notes) = updateChecker.state {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Version \(v) is available")
+                                .font(StrandFont.subhead).foregroundStyle(theme.ink)
+                            Spacer()
+                            QuietButton("Download") { openURL(url) }
                         }
-                        Spacer(minLength: 0)
+                        if !notes.isEmpty {
+                            ScrollView {
+                                Text(notes).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .frame(maxHeight: 150)
+                        }
                     }
+                    .padding(12).frame(maxWidth: .infinity, alignment: .leading)
+                    .background(theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
                 }
 
-                Text("Any amount helps. Thank you — genuinely.")
-                    .font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
+                Text("Checks GitHub for the latest version when you tap — nothing else is sent.")
+                    .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            }
+
+            Text("A standalone companion for your WHOOP. Everything stays on this device — your history, your live stream, your numbers. Nothing is uploaded. \(ProjectInfo.appName) is an independent, experimental project, not the WHOOP app.")
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    // MARK: - Built on (attributions)
+
+    private var builtOnSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Built on").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("This stands on community reverse-engineering. Huge thanks:")
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            ForEach(ProjectInfo.attributions, id: \.repo) { a in
+                HStack(spacing: 8) {
+                    Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(theme.inkTertiary).accessibilityHidden(true)
+                    Text(a.repo).font(StrandFont.mono(12)).foregroundStyle(theme.ink)
+                    Text("· \(a.note)").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                }
             }
         }
     }
 
-    /// Black-on-white QR so wallet cameras read it cleanly against the dark UI.
+    // MARK: - Support the build (crypto donation)
+
+    private var donateSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Support the build").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("Cénit is free and always will be, nothing is locked. It cost real money and a lot of unpaid hours to build, and there's a Windows app and an iOS app I want to ship next. If it's useful to you and you want to help with the development and testing costs, even a few quid in crypto genuinely keeps it moving, and honestly it keeps me motivated to keep building.")
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text("I keep this project anonymous, so crypto is the only way to chip in — no Patreon, no PayPal, no name attached. Quick, global, and private for both of us.")
+                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            // Pick a coin → scan the QR or copy the address.
+            HStack(spacing: 8) {
+                ForEach(ProjectInfo.donations) { coin in
+                    let on = selected == coin.symbol
+                    Button { withAnimation(.easeOut(duration: 0.15)) { selected = coin.symbol } } label: {
+                        Text(coin.symbol).font(.system(size: 12, weight: .bold))
+                            .padding(.horizontal, 14).padding(.vertical, 7)
+                            .background(Capsule().fill(on ? theme.ink : Color.clear))
+                            .foregroundStyle(on ? theme.paper : theme.inkSecondary)
+                            .overlay(Capsule().strokeBorder(on ? Color.clear : theme.hairlineStrong, lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Show \(coin.name) donation address")
+                }
+                Spacer(minLength: 0)
+            }
+
+            if let coin = ProjectInfo.donations.first(where: { $0.symbol == selected }) {
+                HStack(alignment: .top, spacing: 16) {
+                    qrView(coin.address)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Scan with any \(coin.name) wallet")
+                            .font(StrandFont.subhead).foregroundStyle(theme.ink)
+                        Text(coin.address)
+                            .font(StrandFont.mono(11)).foregroundStyle(theme.inkSecondary)
+                            .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+                        QuietButton(copied == coin.symbol ? "Copied!" : "Copy address") {
+                            PlatformPasteboard.copy(coin.address)
+                            withAnimation { copied = coin.symbol }
+                        }
+                        .accessibilityLabel("Copy \(coin.name) address")
+                    }
+                    Spacer(minLength: 0)
+                }
+            }
+
+            Text("Any amount helps. Thank you — genuinely.")
+                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+        }
+    }
+
+    /// Black-on-white QR so wallet cameras read it cleanly regardless of the page color.
     private func qrView(_ address: String) -> some View {
         Group {
             if let img = QRCode.image(for: address) {
                 Image(platformImage: img).resizable().interpolation(.none)
             } else {
-                RoundedRectangle(cornerRadius: 8, style: .continuous).fill(StrandPalette.surfaceInset)
+                RoundedRectangle(cornerRadius: 8, style: .continuous).fill(theme.surface)
             }
         }
         .frame(width: 150, height: 150)
@@ -223,54 +217,65 @@ struct SupportView: View {
         .accessibilityLabel("Donation QR code")
     }
 
-    private var disclaimerCard: some View {
-        StrandCard(padding: 18) {
-            HStack(alignment: .top, spacing: 10) {
-                Image(systemName: "info.circle.fill").foregroundStyle(StrandPalette.textTertiary)
-                    .font(.system(size: 13)).accessibilityHidden(true)
-                Text("Not affiliated with, endorsed by, or connected to WHOOP. Interoperability software for hardware you own and your own data. Use it only with a device you own, and not in breach of any agreement that applies to you. Not a medical device.")
-                    .font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
+    // MARK: - Contact
+
+    private var contactSection: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Get in touch").font(StrandFont.headline).foregroundStyle(theme.ink)
+                Text("Questions, feedback, bugs — \(ProjectInfo.contactEmail)")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 8)
+            QuietButton("Email") {
+                if let url = URL(string: "mailto:\(ProjectInfo.contactEmail)") { PlatformOpen.url(url) }
             }
         }
     }
+
+    // MARK: - Disclaimer (single, quiet, at the foot)
+
+    private var disclaimer: some View {
+        Text("Not affiliated with, endorsed by, or connected to WHOOP. Interoperability software for hardware you own and your own data. Use it only with a device you own, and not in breach of any agreement that applies to you. Not a medical device.")
+            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.top, 4)
+    }
 }
 
-/// Hosts ``SupportView`` as a centred panel over a dimmed backdrop. Clicking anywhere
-/// outside the panel — or pressing Esc, or the ✕ — closes it. Taps on the panel itself
-/// are absorbed (the panel is opaque) so its controls keep working.
+/// Hosts ``SupportView`` as a centred panel over a dimmed backdrop (used by Today). Light «Instrumento»
+/// paper panel; tap outside or the ✕ closes it. Taps on the panel are absorbed so its controls work.
 struct SupportModalOverlay: View {
     @Binding var isPresented: Bool
+    private let theme = InstrumentoTheme.base
 
     var body: some View {
         ZStack {
             Rectangle()
-                .fill(Color.black.opacity(0.45))
+                .fill(Color.black.opacity(0.35))
                 .ignoresSafeArea()
                 .contentShape(Rectangle())
                 .onTapGesture { isPresented = false }
 
             SupportView()
                 .frame(width: 560, height: 680)
-                .background(StrandPalette.surfaceBase,
-                            in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .strokeBorder(StrandPalette.hairline, lineWidth: 1)
-                )
+                .background(theme.paper, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .strokeBorder(theme.hairline, lineWidth: 1))
                 .overlay(alignment: .topTrailing) {
                     Button { isPresented = false } label: {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 20))
-                            .foregroundStyle(StrandPalette.textTertiary)
+                            .foregroundStyle(theme.inkTertiary)
                             .padding(12)
                     }
                     .buttonStyle(.plain)
-                    .help("Close")
-                    .accessibilityLabel("Close Support")
+                    .accessibilityLabel("Close")
                 }
-                .shadow(color: Color.black.opacity(0.5), radius: 30, x: 0, y: 14)
+                .shadow(color: Color.black.opacity(0.25), radius: 30, x: 0, y: 14)
         }
         .transition(.opacity)
     }
 }
+#endif

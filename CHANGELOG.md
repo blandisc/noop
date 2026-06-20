@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **«Acerca de y soporte» en papel cálido (y una sola pantalla) / "About & support" on warm paper (and a single screen).**
+  **ES** — La pantalla de Acerca de y soporte —versión, novedades, buscar actualizaciones, la misión del proyecto, atribuciones, apoyar con cripto y contacto— pasó del tema oscuro a la luz «Instrumento diurno», con un solo aviso de «no afiliado / no es dispositivo médico» (antes se repetía). Las mismas funciones; ahora combina con el resto de la app.
+  **EN** — The About & support screen —version, what's new, check for updates, the project's mission, attributions, crypto support and contact— moved from the dark theme to the light «Instrumento diurno» language, with a single "not affiliated / not a medical device" notice (it used to be duplicated). Same features; now it matches the rest of the app.
+  ([Cenit/Screens/SupportView.swift](Cenit/Screens/SupportView.swift))
 - **Pregúntale aprende a hablar inglés / Ask your data learns to speak English.**
   **ES** — El copy de **«Pregúntale a tus datos»** —las preguntas sugeridas, la línea con la que abre, las respuestas del Modo esencial y el «¿y si…?»— estaba escrito directo en español y nunca pasaba por el catálogo: invisible para ti, pero un usuario en inglés lo veía en español. Ahora tiene fuente en inglés con **tu español preservado palabra por palabra**, así que Pregúntale funciona en ambos idiomas. El clasificador que entiende tus preguntas en español por dentro **no cambió** (sigue siendo el mismo, y el modelo nunca inventa una cifra tuya).
   **EN** — The **"Ask your data"** copy — the suggested questions, its opening line, the essential-mode answers and the "what if…?" — was written straight in Spanish and never went through the catalog: invisible to you, but English users saw it in Spanish. It now has an **English source with your Spanish preserved word for word**, so Ask works in both languages. The Spanish keyword classifier under the hood is **unchanged** (and the model still never invents one of your figures).

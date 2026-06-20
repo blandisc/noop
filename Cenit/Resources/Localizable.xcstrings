@@ -26124,6 +26124,23 @@
           }
         }
       }
+    },
+    "A standalone companion for your WHOOP. Everything stays on this device — your history, your live stream, your numbers. Nothing is uploaded. %@ is an independent, experimental project, not the WHOOP app.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A standalone companion for your WHOOP. Everything stays on this device — your history, your live stream, your numbers. Nothing is uploaded. %@ is an independent, experimental project, not the WHOOP app."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un compañero independiente para tu WHOOP. Todo se queda en este dispositivo — tu historial, tu transmisión en vivo, tus números. Nada se sube. %@ es un proyecto independiente y experimental, no la app de WHOOP."
+          }
+        }
+      }
     }
   },
   "version": "1.1"
