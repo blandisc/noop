@@ -29439,6 +29439,74 @@
           }
         }
       }
+    },
+    "Conecta Apple Health para empezar. Tu banda WHOOP afina la lectura.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect Apple Health to start. Your WHOOP strap sharpens the reading."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conecta Apple Health para empezar. Tu banda WHOOP afina la lectura."
+          }
+        }
+      }
+    },
+    "la base de tus datos": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "the base of your data"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "la base de tus datos"
+          }
+        }
+      }
+    },
+    "Emparejar banda WHOOP": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pair WHOOP strap"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Emparejar banda WHOOP"
+          }
+        }
+      }
+    },
+    "afina la señal · opcional": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sharpens the signal · optional"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "afina la señal · opcional"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
