@@ -370,7 +370,8 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 
 | Estado | Condición de entrada |
 |--------|---------------------|
-| Arranque en frío | Sin veredicto aún (`ReadinessEngine.insufficient`) → «Aún reuniendo señal · X de 14 noches»; solo se muestra «Pregúntale» |
+| Arranque en frío | Historial propio < 14 noches usables (`usableNights < calibrationTarget`) → «Aún reuniendo señal · X de 14 noches» (contador topado a 14, «Faltan N noches…»); solo se muestra «Pregúntale» |
+| Esperando la lectura de hoy | Ya hay ≥14 noches pero aún no llega la lectura de hoy (medianoche → sync de la mañana; `ReadinessEngine.insufficient`) → el héroe «Esperando la lectura de hoy» (+ veredicto de ayer como contexto) reemplaza a la Decisión, pero **palancas, hallazgos y efectos siguen visibles** (FER-340) |
 | Con datos | Veredicto + palancas + hallazgos + registro + efectos |
 | Sin hallazgos | Hay datos pero el motor no encontró hallazgos → «Todo en orden, sin hallazgos nuevos» |
 
