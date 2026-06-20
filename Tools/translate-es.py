@@ -18,6 +18,9 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
+    # FER-312 — Pregúntale (Coach): los 2 strings que faltaban en es (setup + footnote de privacidad)
+    'Coach uses your own API key. Pick a provider, paste a key, and choose a model. Your key is stored securely in the device Keychain and never leaves your phone except as the request you make.': 'Coach usa tu propia clave de API. Elige un proveedor, pega una clave y escoge un modelo. Tu clave se guarda de forma segura en el Llavero de tu teléfono y nunca sale de él salvo como la petición que tú haces.',
+    'This is the only feature that leaves your phone — it sends a summary of your metrics to %@ using your own key. Nothing is sent until you ask.': 'Esta es la única función que sale de tu teléfono — manda un resumen de tus métricas a %@ usando tu propia clave. No se envía nada hasta que preguntas.',
     # FER-299 — Honestidad estadística de Insights: framing de asociación + autocorrelación
     'Association, not cause — these signals move together; neither makes the other happen.': 'Asociación, no causa — estas señales se mueven juntas; ninguna hace que ocurra la otra.',
     'Association, not cause. ‘Significant’ accounts for testing every behaviour at once.': 'Asociación, no causa. ‘Significativo’ ya considera que se prueban todos los comportamientos a la vez.',

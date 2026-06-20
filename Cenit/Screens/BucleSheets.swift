@@ -421,20 +421,26 @@ enum BucleFormat {
         }
     }
 
+    /// The behavior's es-MX display label. Prefers the structured `lever.behavior` (FER-307); falls
+    /// back to parsing the engine's title template. The raw behavior is the journal QUESTION (data) →
+    /// mapped to a short Spanish label via `JournalCatalogStore.esLabel` (FER-312).
     static func behaviorName(_ insight: Insight) -> String {
+        if let raw = insight.lever?.behavior, !raw.isEmpty {
+            return JournalCatalogStore.esLabel(for: raw)
+        }
         let parts = insight.title.components(separatedBy: "‘")
         if parts.count > 1 {
             let after = parts[1].components(separatedBy: "’")
             if let name = after.first, !name.isEmpty {
-                return String(name.prefix(1)).uppercased() + name.dropFirst()
+                return JournalCatalogStore.esLabel(for: name)
             }
         }
         return insight.title
     }
 
-    /// A shorter chip label for a long journal question ("Did you drink any alcohol?" → the question
-    /// verbatim is data; we only trim a trailing "?"-style sentence for display, keeping the key intact).
-    static func shortLabel(_ question: String) -> String { question }
+    /// The es-MX display label for a journal question; the question string itself (the engine's join
+    /// key) is never changed (FER-312).
+    static func shortLabel(_ question: String) -> String { JournalCatalogStore.esLabel(for: question) }
 
     static func isGood(_ insight: Insight) -> Bool {
         let higherBetter = insight.datum.metric != "FC en reposo"
@@ -475,6 +481,19 @@ enum BucleFormat {
         case ..<0.5:  return "chico"
         case ..<0.8:  return "moderado"
         default:      return "grande"
+        }
+    }
+
+    /// The es-MX verdict phrase for a readiness level — the «Decisión de hoy» hero word. Shared by the
+    /// Bucle hero and its explainer. nil (no read yet) reads as «Día parejo.»; the hero never shows it.
+    static func verdictWord(_ level: ReadinessEngine.Level?) -> String {
+        switch level {
+        case .primed:       return "Empuja hoy."
+        case .balanced:     return "Día parejo."
+        case .strained:     return "Ve con calma."
+        case .rundown:      return "Hoy toca descansar."
+        case .insufficient: return "Aún calibrando."
+        case nil:           return "Día parejo."
         }
     }
 
@@ -599,5 +618,160 @@ struct StartExperimentSheet: View {
         let f = DateFormatter(); f.locale = Locale(identifier: "es_MX"); f.dateFormat = "EEE d MMM"
         return f
     }()
+}
+
+// MARK: - Info explainer (On-device pill + the ⓘ on each section)
+
+/// One friendly es-MX explainer the Bucle opens — for the «On-device» pill and the ⓘ on each
+/// section. A glyph, a title and a body, in «Instrumento» (FER-312).
+struct BucleInfo: Identifiable {
+    let id: String
+    let systemImage: String
+    let title: LocalizedStringKey
+    let body: LocalizedStringKey
+
+    static let onDevice = BucleInfo(
+        id: "on-device", systemImage: "cpu", title: "Todo en tu teléfono",
+        body: "Cénit calcula tu recuperación, tus hallazgos y tus palancas aquí, en tu iPhone — sin nube, sin cuenta, sin servidor.\n\nLo único que sale a internet es «Pregúntale a tus datos», y solo si conectas tu propia clave de IA.")
+
+    static let loQueFunciona = BucleInfo(
+        id: "lo-que-funciona", systemImage: "flask", title: "Lo que funciona en ti",
+        body: "Comparamos tus días con y sin cada hábito que anotas. Si la diferencia es real en tus números, aparece aquí como una palanca.\n\nSon candidatos hasta que un experimento los pruebe. Todo se calcula en tu teléfono.")
+
+    static let hallazgos = BucleInfo(
+        id: "hallazgos", systemImage: "dot.radiowaves.left.and.right", title: "Hallazgos",
+        body: "Tu teléfono revisa tus noches y te avisa de tres cosas: lo que se sale de lo normal (una anomalía), lo que viene en tendencia (subiendo o bajando), y qué métricas se mueven juntas.\n\nTodo a partir de tus propios datos.")
+
+    static let efectos = BucleInfo(
+        id: "efectos", systemImage: "chart.bar", title: "Efectos de tus hábitos",
+        body: "Aquí exploras todo tu historial: elige una métrica (recuperación, HRV, sueño, FC en reposo) y mira cómo cada hábito que anotas la mueve, en promedio.\n\nEs la versión a fondo de «Lo que funciona en ti». Asociaciones, no causa.")
+}
+
+struct BucleInfoSheet: View {
+    let info: BucleInfo
+    let theme: InstrumentoTheme
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                Image(systemName: info.systemImage)
+                    .font(.system(size: 26)).foregroundStyle(theme.inkTertiary)
+                Text(info.title)
+                    .font(StrandFont.title2).foregroundStyle(theme.ink)
+                    .padding(.top, 12)
+                Text(info.body)
+                    .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 10)
+            }
+            .padding(NoopMetrics.screenPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(theme.paper.ignoresSafeArea())
+        .presentationDetents([.medium])
+    }
+}
+
+// MARK: - Decisión de hoy explainer (what to do + why)
+
+/// Opens on tapping the «Decisión de hoy» hero (FER-312). Leads with the DECISION (the verdict + what
+/// to do today), then the why — the recovery datum, the engine's summary, and the signals behind it.
+/// Reads from the `ReadinessEngine.Readiness` the Bucle already computed; no recompute.
+struct DecisionExplainerSheet: View {
+    let readiness: ReadinessEngine.Readiness
+    let recovery: Double?
+    let theme: InstrumentoTheme
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Decisión de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text(verdictWord)
+                        .font(.system(size: 30, weight: .semibold)).foregroundStyle(theme.ink)
+                        .padding(.top, 8)
+                }
+
+                block("Qué hacer hoy", whatToDo)
+
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("Por qué").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    whyText.padding(.top, 5)
+                }
+
+                if !readiness.signals.isEmpty {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(Array(readiness.signals.enumerated()), id: \.offset) { _, s in
+                            signalRow(s)
+                        }
+                    }
+                }
+            }
+            .padding(NoopMetrics.screenPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(theme.paper.ignoresSafeArea())
+    }
+
+    private func block(_ label: LocalizedStringKey, _ text: String) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(text).font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    @ViewBuilder private var whyText: some View {
+        if let rec = recovery {
+            (Text("Tu recuperación amaneció en ")
+                + Text("\(Int(rec.rounded()))%").foregroundColor(theme.dataRecovery).bold()
+                + Text(". \(readiness.summary)"))
+                .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        } else {
+            Text(readiness.summary).font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func signalRow(_ s: ReadinessEngine.Signal) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Circle().fill(flagColor(s.flag)).frame(width: 7, height: 7).padding(.top, 6)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(s.label).font(StrandFont.subhead).foregroundStyle(theme.ink)
+                Text(s.detail).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 9)
+        .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
+    }
+
+    private func flagColor(_ flag: ReadinessEngine.Flag) -> Color {
+        switch flag {
+        case .good:    return theme.dataRecovery
+        case .neutral: return theme.inkTertiary
+        case .watch:   return theme.warning
+        case .bad:     return theme.critical
+        }
+    }
+
+    private var verdictWord: String { BucleFormat.verdictWord(readiness.level) }
+
+    private var whatToDo: String {
+        switch readiness.level {
+        case .primed:
+            return "Tu cuerpo aguanta carga. Buen día para entrenar fuerte o sumar intensidad si tu plan lo pide."
+        case .balanced:
+            return "Vienes estable. Mantén tu plan sin forzar; ni te frenes ni te exijas de más."
+        case .strained:
+            return "Una o más de tus señales amanecieron bajas. Baja la intensidad, prioriza descanso y deja el día fuerte para cuando vengas recuperado."
+        case .rundown:
+            return "Varias señales están abajo. Descansa o haz algo muy suave hoy; tu cuerpo lo necesita."
+        case .insufficient:
+            return "Aún reuniendo noches para leer tu día. Sigue usando tu banda y en unos días verás tu decisión."
+        }
+    }
 }
 #endif

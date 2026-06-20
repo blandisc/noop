@@ -42,4 +42,25 @@ final class JournalCatalogStore: ObservableObject {
         }
         return out
     }
+
+    /// A short es-MX display label for a known starter behaviour. The journal QUESTION itself is data
+    /// (the engine's join key, never localised — see `starterQuestions`), so the Spanish copy lives
+    /// here as a display-only mapping (FER-312). Unknown questions (custom / imported) fall back to
+    /// the verbatim string.
+    nonisolated static func esLabel(for question: String) -> String {
+        Self.esLabels[question] ?? question
+    }
+
+    private nonisolated static let esLabels: [String: String] = [
+        "Did you drink any alcohol?": "Alcohol",
+        "Did you have caffeine late in the day?": "Cafeína tarde",
+        "Did you view a screen in bed?": "Pantalla en cama",
+        "Did you eat close to bedtime?": "Cena tardía",
+        "Did you feel stressed?": "Estrés",
+        "Did you use a sauna?": "Sauna",
+        "Did you share your bed?": "Compartí cama",
+        "Did you feel sick or ill?": "Me sentí mal",
+        "Did you take magnesium?": "Magnesio",
+        "Did you read before bed?": "Leí antes de dormir",
+    ]
 }
