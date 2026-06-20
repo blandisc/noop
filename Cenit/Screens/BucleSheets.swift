@@ -239,10 +239,11 @@ struct EfectosExplorerSheet: View {
 
     @State private var metric: String = "Recuperación"
 
-    /// Outcome metrics present, in the engine's canonical order.
+    /// Outcome metrics present, in the engine's canonical order (`InsightEngine.Outcome.allCases`,
+    /// FER-353) so this list can't drift from the typed source.
     private var metrics: [String] {
         let present = Set(behaviors.map { $0.datum.metric })
-        return ["Recuperación", "HRV", "Sueño", "FC en reposo"].filter { present.contains($0) }
+        return InsightEngine.Outcome.allCases.map(\.label).filter { present.contains($0) }
     }
 
     private var rows: [Insight] {
