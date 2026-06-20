@@ -204,6 +204,25 @@ extension WhoopStore {
         }
     }
 
+    /// Every completed *work* set since `sinceTs` (epoch seconds) with its exercise id and the session's
+    /// start time, newest first — one JOIN (`setEntry` × `strengthSession`), not a query per session.
+    /// The raw material for the muscle-fatigue map (FER-350), which counts involvement-weighted *series*
+    /// per muscle, so weight/reps are NOT required (a bodyweight pull-up set still loads the lats).
+    public func workSetsSince(_ sinceTs: Int, limit: Int = 5000) async throws
+        -> [(exerciseId: String, startTs: Int)] {
+        try syncRead { db in
+            try Row.fetchAll(db, sql: """
+                SELECT e.exerciseId AS exerciseId, s.startTs AS startTs
+                FROM setEntry e JOIN strengthSession s ON e.sessionId = s.id
+                WHERE e.kind = 'work' AND e.done = 1 AND s.startTs >= ?
+                ORDER BY s.startTs DESC
+                LIMIT ?
+                """, arguments: [sinceTs, limit]).map {
+                    (exerciseId: $0["exerciseId"], startTs: $0["startTs"])
+                }
+        }
+    }
+
     public func personalRecords(exerciseId: String) async throws -> [PersonalRecord] {
         try syncRead { db in
             try Row.fetchAll(db, sql: "SELECT * FROM personalRecord WHERE exerciseId = ?",

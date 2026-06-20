@@ -145,6 +145,10 @@ private struct CuerpoLanding: View {
     @State private var fitnessAge: FitnessAgeSnapshot? = nil
     /// Drives the Fitness Age detail sheet (the light «Instrumento» sheet for «Edad física»).
     @State private var showFitnessAge = false
+    /// Light «Instrumento» Mapa muscular (FER-350) — front/back silhouettes tinted by per-muscle training
+    /// load, crossed with systemic recovery. Theme passed explicitly (it doesn't cross the `.sheet`
+    /// boundary, FER-162); the per-muscle detail rides a nested sheet, NO NavigationStack (FER-171).
+    @State private var showMuscleMap = false
 
     private static let recoverySeed = Baselines.minNightsSeed
 
@@ -154,6 +158,7 @@ private struct CuerpoLanding: View {
                 titleBlock
                 recoveryHero
                 restLoadCard
+                muscleMapCard
                 vitalsCard
                 activityCard
                 longevityCard
@@ -193,6 +198,15 @@ private struct CuerpoLanding: View {
             // Light «Instrumento» Detalle de Recuperación — theme passed explicitly (it doesn't propagate
             // through `.sheet`), NO nested NavigationStack (FER-171). (FER-225)
             RecoveryDetailScreen(theme: theme, model: item.model)
+        }
+        .sheet(isPresented: $showMuscleMap) {
+            // Light «Instrumento» Mapa muscular (FER-350) — theme injected at the root (it doesn't cross
+            // the `.sheet` boundary, FER-162) and `repo` re-supplied (a sheet starts a fresh environment).
+            // NO nested NavigationStack (FER-171); the per-muscle detail rides its own nested sheet.
+            MuscleMapScreen(theme: theme)
+                .instrumentoTheme(theme)
+                .environmentObject(repo)
+                .preferredColorScheme(.light)
         }
         .sheet(item: $darkSheet) { sheet in darkSheetContent(sheet) }
         .sheet(isPresented: $showCompare) {
@@ -379,6 +393,34 @@ private struct CuerpoLanding: View {
                 stressStat
             }
         }
+    }
+
+    /// Muscle map (FER-350) — a navigational card into the front/back fatigue map. The whole card is the
+    /// tap target (it opens a screen, not a metric detail), so it's a full button, not a `domainCard`.
+    private var muscleMapCard: some View {
+        Button { showMuscleMap = true } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 8) {
+                    Text("Muscle map").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                }
+                Text("What to train today")
+                    .font(StrandFont.headline).foregroundStyle(theme.ink)
+                Text("Per-muscle load crossed with your recovery.")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.vertical, 16).padding(.horizontal, 20)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                .strokeBorder(theme.hairline, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Opens the muscle map.")
     }
 
     /// Vitals — a 3×2 grid of scalar vitals, each into its `MetricDetailScreen`.
