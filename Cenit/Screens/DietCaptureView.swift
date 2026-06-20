@@ -3,17 +3,18 @@ import SwiftUI
 import UniformTypeIdentifiers
 import StrandDesign
 import StrandImport
+import StrandAnalytics
 import WhoopStore
 
-/// Diet capture — bring in the plan your nutritionist gave you (FER-371).
+/// Diet capture + daily tracker — the plan your nutritionist gave you, and how you follow it (FER-371/372).
 ///
-/// «Instrumento diurno»: a capture panel has **no measured datum**, so it stays all-ink on warm
-/// paper (DESIGN.md §8.4) — the only color is `critical` on a parse error. Hierarchy is by space, not
-/// boxes. The star path is **bring-your-own-LLM**: copy a prompt, paste it into your own AI with your
-/// plan (PDF/photo), and bring the `noop.diet.v1` file back to paste or upload. NOOP never calls the
+/// «Instrumento diurno»: the **capture** panel has no measured datum, so it stays all-ink on warm
+/// paper — the only color is `critical` on a parse error. Once a plan is active, the screen becomes the
+/// **daily tracker** (FER-372): the day's adherence **%** is the one dominant numeral (the lone datum,
+/// in `dataRecovery` green), with a 7-day sparkline and a tri-state checklist (Followed / Swapped /
+/// Skipped) per meal. The star capture path is **bring-your-own-LLM**: copy a prompt, paste it into
+/// your own AI with your plan (PDF/photo), and bring the `noop.diet.v1` file back. NOOP never calls the
 /// network — the user runs the LLM step (`DietPlanImporter` from FER-370 validates the result).
-///
-/// This screen is capture + confirm + saved summary only; the daily checklist and apego % are FER-372.
 struct DietCaptureView: View {
 
     @EnvironmentObject private var repo: Repository
@@ -31,13 +32,18 @@ struct DietCaptureView: View {
     @State private var copied = false
     @State private var showFileImporter = false
 
+    // Daily tracker (FER-372): today's per-meal marks, the 7-day adherence trend, and today's key.
+    @State private var todayStatuses: [String: DietMealStatus] = [:]
+    @State private var adherence7d: [Double] = []
+    @State private var todayKey = ""
+
     private let importer = DietPlanImporter()
 
     var body: some View {
         Group {
             switch phase {
             case .landing:
-                if let plan = activePlan { scrolled { savedSummary(plan) } }
+                if let plan = activePlan { scrolled { tracker(plan) } }
                 else { emptyState }
             case .capture:
                 scrolled { captureFlow }
@@ -132,54 +138,122 @@ struct DietCaptureView: View {
     private func confirmStep(_ plan: DietPlan) -> some View {
         VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
             planHeader("Review your plan", name: plan.name)
-            mealList(plan, showTimes: false)
+            mealList(plan)
             QuietButton("Save plan") { save(plan) }
         }
     }
 
-    // MARK: - Saved summary
+    // MARK: - Daily tracker (FER-372)
 
-    private func savedSummary(_ row: DietPlanRow) -> some View {
-        let plan = activeParsed
+    private func tracker(_ row: DietPlanRow) -> some View {
+        let planned = activeParsed?.meals.count ?? 0
+        let marked = todayStatuses.count
+        let pct = marked == 0 ? nil
+            : DietAdherence.dayPercent(statuses: Array(todayStatuses.values), plannedMeals: planned)
         return VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Your plan").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                nameText(row.name, fallback: "Your plan")
-                    .font(StrandFont.title1).foregroundStyle(theme.ink)
-                if let plan {
-                    Text("\(plan.meals.count) meals · active")
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                }
-            }
-            if let plan { mealList(plan, showTimes: true) }
+            adherenceHero(pct: pct, marked: marked, planned: planned)
+            if let plan = activeParsed { mealTracker(plan) }
             QuietButton("Replace plan") { startCapture() }
         }
     }
 
+    /// The day's adherence % — the one dominant numeral and the lone datum, so it carries the only
+    /// saturated color. Until a meal is marked it shows «—» in ink (pending isn't a punitive 0%).
+    private func adherenceHero(pct: Int?, marked: Int, planned: Int) -> some View {
+        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            VStack(alignment: .leading, spacing: NoopMetrics.space1) {
+                Text("Diet · today").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
+                    if let pct {
+                        Text("\(pct)").instrumentoHero(62).foregroundStyle(theme.dataRecovery)
+                        Text(verbatim: "%").font(StrandFont.title1).foregroundStyle(theme.dataRecovery)
+                    } else {
+                        Text(verbatim: "—").instrumentoHero(62).foregroundStyle(theme.ink)
+                    }
+                }
+                Group {
+                    if pct != nil {
+                        Text("adherence · \(marked) of \(planned) meals")
+                    } else {
+                        Text("Mark your meals · 0 of \(planned)")
+                    }
+                }
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            }
+            if adherence7d.count >= 2 {
+                Sparkline(values: adherence7d,
+                          gradient: Gradient(colors: [theme.dataRecovery]),
+                          range: 0...100, showsArea: false, showsScrub: false)
+                    .frame(height: 34)
+                    .accessibilityLabel("7-day adherence trend")
+                Text("Adherence · 7 days").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            }
+        }
+    }
+
+    private func mealTracker(_ plan: DietPlan) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Today's meals").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                .padding(.bottom, NoopMetrics.gap)
+            ForEach(Array(plan.meals.enumerated()), id: \.offset) { index, meal in
+                mealTrackRow(meal)
+                if index < plan.meals.count - 1 {
+                    Rectangle().fill(theme.hairline).frame(height: 0.5)
+                }
+            }
+        }
+    }
+
+    private func mealTrackRow(_ meal: DietMeal) -> some View {
+        let status = todayStatuses[meal.id]
+        return VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+            nameText(meal.name, fallback: "Meal").font(StrandFont.body).foregroundStyle(theme.ink)
+            if status == nil, let foods = meal.options.first?.foods, !foods.isEmpty {
+                Text(foods.joined(separator: " · "))
+                    .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            HStack(spacing: NoopMetrics.space2) {
+                statusChip("Followed", meal.id, .cumpli, status)
+                statusChip("Swapped",  meal.id, .sustitui, status)
+                statusChip("Skipped",  meal.id, .salte, status)
+            }
+        }
+        .padding(.vertical, NoopMetrics.gap)
+    }
+
+    /// One tri-state chip — ink stays the language; the selected one inverts to an ink fill. No color
+    /// here: the apego % is the only datum. Mirrors the journal's `answerPill`.
+    private func statusChip(_ title: LocalizedStringKey, _ mealId: String,
+                            _ value: DietMealStatus, _ current: DietMealStatus?) -> some View {
+        let sel = current == value
+        return Button { mark(mealId, value) } label: {
+            Text(title).font(StrandFont.caption)
+                .foregroundStyle(sel ? theme.paper : theme.inkSecondary)
+                .padding(.horizontal, 13).padding(.vertical, 6)
+                .background(sel ? theme.ink : Color.clear, in: Capsule())
+                .overlay(Capsule().stroke(sel ? theme.ink : theme.hairlineStrong, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(sel ? [.isSelected] : [])
+    }
+
     // MARK: - Shared pieces
 
-    private func mealList(_ plan: DietPlan, showTimes: Bool) -> some View {
+    private func mealList(_ plan: DietPlan) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(plan.meals.enumerated()), id: \.offset) { index, meal in
                 VStack(alignment: .leading, spacing: 3) {
-                    HStack(alignment: .firstTextBaseline) {
-                        nameText(meal.name, fallback: "Meal")
-                            .font(StrandFont.body).foregroundStyle(theme.ink)
-                        if showTimes, let t = meal.suggestedTime, !t.isEmpty {
-                            Spacer()
-                            Text(t).font(StrandFont.captionNumber).foregroundStyle(theme.inkTertiary)
-                        }
-                    }
-                    if !showTimes {
-                        ForEach(Array(meal.options.enumerated()), id: \.offset) { optIndex, option in
-                            HStack(alignment: .firstTextBaseline, spacing: 5) {
-                                if optIndex > 0 {
-                                    Text("or").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
-                                }
-                                Text(option.foods.joined(separator: " · "))
-                                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                                    .fixedSize(horizontal: false, vertical: true)
+                    nameText(meal.name, fallback: "Meal")
+                        .font(StrandFont.body).foregroundStyle(theme.ink)
+                    ForEach(Array(meal.options.enumerated()), id: \.offset) { optIndex, option in
+                        HStack(alignment: .firstTextBaseline, spacing: 5) {
+                            if optIndex > 0 {
+                                Text("or").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
                             }
+                            Text(option.foods.joined(separator: " · "))
+                                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
                 }
@@ -241,7 +315,31 @@ struct DietCaptureView: View {
         guard !loaded else { return }
         activePlan = await repo.activeDietPlan()
         activeParsed = activePlan.flatMap { try? importer.parse(text: $0.payloadJSON) }
+        if activePlan != nil { await loadTrackerData() }
         loaded = true
+    }
+
+    /// Load today's per-meal marks + the recent adherence trend for the tracker.
+    private func loadTrackerData() async {
+        todayKey = Repository.localDayKey(Date())
+        let marks = await repo.dietAdherence(day: todayKey)
+        todayStatuses = Dictionary(marks.map { ($0.mealId, $0.status) }, uniquingKeysWith: { first, _ in first })
+        adherence7d = await repo.dietAdherenceSeries(from: Self.weekAgoKey(), to: todayKey)
+    }
+
+    /// Mark one meal's status: optimistic local update (the hero % recomputes at once), then persist +
+    /// refresh the trend off the render path.
+    private func mark(_ mealId: String, _ status: DietMealStatus) {
+        todayStatuses[mealId] = status
+        let planned = activeParsed?.meals.count ?? 0
+        Task {
+            await repo.saveDietAdherence(day: todayKey, mealId: mealId, status: status, plannedMeals: planned)
+            adherence7d = await repo.dietAdherenceSeries(from: Self.weekAgoKey(), to: todayKey)
+        }
+    }
+
+    private static func weekAgoKey() -> String {
+        Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -6, to: Date()) ?? Date())
     }
 
     private func startCapture() {
@@ -292,6 +390,7 @@ struct DietCaptureView: View {
             await repo.saveDietPlan(row)
             activePlan = await repo.activeDietPlan()
             activeParsed = plan
+            await loadTrackerData()
             pasteText = ""
             pendingPlan = nil
             parseError = nil

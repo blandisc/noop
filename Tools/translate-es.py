@@ -18,6 +18,16 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
+    # FER-372 — Dieta: tracking diario (% de apego + checklist tri-estado)
+    'Diet · today': 'Dieta · hoy',
+    'adherence · %lld of %lld meals': 'apego · %lld de %lld comidas',
+    'Mark your meals · 0 of %lld': 'Marca tus comidas · 0 de %lld',
+    "Today's meals": 'Comidas de hoy',
+    'Adherence · 7 days': 'Apego · 7 días',
+    '7-day adherence trend': 'Tendencia de apego de 7 días',
+    'Followed': 'Cumplí',
+    'Swapped': 'Sustituí',
+    'Skipped': 'Salté',
     # FER-381 — Acerca de y soporte adelgazado: subtítulo acortado
     '%@ — all your data, none of the cloud.': '%@ — todos tus datos, nada en la nube.',
     # FER-371 — Dieta: pantalla de captura (BYO-LLM)

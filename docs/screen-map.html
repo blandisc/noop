@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-20 · Cuerpo → tarjetas por dominio</span>
+  <span class="tb-updated">Actualizado 2026-06-20 · FER-372</span>
 </div>
 
 <div id="wrapper">
@@ -661,18 +661,19 @@ const SCREENS = [
   },
   {
     id: 'diet', x: 1052, y: 2010,
-    name: 'Dieta · captura', desc: 'Captura el plan recetado (BYO-LLM): copiar prompt → pegar/subir noop.diet.v1 → confirmar → guardar. «Instrumento» todo tinta, rojo solo en el error. El seguimiento diario + % de apego es aparte (FER-372). FER-371',
+    name: 'Dieta · captura + tracker', desc: 'Captura BYO-LLM (copiar prompt → pegar/subir noop.diet.v1 → confirmar → guardar) y, con plan activo, el tracker diario: % de apego (un dato = verde, lo demás tinta) + sparkline 7d + checklist tri-estado por comida. Math de apego en StrandAnalytics; escribe diet-adherence en metricSeries. FER-371/372',
     file: 'Cenit/Screens/DietCaptureView.swift',
-    icon: '🍴', color: '#6F6857',
+    icon: '🍴', color: '#0C8F62',
     states: [
       { label: 'Vacío: sin plan → «Capturar mi plan»', type: 'empty' },
       { label: 'Captura: copiar prompt + pegar JSON / subir .json', type: 'data' },
       { label: 'Error: JSON inválido → mensaje accionable (critical)', type: 'error' },
       { label: 'Confirmar: plan parseado (comidas/equivalentes) → Guardar', type: 'data' },
-      { label: 'Con plan: resumen activo + Reemplazar plan', type: 'data' },
+      { label: 'Tracker · pendiente: «—» en tinta + «marca tus comidas»', type: 'empty' },
+      { label: 'Tracker · parcial/completo: % de apego (verde) + sparkline 7d + chips tri-estado', type: 'data' },
     ],
     nav: [],
-    components: ['Renglón Dieta en hub Entrenar (fork.knife)', 'EmptyStateView', 'QuietButton (Copiar prompt / Subir / Continuar / Guardar)', 'TextEditor (pegar JSON)', 'fileImporter (.json)', 'Lista de comidas (equivalentes «o…»)'],
+    components: ['Renglón Dieta en hub Entrenar (fork.knife)', 'EmptyStateView', 'QuietButton', 'TextEditor (pegar JSON)', 'fileImporter (.json)', 'instrumentoHero (% apego)', 'Sparkline 7d', 'Chips tri-estado (Cumplí/Sustituí/Salté, patrón answerPill)'],
   },
 
   // ── Fuerza · tracker (Entrenar, FER-346) ─────────────────

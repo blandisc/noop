@@ -34,7 +34,7 @@ Tab shell (FER-182) → 5 pestañas: Hoy · Cuerpo · Coach · Entrenar · Ajust
   Hoy      → TodayView
   Cuerpo   → CuerpoView (landing curado de la capa «historia», FER-186)
   Coach    → BucleView (pantalla única «el Bucle», FER-292; reemplaza el hub Intelligence · Insights · Coach)
-  Entrenar → EntrenarView (hub claro «Instrumento», FER-343): tarjeta «Hoy» + banda de recuperación · «Mis rutinas» (nueva → builder; editar/borrar por menú) · Herramientas (En vivo · Biblioteca → ExerciseLibraryScreen · Respira · Intervalos · Dieta → DietCaptureView)
+  Entrenar → EntrenarView (hub claro «Instrumento», FER-343): tarjeta «Hoy» + banda de recuperación · «Mis rutinas» (nueva → builder; editar/borrar por menú) · Herramientas (En vivo · Biblioteca → ExerciseLibraryScreen · Respira · Intervalos · Dieta → DietCaptureView: captura BYO-LLM + tracker diario de apego, FER-371/372)
   EntrenarView → RoutineBuilderScreen (sheet: nueva/editar, FER-346) → ExerciseLibraryScreen (sheet add) · RoutineExerciseEditor (sheet)
   ExerciseLibraryScreen (push desde Herramientas, FER-346) → ExerciseDetailScreen (sheet) · CreateExerciseSheet (sheet)
   Ajustes  → AjustesView (raíz clara «Instrumento», FER-337): Perfil · Tu strap (estado + Log de la banda + 5/MG)

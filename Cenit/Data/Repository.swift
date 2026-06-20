@@ -418,6 +418,40 @@ final class Repository: ObservableObject {
         _ = try? await store.upsertDietPlan(row, deviceId: Self.journalDeviceId)
     }
 
+    /// The metric-series key under which each day's diet-adherence % is stored — a standard metric
+    /// point a future Coach/trends reader can pick up (today only the sparkline reads it back) (FER-372).
+    static let dietAdherenceKey = "diet-adherence"
+
+    /// A day's per-meal adherence marks (only meals the user has marked appear).
+    func dietAdherence(day: String) async -> [DietAdherenceRow] {
+        guard let store = await ensureStore() else { return [] }
+        return (try? await store.dietAdherence(deviceId: Self.journalDeviceId, day: day)) ?? []
+    }
+
+    /// Record one meal's status, recompute the day's adherence %, persist it to `metricSeries`
+    /// (key `diet-adherence`), and return the new % (nil if the plan has no meals). The metric point is
+    /// written whenever at least one meal is marked — which it always is right after this upsert.
+    @discardableResult
+    func saveDietAdherence(day: String, mealId: String, status: DietMealStatus, plannedMeals: Int) async -> Int? {
+        guard let store = await ensureStore() else { return nil }
+        _ = try? await store.upsertDietAdherence(
+            DietAdherenceRow(day: day, mealId: mealId, status: status), deviceId: Self.journalDeviceId)
+        let rows = (try? await store.dietAdherence(deviceId: Self.journalDeviceId, day: day)) ?? []
+        guard let pct = DietAdherence.dayPercent(statuses: rows.map(\.status), plannedMeals: plannedMeals) else { return nil }
+        _ = try? await store.upsertMetricSeries(
+            [MetricPoint(day: day, key: Self.dietAdherenceKey, value: Double(pct))], deviceId: Self.journalDeviceId)
+        return pct
+    }
+
+    /// The recent diet-adherence trend (one value per logged day in [from, to], oldest first) — the
+    /// sparkline behind today's apego.
+    func dietAdherenceSeries(from: String, to: String) async -> [Double] {
+        guard let store = await ensureStore() else { return [] }
+        let pts = (try? await store.metricSeries(deviceId: Self.journalDeviceId,
+                                                 key: Self.dietAdherenceKey, from: from, to: to)) ?? []
+        return pts.map(\.value)
+    }
+
     /// End a running experiment early, with no verdict.
     func cancelExperiment(_ row: ExperimentRow) async {
         guard let store = await ensureStore() else { return }
