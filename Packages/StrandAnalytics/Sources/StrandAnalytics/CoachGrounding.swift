@@ -139,7 +139,8 @@ public enum CoachTopic: String, CaseIterable, Sendable {
     /// with it — word-aware (not raw substring), so "encargas" doesn't match "carga" and "recámara"
     /// doesn't match "cama". Stems cover common es-MX conjugations ("dorm"+"duerm", "recuper", …).
     private static let keywords: [(CoachTopic, [String])] = [
-        (.sleep,    ["dorm", "duerm", "sueno", "siesta", "acuest", "acost", "descans", "cama"]),
+        (.sleep,    ["dorm", "duerm", "sueno", "siesta", "acuest", "acost", "descans", "cama",
+                     "despiert", "trasnoch", "desvel", "insomn"]),
         (.hrv,      ["hrv", "variabilidad"]),
         (.load,     ["carga", "sobrecarga", "sobreentren", "acwr", "monoton", "esfuerzo", "volumen"]),
         (.behavior, ["funciona", "habito", "alcohol", "cafe", "cafein", "afecta", "ayuda", "cuesta"]),
