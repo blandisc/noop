@@ -210,9 +210,15 @@ struct AppleHealthView: View {
         async let rows = repo.appleDailyRows()
         async let workouts = repo.workoutRows()
 
-        var fetched: [String: [(day: String, value: Double)]] = [:]
-        for key in Self.seriesKeys {
-            fetched[key] = await repo.series(key: key, source: "apple-health")
+        // Load the per-key series concurrently (was a sequential await loop = N+1 round-trips).
+        // Same pattern as CompareView/InsightsView/MetricExplorerView (FER-318).
+        let fetched = await withTaskGroup(of: (String, [(day: String, value: Double)]).self) { group in
+            for key in Self.seriesKeys {
+                group.addTask { (key, await repo.series(key: key, source: "apple-health")) }
+            }
+            var out: [String: [(day: String, value: Double)]] = [:]
+            for await (key, s) in group { out[key] = s }
+            return out
         }
 
         let loadedRows = await rows
