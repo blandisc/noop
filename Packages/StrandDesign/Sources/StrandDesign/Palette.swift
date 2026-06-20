@@ -215,13 +215,14 @@ public enum SleepStage: String, CaseIterable, Sendable {
     case deep
     case rem
 
-    /// Display label.
+    /// Display label, localized against the host app's catalog (`Bundle.main`) —
+    /// the package carries no string catalog of its own (same as `recoveryState`).
     public var label: String {
         switch self {
-        case .awake: return "Awake"
-        case .light: return "Light"
-        case .deep:  return "Deep"
-        case .rem:   return "REM"
+        case .awake: return String(localized: "Awake", bundle: .main)
+        case .light: return String(localized: "Light", bundle: .main)
+        case .deep:  return String(localized: "Deep", bundle: .main)
+        case .rem:   return String(localized: "REM", bundle: .main)
         }
     }
 
