@@ -40,7 +40,7 @@ final class MigrationTests: XCTestCase {
             let cols = try await store.columnNamesForTest(table: table)
             XCTAssertTrue(cols.contains("synced"), "\(table) missing synced column")
         }
-        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 12)
+        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 13)
     }
 
     /// v12 (FER-307) creates the `experiment` table with `id` as the sole primary key.

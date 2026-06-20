@@ -7,6 +7,7 @@ let package = Package(
     products: [.library(name: "WhoopStore", targets: ["WhoopStore"])],
     dependencies: [
         .package(path: "../WhoopProtocol"),
+        .package(path: "../StrandTraining"),
         .package(url: "https://github.com/groue/GRDB.swift.git", from: "6.0.0"),
     ],
     targets: [
@@ -14,6 +15,7 @@ let package = Package(
             name: "WhoopStore",
             dependencies: [
                 "WhoopProtocol",
+                "StrandTraining",
                 .product(name: "GRDB", package: "GRDB.swift"),
             ]
         ),

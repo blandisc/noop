@@ -264,6 +264,82 @@ extension WhoopStore {
                 t.column("decidedAt", .integer)               // unix seconds (verdict time)
             }
         }
+
+        // v13 (FER-345): strength tracker. User-authored, RELATIONAL data with UUID-string PKs —
+        // deliberately unlike the sensor streams keyed by (deviceId, ts). Append-only; touches no
+        // prior table. The seed exercise catalog is NOT here (it's a bundled resource in
+        // StrandTraining); only user-created exercises + routines/sessions/sets/PRs persist.
+        // Array fields (muscles, cues, warm-up percents) are GRDB-Codable JSON text columns.
+        migrator.registerMigration("v13") { db in
+            try db.create(table: "customExercise") { t in
+                t.column("id", .text).primaryKey()
+                t.column("name", .text).notNull()
+                t.column("type", .text).notNull()              // weightReps | bodyweight | time | distance
+                t.column("equipment", .text)
+                t.column("primaryMuscles", .text).notNull()    // JSON array
+                t.column("secondaryMuscles", .text).notNull()  // JSON array
+                t.column("cues", .text).notNull()              // JSON array
+            }
+            try db.create(table: "routine") { t in
+                t.column("id", .text).primaryKey()
+                t.column("name", .text).notNull()
+                t.column("tag", .text)
+                t.column("createdTs", .integer).notNull()
+                t.column("updatedTs", .integer).notNull()
+                t.column("sortOrder", .integer).notNull().defaults(to: 0)
+            }
+            try db.create(table: "routineExercise") { t in
+                t.column("id", .text).primaryKey()
+                t.column("routineId", .text).notNull()
+                t.column("exerciseId", .text).notNull()
+                t.column("position", .integer).notNull()
+                t.column("targetSets", .integer).notNull()
+                t.column("targetReps", .integer)
+                t.column("targetWeightKg", .double)
+                t.column("warmupPercents", .text).notNull()    // JSON array
+                t.column("restMode", .text).notNull()          // heartRate | fixed
+                t.column("restSeconds", .integer).notNull()
+            }
+            try db.create(index: "idx_routineExercise_routine_pos",
+                          on: "routineExercise", columns: ["routineId", "position"])
+            try db.create(table: "strengthSession") { t in
+                t.column("id", .text).primaryKey()
+                t.column("routineId", .text)
+                t.column("startTs", .integer).notNull()
+                t.column("endTs", .integer)
+                t.column("deviceId", .text)                    // strap that supplied HR/strain, if any
+                t.column("strain", .double)
+                t.column("avgHr", .integer)
+                t.column("notes", .text)
+            }
+            try db.create(table: "setEntry") { t in
+                t.column("id", .text).primaryKey()
+                t.column("sessionId", .text).notNull()
+                t.column("exerciseId", .text).notNull()
+                t.column("position", .integer).notNull()
+                t.column("kind", .text).notNull()              // work | warmup
+                t.column("weightKg", .double)
+                t.column("reps", .integer)
+                t.column("timeS", .double)
+                t.column("distanceM", .double)
+                t.column("done", .boolean).notNull().defaults(to: false)
+                t.column("ts", .integer).notNull()
+            }
+            try db.create(index: "idx_setEntry_session_pos",
+                          on: "setEntry", columns: ["sessionId", "position"])
+            try db.create(index: "idx_setEntry_exercise_ts",
+                          on: "setEntry", columns: ["exerciseId", "ts"])
+            try db.create(table: "personalRecord") { t in
+                t.column("id", .text).primaryKey()             // "<exerciseId>:<metric>"
+                t.column("exerciseId", .text).notNull()
+                t.column("metric", .text).notNull()            // maxWeight | maxReps | maxVolume
+                t.column("valueKg", .double)
+                t.column("reps", .integer)
+                t.column("ts", .integer).notNull()
+            }
+            try db.create(index: "idx_personalRecord_exercise",
+                          on: "personalRecord", columns: ["exerciseId"])
+        }
         return migrator
     }
 }
