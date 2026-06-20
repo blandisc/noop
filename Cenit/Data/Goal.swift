@@ -8,9 +8,9 @@ import StrandAnalytics
 // is `TrajectorySimulator` (pure, StrandAnalytics); this layer only resolves "which metric / bounds /
 // hue / copy" and feeds the engine.
 
-/// The measurable NOOP projects toward a goal. The four cases map 1:1 to `InsightEngine.outcomes`
-/// labels, so a proven lever (whose `outcome` is one of those labels) composes with the projection with
-/// no special case. "Subir tu condición" fans out to two of them (HRV / resting HR).
+/// The measurable NOOP projects toward a goal. Each case maps to an `InsightEngine.Outcome` (see
+/// `outcome`), so a proven lever (whose `outcome` is that metric's label) composes with the projection
+/// with no special case. "Subir tu condición" fans out to two of them (HRV / resting HR).
 enum GoalMetric: String, Codable, CaseIterable {
     case recovery, sleep, hrv, restingHr
 }
@@ -21,15 +21,21 @@ enum GoalFocus: String, CaseIterable {
 }
 
 extension GoalMetric {
-    /// es-MX outcome label — MUST equal an `InsightEngine.outcomes` label (the proven-lever join key).
-    var outcomeLabel: String {
+    /// The analytics outcome this goal projects toward — the SINGLE, typed source of its join key, label
+    /// and unit. Returning `InsightEngine.Outcome` (instead of re-typing the es-MX string) means a rename
+    /// in the engine is one edit and a removed/renamed case is a compile error here, so the goal→series
+    /// join (`Repository.goalSimulation`) can never silently resolve to an empty series.
+    var outcome: InsightEngine.Outcome {
         switch self {
-        case .recovery:  return "Recuperación"
-        case .sleep:     return "Sueño"
-        case .hrv:       return "HRV"
-        case .restingHr: return "FC en reposo"
+        case .recovery:  return .recovery
+        case .sleep:     return .sleep
+        case .hrv:       return .hrv
+        case .restingHr: return .restingHr
         }
     }
+
+    /// es-MX outcome label — the proven-lever / experiment join key. Derived from `outcome`, never re-typed.
+    var outcomeLabel: String { outcome.label }
 
     var focus: GoalFocus {
         switch self {
@@ -62,13 +68,13 @@ extension GoalMetric {
         }
     }
 
-    /// Format a value (in the metric's native units) for display, with its unit. Sleep shows hours.
+    /// Format a value (in the metric's native units) for display, with its unit. Sleep is the one
+    /// special case: its native unit is minutes but it reads in hours. The rest reuse `outcome.unit`,
+    /// so the unit string isn't a second copy of `InsightEngine.Outcome.unit`.
     func format(_ v: Double) -> String {
         switch self {
-        case .sleep:     return String(format: "%.1f h", v / 60)
-        case .recovery:  return "\(Int(v.rounded())) pts"
-        case .hrv:       return "\(Int(v.rounded())) ms"
-        case .restingHr: return "\(Int(v.rounded())) lpm"
+        case .sleep: return String(format: "%.1f h", v / 60)
+        default:     return "\(Int(v.rounded())) \(outcome.unit)"
         }
     }
 }

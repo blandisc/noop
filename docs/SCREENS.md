@@ -58,15 +58,15 @@ MetricExplorerView → MetricDetailView (NavigationLink push, sobre el stack de 
 **Barra de pestañas — «Barra de instrumento»** (`CenitApp/App/InstrumentTabBar.swift`, FER-163; reorganizada a
 5 tabs en FER-182). Barra inferior custom (la nativa va oculta con `.toolbar(.hidden, for: .tabBar)`, montada vía
 `safeAreaInset`) que **adapta su tratamiento a la pestaña activa**: bajo **Hoy** (papel «Instrumento diurno») viste
-el papel y respira con la hora (`instrumentoThemeByHour`); bajo Cuerpo / Coach / Entrenar / Ajustes usa el
-`StrandPalette` oscuro. El color scheme (barra de estado) sigue la pestaña: solo Hoy es clara (`isLightTab` en
-`RootTabView`); En vivo es papel claro pero vive en una **hoja** (`.sheet`) sobre Hoy, no es pestaña (FER-190). La pestaña activa se marca
+el papel y respira con la hora (`instrumentoThemeByHour`); bajo Ajustes usa el
+`StrandPalette` oscuro. El color scheme (barra de estado) sigue la pestaña: Hoy / Cuerpo / Coach / Entrenar son papel claro, Ajustes es oscura (`isLightTab` en
+`RootTabView`; Entrenar migrado a «Instrumento» en FER-342); En vivo es papel claro pero vive en una **hoja** (`.sheet`) sobre Hoy, no es pestaña (FER-190). La pestaña activa se marca
 con tinta + un punto de «ahora» (verde recovery en claro, `accent` en oscuro), nunca con relleno verde. Íconos de
 trazo fino: **Hoy** = glifo de dial 24h (`DialTabGlyph`, StrandDesign), el resto glifos de línea (Cuerpo
 `chart.xyaxis.line` · Coach `sparkles` · Entrenar `figure.strengthtraining.functional` · Ajustes `gearshape`).
 
 **Nota — «Iniciar en vivo» en el hub Entrenar (FER-197):** el hub Entrenar suma, arriba de Breathe/Intervals, una
-fila **«Iniciar en vivo»** (`LiveWorkoutHubRow`, tema oscuro `StrandPalette` como las demás filas). Está
+fila **«Iniciar en vivo»** (`LiveWorkoutHubRow`, tema claro «Instrumento» como las demás filas tras FER-342). Está
 **deshabilitada con un hint** cuando no hay HR en vivo (misma señal que `LiveView`: strap puesto + `bpm`); al
 tocarla arranca (`AppModel.startWorkout`) y abre `LiveWorkoutSheet`, una **hoja en «Instrumento» claro** (tema
 pasado **explícito** — no se hereda por `.sheet`) con overline **GRABANDO**, cronómetro, **Ritmo / Prom / Pico**
@@ -370,7 +370,8 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 
 | Estado | Condición de entrada |
 |--------|---------------------|
-| Arranque en frío | Sin veredicto aún (`ReadinessEngine.insufficient`) → «Aún reuniendo señal · X de 14 noches»; solo se muestra «Pregúntale» |
+| Arranque en frío | Historial propio < 14 noches usables (`usableNights < calibrationTarget`) → «Aún reuniendo señal · X de 14 noches» (contador topado a 14, «Faltan N noches…»); solo se muestra «Pregúntale» |
+| Esperando la lectura de hoy | Ya hay ≥14 noches pero aún no llega la lectura de hoy (medianoche → sync de la mañana; `ReadinessEngine.insufficient`) → el héroe «Esperando la lectura de hoy» (+ veredicto de ayer como contexto) reemplaza a la Decisión, pero **palancas, hallazgos y efectos siguen visibles** (FER-340) |
 | Con datos | Veredicto + palancas + hallazgos + registro + efectos |
 | Sin hallazgos | Hay datos pero el motor no encontró hallazgos → «Todo en orden, sin hallazgos nuevos» |
 
@@ -491,7 +492,7 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 | Desconectada / sin correa | `!live.connected` sin enlace previo en esta apertura, o tras >15 s sin reconectar, o con guía de re-emparejado activa → pill «Desconectada» + ECG plano + mensaje + **CTA «Conectar»** |
 | monitorOnly mode | `monitorOnly: true` (hoja de Hoy "beat by beat", esquema claro) |
 
-**Componentes:** `header` (título + `connectionPill`), `hero` (ECG `dataHeart`/plano + bpm + «en vivo» + latidos de sesión + `rrTachogram`), `signalsSection` (2 grupos: «Capturing live» FC·R-R / «Completes on sync» SpO₂·Temp·Resp·Movimiento, cada renglón con `storedCount`; columnas de ancho fijo; único encabezado de columna **«records»** sobre los conteos en ambos grupos, FER-192/193), `coverageStrip` (28 d **por fuente**: Correa `dataRecovery` / Apple Health `dataSpO2` / Sin datos `hairlineStrong` + leyenda con conteos — reutiliza la clasificación de `DataSourcesView`/`repo.appleHealthDays`, FER-196), `savedFooter` (chips iPhone + iCloud + `verifyButton` con escudo; o línea de aviso/última-sync según estado), `disconnectedState` (CTA «Conectar»), más el estado intermedio **«Reconectando…»** (`showsReconnecting` + ventana `reconnectGraceSeconds` 15 s que pausa el monitor en una caída corta, FER-195). Gestión de correa, batería y entrenamiento **removidos** → Ajustes / *Más › Workouts*. La hoja **abre a la altura del contenido** (detente medido, FER-196); unidad de FC localizada (es «lpm»).
+**Componentes:** `header` (título + `connectionPill`), `hero` (ECG `dataHeart`/plano + bpm + «en vivo» + latidos de sesión + `rrTachogram`), `signalsSection` (2 grupos: «Capturing live» FC·R-R / «Completes on sync» SpO₂·Temp·Resp·Movimiento, cada renglón con `storedCount`; columnas de ancho fijo; único encabezado de columna **«records»** sobre los conteos en ambos grupos, FER-192/193), `coverageStrip` (28 d **por fuente**: Correa `dataRecovery` / Apple Health `dataSpO2` / Sin datos `hairlineStrong` + leyenda con conteos — reutiliza la clasificación de `DataSourcesView`/`repo.appleHealthDays`, FER-196), `savedFooter` (chip iPhone [guardado local, pasivo] + **chip iCloud tappable → respaldo inmediato** con háptico ligero, spinner «Respaldando…» mientras copia y tinta `warning` «No se pudo respaldar» si falla — llama `AutoBackup.backupNow`, solo iOS y solo si ya hay carpeta elegida + respaldo previo, FER-352 — + `verifyButton` con escudo; o línea de aviso/última-sync según estado), `disconnectedState` (CTA «Conectar»), más el estado intermedio **«Reconectando…»** (`showsReconnecting` + ventana `reconnectGraceSeconds` 15 s que pausa el monitor en una caída corta, FER-195). Gestión de correa, batería y entrenamiento **removidos** → Ajustes / *Más › Workouts*. La hoja **abre a la altura del contenido** (detente medido, FER-196); unidad de FC localizada (es «lpm»).
 
 ---
 

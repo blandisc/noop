@@ -49,6 +49,8 @@ private struct BucleLanding: View {
     @State private var readiness: ReadinessEngine.Readiness? = nil
     @State private var recovery: Double? = nil
     @State private var usableNights = 0
+    /// Yesterday's verdict level, shown as context in the «esperando la lectura de hoy» hero (FER-340).
+    @State private var yesterdayVerdict: ReadinessEngine.Level? = nil
     @State private var journalAnswered = 0
     @State private var journalTotal = 0
     /// Recent recovery series (last 14 nights) for the trend-finding sparkline — trends are recovery.
@@ -89,23 +91,40 @@ private struct BucleLanding: View {
     /// Nights of own history the engine needs before it speaks with confidence.
     private static let calibrationTarget = 14
 
-    /// True until there's enough history for a verdict — Decisión and the registro stay hidden,
-    /// only «Pregúntale» (which needs no calibration) shows.
-    private var coldStart: Bool {
-        !loaded || readiness == nil || readiness?.level == .insufficient
+    /// Genuine cold-start: not enough own history yet for ANY verdict. The onboarding hero shows and
+    /// the registro stays hidden — only «Pregúntale» (which needs no calibration) is offered.
+    private var genuineColdStart: Bool {
+        !loaded || usableNights < Self.calibrationTarget
     }
+
+    /// History is sufficient, but today's reading hasn't landed yet: between local midnight and the
+    /// morning sync there's no complete row for today, so readiness reads `.insufficient`. The Decisión
+    /// waits, while the findings/levers — built from history, not today — stay visible (FER-340).
+    private var awaitingToday: Bool {
+        !genuineColdStart && (readiness == nil || readiness?.level == .insufficient)
+    }
+
+    /// Nights still needed before the first verdict (cold-start copy). ≥1 while genuinely cold.
+    private var nightsRemaining: Int { max(0, Self.calibrationTarget - usableNights) }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                 header
 
-                if coldStart {
+                if genuineColdStart {
                     coldStartHero
                     preguntaleEntry
                     pruebaSection
                 } else {
-                    decisionSection
+                    // History is sufficient. Show the real Decisión, or — when today's reading hasn't
+                    // synced yet (midnight → morning) — a waiting hero. EITHER WAY the findings, levers
+                    // and correlations below stay: they come from history, not today's reading (FER-340).
+                    if awaitingToday {
+                        awaitingDecisionHero
+                    } else {
+                        decisionSection
+                    }
                     metaSection
                     preguntaleEntry
                     loQueFuncionaSection
@@ -313,7 +332,7 @@ private struct BucleLanding: View {
                 .font(.system(size: 26, weight: .semibold))
                 .foregroundStyle(theme.ink)
                 .padding(.top, 10)
-            Text("\(usableNights) de \(Self.calibrationTarget) noches")
+            Text("\(min(usableNights, Self.calibrationTarget)) de \(Self.calibrationTarget) noches")
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.inkTertiary)
                 .monospacedDigit()
@@ -323,7 +342,35 @@ private struct BucleLanding: View {
                 .tint(theme.inkTertiary)
                 .frame(maxWidth: 200, alignment: .leading)
                 .padding(.top, 12)
-            Text("Cuando tenga \(Self.calibrationTarget) noches verás tu decisión del día, tus palancas y tus hallazgos.")
+            Text(nightsRemaining == 1
+                 ? "Falta 1 noche con la banda para tu primera decisión, tus palancas y tus hallazgos."
+                 : "Faltan \(nightsRemaining) noches con la banda para tu primera decisión, tus palancas y tus hallazgos.")
+                .font(StrandFont.subhead)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 16)
+        }
+    }
+
+    /// History is sufficient but today's reading hasn't synced yet (midnight → morning). The Decisión
+    /// waits — it arrives with tonight's sleep — while «Lo que funciona», los hallazgos y las
+    /// correlaciones de abajo siguen visibles (vienen del historial, no de hoy). FER-340.
+    private var awaitingDecisionHero: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Decisión de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("Esperando la lectura de hoy")
+                .font(.system(size: 26, weight: .semibold))
+                .foregroundStyle(theme.ink)
+                .padding(.top, 10)
+            if let level = yesterdayVerdict {
+                (Text("Ayer: ")
+                    + Text(BucleFormat.verdictWord(level)).bold()
+                    + Text(" · se actualiza al sincronizar"))
+                    .font(StrandFont.subhead)
+                    .foregroundStyle(theme.inkTertiary)
+                    .padding(.top, 6)
+            }
+            Text("Tu decisión llega cuando uses la banda y sincronices tras dormir. Se afina con la información de hoy.")
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -775,6 +822,14 @@ private struct BucleLanding: View {
         let proven = await repo.provenLevers()
         let generated = InsightEngine.promoteProven(InsightEngine.generate(inputs), provenLevers: proven)
         let r = ReadinessEngine.evaluate(days: days, today: todayKey)
+        // When today's verdict isn't in yet (awaiting state), surface yesterday's as context — but only
+        // if yesterday actually produced one. One extra evaluate; no change to the engine. (FER-340)
+        var yVerdict: ReadinessEngine.Level? = nil
+        if r.level == .insufficient,
+           let yDate = Calendar.current.date(byAdding: .day, value: -1, to: Date()) {
+            let ry = ReadinessEngine.evaluate(days: days, today: Repository.localDayKey(yDate))
+            if ry.level != .insufficient { yVerdict = ry.level }
+        }
 
         let importedQs = NSOrderedSet(array: imported.map(\.question)).array as? [String] ?? []
         let catalog = JournalCatalogStore.mergeCatalog(imported: importedQs, custom: [])
@@ -800,6 +855,7 @@ private struct BucleLanding: View {
             self.recovery = repo.today?.recovery
             self.grounding = g
             self.usableNights = nights
+            self.yesterdayVerdict = yVerdict
             self.journalAnswered = todayAnswers.count
             self.journalTotal = max(catalog.count, 1)
             self.trendSpark = spark

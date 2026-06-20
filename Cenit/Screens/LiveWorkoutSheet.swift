@@ -5,8 +5,8 @@ import WhoopStore
 // MARK: - Train hub: live-workout entry + recording sheet (FER-197)
 //
 // Restores the manually-started live workout tracker removed from Live in FER-184, now living in the
-// Train hub. The HUB ROW stays in the hub's dark `StrandPalette` (matching Breathe/Intervals); tapping
-// it opens a SHEET written in the light «Instrumento diurno» language — coherent with Live, which is
+// Train hub. The Train hub migrated to light «Instrumento» paper (FER-342), so the HUB ROW now reads in
+// the same warm palette as Breathe/Intervals; tapping it opens a SHEET in the same language — coherent with Live, which is
 // itself a light sheet (FER-190). The recording lives in `AppModel` (global), so closing the sheet or
 // switching tabs never stops the session; the row then reads "Recording m:ss" and reopens the sheet.
 //
@@ -35,7 +35,7 @@ struct LiveWorkoutHubRow: View {
             // ONE stable Button hosts the sheet, so flipping start → recording never tears it down.
             Button { primaryTap() } label: { rowLabel }
                 .disabled(isDisabled)
-                .listRowBackground(StrandPalette.surfaceRaised)
+                .listRowBackground(sheetTheme.surface)
                 .accessibilityLabel(Text(model.activeWorkout != nil ? "Recording" : "Start live"))
                 .accessibilityHint(isDisabled ? Text("Connect and wear your strap to record live.") : Text(""))
                 .sheet(isPresented: $showSheet) {
@@ -54,7 +54,7 @@ struct LiveWorkoutHubRow: View {
             if isDisabled {
                 Text("Connect and wear your strap to record live.")
                     .font(StrandFont.footnote)
-                    .foregroundStyle(StrandPalette.textTertiary)
+                    .foregroundStyle(sheetTheme.inkTertiary)
             }
         }
     }
@@ -67,19 +67,19 @@ struct LiveWorkoutHubRow: View {
     @ViewBuilder private var rowLabel: some View {
         if let w = model.activeWorkout {
             HStack(spacing: 10) {
-                Circle().fill(StrandPalette.accent).frame(width: 8, height: 8)
-                Text("Recording").font(StrandFont.body).foregroundStyle(StrandPalette.textPrimary)
+                Circle().fill(sheetTheme.dataRecovery).frame(width: 8, height: 8)
+                Text("Recording").font(StrandFont.body).foregroundStyle(sheetTheme.ink)
                 Spacer()
                 TimelineView(.periodic(from: w.start, by: 1)) { ctx in
                     Text(Self.elapsed(from: w.start, to: ctx.date))
-                        .font(StrandFont.bodyNumber).foregroundStyle(StrandPalette.textSecondary)
+                        .font(StrandFont.bodyNumber).foregroundStyle(sheetTheme.inkSecondary)
                 }
-                Image(systemName: "chevron.right").font(.caption2).foregroundStyle(StrandPalette.textTertiary)
+                Image(systemName: "chevron.right").font(.caption2).foregroundStyle(sheetTheme.inkTertiary)
             }
         } else {
             Label("Start live", systemImage: "play.fill")
                 .font(StrandFont.body)
-                .foregroundStyle(isLiveHR ? StrandPalette.accent : StrandPalette.textTertiary)
+                .foregroundStyle(isLiveHR ? sheetTheme.dataRecovery : sheetTheme.inkTertiary)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
@@ -89,11 +89,11 @@ struct LiveWorkoutHubRow: View {
         let discarded = model.lastWorkoutDiscarded
         return HStack(spacing: 10) {
             Image(systemName: discarded ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
-                .foregroundStyle(discarded ? StrandPalette.statusWarning : StrandPalette.accent)
-            Text(noticeText).font(StrandFont.subhead).foregroundStyle(StrandPalette.textSecondary)
+                .foregroundStyle(discarded ? sheetTheme.warning : sheetTheme.dataRecovery)
+            Text(noticeText).font(StrandFont.subhead).foregroundStyle(sheetTheme.inkSecondary)
             Spacer(minLength: 0)
         }
-        .listRowBackground(StrandPalette.surfaceRaised)
+        .listRowBackground(sheetTheme.surface)
         .task {
             try? await Task.sleep(nanoseconds: 4_000_000_000)
             model.acknowledgeLastWorkout()

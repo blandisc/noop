@@ -145,7 +145,7 @@ public struct Sparkline: View {
                         container: geo.size,
                         tooltip: ChartTooltip(
                             value: valueFormat(values[idx]),
-                            label: indexLabel?(idx) ?? "sample \(idx + 1)",
+                            label: indexLabel?(idx) ?? String(localized: "sample \(idx + 1)", bundle: .main),
                             accent: color
                         )
                     )

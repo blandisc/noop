@@ -94,7 +94,7 @@ public struct MetricRow: View {
                 Text(value).font(StrandFont.number(20)).foregroundStyle(valueColor)
                     // VoiceOver reads "—" as "guion" / "dash". When there's no reading yet, say it
                     // plainly instead — the detail still exists. (FER-161)
-                    .accessibilityLabel(isPlaceholder ? Text("sin dato de hoy") : Text(value))
+                    .accessibilityLabel(isPlaceholder ? Text("no reading today") : Text(value))
                 if let unit {
                     Text(unit).font(StrandFont.unit).foregroundStyle(unitColor)
                         // Don't append a unit to "sin dato de hoy".

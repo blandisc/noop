@@ -91,10 +91,12 @@ final class DiurnalDialTests: XCTestCase {
         cal.timeZone = TimeZone(identifier: "UTC")!
         let d = cal.date(from: DateComponents(year: 2026, month: 6, day: 16, hour: 15, minute: 30))!
         let syncing = DiurnalDial(now: d, calendar: cal, syncing: true)
-        XCTAssertTrue(syncing.accessibilityText.hasPrefix("Sincronizando"),
+        // Source language is English; without the app catalog (test bundle) the
+        // localized strings resolve to their English source.
+        XCTAssertTrue(syncing.accessibilityText.hasPrefix("Syncing"),
                       "a syncing dial should announce it is syncing first")
         let resting = DiurnalDial(now: d, calendar: cal, syncing: false)
-        XCTAssertFalse(resting.accessibilityText.contains("Sincronizando"),
+        XCTAssertFalse(resting.accessibilityText.contains("Syncing"),
                        "a resting dial must not announce syncing")
     }
 }
