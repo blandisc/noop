@@ -1,32 +1,16 @@
-<svg width="1280" height="360" viewBox="0 0 1280 360" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="pulse" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#18C98B"/>
-      <stop offset="1" stop-color="#2FE6A8"/>
-    </linearGradient>
-    <radialGradient id="bg" cx="0.7" cy="0.4" r="0.8">
-      <stop offset="0" stop-color="#0D1512"/>
-      <stop offset="1" stop-color="#060A08"/>
-    </radialGradient>
-  </defs>
-  <rect width="1280" height="360" fill="url(#bg)"/>
-  <!-- faint full-width pulse -->
-  <path d="M0 300 H300 L360 120 L470 470 L540 200 L600 320 H1280"
-        fill="none" stroke="#18C98B" stroke-opacity="0.10" stroke-width="10"
-        stroke-linecap="round" stroke-linejoin="round"/>
-  <!-- logo tile -->
-  <g transform="translate(96,96)">
-    <rect width="168" height="168" rx="40" fill="#060A08" stroke="#1B2620" stroke-width="2"/>
-    <path d="M22 84 H62 L78 44 L106 132 L122 70 L138 96 H150"
-          fill="none" stroke="url(#pulse)" stroke-width="9"
-          stroke-linecap="round" stroke-linejoin="round" transform="translate(0,0) scale(1)"/>
-    <circle cx="150" cy="96" r="7" fill="#2FE6A8"/>
-  </g>
-  <!-- wordmark -->
-  <text x="312" y="168" font-family="-apple-system, Helvetica, Arial, sans-serif"
-        font-size="104" font-weight="800" fill="#F4F7F5" letter-spacing="2">NOOP</text>
-  <text x="316" y="226" font-family="-apple-system, Helvetica, Arial, sans-serif"
-        font-size="30" font-weight="500" fill="#8B9690">Your strap. Your data. Your machine.</text>
-  <text x="316" y="266" font-family="-apple-system, Helvetica, Arial, sans-serif"
-        font-size="24" font-weight="500" fill="#18C98B">A local-first companion for WHOOP straps. No cloud, no account.</text>
+<svg width="1280" height="320" viewBox="0 0 1280 320" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>Cénit — an on-device companion for WHOOP straps</title>
+  <desc>An 82 recovery score in deep green inside a ring on warm paper, beside the Cénit wordmark in ink and the line "Your strap. Your data. Your iPhone."</desc>
+  <!-- «Instrumento diurno» — warm paper, color only in the datum -->
+  <rect x="0" y="0" width="1280" height="320" rx="24" fill="#F4F1E8"/>
+  <!-- faint heartbeat baseline (hairline, never color) -->
+  <path d="M70 300 H540 L556 300 L568 309 L582 279 L598 316 L612 294 L628 300 H1210" fill="none" stroke="#E6E0D2" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- recovery ring — the one datum, so the one color -->
+  <circle cx="210" cy="160" r="96" fill="none" stroke="#E6E0D2" stroke-width="18"/>
+  <circle cx="210" cy="160" r="96" fill="none" stroke="#0C8F62" stroke-width="18" stroke-linecap="round" stroke-dasharray="494.6 603.2" transform="rotate(-90 210 160)"/>
+  <text x="210" y="160" text-anchor="middle" dominant-baseline="central" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="92" font-weight="600" letter-spacing="-2" fill="#0C8F62">82</text>
+  <!-- wordmark + lines, all ink on paper -->
+  <text x="398" y="172" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="132" font-weight="800" letter-spacing="-3" fill="#221D16">Cénit</text>
+  <text x="402" y="224" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="30" font-weight="500" fill="#5C5648">Your strap. Your data. Your iPhone.</text>
+  <text x="402" y="260" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="21" font-weight="400" fill="#6F6857">On-device companion for WHOOP 4.0 &amp; 5.0/MG — no cloud, no account.</text>
 </svg>

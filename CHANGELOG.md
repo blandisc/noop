@@ -2,7 +2,7 @@
 
 All notable changes to Cénit. Cénit is an independent, experimental project — not the WHOOP app, and
 not affiliated with WHOOP. It reads a strap you own, on your own device, fully offline. Dates are
-approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/releases) page.
+approximate; Cénit is built from source — see the [README](README.md).
 
 ## What to expect
 
