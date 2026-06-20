@@ -139,8 +139,7 @@ final class Repository: ObservableObject {
     func refresh(days nDays: Int = 4000) async {
         guard let store = await ensureStore() else { return }
         let now = Date()
-        let fromDay = Self.dayString(now.addingTimeInterval(-Double(nDays) * 86_400))
-        let toDay = Self.dayString(now.addingTimeInterval(86_400))
+        let (fromDay, toDay) = Self.dayWindow(days: nDays, now: now)
         let nowTs = Int(now.timeIntervalSince1970)
         let lo = nowTs - nDays * 86_400, hi = nowTs + 86_400
 
@@ -256,9 +255,7 @@ final class Repository: ObservableObject {
     /// Daily series for any metric key from a given source ("my-whoop" / "apple-health").
     func series(key: String, source: String, days: Int = 4000) async -> [(day: String, value: Double)] {
         guard let store = await ensureStore() else { return [] }
-        let now = Date()
-        let from = Self.dayString(now.addingTimeInterval(-Double(days) * 86_400))
-        let to = Self.dayString(now.addingTimeInterval(86_400))
+        let (from, to) = Self.dayWindow(days: days)
         let pts = (try? await store.metricSeries(deviceId: source, key: key, from: from, to: to)) ?? []
         return pts.map { ($0.day, $0.value) }
     }
@@ -289,9 +286,7 @@ final class Repository: ObservableObject {
     /// Logged behaviours (imported WHOOP journal ∪ native noop-journal) for correlation insights.
     func journalEntries(days: Int = 4000) async -> [JournalEntry] {
         guard let store = await ensureStore() else { return [] }
-        let now = Date()
-        let from = Self.dayString(now.addingTimeInterval(-Double(days) * 86_400))
-        let to = Self.dayString(now.addingTimeInterval(86_400))
+        let (from, to) = Self.dayWindow(days: days)
         let imported = (try? await store.journalEntries(deviceId: deviceId, from: from, to: to)) ?? []
         let native = (try? await store.journalEntries(deviceId: Self.journalDeviceId,
                                                       from: from, to: to)) ?? []
@@ -302,11 +297,8 @@ final class Repository: ObservableObject {
     /// strings into the catalog, so logged and imported days group under one behaviour).
     func importedJournalEntries(days: Int = 4000) async -> [JournalEntry] {
         guard let store = await ensureStore() else { return [] }
-        let now = Date()
-        return (try? await store.journalEntries(
-            deviceId: deviceId,
-            from: Self.dayString(now.addingTimeInterval(-Double(days) * 86_400)),
-            to: Self.dayString(now.addingTimeInterval(86_400)))) ?? []
+        let (from, to) = Self.dayWindow(days: days)
+        return (try? await store.journalEntries(deviceId: deviceId, from: from, to: to)) ?? []
     }
 
     /// One day's native answers (question → answeredYes) for the logging card's chip state. A
@@ -571,11 +563,8 @@ final class Repository: ObservableObject {
     /// Apple Health daily aggregates (steps/energy/vo2/hr).
     func appleDailyRows(days: Int = 4000) async -> [AppleDaily] {
         guard let store = await ensureStore() else { return [] }
-        let now = Date()
-        return (try? await store.appleDaily(
-            deviceId: "apple-health",
-            from: Self.dayString(now.addingTimeInterval(-Double(days) * 86_400)),
-            to: Self.dayString(now.addingTimeInterval(86_400)))) ?? []
+        let (from, to) = Self.dayWindow(days: days)
+        return (try? await store.appleDaily(deviceId: "apple-health", from: from, to: to)) ?? []
     }
 
     /// Apple-Health `dailyMetric` rows (sleep / HRV / resting HR / SpO₂ / resp rate) read straight from
@@ -585,23 +574,22 @@ final class Repository: ObservableObject {
     /// to these to fill that gap without disturbing the dashboard merge or the recovery baseline. (FER-98)
     func appleDailyMetricRows(days: Int = 4000) async -> [DailyMetric] {
         guard let store = await ensureStore() else { return [] }
-        let now = Date()
-        return (try? await store.dailyMetrics(
-            deviceId: "apple-health",
-            from: Self.dayString(now.addingTimeInterval(-Double(days) * 86_400)),
-            to: Self.dayString(now.addingTimeInterval(86_400)))) ?? []
+        let (from, to) = Self.dayWindow(days: days)
+        return (try? await store.dailyMetrics(deviceId: "apple-health", from: from, to: to)) ?? []
     }
 
-    /// Shared formatter — created once. Hot read path (called per series window / refresh);
-    /// allocating a DateFormatter per call was a measurable waste. Read-only use is thread-safe.
-    private static let dayFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.dateFormat = "yyyy-MM-dd"
-        return f
-    }()
+    /// `yyyy-MM-dd` (local zone, en_US_POSIX) — same contract as `localDayKey`; both share the one
+    /// `dayKeyFormatter` (was two byte-identical formatters, FER-328). Hot read path, so it's a single
+    /// cached formatter; read-only use is thread-safe.
+    static func dayString(_ d: Date) -> String { dayKeyFormatter.string(from: d) }
 
-    static func dayString(_ d: Date) -> String { dayFormatter.string(from: d) }
+    /// The (from, to) `yyyy-MM-dd` window spanning the trailing `days` up to tomorrow — the shared
+    /// date window every dashboard/series read derives the same way (FER-328). `now` is injectable so
+    /// a caller that already sampled the clock (refresh) reuses it instead of reading `Date()` twice.
+    private static func dayWindow(days: Int, now: Date = Date()) -> (from: String, to: String) {
+        (dayString(now.addingTimeInterval(-Double(days) * 86_400)),
+         dayString(now.addingTimeInterval(86_400)))
+    }
 }
 
 private extension DailyMetric {
