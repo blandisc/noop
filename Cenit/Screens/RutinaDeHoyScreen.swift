@@ -9,9 +9,9 @@ import StrandTraining
 // the recovery band slot (hidden when there is no recovery score — never invents advice). Pushed from
 // the Entrenar hub in the light «Instrumento» language.
 //
-// The guided, set-by-set session is FER-347 (out of scope), so there is no functional «Empezar» here
-// yet — an honest note names what's coming. The band's RULE is W3·bucle / FER-349; this screen only
-// renders the shared `RecoveryBand` container.
+// The guided, set-by-set session is FER-347: «Empezar» builds the routine's plan (with each exercise's
+// «la última vez» prefill) and opens the guided session sheet (owned by AppModel). The band's RULE is
+// W3·bucle / FER-349; this screen only renders the shared `RecoveryBand` container.
 
 struct RutinaDeHoyScreen: View {
     /// Which routine to show; nil = today's pick (the most recent), used by DEBUG screenshot-nav.
@@ -26,6 +26,7 @@ struct RutinaDeHoyScreen: View {
 
 private struct RutinaDeHoyContent: View {
     @EnvironmentObject var repo: Repository
+    @EnvironmentObject var model: AppModel
     @Environment(\.instrumentoTheme) private var theme
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
 
@@ -49,7 +50,7 @@ private struct RutinaDeHoyContent: View {
 
                 if loaded {
                     plan
-                    startNote
+                    if !rows.isEmpty { startButton }
                 }
             }
             .padding(.top, 12)
@@ -132,17 +133,28 @@ private struct RutinaDeHoyContent: View {
                 .strokeBorder(theme.hairline, lineWidth: 1))
     }
 
-    // MARK: - Honest guided-start note (FER-347 ships the real start)
+    // MARK: - Start the guided session (FER-347)
 
-    private var startNote: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Image(systemName: "info.circle")
-                .font(.system(size: 13)).foregroundStyle(theme.inkTertiary)
-            Text("Guided, set-by-set tracking arrives in a coming update.")
-                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                .fixedSize(horizontal: false, vertical: true)
+    private var startButton: some View {
+        Button { start() } label: {
+            Label(model.strengthSession != nil ? "Resume workout" : "Start workout",
+                  systemImage: model.strengthSession != nil ? "play.fill" : "figure.strengthtraining.functional")
+                .font(StrandFont.headline).foregroundStyle(theme.paper)
+                .frame(maxWidth: .infinity).padding(.vertical, 15)
+                .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
         }
+        .buttonStyle(.plain)
         .padding(.top, 4)
+    }
+
+    private func start() {
+        // A session already running → just resume it (don't rebuild over logged sets).
+        if model.strengthSession != nil { model.resumeStrengthSession(); return }
+        guard let r = routine else { return }
+        let slots = rows.map {
+            StrengthSessionModel.PlanSlot(re: $0.re, exercise: $0.exercise, lastSets: $0.lastSets)
+        }
+        model.startStrengthSession(routineId: r.id, routineName: r.name, slots: slots)
     }
 
     // MARK: - Formatting
@@ -192,10 +204,14 @@ private struct RutinaDeHoyContent: View {
         let custom = (try? await store.customExercises()) ?? []
         let customByID = Dictionary(custom.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         routine = r
-        rows = exs.map { re in
+        var built: [PlanRow] = []
+        for re in exs {
             let ex = ExerciseCatalog.byID(re.exerciseId) ?? customByID[re.exerciseId]
-            return PlanRow(re: re, exercise: ex)
+            // Recent work sets power the «la última vez» prefill in the guided session (FER-347).
+            let last = (try? await store.lastWorkSets(exerciseId: re.exerciseId, limit: 4)) ?? []
+            built.append(PlanRow(re: re, exercise: ex, lastSets: last))
         }
+        rows = built
         loaded = true
     }
 }
@@ -204,6 +220,8 @@ private struct RutinaDeHoyContent: View {
 private struct PlanRow: Identifiable {
     let re: RoutineExercise
     let exercise: Exercise?
+    /// Recent work sets (newest first) for the guided session's «la última vez» prefill (FER-347).
+    var lastSets: [SetEntry] = []
     var id: String { re.id }
     var name: String { exercise?.name ?? String(localized: "Exercise") }
     /// Up to two primary muscles, capitalized for display (catalog stores them lowercased).

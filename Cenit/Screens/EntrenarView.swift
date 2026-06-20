@@ -39,6 +39,7 @@ struct EntrenarView: View {
 
 private struct EntrenarLanding: View {
     @EnvironmentObject var repo: Repository
+    @EnvironmentObject var model: AppModel
     @Environment(\.instrumentoTheme) private var theme
 
     var openRoutine: (String) -> Void
@@ -83,6 +84,19 @@ private struct EntrenarLanding: View {
         .sheet(item: $builderTarget) { target in
             RoutineBuilderScreen(routine: target.routine) { await load() }
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        }
+        // The guided strength session (FER-347). Hosted here at the hub root so it survives pushing
+        // «Rutina de hoy» / switching tabs; the session itself lives in AppModel, so swiping the sheet
+        // down only hides it (the «Resume» row below re-opens). A `.sheet` — no nested NavigationStack.
+        .sheet(isPresented: $model.strengthSheetPresented) {
+            if let session = model.strengthSession {
+                LiveStrengthSheet(session: session, theme: theme)
+                    .environmentObject(model)
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.visible)
+                    .presentationBackground(theme.paper)
+                    .preferredColorScheme(.light)
+            }
         }
         .task { await load() }
     }
@@ -217,6 +231,10 @@ private struct EntrenarLanding: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Tools").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             VStack(alignment: .leading, spacing: 0) {
+                if model.strengthSession != nil {
+                    resumeStrengthRow
+                    divider
+                }
                 LiveWorkoutHubRow()
                 divider
                 toolRow("Exercise library", "book", action: openLibrary)
@@ -228,6 +246,29 @@ private struct EntrenarLanding: View {
                 toolRow("Diet", "fork.knife", action: openDiet)
             }
         }
+    }
+
+    /// «Resume» the in-progress guided session (FER-347) — shown only while a session runs but its sheet
+    /// is dismissed, so the durable session is always one tap away from the hub.
+    private var resumeStrengthRow: some View {
+        Button { model.resumeStrengthSession() } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "figure.strengthtraining.functional").frame(width: 30)
+                    .font(.system(size: 17)).foregroundStyle(theme.dataStrain)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Workout in progress").font(StrandFont.body).foregroundStyle(theme.ink)
+                    Text(model.strengthSession?.routineName ?? "")
+                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                }
+                Spacer(minLength: 8)
+                Text("Resume").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+            }
+            .frame(minHeight: 48).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("Resume workout in progress"))
     }
 
     private func toolRow(_ title: LocalizedStringKey, _ icon: String, action: @escaping () -> Void) -> some View {
