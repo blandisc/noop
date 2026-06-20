@@ -2,25 +2,28 @@ import SwiftUI
 import UniformTypeIdentifiers
 import StrandDesign
 import WhoopStore
+#if canImport(UIKit)
+import UIKit
+#endif
 
-// MARK: - OnboardingWizard
+// MARK: - OnboardingWizard  ·  «Instrumento diurno» (light)
 //
-// A full-screen, paged onboarding + pairing flow for NOOP. Cinematic and calm:
-// a dark surfaceBase substrate with a slow ambient glow, a bottom progress "thread"
-// that fills as you advance, Back always available, and a forward CTA per step.
+// First-run setup, rebuilt light (FER-358, which absorbed the F2 re-skin). Apple
+// Health is the BASE everyone connects; the WHOOP strap is an OPTIONAL layer on top.
+// No dead ends: skipping Health and having no strap still lands you in the app.
 //
-// Steps:
-//  1 Welcome           — NOOP + "all your data, none of the cloud"
-//  2 What it does      — 3 calm value slides
-//  3 Bluetooth priming — explain BEFORE the OS prompt
-//  4 Wear & wake       — put your strap on, make sure it's charged
-//  5 Scan              — radar sweep; auto-scans, Scan retries via model.scan()
-//  6 Bonding           — celebration when live.bonded (a RecoveryRing blooms in)
-//  7 Profile           — age / sex / weight / height bound to ProfileStore
-//  8 Import (optional)  — WHOOP / Apple Health import from the wizard
-//  9 Done              — "Your thread starts here." → onFinished()
+// Flow (additive, ~6 screens):
+//   welcome        — Cénit + "tus datos, nada en la nube" (one honest line)
+//   appleHealth    — connect the base (with "Ahora no"); 5 states
+//   whoopQuestion  — ¿tienes un WHOOP?  Sí → pairing · No → straight to profile
+//   prepare/scan/bonded — pairing (only on the "Sí" branch)
+//   profile        — age / sex / weight / height
+//   importData     — optional history import
+//   done           — "Entrar a Cénit" → onFinished()
 //
-// Presentation is wired centrally; this view only calls onFinished() when complete.
+// Surface is `InstrumentoTheme.base.paper`; color appears ONLY on a real measured
+// state (verdict-green for "connected", critical-red for "denied"). CTAs are the
+// shared InkButton / OutlineButton (hierarchy by ink fill, not color).
 
 public struct OnboardingWizard: View {
 
@@ -31,66 +34,52 @@ public struct OnboardingWizard: View {
         self.onFinished = onFinished
     }
 
-    // NOTE: the root deliberately does NOT observe the fast-updating model/live/profile
-    // env objects — doing so re-rendered the whole animated wizard on every HR tick and
-    // caused flicker. Child steps observe what they need; a hidden BondWatcher (below)
-    // handles the bond→celebration transition without re-rendering the root.
-
     private enum Step: Int, CaseIterable {
-        case welcome, what, expectations, bluetooth, wear, scan, bonded, profile, importData, notifications, done
-
+        case welcome, appleHealth, whoopQuestion, prepare, scan, bonded, profile, importData, done
         var isFirst: Bool { self == .welcome }
         var isLast: Bool { self == .done }
+        /// Pairing steps live only on the "I have a WHOOP" branch.
+        var isPairing: Bool { self == .prepare || self == .scan || self == .bonded }
     }
 
     @State private var step: Step = .welcome
-    @State private var glow = false
+    /// Set by the whoopQuestion branch; drives whether pairing steps are visited.
+    @State private var hasWhoop = true
 
     public var body: some View {
         ZStack {
-            background
+            InstrumentoTheme.base.paper.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Top chrome: a small back affordance + a step counter.
                 topBar
-                    .padding(.horizontal, 36)
-                    .padding(.top, 42)
+                    .padding(.horizontal, 28)
+                    .padding(.top, 18)
 
-                // The paged content.
                 ZStack {
                     switch step {
-                    case .welcome:    WelcomeStep()
-                    case .what:       WhatItDoesStep()
-                    case .expectations: ExpectationsStep()
-                    case .bluetooth:  BluetoothStep()
-                    case .wear:       WearStep()
-                    case .scan:       ScanStep(advance: advance)
-                    case .bonded:     BondedStep()
-                    case .profile:    ProfileStep()
-                    case .importData: ImportStep()
-                    case .notifications: NotificationsStep()
-                    case .done:       DoneStep()
+                    case .welcome:       WelcomeStep(onContinue: advance)
+                    case .appleHealth:   AppleHealthStep(onContinue: advance)
+                    case .whoopQuestion: WhoopQuestionStep(onChoose: choose)
+                    case .prepare:       PrepareStep(onContinue: advance)
+                    case .scan:          ScanStep(onContinue: advance)
+                    case .bonded:        BondedStep(onContinue: advance)
+                    case .profile:       ProfileStep(onContinue: advance)
+                    case .importData:    ImportStep(onContinue: advance)
+                    case .done:          DoneStep(onFinish: onFinished)
                     }
                 }
-                .frame(maxWidth: 620, maxHeight: .infinity)
+                .frame(maxWidth: 560, maxHeight: .infinity)
                 .transition(stepTransition)
-                .id(step)                       // re-runs the transition per step
-                .padding(.horizontal, 40)
-
-                // Bottom: the thread (progress) + the forward CTA.
-                bottomBar
-                    .padding(.horizontal, 40)
-                    .padding(.top, 24)
-                    .padding(.bottom, 36)
+                .id(step)
+                .padding(.horizontal, NoopMetrics.screenPadding)
+                .padding(.bottom, 28)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(StrandPalette.surfaceBase.ignoresSafeArea())
-        .preferredColorScheme(.dark)
-        .onAppear { glow = true }
-        // Isolated live observation — a hidden watcher slides Scan → celebration on bond
-        // without subscribing the whole wizard to per-tick updates.
+        .instrumentoTheme(.base)
+        .preferredColorScheme(.light)
+        // Isolated live observation — slides Scan → celebration on bond without
+        // subscribing the whole wizard to per-tick updates.
         .background(BondWatcher(onBonded: handleBond))
     }
 
@@ -98,124 +87,52 @@ public struct OnboardingWizard: View {
         if step == .scan { withAnimation(StrandMotion.hero) { step = .bonded } }
     }
 
-    // MARK: Backgrounds
+    // MARK: Top bar (just a quiet Back affordance)
 
-    private var background: some View {
-        ZStack {
-            StrandPalette.surfaceBase
-            // A slow ambient bloom that breathes — the substrate feels alive.
-            RadialGradient(
-                colors: [StrandPalette.glowAmbient.opacity(0.55), .clear],
-                center: .center,
-                startRadius: 40,
-                endRadius: glow ? 620 : 480
-            )
-            .blendMode(.plusLighter)
-            .opacity(glow ? 0.9 : 0.6)
-            .animation(StrandMotion.breathe, value: glow)
-            .ignoresSafeArea()
-
-            // A faint indigo wash from the top — instrument-grade depth.
-            LinearGradient(
-                colors: [StrandPalette.accentMuted.opacity(0.20), .clear],
-                startPoint: .top,
-                endPoint: .center
-            )
-            .ignoresSafeArea()
-        }
-    }
-
-    // MARK: Top bar
-
+    @ViewBuilder
     private var topBar: some View {
         HStack {
             if step.isFirst {
-                Color.clear.frame(width: 64, height: 28)
+                Color.clear.frame(width: 44, height: 28)
             } else {
                 Button(action: back) {
                     HStack(spacing: 6) {
                         Image(systemName: "chevron.left")
-                        Text("Back")
+                        Text("Atrás")
                     }
                     .font(StrandFont.subhead)
-                    .foregroundStyle(StrandPalette.textSecondary)
+                    .foregroundStyle(InstrumentoTheme.base.inkSecondary)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Back")
+                .accessibilityLabel("Atrás")
             }
-
             Spacer()
-
-            Text("\(step.rawValue + 1) / \(Step.allCases.count)")
-                .font(StrandFont.captionNumber)
-                .foregroundStyle(StrandPalette.textTertiary)
         }
     }
 
-    // MARK: Bottom bar (the thread + CTA)
-
-    @ViewBuilder
-    private var bottomBar: some View {
-        VStack(spacing: 28) {
-            ThreadProgress(progress: progress)
-                .frame(height: 3)
-                .frame(maxWidth: 620)
-
-            HStack(spacing: 14) {
-                PrimaryButton(title: ctaTitle, systemImage: ctaIcon, action: primaryAction)
-                    .frame(maxWidth: .infinity)
-            }
-            .frame(maxWidth: 620)
-        }
-    }
-
-    private var progress: Double {
-        guard Step.allCases.count > 1 else { return 1 }
-        return Double(step.rawValue) / Double(Step.allCases.count - 1)
-    }
-
-    private var ctaTitle: String {
-        switch step {
-        case .welcome:    return "Get Started"
-        case .what:       return "Continue"
-        case .expectations: return "I understand"
-        case .bluetooth:  return "Continue"
-        case .wear:       return "I'm wearing it"
-        case .scan:       return "Continue"
-        case .bonded:     return "Continue"
-        case .profile:    return "Save & Continue"
-        case .importData: return "Continue"
-        case .notifications: return "Continue"
-        case .done:       return "Enter Cénit"
-        }
-    }
-
-    private var ctaIcon: String? {
-        switch step {
-        case .done:    return "arrow.right"
-        case .bonded:  return "checkmark"
-        default:       return nil
-        }
-    }
-
-    private func primaryAction() {
-        if step.isLast {
-            onFinished()
-        } else {
-            advance()
-        }
-    }
-
-    // MARK: Navigation
+    // MARK: Navigation (skips pairing when there's no WHOOP)
 
     private func advance() {
-        guard let next = Step(rawValue: step.rawValue + 1) else { onFinished(); return }
-        withAnimation(StrandMotion.gentle) { step = next }
+        var next = Step(rawValue: step.rawValue + 1)
+        if !hasWhoop {
+            while let n = next, n.isPairing { next = Step(rawValue: n.rawValue + 1) }
+        }
+        guard let n = next else { onFinished(); return }
+        withAnimation(StrandMotion.gentle) { step = n }
     }
 
     private func back() {
-        guard let prev = Step(rawValue: step.rawValue - 1) else { return }
-        withAnimation(StrandMotion.gentle) { step = prev }
+        var prev = Step(rawValue: step.rawValue - 1)
+        if !hasWhoop {
+            while let p = prev, p.isPairing { prev = Step(rawValue: p.rawValue - 1) }
+        }
+        guard let p = prev else { return }
+        withAnimation(StrandMotion.gentle) { step = p }
+    }
+
+    private func choose(_ value: Bool) {
+        hasWhoop = value
+        advance()
     }
 
     private var stepTransition: AnyTransition {
@@ -226,9 +143,8 @@ public struct OnboardingWizard: View {
     }
 }
 
-/// Hidden, isolated observer — re-renders on live updates (it's just Color.clear, so no
-/// visible cost) and fires `onBonded` when the strap bonds, keeping the main wizard body
-/// out of the per-tick re-render path that caused flicker.
+/// Hidden, isolated observer — fires `onBonded` when the strap bonds, keeping the
+/// main wizard body out of the per-tick re-render path.
 private struct BondWatcher: View {
     @EnvironmentObject private var live: LiveState
     let onBonded: () -> Void
@@ -237,291 +153,371 @@ private struct BondWatcher: View {
     }
 }
 
-// MARK: - Step 1 · Welcome
+// MARK: - Shared shell
+
+/// One light page: a scrollable column on paper. Title/overline/body are the
+/// caller's; this just gives the consistent margins and scroll behaviour so every
+/// step survives Dynamic Type with its CTA reachable.
+private struct StepShell<Content: View>: View {
+    @ViewBuilder var content: () -> Content
+    var body: some View {
+        // minHeight = viewport so inner Spacers push the CTA to the foot, while
+        // Dynamic Type overflow still scrolls (CTA stays reachable at AX5).
+        GeometryReader { geo in
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    content()
+                }
+                .frame(maxWidth: .infinity, minHeight: geo.size.height, alignment: .topLeading)
+                .padding(.vertical, NoopMetrics.space2)
+            }
+        }
+    }
+}
+
+private struct Overline: View {
+    let text: LocalizedStringKey
+    @Environment(\.instrumentoTheme) private var theme
+    var body: some View {
+        Text(text).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+    }
+}
+
+// MARK: - Step · Welcome
 
 private struct WelcomeStep: View {
-    @State private var appear = false
+    let onContinue: () -> Void
+    @Environment(\.instrumentoTheme) private var theme
     var body: some View {
         StepShell {
-            VStack(spacing: 24) {
-                Spacer()
-                // The mark, with a soft halo.
-                ZStack {
-                    Circle()
-                        .fill(StrandPalette.accent)
-                        .frame(width: 120, height: 120)
-                        .blur(radius: 60)
-                        .opacity(appear ? 0.55 : 0.0)
-                        .blendMode(.plusLighter)
-                    Text("Cénit")
-                        .font(StrandFont.display(64))
-                        .foregroundStyle(StrandPalette.textPrimary)
-                        .scaleEffect(appear ? 1 : 0.92)
-                        .opacity(appear ? 1 : 0)
-                }
-                Text("all your data, none of the cloud")
-                    .font(StrandFont.title2)
-                    .foregroundStyle(StrandPalette.textSecondary)
-                    .opacity(appear ? 1 : 0)
-                Text("A private window into your recovery, sleep and strain — read straight from your strap, kept only on this Mac.")
-                    .font(StrandFont.body)
-                    .foregroundStyle(StrandPalette.textTertiary)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: 420)
-                    .opacity(appear ? 1 : 0)
-                Spacer()
-            }
-        }
-        .onAppear { withAnimation(StrandMotion.hero) { appear = true } }
-    }
-}
-
-// MARK: - Step 2 · What it does
-
-private struct WhatItDoesStep: View {
-    private struct Slide: Identifiable {
-        let id = UUID()
-        let icon: String
-        let tint: Color
-        let title: String
-        let body: String
-    }
-
-    private let slides: [Slide] = [
-        .init(icon: "circle.dashed.inset.filled",
-              tint: StrandPalette.accent,
-              title: "See recovery, beautifully",
-              body: "A signature ring distils HRV, resting heart rate and sleep into one calm read on whether to push or rest."),
-        .init(icon: "waveform.path.ecg",
-              tint: StrandPalette.accent,
-              title: "Watch your heart, live",
-              body: "Connect your strap and watch each beat in real time — heart rate, variability and zones as they happen."),
-        .init(icon: "lock.shield",
-              tint: StrandPalette.statusPositive,
-              title: "Own your data, offline",
-              body: "Everything lives on this Mac. No account, no sync, no cloud. Your thread is yours alone."),
-    ]
-
-    var body: some View {
-        StepShell(title: "What Cénit does", subtitle: "Three quiet promises.") {
-            VStack(spacing: 14) {
-                ForEach(Array(slides.enumerated()), id: \.element.id) { index, slide in
-                    SlideRow(slide: slide, index: index)
-                }
-            }
-        }
-    }
-
-    private struct SlideRow: View {
-        let slide: Slide
-        let index: Int
-        @State private var shown = false
-        var body: some View {
-            StrandCard {
-                HStack(spacing: 16) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(slide.tint.opacity(0.14))
-                            .frame(width: 46, height: 46)
-                        Image(systemName: slide.icon)
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundStyle(slide.tint)
-                    }
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(slide.title)
-                            .font(StrandFont.headline)
-                            .foregroundStyle(StrandPalette.textPrimary)
-                        Text(slide.body)
-                            .font(StrandFont.subhead)
-                            .foregroundStyle(StrandPalette.textSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    Spacer(minLength: 0)
-                }
-            }
-            .opacity(shown ? 1 : 0)
-            .offset(y: shown ? 0 : 14)
-            .onAppear {
-                withAnimation(StrandMotion.gentle.delay(Double(index) * 0.10)) { shown = true }
-            }
+            Spacer(minLength: NoopMetrics.sectionGap)
+            Text("Cénit")
+                .instrumentoHero(56)
+                .foregroundStyle(theme.ink)
+            Text("Tus datos, nada en la nube.")
+                .font(StrandFont.title2)
+                .foregroundStyle(theme.inkSecondary)
+                .padding(.top, NoopMetrics.space1)
+            Text("Cénit lee tu recuperación, sueño y esfuerzo y los guarda solo en tu iPhone. Sin cuenta, sin servidores. Dale unos días de datos y empezarás a ver tus patrones.")
+                .font(StrandFont.body)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, NoopMetrics.sectionGap)
+            Spacer(minLength: NoopMetrics.sectionGap)
+            InkButton("Comenzar", action: onContinue)
         }
     }
 }
 
-// MARK: - Step 2.5 · What to expect (independent / experimental / 5-MG framing)
+// MARK: - Step · Apple Health (the base)
 
-private struct ExpectationsStep: View {
-    @State private var shown = false
+private struct AppleHealthStep: View {
+    let onContinue: () -> Void
+    @EnvironmentObject private var health: HealthKitBridge
+    @Environment(\.instrumentoTheme) private var theme
+    @Environment(\.openURL) private var openURL
+    @State private var requesting = false
+
     var body: some View {
-        StepShell(title: "What to expect",
-                  subtitle: "A few honest words, so nothing's a surprise.") {
-            VStack(spacing: 12) {
-                ForEach(Array(AppChangelog.expectations.enumerated()), id: \.element.id) { index, e in
-                    HStack(alignment: .top, spacing: 14) {
-                        Image(systemName: e.icon)
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundStyle(StrandPalette.accent)
-                            .frame(width: 26)
-                            .padding(.top, 2)
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(e.title).font(StrandFont.headline)
-                                .foregroundStyle(StrandPalette.textPrimary)
-                            Text(e.body).font(StrandFont.subhead)
-                                .foregroundStyle(StrandPalette.textSecondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        Spacer(minLength: 0)
-                    }
-                    .padding(14)
-                    .frame(maxWidth: 520, alignment: .leading)
-                    .background(StrandPalette.surfaceRaised, in: RoundedRectangle(cornerRadius: 14))
-                    .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(StrandPalette.hairline))
-                    .opacity(shown ? 1 : 0)
-                    .offset(y: shown ? 0 : 8)
-                    .animation(StrandMotion.gentle.delay(Double(index) * 0.08), value: shown)
-                }
+        Group {
+            switch health.auth {
+            case .unknown:     priming
+            case .authorized:  granted
+            case .denied:      denied
+            case .unavailable: unavailable
             }
         }
-        .onAppear { shown = true }
+        // If Health isn't available, don't strand the user on a dead screen.
+        .onAppear { if health.auth == .unavailable { onContinue() } }
     }
-}
 
-// MARK: - Step 3 · Bluetooth priming
+    // Initial priming + the request, in flight ("Conectando…").
+    private var priming: some View {
+        StepShell {
+            Overline(text: "Paso 1 · La base")
+            Text("Conecta Apple Health")
+                .font(StrandFont.title1)
+                .foregroundStyle(theme.ink)
+                .padding(.top, NoopMetrics.space2)
+            Text("Es la base de tus datos en Cénit.")
+                .font(StrandFont.body)
+                .foregroundStyle(theme.inkSecondary)
+                .padding(.top, NoopMetrics.space2)
+            Text("Cénit lee tu sueño, pasos, entrenamientos, peso y frecuencia cardiaca desde Apple Health para darte una lectura honesta de tu cuerpo.")
+                .font(StrandFont.body)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, NoopMetrics.sectionGap)
 
-private struct BluetoothStep: View {
-    @State private var pulse = false
-    var body: some View {
-        StepShell(title: "A quick word before we connect",
-                  subtitle: "macOS will ask for Bluetooth in a moment.") {
-            VStack(spacing: 24) {
-                ZStack {
-                    Circle()
-                        .stroke(StrandPalette.accent.opacity(0.25), lineWidth: 2)
-                        .frame(width: 120, height: 120)
-                        .scaleEffect(pulse ? 1.25 : 0.9)
-                        .opacity(pulse ? 0 : 0.8)
-                    Circle()
-                        .fill(StrandPalette.accentMuted.opacity(0.5))
-                        .frame(width: 86, height: 86)
-                    Image(systemName: "wave.3.right")
-                        .font(.system(size: 34, weight: .semibold))
-                        .foregroundStyle(StrandPalette.accent)
-                }
-                .frame(height: 130)
-
-                InfoCard(
-                    icon: "lock.fill",
-                    tint: StrandPalette.statusPositive,
-                    title: "Nothing leaves your Mac",
-                    message: "Cénit talks to your strap directly over Bluetooth Low Energy. There's no server in the middle — the connection is local, and so is every reading it pulls in."
-                )
-
-                Text("When the system prompt appears, choose Allow so Cénit can find your strap.")
+            Rectangle().fill(theme.hairline).frame(height: 1)
+                .padding(.top, NoopMetrics.sectionGap)
+            HStack(alignment: .top, spacing: NoopMetrics.space2) {
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 13))
+                    .foregroundStyle(theme.inkTertiary)
+                    .accessibilityHidden(true)
+                Text("Todo se queda en tu iPhone. Cénit no sube nada a ningún servidor.")
                     .font(StrandFont.subhead)
-                    .foregroundStyle(StrandPalette.textTertiary)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: 460)
+                    .foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            .padding(.top, NoopMetrics.gap)
+
+            Spacer(minLength: NoopMetrics.sectionGap)
+            InkButton(requesting ? "Conectando…" : "Conectar Apple Health") {
+                guard !requesting else { return }
+                requesting = true
+                Task {
+                    await health.requestAuthorization()
+                    requesting = false
+                    if health.auth == .authorized { await health.sync() }
+                }
+            }
+            .disabled(requesting)
+            OutlineButton("Ahora no", action: onContinue)
+                .opacity(requesting ? 0.45 : 1)
+                .disabled(requesting)
         }
-        .onAppear { withAnimation(StrandMotion.breathe) { pulse = true } }
+    }
+
+    private var granted: some View {
+        CenteredState(
+            glyph: "checkmark.circle.fill",
+            glyphColor: theme.verdict,
+            title: "Apple Health conectado.",
+            titleColor: theme.verdict,
+            message: "Ya tienes la base. Sigamos."
+        ) {
+            InkButton("Continuar", action: onContinue)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Apple Health conectado")
+    }
+
+    private var denied: some View {
+        CenteredState(
+            glyph: "exclamationmark.circle",
+            glyphColor: theme.critical,
+            title: "Acceso desactivado",
+            titleColor: theme.ink,
+            message: "Dejaste el acceso a Apple Health desactivado. Puedes activarlo cuando quieras desde Ajustes. Cénit funciona sin él, con menos detalle."
+        ) {
+            OutlineButton("Abrir Ajustes") {
+                #if canImport(UIKit)
+                if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                #endif
+            }
+            OutlineButton("Continuar de todos modos", action: onContinue)
+        }
+    }
+
+    private var unavailable: some View {
+        CenteredState(
+            glyph: "heart.slash",
+            glyphColor: theme.inkTertiary,
+            title: "Apple Health no está disponible en este iPhone.",
+            titleColor: theme.ink,
+            message: nil
+        ) {
+            InkButton("Continuar", action: onContinue)
+        }
     }
 }
 
-// MARK: - Step 4 · Wear & wake
+/// A centered single-focus state (granted / denied / unavailable / done): a glyph,
+/// a title, an optional message, and the caller's button stack pinned at the foot.
+private struct CenteredState<Buttons: View>: View {
+    let glyph: String
+    let glyphColor: Color
+    let title: LocalizedStringKey
+    let titleColor: Color
+    let message: LocalizedStringKey?
+    @ViewBuilder var buttons: () -> Buttons
+    @Environment(\.instrumentoTheme) private var theme
 
-private struct WearStep: View {
     var body: some View {
-        StepShell(title: "Put your strap on",
-                  subtitle: "And make sure it's charged.") {
-            VStack(spacing: 22) {
-                ZStack {
-                    Circle()
-                        .fill(StrandPalette.accent.opacity(0.16))
-                        .frame(width: 130, height: 130)
-                        .blur(radius: 24)
-                    Image(systemName: "applewatch.side.right")
-                        .font(.system(size: 58, weight: .regular))
-                        .foregroundStyle(StrandPalette.textPrimary)
+        VStack(spacing: 0) {
+            Spacer(minLength: NoopMetrics.sectionGap)
+            VStack(spacing: NoopMetrics.gap) {
+                Image(systemName: glyph)
+                    .font(.system(size: 48, weight: .regular))
+                    .foregroundStyle(glyphColor)
+                    .accessibilityHidden(true)
+                Text(title)
+                    .font(StrandFont.title2)
+                    .foregroundStyle(titleColor)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let message {
+                    Text(message)
+                        .font(StrandFont.body)
+                        .foregroundStyle(theme.inkSecondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .frame(height: 140)
-
-                VStack(spacing: 12) {
-                    Checkline(text: "Wear it snug on your wrist or bicep — sensor against skin.")
-                    Checkline(text: "Give it a few minutes of charge if the battery is low.")
-                    Checkline(text: "Keep it within about a metre of this Mac.")
-                }
-                .frame(maxWidth: 440)
             }
+            .frame(maxWidth: .infinity)
+            Spacer(minLength: NoopMetrics.sectionGap)
+            VStack(spacing: NoopMetrics.gap) { buttons() }
         }
     }
 }
 
-// MARK: - Step 5 · Scan (radar sweep + reassurance)
+// MARK: - Step · ¿Tienes un WHOOP?
+
+private struct WhoopQuestionStep: View {
+    let onChoose: (Bool) -> Void
+    @Environment(\.instrumentoTheme) private var theme
+    var body: some View {
+        StepShell {
+            Overline(text: "Paso 2 · Afina la señal")
+            Text("¿Tienes una banda WHOOP?")
+                .font(StrandFont.title1)
+                .foregroundStyle(theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, NoopMetrics.space2)
+            Text("Se monta sobre Apple Health y afina la señal: HRV continuo y recuperación de grado banda.")
+                .font(StrandFont.body)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, NoopMetrics.gap)
+            Spacer(minLength: NoopMetrics.sectionGap)
+            InkButton("Sí, tengo una WHOOP") { onChoose(true) }
+            OutlineButton("No tengo una") { onChoose(false) }
+        }
+    }
+}
+
+// MARK: - Step · Prepare (wear + charge + Bluetooth priming)
+
+private struct PrepareStep: View {
+    let onContinue: () -> Void
+    @Environment(\.instrumentoTheme) private var theme
+    var body: some View {
+        StepShell {
+            Overline(text: "Paso 3 · Tu banda")
+            Text("Prepara tu banda")
+                .font(StrandFont.title1)
+                .foregroundStyle(theme.ink)
+                .padding(.top, NoopMetrics.space2)
+            Text("Un momento antes de conectar.")
+                .font(StrandFont.body)
+                .foregroundStyle(theme.inkSecondary)
+                .padding(.top, NoopMetrics.space2)
+
+            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+                Checkline("Póntela ajustada — el sensor necesita contacto con la piel.")
+                Checkline("Asegúrate de que tenga carga.")
+                Checkline("Mantén el Bluetooth de tu iPhone activado.")
+            }
+            .padding(.top, NoopMetrics.sectionGap)
+
+            Rectangle().fill(theme.hairline).frame(height: 1)
+                .padding(.top, NoopMetrics.sectionGap)
+            HStack(alignment: .top, spacing: NoopMetrics.space2) {
+                Image(systemName: "wave.3.right")
+                    .font(.system(size: 13))
+                    .foregroundStyle(theme.inkTertiary)
+                    .accessibilityHidden(true)
+                Text("En un momento tu iPhone pedirá permiso de Bluetooth. Elige Permitir para que Cénit encuentre tu banda. La conexión es directa: nada pasa por la nube.")
+                    .font(StrandFont.subhead)
+                    .foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.top, NoopMetrics.gap)
+
+            Spacer(minLength: NoopMetrics.sectionGap)
+            InkButton("Buscar mi banda", action: onContinue)
+        }
+    }
+}
+
+// MARK: - Step · Scan (sober, no radar)
 
 private struct ScanStep: View {
-    let advance: () -> Void
+    let onContinue: () -> Void
     @EnvironmentObject private var model: AppModel
     @EnvironmentObject private var live: LiveState
+    @Environment(\.instrumentoTheme) private var theme
 
     @State private var scanning = false
     @State private var showHelp = false
     @State private var autoScanStarted = false
 
-    /// Which strap to look for — shared with the Live screen via the same key.
     @AppStorage("selectedWhoopModel") private var selectedModelRaw = WhoopModel.whoop4.rawValue
     private var selectedModel: WhoopModel { WhoopModel(rawValue: selectedModelRaw) ?? .whoop4 }
 
     var body: some View {
-        StepShell(title: "Find your strap",
-                  subtitle: live.bonded ? "Bonded. You're set." : "Cénit starts looking as soon as this step appears. You can keep going while it bonds.") {
-            VStack(spacing: 24) {
-                RadarSweep(active: scanning && !live.bonded, bonded: live.bonded)
-                    .frame(width: 220, height: 220)
+        StepShell {
+            Overline(text: "Paso 3 · Conectar")
+            Text("Buscando tu banda…")
+                .font(StrandFont.title1)
+                .foregroundStyle(theme.ink)
+                .padding(.top, NoopMetrics.space2)
+            statusLine
+                .padding(.top, NoopMetrics.gap)
 
-                statusLine
-
-                if !live.bonded {
-                    VStack(spacing: 8) {
-                        Text("Which strap?").font(StrandFont.caption)
-                            .foregroundStyle(StrandPalette.textSecondary)
-                        SegmentedPillControl(
-                            WhoopModel.allCases,
-                            selection: Binding(
-                                get: { selectedModel },
-                                set: { restartScan(for: $0) }
-                            ),
-                            label: { $0.displayName }
-                        )
+            VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+                Text("¿Cuál banda?").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                Picker("¿Cuál banda?", selection: Binding(
+                    get: { selectedModel },
+                    set: { restartScan(for: $0) }
+                )) {
+                    ForEach(WhoopModel.allCases, id: \.self) { m in
+                        Text(m.displayName).tag(m)
                     }
-
-                    Button(action: { startScan() }) {
-                        Label(scanning ? "Scanning…" : "Scan again", systemImage: "dot.radiowaves.left.and.right")
-                    }
-                    .buttonStyle(SecondaryButtonStyle())
-                    .disabled(scanning)
-
-                    DisclosureToggle(open: $showHelp, label: "Don't see it?")
-
-                    if showHelp { reassurance }
                 }
+                .pickerStyle(.segmented)
+                .labelsHidden()
             }
+            .padding(.top, NoopMetrics.sectionGap)
+
+            if showHelp { reassurance.padding(.top, NoopMetrics.gap) }
+
+            Spacer(minLength: NoopMetrics.sectionGap)
+            OutlineButton(scanning ? "Buscando…" : "Buscar de nuevo") { startScan() }
+                .disabled(scanning)
+            OutlineButton("Continuar sin emparejar", action: onContinue)
         }
         .onAppear(perform: startAutoScanIfNeeded)
         .onDisappear { scanning = false }
     }
 
+    @ViewBuilder
     private var statusLine: some View {
-        Group {
-            if live.bonded {
-                StatePill("Connected", tone: .positive)
-            } else if live.connected {
-                StatePill("Connecting…", tone: .warning, pulsing: true)
-            } else if scanning {
-                StatePill("Searching", tone: .accent, pulsing: true)
-            } else {
-                StatePill("Ready to scan", tone: .neutral, showsDot: false)
-            }
+        if live.bonded {
+            Label("Conectado", systemImage: "checkmark.circle.fill")
+                .font(StrandFont.subhead).foregroundStyle(theme.verdict)
+        } else if live.connected {
+            Label("Conectando…", systemImage: "dot.radiowaves.left.and.right")
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+        } else if scanning {
+            Label("Buscando…", systemImage: "dot.radiowaves.left.and.right")
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+        } else {
+            Label("Listo para buscar", systemImage: "magnifyingglass")
+                .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
         }
+    }
+
+    private var reassurance: some View {
+        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            Text("¿No aparece? Es normal.")
+                .font(StrandFont.headline)
+                .foregroundStyle(theme.ink)
+            Text("Las bandas WHOOP no salen en Ajustes › Bluetooth de tu iPhone — usan un perfil propio que solo apps como Cénit pueden ver. No hay nada que emparejar ahí.")
+                .font(StrandFont.subhead)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Checkline("Está cargada y puesta — el sensor despierta con la piel.")
+            Checkline("No la tiene tomada la app de WHOOP. Solo un host a la vez: ciérrala o apaga su Bluetooth.")
+            Checkline("Está a menos de un metro de tu iPhone.")
+        }
+        .padding(NoopMetrics.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+        .transition(.opacity.combined(with: .move(edge: .bottom)))
     }
 
     private func startScan(model scanModel: WhoopModel? = nil) {
@@ -529,7 +525,6 @@ private struct ScanStep: View {
         scanning = true
         showHelp = false
         model.scan(model: modelToScan)
-        // Surface the reassurance card if we haven't bonded after a calm beat.
         DispatchQueue.main.asyncAfter(deadline: .now() + 12) {
             if !live.bonded {
                 scanning = false
@@ -550,241 +545,162 @@ private struct ScanStep: View {
         autoScanStarted = true
         startScan()
     }
-
-    // The calm, never-alarmist "can't find it" card.
-    private var reassurance: some View {
-        StrandCard {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(spacing: 10) {
-                    Image(systemName: "info.circle.fill")
-                        .foregroundStyle(StrandPalette.statusWarning)
-                    Text("Don't see it? That's normal.")
-                        .font(StrandFont.headline)
-                        .foregroundStyle(StrandPalette.textPrimary)
-                }
-
-                Text("WHOOP straps don't appear in macOS System Settings → Bluetooth. They advertise on a custom profile that only apps like Cénit can find — so there's nothing to pair there, and you shouldn't try.")
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(StrandPalette.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Divider().overlay(StrandPalette.hairline)
-
-                VStack(alignment: .leading, spacing: 10) {
-                    Checkline(text: "It's charged and worn — the sensor needs skin contact to wake.")
-                    Checkline(text: "It isn't held by the WHOOP phone app. Only one host at a time — close the app or turn off its Bluetooth.")
-                    Checkline(text: "It's within about a metre of this Mac.")
-                }
-
-                Button(action: retry) {
-                    Label("Try again", systemImage: "arrow.clockwise")
-                }
-                .buttonStyle(SecondaryButtonStyle())
-                .padding(.top, 2)
-            }
-        }
-        .frame(maxWidth: 480)
-        .transition(.opacity.combined(with: .move(edge: .bottom)))
-    }
-
-    private func retry() {
-        withAnimation(StrandMotion.gentle) { showHelp = false }
-        startScan()
-    }
 }
 
-// MARK: - Step 6 · Bonding celebration
+// MARK: - Step · Bonded (sober celebration)
 
 private struct BondedStep: View {
+    let onContinue: () -> Void
     @EnvironmentObject private var live: LiveState
-    @State private var bloom = false
+    @Environment(\.instrumentoTheme) private var theme
     var body: some View {
-        StepShell {
-            VStack(spacing: 26) {
-                Spacer()
-                ZStack {
-                    Circle()
-                        .fill(StrandPalette.statusPositive)
-                        .frame(width: 160, height: 160)
-                        .blur(radius: 70)
-                        .opacity(bloom ? 0.5 : 0.0)
-                        .blendMode(.plusLighter)
-                    // A ring materialises — a taste of the signature component.
-                    RecoveryRing(score: 100, supporting: nil, diameter: 200, lineWidth: 14, showsLabel: false)
-                        .scaleEffect(bloom ? 1 : 0.7)
-                        .opacity(bloom ? 1 : 0)
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 44, weight: .bold))
-                        .foregroundStyle(StrandPalette.statusPositive)
-                        .scaleEffect(bloom ? 1 : 0.4)
-                        .opacity(bloom ? 1 : 0)
-                }
-                .frame(height: 210)
-
-                VStack(spacing: 8) {
-                    Text("You're connected.")
-                        .font(StrandFont.title1)
-                        .foregroundStyle(StrandPalette.textPrimary)
-                    Text(batteryLine)
-                        .font(StrandFont.body)
-                        .foregroundStyle(StrandPalette.textSecondary)
-                }
-                .opacity(bloom ? 1 : 0)
-                Spacer()
-            }
+        CenteredState(
+            glyph: "checkmark.circle.fill",
+            glyphColor: theme.verdict,
+            title: "Lista. Estás conectado.",
+            titleColor: theme.ink,
+            message: batteryLine
+        ) {
+            InkButton("Continuar", action: onContinue)
         }
-        .onAppear { withAnimation(StrandMotion.hero) { bloom = true } }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Conectado")
     }
-
-    private var batteryLine: String {
+    private var batteryLine: LocalizedStringKey {
         if let pct = live.batteryPct {
-            return "Your strap is bonded · \(Int(pct))% battery."
+            return "Tu banda está conectada · \(Int(pct))% de batería."
         }
-        return "Your strap is bonded and ready to stream."
+        return "Tu banda está conectada y lista."
     }
 }
 
-// MARK: - Step 7 · Profile
+// MARK: - Step · Profile
 
 private struct ProfileStep: View {
+    let onContinue: () -> Void
     @EnvironmentObject private var profile: ProfileStore
+    @Environment(\.instrumentoTheme) private var theme
 
-    // Imperial/Metric display preference (D#103). The stored profile is always SI; the steppers keep
-    // operating in SI (0.5 kg / 1 cm) and only the DISPLAYED value re-labels to lb / ft-in.
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
 
     private let sexes: [(String, String)] = [
-        ("male", "Male"), ("female", "Female"), ("nonbinary", "Other")
+        ("male", "Hombre"), ("female", "Mujer"), ("nonbinary", "Otro")
     ]
 
     var body: some View {
-        StepShell(title: "About you",
-                  subtitle: "So your zones, calories and baselines are accurate.") {
-            VStack(spacing: 16) {
-                StrandCard {
-                    VStack(spacing: 18) {
-                        Stepper(value: $profile.age, in: 13...100) {
-                            FieldRow(label: "Age", value: "\(profile.age) yrs")
-                        }
+        StepShell {
+            Overline(text: "Sobre ti")
+            Text("Sobre ti")
+                .font(StrandFont.title1)
+                .foregroundStyle(theme.ink)
+                .padding(.top, NoopMetrics.space2)
+            Text("Para calcular tus zonas de frecuencia cardiaca y tus líneas base.")
+                .font(StrandFont.body)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, NoopMetrics.space2)
 
-                        Divider().overlay(StrandPalette.hairline)
-
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Sex").strandOverline()
-                            Picker("Sex", selection: $profile.sex) {
-                                ForEach(sexes, id: \.0) { key, label in
-                                    Text(label).tag(key)
-                                }
-                            }
-                            .pickerStyle(.segmented)
-                            .labelsHidden()
-                        }
-
-                        Divider().overlay(StrandPalette.hairline)
-
-                        // Steppers, not sliders — matches the Age row above and the macOS Settings
-                        // profile editor (same ranges/steps), so every numeric profile field is
-                        // consistent across onboarding and Settings on both platforms.
-                        Stepper(value: $profile.weightKg, in: 30...250, step: 0.5) {
-                            FieldRow(label: "Weight",
-                                     value: UnitFormatter.massFromKilograms(profile.weightKg, system: unitSystem))
-                        }
-
-                        Divider().overlay(StrandPalette.hairline)
-
-                        Stepper(value: $profile.heightCm, in: 120...230, step: 1) {
-                            FieldRow(label: "Height",
-                                     value: UnitFormatter.heightFromCentimeters(profile.heightCm, system: unitSystem))
-                        }
-                    }
+            VStack(spacing: NoopMetrics.gap) {
+                Stepper(value: $profile.age, in: 13...100) {
+                    FieldRow(label: "Edad", value: "\(profile.age)")
                 }
-
-                HStack(spacing: 8) {
-                    Image(systemName: "bolt.heart")
-                        .foregroundStyle(StrandPalette.accent)
-                    Text("Estimated max heart rate · \(profile.hrMax) bpm")
-                        .font(StrandFont.footnote)
-                        .foregroundStyle(StrandPalette.textTertiary)
+                Divider().overlay(theme.hairline)
+                VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+                    Overline(text: "Sexo")
+                    Picker("Sexo", selection: $profile.sex) {
+                        ForEach(sexes, id: \.0) { key, label in Text(label).tag(key) }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                }
+                Divider().overlay(theme.hairline)
+                Stepper(value: $profile.weightKg, in: 30...250, step: 0.5) {
+                    FieldRow(label: "Peso", value: UnitFormatter.massFromKilograms(profile.weightKg, system: unitSystem))
+                }
+                Divider().overlay(theme.hairline)
+                Stepper(value: $profile.heightCm, in: 120...230, step: 1) {
+                    FieldRow(label: "Estatura", value: UnitFormatter.heightFromCentimeters(profile.heightCm, system: unitSystem))
                 }
             }
+            .padding(NoopMetrics.cardPadding)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+            .padding(.top, NoopMetrics.sectionGap)
+
+            HStack(spacing: NoopMetrics.space2) {
+                Image(systemName: "bolt.heart").foregroundStyle(theme.inkTertiary)
+                Text("Frecuencia cardiaca máxima estimada · \(profile.hrMax) lpm")
+                    .font(StrandFont.footnote)
+                    .foregroundStyle(theme.inkTertiary)
+            }
+            .padding(.top, NoopMetrics.gap)
+
+            Spacer(minLength: NoopMetrics.sectionGap)
+            InkButton("Continuar", action: onContinue)
         }
     }
 }
 
-// MARK: - Step 8 · Import (optional)
+// MARK: - Step · Import (optional)
 
 private struct ImportStep: View {
+    let onContinue: () -> Void
     @EnvironmentObject private var model: AppModel
+    @Environment(\.instrumentoTheme) private var theme
     @State private var showingImporter = false
     @State private var importTarget: ImportTarget = .whoop
 
     var body: some View {
-        StepShell(title: "Bring your history",
-                  subtitle: "Optional — import now, or continue and return to Data Sources later.") {
-            VStack(spacing: 18) {
-                ZStack {
-                    Circle()
-                        .fill(StrandPalette.accentMuted.opacity(0.45))
-                        .frame(width: 96, height: 96)
-                    Image(systemName: "square.and.arrow.down")
-                        .font(.system(size: 40, weight: .regular))
-                        .foregroundStyle(StrandPalette.accent)
-                }
+        StepShell {
+            Overline(text: "Tu historia")
+            Text("Trae tu historia")
+                .font(StrandFont.title1)
+                .foregroundStyle(theme.ink)
+                .padding(.top, NoopMetrics.space2)
+            Text("Opcional. Llena tu panel desde el primer día.")
+                .font(StrandFont.body)
+                .foregroundStyle(theme.inkSecondary)
+                .padding(.top, NoopMetrics.space2)
+            Text("Un export de WHOOP rellena recuperación, esfuerzo, sueño y entrenamientos. Un export de Apple Health agrega FC, HRV, sueño, oxígeno, pasos y peso.")
+                .font(StrandFont.subhead)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, NoopMetrics.gap)
 
-                InfoCard(
-                    icon: "clock.arrow.circlepath",
-                    tint: StrandPalette.accent,
-                    title: "History fills the dashboard immediately",
-                    message: "A WHOOP export backfills recovery, strain, sleep and workouts. Apple Health can add HR, HRV, sleep, SpO₂, steps, workouts and weight."
-                )
-
-                StrandCard {
-                    VStack(spacing: 10) {
-                        ImportActionButton(
-                            title: model.isImporting(.whoop) ? "Importing…" : "Import WHOOP export",
-                            systemImage: "tray.and.arrow.down",
-                            disabled: model.hasActiveImport
-                        ) {
-                            presentImporter(.whoop)
-                        }
-                        ImportActionButton(
-                            title: model.isImporting(.appleHealth) ? "Working…" : "Import Apple Health export",
-                            systemImage: "heart.fill",
-                            disabled: model.hasActiveImport
-                        ) {
-                            presentImporter(.appleHealth)
-                        }
-                    }
-                }
-                .frame(maxWidth: 480)
-
-                if model.hasActiveImport {
-                    // Live record counter (Apple Health streams a running count) so a multi-minute
-                    // export reads as progressing, not stalled — mirrors the Data Sources card. (FER-70)
-                    HStack(spacing: 8) {
-                        ProgressView()
-                            .controlSize(.small)
-                            .tint(StrandPalette.accent)
-                        if let n = model.appleHealthImportProgress {
-                            Text("\(n) records")
-                                .font(StrandFont.footnote)
-                                .foregroundStyle(StrandPalette.textTertiary)
-                                .monospacedDigit()
-                        }
-                    }
-                }
-
-                // Show the summary for the source the user last imported, styled off the typed
-                // failure flag (not a substring match) so real errors read as warnings.
-                if let summary = lastSummary {
-                    Text(summary)
-                        .font(StrandFont.subhead)
-                        .foregroundStyle(model.importFailed(importKind) ? StrandPalette.statusWarning : StrandPalette.statusPositive)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: 460)
-                }
+            VStack(spacing: NoopMetrics.gap) {
+                ImportRow(title: model.isImporting(.whoop) ? "Importando…" : "Importar export de WHOOP",
+                          systemImage: "tray.and.arrow.down",
+                          disabled: model.hasActiveImport) { presentImporter(.whoop) }
+                ImportRow(title: model.isImporting(.appleHealth) ? "Importando…" : "Importar export de Apple Health",
+                          systemImage: "heart.fill",
+                          disabled: model.hasActiveImport) { presentImporter(.appleHealth) }
             }
+            .padding(.top, NoopMetrics.sectionGap)
+
+            if model.hasActiveImport {
+                HStack(spacing: NoopMetrics.space2) {
+                    ProgressView().controlSize(.small).tint(theme.inkSecondary)
+                    if let n = model.appleHealthImportProgress {
+                        Text("\(n) registros")
+                            .font(StrandFont.footnote)
+                            .foregroundStyle(theme.inkTertiary)
+                            .monospacedDigit()
+                    }
+                }
+                .padding(.top, NoopMetrics.gap)
+            }
+
+            if let summary = lastSummary {
+                Text(summary)
+                    .font(StrandFont.subhead)
+                    .foregroundStyle(model.importFailed(importKind) ? theme.critical : theme.verdict)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, NoopMetrics.gap)
+            }
+
+            Spacer(minLength: NoopMetrics.sectionGap)
+            OutlineButton("Ahora no", action: onContinue)
         }
         .fileImporter(
             isPresented: $showingImporter,
@@ -795,327 +711,74 @@ private struct ImportStep: View {
         }
     }
 
-    /// The AppModel source kind matching the last-chosen import target.
     private var importKind: DataSourceImportKind {
         switch importTarget {
         case .whoop: return .whoop
         case .appleHealth: return .appleHealth
         }
     }
-
-    /// The summary for the source the user last imported in this step.
     private var lastSummary: String? {
         switch importTarget {
         case .whoop: return model.whoopImportSummary
         case .appleHealth: return model.appleHealthImportSummary
         }
     }
-
     private func presentImporter(_ target: ImportTarget) {
         importTarget = target
         showingImporter = true
     }
-
     private func handleImportResult(_ result: Result<[URL], Error>, for target: ImportTarget) {
         guard case .success(let urls) = result, let url = urls.first else { return }
         switch target {
-        case .whoop:
-            model.importWhoop(url: url)
-        case .appleHealth:
-            model.importAppleHealth(url: url)
+        case .whoop: model.importWhoop(url: url)
+        case .appleHealth: model.importAppleHealth(url: url)
         }
     }
-
     private enum ImportTarget {
-        case whoop
-        case appleHealth
-
+        case whoop, appleHealth
         var allowedContentTypes: [UTType] {
             switch self {
-            case .whoop:
-                return [.zip, .folder]
-            case .appleHealth:
-                return [.zip, .xml, .folder]
+            case .whoop: return [.zip, .folder]
+            case .appleHealth: return [.zip, .xml, .folder]
             }
         }
     }
 }
 
-// MARK: - Step 9 · Notifications (wrist alerts priming)
-
-private struct NotificationsStep: View {
-    @State private var pulse = false
-    var body: some View {
-        StepShell(title: "Stay in the loop",
-                  subtitle: "Cénit can tap your wrist when your Mac needs you — no glance at the screen required.") {
-            VStack(spacing: 24) {
-                ZStack {
-                    Circle()
-                        .stroke(StrandPalette.accent.opacity(0.25), lineWidth: 2)
-                        .frame(width: 120, height: 120)
-                        .scaleEffect(pulse ? 1.2 : 0.9)
-                        .opacity(pulse ? 0 : 0.8)
-                    Circle()
-                        .fill(StrandPalette.accentMuted.opacity(0.5))
-                        .frame(width: 86, height: 86)
-                    Image(systemName: "bell.badge")
-                        .font(.system(size: 32, weight: .semibold))
-                        .foregroundStyle(StrandPalette.accent)
-                }
-                .frame(height: 130)
-
-                InfoCard(
-                    icon: "applewatch.radiowaves.left.and.right",
-                    tint: StrandPalette.statusPositive,
-                    title: "A buzz, not a banner",
-                    message: "When the Mac apps you choose send a notification, Cénit taps your strap — Slack, Calendar, Messages, whatever matters. Everything stays on this Mac."
-                )
-
-                VStack(spacing: 12) {
-                    Checkline(text: "Pick which apps reach your wrist in Settings → Notifications.")
-                    Checkline(text: "Strain nudges and your smart alarm tap your wrist the same way.")
-                }
-                .frame(maxWidth: 460)
-            }
-        }
-        .onAppear { withAnimation(StrandMotion.breathe) { pulse = true } }
-    }
-}
-
-// MARK: - Step 10 · Done
+// MARK: - Step · Done
 
 private struct DoneStep: View {
-    @State private var appear = false
+    let onFinish: () -> Void
+    @Environment(\.instrumentoTheme) private var theme
     var body: some View {
-        StepShell {
-            VStack(spacing: 22) {
-                Spacer()
-                ZStack {
-                    Circle()
-                        .fill(StrandPalette.recovery100)
-                        .frame(width: 120, height: 120)
-                        .blur(radius: 64)
-                        .opacity(appear ? 0.5 : 0)
-                        .blendMode(.plusLighter)
-                    Image(systemName: "point.topleft.down.curvedto.point.bottomright.up")
-                        .font(.system(size: 52, weight: .light))
-                        .foregroundStyle(
-                            LinearGradient(gradient: StrandPalette.recoveryGradient,
-                                           startPoint: .topLeading, endPoint: .bottomTrailing)
-                        )
-                        .scaleEffect(appear ? 1 : 0.8)
-                        .opacity(appear ? 1 : 0)
-                }
-                .frame(height: 130)
-
-                VStack(spacing: 10) {
-                    Text("Your thread starts here.")
-                        .font(StrandFont.title1)
-                        .foregroundStyle(StrandPalette.textPrimary)
-                    Text("Every beat, every night, every day — woven into one quiet picture of you. Welcome to Cénit.")
-                        .font(StrandFont.body)
-                        .foregroundStyle(StrandPalette.textSecondary)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: 420)
-                }
-                .opacity(appear ? 1 : 0)
-                Spacer()
-            }
-        }
-        .onAppear { withAnimation(StrandMotion.hero) { appear = true } }
-    }
-}
-
-// MARK: - Step shell (shared layout for each page)
-
-private struct StepShell<Content: View>: View {
-    var title: String? = nil
-    var subtitle: String? = nil
-    @ViewBuilder var content: () -> Content
-
-    var body: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            VStack(spacing: 20) {
-                if title != nil || subtitle != nil {
-                    VStack(spacing: 8) {
-                        if let title {
-                            Text(title)
-                                .font(StrandFont.title1)
-                                .foregroundStyle(StrandPalette.textPrimary)
-                                .multilineTextAlignment(.center)
-                        }
-                        if let subtitle {
-                            Text(subtitle)
-                                .font(StrandFont.body)
-                                .foregroundStyle(StrandPalette.textSecondary)
-                                .multilineTextAlignment(.center)
-                        }
-                    }
-                    .padding(.top, 8)
-                }
-                content()
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 24)
-        }
-    }
-}
-
-// MARK: - Radar sweep
-
-private struct RadarSweep: View {
-    var active: Bool
-    var bonded: Bool
-    @State private var angle: Double = 0
-    @State private var ping = false
-
-    var body: some View {
-        GeometryReader { geo in
-            let size = min(geo.size.width, geo.size.height)
-            ZStack {
-                // Concentric rings.
-                ForEach(1...3, id: \.self) { i in
-                    Circle()
-                        .stroke(StrandPalette.hairline.opacity(0.7), lineWidth: 1)
-                        .frame(width: size * Double(i) / 3, height: size * Double(i) / 3)
-                }
-                // Cross hairs.
-                Path { p in
-                    p.move(to: CGPoint(x: size / 2, y: 0)); p.addLine(to: CGPoint(x: size / 2, y: size))
-                    p.move(to: CGPoint(x: 0, y: size / 2)); p.addLine(to: CGPoint(x: size, y: size / 2))
-                }
-                .stroke(StrandPalette.hairline.opacity(0.5), lineWidth: 1)
-
-                // The sweeping wedge.
-                if active {
-                    sweepWedge(size: size)
-                        .rotationEffect(.degrees(angle))
-                }
-
-                // Center node — accent while searching, mint when bonded.
-                Circle()
-                    .fill(bonded ? StrandPalette.recovery100 : StrandPalette.accent)
-                    .frame(width: 14, height: 14)
-                    .shadow(color: (bonded ? StrandPalette.recovery100 : StrandPalette.accent).opacity(0.8),
-                            radius: ping ? 10 : 4)
-
-                // A discovered "blip" once bonded.
-                if bonded {
-                    Circle()
-                        .fill(StrandPalette.statusPositive)
-                        .frame(width: 12, height: 12)
-                        .shadow(color: StrandPalette.statusPositive.opacity(0.9), radius: 8)
-                        .position(x: size * 0.70, y: size * 0.36)
-                        .transition(.scale.combined(with: .opacity))
-                }
-            }
-            .frame(width: size, height: size)
-        }
-        .onAppear {
-            if active { startSweep() }
-            ping = true
-        }
-        .onChange(of: active) { _, isActive in
-            if isActive { startSweep() }
-        }
-        .animation(StrandMotion.breathe, value: ping)
-    }
-
-    private func sweepWedge(size: CGFloat) -> some View {
-        let radius = size / 2
-        return AngularGradient(
-            gradient: Gradient(colors: [StrandPalette.accent.opacity(0.0),
-                                        StrandPalette.accent.opacity(0.45)]),
-            center: .center,
-            startAngle: .degrees(-50),
-            endAngle: .degrees(0)
-        )
-        .mask(
-            Path { p in
-                let c = CGPoint(x: radius, y: radius)
-                p.move(to: c)
-                p.addArc(center: c, radius: radius,
-                         startAngle: .degrees(-50), endAngle: .degrees(0), clockwise: false)
-                p.closeSubpath()
-            }
-        )
-        .frame(width: size, height: size)
-        .blendMode(.plusLighter)
-    }
-
-    private func startSweep() {
-        angle = 0
-        withAnimation(.linear(duration: 2.4).repeatForever(autoreverses: false)) {
-            angle = 360
-        }
-    }
-}
-
-// MARK: - The bottom "thread" progress
-
-private struct ThreadProgress: View {
-    var progress: Double           // 0...1
-    var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(StrandPalette.hairline)
-                Capsule()
-                    .fill(LinearGradient(gradient: StrandPalette.recoveryGradient,
-                                         startPoint: .leading, endPoint: .trailing))
-                    .frame(width: max(6, geo.size.width * progress))
-                    .shadow(color: StrandPalette.recovery078.opacity(0.6), radius: 6)
-                    .animation(StrandMotion.gentle, value: progress)
-            }
+        CenteredState(
+            glyph: "checkmark.seal",
+            glyphColor: theme.verdict,
+            title: "Todo listo.",
+            titleColor: theme.ink,
+            message: "Cada noche y cada día se irán tejiendo en una sola lectura de ti. Bienvenido a Cénit."
+        ) {
+            InkButton("Entrar a Cénit", action: onFinish)
         }
     }
 }
 
 // MARK: - Reusable pieces
 
-private struct InfoCard: View {
-    let icon: String
-    let tint: Color
-    let title: String
-    let message: String
-    var body: some View {
-        StrandCard {
-            HStack(alignment: .top, spacing: 14) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 11, style: .continuous)
-                        .fill(tint.opacity(0.14))
-                        .frame(width: 40, height: 40)
-                    Image(systemName: icon)
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(tint)
-                }
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(title)
-                        .font(StrandFont.headline)
-                        .foregroundStyle(StrandPalette.textPrimary)
-                    Text(message)
-                        .font(StrandFont.subhead)
-                        .foregroundStyle(StrandPalette.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer(minLength: 0)
-            }
-        }
-        .frame(maxWidth: 480)
-    }
-}
-
 private struct Checkline: View {
-    let text: String
+    let text: LocalizedStringKey
+    @Environment(\.instrumentoTheme) private var theme
+    init(_ text: LocalizedStringKey) { self.text = text }
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 14))
-                .foregroundStyle(StrandPalette.statusPositive)
-                .padding(.top, 1)
+        HStack(alignment: .top, spacing: NoopMetrics.space2) {
+            Image(systemName: "checkmark")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(theme.inkTertiary)
+                .padding(.top, 2)
+                .accessibilityHidden(true)
             Text(text)
                 .font(StrandFont.subhead)
-                .foregroundStyle(StrandPalette.textSecondary)
+                .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
@@ -1123,117 +786,46 @@ private struct Checkline: View {
 }
 
 private struct FieldRow: View {
-    let label: String
+    let label: LocalizedStringKey
     let value: String
+    @Environment(\.instrumentoTheme) private var theme
     var body: some View {
         HStack {
-            Text(label).strandOverline()
+            Text(label).font(StrandFont.body).foregroundStyle(theme.ink)
             Spacer()
-            Text(value)
-                .font(StrandFont.bodyNumber)
-                .foregroundStyle(StrandPalette.textPrimary)
+            Text(value).font(StrandFont.bodyNumber).foregroundStyle(theme.ink)
         }
     }
 }
 
-private struct DisclosureToggle: View {
-    @Binding var open: Bool
-    let label: String
-    var body: some View {
-        Button {
-            withAnimation(StrandMotion.gentle) { open.toggle() }
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: open ? "chevron.up" : "chevron.down")
-                Text(label)
-            }
-            .font(StrandFont.subhead)
-            .foregroundStyle(StrandPalette.accent)
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-private struct ImportActionButton: View {
-    let title: String
+private struct ImportRow: View {
+    let title: LocalizedStringKey
     let systemImage: String
     var disabled = false
     let action: () -> Void
-
+    @Environment(\.instrumentoTheme) private var theme
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 10) {
+            HStack(spacing: NoopMetrics.gap) {
                 Image(systemName: systemImage)
                     .font(.system(size: 14, weight: .semibold))
                     .frame(width: 18)
-                Text(title)
-                    .font(StrandFont.subhead.weight(.semibold))
+                Text(title).font(StrandFont.subhead.weight(.semibold))
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right")
                     .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(StrandPalette.textTertiary)
+                    .foregroundStyle(theme.inkTertiary)
             }
+            .foregroundStyle(theme.ink)
+            .padding(.vertical, 12)
+            .padding(.horizontal, NoopMetrics.cardPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
         }
-        .buttonStyle(SecondaryButtonStyle())
+        .buttonStyle(.plain)
         .disabled(disabled)
         .opacity(disabled ? 0.55 : 1)
-    }
-}
-
-// MARK: - Button styles
-
-private struct PrimaryButton: View {
-    let title: String
-    var systemImage: String? = nil
-    let action: () -> Void
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 8) {
-                Text(title).font(StrandFont.headline)
-                if let systemImage {
-                    Image(systemName: systemImage).font(.system(size: 14, weight: .semibold))
-                }
-            }
-        }
-        .buttonStyle(PrimaryButtonStyle())
-    }
-}
-
-private struct PrimaryButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .frame(maxWidth: .infinity)
-            .foregroundStyle(Color.white)
-            .padding(.vertical, 14)
-            .padding(.horizontal, 20)
-            .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(configuration.isPressed ? StrandPalette.accentHover : StrandPalette.accent)
-            )
-            .shadow(color: StrandPalette.accent.opacity(0.4), radius: 12, y: 4)
-            .scaleEffect(configuration.isPressed ? 0.985 : 1)
-            .animation(StrandMotion.interactive, value: configuration.isPressed)
-    }
-}
-
-private struct SecondaryButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(StrandFont.subhead.weight(.semibold))
-            .foregroundStyle(StrandPalette.textPrimary)
-            .padding(.vertical, 11)
-            .padding(.horizontal, 18)
-            .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(StrandPalette.surfaceOverlay)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(configuration.isPressed ? StrandPalette.hairlineStrong : StrandPalette.hairline, lineWidth: 1)
-            )
-            .scaleEffect(configuration.isPressed ? 0.985 : 1)
-            .animation(StrandMotion.interactive, value: configuration.isPressed)
     }
 }
 
@@ -1247,8 +839,7 @@ private struct OnboardingPreview: View {
             .environmentObject(model)
             .environmentObject(model.live)
             .environmentObject(model.profile)
-            .frame(width: 1100, height: 780)
-            .preferredColorScheme(.dark)
+            .frame(width: 390, height: 780)
     }
 }
 
