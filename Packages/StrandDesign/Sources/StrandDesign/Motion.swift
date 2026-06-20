@@ -21,9 +21,6 @@ public enum StrandMotion {
 
     // MARK: Durations
 
-    /// Fast UI feedback (hover lift, chip state).
-    public static let durationFast: Double = 0.18
-
     /// Standard transition (card appear, fades).
     public static let durationStandard: Double = 0.30
 
