@@ -231,6 +231,16 @@ Given `(TRIMP, reference_strain)` pairs, fits `D` via a through-origin least-squ
 
 ---
 
+## `RestReadiness` — between-sets rest by heart-rate recovery (HRR)
+
+Source: `RestReadiness.swift`. Pure between-sets rule: "ready" = HR has returned to `restingHR + margin` (default 20 bpm over the user's personal resting HR). The dominant number is `bpmToReady = max(0, HR − target)` (variant C2: counts down to 0 → «Ready»). A floor (`minRestS`, default 20 s) blocks a premature «ready»; a ceiling (`maxRestS`, default 180 s) releases with no infinite wait; an honesty band (`bandBPM`, default 5) reports `almostReady` instead of faking beat-level precision. With no live HR (not worn / nil / no baseline) it falls back to a fixed timer — no invented HR or color, but the clock still releases at the ceiling.
+
+Stateless: the caller (the guided session, FER-347, in `Cenit/`) owns the timer and passes plain values — live HR, wrist-wear, resting-HR baseline, seconds elapsed — so the package never imports CoreBluetooth/UIKit and never sees `LiveState`.
+
+**Method:** heart-rate recovery — the bpm the HR falls after effort reflects parasympathetic reactivation (Cole 1999, NEJM 341:1351; Daanen 2012, IJSPP 7:251, HRR for monitoring training status). NOOP uses no absolute clinical thresholds: the target is the user's own resting HR. **APPROXIMATE** — a rest cue, not a medical verdict. (Distinct from the Heart-Rate *Reserve* the StrainScorer calls "HRR".)
+
+---
+
 ## `SleepStager` — sleep/wake detection + approximate 4-class staging
 
 Source: `SleepStager.swift`. Detects in-bed sessions from gravity/HR/RR/respiration and produces a 30-second hypnogram of `{wake, light, deep, rem}`.
