@@ -102,6 +102,17 @@ public enum InsightEngine {
         Metric(label: "FC en reposo", unit: "lpm", value: { $0.restingHr.map(Double.init) }),
     ]
 
+    /// The "yyyy-MM-dd" → value series for one outcome metric label (the same labels a `Lever.outcome`
+    /// carries), read off `days`. Empty when the label is unknown or no day has the value. The N-of-1
+    /// experiment verdict (FER-307) feeds this into `ExperimentVerdict` so the label→field mapping
+    /// stays in one place — here, where the candidate's outcome label was minted.
+    public static func outcomeSeries(_ days: [DailyMetric], metric: String) -> [String: Double] {
+        guard let m = outcomes.first(where: { $0.label == metric }) else { return [:] }
+        var out: [String: Double] = [:]
+        for d in days { if let v = m.value(d) { out[d.day] = v } }
+        return out
+    }
+
     // MARK: - Generate
 
     /// Run every detector and return findings ranked by relevance (significant

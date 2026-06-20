@@ -374,9 +374,17 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 | Con datos | Veredicto + palancas + hallazgos + registro + efectos |
 | Sin hallazgos | Hay datos pero el motor no encontró hallazgos → «Todo en orden, sin hallazgos nuevos» |
 
-**Secciones:** Header (`Coach · fecha` + badge «On-device») · **Decisión de hoy** (héroe-frase del `ReadinessEngine` + recuperación como evidencia) · **Pregúntale a tus datos** (única puerta al chat LLM externo `CoachView`, presentado como `.sheet`) · **Lo que funciona en ti** (palancas curadas del `InsightEngine`, top 2 + «Ver las N») · **Hallazgos** (anomalía/tendencia/relación/pronóstico, topados + «Ver los N») · **Anota tu día** (resumen → hoja Sí/No tri-estado, escribe al journal existente) · **Efectos de tus hábitos** (explorador histórico por métrica).  
-**Hojas (`BucleSheets.swift`):** `PalancaDetailSheet` (evidencia: muestra, significancia, tamaño de efecto, confianza) · `HallazgosListSheet` · `EfectosExplorerSheet` (selector de métrica) · `AnotaTuDiaSheet` (Hoy/Ayer + Sí/No).  
-**Navegación:** `RootTabView` la monta como `lazyTab(.coach)` directo (ya no `hubTab`). El chat LLM externo se preserva intacto (`AICoachEngine` + Keychain); `CoachView` se rediseñó a «Instrumento diurno» claro (FER-309) y se abre como `.sheet` con el tema inyectado (sin pin `.dark`). Los hallazgos de tendencia llevan sparkline a color por hue (FER-147) y el detalle de palanca muestra barras con/sin desde el campo `Insight.behaviorBreakdown` (FER-309).
+**Sección «Prueba» — experimentos N-of-1 (FER-307).** Tercer latido del ciclo (Descubre→**Prueba**→Actúa→Aprende), entre «Lo que funciona en ti» y «Hallazgos». Una sola sección que cambia de identidad según el estado del experimento (uno a la vez, MVP):
+
+| Estado de Prueba | Qué muestra |
+|------------------|-------------|
+| Idea por probar | Sin experimento: tarjeta-entrada con el candidato más fuerte → `StartExperimentSheet` |
+| Tu experimento (en curso) | «Día N de M» + barra de avance + adherencia («cumpliste X de N días») + fecha de veredicto + Cancelar |
+| Tu experimento (veredicto) | Resultado: **se sostuvo** (datum a color, el único color del estado) / **no se sostuvo** / **sin señal suficiente**; «Listo» lo descarta (id en `@AppStorage`) |
+
+**Secciones:** Header (`Coach · fecha` + badge «On-device») · **Decisión de hoy** (héroe-frase del `ReadinessEngine` + recuperación como evidencia) · **Pregúntale a tus datos** (única puerta al chat LLM externo `CoachView`, presentado como `.sheet`) · **Lo que funciona en ti** (palancas curadas del `InsightEngine`, top 2 + «Ver las N»; una palanca confirmada por experimento se marca «probado» vía `InsightEngine.promoteProven`) · **Prueba** (ver arriba) · **Hallazgos** (anomalía/tendencia/relación/pronóstico, topados + «Ver los N») · **Anota tu día** (resumen → hoja Sí/No tri-estado, escribe al journal existente; de ahí sale la adherencia del experimento) · **Efectos de tus hábitos** (explorador histórico por métrica).  
+**Hojas (`BucleSheets.swift`):** `PalancaDetailSheet` (evidencia: muestra, significancia, tamaño de efecto, confianza; CTA «Probar esta idea» para un candidato cuando no hay experimento en curso) · `StartExperimentSheet` (confirmación: por qué, los 3 pasos, ventana de 7 días + fecha de veredicto, «Empezar») · `HallazgosListSheet` · `EfectosExplorerSheet` (selector de métrica) · `AnotaTuDiaSheet` (Hoy/Ayer + Sí/No).  
+**Navegación:** `RootTabView` la monta como `lazyTab(.coach)` directo (ya no `hubTab`). El chat LLM externo se preserva intacto (`AICoachEngine` + Keychain); `CoachView` se rediseñó a «Instrumento diurno» claro (FER-309) y se abre como `.sheet` con el tema inyectado (sin pin `.dark`). Los hallazgos de tendencia llevan sparkline a color por hue (FER-147) y el detalle de palanca muestra barras con/sin desde el campo `Insight.behaviorBreakdown` (FER-309). El veredicto del experimento reusa `ExperimentVerdict`/`BehaviorInsights` (FER-307); la persistencia vive en la tabla `experiment` (`WhoopStore` v12) leída/escrita por `Repository`.
 
 ---
 
