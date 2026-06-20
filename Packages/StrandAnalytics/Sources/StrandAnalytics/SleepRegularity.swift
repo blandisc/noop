@@ -10,7 +10,7 @@ import Foundation
 //
 // Mid-sleep is handled as a point on the 24 h **clock circle** and reduced with CIRCULAR statistics,
 // so a 23:30 onset and a 00:30 onset average to ~midnight instead of ~11:30 — the midnight wrap is
-// built into the math, not patched with an origin (Roenneberg 2006; Mardia & Jupp 2000). The functions
+// built into the math, not patched with an origin (Wittmann et al. 2006; Mardia & Jupp 2000). The functions
 // are pure + deterministic (no `Date()` read internally); the app layer feeds in the onset/wake
 // instants it already holds in `CachedSleepSession` as `NightTiming` (so this stays DB-free).
 //
@@ -19,10 +19,11 @@ import Foundation
 //
 // Methods / citations
 // -------------------
-//   • Mid-sleep point & social jetlag: Roenneberg et al., "Social jetlag and obesity",
-//     *Chronobiology International* 23(1–2), 2006.
-//   • Mid-sleep timing variability predicts cardiometabolic risk: Huang & Redline,
-//     "Sleep Irregularity and the Risk of Type 2 Diabetes", *Diabetes Care* 42, 2019.
+//   • Mid-sleep point & social jetlag: Wittmann, Dinich, Merrow & Roenneberg, "Social Jetlag:
+//     Misalignment of Biological and Social Time", *Chronobiology International* 23(1–2):497–509, 2006.
+//   • Mid-sleep timing variability predicts cardiometabolic risk: Huang & Redline, "Cross-sectional
+//     and Prospective Associations of Actigraphy-Assessed Sleep Regularity With Metabolic
+//     Abnormalities: The Multi-Ethnic Study of Atherosclerosis", *Diabetes Care* 42(8):1422–1429, 2019.
 //   • Sleep-regularity (timing variability) and mortality: Windred et al., "Sleep regularity is a
 //     stronger predictor of mortality risk than sleep duration", *Sleep* 47(1), 2024.
 //   • Circular mean / SD of a directional quantity: Mardia & Jupp, *Directional Statistics*, 2000.
@@ -111,7 +112,7 @@ public enum SleepRegularity {
     /// Mid-sleep point of a night as a MINUTE-OF-DAY (0..<1440) — a point on the 24 h clock circle.
     /// Because it's reduced circularly (see `circularSDMinutes` / `circularMedian`), a 23:30 onset and
     /// a 00:30 onset land at the SAME arc and never split by ~24 h. Using clock time-of-day (not an
-    /// absolute epoch origin) is the chronobiology convention (Roenneberg 2006).
+    /// absolute epoch origin) is the chronobiology convention (Wittmann et al. 2006).
     static func midSleepMinuteOfDay(_ night: NightTiming, _ calendar: Calendar) -> Double {
         // Absolute mid-sleep instant = halfway between onset and wake; then reduce to minute-of-day.
         let midTs = Double(night.onset + night.wake) / 2.0
