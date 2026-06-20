@@ -8,6 +8,7 @@ enum BackfillTrigger {
     case foreground  // the app became active (scenePhase .active)
     case manual      // the user tapped "Sync now"
     case strap       // an incoming strap EVENT packet (WHOOP's HighFreqSyncPrompt analog)
+    case drain       // FER-287: auto-continue while a backlog remains — bypasses the floor on purpose
 }
 
 /// Pure rate-limiter for historical-offload kicks. No BLE/store deps. Floors match WHOOP
@@ -21,7 +22,7 @@ enum BackfillPolicy {
         guard let last = lastBackfillAt else { return true }
         let elapsed = now - last
         switch trigger {
-        case .manual:                        return true
+        case .manual, .drain:                return true   // .drain is gated by DrainContinuationPolicy, not time (FER-287)
         case .connect, .foreground, .strap:  return elapsed >= eventFloorSeconds
         case .periodic:                      return elapsed >= periodicFloorSeconds
         }
