@@ -66,8 +66,8 @@ struct RootTabView: View {
             hubTab(.train, "Train", "figure.strengthtraining.functional", path: $trainStack) {
                 LiveWorkoutHubRow(solar: barSolar)
                 Section {
-                    row(.breathe,   "Breathe",   "wind")
-                    row(.intervals, "Intervals", "timer")
+                    row(.breathe,   "Breathe",   "wind",  light: true)
+                    row(.intervals, "Intervals", "timer", light: true)
                 }
             }
 
@@ -171,7 +171,7 @@ struct RootTabView: View {
     /// via `isTodayActive` and the instrument bar's `isLight`). Hoy and Cuerpo — the «historia» landing
     /// is warm paper too (FER-186), color only on the datum; every other tab is the dark instrument
     /// panel. (En vivo's light paper lives in a cover over Hoy, not a tab.)
-    private func isLightTab(_ tab: Tab) -> Bool { tab == .today || tab == .body || tab == .coach }
+    private func isLightTab(_ tab: Tab) -> Bool { tab == .today || tab == .body || tab == .coach || tab == .train }
 
     /// The hub tab that owns a given secondary screen (for debug navigation).
     private func hub(for screen: SecondaryScreen) -> Tab {
@@ -213,19 +213,24 @@ struct RootTabView: View {
     private func hubTab<Rows: View>(_ tag: Tab, _ title: LocalizedStringKey, _ icon: String,
                                     path: Binding<NavigationPath>,
                                     @ViewBuilder rows: () -> Rows) -> some View {
-        NavigationStack(path: path) {
+        // Entrenar migrated to «Instrumento» warm paper (FER-342); Ajustes stays the dark
+        // panel until its own redesign (FER-337). One surface token branches the chrome.
+        let light = isLightTab(tag)
+        let bg: Color = light ? InstrumentoTheme.base.paper : StrandPalette.surfaceBase
+        return NavigationStack(path: path) {
             List { rows() }
                 .listStyle(.insetGrouped)
                 .scrollContentBackground(.hidden)
-                .background(StrandPalette.surfaceBase.ignoresSafeArea())
+                .background(bg.ignoresSafeArea())
                 .barReservation(barHeight)
                 .navigationTitle(title)
                 .navigationDestination(for: SecondaryScreen.self) { screen in
                     secondaryDestination(screen)
-                        .background(StrandPalette.surfaceBase.ignoresSafeArea())
+                        .background(bg.ignoresSafeArea())
                         .barReservation(barHeight)
                         .navigationBarTitleDisplayMode(.inline)
-                        .toolbarBackground(StrandPalette.surfaceBase, for: .navigationBar)
+                        .toolbarBackground(bg, for: .navigationBar)
+                        .toolbarColorScheme(light ? .light : .dark, for: .navigationBar)
                 }
         }
         .toolbar(.hidden, for: .tabBar)
@@ -234,9 +239,10 @@ struct RootTabView: View {
     }
 
     /// A grouped-list row that pushes a secondary screen onto its hub's stack.
-    private func row(_ screen: SecondaryScreen, _ title: LocalizedStringKey, _ icon: String) -> some View {
+    private func row(_ screen: SecondaryScreen, _ title: LocalizedStringKey, _ icon: String,
+                     light: Bool = false) -> some View {
         NavigationLink(value: screen) { Label(title, systemImage: icon) }
-            .listRowBackground(StrandPalette.surfaceRaised)
+            .listRowBackground(light ? InstrumentoTheme.base.surface : StrandPalette.surfaceRaised)
     }
 
     // MARK: - Custom bar (FER-163)
