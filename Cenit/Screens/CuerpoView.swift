@@ -111,6 +111,9 @@ private struct CuerpoLanding: View {
     /// (valor de hoy + bandas universales + qué lo mueve + ⓘ por concepto), theme passed explicitly. SOLO
     /// en Cuerpo: el tile de Estrés en Hoy NO cambia.
     @State private var stressDetail: StressDetailItem? = nil
+    /// The «mapa del día» driver (EventKit + intraday stress), built fresh when the Stress row opens
+    /// its detail and passed into the sheet. (FER-377)
+    @State private var stressDayMap: CalendarDayMap? = nil
     /// Light «Instrumento» Detalle de Temperatura de la piel (FER-256) — the «Skin Temperature» row now
     /// opens this dedicated screen (última lectura + tendencia con banda ±típica + consistencia en SD °C +
     /// método) instead of the legacy dark catalog sheet; theme passed explicitly.
@@ -253,7 +256,8 @@ private struct CuerpoLanding: View {
         .sheet(item: $stressDetail) { item in
             // Light «Instrumento» Detalle de Estrés — theme passed explicitly (it doesn't propagate
             // through `.sheet`), NO nested NavigationStack (FER-171). SOLO Cuerpo. (FER-241)
-            StressDetailScreen(theme: theme, model: item.model)
+            // The «mapa del día» driver (EventKit + intraday curve) is built fresh on tap. (FER-377)
+            StressDetailScreen(theme: theme, model: item.model, dayMap: stressDayMap)
         }
         .sheet(item: $skinTempDetail) { item in
             // Light «Instrumento» Detalle de Temperatura de la piel — theme passed explicitly (it doesn't
@@ -537,8 +541,23 @@ private struct CuerpoLanding: View {
         return statColumn("Stress", value: s.map { String(format: "%.1f", $0) },
                           unit: s == nil ? nil : "/ 3",
                           color: s.map(stressDataColor) ?? theme.inkTertiary) {
+            stressDayMap = makeCalendarDayMap()
             stressDetail = StressDetailItem(model: stressModel)
         }
+    }
+
+    /// Build the «mapa del día» driver from the in-scope repo + profile, capturing only the closures it
+    /// needs (RR per window, sleep spans to exclude) so the model stays store-free. (FER-377)
+    private func makeCalendarDayMap() -> CalendarDayMap {
+        let resting = resolveMeasured { $0.restingHr.map(Double.init) }?.value ?? StrainScorer.defaultRestingHR
+        return CalendarDayMap(
+            restingHR: resting,
+            maxHR: Double(model.profile.hrMax),
+            rrLoader: { from, to in await repo.rrIntervals(from: from, to: to) },
+            sleepLoader: { from, to in
+                (await repo.sleepSessions(from: from, to: to))
+                    .compactMap { $0.startTs <= $0.endTs ? $0.startTs...$0.endTs : nil }
+            })
     }
 
     private var hrvStat: some View {

@@ -250,6 +250,14 @@ final class Repository: ObservableObject {
         return (try? await store.hrSamples(deviceId: deviceId, from: from, to: to, limit: limit)) ?? []
     }
 
+    /// Beat-to-beat R-R intervals for the strap in `[from, to]`. Feeds the intraday stress engine
+    /// (`StressEngine`), which derives RMSSD per window. Recomputed on the fly like `hrSamples`; the
+    /// `rrInterval` table is index-covered by `(deviceId, ts)` so a multi-day read is a range scan. (FER-377)
+    func rrIntervals(from: Int, to: Int, limit: Int = 200_000) async -> [RRInterval] {
+        guard let store = await ensureStore() else { return [] }
+        return (try? await store.rrIntervals(deviceId: deviceId, from: from, to: to, limit: limit)) ?? []
+    }
+
     /// Downsampled HR (mean bpm per `bucketSeconds`) for the strap, for a Today/24h trend chart.
     /// Aggregated in SQL so a full day never loads the raw ~1 Hz rows.
     func hrBuckets(from: Int, to: Int, bucketSeconds: Int = 300) async -> [HRBucket] {
