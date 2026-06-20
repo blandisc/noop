@@ -57,6 +57,8 @@ let roles: [Role] = [
     Role(key: "surface",        color: t.surface,        isSurface: true,  desc: "a sparingly-used raised surface; never nested"),
     Role(key: "hairline",       color: t.hairline,       isSurface: true,  desc: "faint warm 1px rule"),
     Role(key: "hairlineStrong", color: t.hairlineStrong, isSurface: true,  desc: "rule on emphasis"),
+    Role(key: "paperHi",        color: t.paperHi,        isSurface: true,  desc: "paper-gradient highlight — lighter pool toward top-centre (derived from paper)"),
+    Role(key: "paperLo",        color: t.paperLo,        isSurface: true,  desc: "paper-gradient rim — deeper warm edge (derived from paper)"),
     Role(key: "ink",            color: t.ink,            isSurface: false, desc: "primary text & the hero numeral"),
     Role(key: "inkSecondary",   color: t.inkSecondary,   isSurface: false, desc: "supporting copy & labels"),
     Role(key: "inkTertiary",    color: t.inkTertiary,    isSurface: false, desc: "overlines, captions, axis"),
