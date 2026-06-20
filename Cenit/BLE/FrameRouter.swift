@@ -30,7 +30,7 @@ public final class FrameRouter {
     /// exactly once and the `ParsedFrame` is reused across the live router, the clock-correlation and
     /// the live-gesture gate (FER-183).
     public func handle(frame: [UInt8]) {
-        handle(parsed: parseFrame(frame, family: family))
+        handle(parsed: parseFrame(frame, family: family, annotate: false))
     }
 
     /// Route an ALREADY-parsed frame into LiveState. Same logic as `handle(frame:)` minus the parse,
@@ -117,7 +117,7 @@ public final class FrameRouter {
     /// Deliberately does NOT touch lastEvent / sync trigger / bonded / battery — those stay on the normal
     /// handle(frame:) path, so backfill UI behaviour is otherwise unchanged.
     func dispatchLiveGestureIfFresh(frame: [UInt8], now: Int = Int(Date().timeIntervalSince1970)) {
-        dispatchLiveGestureIfFresh(parsed: parseFrame(frame, family: family), now: now)
+        dispatchLiveGestureIfFresh(parsed: parseFrame(frame, family: family, annotate: false), now: now)
     }
 
     /// Live-gesture gate for an ALREADY-parsed frame — the parse-once twin of `dispatchLiveGestureIfFresh(frame:now:)`.

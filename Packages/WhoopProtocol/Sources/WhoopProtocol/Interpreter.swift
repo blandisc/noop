@@ -64,20 +64,27 @@ private func hexString(_ bytes: ArraySlice<UInt8>) -> String {
 /// Field builder: accumulates annotated fields and a flat parsed dict. Port of Python FB.
 final class FieldBuilder {
     let frame: [UInt8]
+    /// When false, the annotated `fields` (and their per-field hex `raw`) are NOT built — only the
+    /// `parsed` value dict is populated. The BLE/offload hot path never reads `fields`/`rawHex`, so
+    /// it skips that per-frame allocation cost; the CLI and capture keep `annotate = true` (FER-321).
+    let annotate: Bool
     var fields: [DecodedField] = []
     var parsed: [String: ParsedValue] = [:]
 
-    init(_ frame: [UInt8]) {
+    init(_ frame: [UInt8], annotate: Bool = true) {
         self.frame = frame
+        self.annotate = annotate
     }
 
     @discardableResult
     func add(_ off: Int, _ length: Int, _ name: String, _ cat: String,
              value: ParsedValue? = nil, note: String? = nil) -> FieldBuilder {
-        let end = min(off + length, frame.count)
-        let raw = off <= frame.count ? hexString(frame[max(0, off)..<max(off, end)]) : ""
-        fields.append(DecodedField(off: off, len: length, name: name, cat: cat,
-                                   value: value, raw: raw, note: note))
+        if annotate {
+            let end = min(off + length, frame.count)
+            let raw = off <= frame.count ? hexString(frame[max(0, off)..<max(off, end)]) : ""
+            fields.append(DecodedField(off: off, len: length, name: name, cat: cat,
+                                       value: value, raw: raw, note: note))
+        }
         if value != nil && cat != "frame" && cat != "unknown" {
             parsed[name] = value
         }
@@ -100,9 +107,9 @@ public enum ParseInstrumentation {
     nonisolated(unsafe) public static var onParse: (@Sendable () -> Void)?
 }
 
-public func parseFrame(_ frame: [UInt8]) -> ParsedFrame {
+public func parseFrame(_ frame: [UInt8], annotate: Bool = true) -> ParsedFrame {
     ParseInstrumentation.onParse?()
-    let rawHex = frame.map { String(format: "%02x", $0) }.joined()
+    let rawHex = annotate ? frame.map { String(format: "%02x", $0) }.joined() : ""
     if frame.count < 8 || frame[0] != 0xAA {
         return ParsedFrame(ok: false, typeName: "INVALID/FRAGMENT", seq: nil, cmdName: nil,
                            crcOK: nil, lenBytes: frame.count, rawHex: rawHex,
@@ -118,7 +125,7 @@ public func parseFrame(_ frame: [UInt8]) -> ParsedFrame {
     let typeName = schema.typeName(t)
     let seq = Int(frame[5])
 
-    let fb = FieldBuilder(frame)
+    let fb = FieldBuilder(frame, annotate: annotate)
     // envelope
     fb.add(0, 1, "SOF", "frame", value: .string("0xAA"))
     fb.add(1, 2, "length", "frame", value: length.map { .int($0) })
@@ -172,18 +179,18 @@ public func parseFrame(_ frame: [UInt8]) -> ParsedFrame {
 /// header-CRC live in the first 8 bytes, the inner `[type][seq][cmd][data…]` starts at offset 8,
 /// and the 4-byte CRC32 trailer closes the frame. "Puffin" types 38/56 are aliased onto their base
 /// names (COMMAND_RESPONSE / METADATA) via `canonicalTypeName`.
-public func parseFrame(_ frame: [UInt8], family: DeviceFamily) -> ParsedFrame {
+public func parseFrame(_ frame: [UInt8], family: DeviceFamily, annotate: Bool = true) -> ParsedFrame {
     switch family {
     case .whoop4:
-        return parseFrame(frame)
+        return parseFrame(frame, annotate: annotate)
     case .whoop5:
-        return parseFrameWhoop5(frame)
+        return parseFrameWhoop5(frame, annotate: annotate)
     }
 }
 
-private func parseFrameWhoop5(_ frame: [UInt8]) -> ParsedFrame {
+private func parseFrameWhoop5(_ frame: [UInt8], annotate: Bool = true) -> ParsedFrame {
     ParseInstrumentation.onParse?()
-    let rawHex = frame.map { String(format: "%02x", $0) }.joined()
+    let rawHex = annotate ? frame.map { String(format: "%02x", $0) }.joined() : ""
     // Minimum whoop5 frame: 8 header bytes + 1 inner (type) + 4 CRC32 trailer.
     if frame.count < 12 || frame[0] != 0xAA {
         return ParsedFrame(ok: false, typeName: "INVALID/FRAGMENT", seq: nil, cmdName: nil,
@@ -202,7 +209,7 @@ private func parseFrameWhoop5(_ frame: [UInt8]) -> ParsedFrame {
     let typeName = canonicalTypeName(t, schema: schema)
     let seq = frame.count > innerStart + 1 ? Int(frame[innerStart + 1]) : nil
 
-    let fb = FieldBuilder(frame)
+    let fb = FieldBuilder(frame, annotate: annotate)
     // envelope
     fb.add(0, 1, "SOF", "frame", value: .string("0xAA"))
     fb.add(1, 1, "format", "frame", value: .int(Int(frame[1])))

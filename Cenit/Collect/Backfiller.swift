@@ -124,7 +124,7 @@ final class Backfiller {
 
     /// Feed one raw BLE frame into the state machine. May trigger async store operations.
     func ingest(_ frame: [UInt8]) async {
-        switch classifyHistoricalMeta(parseFrame(frame, family: family)) {
+        switch classifyHistoricalMeta(parseFrame(frame, family: family, annotate: false)) {
         case .start:
             isBackfilling = true
             chunk.removeAll(keepingCapacity: true)
@@ -180,7 +180,7 @@ final class Backfiller {
             // decodes to correct wall time, and we can persist + ack + upload. The correlation is only
             // truly required to map REALTIME (type-40/43) device-epoch timestamps, never in a hist chunk.
             let ref = clockRef ?? { let now = Int(Date().timeIntervalSince1970); return ClockRef(device: now, wall: now) }()
-            let parsed = frames.map { parseFrame($0, family: family) }
+            let parsed = frames.map { parseFrame($0, family: family, annotate: false) }
             // FER-90 diagnostic: break down what this chunk actually contained by frame type. The 4.0
             // "historical offload" sometimes returns CONSOLE_LOGS (type 50) and ZERO biometric records
             // (type 47) — the band narrating firmware errors instead of serving history. This count makes
