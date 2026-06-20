@@ -176,7 +176,7 @@ private struct StepShell<Content: View>: View {
 }
 
 private struct Overline: View {
-    let text: String
+    let text: LocalizedStringKey
     @Environment(\.instrumentoTheme) private var theme
     var body: some View {
         Text(text).instrumentoOverline().foregroundStyle(theme.inkTertiary)
@@ -329,9 +329,9 @@ private struct AppleHealthStep: View {
 private struct CenteredState<Buttons: View>: View {
     let glyph: String
     let glyphColor: Color
-    let title: String
+    let title: LocalizedStringKey
     let titleColor: Color
-    let message: String?
+    let message: LocalizedStringKey?
     @ViewBuilder var buttons: () -> Buttons
     @Environment(\.instrumentoTheme) private var theme
 
@@ -566,7 +566,7 @@ private struct BondedStep: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Conectado")
     }
-    private var batteryLine: String {
+    private var batteryLine: LocalizedStringKey {
         if let pct = live.batteryPct {
             return "Tu banda está conectada · \(Int(pct))% de batería."
         }
@@ -766,9 +766,9 @@ private struct DoneStep: View {
 // MARK: - Reusable pieces
 
 private struct Checkline: View {
-    let text: String
+    let text: LocalizedStringKey
     @Environment(\.instrumentoTheme) private var theme
-    init(_ text: String) { self.text = text }
+    init(_ text: LocalizedStringKey) { self.text = text }
     var body: some View {
         HStack(alignment: .top, spacing: NoopMetrics.space2) {
             Image(systemName: "checkmark")
@@ -786,7 +786,7 @@ private struct Checkline: View {
 }
 
 private struct FieldRow: View {
-    let label: String
+    let label: LocalizedStringKey
     let value: String
     @Environment(\.instrumentoTheme) private var theme
     var body: some View {
@@ -799,7 +799,7 @@ private struct FieldRow: View {
 }
 
 private struct ImportRow: View {
-    let title: String
+    let title: LocalizedStringKey
     let systemImage: String
     var disabled = false
     let action: () -> Void
