@@ -125,6 +125,28 @@ public extension InstrumentoTheme {
          Color(hex: "#C4631F"), Color(hex: "#9C3D14")]
     }
 
+    // MARK: - Muscle-load ramp (FER-350)
+
+    /// The fresh→loaded color scale for the muscle-fatigue map: sage-green when a muscle is fresh,
+    /// deepening through ember to a heavy brick-red when it's loaded. The same warm five-stop family as
+    /// `hrZoneRamp` (which reads correctly on warm paper, where the dark system's bright hues muddy), but
+    /// named for its own role so the map isn't borrowing the workout-zone token. A silhouette fill, not
+    /// text, so AA-on-paper isn't required — the ranking and legend carry the meaning. (FER-350)
+    var muscleLoadRamp: [Color] {
+        [Color(hex: "#8FA98C"), Color(hex: "#C8A24A"), Color(hex: "#D98A3D"),
+         Color(hex: "#C4631F"), Color(hex: "#9C3D14")]
+    }
+
+    /// A color along `muscleLoadRamp` for a 0…1 load fraction (0 = fresh, 1 = most loaded), interpolated
+    /// in OKLab so the sweep stays perceptually even. Clamps out of range. (FER-350)
+    func muscleLoadColor(_ fraction: Double) -> Color {
+        let ramp = muscleLoadRamp
+        let f = min(max(fraction, 0), 1)
+        let scaled = f * Double(ramp.count - 1)
+        let i = min(Int(scaled), ramp.count - 2)
+        return OKLab.mix(ramp[i], ramp[i + 1], scaled - Double(i))
+    }
+
     // MARK: Tinted-text tokens — the data/state hues at SMALL size (FER-131 handoff · 02)
     //
     // The data/state hues (`verdict`/`dataRecovery`/… at 3.6:1, AA-LARGE) are sized for the
@@ -349,5 +371,26 @@ private func swatches(_ title: String, _ items: [(String, Color)], _ t: Instrume
             }
         }
     }
+}
+
+#Preview("Instrumento · carga muscular") {
+    let t = InstrumentoTheme.base
+    return VStack(alignment: .leading, spacing: 16) {
+        Text("RAMPA DE CARGA").instrumentoOverline().foregroundStyle(t.inkTertiary)
+        HStack(spacing: 0) {
+            ForEach(0..<24, id: \.self) { i in
+                Rectangle().fill(t.muscleLoadColor(Double(i) / 23))
+            }
+        }
+        .frame(height: 14)
+        .clipShape(RoundedRectangle(cornerRadius: 7))
+        HStack {
+            Text("Fresco").font(StrandFont.caption).foregroundStyle(t.inkSecondary)
+            Spacer()
+            Text("Cargado").font(StrandFont.caption).foregroundStyle(t.inkSecondary)
+        }
+    }
+    .padding(28)
+    .background(t.paper)
 }
 #endif
