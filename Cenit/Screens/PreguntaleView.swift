@@ -341,10 +341,13 @@ private struct OnDeviceChatScreen: View {
         }
         .sheet(item: $startItem) { item in
             StartExperimentSheet(insight: item.insight, theme: theme) { behavior, outcome, sign in
-                await repo.startExperiment(behavior: behavior, outcome: outcome, expectedSign: sign)
+                // `startExperiment` returns nil when one is already running (one-at-a-time) — don't
+                // claim we started it then.
+                let started = await repo.startExperiment(behavior: behavior, outcome: outcome, expectedSign: sign)
                 startItem = nil
-                engine.messages.append(ChatMessage(role: .assistant,
-                    text: "Listo, empecé tu experimento de 7 días con \(behavior.lowercased()). Lo verás en el Bucle, en «Tu experimento»."))
+                engine.messages.append(ChatMessage(role: .assistant, text: started != nil
+                    ? "Listo, empecé tu experimento de 7 días con \(behavior.lowercased()). Lo verás en el Bucle, en «Tu experimento»."
+                    : "Ya tienes un experimento en curso. Cuando termine, podrás probar este — lo ves en el Bucle, en «Tu experimento»."))
                 engine.lastWhatIf = nil
             }
             .instrumentoTheme(theme)
