@@ -240,4 +240,42 @@ final class BehaviorInsightsTests: XCTestCase {
         let s = BehaviorInsights.sentence(e)
         XCTAssertEqual(s, "On days you logged ‘X’, HRV was 5.0 higher (avg 5 vs 0, n=3 vs 3).")
     }
+
+    // MARK: - eligibleDays restriction (FER-385)
+
+    /// A fixture mirroring diet adherence: 6 adherent days (high outcome), 6 registered-but-not-adherent
+    /// days (low outcome), and 30 days with NO diet record (mid outcome). The behavior's universe is only
+    /// the 12 registered days.
+    private static let dietFixture: (outcome: [String: Double], adherent: Set<String>, eligible: Set<String>) = {
+        var outcome: [String: Double] = [:]
+        var adherent = Set<String>(), eligible = Set<String>()
+        for i in 0..<6 { let d = "a\(i)"; outcome[d] = 70; adherent.insert(d); eligible.insert(d) }   // followed
+        for i in 0..<6 { let d = "b\(i)"; outcome[d] = 50; eligible.insert(d) }                        // registered, not followed
+        for i in 0..<30 { outcome["u\(i)"] = 60 }                                                      // never tracked diet
+        return (outcome, adherent, eligible)
+    }()
+
+    func testEligibleDaysExcludesUnregisteredFromBothGroups() {
+        let f = Self.dietFixture
+        let e = BehaviorInsights.effect(behaviorDays: f.adherent, outcomeByDay: f.outcome,
+                                        behavior: "Diet", outcome: "Recovery", eligibleDays: f.eligible)!
+        XCTAssertEqual(e.nWith, 6)                       // the 6 adherent days
+        XCTAssertEqual(e.nWithout, 6)                    // ONLY the 6 registered-not-adherent days
+        XCTAssertEqual(e.meanWith, 70, accuracy: 1e-9)
+        XCTAssertEqual(e.meanWithout, 50, accuracy: 1e-9)   // the 30 untracked (60) days did NOT pollute it
+    }
+
+    func testNilEligibleDaysIsLegacyAndDiffersFromRestricted() {
+        let f = Self.dietFixture
+        // Legacy (nil): every day is eligible, so the 30 untracked days fall into "without".
+        let legacy = BehaviorInsights.effect(behaviorDays: f.adherent, outcomeByDay: f.outcome,
+                                             behavior: "Diet", outcome: "Recovery")!
+        XCTAssertEqual(legacy.nWithout, 36)                                  // 6 + 30
+        XCTAssertEqual(legacy.meanWithout, (50 * 6 + 60 * 30) / 36.0, accuracy: 1e-9)   // contaminated
+        // Restricting changes the contrast — this is the bug FER-385 fixes.
+        let restricted = BehaviorInsights.effect(behaviorDays: f.adherent, outcomeByDay: f.outcome,
+                                                 behavior: "Diet", outcome: "Recovery", eligibleDays: f.eligible)!
+        XCTAssertNotEqual(legacy.nWithout, restricted.nWithout)
+        XCTAssertNotEqual(legacy.meanWithout, restricted.meanWithout, accuracy: 1e-6)
+    }
 }

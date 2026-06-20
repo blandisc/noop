@@ -36,4 +36,16 @@ final class DietAdherenceTests: XCTestCase {
     func testEmptyPlanReturnsNil() {
         XCTAssertNil(DietAdherence.dayPercent(statuses: [.cumpli], plannedMeals: 0))
     }
+
+    // MARK: - Adherent-day threshold (FER-385)
+
+    func testAdherentDayThresholdIs80() {
+        XCTAssertEqual(DietAdherence.adherentDayThreshold, 80)
+    }
+
+    func testAdherentDaysSelectsAtOrAbove80() {
+        // 79 is out, exactly 80 is in, 0 is out — the ≥80% «followed the plan» cut.
+        let byDay: [String: Double] = ["d1": 79, "d2": 80, "d3": 100, "d4": 0, "d5": 81]
+        XCTAssertEqual(DietAdherence.adherentDays(percentByDay: byDay), ["d2", "d3", "d5"])
+    }
 }

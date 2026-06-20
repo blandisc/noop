@@ -27,4 +27,17 @@ public enum DietAdherence {
         let adherent = adherentCount(statuses)
         return Int((Double(adherent) / Double(plannedMeals) * 100).rounded())
     }
+
+    /// A day counts as "followed the plan" at this adherence % or above (FER-385). 80% is the standard
+    /// «clinically meaningful adherence» cut in the medication-adherence literature (PDC/MPR ≥ 80% =
+    /// "adherent"; Karve et al. 2009; Cramer et al. / ISPOR 2008) — high enough that a day is genuinely
+    /// on-plan, forgiving enough that one swap or skip out of several meals still counts.
+    public static let adherentDayThreshold: Int = 80
+
+    /// The subset of days whose adherence % is at or above `adherentDayThreshold`. The Coach treats this
+    /// set as the «Seguí mi dieta» behavior's "with" days; the full key set is the behavior's eligible
+    /// universe (see `BehaviorInsights.effect(... eligibleDays:)`). FER-385.
+    public static func adherentDays(percentByDay: [String: Double]) -> Set<String> {
+        Set(percentByDay.filter { $0.value >= Double(adherentDayThreshold) }.keys)
+    }
 }

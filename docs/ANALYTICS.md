@@ -512,6 +512,8 @@ t  = (m1 − m2) / sqrt(s1²/n1 + s2²/n2)
 - `rank(...)` orders effects by `|d|` descending, significant first.
 - `sentence(_:)` renders plain English, e.g. *"On days you logged 'Alcohol', Recovery was 12% lower (avg 61 vs 69, n=140 vs 498)."*
 
+**Eligible-day restriction (FER-385).** `effect(… , eligibleDays:)` takes an optional universe of days the behavior is even *measured* on. For journal behaviors it stays `nil` — absence of a log means "didn't do it", so every day is eligible. For **diet adherence** it's the set of days that carry a `diet-adherence` point: a day with no record is *unknown*, not non-adherent, and falls into **neither** group. The binary behavior is *"I followed my diet"* = days with `diet-adherence ≥ 80%` (`DietAdherence.adherentDayThreshold`; the ≥80% "clinically meaningful adherence" convention — Karve 2009; Cramer/ISPOR 2008). `InsightEngine.Inputs.eligibleDaysByBehavior` threads the per-behavior universe in; the **N-of-1 experiment deliberately does NOT restrict** (its "without" group is the full baseline — restricting a 7-day window would starve it below the `minGroup` floor).
+
 ### `ComparisonEngine`
 
 Source: `ComparisonEngine.swift`. Period-over-period comparison of one daily metric.

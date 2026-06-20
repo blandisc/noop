@@ -90,13 +90,21 @@ public enum BehaviorInsights {
     ///
     /// Returns nil unless BOTH groups are non-empty AND the total is large enough
     /// to form a variance estimate (at least 1 value per side and ≥ 3 total).
+    ///
+    /// `eligibleDays` (FER-385) is the universe of days on which the behavior is even *measured*.
+    /// `nil` (the default) keeps the legacy split: every day with an outcome is eligible, so absence
+    /// of a log means "without" — correct for journal behaviors, where not logging «Alcohol» means
+    /// "didn't drink". For diet adherence it's the set of days that have a `diet-adherence` record:
+    /// a day with no record is *unknown*, not non-adherent, and must fall into NEITHER group.
     public static func effect(behaviorDays: Set<String>,
                               outcomeByDay: [String: Double],
                               behavior: String,
-                              outcome: String) -> BehaviorEffect? {
+                              outcome: String,
+                              eligibleDays: Set<String>? = nil) -> BehaviorEffect? {
         var withVals: [Double] = []
         var withoutVals: [Double] = []
         for (day, value) in outcomeByDay {
+            if let eligibleDays, !eligibleDays.contains(day) { continue }   // unknown day → neither group
             if behaviorDays.contains(day) { withVals.append(value) }
             else { withoutVals.append(value) }
         }

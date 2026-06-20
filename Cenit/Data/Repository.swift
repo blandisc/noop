@@ -399,9 +399,14 @@ final class Repository: ObservableObject {
         return row
     }
 
-    /// Count of distinct days in [from, to] the native journal logged `behavior` as «yes» — the
-    /// adherence a running experiment shows ("cumpliste 3 de 4 días").
+    /// Count of distinct days in [from, to] the behavior was adhered to — the adherence a running
+    /// experiment shows ("cumpliste 3 de 4 días"). Diet (FER-385) counts days with adherence ≥ threshold
+    /// from the `diet-adherence` series; every other behavior counts «yes» days from the native journal.
     func nativeAdherence(behavior: String, from: String, to: String) async -> Int {
+        if behavior == JournalCatalogStore.dietBehaviorKey {
+            let byDay = await dietAdherenceByDay(from: from, to: to)
+            return DietAdherence.adherentDays(percentByDay: byDay).count
+        }
         guard let store = await ensureStore() else { return 0 }
         let entries = (try? await store.journalEntries(deviceId: Self.journalDeviceId,
                                                        from: from, to: to)) ?? []
@@ -460,6 +465,17 @@ final class Repository: ObservableObject {
         return pts.map(\.value)
     }
 
+    /// Day → adherence % for every logged day in [from, to] (FER-385). The Coach derives both the
+    /// «Seguí mi dieta» day set (`DietAdherence.adherentDays`, ≥ threshold) and the eligible universe
+    /// (all keys — the days the behavior is even measured on) from this; days with no record are absent,
+    /// so they stay out of both the contrast and the experiment.
+    func dietAdherenceByDay(from: String, to: String) async -> [String: Double] {
+        guard let store = await ensureStore() else { return [:] }
+        let pts = (try? await store.metricSeries(deviceId: Self.journalDeviceId,
+                                                 key: Self.dietAdherenceKey, from: from, to: to)) ?? []
+        return Dictionary(pts.map { ($0.day, $0.value) }, uniquingKeysWith: { _, latest in latest })
+    }
+
     /// End a running experiment early, with no verdict.
     func cancelExperiment(_ row: ExperimentRow) async {
         guard let store = await ensureStore() else { return }
@@ -478,11 +494,20 @@ final class Repository: ObservableObject {
         guard today >= endKey else { return }   // window still open
 
         let series = InsightEngine.outcomeSeries(days, metric: exp.outcome)
-        let entries = (try? await store.journalEntries(deviceId: Self.journalDeviceId,
-                                                       from: exp.startDay, to: endKey)) ?? []
+        // "With" = the window days the lever was adhered to; "without" = the rest (mostly baseline). The
+        // experiment deliberately does NOT restrict to registered days the way the lever does — its short
+        // window needs the full baseline on the "without" side, and an adherent diet day is, by
+        // definition, a registered one (FER-385).
         var adherent = Set<String>()
-        for e in entries where e.question == exp.behavior && e.answeredYes && e.day < endKey {
-            adherent.insert(e.day)
+        if exp.behavior == JournalCatalogStore.dietBehaviorKey {
+            let byDay = await dietAdherenceByDay(from: exp.startDay, to: endKey)
+            adherent = DietAdherence.adherentDays(percentByDay: byDay).filter { $0 < endKey }
+        } else {
+            let entries = (try? await store.journalEntries(deviceId: Self.journalDeviceId,
+                                                           from: exp.startDay, to: endKey)) ?? []
+            for e in entries where e.question == exp.behavior && e.answeredYes && e.day < endKey {
+                adherent.insert(e.day)
+            }
         }
         let result = ExperimentVerdict.evaluate(behavior: exp.behavior, outcome: exp.outcome,
                                                 expectedSign: exp.expectedSign,
