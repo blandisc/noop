@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-19 · FER-299</span>
+  <span class="tb-updated">Actualizado 2026-06-20 · FER-310</span>
 </div>
 
 <div id="wrapper">
@@ -404,7 +404,7 @@ const SCREENS = [
   },
   {
     id: 'sleep', x: 538, y: 60,
-    name: 'Detalle de Sueño', desc: 'Detalle de Sueño «Instrumento» + regularidad + tarjetas ⓘ por métrica/etapa (FER-212 · pasada de UI FER-227)',
+    name: 'Detalle de Sueño', desc: 'Detalle de Sueño «Instrumento» + regularidad (avisa si excluyó una siesta — FER-310) + tarjetas ⓘ por métrica/etapa (FER-212 · pasada de UI FER-227)',
     file: 'Cenit/Screens/SleepDetailScreen.swift',
     icon: '🌙', color: '#7B8FFF',
     states: [
@@ -414,6 +414,7 @@ const SCREENS = [
       { label: 'WHOOP · hipnograma', type: 'live' },
       { label: 'WHOOP · estimado (barra apilada)', type: 'data' },
       { label: 'Regularidad afinándose (N noches por venir)', type: 'empty' },
+      { label: 'Aviso: siesta excluida de la regularidad (FER-310)', type: 'data' },
     ],
     nav: [
       { to: 'sleep', label: 'Tile de métrica → MetricInfoSheet (mini-tendencia 14d + bandas — FER-227)', type: 'sheet' },
