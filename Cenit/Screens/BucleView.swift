@@ -119,7 +119,8 @@ private struct BucleLanding: View {
         .sheet(isPresented: $showPreguntale) {
             PreguntaleView(grounding: grounding ?? CoachGrounding.from(
                 insights: insights, readiness: readiness, recovery: recovery,
-                referenceDay: Repository.localDayKey(Date())))
+                referenceDay: Repository.localDayKey(Date())),
+                           behaviorInsights: behaviorInsights)
                 .instrumentoTheme(theme)
                 .environmentObject(coach)
                 .environmentObject(repo)

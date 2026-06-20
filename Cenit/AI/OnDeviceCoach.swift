@@ -26,6 +26,9 @@ final class OnDeviceCoachEngine: ObservableObject {
     @Published var messages: [ChatMessage] = []
     @Published var thinking = false
     @Published var errorText: String?
+    /// Set when the last answer was a grounded what-if about a behavior — drives the "turn it into a
+    /// 7-day experiment" handoff (FER-333). Cleared on any non-what-if answer.
+    @Published var lastWhatIf: WhatIfResult?
 
     private let grounding: CoachGrounding
     private let session: LanguageModelSession
@@ -63,9 +66,11 @@ final class OnDeviceCoachEngine: ObservableObject {
         thinking = true
         defer { thinking = false }
 
-        // The engine owns the answer; the model only rewrites it.
-        let topic = CoachTopic.classify(q)
-        let base = grounding.deterministicAnswer(forTopic: topic)
+        // The engine owns the answer; the model only rewrites it. A what-if about a logged behavior
+        // gets the grounded historical contrast (and unlocks the experiment handoff).
+        let whatIf = grounding.whatIf(q)
+        lastWhatIf = whatIf
+        let base = whatIf?.statement ?? grounding.deterministicAnswer(forTopic: CoachTopic.classify(q))
 
         do {
             let rewritten = try await session.respond(to: """

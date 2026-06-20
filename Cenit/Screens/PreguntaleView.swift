@@ -14,6 +14,8 @@ import StrandAnalytics
 
 struct PreguntaleView: View {
     let grounding: CoachGrounding
+    /// Behavior insights (with their breakdown) so a what-if can hand off to a 7-day experiment (FER-333).
+    var behaviorInsights: [Insight] = []
 
     @Environment(\.instrumentoTheme) private var theme
     @EnvironmentObject private var coach: AICoachEngine
@@ -27,7 +29,8 @@ struct PreguntaleView: View {
         Group {
             #if canImport(FoundationModels)
             if #available(iOS 26, *), availability.tier == .onDevice {
-                OnDeviceChatScreen(grounding: grounding, openExternal: { showExternal = true })
+                OnDeviceChatScreen(grounding: grounding, behaviorInsights: behaviorInsights,
+                                   openExternal: { showExternal = true })
             } else {
                 EssentialModeScreen(grounding: grounding,
                                     reason: availability.reason ?? .osTooOld,
@@ -220,21 +223,38 @@ private struct FlowChips: View {
 
 // MARK: - On-device chat (Level 2)
 
+/// Identifiable wrapper so a what-if's `Insight` can drive `.sheet(item:)` for the experiment handoff.
+private struct StartExperimentItem: Identifiable {
+    let id = UUID()
+    let insight: Insight
+}
+
 #if canImport(FoundationModels)
 @available(iOS 26, *)
 private struct OnDeviceChatScreen: View {
     let grounding: CoachGrounding
     let openExternal: () -> Void
 
+    let behaviorInsights: [Insight]
+
     @Environment(\.instrumentoTheme) private var theme
     @EnvironmentObject private var coach: AICoachEngine
+    @EnvironmentObject private var repo: Repository
     @StateObject private var engine: OnDeviceCoachEngine
     @State private var draft = ""
+    @State private var startItem: StartExperimentItem?
 
-    init(grounding: CoachGrounding, openExternal: @escaping () -> Void) {
+    init(grounding: CoachGrounding, behaviorInsights: [Insight], openExternal: @escaping () -> Void) {
         self.grounding = grounding
+        self.behaviorInsights = behaviorInsights
         self.openExternal = openExternal
         _engine = StateObject(wrappedValue: OnDeviceCoachEngine(grounding: grounding))
+    }
+
+    /// The behavior insight matching the last what-if, so we can offer to test it as an experiment.
+    private var whatIfInsight: Insight? {
+        guard let wi = engine.lastWhatIf else { return nil }
+        return behaviorInsights.first { $0.lever?.behavior == wi.behavior && $0.lever?.outcome == wi.outcome }
     }
 
     var body: some View {
@@ -283,6 +303,24 @@ private struct OnDeviceChatScreen: View {
                         .accessibilityLabel("Pensando")
                     }
 
+                    // What-if → close the loop: offer to turn it into a 7-day experiment (FER-333).
+                    if !engine.thinking, let insight = whatIfInsight {
+                        Button { startItem = StartExperimentItem(insight: insight) } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "flask").font(.system(size: 14))
+                                Text("Convertirlo en experimento de 7 días").font(StrandFont.subhead)
+                                Spacer()
+                                Image(systemName: "arrow.right").font(.system(size: 13))
+                            }
+                            .foregroundStyle(theme.ink)
+                            .padding(.vertical, 11).padding(.horizontal, 14)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                                .strokeBorder(theme.hairlineStrong, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
+                        }
+                        .buttonStyle(.plain)
+                    }
+
                     // Follow-up suggestions once there's an answer on screen.
                     if !engine.messages.isEmpty && !engine.thinking {
                         FlowChips(chips: grounding.followUpChips(after: .today), theme: theme) { chip in
@@ -300,6 +338,17 @@ private struct OnDeviceChatScreen: View {
         }
         .onChange(of: engine.thinking) { _, now in
             if now { AccessibilityNotification.Announcement("Pensando").post() }
+        }
+        .sheet(item: $startItem) { item in
+            StartExperimentSheet(insight: item.insight, theme: theme) { behavior, outcome, sign in
+                await repo.startExperiment(behavior: behavior, outcome: outcome, expectedSign: sign)
+                startItem = nil
+                engine.messages.append(ChatMessage(role: .assistant,
+                    text: "Listo, empecé tu experimento de 7 días con \(behavior.lowercased()). Lo verás en el Bucle, en «Tu experimento»."))
+                engine.lastWhatIf = nil
+            }
+            .instrumentoTheme(theme)
+            .environmentObject(repo)
         }
     }
 
