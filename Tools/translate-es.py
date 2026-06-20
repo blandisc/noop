@@ -1123,8 +1123,6 @@ ES: dict[str, str] = {
 
     # Strap actions (Automations picker).
     "Nothing": "Nada",
-    "Lock the device": "Bloquear el dispositivo",
-    "Lock the Mac": "Bloquear la Mac",
     "Buzz back (confirm)": "Vibrar de vuelta (confirmar)",
     "Mark a moment": "Marcar un momento",
     "Run a Shortcut…": "Ejecutar un Atajo…",

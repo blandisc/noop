@@ -1,7 +1,7 @@
 import Foundation
 import Combine
 
-/// Settings for the strap's physical inputs and the Mac/coaching automations built on top of the
+/// Settings for the strap's physical inputs and the coaching automations built on top of the
 /// live event + biometric stream. UserDefaults-backed (single-user, on-device).
 @MainActor
 final class BehaviorStore: ObservableObject {
@@ -11,8 +11,6 @@ final class BehaviorStore: ObservableObject {
     @Published var doubleTapShortcut: String { didSet { d.set(doubleTapShortcut, forKey: K.dtShortcut) } }
 
     // MARK: Wear automation
-    /// Lock the Mac when the strap comes off the wrist.
-    @Published var autoLockOnWristOff: Bool { didSet { d.set(autoLockOnWristOff, forKey: K.autoLock) } }
     /// Run a Shortcut when the strap comes off (presence automation: Focus, pause media, set away…).
     @Published var wristOffShortcut: String { didSet { d.set(wristOffShortcut, forKey: K.wristOffShortcut) } }
     /// Run a Shortcut when the strap goes back on the wrist.
@@ -35,7 +33,9 @@ final class BehaviorStore: ObservableObject {
     private enum K {
         static let dtAction = "behavior.doubleTapAction"
         static let dtShortcut = "behavior.doubleTapShortcut"
-        static let autoLock = "behavior.autoLockOnWristOff"
+        // "behavior.autoLockOnWristOff" retired: the Mac-only "lock when the strap comes off"
+        // control was dropped when the app went iOS-only (no API locks an iPhone). Any old
+        // defaults value is left orphaned on purpose — harmless.
         static let wristOffShortcut = "behavior.wristOffShortcut"
         static let wristOnShortcut = "behavior.wristOnShortcut"
         static let zoneCoaching = "behavior.zoneCoaching"
@@ -51,7 +51,6 @@ final class BehaviorStore: ObservableObject {
     init() {
         doubleTapAction = StrapActionKind(rawValue: d.string(forKey: K.dtAction) ?? "") ?? .none
         doubleTapShortcut = d.string(forKey: K.dtShortcut) ?? ""
-        autoLockOnWristOff = d.object(forKey: K.autoLock) as? Bool ?? false
         wristOffShortcut = d.string(forKey: K.wristOffShortcut) ?? ""
         wristOnShortcut = d.string(forKey: K.wristOnShortcut) ?? ""
         zoneCoaching = d.object(forKey: K.zoneCoaching) as? Bool ?? false
