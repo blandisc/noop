@@ -18,6 +18,24 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
+    # FER-337 — Rediseño de Ajustes a «Instrumento»: raíz + sub-pantallas (Unidades, Log) + huérfanos rehubicados
+    'Your numbers, your strap, and how Cénit works. All on this iPhone.': 'Tus números, tu banda y cómo funciona Cénit. Todo en este iPhone.',
+    'Your strap': 'Tu banda',
+    'Strap log': 'Log de la banda',
+    'WHOOP 5/MG protocol probes': 'Sondas de protocolo WHOOP 5/MG',
+    'On a 5/MG connection Cénit sends a probe after the handshake and logs what comes back. No effect on WHOOP 4.0.': 'En una conexión 5/MG, Cénit manda una sonda tras el emparejamiento y registra lo que regresa. No afecta a la WHOOP 4.0.',
+    'Record 5/MG frames to a file': 'Grabar frames 5/MG en un archivo',
+    'Units & format': 'Unidades y formato',
+    'Data & sources': 'Datos y fuentes',
+    'About & support': 'Acerca de y soporte',
+    'Display': 'Visualización',
+    'Your data is always stored the same way — this only changes how distances, weights, heights and temperatures are shown.': 'Tus datos siempre se guardan igual; esto solo cambia cómo se muestran distancias, pesos, estaturas y temperaturas.',
+    "Your strap's connection trail. Attach it to a bug report if something looks off.": 'El rastro de conexión de tu banda. Adjúntalo a un reporte de error si algo se ve raro.',
+    'View imported data': 'Ver datos importados',
+    "Everything stays on this iPhone. Bring your history in once, then it's yours.": 'Todo se queda en este iPhone. Trae tu historial una vez y es tuyo.',
+    "Importing overwrites everything currently in Cénit. Your old data is kept in a side file just in case, and Cénit needs a relaunch for an import to take effect. Export CSV writes a WHOOP-format zip of your days, sleeps, workouts and journal that re-imports into Cénit.": 'Importar sobrescribe todo lo que hay en Cénit. Tus datos viejos se guardan en un archivo aparte por si acaso, y Cénit necesita reiniciarse para que el import surta efecto. Exportar CSV genera un zip en formato WHOOP de tus días, sueños, entrenamientos y diario que se re-importa a Cénit.',
+    '%@ — all your data, none of the cloud. Free and always will be; chipping in is optional.': '%@ — todos tus datos, nada en la nube. Es gratis y siempre lo será; aportar es opcional.',
+    'Automations': 'Automatizaciones',
     # FER-312 — Pregúntale (Coach): los 2 strings que faltaban en es (setup + footnote de privacidad)
     'Coach uses your own API key. Pick a provider, paste a key, and choose a model. Your key is stored securely in the device Keychain and never leaves your phone except as the request you make.': 'Coach usa tu propia clave de API. Elige un proveedor, pega una clave y escoge un modelo. Tu clave se guarda de forma segura en el Llavero de tu teléfono y nunca sale de él salvo como la petición que tú haces.',
     'This is the only feature that leaves your phone — it sends a summary of your metrics to %@ using your own key. Nothing is sent until you ask.': 'Esta es la única función que sale de tu teléfono — manda un resumen de tus métricas a %@ usando tu propia clave. No se envía nada hasta que preguntas.',

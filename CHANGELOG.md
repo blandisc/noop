@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Ajustes, rediseñado: una sola pantalla clara, sin laberinto / Settings, redesigned: one clean screen, no maze.**
+  **ES** — La pestaña Ajustes estrena el lenguaje claro «Instrumento»: abre directo (sin el paso extra «Settings») y con tu perfil y el estado de tu banda a la vista. Desaparece el cajón «Más»: lo que ya vivía en Cuerpo (Explorar, Comparar, Entrenamientos) deja de duplicarse aquí, y lo demás queda ordenado en **Datos y fuentes**, **Automatizaciones**, y **Acerca de y soporte**. El log de la banda —con Copiar/Guardar para adjuntar a un reporte— sigue a un toque, dentro de «Tu banda».
+  **EN** — The Settings tab adopts the light «Instrumento» language: it opens directly (no extra "Settings" step) with your profile and your strap's status in view. The "More" drawer is gone: what already lived in Body (Explore, Compare, Workouts) is no longer duplicated here, and the rest is tidied into **Data & sources**, **Automations**, and **About & support**. The strap log — with Copy/Save to attach to a bug report — stays one tap away, inside "Your strap".
+  ([Cenit/Screens/AjustesView.swift](Cenit/Screens/AjustesView.swift), [CenitApp/App/RootTabView.swift](CenitApp/App/RootTabView.swift))
 - **«Hace 5 min», no «5 min ago»: la antigüedad de la sincronización ya en español / Relative sync time no longer stays in English.**
   **ES** — La línea de sincronización («Última sincronización…» / «Historial sincronizado…») mostraba la antigüedad en inglés —«5 min ago», «just now», «2 h ago»— aun con la app en español. Ahora dice «hace 5 min», «justo ahora», «hace 2 h». De paso rutamos por el catálogo las abreviaturas de unidad de las métricas (ms, rpm, ml/kg) para que ninguna quede escrita a mano.
   **EN** — The sync line ("Last synced…" / "History synced…") showed the age in English — "5 min ago", "just now", "2 h ago" — even with the app in Spanish. It now reads "hace 5 min", "justo ahora", "hace 2 h". We also routed the metric unit abbreviations (ms, rpm, ml/kg) through the catalog so none stay hardcoded.

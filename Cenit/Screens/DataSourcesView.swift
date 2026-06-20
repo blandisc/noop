@@ -19,9 +19,20 @@ struct DataSourcesView: View {
     @State private var hkBusy = false
     #endif
 
+    // Backup & restore + automatic iCloud backup — migrated here from SettingsView for FER-337 so no
+    // content is orphaned when the old Settings screen goes away. FER-338 reskins this whole screen
+    // (these cards included) to the light «Instrumento» «Datos y fuentes».
+    @State private var backupBusy = false
+    @State private var backupAlertTitle = ""
+    @State private var backupAlertMessage = ""
+    @State private var showBackupAlert = false
+    #if os(iOS)
+    @EnvironmentObject private var autoBackup: AutoBackup
+    #endif
+
     var body: some View {
         ScreenScaffold(title: "Data Sources",
-                       subtitle: "Everything stays on this Mac. Bring your history in once, then it's yours.") {
+                       subtitle: "Everything stays on this iPhone. Bring your history in once, then it's yours.") {
             whoopCard
             appleHealthCard
             #if os(iOS)
@@ -32,6 +43,8 @@ struct DataSourcesView: View {
             // FER-137 — the "Sources" summary card moved here off the iPhone Today (which now reads as
             // verdict + Key Metrics only). iOS-only: macOS still shows it on its Today footer.
             SourcesSummaryCard()
+            backupCard
+            autoBackupCard
             #endif
         }
         // A single target-aware importer avoids SwiftUI collapsing competing importers on the same screen.
@@ -40,6 +53,9 @@ struct DataSourcesView: View {
                       allowsMultipleSelection: false) { result in
             handleImportResult(result, for: importTarget)
         }
+        .alert(backupAlertTitle, isPresented: $showBackupAlert) {
+            Button("OK", role: .cancel) { }
+        } message: { Text(backupAlertMessage) }
     }
 
     private var whoopCard: some View {
@@ -129,6 +145,13 @@ struct DataSourcesView: View {
             if !repo.days.isEmpty || (!repo.appleHealthDays.isEmpty && healthAccessible) {
                 Divider().overlay(StrandPalette.hairline)
                 coverageBodyView
+            }
+            // Reachability for the per-source Apple Health viewer (used to hang off the «Más» drawer).
+            // Pushed within this screen's NavigationStack. FER-338 turns it into «Ver datos importados ›».
+            Divider().overlay(StrandPalette.hairline)
+            NavigationLink { AppleHealthView() } label: {
+                Label("View imported data", systemImage: "chart.bar.doc.horizontal")
+                    .font(StrandFont.subhead).foregroundStyle(StrandPalette.accent)
             }
         }
         // Load coverage + write permissions on appear so opening the screen shows "X days imported"
@@ -601,5 +624,145 @@ struct DataSourcesView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(StrandPalette.surfaceRaised, in: RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(StrandPalette.hairline))
+    }
+
+    // MARK: - Backup & restore + iCloud (migrated from SettingsView — FER-337)
+
+    #if os(iOS)
+    private var backupCard: some View {
+        card(title: "Backup & restore", icon: "externaldrive.fill",
+             subtitle: "Move all your Cénit data to another device. Export saves everything to one file you can copy across; import replaces this device's data with a backup.") {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(spacing: 12) {
+                    Button { runExport() } label: {
+                        Label("Export…", systemImage: "square.and.arrow.up").padding(.horizontal, 6)
+                    }
+                    .buttonStyle(.borderedProminent).tint(StrandPalette.accent).disabled(backupBusy)
+                    Button { runImport() } label: {
+                        Label("Import…", systemImage: "square.and.arrow.down").padding(.horizontal, 6)
+                    }
+                    .buttonStyle(.bordered).tint(StrandPalette.accent).disabled(backupBusy)
+                    Button { runCsvExport() } label: {
+                        Label("Export CSV…", systemImage: "tablecells").padding(.horizontal, 6)
+                    }
+                    .buttonStyle(.bordered).tint(StrandPalette.accent).disabled(backupBusy)
+                    if backupBusy { ProgressView().controlSize(.small) }
+                    Spacer(minLength: 0)
+                }
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: "info.circle.fill").foregroundStyle(StrandPalette.textTertiary)
+                        .font(.system(size: 13)).accessibilityHidden(true)
+                    Text("Importing overwrites everything currently in Cénit. Your old data is kept in a side file just in case, and Cénit needs a relaunch for an import to take effect. Export CSV writes a WHOOP-format zip of your days, sleeps, workouts and journal that re-imports into Cénit.")
+                        .font(StrandFont.footnote).foregroundStyle(StrandPalette.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    private var autoBackupCard: some View {
+        card(title: "Automatic iCloud backup", icon: "icloud.and.arrow.up.fill",
+             subtitle: "Pick a folder in iCloud Drive and Cénit keeps a fresh copy of all your data there. Your strap history lives only inside the app, so this is what protects it if you reinstall Cénit or switch phones. A free Apple ID is enough.") {
+            VStack(alignment: .leading, spacing: 14) {
+                if let name = autoBackup.destinationName {
+                    Label("Backing up to \(name)", systemImage: "checkmark.icloud.fill")
+                        .font(StrandFont.subhead).foregroundStyle(StrandPalette.textPrimary)
+                    Text(lastBackupText).font(StrandFont.footnote).foregroundStyle(StrandPalette.textSecondary)
+                    HStack(spacing: 12) {
+                        Button {
+                            Task { await autoBackup.backupNow(checkpoint: { await model.repo.checkpointForBackup() }) }
+                        } label: {
+                            Label("Back up now", systemImage: "arrow.clockwise.icloud").padding(.horizontal, 6)
+                        }
+                        .buttonStyle(.borderedProminent).tint(StrandPalette.accent).disabled(autoBackup.busy)
+                        Button { runImport() } label: {
+                            Label("Restore…", systemImage: "square.and.arrow.down").padding(.horizontal, 6)
+                        }
+                        .buttonStyle(.bordered).tint(StrandPalette.accent).disabled(backupBusy)
+                        if autoBackup.busy { ProgressView().controlSize(.small) }
+                        Spacer(minLength: 0)
+                    }
+                    Button(role: .destructive) { autoBackup.disable() } label: {
+                        Label("Turn off automatic backup", systemImage: "xmark.circle")
+                    }
+                    .buttonStyle(.bordered)
+                } else {
+                    HStack(spacing: 12) {
+                        Button { Task { await autoBackup.chooseFolder() } } label: {
+                            Label("Choose iCloud Drive folder…", systemImage: "folder.badge.plus").padding(.horizontal, 6)
+                        }
+                        .buttonStyle(.borderedProminent).tint(StrandPalette.accent)
+                        Button { runImport() } label: {
+                            Label("Restore…", systemImage: "square.and.arrow.down").padding(.horizontal, 6)
+                        }
+                        .buttonStyle(.bordered).tint(StrandPalette.accent).disabled(backupBusy)
+                        Spacer(minLength: 0)
+                    }
+                }
+                if let err = autoBackup.lastError {
+                    HStack(alignment: .top, spacing: 10) {
+                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                            .font(.system(size: 13)).accessibilityHidden(true)
+                        Text(err).font(StrandFont.footnote).foregroundStyle(StrandPalette.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+        }
+    }
+
+    private var lastBackupText: String {
+        guard let d = autoBackup.lastBackup else { return String(localized: "No backup yet.") }
+        let rel = RelativeDateTimeFormatter(); rel.unitsStyle = .full
+        return String(localized: "Last backup \(rel.localizedString(for: d, relativeTo: Date()))")
+    }
+    #endif
+
+    private func runExport() {
+        backupBusy = true
+        Task {
+            let result = await DataBackup.runExport(checkpoint: { await model.repo.checkpointForBackup() })
+            handleBackup(result)
+        }
+    }
+    private func runImport() {
+        backupBusy = true
+        Task {
+            let result = await DataBackup.runImport()
+            handleBackup(result)
+        }
+    }
+    private func runCsvExport() {
+        backupBusy = true
+        Task {
+            let result = await CsvExport.run(repo: model.repo)
+            backupBusy = false
+            switch result {
+            case .cancelled: return
+            case .exported(let url):
+                backupAlertTitle = "CSV exported"
+                backupAlertMessage = "Saved to \(url.lastPathComponent). The zip re-imports into Cénit (Data Sources → WHOOP Export)."
+                showBackupAlert = true
+            case .failure(let message):
+                backupAlertTitle = "Export problem"; backupAlertMessage = message; showBackupAlert = true
+            }
+        }
+    }
+    @MainActor
+    private func handleBackup(_ result: DataBackup.BackupResult) {
+        backupBusy = false
+        switch result {
+        case .cancelled: return
+        case .exported(let url):
+            backupAlertTitle = "Backup exported"
+            backupAlertMessage = "Saved to \(url.lastPathComponent). Copy this file to your other device and use Import there to restore everything."
+            showBackupAlert = true
+        case .imported:
+            backupAlertTitle = "Backup imported"
+            backupAlertMessage = "Your data has been restored. Quit and reopen Cénit for it to take effect."
+            showBackupAlert = true
+        case .failure(let message):
+            backupAlertTitle = "Backup problem"; backupAlertMessage = message; showBackupAlert = true
+        }
     }
 }

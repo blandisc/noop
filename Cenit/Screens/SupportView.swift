@@ -5,14 +5,98 @@ import StrandDesign
 struct SupportView: View {
     @State private var copied: String?
     @State private var selected = "BTC"
+    // About — migrated here from SettingsView.aboutCard for FER-337 (no orphaned content when the old
+    // Settings screen goes away). FER-67 fully merges About + Support into one light «Instrumento» screen.
+    @State private var showWhatsNew = false
+    @StateObject private var updateChecker = UpdateChecker()
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
-        ScreenScaffold(title: "Support",
-                       subtitle: "\(ProjectInfo.appName) is free and always will be. If it's useful to you, you can chip in to help with development and testing costs. Totally optional.") {
+        ScreenScaffold(title: "About & support",
+                       subtitle: "\(ProjectInfo.appName) — all your data, none of the cloud. Free and always will be; chipping in is optional.") {
+            aboutCard
             builtOnCard
             donateCard
             contactCard
             disclaimerCard
+        }
+        .sheet(isPresented: $showWhatsNew) {
+            WhatsNewView(onClose: { showWhatsNew = false })
+        }
+    }
+
+    /// Identity + version + "What's New" + on-demand GitHub update check + the project's mission. The
+    /// "not affiliated" / "not a medical device" disclaimer and the attributions already live in
+    /// `disclaimerCard` / `builtOnCard` below, so they are not repeated here.
+    private var aboutCard: some View {
+        StrandCard(padding: 20) {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(spacing: 10) {
+                    Text(ProjectInfo.appName).font(StrandFont.title2).foregroundStyle(StrandPalette.textPrimary)
+                    StatePill("v\(AppChangelog.currentVersion)", tone: .neutral, showsDot: false)
+                    Spacer()
+                    Button { showWhatsNew = true } label: {
+                        Label("What's new", systemImage: "sparkles").padding(.horizontal, 4)
+                    }
+                    .buttonStyle(.bordered).tint(StrandPalette.accent)
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 10) {
+                        Button {
+                            updateChecker.check(currentVersion: AppChangelog.currentVersion)
+                        } label: {
+                            if updateChecker.state == .checking {
+                                HStack(spacing: 6) { ProgressView().controlSize(.small); Text("Checking…") }
+                            } else {
+                                Label("Check for updates", systemImage: "arrow.triangle.2.circlepath").padding(.horizontal, 4)
+                            }
+                        }
+                        .buttonStyle(.bordered).disabled(updateChecker.state == .checking)
+
+                        if case .upToDate(let v) = updateChecker.state {
+                            Text("You're on the latest (\(v)).")
+                                .font(StrandFont.footnote).foregroundStyle(StrandPalette.textSecondary)
+                        } else if case .failed = updateChecker.state {
+                            Text("Couldn't check. Try again.")
+                                .font(StrandFont.footnote).foregroundStyle(StrandPalette.statusWarning)
+                        }
+                        Spacer()
+                    }
+
+                    if case .available(let v, let url, let notes) = updateChecker.state {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("Version \(v) is available")
+                                    .font(StrandFont.subhead).foregroundStyle(StrandPalette.textPrimary)
+                                Spacer()
+                                Button { openURL(url) } label: {
+                                    Label("Download", systemImage: "arrow.down.circle.fill").padding(.horizontal, 4)
+                                }
+                                .buttonStyle(.borderedProminent).tint(StrandPalette.accent)
+                            }
+                            if !notes.isEmpty {
+                                ScrollView {
+                                    Text(notes).font(StrandFont.footnote).foregroundStyle(StrandPalette.textSecondary)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                                .frame(maxHeight: 150)
+                            }
+                        }
+                        .padding(12).frame(maxWidth: .infinity, alignment: .leading)
+                        .background(StrandPalette.surfaceInset, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .stroke(StrandPalette.accent.opacity(0.3), lineWidth: 1))
+                    }
+
+                    Text("Checks GitHub for the latest version when you tap — nothing else is sent.")
+                        .font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
+                }
+
+                Text("A standalone companion for your WHOOP. Everything stays on this device — your history, your live stream, your numbers. Nothing is uploaded. \(ProjectInfo.appName) is an independent, experimental project, not the WHOOP app.")
+                    .font(StrandFont.subhead).foregroundStyle(StrandPalette.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 

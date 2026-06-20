@@ -35,10 +35,13 @@ Tab shell (FER-182) → 5 pestañas: Hoy · Cuerpo · Coach · Entrenar · Ajust
   Cuerpo   → CuerpoView (landing curado de la capa «historia», FER-186)
   Coach    → BucleView (pantalla única «el Bucle», FER-292; reemplaza el hub Intelligence · Insights · Coach)
   Entrenar → hub-lista → «Iniciar en vivo» (LiveWorkoutHubRow) · BreathingView · IntervalTimerView
-  Ajustes  → SettingsView + sección «Más» → MetricExplorerView · CompareView ·
-             WorkoutsView · AppleHealthView · DataSourcesView · AutomationsView · SupportView
-             (Sueño · Health · Stress se mudaron a «Cuerpo» como métricas — FER-186)
-SettingsView → WhatsNewView (sheet)
+  Ajustes  → AjustesView (raíz clara «Instrumento», FER-337): Perfil · Tu strap (estado + Log de la banda + 5/MG)
+             · filas → Unidades y formato · Datos y fuentes · Automatizaciones · Acerca de y soporte
+             (mató «Más» + el doble nivel lista→Settings; Explore/Compare/Workouts viven en Cuerpo;
+              Sueño · Health · Stress en «Cuerpo» como métricas — FER-186)
+AjustesView → UnidadesSheet · StrapLogSheet (sheets claros) · DataSourcesView · AutomationsView · SupportView
+             (sheets oscuros «pinned» a .dark en transición hasta su reskin — FER-338/69/67)
+DataSourcesView → AppleHealthView (push, «Ver datos importados»)
 TodayView   → LiveView (sheet, detente grande) · MetricInfoSheet (sheet; incl. Recuperación — hoja resumida, FER-232) · MetricDetailScreen (sheet, .focus: HRV/FC reposo — FER-185) · WhyVerdictSheet (sheet) · SupportView (toolbar)
              MetricInfoSheet --«Ver más»--> RecoveryDetailScreen / SleepDetailScreen / StrainDetailScreen / StressDetailScreen / MetricDetailScreen .full (detalle rico, sin cambiar de pestaña — FER-251)
 CuerpoView  → RecoveryDetailScreen (sheet «Instrumento»: Recuperación — FER-225) ·
@@ -559,16 +562,18 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 
 ---
 
-### SettingsView
-**Archivo:** `Cenit/Screens/SettingsView.swift`  
-**Descripción:** Configuración — perfil (edad, sexo, peso, altura), unidades, strap (estado + controles + **registro del strap** embebido, restaurado en FER-199), experimental, backup, about.
+### AjustesView
+**Archivo:** `Cenit/Screens/AjustesView.swift`  
+**Descripción:** La raíz de Ajustes en el lenguaje claro «Instrumento diurno» (FER-337). Abre directo (sin el viejo paso «Settings») y mató el cajón «Más». Perfil (edad/sexo/peso/estatura/FC máx) y «Tu strap» (estado + batería + Re-escanear/Desconectar + Log de la banda + Pruebas 5/MG) a la vista; filas que abren las sub-pantallas. Reemplaza a `SettingsView` (borrado): su respaldo/iCloud se mudó a `DataSourcesView` y su «Acerca de» a `SupportView` (transición que rehúbican FER-338/67). El log de la banda sigue alcanzable (criterio duro).
 
 | Estado | Condición de entrada |
 |--------|---------------------|
 | Vista única (scrollable) | Siempre |
+| Tu strap: vinculado / conectado / idle / desconectado | Según `live.connected` / `live.bonded` |
+| Log de la banda: vacío / con líneas | Según `live.log` |
 
-**Componentes:** `SettingsSection cards`, `FormRow (age/sex/weight/height)`, `Units toggles (metric/imperial / °C/°F)`, `Strap card (estado + Re-scan/Disconnect + registro del strap con Copiar/Guardar)`, `Experimental toggle (Puffin)`, `Backup card (export/restore)`, `About card`  
-**Navegación:** → `WhatsNewView` (sheet)
+**Componentes:** `section()` (overline + filas, jerarquía por espacio — sin card-in-card), `FormRow` (Stepper/Picker nativos), estado del strap inline (dot en color del dato + batería), `QuietButton`, `navRow` (chevron → sheet), sub-pantallas `UnidadesSheet` / `StrapLogSheet` (claras, tema pasado explícito), sheet oscuro «pinned» a `.dark` para Datos y fuentes / Automatizaciones / Acerca de y soporte (transición)  
+**Navegación:** → `UnidadesSheet` · `StrapLogSheet` (sheets claros) · `DataSourcesView` · `AutomationsView` · `SupportView` (sheets oscuros)
 
 ---
 
