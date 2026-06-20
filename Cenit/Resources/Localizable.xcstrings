@@ -26549,6 +26549,438 @@
           }
         }
       }
+    },
+    "‘%1$@’ and your %2$@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "‘%1$@’ and your %2$@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "‘%1$@’ y tu %2$@"
+          }
+        }
+      }
+    },
+    "On days with ‘%1$@’, your %2$@ drops %3$lld%% (n=%4$lld vs %5$lld).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On days with ‘%1$@’, your %2$@ drops %3$lld%% (n=%4$lld vs %5$lld)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En los días con ‘%1$@’, tu %2$@ baja %3$lld%% (n=%4$lld vs %5$lld)."
+          }
+        }
+      }
+    },
+    "On days with ‘%1$@’, your %2$@ rises %3$lld%% (n=%4$lld vs %5$lld).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On days with ‘%1$@’, your %2$@ rises %3$lld%% (n=%4$lld vs %5$lld)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En los días con ‘%1$@’, tu %2$@ sube %3$lld%% (n=%4$lld vs %5$lld)."
+          }
+        }
+      }
+    },
+    "%1$@ and %2$@ go together": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ and %2$@ go together"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ y %2$@ van juntos"
+          }
+        }
+      }
+    },
+    "Inverse relationship between %1$@ and %2$@ (r=%3$@, n=%4$lld).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inverse relationship between %1$@ and %2$@ (r=%3$@, n=%4$lld)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relación inversa entre %1$@ y %2$@ (r=%3$@, n=%4$lld)."
+          }
+        }
+      }
+    },
+    "Direct relationship between %1$@ and %2$@ (r=%3$@, n=%4$lld).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Direct relationship between %1$@ and %2$@ (r=%3$@, n=%4$lld)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relación directa entre %1$@ y %2$@ (r=%3$@, n=%4$lld)."
+          }
+        }
+      }
+    },
+    "%@ was off last night": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ was off last night"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ fuera de lo normal anoche"
+          }
+        }
+      }
+    },
+    "Last night your %1$@ ran below your baseline (z=%2$@, baseline %3$lld%4$@).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last night your %1$@ ran below your baseline (z=%2$@, baseline %3$lld%4$@)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anoche tu %1$@ estuvo por debajo de tu base (z=%2$@, base %3$lld%4$@)."
+          }
+        }
+      }
+    },
+    "Last night your %1$@ ran above your baseline (z=%2$@, baseline %3$lld%4$@).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last night your %1$@ ran above your baseline (z=%2$@, baseline %3$lld%4$@)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anoche tu %1$@ estuvo por encima de tu base (z=%2$@, base %3$lld%4$@)."
+          }
+        }
+      }
+    },
+    "Your Recovery is trending down (%lld days)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Recovery is trending down (%lld days)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu Recuperación viene bajando (%lld días)"
+          }
+        }
+      }
+    },
+    "Your Recovery is trending up (%lld days)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Recovery is trending up (%lld days)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu Recuperación viene subiendo (%lld días)"
+          }
+        }
+      }
+    },
+    "Over the last %1$lld days your Recovery averaged %2$lld vs %3$lld before (%4$lld%%).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Over the last %1$lld days your Recovery averaged %2$lld vs %3$lld before (%4$lld%%)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los últimos %1$lld días tu Recuperación promedió %2$lld vs %3$lld antes (%4$lld%%)."
+          }
+        }
+      }
+    },
+    "Tomorrow your Recovery looks like it's heading up": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tomorrow your Recovery looks like it's heading up"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mañana tu Recuperación pinta al alza"
+          }
+        }
+      }
+    },
+    "Tomorrow your Recovery looks like it's heading down": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tomorrow your Recovery looks like it's heading down"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mañana tu Recuperación pinta a la baja"
+          }
+        }
+      }
+    },
+    "Tomorrow your Recovery looks steady": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tomorrow your Recovery looks steady"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mañana tu Recuperación pinta estable"
+          }
+        }
+      }
+    },
+    "Forecast for tomorrow: %1$lld (range %2$lld–%3$lld, %4$lld days).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forecast for tomorrow: %1$lld (range %2$lld–%3$lld, %4$lld days)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Proyección para mañana: %1$lld (rango %2$lld–%3$lld, %4$lld días)."
+          }
+        }
+      }
+    },
+    "Your sleep schedule is drifting": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your sleep schedule is drifting"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus horarios de sueño van irregulares"
+          }
+        }
+      }
+    },
+    "Your sleep regularity is at %lld/100 (how consistent your bedtime is); steadier hours help.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your sleep regularity is at %lld/100 (how consistent your bedtime is); steadier hours help."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu regularidad de sueño está en %lld/100 (qué tan pareja es tu hora de dormir); horarios más constantes ayudan."
+          }
+        }
+      }
+    },
+    "You're carrying sleep debt": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You're carrying sleep debt"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Llevas deuda de sueño"
+          }
+        }
+      }
+    },
+    "Over recent nights you've built up %@ h below your need; debt isn't repaid in one go.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Over recent nights you've built up %@ h below your need; debt isn't repaid in one go."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En las últimas noches acumulas %@ h por debajo de tu necesidad; la deuda no se salda de un jalón."
+          }
+        }
+      }
+    },
+    "%@ costs you Recovery": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ costs you Recovery"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ te cuesta Recuperación"
+          }
+        }
+      }
+    },
+    "After %1$@, your next-day Recovery drops ~%2$lld pts vs your rest days (n=%3$lld).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After %1$@, your next-day Recovery drops ~%2$lld pts vs your rest days (n=%3$lld)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tras %1$@, tu Recuperación del día siguiente cae ~%2$lld pts vs tus días de descanso (n=%3$lld)."
+          }
+        }
+      }
+    },
+    "Your training load: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your training load: %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu carga de entrenamiento: %@"
+          }
+        }
+      }
+    },
+    "Your fitness age is lower than your age": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your fitness age is lower than your age"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu edad fitness es menor que tu edad"
+          }
+        }
+      }
+    },
+    "Your fitness age is above your age": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your fitness age is above your age"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu edad fitness va por encima de tu edad"
+          }
+        }
+      }
+    },
+    "Your fitness age is %1$lld years (±%2$lld), %3$lld younger than your real age.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your fitness age is %1$lld years (±%2$lld), %3$lld younger than your real age."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu edad fitness es %1$lld años (±%2$lld), %3$lld menos que tu edad real."
+          }
+        }
+      }
+    },
+    "Your fitness age is %1$lld years (±%2$lld), %3$lld older than your real age.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your fitness age is %1$lld years (±%2$lld), %3$lld older than your real age."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu edad fitness es %1$lld años (±%2$lld), %3$lld más que tu edad real."
+          }
+        }
+      }
     }
   },
   "version": "1.1"
