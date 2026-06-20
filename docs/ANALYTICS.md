@@ -295,6 +295,20 @@ The per-night asleep timeline comes from the **already-persisted hypnogram** —
 
 ---
 
+## `SleepRegularity` — mid-sleep timing SD (circular)
+
+Source: `SleepRegularity.swift` (FER-218). Live in `SleepDetailScreen`. A second, complementary take on sleep-timing regularity to the SRI above: instead of the epoch-to-epoch overlap probability, it reports the **standard deviation of the mid-sleep point** (the midpoint between onset and wake) over a rolling window of nights. Lower SD = a steadier schedule. It also reports the **weekend shift** (social jetlag): the shortest-arc gap between the typical weekend and weekday mid-sleep.
+
+Mid-sleep is treated as a point on the 24 h **clock circle** and reduced with **circular statistics**, so a 23:30 and a 00:30 mid-sleep average to ~midnight rather than ~11:30 — the midnight wrap is built into the math, not patched with an origin. Each clock minute `m` becomes an angle `θ = 2π·m/1440`; with mean resultant length `R = |mean(e^{iθ})|`, the circular SD is `√(−2·ln R)` scaled back to minutes by `1440/2π` (a degenerate `R≈0` is clamped to the 12 h cap). The weekend median uses a wrap-aware circular median (the candidate minimizing summed shortest-arc distance).
+
+The SD in minutes is the load-bearing, literature-anchored figure; the **0–100 score is presentation only** — a bounded, linear remap of the SD anchored so SD ≈ 0 → ~100 and SD ≥ `worstMidSleepSwingMinutes` (120, a product-calibration knob) → ~0. Gates: `nil` below `minNights` (7); flagged `preliminary` until `stableNights` (14); the rolling window is the most recent `windowNights` (14).
+
+**Sampling limit — main nights only (FER-298).** A nap sits ~11 h from the nocturnal mid-sleep (near anti-phase on the circle) and would wreck the SD, so only sessions lasting ≥ 3 h (`SleepMainNight.qualifies`) feed the read; naps are excluded. The 3 h boundary is a product-calibration threshold, not a clinical claim — so the SD reflects schedule, not nap noise.
+
+APPROXIMATE; no clinical claim. References: **Roenneberg et al. 2006** (mid-sleep point & social jetlag, *Chronobiology International* 23(1–2)); **Mardia & Jupp 2000** (*Directional Statistics* — circular mean/SD); supporting outcome links **Huang & Redline 2019** (*Diabetes Care* 42) and **Windred et al. 2024** (*Sleep* 47(1)).
+
+---
+
 ## `Baselines` — personal rolling baselines
 
 Source: `Baselines.swift`. Per-metric personal baselines that `RecoveryScorer` consumes. Two interchangeable paths produce the same `BaselineState` shape.
@@ -421,6 +435,35 @@ An expert review against current primary literature found the upstream coefficie
 6. **Steps — age-aware threshold.** Reference `age ≥ 60 ? 7000 : 8500` (Paluch 2022); per-1,000 weight 0.064 and the 11k protection cap kept (conservative vs Jayedi 2022).
 
 Kept **verbatim** (well-centered, documented): VO₂max 0.130/MET (Kodama 2009 / Singh 2025; estimated ≈ measured); Gompertz MRDT 8 yr (within the human 7.7–9.9 range, a global ±~15% scale). The full per-coefficient review with primary sources is logged on the FER-124 issue. References: **Zhang 2016 / Aune 2017** (RHR), **Kodama 2009 / Singh 2025** (VO₂max), **Yin 2017 / Cappuccio 2010** (sleep), **Windred 2024** (regularity), **Jarczok 2022 / Hillebrand 2013** (HRV), **Paluch 2022 / Jayedi 2022** (steps).
+
+---
+
+## `ReadinessEngine` — morning readiness verdict
+
+Source: `ReadinessEngine.swift`. Live in `TodayView` (the verdict hero). A pure, deterministic synthesis of a handful of established sports-science signals from the daily-metrics history into one readiness `Level` (`primed` / `balanced` / `strained` / `rundown` / `insufficient`) plus the drivers behind it. Each signal is a flag (`good` / `neutral` / `watch` / `bad`):
+
+- **HRV / resting-HR / respiratory-rate / skin-temp** — z-scores against the **same** robust EWMA personal baseline `RecoveryScorer` consumes (so the verdict and the score never tell two different stories), shrunk toward neutral on thin baselines. HRV-drop and RHR-rise flag autonomic fatigue / overtraining (Plews et al. 2013; Buchheit 2014; Lamberts et al. 2004); a respiratory-rate or skin-temperature rise is an early illness marker.
+- **Training Stress Balance (ACWR)** — acute (7-day) ÷ chronic (28-day) workload, banded `<0.8 / 0.8–1.3 / 1.3–1.5 / ≥1.5` (sweet spot 0.8–1.3; ≥1.5 = higher injury risk). Computed on a **linearized** TRIMP-like load (inverting `StrainScorer`'s log map) so a spike reads as a spike, not flattened. Needs ≥ `minChronic` (14) days of strain.
+- **Training monotony** — week-long mean ÷ SD of strain; high monotony (low day-to-day variety) is associated with higher strain/illness (Foster 1998).
+
+A short night (< 6 h) flags the morning read **low-confidence** (a short night suppresses HRV / lifts RHR regardless of true recovery). A separate, testable `BridgeKind` reconciles a high recovery score against a cautious verdict (the classic "you woke up recovered, but your training load is the thing to watch" divergence), reusing `RecoveryScorer.bandYellowMax` as the "recovery high" threshold.
+
+**Honest note — the ACWR is coupled.** The acute window is a subset of the chronic window (acute ⊂ chronic), faithful to the original Gabbett formulation; this is the "coupled" ACWR whose statistical properties (spurious correlation, ratio artefacts) were critiqued by **Lolli et al. 2019** — an uncoupled ACWR (acute vs the *preceding* chronic block) avoids the shared term. NOOP keeps the coupled form deliberately (it matches the published bands users may know), and the readout is an association, not a clinical risk model. APPROXIMATE. References: **Gabbett 2016** (*Br J Sports Med* 50:273–280, ACWR); **Foster 1998** (*Med Sci Sports Exerc* 30(7), monotony); **Lolli et al. 2019** (*Br J Sports Med* 53:1577–1578, coupled-vs-uncoupled critique); **Plews et al. 2013**, **Buchheit 2014**, **Lamberts et al. 2004** (HRV/RHR).
+
+---
+
+## `RecoveryForecast` — one-day-ahead recovery projection
+
+Source: `RecoveryForecast.swift` (FER-188). Live in `RecoveryDetailScreen` (the "Mañana, si descansas igual: ~X" block). Answers a narrow question — *given how recovery has been trending and assuming you rest about the same, roughly where does tomorrow land?* — as a **trend projection with a range**, never a guarantee.
+
+It projects the **recovery composite directly** rather than forecasting HRV and RHR separately and recomposing them: recovery is already the HRV-dominant composite, so its day-to-day series *is* the autoregressive trend of those drivers, de-noised and already on the 0–100 scale. The model is a **damped level + slope**:
+
+- `level` = mean of the last `levelDays` (7) valid days
+- `slope` = OLS slope of recovery vs day index over the trailing `window` (21 days), then `step = slope · 0.5`, clamped to ±8 pts/day (short noisy daily series over-extrapolate)
+- `debt` = a gentle, bounded downward drag from standing sleep debt (a **product heuristic**, not a peer-reviewed coefficient — "si descansas igual" means you won't repay it tomorrow)
+- `estimate = clamp(level + step − debt, 0…100)`; `range = estimate ± max(5, 1.15·σ)` — deliberately wide, because the band is the honesty
+
+**Honest gate:** returns `nil` below `minDays` (14, ≈ two weeks of baseline); the caller then **hides** the block rather than inventing a number. The window/damping/cap/band/debt constants are product-calibration knobs, not validated quantities. APPROXIMATE. Reference: **De Sabbata & Simonini 2025** (*J Healthcare Informatics Research*, PMC12037944) — for univariate short-term wearable forecasting, "refining model complexity offers minimal benefit" and a random-walk baseline "remains competitive, if not superior", which is exactly why this is a damped level+slope model and not something heavier. (The paper's scope is short-term, cited accordingly.)
 
 ---
 
