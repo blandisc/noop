@@ -4,6 +4,17 @@ import StrandDesign
 import StrandTraining
 import WhoopStore
 
+// Plate weights read cleaner without a trailing «.0» (60, not 60.0) but keep a half-plate decimal (2.5).
+private func plateNumber(_ v: Double) -> String {
+    v == v.rounded() ? String(Int(v.rounded())) : String(format: "%.1f", v)
+}
+
+/// A weight in kilograms formatted for display in the user's unit, e.g. "82.5 kg" / "180 lb".
+private func massString(_ kg: Double, units: UnitSystem) -> String {
+    let v = units == .imperial ? UnitFormatter.kgToPounds(kg) : kg
+    return "\(plateNumber(v)) \(UnitFormatter.massUnit(units))"
+}
+
 // MARK: - Guided strength session (FER-347)
 //
 // The heart of the strength tracker: the guided, set-by-set execution. A «Foco» (the dominant weight in
@@ -59,7 +70,6 @@ final class StrengthSessionModel: ObservableObject {
     @Published var phase: Phase = .capturing
     /// When the fixed rest countdown ends; nil when not resting. Durable so the timer survives a tab switch.
     @Published var restEndsAt: Date?
-    @Published var restTotal: Int = 0
 
     init(id: String = UUID().uuidString, routineId: String?, routineName: String,
          startTs: Int, runs: [ExerciseRun]) {
@@ -179,15 +189,12 @@ final class StrengthSessionModel: ObservableObject {
 
     func startRest(seconds: Int, now: Date = Date()) {
         guard seconds > 0 else { phase = .capturing; restEndsAt = nil; return }
-        restTotal = seconds
         restEndsAt = now.addingTimeInterval(TimeInterval(seconds))
         phase = .resting
     }
     func extendRest(byseconds delta: Int, now: Date = Date()) {
         guard let end = restEndsAt else { return }
-        let newEnd = max(now, end.addingTimeInterval(TimeInterval(delta)))
-        restEndsAt = newEnd
-        restTotal = max(0, Int(newEnd.timeIntervalSince(now)))
+        restEndsAt = max(now, end.addingTimeInterval(TimeInterval(delta)))
     }
     func skipRest() { phase = .capturing; restEndsAt = nil }
 
@@ -402,7 +409,7 @@ struct LiveStrengthSheet: View {
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 if let suggested = suggestedWeight(run) {
                     Button { session.setCurrentWeight(suggested) } label: {
-                        Text("+\(plainNumber(displayWeight(weightStepKg)))")
+                        Text("+\(plateNumber(displayWeight(weightStepKg)))")
                             .font(StrandFont.caption).foregroundStyle(theme.dataRecovery)
                             .padding(.horizontal, 6).padding(.vertical, 2)
                             .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
@@ -423,7 +430,7 @@ struct LiveStrengthSheet: View {
                 .accessibilityLabel(Text("Decrease weight"))
             Spacer(minLength: 8)
             VStack(spacing: 0) {
-                Text(plainNumber(displayWeight(session.currentSet?.weightKg ?? 0)))
+                Text(plateNumber(displayWeight(session.currentSet?.weightKg ?? 0)))
                     .instrumentoHero(76).foregroundStyle(theme.dataStrain)
                     .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
                 Text(UnitFormatter.massUnit(units)).font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
@@ -513,7 +520,7 @@ struct LiveStrengthSheet: View {
             Text("Rest").instrumentoOverline().foregroundStyle(theme.inkTertiary)
 
             if let end = session.restEndsAt {
-                TimelineView(.periodic(from: .now, by: 1)) { ctx in
+                TimelineView(.periodic(from: end, by: 1)) { ctx in
                     let remaining = max(0, Int(end.timeIntervalSince(ctx.date).rounded(.up)))
                     VStack(alignment: .leading, spacing: 4) {
                         Text(Self.clock(remaining)).instrumentoHero(64)
@@ -654,13 +661,7 @@ struct LiveStrengthSheet: View {
     // MARK: Units / formatting
 
     private func displayWeight(_ kg: Double) -> Double { imperial ? UnitFormatter.kgToPounds(kg) : kg }
-    private func massText(_ kg: Double) -> String {
-        "\(plainNumber(displayWeight(kg))) \(UnitFormatter.massUnit(units))"
-    }
-    /// Plate weights read cleaner without a trailing «.0» (60, not 60.0) but keep a half-plate decimal (2.5).
-    private func plainNumber(_ v: Double) -> String {
-        v == v.rounded() ? String(Int(v.rounded())) : String(format: "%.1f", v)
-    }
+    private func massText(_ kg: Double) -> String { massString(kg, units: units) }
 
     static func clock(_ seconds: Int) -> String {
         String(format: "%d:%02d", seconds / 60, seconds % 60)
@@ -794,10 +795,6 @@ private struct SetTableDrawer: View {
         .buttonStyle(.plain)
     }
 
-    private func massText(_ kg: Double) -> String {
-        let v = units == .imperial ? UnitFormatter.kgToPounds(kg) : kg
-        let num = v == v.rounded() ? String(Int(v.rounded())) : String(format: "%.1f", v)
-        return "\(num) \(UnitFormatter.massUnit(units))"
-    }
+    private func massText(_ kg: Double) -> String { massString(kg, units: units) }
 }
 #endif

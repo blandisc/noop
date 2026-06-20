@@ -65,8 +65,8 @@ final class StrengthSessionModelTests: XCTestCase {
         XCTAssertTrue(s.runs[0].sets[0].done, "first set marked done")
         XCTAssertEqual(s.runs[0].currentSet, 1, "advanced to the second set")
         XCTAssertEqual(s.phase, .resting)
-        XCTAssertEqual(s.restTotal, 120, "fixed rest from the routine")
-        XCTAssertNotNil(s.restEndsAt)
+        // Fixed rest of 120s from the routine: the countdown ends ~120s after the register moment.
+        XCTAssertEqual(s.restEndsAt?.timeIntervalSince1970 ?? 0, 5000 + 120, accuracy: 0.5)
     }
 
     func testRegisterCrossesToNextExercise() {
