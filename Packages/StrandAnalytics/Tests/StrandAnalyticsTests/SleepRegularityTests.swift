@@ -125,7 +125,7 @@ final class SleepRegularityTests: XCTestCase {
     // MARK: - Naps must not degrade schedule regularity (FER-298)
     //
     // A nap is a short daytime sleep whose mid-point sits ~11 h from the nocturnal mid-sleep — near
-    // anti-phase on the 24 h clock circle (Roenneberg 2006; Mardia & Jupp 2000). Counted as a "night"
+    // anti-phase on the 24 h clock circle (Wittmann et al. 2006; Mardia & Jupp 2000). Counted as a "night"
     // it would explode the circular SD. The "main night" gate (≥ 3 h, SleepMainNight) drops it, so a
     // perfectly steady sleeper stays steady. Fixed vector: 13 identical nights + one 2 h afternoon nap
     // → the same score as the 13 nights alone (regression of the reported SD 126.9 / score 0).
