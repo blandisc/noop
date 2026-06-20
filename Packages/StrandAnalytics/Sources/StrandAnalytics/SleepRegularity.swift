@@ -171,7 +171,10 @@ public enum SleepRegularity {
         let r = (sumSin * sumSin + sumCos * sumCos).squareRoot() / Double(n)
         guard r > 1e-9 else { return dayMinutes / 2 }      // fully dispersed → cap at 12 h
         let sdRadians = (-2 * Foundation.log(min(r, 1))).squareRoot()
-        return sdRadians * dayMinutes / (2 * Double.pi)
+        // A perfect schedule (r == 1) yields -0.0 here, which the UI can render
+        // as "-0 min". Normalize to +0.0.
+        // `+ 0.0` normalizes -0.0 (from r == 1) to +0.0.
+        return sdRadians * dayMinutes / (2 * Double.pi) + 0.0
     }
 
     /// Circular median of clock minutes: the candidate value minimizing the summed shortest-arc

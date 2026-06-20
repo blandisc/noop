@@ -19,6 +19,10 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Precisión interna: tres pulidos numéricos menores / Internal precision: three minor numeric polish fixes.**
+  **ES** — Correcciones de borde en el motor de análisis, sin cambio visible esperado: la mediana de intervalos en zonas de pulso ahora promedia los dos valores centrales (antes sesgaba ligeramente al alza), la regularidad de sueño nunca muestra «-0 min» para un horario perfecto, y la estimación de calorías del día tiene un tope robusto ante entradas degeneradas.
+  **EN** — Edge-case fixes in the analytics engine, with no expected visible change: the heart-rate-zone interval median now averages the two central values (it used to bias slightly high), sleep regularity never shows "-0 min" for a perfect schedule, and the day-calories estimate is robustly capped against degenerate input.
+  ([Packages/StrandAnalytics/Sources/StrandAnalytics/HRZones.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/HRZones.swift), [SleepRegularity.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/SleepRegularity.swift), [WorkoutDetector.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/WorkoutDetector.swift))
 - **Sueño: ahora te avisamos cuando una siesta no contó para tu regularidad / Sleep: we now tell you when a nap didn't count toward your regularity.**
   **ES** — Tu regularidad de horario solo mide tu **noche principal** (una siesta de menos de 3 h no cuenta). Antes eso era invisible; ahora, en el Detalle de Sueño, si ignoramos una siesta dentro de tu ventana, aparece una línea discreta bajo tu regularidad — *«No contamos tu siesta de 2 h»* — y «Ver el método» lo explica siempre. Así sabes por qué tu número se mantuvo, en vez de adivinarlo.
   **EN** — Your schedule regularity only measures your **main night** (a nap under 3 h doesn't count). That used to be invisible; now, in Sleep detail, if we skipped a nap inside your window, a quiet line shows under your regularity — *"We didn't count your 2 h nap"* — and "See the method" always explains it. So you know why your number held, instead of guessing.
