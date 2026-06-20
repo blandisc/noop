@@ -951,11 +951,10 @@ struct SleepDetailModel {
 
     // MARK: - Build
 
-    /// Personal sleep need (minutes): mean asleep, never below a 7.5 h floor.
+    /// Personal sleep need (minutes): mean asleep, never below a 7.5 h floor. Single source of truth
+    /// shared with the coach/InsightEngine via `SleepMath` (FER-339), so both show the same debt.
     private static func sleepNeedMin(_ days: [DailyMetric]) -> Double {
-        let totals = days.compactMap { $0.totalSleepMin }.filter { $0 > 0 }
-        let avg = totals.isEmpty ? nil : totals.reduce(0, +) / Double(totals.count)
-        return Swift.max(450, avg ?? 450)   // 450 min = 7.5 h
+        SleepMath.needMinutes(days)
     }
 
     /// Build the whole model from the repo's in-memory dashboard. Pure (no DB); call from the caller's

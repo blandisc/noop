@@ -35,9 +35,8 @@ public enum InsightEngine {
     public static let minAbsR = 0.30
     /// Per-side minimum sample for an association (reuses BehaviorInsights' bar).
     public static var minGroup: Int { BehaviorInsights.minGroupForSignificance }
-    /// Nightly sleep target (min) the sleep-debt detector measures deficits against.
-    static let sleepTargetMin = 480.0
-    /// Trailing nights the sleep-debt detector accumulates over.
+    /// Trailing nights the sleep-debt detector accumulates over. (The nightly need it measures against
+    /// lives in `SleepMath`, shared with the Sleep Detail — FER-339.)
     static let sleepDebtWindow = 7
 
     // MARK: - Inputs
@@ -375,36 +374,43 @@ public enum InsightEngine {
                                             effectMag: abs(r.estimate - 50), effectRef: 50.0, recency: 1.0))
     }
 
-    // MARK: - Sleep regularity (SleepRegularityIndex)
+    // MARK: - Sleep regularity (SleepRegularity — SD of mid-sleep, SAME engine as the Sleep Detail)
 
+    // FER-339: the coach must report the SAME regularity the Sleep Detail shows. The detail uses
+    // `SleepRegularity` (SD of the mid-sleep point → a 0–100 score); this used to use the older
+    // `SleepRegularityIndex` (SRI), so the two surfaces showed two different "/100" numbers. Now both
+    // read `SleepRegularity.score`. We only surface it as a finding when the schedule is genuinely
+    // "variable" (score < 55), so the coach never calls "irregular" a night the detail labels "regular".
     private static func sleepRegularityInsight(_ sessions: [CachedSleepSession]) -> Insight? {
-        guard let sri = SleepRegularityIndex.fromSessions(sessions) else { return nil }
-        guard sri < 80 else { return nil }   // surface only when timing is irregular
+        let timing = sessions.compactMap { s -> SleepRegularity.NightTiming? in
+            guard s.endTs > s.startTs else { return nil }   // exclude Apple-only nights (start == end)
+            return SleepRegularity.NightTiming(onset: s.startTs, wake: s.endTs)
+        }
+        guard let r = SleepRegularity.compute(timing), r.score < 55 else { return nil }
         let title = "Tus horarios de sueño van irregulares"
-        let reading = "Tu regularidad de sueño está en \(Int(sri.rounded()))/100; dormir y despertar a horas más parejas ayuda."
-        let datum = InsightDatum(value: round1(sri), unit: "/100", metric: "Regularidad de sueño")
-        let evidence = InsightEvidence(n: sessions.count, pValue: nil, pAdjusted: nil,
+        let reading = "Tu regularidad de sueño está en \(r.score)/100 (qué tan pareja es tu hora de dormir); horarios más constantes ayudan."
+        let datum = InsightDatum(value: Double(r.score), unit: "/100", metric: "Regularidad de sueño")
+        let evidence = InsightEvidence(n: r.nights, pValue: nil, pAdjusted: nil,
                                        effectSize: nil, significant: false)
         return Insight(kind: .sleepRegularity, title: title, reading: reading, datum: datum,
                        evidence: evidence, confidence: .medium,
                        relevance: relevance(significant: false, qAdjusted: nil,
-                                            effectMag: 80 - sri, effectRef: 40.0, recency: 0.9))
+                                            effectMag: Double(80 - r.score), effectRef: 40.0, recency: 0.9))
     }
 
     // MARK: - Sleep debt (DailyMetric)
 
-    /// Accumulated deficit (min) over the trailing window vs `sleepTargetMin`.
-    /// Pure aggregation over DailyMetric — no engine, no new model.
+    /// Accumulated sleep debt (min) over the trailing window. Single source of truth shared with the
+    /// Sleep Detail screen (FER-339): `SleepMath` (per-night shortfall vs personal need, floored).
     static func sleepDebtMinutes(_ days: [DailyMetric]) -> Double {
-        let recent = days.suffix(sleepDebtWindow).compactMap { $0.totalSleepMin }
-        return recent.reduce(0.0) { $0 + max(0.0, sleepTargetMin - $1) }
+        SleepMath.debtMinutes(days)
     }
 
     private static func sleepDebtInsight(debtMin: Double, nights: Int) -> Insight? {
         guard debtMin >= 60, nights >= 3 else { return nil }   // < 1h debt isn't worth a card
         let hours = debtMin / 60.0
         let title = "Llevas deuda de sueño"
-        let reading = "En las últimas noches acumulas \(round1(hours)) h por debajo de tu meta; la deuda no se salda de un jalón."
+        let reading = "En las últimas noches acumulas \(round1(hours)) h por debajo de tu necesidad; la deuda no se salda de un jalón."
         let datum = InsightDatum(value: round1(hours), unit: "h", metric: "Deuda de sueño")
         let evidence = InsightEvidence(n: nights, pValue: nil, pAdjusted: nil,
                                        effectSize: nil, significant: false)
