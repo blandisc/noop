@@ -183,26 +183,6 @@ public struct ChartFooter: View {
     }
 }
 
-// MARK: - Insight card
-
-public struct InsightCard: View {
-    let category: LocalizedStringKey, status: LocalizedStringKey, detail: LocalizedStringKey
-    var statusColor: Color = StrandPalette.accent
-    public init(category: LocalizedStringKey, status: LocalizedStringKey, detail: LocalizedStringKey, statusColor: Color = StrandPalette.accent) {
-        self.category = category; self.status = status; self.detail = detail; self.statusColor = statusColor
-    }
-    public var body: some View {
-        NoopCard(padding: 18) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(category).strandOverline()
-                Text(status).font(StrandFont.title1).foregroundStyle(statusColor)
-                Text(detail).font(StrandFont.subhead).foregroundStyle(StrandPalette.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-    }
-}
-
 // MARK: - Range control (the ONE segmented pill control, used everywhere)
 
 public struct SegmentedPillControl<T: Hashable>: View {

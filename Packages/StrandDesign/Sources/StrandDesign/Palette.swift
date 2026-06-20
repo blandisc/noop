@@ -56,8 +56,6 @@ public enum StrandPalette {
     public static let accent         = Color(hex: "#18C98B") // health green (brief)
     public static let accentHover    = Color(hex: "#2FE0A0")
     public static let accentMuted    = Color(hex: "#10271F") // dark-green tint (selected rows)
-    /// Focus ring color (same as accent).
-    public static let focusRing      = Color(hex: "#18C98B")
     /// Opacity for dimmed/disabled sections (shared so screens don't invent their own value).
     public static let disabledOpacity: Double = 0.45
 
