@@ -306,7 +306,7 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 | Calibrando | Recuperación muestra «N/4» + «Calibrando tu base»; el resto en «—» con esqueleto |
 | Sin permiso / offline | Muestra lo guardado; las métricas solo-Apple (Pasos) invitan a conectar sin prometer datos |
 
-**Apertura del detalle (FER-185 ya aterrizó para los 3 vitales):** **HRV · FC en reposo · Respiración** abren el **`MetricDetailScreen`** unificado (sheet claro «Instrumento», `depth: .full`, tema explícito, sin `NavigationStack` anidado); **Sueño** abre el **`SleepDetailScreen`** claro «Instrumento» (sheet, tema explícito, sin stack anidado — FER-212); **Recuperación** (la fila héroe) abre el **`RecoveryDetailScreen`** «Instrumento» (sheet, tema explícito, sin stack anidado — FER-225), ya no la `MetricInfoSheet`. **Esfuerzo del día** abre el **`StrainDetailScreen`** «Instrumento» (sheet, tema explícito, sin stack anidado — FER-238), ya no la `MetricInfoSheet` (Hoy sí la conserva). **SpO₂** (FER-252) y **Frecuencia cardíaca** (FER-253) también abren ya el **`MetricDetailScreen`** unificado (Frecuencia cardíaca con curva intradía + pico + piso de reposo + «Tiempo en zonas»). **Temperatura de la piel** abre el **`SkinTempDetailScreen`** «Instrumento» (sheet, tema explícito, sin stack anidado — FER-256), ya no la pantalla oscura del catálogo. **VO₂ máx** (Longevidad) abre el **`MetricDetailScreen`** con la factory `.vo2max` (dato esporádico de Apple Salud, hero = última lectura leída contra tus pares por edad/sexo — FER-257). El resto sigue su puente: Pasos/Estrés→`MetricInfoSheet` claro; **Entrenamientos→`WorkoutsView`** ahora es **sheet claro «Instrumento»** con su propio `NavigationStack` (FER-260), no oscuro; Comparar→`CompareView` (FER-268) y Ver todas→`MetricExplorerView` (FER-272) ya son **sheets claros «Instrumento»** con su propio `NavigationStack`; solo **Data Sources** sigue como sheet oscuro fijado a `.dark` (un tab claro no puede empujar una pantalla oscura sin romper la barra de estado). El mini-bloque **«Cómo amaneces tras cada deporte»** (Activity Cost, FER-139) en «Actividad» abre su propia **hoja clara** `ActivityRecoverySheet` (hermana de `MetricInfoSheet`, tema explícito): una tarjeta por deporte —en el orden del motor— con la frase de **asociación** (no causa), badge de confianza (`Sólido`/`Juntando datos`) y «n sesiones», más «Ver el método» con los confusores; sin datos suficientes → estado «Juntando datos».
+**Apertura del detalle (FER-185 ya aterrizó para los 3 vitales):** **HRV · FC en reposo · Respiración** abren el **`MetricDetailScreen`** unificado (sheet claro «Instrumento», `depth: .full`, tema explícito, sin `NavigationStack` anidado); **Sueño** abre el **`SleepDetailScreen`** claro «Instrumento» (sheet, tema explícito, sin stack anidado — FER-212); **Recuperación** (la fila héroe) abre el **`RecoveryDetailScreen`** «Instrumento» (sheet, tema explícito, sin stack anidado — FER-225), ya no la `MetricInfoSheet`. **Esfuerzo del día** abre el **`StrainDetailScreen`** «Instrumento» (sheet, tema explícito, sin stack anidado — FER-238), ya no la `MetricInfoSheet` (Hoy sí la conserva). **SpO₂** (FER-252) y **Frecuencia cardíaca** (FER-253) también abren ya el **`MetricDetailScreen`** unificado (Frecuencia cardíaca con curva intradía + pico + piso de reposo + «Tiempo en zonas»). **Temperatura de la piel** abre el **`SkinTempDetailScreen`** «Instrumento» (sheet, tema explícito, sin stack anidado — FER-256), ya no la pantalla oscura del catálogo. **VO₂ máx** (Longevidad) abre el **`MetricDetailScreen`** con la factory `.vo2max` (dato esporádico de Apple Salud, hero = última lectura leída contra tus pares por edad/sexo — FER-257). El resto sigue su puente: Pasos/Estrés→`MetricInfoSheet` claro; **Entrenamientos→`WorkoutsView`** ahora es **sheet claro «Instrumento»** con su propio `NavigationStack` (FER-260), no oscuro; Comparar→`CompareView` (FER-268) y Ver todas→`MetricExplorerView` (FER-272) ya son **sheets claros «Instrumento»** con su propio `NavigationStack`; **Data Sources** también pasó a hoja clara «Instrumento» (FER-338), así que ya no quedan hojas oscuras en estos detalles. El mini-bloque **«Cómo amaneces tras cada deporte»** (Activity Cost, FER-139) en «Actividad» abre su propia **hoja clara** `ActivityRecoverySheet` (hermana de `MetricInfoSheet`, tema explícito): una tarjeta por deporte —en el orden del motor— con la frase de **asociación** (no causa), badge de confianza (`Sólido`/`Juntando datos`) y «n sesiones», más «Ver el método» con los confusores; sin datos suficientes → estado «Juntando datos».
 
 **Componentes:** `MetricRow`, `Sparkline` (+ `ReferenceRange.interquartile`), `MetricInfoSheet`, `MetricDetailScreen` (+ `MetricDetailSpec`), `ActivityRecoverySheet` (FER-139), `FitnessAgeDetailView`, `InlineFlagChip`, `InstrumentoTheme` (`instrumentoThemeByHour`). **Analytics:** `ActivityCostEngine` + `ActivityCostInputs` (StrandAnalytics, vía `Repository.activityCosts()`).
 
@@ -457,7 +457,7 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 
 ### AppleHealthView
 **Archivo:** `Cenit/Screens/AppleHealthView.swift`  
-**Descripción:** Historia de Apple Health — Steps, Active Energy, VO₂ Max, vitales, cuerpo, sueño.
+**Descripción:** Visor por-fuente de Apple Health en **luz «Instrumento diurno»** (FER-338, antes oscura) — Steps, Active Energy, VO₂ Max, vitales, cuerpo, sueño. Se abre desde «Datos y fuentes → Ver datos importados».
 
 | Estado | Condición de entrada |
 |--------|---------------------|
@@ -579,7 +579,7 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 
 ### DataSourcesView
 **Archivo:** `Cenit/Screens/DataSourcesView.swift`  
-**Descripción:** Importar datos — WHOOP export (.zip), Apple Health export, sincronización en vivo Apple Health (iOS).
+**Descripción:** «Datos y fuentes» en **luz «Instrumento diurno»** (FER-338, antes oscura): importar (WHOOP `.zip` + Apple Health export), Apple Health en vivo + «Ver datos importados» (→ `AppleHealthView`), Sincronización de la banda (FER-83), Cobertura 30 días, y Respaldo (backup/CSV/iCloud). Tema por hora, color solo en el dato.
 
 | Estado | Condición de entrada |
 |--------|---------------------|
@@ -588,7 +588,7 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 | Importando Apple Health | `HealthImporter` corriendo |
 | Import completo | Proceso terminado, muestra conteos |
 
-**Componentes:** `WHOOP Export Card`, `Apple Health Export Card`, `Apple Health Live Card (iOS, toggle)`, `Live Strap Card`, `SourcesSummaryCard` (resumen de fuentes al pie, solo iOS · FER-137), `File importer (fileImporter)`
+**Componentes (Instrumento):** secciones `Importar` · `Apple Health` (+ link al visor) · `Sincronización de la banda` · `Cobertura` (rejilla 30d + `SourcesSummaryCard`) · `Respaldo`; `QuietButton`, `section()`/hairlines (sin card-in-card), `File importer`. Se presenta como sheet **claro** (ya no `.dark`) desde Ajustes/Cuerpo/Hoy/Workouts.
 
 ---
 

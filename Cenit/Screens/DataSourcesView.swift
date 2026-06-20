@@ -7,10 +7,25 @@ import HealthKit   // HKAuthorizationStatus, for the write-back permission tally
 import UIKit       // UIApplication.openSettingsURLString
 #endif
 
+// MARK: - Datos y fuentes — light «Instrumento diurno» (FER-338)
+//
+// Reskin of the legacy dark Data Sources screen to the warm-paper language: hierarchy by space +
+// hairlines (no card-in-card), quiet uppercase overlines in tertiary ink, color ONLY on a measured
+// datum (a sync verdict, a coverage cell, an import-result line), chrome stays ink. Behavior is
+// IDENTICAL to the dark version — same importers, same Apple Health live sync, same FER-83 band
+// diagnostic, same backup/restore + iCloud auto-backup, same `#if os(iOS)` guards.
+//
+// The screen builds its own header (no `ScreenScaffold`: the app module's local dark `ScreenScaffold`
+// wins name resolution, and `StrandDesign` can't be module-qualified — it's also a type), reads the
+// resolved theme from the environment, and groups the existing cards into five sections by space:
+// Importar · Apple Health · Sincronización de la banda · Cobertura · Respaldo. The per-source Apple
+// Health viewer is reached via a `NavigationLink` (the screen is presented inside a NavigationStack).
+
 struct DataSourcesView: View {
     @EnvironmentObject var model: AppModel
     @EnvironmentObject var repo: Repository
     @EnvironmentObject var live: LiveState
+    @Environment(\.instrumentoTheme) private var theme
     @State private var showingImporter = false
     @State private var importTarget: ImportTarget = .whoop
     #if os(iOS)
@@ -20,8 +35,7 @@ struct DataSourcesView: View {
     #endif
 
     // Backup & restore + automatic iCloud backup — migrated here from SettingsView for FER-337 so no
-    // content is orphaned when the old Settings screen goes away. FER-338 reskins this whole screen
-    // (these cards included) to the light «Instrumento» «Datos y fuentes».
+    // content is orphaned when the old Settings screen goes away.
     @State private var backupBusy = false
     @State private var backupAlertTitle = ""
     @State private var backupAlertMessage = ""
@@ -31,22 +45,31 @@ struct DataSourcesView: View {
     #endif
 
     var body: some View {
-        ScreenScaffold(title: "Data Sources",
-                       subtitle: "Everything stays on this iPhone. Bring your history in once, then it's yours.") {
-            whoopCard
-            appleHealthCard
-            #if os(iOS)
-            appleHealthLiveCard
-            #endif
-            liveCard
-            #if os(iOS)
-            // FER-137 — the "Sources" summary card moved here off the iPhone Today (which now reads as
-            // verdict + Key Metrics only). iOS-only: macOS still shows it on its Today footer.
-            SourcesSummaryCard()
-            backupCard
-            autoBackupCard
-            #endif
+        ScrollView {
+            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Sources").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text("Data Sources").font(StrandFont.title1).foregroundStyle(theme.ink)
+                    Text("Everything stays on this iPhone. Bring your history in once, then it's yours.")
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 2)
+                }
+
+                importSection
+                appleHealthSection
+                bandSyncSection
+                #if os(iOS)
+                coverageSection
+                backupSection
+                #endif
+            }
+            .padding(.top, 20)
+            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.bottom, NoopMetrics.screenPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .background(theme.paper.ignoresSafeArea())
         // A single target-aware importer avoids SwiftUI collapsing competing importers on the same screen.
         .fileImporter(isPresented: $showingImporter,
                       allowedContentTypes: importTarget.allowedContentTypes,
@@ -58,79 +81,118 @@ struct DataSourcesView: View {
         } message: { Text(backupAlertMessage) }
     }
 
-    private var whoopCard: some View {
-        card(title: "WHOOP Export", icon: "square.and.arrow.down.fill",
-             subtitle: "Import your full WHOOP history — recovery, strain, sleep, workouts — from a data export (.zip). Works for WHOOP 4.0, 5.0 and MG. Get one at app.whoop.com → Data Management.") {
-            let importingWhoop = model.isImporting(.whoop)
-            HStack(spacing: 12) {
-                Button {
-                    presentImporter(.whoop)
-                } label: {
-                    Label(importingWhoop ? "Importing…" : "Choose export…",
-                          systemImage: "tray.and.arrow.down")
-                        .padding(.horizontal, 6)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(StrandPalette.accent)
-                .disabled(model.hasActiveImport)
-                if importingWhoop { ProgressView().controlSize(.small) }
-            }
-            if let s = model.whoopImportSummary {
-                Text(s).font(StrandFont.subhead)
-                    .foregroundStyle(model.whoopImportFailed ? StrandPalette.statusWarning : StrandPalette.statusPositive)
-            }
-            Text("\(repo.days.count) days · \(repo.sleeps.count) sleeps stored")
-                .font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
+    // MARK: - Section scaffolding (overline + content on paper, no card-in-card)
+
+    @ViewBuilder
+    private func section<Content: View>(_ title: LocalizedStringKey,
+                                        @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(title).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            content()
         }
     }
 
-    private var appleHealthCard: some View {
-        card(title: "Apple Health", icon: "heart.fill",
-             subtitle: "Import an Apple Health export (Health app → profile → Export All Health Data → export.zip). 7 years of HR, HRV, sleep, SpO₂, steps and more — streamed locally. Large exports take a minute or two.") {
+    /// A quiet inline block within a section: a title line + supporting copy, separated from siblings
+    /// by space (and the caller's hairline). No surface, no border — the language groups by whitespace.
+    @ViewBuilder
+    private func block<Content: View>(_ title: LocalizedStringKey, subtitle: LocalizedStringKey,
+                                      @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title).font(StrandFont.headline).foregroundStyle(theme.ink)
+            Text(subtitle).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            content()
+        }
+    }
+
+    private var divider: some View { Divider().overlay(theme.hairline) }
+
+    // MARK: - Importar (WHOOP .zip + Apple Health .zip)
+
+    private var importSection: some View {
+        section("Import") {
+            whoopBlock
+            divider
+            appleHealthImportBlock
+        }
+    }
+
+    private var whoopBlock: some View {
+        block("WHOOP Export",
+              subtitle: "Import your full WHOOP history — recovery, strain, sleep, workouts — from a data export (.zip). Works for WHOOP 4.0, 5.0 and MG. Get one at app.whoop.com → Data Management.") {
+            let importingWhoop = model.isImporting(.whoop)
+            HStack(spacing: 12) {
+                QuietButton(importingWhoop ? "Importing…" : "Choose export…") { presentImporter(.whoop) }
+                    .disabled(model.hasActiveImport)
+                if importingWhoop { ProgressView().controlSize(.small).tint(theme.inkSecondary) }
+                Spacer(minLength: 0)
+            }
+            if let s = model.whoopImportSummary {
+                Text(verbatim: s).font(StrandFont.subhead)
+                    .foregroundStyle(model.whoopImportFailed ? theme.warning : theme.verdict)
+            }
+            Text("\(repo.days.count) days · \(repo.sleeps.count) sleeps stored")
+                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+        }
+    }
+
+    private var appleHealthImportBlock: some View {
+        block("Apple Health Export",
+              subtitle: "Import an Apple Health export (Health app → profile → Export All Health Data → export.zip). 7 years of HR, HRV, sleep, SpO₂, steps and more — streamed locally. Large exports take a minute or two.") {
             let importingAppleHealth = model.isImporting(.appleHealth)
             HStack(spacing: 12) {
-                Button { presentImporter(.appleHealth) } label: {
-                    Label(importingAppleHealth ? "Working…" : "Choose export.zip…", systemImage: "tray.and.arrow.down")
-                        .padding(.horizontal, 6)
-                }
-                .buttonStyle(.borderedProminent).tint(StrandPalette.accent)
-                .disabled(model.hasActiveImport)
+                QuietButton(importingAppleHealth ? "Working…" : "Choose export.zip…") { presentImporter(.appleHealth) }
+                    .disabled(model.hasActiveImport)
                 if importingAppleHealth {
-                    ProgressView().controlSize(.small)
+                    ProgressView().controlSize(.small).tint(theme.inkSecondary)
                     if let n = model.appleHealthImportProgress {
                         Text("\(n) records").font(StrandFont.footnote)
-                            .foregroundStyle(StrandPalette.textTertiary)
+                            .foregroundStyle(theme.inkTertiary)
                             .monospacedDigit()
                     }
                 }
+                Spacer(minLength: 0)
             }
             if let s = model.appleHealthImportSummary {
-                Text(s).font(StrandFont.subhead)
-                    .foregroundStyle(model.appleHealthImportFailed ? StrandPalette.statusWarning : StrandPalette.statusPositive)
+                Text(verbatim: s).font(StrandFont.subhead)
+                    .foregroundStyle(model.appleHealthImportFailed ? theme.warning : theme.verdict)
             }
-            // FER-115: coverage grid — macOS only (iOS shows it inside the live-sync card)
+            // FER-115: coverage grid — macOS only (iOS shows it in its own «Cobertura» section)
             #if !os(iOS)
             if !repo.days.isEmpty || !repo.appleHealthDays.isEmpty {
-                Divider().overlay(StrandPalette.hairline)
+                divider
                 coverageBodyView
             }
             #endif
         }
     }
 
+    // MARK: - Apple Health (live sync + permissions + "View imported data")
+
+    private var appleHealthSection: some View {
+        #if os(iOS)
+        section("Apple Health") { appleHealthLiveBody }
+        #else
+        EmptyView()
+        #endif
+    }
+
     #if os(iOS)
     /// iOS-only: connect + drive the live two-way Apple Health sync, and surface what it did. Beyond
-    /// the connect/sync control it now shows live per-stage progress, a coverage summary (days +
-    /// span), a per-metric "what landed" list, and a Settings deep-link — so the import stops being a
-    /// silent background task the user can't reason about. (FER-70)
+    /// the connect/sync control it shows live per-stage progress, a coverage summary (days + span), a
+    /// per-metric "what landed" list, a Settings deep-link, and the link to the per-source viewer. (FER-70)
     @ViewBuilder
-    private var appleHealthLiveCard: some View {
-        card(title: "Apple Health — Live Sync", icon: "heart.text.square.fill",
-             subtitle: "Sync the last few weeks two-way, on-device: Cénit reads your Apple Health HR, HRV, sleep, SpO₂ and steps, and writes its own strap-derived metrics back. Strictly opt-in — nothing leaves your iPhone. (For a one-time bulk history, use the export import above.)") {
+    private var appleHealthLiveBody: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Sync the last few weeks two-way, on-device: Cénit reads your Apple Health HR, HRV, sleep, SpO₂ and steps, and writes its own strap-derived metrics back. Strictly opt-in — nothing leaves your iPhone. (For a one-time bulk history, use the export import above.)")
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+
             switch health.auth {
             case .unavailable:
                 Text(verbatim: "Apple Health isn’t available on this device.")
-                    .font(StrandFont.subhead).foregroundStyle(StrandPalette.textTertiary)
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
             case .authorized:
                 appleHealthAuthorizedBody
             case .unknown, .denied:
@@ -138,21 +200,22 @@ struct DataSourcesView: View {
             }
             if let err = health.lastError {
                 Text(verbatim: err)
-                    .font(StrandFont.footnote).foregroundStyle(StrandPalette.statusWarning)
+                    .font(StrandFont.footnote).foregroundStyle(theme.warning)
             }
-            // FER-115: coverage grid — hide when Apple Health is denied/unavailable and there are no strap days
-            let healthAccessible = health.auth != .denied && health.auth != .unavailable
-            if !repo.days.isEmpty || (!repo.appleHealthDays.isEmpty && healthAccessible) {
-                Divider().overlay(StrandPalette.hairline)
-                coverageBodyView
-            }
-            // Reachability for the per-source Apple Health viewer (used to hang off the «Más» drawer).
-            // Pushed within this screen's NavigationStack. FER-338 turns it into «Ver datos importados ›».
-            Divider().overlay(StrandPalette.hairline)
+            // Reachability for the per-source Apple Health viewer. Pushed within this screen's
+            // NavigationStack — «Ver datos importados ›».
+            divider
             NavigationLink { AppleHealthView() } label: {
-                Label("View imported data", systemImage: "chart.bar.doc.horizontal")
-                    .font(StrandFont.subhead).foregroundStyle(StrandPalette.accent)
+                HStack(spacing: 12) {
+                    Text("View imported data").font(StrandFont.body).foregroundStyle(theme.ink)
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                }
+                .frame(minHeight: 40)
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
         }
         // Load coverage + write permissions on appear so opening the screen shows "X days imported"
         // and the per-metric list without forcing a re-import first.
@@ -163,14 +226,11 @@ struct DataSourcesView: View {
     /// summary + per-metric status of what has been imported.
     @ViewBuilder
     private var appleHealthAuthorizedBody: some View {
-        Button {
-            Task { await health.sync() }
-        } label: {
-            Label(health.syncing ? "Syncing…" : "Sync now",
-                  systemImage: "arrow.triangle.2.circlepath").padding(.horizontal, 6)
+        HStack(spacing: 12) {
+            QuietButton(health.syncing ? "Syncing…" : "Sync now") { Task { await health.sync() } }
+                .disabled(health.syncing)
+            Spacer(minLength: 0)
         }
-        .buttonStyle(.borderedProminent).tint(StrandPalette.accent)
-        .disabled(health.syncing)
 
         if health.syncing {
             appleHealthSyncProgress
@@ -179,7 +239,7 @@ struct DataSourcesView: View {
             appleHealthMetricList
             if let at = health.lastSync {
                 Text(verbatim: "Last synced \(at.formatted(.relative(presentation: .named)))")
-                    .font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
+                    .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
             }
         }
         appleHealthPermissionsFooter
@@ -189,24 +249,21 @@ struct DataSourcesView: View {
     @ViewBuilder
     private var appleHealthConnectBody: some View {
         HStack(spacing: 12) {
-            Button {
+            QuietButton(hkBusy ? "Connecting…" : "Connect Apple Health") {
                 Task {
                     hkBusy = true
                     await health.requestAuthorization()
                     if health.auth == .authorized { await health.sync() }
                     hkBusy = false
                 }
-            } label: {
-                Label(hkBusy ? "Connecting…" : "Connect Apple Health",
-                      systemImage: "heart.fill").padding(.horizontal, 6)
             }
-            .buttonStyle(.borderedProminent).tint(StrandPalette.accent)
             .disabled(hkBusy)
-            if hkBusy { ProgressView().controlSize(.small) }
+            if hkBusy { ProgressView().controlSize(.small).tint(theme.inkSecondary) }
+            Spacer(minLength: 0)
         }
         if health.auth == .denied {
             Text(verbatim: "Apple Health access was declined. Enable it in Settings › Privacy & Security › Health › Cénit.")
-                .font(StrandFont.footnote).foregroundStyle(StrandPalette.statusWarning)
+                .font(StrandFont.footnote).foregroundStyle(theme.warning)
             settingsButton
         }
     }
@@ -220,7 +277,7 @@ struct DataSourcesView: View {
             if let p = health.syncProgress {
                 Text(verbatim: "\(Self.stageLabel(p.stageKey)) · \(p.done)/\(p.total)")
                     .font(StrandFont.footnote)
-                    .foregroundStyle(StrandPalette.textSecondary)
+                    .foregroundStyle(theme.inkSecondary)
                     .monospacedDigit()
             }
         }
@@ -231,18 +288,18 @@ struct DataSourcesView: View {
     private var appleHealthCoverageSection: some View {
         if let cov = health.coverage, cov.totalDays > 0 {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Imported history").strandOverline()
-                    .foregroundStyle(StrandPalette.textTertiary)
+                Text("Imported history").instrumentoOverline()
+                    .foregroundStyle(theme.inkTertiary)
                 HStack(spacing: 6) {
                     Image(systemName: "checkmark.seal.fill")
-                        .font(.system(size: 13)).foregroundStyle(StrandPalette.statusPositive)
+                        .font(.system(size: 13)).foregroundStyle(theme.verdict)
                     Text(verbatim: Self.coverageSummaryText(cov))
-                        .font(StrandFont.subhead).foregroundStyle(StrandPalette.textSecondary)
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 }
             }
         } else {
             Text("No Apple Health data imported yet — tap Sync now to pull your recent history.")
-                .font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
+                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
         }
     }
 
@@ -259,14 +316,14 @@ struct DataSourcesView: View {
                 HStack(spacing: 8) {
                     Image(systemName: has ? "checkmark.circle.fill" : "minus.circle")
                         .font(.system(size: 13))
-                        .foregroundStyle(has ? StrandPalette.statusPositive : StrandPalette.textTertiary)
+                        .foregroundStyle(has ? theme.verdict : theme.inkTertiary)
                     Text(row.label)
                         .font(StrandFont.subhead)
-                        .foregroundStyle(has ? StrandPalette.textSecondary : StrandPalette.textTertiary)
+                        .foregroundStyle(has ? theme.inkSecondary : theme.inkTertiary)
                     Spacer()
                     Text(verbatim: has ? "\(days!) d" : "—")
                         .font(StrandFont.footnote).monospacedDigit()
-                        .foregroundStyle(has ? StrandPalette.textSecondary : StrandPalette.textTertiary)
+                        .foregroundStyle(has ? theme.inkSecondary : theme.inkTertiary)
                 }
                 .padding(.vertical, 5)
             }
@@ -286,16 +343,15 @@ struct DataSourcesView: View {
             settingsButton
         }
         .font(StrandFont.footnote)
-        .foregroundStyle(StrandPalette.textTertiary)
+        .foregroundStyle(theme.inkTertiary)
     }
 
     private var settingsButton: some View {
         Button { openSystemSettings() } label: {
             Label("Manage Apple Health permissions", systemImage: "gearshape")
-                .font(StrandFont.footnote)
+                .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
         }
         .buttonStyle(.plain)
-        .foregroundStyle(StrandPalette.accent)
     }
 
     private func openSystemSettings() {
@@ -349,9 +405,192 @@ struct DataSourcesView: View {
     }
     #endif
 
-    // MARK: FER-115 — 30-day source coverage grid
+    // MARK: - Sincronización de la banda (FER-83 diagnostic)
 
-    /// Overline + summary line + 6×5 grid + legend. Caller adds the leading Divider.
+    private var bandSyncSection: some View {
+        section("WHOOP Strap") {
+            // Three-state, consistent with the Live screen's connection pill — a connected-but-not-yet-
+            // streaming strap (e.g. an experimental WHOOP 5/MG link) no longer reads as "Not connected"
+            // on one screen and "Connected" on another (issue #8). Color rides the status datum (the dot
+            // + label); the supporting copy stays ink.
+            let (dot, label): (Color, LocalizedStringKey) =
+                live.bonded ? (theme.verdict, "Bonded — streaming.")
+                : live.connected ? (theme.warning, "Connected.")
+                : (theme.critical, "Not connected — open Live to pair.")
+            HStack(spacing: 10) {
+                Circle().fill(dot).frame(width: 8, height: 8)
+                Text(label).font(StrandFont.subhead).foregroundStyle(dot)
+                Spacer(minLength: 0)
+            }
+            .accessibilityElement(children: .combine)
+            Text("Pairs directly with your strap over Bluetooth — no WHOOP app, no cloud.")
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            divider
+            strapSyncDiagnostic
+        }
+    }
+
+    /// Sync diagnostic (FER-83): honest, read-only evidence that the band captured data and that NOOP
+    /// is receiving, decoding and storing it. Informs only — the one action is "Sync now" (a single
+    /// safe, reversible offload). State-driven: connect prompt / pairing prompt / live progress /
+    /// result (band range + per-sensor receipt + verdict) / error.
+    @ViewBuilder
+    private var strapSyncDiagnostic: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Sync diagnostic").instrumentoOverline()
+                .foregroundStyle(theme.inkTertiary)
+
+            if !live.connected {
+                Text("Connect your strap to run the sync diagnostic.")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+            } else if !live.encryptedBond {
+                Text("Complete secure pairing first — the strap won’t offload its history until the encrypted bond is set.")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+            } else {
+                strapRangeRow
+                syncNowButton
+                if live.backfilling {
+                    syncProgressRow
+                } else if let err = live.lastSyncError {
+                    Text(verbatim: err)
+                        .font(StrandFont.footnote).foregroundStyle(theme.warning)
+                } else if live.syncCompletedThisSession {
+                    syncReceiptList
+                    syncVerdictRow
+                }
+            }
+        }
+    }
+
+    /// "On the band" — the strap's own retained-history window (proof the sensor captured + still holds
+    /// it). "—" until a GET_DATA_RANGE response has been seen.
+    @ViewBuilder
+    private var strapRangeRow: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "externaldrive.fill")
+                .font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
+            Text("On the band:").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            if let oldest = live.strapHistoryOldest, let newest = live.strapHistoryNewest {
+                Text(verbatim: "\(Self.dayFormatter.string(from: Date(timeIntervalSince1970: oldest))) → \(Self.dayFormatter.string(from: Date(timeIntervalSince1970: newest)))")
+                    .font(StrandFont.footnote).monospacedDigit()
+                    .foregroundStyle(theme.inkSecondary)
+            } else {
+                Text(verbatim: "—").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            }
+        }
+    }
+
+    private var syncNowButton: some View {
+        HStack(spacing: 12) {
+            QuietButton(live.backfilling ? "Syncing…" : "Sync now") { model.ble.syncNow() }
+                .disabled(live.backfilling)
+            Spacer(minLength: 0)
+        }
+    }
+
+    /// Live offload progress — a pulsing pill plus the running chunk count (the only honest progress
+    /// signal; the protocol never reveals the total pending, so a count, never a percent).
+    private var syncProgressRow: some View {
+        HStack(spacing: 10) {
+            StatePill("Syncing strap history…", tone: .accent, pulsing: true)
+            Text("\(live.syncChunksThisSession) pieces")
+                .font(StrandFont.footnote).monospacedDigit()
+                .foregroundStyle(theme.inkSecondary)
+        }
+    }
+
+    /// "Received this sync" — rows that decoded and landed, per sensor. The honest data receipt
+    /// (counts from StreamStore.insert, accumulated over the offload session).
+    @ViewBuilder
+    private var syncReceiptList: some View {
+        let r = live.syncReceipt
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Received this sync").instrumentoOverline()
+                .foregroundStyle(theme.inkTertiary)
+            VStack(spacing: 0) {
+                ForEach(Self.syncSensorRows(r), id: \.key) { row in
+                    HStack(spacing: 8) {
+                        Image(systemName: row.count > 0 ? "checkmark.circle.fill" : "minus.circle")
+                            .font(.system(size: 12))
+                            .foregroundStyle(row.count > 0 ? theme.verdict : theme.inkTertiary)
+                        Text(LocalizedStringKey(row.key)).font(StrandFont.subhead)
+                            .foregroundStyle(row.count > 0 ? theme.inkSecondary : theme.inkTertiary)
+                        Spacer()
+                        Text(verbatim: row.count > 0 ? "\(row.count)" : "—")
+                            .font(StrandFont.footnote).monospacedDigit()
+                            .foregroundStyle(row.count > 0 ? theme.inkSecondary : theme.inkTertiary)
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+        }
+    }
+
+    /// The honest verdict, derived purely from what the offload session observed plus whether the band
+    /// reported a stored-history window. Branching lives in `LiveState.SyncVerdict.decide` (testable).
+    @ViewBuilder
+    private var syncVerdictRow: some View {
+        // The "On the band" window shows only when both markers are present — same signal here: a
+        // plausible GET_DATA_RANGE window means the band holds history, so a console-logs-only offload
+        // is a decode failure, not a lost clock (FER-152).
+        let reportsStoredHistory = live.strapHistoryOldest != nil && live.strapHistoryNewest != nil
+        let verdict = LiveState.SyncVerdict.decide(live.syncReceipt, reportsStoredHistory: reportsStoredHistory)
+        let (icon, text, tint): (String, LocalizedStringKey, Color) = {
+            switch verdict {
+            case .nothingNew:
+                return ("circle", "The band has nothing new.", theme.inkSecondary)
+            case .notStoringClock:
+                return ("clock.badge.exclamationmark.fill", "The band isn’t storing data (clock). Run it through the WHOOP app to resume.", theme.warning)
+            case .arrivesButNoDecode:
+                return ("exclamationmark.triangle.fill", "Data arrives but doesn’t decode — please report.", theme.warning)
+            case .receivingAndStoring:
+                return ("checkmark.seal.fill", "Receiving and storing everything.", theme.verdict)
+            }
+        }()
+        HStack(spacing: 6) {
+            Image(systemName: icon).font(.system(size: 13)).foregroundStyle(tint)
+            Text(text).font(StrandFont.subhead).foregroundStyle(tint)
+        }
+    }
+
+    /// The six sensor streams the receipt reports, paired with their (localizable) English label keys
+    /// — `key` doubles as the stable ForEach id and the LocalizedStringKey lookup (FER-83).
+    private static func syncSensorRows(_ r: LiveState.SyncReceipt) -> [(key: String, count: Int)] {
+        [("Heart rate", r.hr), ("R-R", r.rr), ("Blood oxygen", r.spo2),
+         ("Temperature", r.skinTemp), ("Respiration", r.resp), ("Movement", r.gravity)]
+    }
+
+    /// Medium-date formatter for the band's retained-history window (FER-83).
+    private static let dayFormatter: DateFormatter = {
+        let f = DateFormatter(); f.dateStyle = .medium; f.timeStyle = .none; return f
+    }()
+
+    // MARK: - Cobertura (30-day grid + sources summary) — iOS
+
+    #if os(iOS)
+    @ViewBuilder
+    private var coverageSection: some View {
+        // Hide the whole section when there's nothing to show: no strap days, and Apple Health is
+        // denied/unavailable or has imported nothing (mirrors the dark screen's guards).
+        let healthAccessible = health.auth != .denied && health.auth != .unavailable
+        let showsCoverage = !repo.days.isEmpty || (!repo.appleHealthDays.isEmpty && healthAccessible)
+        if showsCoverage || sourcesHasContent {
+            section("Coverage") {
+                if showsCoverage {
+                    coverageBodyView
+                }
+                if showsCoverage && sourcesHasContent { divider }
+                if sourcesHasContent {
+                    sourcesSummary
+                }
+            }
+        }
+    }
+    #endif
+
+    /// Overline + summary line + 6×5 grid + legend. (The leading section overline replaces the dark
+    /// card's own overline, so this body opens straight on the summary line.)
     @ViewBuilder
     private var coverageBodyView: some View {
         let cal = Calendar.current
@@ -364,20 +603,17 @@ struct DataSourcesView: View {
         let appleCount = days30.filter { repo.appleHealthDays.contains($0) }.count
         let emptyCount  = 30 - whoopCount - appleCount
         VStack(alignment: .leading, spacing: 8) {
-            Text("Data coverage").strandOverline()
-                .foregroundStyle(StrandPalette.textTertiary)
             Text(coverageSummaryString(whoop: whoopCount, apple: appleCount))
                 .font(StrandFont.subhead)
-                .foregroundStyle(whoopCount + appleCount > 0 ? StrandPalette.textSecondary
-                                                             : StrandPalette.textTertiary)
+                .foregroundStyle(whoopCount + appleCount > 0 ? theme.inkSecondary : theme.inkTertiary)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 6), spacing: 4) {
                 ForEach(Array(days30.enumerated()), id: \.offset) { _, day in
                     let isWhoop = allDayKeys.contains(day) && !repo.appleHealthDays.contains(day)
                     let isApple = repo.appleHealthDays.contains(day)
                     RoundedRectangle(cornerRadius: 4)
-                        .fill(isWhoop ? StrandPalette.accent
-                              : isApple ? StrandPalette.metricCyan
-                              : StrandPalette.textTertiary.opacity(0.3))
+                        .fill(isWhoop ? theme.dataRecovery
+                              : isApple ? theme.dataSpO2
+                              : theme.hairlineStrong)
                         .frame(height: 30)
                 }
             }
@@ -410,19 +646,83 @@ struct DataSourcesView: View {
 
     @ViewBuilder
     private func coverageLegendItems(hasWhoop: Bool, hasApple: Bool) -> some View {
-        coverageLegendItem(color: StrandPalette.accent, label: "WHOOP strap", active: hasWhoop)
-        coverageLegendItem(color: StrandPalette.metricCyan, label: "Apple Health only", active: hasApple)
-        coverageLegendItem(color: StrandPalette.textTertiary.opacity(0.5), label: "No data", active: true)
+        coverageLegendItem(color: theme.dataRecovery, label: "WHOOP strap", active: hasWhoop)
+        coverageLegendItem(color: theme.dataSpO2, label: "Apple Health only", active: hasApple)
+        coverageLegendItem(color: theme.hairlineStrong, label: "No data", active: true)
     }
 
     @ViewBuilder
     private func coverageLegendItem(color: Color, label: LocalizedStringKey, active: Bool) -> some View {
         HStack(spacing: 5) {
             RoundedRectangle(cornerRadius: 2).fill(color).frame(width: 10, height: 10)
-            Text(label).font(StrandFont.footnote).foregroundStyle(StrandPalette.textSecondary)
+            Text(label).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
         }
         .opacity(active ? 1.0 : 0.3)
     }
+
+    // MARK: - Sources summary (reskinned inline — was the dark `SourcesSummaryCard`)
+
+    /// True when there's a per-source line or a sync line worth showing (mirrors `SourcesSummaryCard`).
+    private var sourcesHasContent: Bool {
+        let whoopDays = repo.days.count - repo.appleHealthDays.count
+        let hasData = whoopDays > 0 || repo.appleHealthDays.count > 0
+        let hasSync = live.lastSyncError != nil || live.lastSyncedAt != nil
+        return hasData || (!live.backfilling && hasSync)
+    }
+
+    /// The compact "Sources" rollup — one row per data source (color rides the source-count datum) plus
+    /// the last-sync footnote. Reskinned from `SourcesSummaryCard` into the light language inline (a dark
+    /// `NoopCard` on warm paper would be card-in-card); same data, same conditions.
+    @ViewBuilder
+    private var sourcesSummary: some View {
+        let whoopDays = repo.days.count - repo.appleHealthDays.count
+        let ahDays    = repo.appleHealthDays.count
+        let hasData   = whoopDays > 0 || ahDays > 0
+        let hasSync   = live.lastSyncError != nil || live.lastSyncedAt != nil
+        let showsSync = !live.backfilling && hasSync
+        VStack(alignment: .leading, spacing: 8) {
+            if hasData {
+                if whoopDays > 0 {
+                    sourceRow(name: "WHOOP",
+                              count: String(localized: "\(whoopDays) days · \(repo.sleeps.count) sleeps"),
+                              tint: theme.dataRecovery)
+                }
+                if ahDays > 0 {
+                    sourceRow(name: "Apple Health",
+                              count: String(localized: "\(ahDays) days · \(appleWorkouts) workouts"),
+                              tint: theme.dataSpO2)
+                }
+            }
+            if showsSync {
+                if hasData { divider }
+                TimelineView(.periodic(from: .now, by: 60)) { context in
+                    if let error = live.lastSyncError {
+                        Text(verbatim: error).font(StrandFont.footnote).foregroundStyle(theme.warning)
+                    } else if let at = live.lastSyncedAt {
+                        Text("History synced \(relativeAgo(at, now: context.date.timeIntervalSince1970))")
+                            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    }
+                }
+            }
+        }
+        .task {
+            appleWorkouts = (await repo.workoutRows()).filter { $0.source == "apple-health" }.count
+        }
+    }
+
+    /// One source rollup row: brand name (ink) · tabular count tinted in the source's data hue (the
+    /// count is the measured datum). The dark card tinted a leading glyph; the language tints the datum.
+    private func sourceRow(name: LocalizedStringKey, count: String, tint: Color) -> some View {
+        HStack(spacing: 10) {
+            Text(name).font(StrandFont.subhead).foregroundStyle(theme.ink)
+            Spacer(minLength: 8)
+            Text(verbatim: count).font(StrandFont.captionNumber).foregroundStyle(tint)
+        }
+    }
+
+    @State private var appleWorkouts = 0
+
+    // MARK: - Import plumbing (unchanged)
 
     private func presentImporter(_ target: ImportTarget) {
         importTarget = target
@@ -452,258 +752,77 @@ struct DataSourcesView: View {
             }
         }
     }
-    private var liveCard: some View {
-        card(title: "WHOOP Strap (Live BLE)", icon: "antenna.radiowaves.left.and.right",
-             subtitle: "Pairs directly with your strap over Bluetooth — no WHOOP app, no cloud.") {
-            HStack(spacing: 8) {
-                // Three-state, consistent with the Live screen's connection pill — a connected-but-
-                // not-yet-streaming strap (e.g. an experimental WHOOP 5/MG link) no longer reads as
-                // "Not connected" on one screen and "Connected" on another (issue #8).
-                let (dot, label): (Color, String) =
-                    live.bonded ? (StrandPalette.statusPositive, "Bonded — streaming.")
-                    : live.connected ? (StrandPalette.statusWarning, "Connected.")
-                    : (StrandPalette.statusCritical, "Not connected — open Live to pair.")
-                Circle().fill(dot).frame(width: 8, height: 8)
-                Text(label).font(StrandFont.subhead).foregroundStyle(StrandPalette.textSecondary)
-            }
-            Divider().overlay(StrandPalette.hairline)
-            strapSyncDiagnostic
-        }
-    }
 
-    /// Sync diagnostic (FER-83): honest, read-only evidence that the band captured data and that NOOP
-    /// is receiving, decoding and storing it. Informs only — the one action is "Sync now" (a single
-    /// safe, reversible offload). State-driven: connect prompt / pairing prompt / live progress /
-    /// result (band range + per-sensor receipt + verdict) / error.
-    @ViewBuilder
-    private var strapSyncDiagnostic: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Sync diagnostic").strandOverline()
-                .foregroundStyle(StrandPalette.textTertiary)
-
-            if !live.connected {
-                Text("Connect your strap to run the sync diagnostic.")
-                    .font(StrandFont.subhead).foregroundStyle(StrandPalette.textTertiary)
-            } else if !live.encryptedBond {
-                Text("Complete secure pairing first — the strap won’t offload its history until the encrypted bond is set.")
-                    .font(StrandFont.subhead).foregroundStyle(StrandPalette.textTertiary)
-            } else {
-                strapRangeRow
-                syncNowButton
-                if live.backfilling {
-                    syncProgressRow
-                } else if let err = live.lastSyncError {
-                    Text(verbatim: err)
-                        .font(StrandFont.footnote).foregroundStyle(StrandPalette.statusWarning)
-                } else if live.syncCompletedThisSession {
-                    syncReceiptList
-                    syncVerdictRow
-                }
-            }
-        }
-    }
-
-    /// "On the band" — the strap's own retained-history window (proof the sensor captured + still holds
-    /// it). "—" until a GET_DATA_RANGE response has been seen.
-    @ViewBuilder
-    private var strapRangeRow: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "externaldrive.fill")
-                .font(.system(size: 12)).foregroundStyle(StrandPalette.textTertiary)
-            Text("On the band:").font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
-            if let oldest = live.strapHistoryOldest, let newest = live.strapHistoryNewest {
-                Text(verbatim: "\(Self.dayFormatter.string(from: Date(timeIntervalSince1970: oldest))) → \(Self.dayFormatter.string(from: Date(timeIntervalSince1970: newest)))")
-                    .font(StrandFont.footnote).monospacedDigit()
-                    .foregroundStyle(StrandPalette.textSecondary)
-            } else {
-                Text(verbatim: "—").font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
-            }
-        }
-    }
-
-    private var syncNowButton: some View {
-        Button {
-            model.ble.syncNow()
-        } label: {
-            Label(live.backfilling ? "Syncing…" : "Sync now",
-                  systemImage: "arrow.triangle.2.circlepath").padding(.horizontal, 6)
-        }
-        .buttonStyle(.borderedProminent).tint(StrandPalette.accent)
-        .disabled(live.backfilling)
-    }
-
-    /// Live offload progress — a pulsing pill plus the running chunk count (the only honest progress
-    /// signal; the protocol never reveals the total pending, so a count, never a percent).
-    private var syncProgressRow: some View {
-        HStack(spacing: 10) {
-            StatePill("Syncing strap history…", tone: .accent, pulsing: true)
-            Text("\(live.syncChunksThisSession) pieces")
-                .font(StrandFont.footnote).monospacedDigit()
-                .foregroundStyle(StrandPalette.textSecondary)
-        }
-    }
-
-    /// "Received this sync" — rows that decoded and landed, per sensor. The honest data receipt
-    /// (counts from StreamStore.insert, accumulated over the offload session).
-    @ViewBuilder
-    private var syncReceiptList: some View {
-        let r = live.syncReceipt
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Received this sync").strandOverline()
-                .foregroundStyle(StrandPalette.textTertiary)
-            VStack(spacing: 0) {
-                ForEach(Self.syncSensorRows(r), id: \.key) { row in
-                    HStack(spacing: 8) {
-                        Image(systemName: row.count > 0 ? "checkmark.circle.fill" : "minus.circle")
-                            .font(.system(size: 12))
-                            .foregroundStyle(row.count > 0 ? StrandPalette.statusPositive : StrandPalette.textTertiary)
-                        Text(LocalizedStringKey(row.key)).font(StrandFont.subhead)
-                            .foregroundStyle(row.count > 0 ? StrandPalette.textSecondary : StrandPalette.textTertiary)
-                        Spacer()
-                        Text(verbatim: row.count > 0 ? "\(row.count)" : "—")
-                            .font(StrandFont.footnote).monospacedDigit()
-                            .foregroundStyle(row.count > 0 ? StrandPalette.textSecondary : StrandPalette.textTertiary)
-                    }
-                    .padding(.vertical, 4)
-                }
-            }
-        }
-    }
-
-    /// The honest verdict, derived purely from what the offload session observed plus whether the band
-    /// reported a stored-history window. Branching lives in `LiveState.SyncVerdict.decide` (testable).
-    @ViewBuilder
-    private var syncVerdictRow: some View {
-        // The "On the band" window shows only when both markers are present — same signal here: a
-        // plausible GET_DATA_RANGE window means the band holds history, so a console-logs-only offload
-        // is a decode failure, not a lost clock (FER-152).
-        let reportsStoredHistory = live.strapHistoryOldest != nil && live.strapHistoryNewest != nil
-        let verdict = LiveState.SyncVerdict.decide(live.syncReceipt, reportsStoredHistory: reportsStoredHistory)
-        let (icon, text, tint): (String, LocalizedStringKey, Color) = {
-            switch verdict {
-            case .nothingNew:
-                return ("circle", "The band has nothing new.", StrandPalette.textSecondary)
-            case .notStoringClock:
-                return ("clock.badge.exclamationmark.fill", "The band isn’t storing data (clock). Run it through the WHOOP app to resume.", StrandPalette.statusWarning)
-            case .arrivesButNoDecode:
-                return ("exclamationmark.triangle.fill", "Data arrives but doesn’t decode — please report.", StrandPalette.statusWarning)
-            case .receivingAndStoring:
-                return ("checkmark.seal.fill", "Receiving and storing everything.", StrandPalette.statusPositive)
-            }
-        }()
-        HStack(spacing: 6) {
-            Image(systemName: icon).font(.system(size: 13)).foregroundStyle(tint)
-            Text(text).font(StrandFont.subhead).foregroundStyle(tint)
-        }
-    }
-
-    /// The six sensor streams the receipt reports, paired with their (localizable) English label keys
-    /// — `key` doubles as the stable ForEach id and the LocalizedStringKey lookup (FER-83).
-    private static func syncSensorRows(_ r: LiveState.SyncReceipt) -> [(key: String, count: Int)] {
-        [("Heart rate", r.hr), ("R-R", r.rr), ("Blood oxygen", r.spo2),
-         ("Temperature", r.skinTemp), ("Respiration", r.resp), ("Movement", r.gravity)]
-    }
-
-    /// Medium-date formatter for the band's retained-history window (FER-83).
-    private static let dayFormatter: DateFormatter = {
-        let f = DateFormatter(); f.dateStyle = .medium; f.timeStyle = .none; return f
-    }()
-
-    @ViewBuilder
-    private func card<C: View>(title: String, icon: String, subtitle: String,
-                              @ViewBuilder content: () -> C) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 10) {
-                Image(systemName: icon).foregroundStyle(StrandPalette.accent)
-                Text(title).font(StrandFont.headline).foregroundStyle(StrandPalette.textPrimary)
-            }
-            Text(subtitle).font(StrandFont.subhead).foregroundStyle(StrandPalette.textSecondary)
-            content()
-        }
-        .padding(18)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(StrandPalette.surfaceRaised, in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(StrandPalette.hairline))
-    }
-
-    // MARK: - Backup & restore + iCloud (migrated from SettingsView — FER-337)
+    // MARK: - Respaldo (backup/restore + CSV + iCloud auto) — iOS
 
     #if os(iOS)
-    private var backupCard: some View {
-        card(title: "Backup & restore", icon: "externaldrive.fill",
-             subtitle: "Move all your Cénit data to another device. Export saves everything to one file you can copy across; import replaces this device's data with a backup.") {
+    private var backupSection: some View {
+        section("Backup") {
+            backupBlock
+            divider
+            autoBackupBlock
+        }
+    }
+
+    private var backupBlock: some View {
+        block("Backup & restore",
+              subtitle: "Move all your Cénit data to another device. Export saves everything to one file you can copy across; import replaces this device's data with a backup.") {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(spacing: 12) {
-                    Button { runExport() } label: {
-                        Label("Export…", systemImage: "square.and.arrow.up").padding(.horizontal, 6)
-                    }
-                    .buttonStyle(.borderedProminent).tint(StrandPalette.accent).disabled(backupBusy)
-                    Button { runImport() } label: {
-                        Label("Import…", systemImage: "square.and.arrow.down").padding(.horizontal, 6)
-                    }
-                    .buttonStyle(.bordered).tint(StrandPalette.accent).disabled(backupBusy)
-                    Button { runCsvExport() } label: {
-                        Label("Export CSV…", systemImage: "tablecells").padding(.horizontal, 6)
-                    }
-                    .buttonStyle(.bordered).tint(StrandPalette.accent).disabled(backupBusy)
-                    if backupBusy { ProgressView().controlSize(.small) }
+                    QuietButton("Export…") { runExport() }.disabled(backupBusy)
+                    QuietButton("Import…") { runImport() }.disabled(backupBusy)
+                    QuietButton("Export CSV…") { runCsvExport() }.disabled(backupBusy)
+                    if backupBusy { ProgressView().controlSize(.small).tint(theme.inkSecondary) }
                     Spacer(minLength: 0)
                 }
                 HStack(alignment: .top, spacing: 10) {
-                    Image(systemName: "info.circle.fill").foregroundStyle(StrandPalette.textTertiary)
+                    Image(systemName: "info.circle.fill").foregroundStyle(theme.inkTertiary)
                         .font(.system(size: 13)).accessibilityHidden(true)
                     Text("Importing overwrites everything currently in Cénit. Your old data is kept in a side file just in case, and Cénit needs a relaunch for an import to take effect. Export CSV writes a WHOOP-format zip of your days, sleeps, workouts and journal that re-imports into Cénit.")
-                        .font(StrandFont.footnote).foregroundStyle(StrandPalette.textSecondary)
+                        .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
         }
     }
 
-    private var autoBackupCard: some View {
-        card(title: "Automatic iCloud backup", icon: "icloud.and.arrow.up.fill",
-             subtitle: "Pick a folder in iCloud Drive and Cénit keeps a fresh copy of all your data there. Your strap history lives only inside the app, so this is what protects it if you reinstall Cénit or switch phones. A free Apple ID is enough.") {
+    private var autoBackupBlock: some View {
+        block("Automatic iCloud backup",
+              subtitle: "Pick a folder in iCloud Drive and Cénit keeps a fresh copy of all your data there. Your strap history lives only inside the app, so this is what protects it if you reinstall Cénit or switch phones. A free Apple ID is enough.") {
             VStack(alignment: .leading, spacing: 14) {
                 if let name = autoBackup.destinationName {
                     Label("Backing up to \(name)", systemImage: "checkmark.icloud.fill")
-                        .font(StrandFont.subhead).foregroundStyle(StrandPalette.textPrimary)
-                    Text(lastBackupText).font(StrandFont.footnote).foregroundStyle(StrandPalette.textSecondary)
+                        .font(StrandFont.subhead).foregroundStyle(theme.ink)
+                    Text(verbatim: lastBackupText).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
                     HStack(spacing: 12) {
-                        Button {
+                        QuietButton("Back up now") {
                             Task { await autoBackup.backupNow(checkpoint: { await model.repo.checkpointForBackup() }) }
-                        } label: {
-                            Label("Back up now", systemImage: "arrow.clockwise.icloud").padding(.horizontal, 6)
                         }
-                        .buttonStyle(.borderedProminent).tint(StrandPalette.accent).disabled(autoBackup.busy)
-                        Button { runImport() } label: {
-                            Label("Restore…", systemImage: "square.and.arrow.down").padding(.horizontal, 6)
-                        }
-                        .buttonStyle(.bordered).tint(StrandPalette.accent).disabled(backupBusy)
-                        if autoBackup.busy { ProgressView().controlSize(.small) }
+                        .disabled(autoBackup.busy)
+                        QuietButton("Restore…") { runImport() }.disabled(backupBusy)
+                        if autoBackup.busy { ProgressView().controlSize(.small).tint(theme.inkSecondary) }
                         Spacer(minLength: 0)
                     }
-                    Button(role: .destructive) { autoBackup.disable() } label: {
-                        Label("Turn off automatic backup", systemImage: "xmark.circle")
+                    Button { autoBackup.disable() } label: {
+                        Text("Turn off automatic backup").font(StrandFont.headline)
+                            .foregroundStyle(theme.critical)
+                            .padding(.horizontal, 18).padding(.vertical, 10)
+                            .frame(minHeight: 44)
+                            .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.plain)
                 } else {
                     HStack(spacing: 12) {
-                        Button { Task { await autoBackup.chooseFolder() } } label: {
-                            Label("Choose iCloud Drive folder…", systemImage: "folder.badge.plus").padding(.horizontal, 6)
-                        }
-                        .buttonStyle(.borderedProminent).tint(StrandPalette.accent)
-                        Button { runImport() } label: {
-                            Label("Restore…", systemImage: "square.and.arrow.down").padding(.horizontal, 6)
-                        }
-                        .buttonStyle(.bordered).tint(StrandPalette.accent).disabled(backupBusy)
+                        QuietButton("Choose iCloud Drive folder…") { Task { await autoBackup.chooseFolder() } }
+                        QuietButton("Restore…") { runImport() }.disabled(backupBusy)
                         Spacer(minLength: 0)
                     }
                 }
                 if let err = autoBackup.lastError {
                     HStack(alignment: .top, spacing: 10) {
-                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(theme.warning)
                             .font(.system(size: 13)).accessibilityHidden(true)
-                        Text(err).font(StrandFont.footnote).foregroundStyle(StrandPalette.textSecondary)
+                        Text(verbatim: err).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }

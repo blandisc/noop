@@ -784,9 +784,11 @@ private struct CuerpoLanding: View {
         )
     }
 
-    /// A dark, existing screen presented self-contained: its own NavigationStack + Done button, pinned
-    /// to `.dark` (a light tab can't host a dark screen without breaking the status bar), with the
-    /// environment objects re-injected (a sheet starts a fresh environment branch).
+    /// Data Sources, now reskinned to the light «Instrumento» language (FER-338), presented
+    /// self-contained: its own NavigationStack + Done button (so «Ver datos importados» pushes the
+    /// Apple Health viewer), the theme injected at the root (it doesn't cross the `.sheet` boundary,
+    /// FER-162), and the environment objects re-injected (a sheet starts a fresh environment branch).
+    /// A light sheet from a light tab keeps the status bar honest (no dark pin needed).
     private func darkSheetContent(_ sheet: CuerpoSheet) -> some View {
         NavigationStack {
             Group {
@@ -794,20 +796,20 @@ private struct CuerpoLanding: View {
                 case .screen(.dataSources): DataSourcesView()
                 }
             }
-            .background(StrandPalette.surfaceBase.ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(StrandPalette.surfaceBase, for: .navigationBar)
+            .toolbarBackground(theme.paper, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { darkSheet = nil }.foregroundStyle(StrandPalette.accent)
+                    Button("Done") { darkSheet = nil }.foregroundStyle(theme.ink)
                 }
             }
         }
+        .instrumentoTheme(theme)
         .environmentObject(repo)
         .environmentObject(live)
         .environmentObject(model)
         .environmentObject(health)
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(.light)
     }
 
     // MARK: - Loading (memoize once per refresh)

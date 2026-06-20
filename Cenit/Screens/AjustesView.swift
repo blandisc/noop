@@ -372,33 +372,61 @@ private struct AjustesLanding: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - Dark sibling sheet (DataSources / Automations / Support), pinned to .dark
+    // MARK: - Sibling sheet (DataSources is light · Automations / Support still dark, pinned to .dark)
 
+    @ViewBuilder
     private func darkSheet(_ screen: AjustesDarkScreen) -> some View {
-        NavigationStack {
-            Group {
-                switch screen {
-                case .dataSources: DataSourcesView()
-                case .automations: AutomationsView()
-                case .support:     SupportView()
+        switch screen {
+        case .dataSources:
+            // Reskinned to the light «Instrumento» language (FER-338): a light sheet with its own
+            // NavigationStack (so «Ver datos importados» pushes the Apple Health viewer). The theme is
+            // injected at the root (it doesn't cross the `.sheet` boundary, FER-162); a light sheet from
+            // a light tab keeps the status bar honest (no dark pin needed).
+            NavigationStack {
+                DataSourcesView()
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbarBackground(theme.paper, for: .navigationBar)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") { darkScreen = nil }.foregroundStyle(theme.ink)
+                        }
+                    }
+            }
+            .instrumentoTheme(theme)
+            .environmentObject(model)
+            .environmentObject(repo)
+            .environmentObject(live)
+            .environmentObject(health)
+            .environmentObject(behavior)
+            .environmentObject(autoBackup)
+            .preferredColorScheme(.light)
+        case .automations, .support:
+            // Still dark (go light in FER-69 / FER-67), presented self-contained pinned to `.dark`.
+            NavigationStack {
+                Group {
+                    switch screen {
+                    case .automations: AutomationsView()
+                    case .support:     SupportView()
+                    case .dataSources: EmptyView()   // handled above
+                    }
+                }
+                .background(StrandPalette.surfaceBase.ignoresSafeArea())
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbarBackground(StrandPalette.surfaceBase, for: .navigationBar)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { darkScreen = nil }.foregroundStyle(StrandPalette.accent)
+                    }
                 }
             }
-            .background(StrandPalette.surfaceBase.ignoresSafeArea())
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(StrandPalette.surfaceBase, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { darkScreen = nil }.foregroundStyle(StrandPalette.accent)
-                }
-            }
+            .environmentObject(model)
+            .environmentObject(repo)
+            .environmentObject(live)
+            .environmentObject(health)
+            .environmentObject(behavior)
+            .environmentObject(autoBackup)
+            .preferredColorScheme(.dark)
         }
-        .environmentObject(model)
-        .environmentObject(repo)
-        .environmentObject(live)
-        .environmentObject(health)
-        .environmentObject(behavior)
-        .environmentObject(autoBackup)
-        .preferredColorScheme(.dark)
     }
 }
 

@@ -36,6 +36,17 @@ ES: dict[str, str] = {
     "Importing overwrites everything currently in Cénit. Your old data is kept in a side file just in case, and Cénit needs a relaunch for an import to take effect. Export CSV writes a WHOOP-format zip of your days, sleeps, workouts and journal that re-imports into Cénit.": 'Importar sobrescribe todo lo que hay en Cénit. Tus datos viejos se guardan en un archivo aparte por si acaso, y Cénit necesita reiniciarse para que el import surta efecto. Exportar CSV genera un zip en formato WHOOP de tus días, sueños, entrenamientos y diario que se re-importa a Cénit.',
     '%@ — all your data, none of the cloud. Free and always will be; chipping in is optional.': '%@ — todos tus datos, nada en la nube. Es gratis y siempre lo será; aportar es opcional.',
     'Automations': 'Automatizaciones',
+    # FER-338 — Reskin «Datos y fuentes» + visor Apple Health a «Instrumento»: cadenas nuevas/visibles
+    'Import': 'Importar',
+    'Coverage': 'Cobertura',
+    'Backup': 'Respaldo',
+    'WHOOP Strap': 'Banda WHOOP',
+    'Pairs directly with your strap over Bluetooth — no WHOOP app, no cloud.': 'Se vincula directo con tu banda por Bluetooth — sin app de WHOOP, sin nube.',
+    'Sync the last few weeks two-way, on-device: Cénit reads your Apple Health HR, HRV, sleep, SpO₂ and steps, and writes its own strap-derived metrics back. Strictly opt-in — nothing leaves your iPhone. (For a one-time bulk history, use the export import above.)': 'Sincroniza las últimas semanas en ambos sentidos, en el dispositivo: Cénit lee tu FC, HRV, sueño, SpO₂ y pasos de Apple Health, y escribe de vuelta sus propias métricas derivadas de la banda. Estrictamente opcional — nada sale de tu iPhone. (Para un historial masivo de una vez, usa la importación de export de arriba.)',
+    'Nothing imported yet': 'Aún no importas nada',
+    'On an iPhone: Health app, tap your photo, Export All Health Data, then import the .zip here in Data Sources.': 'En un iPhone: app Salud, toca tu foto, Exportar todos los datos de salud, y luego importa el .zip aquí en Datos y fuentes.',
+    'Steps, heart, sleep, body composition and VO₂ max — read locally on this iPhone.': 'Pasos, corazón, sueño, composición corporal y VO₂ máx — leídos localmente en este iPhone.',
+    'Apple-logged': 'Registrado por Apple',
     # FER-312 — Pregúntale (Coach): los 2 strings que faltaban en es (setup + footnote de privacidad)
     'Coach uses your own API key. Pick a provider, paste a key, and choose a model. Your key is stored securely in the device Keychain and never leaves your phone except as the request you make.': 'Coach usa tu propia clave de API. Elige un proveedor, pega una clave y escoge un modelo. Tu clave se guarda de forma segura en el Llavero de tu teléfono y nunca sale de él salvo como la petición que tú haces.',
     'This is the only feature that leaves your phone — it sends a summary of your metrics to %@ using your own key. Nothing is sent until you ask.': 'Esta es la única función que sale de tu teléfono — manda un resumen de tus métricas a %@ usando tu propia clave. No se envía nada hasta que preguntas.',
