@@ -67,6 +67,10 @@ struct LiveView: View {
     /// Measured content height → the sheet detent, so the sheet opens exactly as tall as the content
     /// instead of full-screen with empty space below (FER-196).
     @State private var sheetHeight: CGFloat = 0
+    /// Cached coverage classification. Depends only on `repo.days`/`appleHealthDays`, so it's
+    /// recomputed via `.task(id: repo.refreshSeq)` rather than on every `body` pass — LiveView
+    /// re-renders on each live-HR tick, and recomputing `Set(repo.days…)` per tick was wasteful (FER-319).
+    @State private var coverageCache = Coverage(perDay: [], strap: 0, apple: 0, none: 0)
     /// How many recent calendar days the coverage strip shows.
     private static let coverageWindow = 28
     /// Fixed widths for the two right-hand signal columns so rows AND the per-group column headers
@@ -134,6 +138,7 @@ struct LiveView: View {
             if rrHistory.count > 40 { rrHistory.removeFirst(rrHistory.count - 40) }
         }
         .task { receipt = await repo.dataReceipt() }
+        .task(id: repo.refreshSeq) { coverageCache = computeCoverage() }
         .onChange(of: live.hrFlushSeq) {
             // A standard-HR flush just committed to SQLite → re-query so the stored counts climb live.
             Task { receipt = await repo.dataReceipt() }
@@ -345,7 +350,7 @@ struct LiveView: View {
     private struct Coverage { let perDay: [Source]; let strap: Int; let apple: Int; let none: Int
         enum Source { case strap, apple, none } }
 
-    private var coverage: Coverage {
+    private func computeCoverage() -> Coverage {
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
         let allKeys = Set(repo.days.map(\.day))
@@ -365,7 +370,7 @@ struct LiveView: View {
     }
 
     @ViewBuilder private var coverageStrip: some View {
-        let cov = coverage
+        let cov = coverageCache
         // Only show once at least one day has data — no alarming all-grey strip on first use.
         if cov.strap + cov.apple > 0 {
             VStack(alignment: .leading, spacing: 7) {
