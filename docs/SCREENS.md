@@ -34,7 +34,9 @@ Tab shell (FER-182) → 5 pestañas: Hoy · Cuerpo · Coach · Entrenar · Ajust
   Hoy      → TodayView
   Cuerpo   → CuerpoView (landing curado de la capa «historia», FER-186)
   Coach    → BucleView (pantalla única «el Bucle», FER-292; reemplaza el hub Intelligence · Insights · Coach)
-  Entrenar → EntrenarView (hub claro «Instrumento», FER-343): tarjeta «Hoy» + banda de recuperación · «Mis rutinas» · Herramientas (En vivo · Respira · Intervalos · Dieta → DietCaptureView, FER-371)
+  Entrenar → EntrenarView (hub claro «Instrumento», FER-343): tarjeta «Hoy» + banda de recuperación · «Mis rutinas» (nueva → builder; editar/borrar por menú) · Herramientas (En vivo · Biblioteca → ExerciseLibraryScreen · Respira · Intervalos · Dieta → DietCaptureView)
+  EntrenarView → RoutineBuilderScreen (sheet: nueva/editar, FER-346) → ExerciseLibraryScreen (sheet add) · RoutineExerciseEditor (sheet)
+  ExerciseLibraryScreen (push desde Herramientas, FER-346) → ExerciseDetailScreen (sheet) · CreateExerciseSheet (sheet)
   Ajustes  → AjustesView (raíz clara «Instrumento», FER-337): Perfil · Tu strap (estado + Log de la banda + 5/MG)
              · filas → Unidades y formato · Datos y fuentes · Automatizaciones · Acerca de y soporte
              (mató «Más» + el doble nivel lista→Settings; Explore/Compare/Workouts viven en Cuerpo;
@@ -306,6 +308,58 @@ Los 9 bloques (orden), **cada uno con su ⓘ `InfoAccordion`** salvo el método:
 
 **Componentes:** `instrumentoHero`, barra de zonas (`hrZoneRamp`), `SourceBadge`, `ManualWorkoutSheet` (edit/duplicate), menú `ellipsis.circle`  
 **Navegación:** back → `WorkoutsView`; menú ••• → `ManualWorkoutSheet` (edit / duplicate)
+
+---
+
+## Fuerza · tracker (Entrenar) — FER-346
+
+Builder de rutinas + biblioteca de ejercicios, sobre el modelo de fuerza (FER-345) + migración v15 (superset). DNA **«báscula de papel»**: el peso domina por tamaño en **tinta**, el único color es la línea de tendencia del **1RM estimado** (`dataStrain`, hue de salida); jerarquía por espacio + hairlines, sin card-in-card. Pesos almacenados SI (kg), mostrados en la unidad del usuario (`UnitFormatter`). El catálogo semilla (free-exercise-db) es contenido en inglés (nombres/músculos), no chrome — se muestra title-cased; el chrome se localiza por `Localizable.xcstrings`.
+
+### Punto de entrada — «Mis rutinas» vive en EntrenarView (FER-343)
+La lista de rutinas guardadas es la sección «Mis rutinas» de `EntrenarView` (FER-343), no una pantalla aparte. FER-346 conecta ahí el builder real (reemplaza el placeholder «coming soon» de FER-343): «New routine» y el estado vacío abren `RoutineBuilderScreen(.new)` como **sheet** (un id de rutina no cabe en el path tipado del tab, FER-171); cada fila de rutina gana un **menú contextual** con «Edit routine» (→ `RoutineBuilderScreen(.edit)`) y «Delete routine». La «Biblioteca» se alcanza desde Herramientas (push) o desde el estado vacío.
+
+### RoutineBuilderScreen — builder
+**Archivo:** `Cenit/Screens/RoutineBuilderScreen.swift`  
+**Descripción:** Crea/edita una rutina (sheet con `NavigationStack` propio + Cancel/Save). Nombre editable; **lista reordenable** (`List` + `.onMove`/`.onDelete` vía `EditButton`, patrón HIG); **superset** por menú de fila («Superset with next» / «Break superset») con regla vertical + overline «SUPERSET»; agregar desde la biblioteca (multi-add, sheet); tap en fila → editor. Guardar → `repo.saveRoutine`.
+
+| Estado | Condición |
+|--------|-----------|
+| Vacía | `items.isEmpty` → prompt + «Add exercise» |
+| Con ejercicios | lista reordenable + superset + Save |
+| Reordenar/borrar | `EditButton` activa el modo de edición |
+
+**Componentes:** `List(.plain)` reordenable, menú `ellipsis`, `EditButton`, regla de superset, `QuietButton`, `RoutineExerciseEditor` (sheet)
+**Navegación:** «Add exercise» → `ExerciseLibraryScreen` (add-mode, sheet); fila/Edit → `RoutineExerciseEditor` (sheet)
+
+### RoutineExerciseEditor — editor por ejercicio
+**Archivo:** `Cenit/Screens/RoutineBuilderScreen.swift` (privado)  
+**Descripción:** Hoja para afinar un slot: **series de trabajo** (objetivo de series/reps/peso, steppers en tinta), **calentamiento auto desde %** (chips 40/60/80 toggleables — no cuentan para PR ni volumen), **descanso** `Por FC | Fijo` (segmented; stepper de segundos solo en Fijo). Campos según `ExerciseType` (reps/peso solo donde aplican).
+
+### ExerciseLibraryScreen — biblioteca
+**Archivo:** `Cenit/Screens/ExerciseLibraryScreen.swift`  
+**Descripción:** Explora el catálogo on-device (semilla + ejercicios propios, vía `repo.allExercises`). Dos modos de una vista: **browse** (destino del hub — tap abre el detalle) y **add** (presentada por el builder con `onAdd` — multi-selección + «Add N»). Buscar + filtros de **músculo** y **equipo** (menús). «Create exercise» abre el formulario.
+
+| Estado | Condición |
+|--------|-----------|
+| Browse | `onAdd == nil` → tap fila abre detalle |
+| Add | `onAdd != nil` → checkmarks + barra «Add N» |
+| Filtrado vacío | `filtered.isEmpty` → línea honesta |
+
+**Componentes:** campo de búsqueda, `Menu` de filtros (chip), `LazyVStack` de filas, `CreateExerciseSheet` (sheet)
+**Navegación:** fila (browse) → `ExerciseDetailScreen` (sheet); «Create exercise» → `CreateExerciseSheet` (sheet); «Add N» (add) → `onAdd` + dismiss
+
+### ExerciseDetailScreen — detalle de ejercicio
+**Archivo:** `Cenit/Screens/ExerciseDetailScreen.swift`  
+**Descripción:** Un ejercicio: **músculos** (primario a tinta llena, asistentes a media tinta = el peso 1.0/0.5 del modelo), **historial** (mejor marca / última vez, pesos héroe en tinta) y **1RM estimado** (Epley 1985, `StrandAnalytics.OneRepMax`): número en tinta + **sparkline en ámbar `dataStrain`** (con scrub). Sin historial → estado honesto (músculos + el porqué, nada fabricado).
+
+| Estado | Condición |
+|--------|-----------|
+| Con historial | `!history.isEmpty` → mejor marca + última vez + 1RM |
+| 1RM con tendencia | `spark.count >= 2` → `Sparkline` ámbar |
+| Sin historial | `history.isEmpty` → bloque honesto |
+
+**Componentes:** barras de músculo en tinta, `instrumentoHero` (pesos), `Sparkline` (`dataStrain`), cita Epley
+**Navegación:** presentada como sheet (desde la biblioteca); Done → cierra
 
 ---
 

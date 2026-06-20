@@ -42,15 +42,23 @@ public struct RoutineExercise: Codable, Sendable, Identifiable, Equatable {
     public var warmupPercents: [Double]
     public var restMode: RestMode
     public var restSeconds: Int
+    /// Superset grouping (FER-346): `nil` = a standalone exercise; the same `Int` within a routine =
+    /// one superset, performed in `position` order with rest taken only after the group's last
+    /// exercise. The label is opaque (the builder assigns "next free" per routine, not the user) —
+    /// grouping is by equality, so gaps in the numbering don't matter. The guided session (FER-347)
+    /// reads it to cycle a group and skip the between-exercise rest.
+    public var supersetGroup: Int?
 
     public init(id: String = UUID().uuidString, routineId: String, exerciseId: String,
                 position: Int, targetSets: Int, targetReps: Int? = nil,
                 targetWeightKg: Double? = nil, warmupPercents: [Double] = [],
-                restMode: RestMode = .heartRate, restSeconds: Int = 90) {
+                restMode: RestMode = .heartRate, restSeconds: Int = 90,
+                supersetGroup: Int? = nil) {
         self.id = id; self.routineId = routineId; self.exerciseId = exerciseId
         self.position = position; self.targetSets = targetSets; self.targetReps = targetReps
         self.targetWeightKg = targetWeightKg; self.warmupPercents = warmupPercents
         self.restMode = restMode; self.restSeconds = restSeconds
+        self.supersetGroup = supersetGroup
     }
 }
 

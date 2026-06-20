@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-20 · FER-371</span>
+  <span class="tb-updated">Actualizado 2026-06-20 · FER-346</span>
 </div>
 
 <div id="wrapper">
@@ -673,6 +673,70 @@ const SCREENS = [
     ],
     nav: [],
     components: ['Renglón Dieta en hub Entrenar (fork.knife)', 'EmptyStateView', 'QuietButton (Copiar prompt / Subir / Continuar / Guardar)', 'TextEditor (pegar JSON)', 'fileImporter (.json)', 'Lista de comidas (equivalentes «o…»)'],
+  },
+
+  // ── Fuerza · tracker (Entrenar, FER-346) ─────────────────
+  {
+    id: 'routines-list', x: 284, y: 2310,
+    name: 'Mis rutinas → builder', desc: 'La lista «Mis rutinas» vive en EntrenarView (FER-343); FER-346 conecta ahí el builder real: «New routine» / vacío → builder sheet, y menú de fila Edit/Delete',
+    file: 'Cenit/Screens/EntrenarView.swift',
+    icon: '📋', color: '#221D16',
+    states: [
+      { label: 'Nueva rutina → RoutineBuilderScreen(.new)', type: 'data' },
+      { label: 'Menú de fila: Edit / Delete', type: 'data' },
+    ],
+    nav: ['RoutineBuilderScreen (sheet, nueva/editar)', 'ExerciseLibraryScreen (Herramientas)'],
+    components: ['Sección «Mis rutinas» (EntrenarView)', 'contextMenu Edit/Delete', 'builderTarget sheet'],
+  },
+  {
+    id: 'routine-builder', x: 538, y: 2310,
+    name: 'Builder de rutinas', desc: '«Báscula de papel»: nombre + lista reordenable + superset + editor por ejercicio (FER-346)',
+    file: 'Cenit/Screens/RoutineBuilderScreen.swift',
+    icon: '🏗', color: '#221D16',
+    states: [
+      { label: 'Rutina vacía', type: 'empty' },
+      { label: 'Con ejercicios + superset', type: 'data' },
+      { label: 'Reordenar/borrar (EditButton)', type: 'data' },
+    ],
+    nav: ['ExerciseLibraryScreen (add, sheet)', 'RoutineExerciseEditor (sheet)'],
+    components: ['List(.plain) reordenable (.onMove/.onDelete)', 'Regla de superset + overline', 'Menú ellipsis (superset/edit/remove)', 'Save → repo.saveRoutine'],
+  },
+  {
+    id: 'exercise-editor', x: 792, y: 2310,
+    name: 'Editor por ejercicio', desc: 'Series de trabajo + calentamiento auto-% + descanso porFC|fijo (FER-346)',
+    file: 'Cenit/Screens/RoutineBuilderScreen.swift',
+    icon: '🎚', color: '#221D16',
+    states: [
+      { label: 'weightReps (sets/reps/peso)', type: 'data' },
+      { label: 'Descanso Fijo (stepper s)', type: 'data' },
+    ],
+    nav: [],
+    components: ['Steppers en tinta', 'Chips calentamiento 40/60/80%', 'SegmentedControl Por FC | Fijo'],
+  },
+  {
+    id: 'exercise-library', x: 1046, y: 2310,
+    name: 'Biblioteca de ejercicios', desc: 'Explorar/multi-add + filtros músculo/equipo + crear propio (FER-346)',
+    file: 'Cenit/Screens/ExerciseLibraryScreen.swift',
+    icon: '📚', color: '#221D16',
+    states: [
+      { label: 'Browse (tap → detalle)', type: 'data' },
+      { label: 'Add (multi-select + Add N)', type: 'data' },
+      { label: 'Filtrado vacío', type: 'empty' },
+    ],
+    nav: ['ExerciseDetailScreen (sheet)', 'CreateExerciseSheet (sheet)'],
+    components: ['Campo de búsqueda', 'Menús de filtro (chip)', 'LazyVStack de filas', 'Barra Add N'],
+  },
+  {
+    id: 'exercise-detail', x: 1300, y: 2310,
+    name: 'Detalle de ejercicio', desc: 'Músculos (tinta 1.0/0.5) + historial + 1RM estimado (sparkline ámbar dataStrain, Epley 1985) (FER-346)',
+    file: 'Cenit/Screens/ExerciseDetailScreen.swift',
+    icon: '📈', color: '#C4631F',
+    states: [
+      { label: 'Con historial (mejor/última/1RM)', type: 'data' },
+      { label: 'Sin historial (honesto)', type: 'empty' },
+    ],
+    nav: [],
+    components: ['Barras de músculo en tinta', 'instrumentoHero (pesos)', 'Sparkline 1RM (dataStrain)', 'Cita Epley'],
   },
 
   // ── ROW 4: App (y = 2660) ─────────────────

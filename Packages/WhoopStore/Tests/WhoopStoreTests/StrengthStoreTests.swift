@@ -101,4 +101,25 @@ final class StrengthStoreTests: XCTestCase {
         let empty = try await store.customExercises()
         XCTAssertTrue(empty.isEmpty)
     }
+
+    /// `workSetHistory` joins setEntry × strengthSession: carries each work set's SESSION start time,
+    /// oldest→newest, and excludes warm-ups and sets missing weight/reps (1RM needs both).
+    func testWorkSetHistoryJoinsSessionStart() async throws {
+        let store = try await WhoopStore.inMemory()
+        try await store.saveSession(StrengthSession(id: "s1", startTs: 1000), sets: [
+            SetEntry(id: "a", sessionId: "s1", exerciseId: "bench", position: 0, kind: .warmup,
+                     weightKg: 24, reps: 10, done: true, ts: 1001),                 // warm-up → excluded
+            SetEntry(id: "b", sessionId: "s1", exerciseId: "bench", position: 1, kind: .work,
+                     weightKg: 60, reps: 8, done: true, ts: 1002),
+        ])
+        try await store.saveSession(StrengthSession(id: "s2", startTs: 2000), sets: [
+            SetEntry(id: "c", sessionId: "s2", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 65, reps: 5, done: true, ts: 2001),
+            SetEntry(id: "d", sessionId: "s2", exerciseId: "bench", position: 1, kind: .work,
+                     reps: 5, done: true, ts: 2002),                                // no weight → excluded
+        ])
+        let hist = try await store.workSetHistory(exerciseId: "bench")
+        XCTAssertEqual(hist.map(\.startTs), [1000, 2000])     // session start, oldest→newest
+        XCTAssertEqual(hist.map(\.weightKg), [60, 65])        // warm-up + weightless set dropped
+    }
 }

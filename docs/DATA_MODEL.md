@@ -76,7 +76,7 @@ The schema falls into four groups:
 | **Bookkeeping** | `cursors` | Highwater / read cursors |
 | **Metric caches** | `sleepSession`, `dailyMetric`, `journal`, `workout`, `appleDaily`, `metricSeries` | Derived metrics + CSV / Apple-Health imports |
 | **Experiments** *(v12)* | `experiment` | N-of-1 experiments (FER-307) |
-| **Strength tracker** *(v13)* | `customExercise`, `routine`, `routineExercise`, `strengthSession`, `setEntry`, `personalRecord` | User-authored routines/sessions/sets/PRs — relational, UUID PKs. The seed exercise catalog is a bundled resource in `StrandTraining`, not in SQLite. (FER-345) |
+| **Strength tracker** *(v13, +v15)* | `customExercise`, `routine`, `routineExercise`, `strengthSession`, `setEntry`, `personalRecord` | User-authored routines/sessions/sets/PRs — relational, UUID PKs. `routineExercise.supersetGroup` (v15) groups exercises into supersets. The seed exercise catalog is a bundled resource in `StrandTraining`, not in SQLite. (FER-345/346) |
 | **Diet** *(v14)* | `dietPlan`, `dietAdherence` | Prescribed diet plan (`noop.diet.v1`, captured via import) + daily per-meal adherence — apego tracking (FER-370) |
 
 All timestamp columns named `ts`, `startTs`, `endTs`, `capturedAt`, etc. are **unix seconds**
@@ -106,6 +106,7 @@ Migrations are registered in `Packages/WhoopStore/Sources/WhoopStore/Database.sw
 | **v12** | Adds the `experiment` table (N-of-1 experiments, FER-307). |
 | **v13** | Strength tracker (FER-345): `customExercise`, `routine`, `routineExercise`, `strengthSession`, `setEntry`, `personalRecord` + their indexes. Relational, UUID-string PKs; array fields (muscles, cues, warm-up percents) are JSON text columns. Append-only. |
 | **v14** | Diet (FER-370): `dietPlan` (prescribed plan as an opaque `noop.diet.v1` JSON payload + denormalized columns, PK `id`) and `dietAdherence` (per-meal daily status, PK `(deviceId, day, mealId)`). Append-only. |
+| **v15** | Supersets (FER-346): adds nullable `supersetGroup` (INTEGER) to `routineExercise` — same value within a routine = one superset; NULL = standalone. Append-only `ALTER ADD COLUMN`. |
 
 ### The vestigial `synced` column
 

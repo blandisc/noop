@@ -84,13 +84,14 @@ extension WhoopStore {
             for re in exercises {
                 let args: [DatabaseValueConvertible?] = [
                     re.id, re.routineId, re.exerciseId, re.position, re.targetSets, re.targetReps,
-                    re.targetWeightKg, encodeJSON(re.warmupPercents), re.restMode.rawValue, re.restSeconds
+                    re.targetWeightKg, encodeJSON(re.warmupPercents), re.restMode.rawValue, re.restSeconds,
+                    re.supersetGroup
                 ]
                 try db.execute(sql: """
                     INSERT INTO routineExercise
                         (id, routineId, exerciseId, position, targetSets, targetReps, targetWeightKg,
-                         warmupPercents, restMode, restSeconds)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                         warmupPercents, restMode, restSeconds, supersetGroup)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, arguments: StatementArguments(args))
             }
         }
@@ -115,7 +116,7 @@ extension WhoopStore {
                                     targetReps: $0["targetReps"], targetWeightKg: $0["targetWeightKg"],
                                     warmupPercents: decodeJSON($0["warmupPercents"], as: [Double].self, default: []),
                                     restMode: RestMode(rawValue: $0["restMode"]) ?? .heartRate,
-                                    restSeconds: $0["restSeconds"])
+                                    restSeconds: $0["restSeconds"], supersetGroup: $0["supersetGroup"])
                 }
         }
     }
@@ -181,6 +182,25 @@ extension WhoopStore {
                 SELECT * FROM setEntry WHERE exerciseId = ? AND kind = 'work' AND done = 1
                 ORDER BY ts DESC LIMIT ?
                 """, arguments: [exerciseId, limit]).map(Self.setEntry)
+        }
+    }
+
+    /// Completed work sets for an exercise with their session's start time, oldest→newest — one JOIN
+    /// (`setEntry` × `strengthSession`), not a query per session. The raw material the detail screen
+    /// buckets by day into the estimated-1RM trend; only weight×reps sets count (1RM needs both).
+    public func workSetHistory(exerciseId: String, limit: Int = 600) async throws
+        -> [(startTs: Int, weightKg: Double, reps: Int)] {
+        try syncRead { db in
+            try Row.fetchAll(db, sql: """
+                SELECT s.startTs AS startTs, e.weightKg AS weightKg, e.reps AS reps
+                FROM setEntry e JOIN strengthSession s ON e.sessionId = s.id
+                WHERE e.exerciseId = ? AND e.kind = 'work' AND e.done = 1
+                  AND e.weightKg IS NOT NULL AND e.reps IS NOT NULL
+                ORDER BY s.startTs ASC
+                LIMIT ?
+                """, arguments: [exerciseId, limit]).map {
+                    (startTs: $0["startTs"], weightKg: $0["weightKg"], reps: $0["reps"])
+                }
         }
     }
 

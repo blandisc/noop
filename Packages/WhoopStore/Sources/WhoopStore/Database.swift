@@ -366,6 +366,15 @@ extension WhoopStore {
                 t.primaryKey(["deviceId", "day", "mealId"])
             }
         }
+
+        // v15 (FER-346): supersets. One nullable column on the v13 `routineExercise` table — same
+        // value within a routine = one superset; NULL = a standalone exercise (every v13 row).
+        // Append-only: a single ALTER ADD COLUMN, touching no prior migration and no other table.
+        migrator.registerMigration("v15") { db in
+            try db.alter(table: "routineExercise") { t in
+                t.add(column: "supersetGroup", .integer)   // nullable; NULL = standalone exercise
+            }
+        }
         return migrator
     }
 }
