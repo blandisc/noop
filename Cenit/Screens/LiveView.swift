@@ -58,6 +58,15 @@ struct LiveView: View {
     /// "Verify my data" (PRAGMA integrity_check) button state.
     @State private var verifying = false
     @State private var verifyOK: Bool? = nil
+    #if os(iOS)
+    /// iCloud auto-backup engine, injected at the iOS app root (`CenitApp.swift`). Drives the tappable
+    /// iCloud chip in `savedFooter`: tap → back up now, with a busy spinner + error tint. iOS-only — it
+    /// isn't injected on macOS (where `lastBackupAgo` just reads UserDefaults). (FER-352)
+    @EnvironmentObject private var autoBackup: AutoBackup
+    /// Counter trigger for the light háptico fired when the user taps the iCloud chip to back up — the
+    /// same declarative `.sensoryFeedback` pattern as TodayView's pull-to-sync (FER-204). (FER-352)
+    @State private var backupHaptic = 0
+    #endif
     /// Post-drop "Reconnecting…" grace window is active (FER-195). Set when a live link we were showing
     /// flips connected true→false; cleared on reconnect or after `reconnectGraceSeconds`. Drives the
     /// paused monitor + "Reconnecting…" pill via `showsReconnecting`. Presentation-only.
@@ -422,9 +431,7 @@ struct LiveView: View {
             HStack(spacing: 8) {
                 savedChip(icon: "iphone", tint: theme.dataRecovery,
                           text: live.lastSyncedAt.map { relativeAgo($0) } ?? String(localized: "saved"))
-                if let backupAgo = lastBackupAgo {
-                    savedChip(icon: "checkmark.icloud", tint: theme.inkTertiary, text: backupAgo)
-                }
+                iCloudBackupChip
                 Spacer(minLength: 0)
                 verifyButton
             }
@@ -449,6 +456,51 @@ struct LiveView: View {
         .padding(.horizontal, 10).padding(.vertical, 6)
         .background(theme.surface, in: Capsule())
         .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
+    }
+
+    /// The iCloud auto-backup chip. On iOS it's a button: tap to back up now (light háptico), showing a
+    /// busy spinner while the copy runs and an error tint if it failed — all driven by the `AutoBackup`
+    /// engine. Visible only once a folder is chosen AND a prior backup exists (same gate as before:
+    /// `lastBackupAgo != nil`); the configuration flow stays in Settings. On other platforms it remains
+    /// the passive chip it always was. (FER-352)
+    @ViewBuilder private var iCloudBackupChip: some View {
+        #if os(iOS)
+        if let agoText = lastBackupAgo {
+            let isError = autoBackup.lastError != nil && !autoBackup.busy
+            Button {
+                backupHaptic += 1
+                Task { await autoBackup.backupNow(checkpoint: { await repo.checkpointForBackup() }) }
+            } label: {
+                HStack(spacing: 6) {
+                    if autoBackup.busy {
+                        ProgressView().controlSize(.mini)
+                    } else {
+                        Image(systemName: isError ? "exclamationmark.triangle.fill" : "checkmark.icloud")
+                            .font(StrandFont.caption)
+                            .foregroundStyle(isError ? theme.warning : theme.inkTertiary)
+                    }
+                    Text(autoBackup.busy ? String(localized: "Backing up…")
+                         : (isError ? String(localized: "Couldn't back up") : agoText))
+                        .font(StrandFont.caption)
+                        .foregroundStyle(isError ? theme.warning : theme.inkSecondary)
+                        .lineLimit(1)
+                }
+                .padding(.horizontal, 10).padding(.vertical, 6)
+                .background(theme.surface, in: Capsule())
+                .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .disabled(autoBackup.busy)
+            .sensoryFeedback(.impact(weight: .light), trigger: backupHaptic)
+            .accessibilityLabel(autoBackup.busy ? String(localized: "Backing up to iCloud")
+                                : (isError ? String(localized: "iCloud backup failed — tap to retry")
+                                   : String(localized: "Back up to iCloud now")))
+        }
+        #else
+        if let backupAgo = lastBackupAgo {
+            savedChip(icon: "checkmark.icloud", tint: theme.inkTertiary, text: backupAgo)
+        }
+        #endif
     }
 
     private func footerLine(icon: String, tint: Color, text: String) -> some View {
