@@ -8,13 +8,14 @@ import Foundation
 // MARK: - Cuerpo (the «between-days / history» landing) — FER-186
 //
 // The «Cuerpo» tab of the 3-layer IA redesign (FER-182 placed it; this screen replaces its interim
-// `TrendsView`). An Apple-Health-Summary-style curated landing in the light «Instrumento diurno»
-// language: warm paper, color ONLY on the datum, hierarchy by space. One column of grouped sections —
-// Recuperación (hero) · Descanso & carga · Vitales · Actividad · Longevidad — each row a `MetricRow`
-// (label · 14-day sparkline · value in its data hue · chevron) that opens a detail. The sparklines
-// carry NO p25–p75 reference band: at 60×26 pt the band read as a grey box behind the line, not as
-// context (it fought the «color only in the datum» DNA). The `Sparkline`/`MetricRow` band API stays
-// for any future large-chart caller; these dense rows just don't pass it.
+// `TrendsView`). A curated landing in the light «Instrumento diurno» language: warm paper, color ONLY
+// on the datum, hierarchy by space. The body is a column of DOMAIN CARDS, not a flat list: a title +
+// date frame → Recovery (the single hero numeral + 14-day trend) → Rest & load / Vitals / Activity /
+// Longevity, each a `theme.surface` card whose grouped stats (label · value in its data hue · optional
+// legend) tap straight into their detail, with the «How you wake after each sport» insight nested under
+// a hairline inside Activity → connect nudge → global actions (Compare · See all metrics) at the foot.
+// Each stat is its own tap target (the direct shortcut the old rows had); the card-header chevron opens
+// Explore. Only the hero carries a trend on the landing — the dense stats are a number, not a chart.
 //
 // Detail bridge: every vital now opens a light «Instrumento» sheet — the scalar vitals (HRV / Resting HR /
 // Respiración / SpO₂) through the unified `MetricDetailScreen` (FER-185), and the composite/own-shaped ones
@@ -149,45 +150,13 @@ private struct CuerpoLanding: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
-                Text("Body").font(StrandFont.title1).foregroundStyle(theme.ink)
-                    .padding(.bottom, -8)
-
+            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+                titleBlock
                 recoveryHero
-
-                section("Rest & load") {
-                    sleepRow
-                    divider
-                    strainRow
-                    divider
-                    stressRow
-                }
-
-                section("Vitals") {
-                    hrvRow;  divider
-                    rhrRow;  divider
-                    spo2Row; divider
-                    heartRow; divider
-                    respRow; divider
-                    skinTempRow
-                }
-
-                section("Activity") {
-                    stepsRow
-                    divider
-                    workoutsRow
-                }
-
-                activityCostBlock
-
-                section("Longevity") {
-                    physicalAgeRow
-                    divider
-                    bodyAgeRow
-                    divider
-                    vo2maxRow
-                }
-
+                restLoadCard
+                vitalsCard
+                activityCard
+                longevityCard
                 connectNudge
                 footerActions
             }
@@ -316,52 +285,141 @@ private struct CuerpoLanding: View {
         var body: some View { theme.paper.ignoresSafeArea() }
     }
 
-    // MARK: - Section scaffolding
+    // MARK: - Title + date
 
-    /// A section: a quiet overline + a column of rows, grouped by space + hairlines on the paper
-    /// (no card-in-card — Instrumento rule 3).
-    @ViewBuilder
-    private func section<Rows: View>(_ title: LocalizedStringKey, @ViewBuilder rows: () -> Rows) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.bottom, 4)
-            rows()
+    /// «Body» + today's date — the landing's temporal frame (the date is new to the card model).
+    private var titleBlock: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text("Body").font(StrandFont.title1).foregroundStyle(theme.ink)
+            Text(Self.dateText(Date()))
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
         }
+        .padding(.bottom, 2)
+        .accessibilityElement(children: .combine)
     }
 
-    private var divider: some View { Divider().overlay(theme.hairline) }
+    /// e.g. «Thursday, Jun 20», localized to the user's calendar/locale.
+    private static func dateText(_ date: Date) -> String {
+        date.formatted(.dateTime.weekday(.wide).month(.abbreviated).day())
+    }
 
-    // MARK: - Generic metric row
+    // MARK: - Domain card scaffolding (Instrumento rule 3: one surface, no card-in-card)
 
-    /// One `MetricRow` wired to the light theme: value in its data hue (ink when absent), 14-day
-    /// sparkline, chevron, whole row tappable. `value == nil` shows an honest "—".
-    private func metricRow(_ label: LocalizedStringKey, value: String?, unit: String? = nil,
-                           color: Color, sparkKey: String, fromApple: Bool = false,
-                           open: @escaping () -> Void) -> some View {
-        let spark = sparks[sparkKey]
-        let validSpark = (spark?.count ?? 0) > 1 ? spark : nil
-        return Button(action: open) {
-            MetricRow(
-                label: label,
-                value: value ?? "—",
-                unit: value == nil ? nil : unit,
-                valueColor: value == nil ? theme.inkTertiary : color,
-                labelColor: theme.inkSecondary,
-                unitColor: theme.inkTertiary,
-                flag: fromApple ? "Apple Health" : nil,
-                flagColor: theme.inkTertiary,
-                sparkline: validSpark,
-                sparkColor: color,
-                isPlaceholder: value == nil,
-                showsChevron: true,
-                chevronColor: theme.inkTertiary
-            )
+    /// A domain card: a quiet overline header (tappable chevron → the metric catalog) over its grouped
+    /// stats, on a single `theme.surface` panel.
+    private func domainCard<Content: View>(_ title: LocalizedStringKey, headerTap: @escaping () -> Void,
+                                           @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Button(action: headerTap) {
+                HStack(spacing: 8) {
+                    Text(title).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("Opens all metrics.")
+            content()
+        }
+        .padding(.vertical, 16).padding(.horizontal, 20)
+        .frame(maxWidth: .infinity)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+            .strokeBorder(theme.hairline, lineWidth: 1))
+    }
+
+    /// A tappable stat column inside a domain card: a quiet label (optional Apple/Estimate chip), the
+    /// value in its data hue (ink «—» when absent — never a hue), an optional inline unit and a footnote
+    /// legend. `value == nil` is an honest empty state.
+    private func statColumn(_ label: LocalizedStringKey, value: String?, unit: String? = nil,
+                            color: Color, legend: LocalizedStringKey? = nil, estimate: Bool = false,
+                            fromApple: Bool = false, tap: @escaping () -> Void) -> some View {
+        Button(action: tap) {
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 5) {
+                    Text(label).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    if fromApple { InlineFlagChip("Apple", color: theme.inkTertiary) }
+                    if estimate { InlineFlagChip("Estimate", color: theme.warning) }
+                }
+                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                    Text(value ?? "—")
+                        .font(StrandFont.number(21))
+                        .foregroundStyle(value == nil ? theme.inkTertiary : color)
+                    if let unit, value != nil {
+                        Text(unit).font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
+                    }
+                }
+                if let legend {
+                    Text(legend).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
         }
         .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05)))
+        .accessibilityElement(children: .combine)
     }
 
-    // MARK: - Recovery hero (the dominant, highlighted row)
+    /// Vertical hairline between stat columns (no card-in-card — Instrumento rule 3).
+    private var vsep: some View { Divider().overlay(theme.hairline) }
+
+    // MARK: - Domain cards
+
+    /// Rest & load — Sleep · Day Strain · Stress, each column into its detail.
+    private var restLoadCard: some View {
+        domainCard("Rest & load", headerTap: { showExplore = true }) {
+            HStack(spacing: 13) {
+                sleepStat
+                vsep
+                strainStat
+                vsep
+                stressStat
+            }
+        }
+    }
+
+    /// Vitals — a 3×2 grid of scalar vitals, each into its `MetricDetailScreen`.
+    private var vitalsCard: some View {
+        domainCard("Vitals", headerTap: { showExplore = true }) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .leading), count: 3),
+                      alignment: .leading, spacing: 18) {
+                hrvStat; rhrStat; spo2Stat; heartStat; respStat; skinTempStat
+            }
+        }
+    }
+
+    /// Activity — Steps · Workouts·14d, with «How you wake after each sport» nested under a hairline.
+    private var activityCard: some View {
+        domainCard("Activity", headerTap: { showExplore = true }) {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(spacing: 13) {
+                    stepsStat
+                    vsep
+                    workoutsStat
+                }
+                vsep
+                activityInsight
+            }
+        }
+    }
+
+    /// Longevity — Physical age · Body age · VO₂ Max, each with a micro-legend, into its sheet.
+    private var longevityCard: some View {
+        domainCard("Longevity", headerTap: { showExplore = true }) {
+            HStack(alignment: .top, spacing: 13) {
+                physicalAgeStat
+                vsep
+                bodyAgeStat
+                vsep
+                vo2maxStat
+            }
+        }
+    }
+
+    // MARK: - Recovery hero (the single dominant element — Instrumento rule 1)
 
     private var recoveryHero: some View {
         let score = repo.today?.recovery.map { Int($0.rounded()) }
@@ -378,24 +436,21 @@ private struct CuerpoLanding: View {
                 loaded: repo.loaded,
                 importedSleep: repo.importedSleep))
         } label: {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Recovery").font(StrandFont.headline).foregroundStyle(theme.ink)
+            HStack(spacing: 14) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Recovery").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    recoveryHeroNumeral(score: score, calibrating: cal, color: color)
                     Text(recoverySubtitle(score: score, calibrating: cal))
                         .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 }
                 Spacer(minLength: 8)
-                if showSpark, let spark {
-                    Sparkline(values: spark,
-                              gradient: Gradient(colors: [color.opacity(0.55), color]),
-                              lineWidth: 2, showsArea: false, showsHead: false, showsScrub: false)
-                        .frame(width: 64, height: 28)
-                }
-                recoveryNumeral(score: score, calibrating: cal, color: color)
+                recoveryHeroAccessory(score: score, calibrating: cal,
+                                      spark: showSpark ? spark : nil, color: color)
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    .accessibilityHidden(true)
             }
-            .padding(16)
+            .padding(.vertical, 18).padding(.horizontal, 20)
             .frame(maxWidth: .infinity)
             .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
@@ -406,29 +461,55 @@ private struct CuerpoLanding: View {
         .accessibilityElement(children: .combine)
     }
 
+    /// The hero numeral — the screen's one dominant figure (SF Mono). Scored → tinted by band + «/100»;
+    /// calibrating → «N/seed» in ink; no reading → faint «—».
     @ViewBuilder
-    private func recoveryNumeral(score: Int?, calibrating: Int?, color: Color) -> some View {
+    private func recoveryHeroNumeral(score: Int?, calibrating: Int?, color: Color) -> some View {
         if let score {
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text("\(score)").font(StrandFont.number(30)).foregroundStyle(color)
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text("\(score)").instrumentoHero(56).foregroundStyle(color)
                 Text("/100").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
             }
         } else if let calibrating {
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text("\(calibrating)").font(StrandFont.number(30)).foregroundStyle(theme.ink)
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text("\(calibrating)").instrumentoHero(48).foregroundStyle(theme.ink)
                 Text("/\(Self.recoverySeed)").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
             }
         } else {
-            Text("—").font(StrandFont.number(30)).foregroundStyle(theme.inkTertiary)
+            Text("—").instrumentoHero(56).foregroundStyle(theme.inkTertiary)
         }
     }
 
-    // MARK: - Rows
+    /// The hero's right accessory: the 14-day trend (scored), a calibration progress bar (calibrating),
+    /// or nothing — decorative, so it's hidden from VoiceOver (the numeral + subtitle carry meaning).
+    @ViewBuilder
+    private func recoveryHeroAccessory(score: Int?, calibrating: Int?, spark: [Double]?, color: Color) -> some View {
+        if let spark, score != nil {
+            VStack(alignment: .trailing, spacing: 8) {
+                Sparkline(values: spark,
+                          gradient: Gradient(colors: [color.opacity(0.55), color]),
+                          lineWidth: 2.4, showsArea: true, showsHead: false, showsScrub: false)
+                    .frame(width: 104, height: 46)
+                Text("14-day").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            }
+            .accessibilityHidden(true)
+        } else if let calibrating {
+            Capsule().fill(theme.hairline)
+                .frame(width: 104, height: 6)
+                .overlay(alignment: .leading) {
+                    Capsule().fill(theme.dataRecovery)
+                        .frame(width: 104 * CGFloat(calibrating) / CGFloat(Self.recoverySeed), height: 6)
+                }
+                .accessibilityHidden(true)
+        }
+    }
 
-    private var sleepRow: some View {
+    // MARK: - Stat columns (one per metric — same value resolution + tap target as the old rows)
+
+    private var sleepStat: some View {
         let r = resolveMeasured { $0.totalSleepMin }
-        return metricRow("Sleep", value: r.map { sleepText($0.value) }, color: theme.dataSleep,
-                         sparkKey: "sleep_total_min", fromApple: r?.fromApple == true) {
+        return statColumn("Sleep", value: r.map { sleepText($0.value) }, color: theme.dataSleep,
+                          fromApple: r?.fromApple == true) {
             sleepDetail = SleepDetailItem(model: SleepDetailModel.build(
                 days: repo.days,
                 sleeps: repo.sleeps,
@@ -439,10 +520,10 @@ private struct CuerpoLanding: View {
         }
     }
 
-    private var strainRow: some View {
+    private var strainStat: some View {
         let v = repo.today?.strain
-        return metricRow("Day Strain", value: v.map { String(format: "%.1f", $0) },
-                         color: theme.dataStrain, sparkKey: "strain") {
+        return statColumn("Day Strain", value: v.map { String(format: "%.1f", $0) },
+                          color: theme.dataStrain) {
             // Opens the rich Detalle de Esfuerzo (FER-238) — built fresh from the in-memory dashboard;
             // the intraday curve loads async in the screen via `loadStrainCurve`. (Hoy still uses
             // `MetricInfo.strain`/`MetricInfoSheet`.)
@@ -451,59 +532,59 @@ private struct CuerpoLanding: View {
         }
     }
 
-    private var stressRow: some View {
+    private var stressStat: some View {
         let s = stressModel?.score
-        return metricRow("Stress", value: s.map { String(format: "%.1f", $0) },
-                         unit: s == nil ? nil : "/ 3",
-                         color: s.map(stressDataColor) ?? theme.inkTertiary, sparkKey: "stress") {
+        return statColumn("Stress", value: s.map { String(format: "%.1f", $0) },
+                          unit: s == nil ? nil : "/ 3",
+                          color: s.map(stressDataColor) ?? theme.inkTertiary) {
             stressDetail = StressDetailItem(model: stressModel)
         }
     }
 
-    private var hrvRow: some View {
+    private var hrvStat: some View {
         let r = resolveMeasured { $0.avgHrv }
-        return metricRow("HRV", value: r.map { "\(Int($0.value.rounded()))" }, unit: String(localized: "ms"),
-                         color: theme.dataHrv, sparkKey: "hrv", fromApple: r?.fromApple == true) {
+        return statColumn("HRV", value: r.map { "\(Int($0.value.rounded()))" }, unit: String(localized: "ms"),
+                          color: theme.dataHrv, fromApple: r?.fromApple == true) {
             metricSpec = .hrv(r?.value)
         }
     }
 
-    private var rhrRow: some View {
+    private var rhrStat: some View {
         let r = resolveMeasured { $0.restingHr.map(Double.init) }
-        return metricRow("Resting HR", value: r.map { "\(Int($0.value.rounded()))" }, unit: String(localized: "bpm"),
-                         color: theme.dataHeart, sparkKey: "rhr", fromApple: r?.fromApple == true) {
+        return statColumn("Resting HR", value: r.map { "\(Int($0.value.rounded()))" }, unit: String(localized: "bpm"),
+                          color: theme.dataHeart, fromApple: r?.fromApple == true) {
             metricSpec = .restingHR(r.map { Int($0.value.rounded()) })
         }
     }
 
-    private var spo2Row: some View {
+    private var spo2Stat: some View {
         let r = resolveMeasured { $0.spo2Pct }
-        return metricRow("Blood Oxygen", value: r.map { String(format: "%.0f", $0.value) }, unit: "%",
-                         color: theme.dataSpO2, sparkKey: "spo2", fromApple: r?.fromApple == true) {
+        return statColumn("Blood Oxygen", value: r.map { String(format: "%.0f", $0.value) }, unit: "%",
+                          color: theme.dataSpO2, fromApple: r?.fromApple == true) {
             metricSpec = .spo2(r?.value)
         }
     }
 
-    private var heartRow: some View {
+    private var heartStat: some View {
         let avg = hrTodayAvg
-        return metricRow("Heart Rate", value: avg.map { "\($0)" }, unit: String(localized: "bpm"),
-                         color: theme.dataHeart, sparkKey: "_none") {
+        return statColumn("Heart Rate", value: avg.map { "\($0)" }, unit: String(localized: "bpm"),
+                          color: theme.dataHeart) {
             metricSpec = .heartRate(avg)
         }
     }
 
-    private var respRow: some View {
+    private var respStat: some View {
         let r = resolveMeasured { $0.respRateBpm }
-        return metricRow("Respiratory Rate", value: r.map { String(format: "%.1f", $0.value) }, unit: String(localized: "rpm"),
-                         color: theme.dataSpO2, sparkKey: "resp_rate", fromApple: r?.fromApple == true) {
+        return statColumn("Respiratory", value: r.map { String(format: "%.1f", $0.value) }, unit: String(localized: "rpm"),
+                          color: theme.dataSpO2, fromApple: r?.fromApple == true) {
             metricSpec = .respiratory(r?.value)
         }
     }
 
-    private var skinTempRow: some View {
+    private var skinTempStat: some View {
         let r = resolveMeasured { $0.skinTempDevC }
-        return metricRow("Skin Temperature", value: r.map { String(format: "%+.1f", $0.value) }, unit: "°C",
-                         color: theme.dataStrain, sparkKey: "skin_temp", fromApple: r?.fromApple == true) {
+        return statColumn("Skin temp", value: r.map { String(format: "%+.1f", $0.value) }, unit: "°C",
+                          color: theme.dataStrain, fromApple: r?.fromApple == true) {
             // Opens the rich light Detalle de Temperatura de la piel (FER-256) — built fresh from the
             // in-memory dashboard (última lectura resuelta + serie completa de `displayDays`).
             skinTempDetail = SkinTempDetailItem(model: SkinTempDetailModel.build(
@@ -511,77 +592,37 @@ private struct CuerpoLanding: View {
         }
     }
 
-    private var stepsRow: some View {
+    private var stepsStat: some View {
         let steps = freshSteps
-        return metricRow("Steps", value: steps.map { intString(Double($0)) },
-                         color: theme.dataSteps, sparkKey: "steps") {
+        return statColumn("Steps", value: steps.map { intString(Double($0)) },
+                          color: theme.dataSteps, fromApple: steps != nil) {
             metricSpec = .steps(steps)
         }
     }
 
-    /// «Entrenamientos» — now consistent with the other Activity rows: the recent-session count tinted in
-    /// the effort hue (`dataStrain`), not the neutral ink it used before. No sparkline — workout volume is
-    /// too sparse/spiky to read as a trend at this size, so the number carries it alone (like Heart Rate).
-    /// No recent sessions → honest "—"; VoiceOver says it plainly, not "dash". (FER-259)
-    @ViewBuilder private var workoutsRow: some View {
+    /// «Entrenamientos» — the recent-session count tinted in the effort hue (`dataStrain`). No recent
+    /// sessions → honest "—"; VoiceOver says it plainly, not "dash". (FER-259)
+    @ViewBuilder private var workoutsStat: some View {
         let n = recentWorkoutCount
-        let row = metricRow("Workouts", value: n > 0 ? "\(n)" : nil,
-                            color: theme.dataStrain, sparkKey: "_none") {
+        let col = statColumn("Workouts · 14d", value: n > 0 ? "\(n)" : nil,
+                             color: theme.dataStrain) {
             showWorkouts = true
         }
-        if n > 0 {
-            row
-        } else {
-            row.accessibilityLabel(Text("sin entrenamientos aún"))
-        }
+        if n > 0 { col } else { col.accessibilityLabel(Text("sin entrenamientos aún")) }
     }
 
-    // MARK: - Physical age (Fitness Age, FER-141)
+    // MARK: - Longevity stats (Fitness Age FER-141 · Body Age FER-145 · VO₂max FER-257)
 
-    /// The Longevity row that opens the Fitness Age detail. Custom (not `MetricRow`): the delta lives
-    /// UNDER the label and there's no sparkline — the number is tinted by DIRECTION (verde younger /
-    /// ámbar older / ink even / faint when there's no reading yet). The whole row taps into the detail.
-    private var physicalAgeRow: some View {
+    /// Physical age — the value tinted by DIRECTION (younger green / older amber / even ink, faint «—»
+    /// when there's no reading), with a compact legend and the «Estimate» chip on low confidence.
+    private var physicalAgeStat: some View {
         let snap = fitnessAge
         let estimate = snap?.readiness.confidence == .estimate
-        return Button {
+        let color = snap?.result.map(physicalAgeColor) ?? theme.inkTertiary
+        return statColumn("Physical age",
+                          value: snap?.result.map { "\(Int($0.fitnessAge.rounded()))" },
+                          color: color, legend: physicalAgeLegend(snap), estimate: estimate) {
             showFitnessAge = true
-        } label: {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 6) {
-                        Text("Physical age").font(StrandFont.body).foregroundStyle(theme.inkSecondary)
-                        if estimate { InlineFlagChip("Estimate", color: theme.warning) }
-                    }
-                    Text(physicalAgeSubtitle(snap))
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer(minLength: 8)
-                physicalAgeValue(snap)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-                    .accessibilityHidden(true)   // decorative — the whole row is the button
-            }
-            .padding(.vertical, 15)
-            .frame(maxWidth: .infinity)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05)))
-        .accessibilityElement(children: .combine)
-    }
-
-    @ViewBuilder private func physicalAgeValue(_ snap: FitnessAgeSnapshot?) -> some View {
-        if let result = snap?.result {
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text("\(Int(result.fitnessAge.rounded()))")
-                    .font(StrandFont.number(20)).foregroundStyle(physicalAgeColor(result))
-                Text("years").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
-            }
-        } else {
-            // Honest "no reading yet" — VoiceOver says it plainly, not "dash" (mirrors MetricRow).
-            Text("—").font(StrandFont.number(20)).foregroundStyle(theme.inkTertiary)
-                .accessibilityLabel(Text("sin dato de hoy"))
         }
     }
 
@@ -595,19 +636,21 @@ private struct CuerpoLanding: View {
         }
     }
 
-    private func physicalAgeSubtitle(_ snap: FitnessAgeSnapshot?) -> LocalizedStringKey {
-        guard let snap else { return " " }   // still loading: keep the row's height stable
+    /// The compact footnote under Physical age — direction when ready, else the honest RHR-coverage
+    /// blocker; nil while still loading so the column doesn't jump.
+    private func physicalAgeLegend(_ snap: FitnessAgeSnapshot?) -> LocalizedStringKey? {
+        guard let snap else { return nil }
         if let result = snap.result {
             let yrs = Int(abs(result.deltaYears).rounded())
             let chrono = Int(result.chronoAge.rounded())
             switch result.direction {
-            case .younger: return "\(yrs) years younger than your \(chrono)"
-            case .older:   return "\(yrs) years above your \(chrono)"
-            case .even:    return "Right at your \(chrono)"
+            case .younger: return "\(yrs) yr younger"
+            case .older:   return "\(yrs) yr older"
+            case .even:    return "at your \(chrono)"
             }
         }
         // notReady — RHR coverage is the real blocker (age/sex come from the profile defaults).
-        return "Missing resting-HR nights (\(snap.rhrNights) of 4)"
+        return "RHR \(snap.rhrNights)/4 nights"
     }
 
     /// Build the Fitness Age snapshot from the trailing 7-day display window + profile. Pure + cheap;
@@ -621,31 +664,23 @@ private struct CuerpoLanding: View {
             hasHeightWeight: true)
     }
 
-    /// «Body age» (Vitality/Body Age, FER-145): the years datum, tinted by the SIGN of the delta, opening
-    /// the longevity detail. No sparkline — Body Age isn't a daily-stored series (its trend lives in the
-    /// detail's ±5 band); the row still opens the detail with no reading yet (the honest checklist).
-    private var bodyAgeRow: some View {
+    /// «Body age» (Vitality/Body Age, FER-145): the years datum, tinted by the SIGN of the delta, with a
+    /// «vs your N» legend; opens the longevity detail (the honest checklist even with no reading).
+    private var bodyAgeStat: some View {
         let r = vitalityResult
         let color = r.map { BodyAgeSheet.tint(forDelta: $0.deltaYears, theme: theme) } ?? theme.inkTertiary
-        return metricRow("Body age", value: r.map { "\(Int($0.bodyAge.rounded()))" },
-                         unit: r == nil ? nil : String(localized: "yrs"),
-                         color: color, sparkKey: "_none") {
+        return statColumn("Body age", value: r.map { "\(Int($0.bodyAge.rounded()))" },
+                          color: color, legend: r == nil ? nil : "vs your \(model.profile.age)") {
             showBodyAge = true
         }
     }
 
-    /// VO₂max (Apple Health, measured · FER-257): the Longevity row opening the rich detail. Apple-only and
-    /// SPARSELY measured, so there's no sparkline (`sparkKey: "vo2max"` stays unpopulated) and the value
-    /// uses the most recent reading (`latestAppleVO2max`), no today/yesterday freshness gate. «—» + no
-    /// badge when there's no reading; the detail then shows the explanatory empty state.
-    ///
-    /// No unit in the dense row: `MetricRow`'s value column is a fixed 88pt (to align decimals across
-    /// rows), and "ml/kg/min" is far too long for it — it truncated the number itself ("35…"). The unit
-    /// lives in full in the detail (hero + blocks), so the row shows just the number. (FER-263)
-    private var vo2maxRow: some View {
+    /// VO₂max (Apple Health, measured · FER-257): the most recent reading (no freshness gate), the unit
+    /// carried by the «ml/kg·min» legend so the numeral stays clean. «—» + no chip when unread.
+    private var vo2maxStat: some View {
         let v = latestAppleVO2max
-        return metricRow("VO₂ Max", value: v.map { String(format: "%.1f", $0) },
-                         color: theme.dataSpO2, sparkKey: "vo2max", fromApple: v != nil) {
+        return statColumn("VO₂ Max", value: v.map { String(format: "%.0f", $0) },
+                          color: theme.dataSpO2, legend: "ml/kg·min", fromApple: v != nil) {
             metricSpec = .vo2max(value: v, age: model.profile.age, sex: model.profile.sex)
         }
     }
@@ -698,19 +733,18 @@ private struct CuerpoLanding: View {
         .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05)))
     }
 
-    // MARK: - Activity recovery (FER-139)
+    // MARK: - Activity insight (FER-139) — nested under Activity, NOT a card-in-card (Instrumento rule 3)
 
-    /// «How you wake after each sport» — the Variant-C mini-block: a `theme.surface` card (same mold as
-    /// `recoveryHero` / `footerActions`, no card-in-card) holding up to three top sports from the
-    /// engine's ranking, each as `sport · N pts lower/higher` (colour only on the datum). A `delta < 3`
-    /// sport reads «no clear link». When the engine returns nothing the block stays, showing «Gathering
-    /// data» — it never hides. The whole block opens the detail.
-    private var activityCostBlock: some View {
+    /// «How you wake after each sport» — up to three top sports from the engine's ranking, each as
+    /// `sport · N pts lower/higher` (colour only on the datum). A `delta < 3` sport reads «no clear
+    /// link». When the engine returns nothing the block stays, showing «Gathering data» — it never
+    /// hides. Lives under a hairline inside the Activity card; its own chevron jumps to the detail.
+    private var activityInsight: some View {
         Button { showActivityCost = true } label: {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 11) {
                 HStack(spacing: 8) {
                     Text("How you wake after each sport")
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     Spacer(minLength: 8)
                     if activityCosts.isEmpty {
                         Text("Gathering data").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
@@ -719,21 +753,17 @@ private struct CuerpoLanding: View {
                         .font(.system(size: 12, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                 }
                 if !activityCosts.isEmpty {
-                    VStack(spacing: 10) {
+                    VStack(spacing: 8) {
                         ForEach(Array(activityCosts.prefix(3).enumerated()), id: \.offset) { _, c in
                             activityCostRow(c)
                         }
                     }
                 }
             }
-            .padding(16)
             .frame(maxWidth: .infinity)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                .strokeBorder(theme.hairline, lineWidth: 1))
             .contentShape(Rectangle())
         }
-        .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05)))
+        .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
         .accessibilityHint("Opens the per-sport detail.")
     }
