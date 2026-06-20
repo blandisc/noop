@@ -132,7 +132,8 @@ public enum SleepStager {
     public static let noREMAfterOnsetMin: Double = 15.0
     public static let deepFirstFraction: Double = 1.0 / 3.0
 
-    /// te Lindert 30 s Cole–Kripke weights [A₋₄..A₊₂]. SI = 0.001·Σ wᵢ·Aᵢ; sleep iff SI<1.
+    /// Cole–Kripke weights, 30 s variant [A₋₄..A₊₂] (Cole et al. 1992, Sleep 15(5):461–469; 30 s
+    /// rescaling: te Lindert & Van Someren 2013, Sleep 36(5):781–789). SI = 0.001·Σ wᵢ·Aᵢ; sleep iff SI<1.
     public static let ckWeights: [Double] = [106.0, 54.0, 58.0, 76.0, 230.0, 74.0, 67.0]
     public static let ckScale: Double = 0.001
     public static let ckBack: Int = 4
