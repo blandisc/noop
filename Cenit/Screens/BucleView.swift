@@ -57,10 +57,20 @@ private struct BucleLanding: View {
     @State private var grounding: CoachGrounding? = nil
     @State private var loaded = false
 
+    // N-of-1 experiment state (FER-307). One at a time (MVP): either a running experiment, or the
+    // most-recent finished verdict the user hasn't dismissed, or neither.
+    @State private var running: ExperimentVM? = nil
+    @State private var finished: ExperimentRow? = nil
+    /// The completed experiment the user has acknowledged — so its verdict card stops showing. Local,
+    /// per-device; the «probado» promotion in "Lo que funciona" is the durable record either way.
+    @AppStorage("fer307.dismissedExperimentId") private var dismissedExperimentId = ""
+
     // Sheets.
     @State private var showPreguntale = false
     /// One lever/finding detail sheet — fed by both «Lo que funciona» and «Hallazgos» (same screen).
     @State private var detail: InsightItem? = nil
+    /// The candidate lever a start-experiment confirmation sheet is open for.
+    @State private var startLever: InsightItem? = nil
     @State private var showHallazgos = false
     @State private var showEfectos = false
     @State private var showAnota = false
@@ -86,6 +96,7 @@ private struct BucleLanding: View {
                     decisionSection
                     preguntaleEntry
                     loQueFuncionaSection
+                    pruebaSection
                     hallazgosSection
                     anotaResumen
                     efectosEntry
@@ -109,7 +120,19 @@ private struct BucleLanding: View {
                 .environmentObject(repo)
         }
         .sheet(item: $detail) { item in
-            PalancaDetailSheet(insight: item.insight, theme: theme)
+            PalancaDetailSheet(insight: item.insight, theme: theme,
+                               canStartExperiment: canStartExperiment(item.insight)) {
+                detail = nil
+                startLever = item
+            }
+        }
+        .sheet(item: $startLever) { item in
+            StartExperimentSheet(insight: item.insight, theme: theme) { behavior, outcome, sign in
+                await repo.startExperiment(behavior: behavior, outcome: outcome, expectedSign: sign)
+                startLever = nil
+                await load()
+            }
+            .instrumentoTheme(theme)
         }
         .sheet(isPresented: $showHallazgos) {
             HallazgosListSheet(insights: hallazgosInsights, theme: theme, trendSpark: trendSpark) { picked in
@@ -285,6 +308,157 @@ private struct BucleLanding: View {
         .buttonStyle(.plain)
     }
 
+    // MARK: Prueba (experimentos N-of-1, FER-307)
+    //
+    // The cycle's third beat (Descubre → PRUEBA → Actúa → Aprende). One section that changes identity
+    // by state: a running experiment («Tu experimento»), the most-recent verdict, or an invitation to
+    // test the top candidate lever («Idea por probar»). Color stays in the datum — the verdict's
+    // measured effect is the only place a hue is earned (and only when it «se sostuvo»).
+
+    @ViewBuilder private var pruebaSection: some View {
+        if let vm = running {
+            experimentRunningSection(vm)
+        } else if let fin = finished {
+            experimentVerdictSection(fin)
+        } else if let idea = ideaPorProbar {
+            ideaPorProbarSection(idea)
+        }
+    }
+
+    /// The top candidate lever not yet under test or proven — the idea worth confirming next.
+    private var ideaPorProbar: Insight? {
+        behaviorInsights.first { $0.confidence == .candidate && $0.lever != nil }
+    }
+
+    // MARK: Idea por probar (no experiment running)
+
+    private func ideaPorProbarSection(_ idea: Insight) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Idea por probar").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Button { startLever = InsightItem(insight: idea) } label: {
+                HStack(spacing: 13) {
+                    Image(systemName: "flask").font(.system(size: 20)).foregroundStyle(theme.inkSecondary)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Prueba “\(BucleFormat.behaviorName(idea))” una semana")
+                            .font(StrandFont.headline).foregroundStyle(theme.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text("Confirma si \(idea.datum.value < 0 ? "baja" : "sube") tu \(idea.datum.metric)")
+                            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    }
+                    Spacer()
+                    HStack(spacing: 4) {
+                        Text("Probar").font(StrandFont.footnote)
+                        Image(systemName: "arrow.right").font(.system(size: 14))
+                    }
+                    .foregroundStyle(theme.ink)
+                }
+                .padding(16)
+                .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                    .stroke(theme.hairlineStrong, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    // MARK: Tu experimento (running)
+
+    private func experimentRunningSection(_ vm: ExperimentVM) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Tu experimento").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(BucleFormat.behaviorName(insightStub(vm.row)))
+                .font(StrandFont.title2).foregroundStyle(theme.ink).padding(.top, 10)
+            Text("a prueba sobre tu \(vm.row.outcome)")
+                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).padding(.top, 3)
+
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("Día \(vm.elapsedDay)").font(.system(size: 30, weight: .semibold)).monospacedDigit()
+                    .foregroundStyle(theme.ink)
+                Text("de \(vm.row.windowDays)").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+            }
+            .padding(.top, 16)
+
+            ProgressView(value: Double(vm.elapsedDay), total: Double(vm.row.windowDays))
+                .tint(theme.inkTertiary).padding(.top, 12)
+
+            (Text("Cumpliste ")
+                + Text("\(vm.adherent) de \(vm.elapsedDay)").foregroundColor(theme.ink).bold()
+                + Text(" días."))
+                .font(StrandFont.body).foregroundStyle(theme.inkSecondary).monospacedDigit().padding(.top, 16)
+            Text("Veredicto el \(vm.verdictDate)")
+                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).padding(.top, 6)
+
+            Button { Task { await repo.cancelExperiment(vm.row); await load() } } label: {
+                Text("Cancelar experimento").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            }
+            .buttonStyle(.plain).padding(.top, 18)
+        }
+    }
+
+    // MARK: Tu experimento (verdict)
+
+    private func experimentVerdictSection(_ exp: ExperimentRow) -> some View {
+        let v = Verdict(rawValue: exp.result ?? "") ?? .insufficient
+        return VStack(alignment: .leading, spacing: 0) {
+            Text("Tu experimento").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(BucleFormat.verdictHeadline(v))
+                .font(.system(size: v == .sustained ? 26 : 24, weight: .semibold))
+                .foregroundStyle(theme.ink).fixedSize(horizontal: false, vertical: true).padding(.top, 10)
+
+            // Color only on a sustained effect — a confirmed measured value.
+            if v == .sustained, let delta = exp.effectDelta {
+                HStack(alignment: .firstTextBaseline, spacing: 9) {
+                    Text(BucleFormat.signedDelta(delta, unit: outcomeUnit(exp.outcome)))
+                        .font(.system(size: 40, weight: .semibold)).monospacedDigit()
+                        .foregroundStyle(theme.dataRecovery)
+                    Text(exp.outcome).font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                }
+                .padding(.top, 12)
+            }
+
+            Text(BucleFormat.verdictReading(v, behavior: BucleFormat.behaviorName(insightStub(exp)),
+                                            outcome: exp.outcome, adherent: exp.nWith ?? 0,
+                                            window: exp.windowDays))
+                .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true).padding(.top, 14)
+
+            Button {
+                dismissedExperimentId = exp.id
+                finished = nil
+            } label: {
+                HStack(spacing: 5) {
+                    Text("Listo").font(StrandFont.headline).foregroundStyle(theme.ink)
+                    Image(systemName: "checkmark").font(.system(size: 14)).foregroundStyle(theme.ink)
+                }
+            }
+            .buttonStyle(.plain).padding(.top, 18)
+        }
+    }
+
+    /// Whether tapping «Probar» on a lever may start an experiment: it's a candidate behavior lever and
+    /// nothing is in flight (MVP one-at-a-time).
+    private func canStartExperiment(_ insight: Insight) -> Bool {
+        running == nil && insight.kind == .behavior && insight.lever != nil && insight.confidence != .proven
+    }
+
+    /// Build a throwaway `Insight` carrying only the title an experiment row implies, so
+    /// `BucleFormat.behaviorName` (which parses the ‘…’ title) can name the lever from a stored row.
+    private func insightStub(_ row: ExperimentRow) -> Insight {
+        Insight(kind: .behavior, title: "‘\(row.behavior)’", reading: "",
+                datum: InsightDatum(value: 0, unit: "", metric: row.outcome),
+                evidence: InsightEvidence(n: 0, pValue: nil, pAdjusted: nil, effectSize: nil, significant: false),
+                confidence: .candidate, relevance: 0, lever: Lever(behavior: row.behavior, outcome: row.outcome))
+    }
+
+    private func outcomeUnit(_ metric: String) -> String {
+        switch metric {
+        case "HRV":          return "ms"
+        case "Sueño":        return "min"
+        case "FC en reposo": return "lpm"
+        default:             return "pts"
+        }
+    }
+
     // MARK: Hallazgos
 
     private var hallazgosSection: some View {
@@ -458,6 +632,9 @@ private struct BucleLanding: View {
         let days = repo.days
         let todayKey = Repository.localDayKey(Date())
 
+        // Close a due experiment first, so its verdict is ready to show and to promote its lever.
+        await repo.closeDueExperiment(today: todayKey)
+
         async let entriesTask = repo.journalEntries()
         async let importedTask = repo.importedJournalEntries()
         async let answersTask = repo.nativeJournalAnswers(day: todayKey)
@@ -470,7 +647,8 @@ private struct BucleLanding: View {
         for e in entries where e.answeredYes { behaviors[e.question, default: []].insert(e.day) }
 
         let inputs = InsightEngine.Inputs(days: days, behaviors: behaviors, referenceDay: todayKey)
-        let generated = InsightEngine.generate(inputs)
+        let proven = await repo.provenLevers()
+        let generated = InsightEngine.promoteProven(InsightEngine.generate(inputs), provenLevers: proven)
         let r = ReadinessEngine.evaluate(days: days, today: todayKey)
 
         let importedQs = NSOrderedSet(array: imported.map(\.question)).array as? [String] ?? []
@@ -481,6 +659,16 @@ private struct BucleLanding: View {
         let g = CoachGrounding.from(insights: generated, readiness: r,
                                     recovery: repo.today?.recovery, referenceDay: todayKey)
 
+        // Experiment state: a running one (with live progress + adherence), else the latest finished
+        // verdict the user hasn't dismissed.
+        let active = await repo.activeExperiment()
+        var runVM: ExperimentVM? = nil
+        if let active { runVM = await runningVM(active, today: todayKey) }
+        let allExp = await repo.allExperiments()
+        let latestFinished = active == nil
+            ? allExp.first { $0.status == .completed && $0.id != dismissedExperimentId }
+            : nil
+
         await MainActor.run {
             self.insights = generated
             self.readiness = r
@@ -490,9 +678,43 @@ private struct BucleLanding: View {
             self.journalAnswered = todayAnswers.count
             self.journalTotal = max(catalog.count, 1)
             self.trendSpark = spark
+            self.running = runVM
+            self.finished = latestFinished
             self.loaded = true
         }
     }
+
+    /// Build the running-experiment view model: day N of M, adherent-day count so far, verdict date.
+    private func runningVM(_ row: ExperimentRow, today: String) async -> ExperimentVM? {
+        let elapsed = max(1, min(row.windowDays, Self.dayspan(from: row.startDay, to: today) + 1))
+        let adherent = await repo.nativeAdherence(behavior: row.behavior, from: row.startDay, to: today)
+        let verdictDate = Repository.experimentEndDay(row).flatMap(Self.dayLongLabel) ?? "—"
+        return ExperimentVM(row: row, elapsedDay: elapsed, adherent: adherent, verdictDate: verdictDate)
+    }
+
+    /// Whole days from `a` to `b` ("yyyy-MM-dd"), 0 when same day, clamped at 0.
+    private static func dayspan(from a: String, to b: String) -> Int {
+        guard let da = dayParse.date(from: a), let db = dayParse.date(from: b) else { return 0 }
+        return max(0, Calendar.current.dateComponents([.day], from: da, to: db).day ?? 0)
+    }
+
+    /// "vie 26 jun" for a day key.
+    private static func dayLongLabel(_ key: String) -> String? {
+        dayParse.date(from: key).map { dateFormatter.string(from: $0) }
+    }
+
+    private static let dayParse: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; f.locale = Locale(identifier: "en_US_POSIX")
+        return f
+    }()
+}
+
+/// Running-experiment display model (computed once per refresh).
+private struct ExperimentVM {
+    let row: ExperimentRow
+    let elapsedDay: Int
+    let adherent: Int
+    let verdictDate: String
 }
 
 // MARK: - Insight sheet item

@@ -86,4 +86,27 @@ final class HRZonesTests: XCTestCase {
         XCTAssertEqual(tiz.seconds(inZone: 1), 3.0, accuracy: 1e-9)
         XCTAssertEqual(tiz.total, 3.0, accuracy: 1e-9)  // all time accounted for
     }
+
+    func testMedianIntervalEvenCountAveragesTwoCentral() {
+        // Gaps 2,4,6,10 → true median is (4+6)/2 = 5, not the upper-mid 6.
+        let hr = [
+            HRSample(ts: 0, bpm: 100),
+            HRSample(ts: 2, bpm: 100),
+            HRSample(ts: 6, bpm: 100),
+            HRSample(ts: 12, bpm: 100),
+            HRSample(ts: 22, bpm: 100),
+        ]
+        XCTAssertEqual(HRZones.medianInterval(hr), 5.0, accuracy: 1e-9)
+    }
+
+    func testMedianIntervalOddCountTakesCenter() {
+        // Gaps 2,4,6 → median 4.
+        let hr = [
+            HRSample(ts: 0, bpm: 100),
+            HRSample(ts: 2, bpm: 100),
+            HRSample(ts: 6, bpm: 100),
+            HRSample(ts: 12, bpm: 100),
+        ]
+        XCTAssertEqual(HRZones.medianInterval(hr), 4.0, accuracy: 1e-9)
+    }
 }

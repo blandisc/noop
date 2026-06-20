@@ -342,6 +342,114 @@ final class Repository: ObservableObject {
         _ = try? await store.deleteJournal(deviceId: Self.journalDeviceId, day: day, question: question)
     }
 
+    // MARK: - N-of-1 experiments (FER-307)
+    //
+    // Experiments are native on-device records, partitioned under the same `journalDeviceId` source as
+    // the journal they draw adherence from. The verdict reuses StrandAnalytics' `ExperimentVerdict`
+    // (which reuses `BehaviorInsights`) over `days` (the same daily metrics the Bucle's levers come
+    // from) and the native journal; no math lives here.
+
+    /// The experiment currently in flight (`running`), or nil. MVP is one at a time.
+    func activeExperiment() async -> ExperimentRow? {
+        guard let store = await ensureStore() else { return nil }
+        return (try? await store.activeExperiment(deviceId: Self.journalDeviceId)) ?? nil
+    }
+
+    /// Every experiment, newest first (for the verdict card + proven-lever derivation).
+    func allExperiments() async -> [ExperimentRow] {
+        guard let store = await ensureStore() else { return [] }
+        return (try? await store.experiments(deviceId: Self.journalDeviceId)) ?? []
+    }
+
+    /// The levers an experiment has confirmed (`completed` + `sustained`) — fed to
+    /// `InsightEngine.promoteProven` so "Lo que funciona en ti" shows them as «probado».
+    func provenLevers() async -> Set<Lever> {
+        let all = await allExperiments()
+        var out = Set<Lever>()
+        for e in all where e.status == .completed && e.result == Verdict.sustained.rawValue {
+            out.insert(Lever(behavior: e.behavior, outcome: e.outcome))
+        }
+        return out
+    }
+
+    /// Start a 7-day experiment on a candidate lever. No-op (returns nil) if one already runs.
+    @discardableResult
+    func startExperiment(behavior: String, outcome: String, expectedSign: Int,
+                         windowDays: Int = 7) async -> ExperimentRow? {
+        guard let store = await ensureStore() else { return nil }
+        if let existing = try? await store.activeExperiment(deviceId: Self.journalDeviceId),
+           existing != nil { return nil }   // one at a time
+        let now = Int(Date().timeIntervalSince1970)
+        let row = ExperimentRow(id: UUID().uuidString, behavior: behavior, outcome: outcome,
+                                expectedSign: expectedSign, startDay: Self.localDayKey(Date()),
+                                windowDays: windowDays, status: .running, createdAt: now)
+        try? await store.upsertExperiment(row, deviceId: Self.journalDeviceId)
+        return row
+    }
+
+    /// Count of distinct days in [from, to] the native journal logged `behavior` as «yes» — the
+    /// adherence a running experiment shows ("cumpliste 3 de 4 días").
+    func nativeAdherence(behavior: String, from: String, to: String) async -> Int {
+        guard let store = await ensureStore() else { return 0 }
+        let entries = (try? await store.journalEntries(deviceId: Self.journalDeviceId,
+                                                       from: from, to: to)) ?? []
+        return Set(entries.filter { $0.question == behavior && $0.answeredYes }.map(\.day)).count
+    }
+
+    /// End a running experiment early, with no verdict.
+    func cancelExperiment(_ row: ExperimentRow) async {
+        guard let store = await ensureStore() else { return }
+        let canceled = Self.experimentRow(row, status: .canceled,
+                                          decidedAt: Int(Date().timeIntervalSince1970))
+        try? await store.upsertExperiment(canceled, deviceId: Self.journalDeviceId)
+    }
+
+    /// If a running experiment's window has elapsed (today ≥ startDay + windowDays), compute its
+    /// verdict and persist it (`completed`). Idempotent: a `running` experiment whose window isn't up
+    /// yet, or no experiment at all, is left untouched. Call before reading the experiment for display.
+    func closeDueExperiment(today: String) async {
+        guard let store = await ensureStore(),
+              let exp = (try? await store.activeExperiment(deviceId: Self.journalDeviceId)) ?? nil,
+              let endKey = Self.experimentEndDay(exp) else { return }
+        guard today >= endKey else { return }   // window still open
+
+        let series = InsightEngine.outcomeSeries(days, metric: exp.outcome)
+        let entries = (try? await store.journalEntries(deviceId: Self.journalDeviceId,
+                                                       from: exp.startDay, to: endKey)) ?? []
+        var adherent = Set<String>()
+        for e in entries where e.question == exp.behavior && e.answeredYes && e.day < endKey {
+            adherent.insert(e.day)
+        }
+        let result = ExperimentVerdict.evaluate(behavior: exp.behavior, outcome: exp.outcome,
+                                                expectedSign: exp.expectedSign,
+                                                adherentDays: adherent, outcomeByDay: series)
+        let e = result.effect
+        let completed = ExperimentRow(id: exp.id, behavior: exp.behavior, outcome: exp.outcome,
+                                      expectedSign: exp.expectedSign, startDay: exp.startDay,
+                                      windowDays: exp.windowDays, status: .completed,
+                                      result: result.verdict.rawValue, effectDelta: e?.delta,
+                                      effectSize: e?.cohensD, pValue: e?.pApprox, nWith: e?.nWith,
+                                      nWithout: e?.nWithout, createdAt: exp.createdAt,
+                                      decidedAt: Int(Date().timeIntervalSince1970))
+        try? await store.upsertExperiment(completed, deviceId: Self.journalDeviceId)
+    }
+
+    /// The day key on which an experiment's window closes (startDay + windowDays, exclusive).
+    static func experimentEndDay(_ row: ExperimentRow, calendar: Calendar = .current) -> String? {
+        guard let start = dayKeyFormatter.date(from: row.startDay),
+              let end = calendar.date(byAdding: .day, value: row.windowDays, to: start) else { return nil }
+        return localDayKey(end)
+    }
+
+    /// Copy an experiment row with a new status / decidedAt, preserving its result columns.
+    private static func experimentRow(_ r: ExperimentRow, status: ExperimentStatus,
+                                      decidedAt: Int?) -> ExperimentRow {
+        ExperimentRow(id: r.id, behavior: r.behavior, outcome: r.outcome, expectedSign: r.expectedSign,
+                      startDay: r.startDay, windowDays: r.windowDays, status: status, result: r.result,
+                      effectDelta: r.effectDelta, effectSize: r.effectSize, pValue: r.pValue,
+                      nWith: r.nWith, nWithout: r.nWithout, createdAt: r.createdAt, decidedAt: decidedAt)
+    }
+
     /// All workouts (Whoop + Apple Health + on-device detected bouts), newest first.
     ///
     /// Detected bouts are surfaced with an honest "Detected" badge so the user can see — and

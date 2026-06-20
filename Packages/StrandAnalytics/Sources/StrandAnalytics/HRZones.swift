@@ -190,6 +190,10 @@ public enum HRZones {
         }
         guard !gaps.isEmpty else { return 1.0 }
         gaps.sort()
-        return max(gaps[gaps.count / 2], 1.0)
+        let mid = gaps.count / 2
+        // True median: average the two central values for even counts (e.g.
+        // [2,4,6,10] → 5, not 6) so tailDuration isn't biased high.
+        let median = gaps.count % 2 == 0 ? (gaps[mid - 1] + gaps[mid]) / 2 : gaps[mid]
+        return max(median, 1.0)
     }
 }

@@ -363,6 +363,14 @@ public enum Calories {
                                            hrmax: Double?,
                                            restingHR: Double?) -> Double {
         if hrSamples.isEmpty { return 0.0 }
-        return estimateBoutCalories(hrSamples, profile: profile, hrmax: hrmax, restingHR: restingHR).0
+        // The model counts each sample as 1 second (1 Hz strap). A degenerate
+        // input (e.g. 90 000 samples) would imply >24 h of data and overstate
+        // the day. Cap the seconds counted at one day so the raw API stays
+        // bounded even without the `analyzeDay` day-filter upstream.
+        let dayCappedSeconds = 86_400
+        let samples = hrSamples.count > dayCappedSeconds
+            ? Array(hrSamples.prefix(dayCappedSeconds))
+            : hrSamples
+        return estimateBoutCalories(samples, profile: profile, hrmax: hrmax, restingHR: restingHR).0
     }
 }

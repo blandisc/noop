@@ -164,4 +164,12 @@ final class SleepRegularityTests: XCTestCase {
         XCTAssertEqual(r.midSleepSDMinutes, 0, accuracy: 1e-6,
                        "only the steady most-recent 14 nights should drive the SD")
     }
+
+    func testCircularSDPerfectScheduleIsPositiveZero() {
+        // Identical points (r == 1) must yield +0.0, never -0.0 (which the UI
+        // can render as "-0 min").
+        let sd = SleepRegularity.circularSDMinutes([480, 480, 480, 480])
+        XCTAssertEqual(sd, 0)
+        XCTAssertFalse(sd.sign == .minus, "circularSDMinutes must not return -0.0")
+    }
 }

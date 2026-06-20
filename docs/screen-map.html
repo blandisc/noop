@@ -662,7 +662,7 @@ const SCREENS = [
   // ── ROW 4: App (y = 2660) ─────────────────
   {
     id: 'coach', x: 30, y: 2660,
-    name: 'Coach · el Bucle', desc: 'Una pantalla «Instrumento»: Decisión de hoy + palancas + hallazgos + registro + efectos (InsightEngine, FER-292)',
+    name: 'Coach · el Bucle', desc: 'Una pantalla «Instrumento»: Decisión de hoy + palancas + Prueba (experimentos N-of-1) + hallazgos + registro + efectos (InsightEngine, FER-292/307)',
     file: 'Cenit/Screens/BucleView.swift',
     icon: '✨', color: '#9B8FFF',
     states: [
@@ -670,9 +670,12 @@ const SCREENS = [
       { label: 'Con datos', type: 'data' },
       { label: 'Sin hallazgos', type: 'data' },
       { label: 'Pregúntale → PreguntaleView (on-device · modo esencial · externo, FER-308)', type: 'data' },
+      { label: 'Prueba: Idea por probar (sin experimento) · FER-307', type: 'empty' },
+      { label: 'Prueba: Tu experimento en curso (día N de M + adherencia) · FER-307', type: 'data' },
+      { label: 'Prueba: veredicto (se sostuvo / no / sin señal) · FER-307', type: 'data' },
     ],
     nav: [],
-    components: ['Decisión de hoy (héroe-frase + % recuperación)', 'Pregúntale entry → PreguntaleView (.sheet)', 'Lo que funciona en ti (leverRow + Ver las N)', 'Hallazgos (findingRow + Ver los N)', 'Anota tu día (resumen → AnotaTuDiaSheet Sí/No)', 'Efectos de tus hábitos (EfectosExplorerSheet + SegmentedPillControl)', 'PalancaDetailSheet (evidencia)'],
+    components: ['Decisión de hoy (héroe-frase + % recuperación)', 'Pregúntale entry → PreguntaleView (.sheet)', 'Lo que funciona en ti (leverRow + Ver las N; «probado» vía promoteProven)', 'Prueba (Idea por probar / Tu experimento / veredicto · FER-307)', 'Hallazgos (findingRow + Ver los N)', 'Anota tu día (resumen → AnotaTuDiaSheet Sí/No)', 'Efectos de tus hábitos (EfectosExplorerSheet + SegmentedPillControl)', 'PalancaDetailSheet (evidencia + CTA Probar)', 'StartExperimentSheet (confirmación)'],
   },
   {
     name: 'Pregúntale a tus datos', desc: 'Texto libre on-device (FoundationModels) fundamentado en el motor + Modo esencial con chips + LLM externo (FER-308)',

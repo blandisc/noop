@@ -17,6 +17,10 @@ import WhoopStore
 struct PalancaDetailSheet: View {
     let insight: Insight
     let theme: InstrumentoTheme
+    /// True when this lever is a candidate and nothing is in flight — shows the «Probar» CTA (FER-307).
+    var canStartExperiment: Bool = false
+    /// Invoked when the user taps «Probar esta idea» — the Bucle opens the start-confirmation sheet.
+    var onProbar: (() -> Void)? = nil
 
     var body: some View {
         ScrollView {
@@ -70,6 +74,24 @@ struct PalancaDetailSheet: View {
                 .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
                     .stroke(theme.hairlineStrong, lineWidth: 1))
+
+                // Probar esta idea — only for a candidate lever, only when nothing is in flight (FER-307).
+                if canStartExperiment, let onProbar {
+                    Button(action: onProbar) {
+                        HStack(spacing: 7) {
+                            Image(systemName: "flask").font(.system(size: 17))
+                            Text("Probar esta idea una semana").font(StrandFont.headline)
+                            Image(systemName: "arrow.right").font(.system(size: 15))
+                        }
+                        .foregroundStyle(theme.ink)
+                        .frame(maxWidth: .infinity)
+                        .padding(15)
+                        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                            .stroke(theme.hairlineStrong, lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                }
             }
             .padding(NoopMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -455,5 +477,127 @@ enum BucleFormat {
         default:      return "grande"
         }
     }
+
+    // MARK: Experiment verdict copy (FER-307)
+
+    static func verdictHeadline(_ v: Verdict) -> String {
+        switch v {
+        case .sustained:    return "Se sostuvo."
+        case .notSustained: return "No se sostuvo esta vez."
+        case .insufficient: return "Sin señal suficiente."
+        }
+    }
+
+    static func verdictReading(_ v: Verdict, behavior: String, outcome: String,
+                               adherent: Int, window: Int) -> String {
+        switch v {
+        case .sustained:
+            return "“\(behavior)” subió tu \(outcome) en la semana. La marcamos como probada en Lo que funciona en ti."
+        case .notSustained:
+            return "“\(behavior)” no movió tu \(outcome) en esta semana. Una semana es poca evidencia — puedes volver a intentarlo."
+        case .insufficient:
+            return "Cumpliste \(adherent) de \(window) días: faltaron días para juzgar. Inténtalo otra semana anotando a diario."
+        }
+    }
+
+    /// A signed effect for the verdict datum, e.g. "+8 pts" / "−1.4 ms".
+    static func signedDelta(_ v: Double, unit: String) -> String {
+        let sign = v > 0 ? "+" : (v < 0 ? "−" : "")
+        let mag = abs(v) >= 10 ? String(Int(abs(v).rounded())) : String(format: "%.1f", abs(v))
+        return "\(sign)\(mag) \(unit)"
+    }
+}
+
+// MARK: - Start experiment (confirmation sheet, FER-307)
+
+/// The brief confirmation a candidate lever opens before an experiment begins: why it's worth testing,
+/// what's asked of the user over the window, and the verdict date. «Empezar» starts it; nothing runs
+/// until then. The only color is the candidate's measured effect (the datum); «Empezar» is ink.
+struct StartExperimentSheet: View {
+    let insight: Insight
+    let theme: InstrumentoTheme
+    /// (behavior, outcome, expectedSign) → start. Async so the caller can persist + reload.
+    let onStart: (String, String, Int) async -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    private static let windowDays = 7
+
+    /// The lever's RAW identity — the journal question and outcome the engine keyed it by. This is
+    /// what gets persisted and later matched (adherence, candidate→proven), NOT the display name,
+    /// which `BucleFormat.behaviorName` capitalizes (a lowercase question would never match).
+    private var leverBehavior: String { insight.lever?.behavior ?? BucleFormat.behaviorName(insight) }
+    private var leverOutcome: String { insight.lever?.outcome ?? insight.datum.metric }
+    /// The capitalized name for visible copy only.
+    private var displayName: String { BucleFormat.behaviorName(insight) }
+    private var expectedSign: Int { insight.datum.value < 0 ? -1 : 1 }
+    private var verdictDate: String {
+        let end = Calendar.current.date(byAdding: .day, value: Self.windowDays, to: Date()) ?? Date()
+        return Self.dateFormatter.string(from: end)
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Nuevo experimento").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("Probar “\(displayName)”")
+                    .font(StrandFont.title2).foregroundStyle(theme.ink)
+                    .fixedSize(horizontal: false, vertical: true).padding(.top, 8)
+
+                (Text("En tus datos, “\(displayName)” va con ")
+                    + Text(BucleFormat.signedDelta(insight.datum.value, unit: insight.datum.unit))
+                        .foregroundColor(theme.positiveText).bold()
+                    + Text(" de \(leverOutcome). Una semana lo confirma en tu cuerpo."))
+                    .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true).padding(.top, 10)
+
+                VStack(alignment: .leading, spacing: 13) {
+                    stepRow(1, "Anota cada día si lo cumpliste, en “Anota tu día”.")
+                    stepRow(2, "Al cerrar, comparamos esos días con tu base.")
+                    stepRow(3, "Si el efecto se sostiene, queda probada.")
+                }
+                .padding(.top, 18)
+
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Durante \(Self.windowDays) días").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    Spacer()
+                    Text("veredicto el \(verdictDate)").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                }
+                .padding(.top, 18).padding(.top, 14)
+                .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
+
+                Button {
+                    Task { await onStart(leverBehavior, leverOutcome, expectedSign) }
+                } label: {
+                    Text("Empezar").font(StrandFont.headline).foregroundStyle(theme.paper)
+                        .frame(maxWidth: .infinity).padding(15)
+                        .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+                }
+                .buttonStyle(.plain).padding(.top, 18)
+
+                Button { dismiss() } label: {
+                    Text("Ahora no").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.plain).padding(.top, 13)
+            }
+            .padding(NoopMetrics.screenPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(theme.paper.ignoresSafeArea())
+    }
+
+    private func stepRow(_ n: Int, _ text: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 11) {
+            Text("\(n)").font(StrandFont.captionNumber).foregroundStyle(theme.inkTertiary)
+                .frame(minWidth: 14, alignment: .leading)
+            Text(text).font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter(); f.locale = Locale(identifier: "es_MX"); f.dateFormat = "EEE d MMM"
+        return f
+    }()
 }
 #endif
