@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **«Hace 5 min», no «5 min ago»: la antigüedad de la sincronización ya en español / Relative sync time no longer stays in English.**
+  **ES** — La línea de sincronización («Última sincronización…» / «Historial sincronizado…») mostraba la antigüedad en inglés —«5 min ago», «just now», «2 h ago»— aun con la app en español. Ahora dice «hace 5 min», «justo ahora», «hace 2 h». De paso rutamos por el catálogo las abreviaturas de unidad de las métricas (ms, rpm, ml/kg) para que ninguna quede escrita a mano.
+  **EN** — The sync line ("Last synced…" / "History synced…") showed the age in English — "5 min ago", "just now", "2 h ago" — even with the app in Spanish. It now reads "hace 5 min", "justo ahora", "hace 2 h". We also routed the metric unit abbreviations (ms, rpm, ml/kg) through the catalog so none stay hardcoded.
+  ([Cenit/Screens/ScreenScaffold.swift](Cenit/Screens/ScreenScaffold.swift), [Cenit/Screens/CuerpoView.swift](Cenit/Screens/CuerpoView.swift), [Cenit/Screens/HealthView.swift](Cenit/Screens/HealthView.swift))
 - **El hipnograma, los días y VoiceOver del dial ahora en tu idioma / Hypnogram, weekday axis and dial VoiceOver now in your language.**
   **ES** — Unos textos del sistema de diseño que se quedaban fijos en inglés (o en español para todos) ahora siguen tu idioma: las etapas del **hipnograma** de sueño (Despierto/Ligero/Profundo/REM), las iniciales de los **días** en la tira anual del año, y lo que **VoiceOver** lee del dial de 24 h y de una métrica sin lectura de hoy. Es un arreglo invisible si todo estaba en su sitio, y correcto si no.
   **EN** — A few design-system texts that stayed hardcoded in English (or in Spanish for everyone) now follow your language: the sleep **hypnogram** stages (Awake/Light/Deep/REM), the **weekday** initials in the yearly strip, and what **VoiceOver** reads from the 24-h dial and from a metric with no reading yet.

@@ -70,10 +70,10 @@ func relativeAgo(_ epochSeconds: TimeInterval,
                  now: TimeInterval = Date().timeIntervalSince1970) -> String {
     let d = max(0, Int(now - epochSeconds))
     switch d {
-    case ..<60:     return "just now"
-    case ..<3600:   return "\(d / 60) min ago"
-    case ..<86_400: return "\(d / 3600) h ago"
-    default:        return "\(d / 86_400) d ago"
+    case ..<60:     return String(localized: "just now")
+    case ..<3600:   return String(localized: "\(d / 60) min ago")
+    case ..<86_400: return String(localized: "\(d / 3600) h ago")
+    default:        return String(localized: "\(d / 86_400) d ago")
     }
 }
 

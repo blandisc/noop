@@ -1286,7 +1286,7 @@ struct TodayView: View {
                 // HRV — más alto es mejor.
                 metricTile(TodayMetricTile(
                     label: "HRV",
-                    value: hrvR.map { "\(Int($0.value.rounded()))" } ?? "—", unit: "ms",
+                    value: hrvR.map { "\(Int($0.value.rounded()))" } ?? "—", unit: String(localized: "ms"),
                     valueColor: theme.dataHrv,
                     fromApple: hrvR?.fromApple == true,
                     context: tileContext(today: hrvR?.value, history: history(base) { $0.avgHrv },
