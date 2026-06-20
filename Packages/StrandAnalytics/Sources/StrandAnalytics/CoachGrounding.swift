@@ -135,20 +135,24 @@ public enum CoachTopic: String, CaseIterable, Sendable {
     case behavior
     case general
 
-    /// Keyword groups, checked most-specific first. Lowercased, accent-insensitive matching.
+    /// Keyword STEMS, checked most-specific first. A stem matches when some WORD in the question starts
+    /// with it — word-aware (not raw substring), so "encargas" doesn't match "carga" and "recámara"
+    /// doesn't match "cama". Stems cover common es-MX conjugations ("dorm"+"duerm", "recuper", …).
     private static let keywords: [(CoachTopic, [String])] = [
-        (.sleep,    ["dorm", "sueno", "siesta", "acuest", "acostar", "descans", "cama"]),
+        (.sleep,    ["dorm", "duerm", "sueno", "siesta", "acuest", "acost", "descans", "cama"]),
         (.hrv,      ["hrv", "variabilidad"]),
-        (.load,     ["carga", "sobreentren", "acwr", "monoton", "esfuerzo", "volumen"]),
+        (.load,     ["carga", "sobrecarga", "sobreentren", "acwr", "monoton", "esfuerzo", "volumen"]),
         (.behavior, ["funciona", "habito", "alcohol", "cafe", "cafein", "afecta", "ayuda", "cuesta"]),
         (.recovery, ["recuper", "listo", "entren", "empuj", "descanso", "readiness",
-                     "cansad", "amaneci", "energia", "agotad", "fatig"]),
+                     "cansad", "amanec", "energia", "agotad", "fatig"]),
     ]
 
-    /// Classify a free-text question into a topic. Falls back to `.general`.
+    /// Classify a free-text question into a topic. Word-aware (prefix match per word). Falls back to
+    /// `.general`.
     public static func classify(_ question: String) -> CoachTopic {
-        let q = CoachGrounding.foldForMatch(question)
-        for (topic, keys) in keywords where keys.contains(where: { q.contains($0) }) {
+        let words = CoachGrounding.words(question)
+        for (topic, keys) in keywords
+        where keys.contains(where: { key in words.contains { $0.hasPrefix(key) } }) {
             return topic
         }
         return .general
@@ -386,29 +390,44 @@ public struct CoachGrounding: Equatable, Sendable {
     /// experiment. Returns nil when it isn't a what-if, or no behavior with data matches (honest: the
     /// caller then answers normally, never inventing a contrast).
     public func whatIf(_ question: String) -> WhatIfResult? {
-        let q = CoachGrounding.foldForMatch(question)
-        guard CoachGrounding.whatIfMarkers.contains(where: { q.contains($0) }) else { return nil }
+        let qWords = CoachGrounding.words(question)
+        guard CoachGrounding.whatIfMarkers.contains(where: { CoachGrounding.containsPhrase(qWords, $0) })
+        else { return nil }
 
-        // Find the highest-ranked behavior fact whose behavior name appears in the question.
+        // Find the highest-ranked behavior fact whose behavior name (a 4+ char word) is in the question.
+        let qSet = Set(qWords)
         let candidate = facts.first { fact in
             guard fact.kind == .behavior, fact.breakdown != nil, let b = fact.behavior else { return false }
-            let tokens = CoachGrounding.foldForMatch(b).split(separator: " ").filter { $0.count >= 4 }
-            return tokens.contains { q.contains($0) }
+            let tokens = CoachGrounding.words(b).filter { $0.count >= 4 }
+            return tokens.contains { qSet.contains($0) }
         }
-        guard let f = candidate, let br = f.breakdown, let behavior = f.behavior,
-              let outcome = f.outcome else { return nil }
+        guard let f = candidate, let br = f.breakdown, let behavior = f.behavior, let outcome = f.outcome
+        else { return nil }
+        // Both groups must actually have days, or the contrast is meaningless ("… contra 0 sin").
+        guard br.nWith > 0, br.nWithout > 0 else { return nil }
 
         let withV = Int(br.meanWith.rounded())
         let withoutV = Int(br.meanWithout.rounded())
         let n = br.nWith + br.nWithout
-        let helps = br.meanWith >= br.meanWithout
-        let verdict = helps ? "Mantenerlo parece ayudarte." : "Quitarlo podría ayudarte."
+        let diff = br.meanWith - br.meanWithout
+        let verdict: String
+        let sign: Int
+        if abs(diff) < 1 {                       // no meaningful difference either way
+            verdict = "No veo una diferencia clara todavía."
+            sign = 1
+        } else if diff > 0 {
+            verdict = "Mantenerlo parece ayudarte."
+            sign = 1
+        } else {
+            verdict = "Quitarlo podría ayudarte."
+            sign = -1
+        }
         var statement = "En tus días con \(behavior.lowercased()), tu \(outcome.lowercased()) "
             + "promedió \(withV) — contra \(withoutV) sin. \(verdict)"
         if let caveat = CoachGrounding.confidenceCaveat(n: n) { statement += " " + caveat }
 
         return WhatIfResult(behavior: behavior, outcome: outcome, statement: statement,
-                            n: n, expectedSign: helps ? 1 : -1)
+                            n: n, expectedSign: sign)
     }
 
     /// A hedge to append when the sample is thin — honesty as the brand (FER-333). nil when n is solid.
@@ -470,9 +489,10 @@ public struct CoachGrounding: Equatable, Sendable {
                                         && j + 1 < chars.count && chars[j + 1].isNumber) {
                 num.append(chars[j]); j += 1
             }
-            // Skip a single optional space, then read the trailing unit token (letters or %).
+            // Skip any spaces, then read the trailing unit token (letters or %). Skipping ALL spaces
+            // closes the "100  %" double-space evasion of the golden rule.
             var k = j
-            if k < chars.count && chars[k] == " " { k += 1 }
+            while k < chars.count && chars[k] == " " { k += 1 }
             var unit = ""
             while k < chars.count && (chars[k].isLetter || chars[k] == "%") { unit.append(chars[k]); k += 1 }
             let u = unit.lowercased()
@@ -513,6 +533,23 @@ public struct CoachGrounding: Equatable, Sendable {
     /// Fold text for keyword matching: lowercased and accent-insensitive ("Sueño" → "sueno").
     static func foldForMatch(_ s: String) -> String {
         s.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: "es"))
+    }
+
+    /// The folded words of a string (split on anything that isn't a letter/number) — the unit of
+    /// word-aware matching, so a stem matches a whole word's start, not a mid-word substring.
+    static func words(_ s: String) -> [Substring] {
+        foldForMatch(s).split { !$0.isLetter && !$0.isNumber }
+    }
+
+    /// True if `folded`'s word sequence contains `phrase` (1+ words) as consecutive whole words — so
+    /// "y si" matches "¿y si duermo?" but NOT "hoy sí" or "y siento".
+    static func containsPhrase(_ folded: [Substring], _ phrase: String) -> Bool {
+        let p = phrase.split(separator: " ").map(String.init)
+        guard !p.isEmpty, folded.count >= p.count else { return false }
+        for start in 0...(folded.count - p.count) {
+            if (0..<p.count).allSatisfy({ folded[start + $0] == p[$0][...] }) { return true }
+        }
+        return false
     }
 
     /// Normalize a numeric token for comparison: unify the decimal mark to ".", drop a trailing
