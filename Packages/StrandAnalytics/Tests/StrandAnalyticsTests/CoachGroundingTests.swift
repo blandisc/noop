@@ -169,6 +169,50 @@ final class CoachGroundingTests: XCTestCase {
         XCTAssertEqual(g.deterministicAnswer(forChip: .sleep), sleepAns)
     }
 
+    // FER-333: grounded what-if + confidence caveat.
+    private func behaviorInsight(_ behavior: String, outcome: String, meanWith: Double,
+                                 meanWithout: Double, n: Int) -> Insight {
+        Insight(kind: .behavior, title: "t", reading: "\(behavior) y \(outcome)",
+                datum: InsightDatum(value: meanWith - meanWithout, unit: "pts", metric: outcome),
+                evidence: InsightEvidence(n: n, pValue: 0.01, pAdjusted: 0.02, effectSize: 0.5, significant: true),
+                confidence: .candidate, relevance: 5,
+                lever: Lever(behavior: behavior, outcome: outcome),
+                behaviorBreakdown: BehaviorBreakdown(meanWith: meanWith, meanWithout: meanWithout,
+                                                     nWith: n / 2, nWithout: n - n / 2))
+    }
+
+    func testWhatIfReturnsHistoricalContrast() {
+        let g = CoachGrounding.from(insights: [behaviorInsight("Alcohol", outcome: "Recuperación",
+                                                               meanWith: 63, meanWithout: 71, n: 24)],
+                                    readiness: nil, recovery: nil, referenceDay: "d")
+        let wi = g.whatIf("¿y si dejo el alcohol?")
+        XCTAssertNotNil(wi)
+        XCTAssertEqual(wi?.behavior, "Alcohol")
+        XCTAssertEqual(wi?.outcome, "Recuperación")
+        XCTAssertEqual(wi?.expectedSign, -1)            // with(63) < without(71) → keeping it hurts
+        XCTAssertTrue(wi?.statement.contains("63") ?? false)
+        XCTAssertTrue(wi?.statement.contains("71") ?? false)
+    }
+
+    func testWhatIfNilWhenNotAWhatIf() {
+        let g = CoachGrounding.from(insights: [behaviorInsight("Alcohol", outcome: "Recuperación",
+                                                               meanWith: 63, meanWithout: 71, n: 24)],
+                                    readiness: nil, recovery: nil, referenceDay: "d")
+        XCTAssertNil(g.whatIf("¿cómo viene mi recuperación?"))
+    }
+
+    func testWhatIfNilWhenBehaviorNotKnown() {
+        let g = CoachGrounding.from(insights: [behaviorInsight("Alcohol", outcome: "Recuperación",
+                                                               meanWith: 63, meanWithout: 71, n: 24)],
+                                    readiness: nil, recovery: nil, referenceDay: "d")
+        XCTAssertNil(g.whatIf("¿y si dejo el azúcar?"))   // no azúcar lever → honest nil
+    }
+
+    func testConfidenceCaveatHedgesWhenThin() {
+        XCTAssertTrue(CoachGrounding.confidenceCaveat(n: 5)?.localizedCaseInsensitiveContains("pista") ?? false)
+        XCTAssertNil(CoachGrounding.confidenceCaveat(n: 25))
+    }
+
     func testMetricNumbersOnlyCatchesUnitedNumbers() {
         let found = CoachGrounding.metricNumbers(in: "91% y 80 ms, pero 9 horas y 80/20")
         XCTAssertEqual(found, ["91", "80"])

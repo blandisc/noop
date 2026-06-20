@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-20 · FER-313</span>
+  <span class="tb-updated">Actualizado 2026-06-20 · FER-333</span>
 </div>
 
 <div id="wrapper">
@@ -679,15 +679,16 @@ const SCREENS = [
     components: ['Decisión de hoy (héroe-frase + % recuperación)', 'Pregúntale entry → PreguntaleView (.sheet)', 'Lo que funciona en ti (leverRow + Ver las N; «probado» vía promoteProven)', 'Prueba (Idea por probar / Tu experimento / veredicto · FER-307)', 'Hallazgos (findingRow + Ver los N)', 'Anota tu día (resumen → AnotaTuDiaSheet Sí/No)', 'Efectos de tus hábitos (EfectosExplorerSheet + SegmentedPillControl)', 'PalancaDetailSheet (evidencia + CTA Probar)', 'StartExperimentSheet (confirmación)'],
   },
   {
-    name: 'Pregúntale a tus datos', desc: 'Texto libre on-device (FoundationModels) fundamentado en el motor + Modo esencial con chips + LLM externo (FER-308)',
+    name: 'Pregúntale a tus datos', desc: 'Conversación sembrada + consciente del tema + what-if fundamentado con handoff a experimento; on-device (FoundationModels) / esencial / externo (FER-308·331·332·333)',
     file: 'Cenit/Screens/PreguntaleView.swift',
     states: [
-      { label: 'On-device: texto libre + «Pensando…» + cómo funciona', type: 'data' },
-      { label: 'Modo esencial: por qué + qué necesitas + chips', type: 'empty' },
+      { label: 'On-device: opener + sugerencias + texto libre + «Pensando…»', type: 'data' },
+      { label: 'What-if: contraste histórico + «Convertirlo en experimento 7 días»', type: 'data' },
+      { label: 'Modo esencial: opener + chips + por qué/qué necesitas', type: 'empty' },
       { label: 'Nivel 3: chat externo CoachView (BYO-key, opt-in)', type: 'data' },
     ],
     nav: [],
-    components: ['CoachAvailability.current() (gating)', 'OnDeviceCoachEngine + CoachFactsTool (LanguageModelSession)', 'CoachGrounding (resumen puro + validate, StrandAnalytics)', 'Chips CoachChip + respuesta de plantilla', 'ExternalUpgradeRow → CoachView (.sheet)'],
+    components: ['CoachAvailability.current() (gating)', 'OnDeviceCoachEngine (motor arma, LLM reescribe)', 'CoachGrounding: opener/suggestedChips/CoachTopic/whatIf/validate (StrandAnalytics)', 'Opener + chips dinámicos + seguimientos', 'StartExperimentSheet (.sheet, handoff FER-307)', 'ExternalUpgradeRow → CoachView (.sheet)'],
   },
   {
     id: 'settings', x: 284, y: 2660,

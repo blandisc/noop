@@ -389,16 +389,17 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 
 ---
 
-### PreguntaleView — «Pregúntale a tus datos» (FER-308)
+### PreguntaleView — «Pregúntale a tus datos» (FER-308 · 331 · 332 · 333)
 **Archivo:** `Cenit/Screens/PreguntaleView.swift` (+ `Cenit/AI/CoachAvailability.swift`, `Cenit/AI/OnDeviceCoach.swift`)  
-**Descripción:** La hoja de «Pregúntale» del Bucle, unificada en tres niveles. El nivel se decide con `CoachAvailability.current()` (lee `SystemLanguageModel.availability` de Apple, todo detrás de `#if canImport(FoundationModels)` + `@available(iOS 26)`). El modelo **no calcula**: solo redacta sobre el resumen puro `CoachGrounding` (StrandAnalytics, FER-290/308), y toda respuesta pasa por `validate()` (regla de oro: si cita una cifra que no vino del motor, se descarta y cae al texto determinista).
+**Descripción:** La hoja de «Pregúntale» del Bucle, unificada en tres niveles. El nivel se decide con `CoachAvailability.current()` (lee `SystemLanguageModel.availability` de Apple, todo detrás de `#if canImport(FoundationModels)` + `@available(iOS 26)`). **Jerarquía invertida (FER-332):** el motor (`CoachGrounding`, StrandAnalytics) clasifica el tema de la pregunta (`CoachTopic`) y arma la respuesta determinista correcta; el modelo on-device **solo la reescribe**, nunca calcula. Si reescribe mal o cita una cifra ajena (`validate()`), se muestra la respuesta del motor tal cual. **Conversación sembrada (FER-331):** el coach abre con `opener()` (hallazgo top del día) + `suggestedChips()` (dinámicos) + `followUpChips()`. **What-if fundamentado (FER-333):** una pregunta «¿y si…?» sobre un hábito registrado devuelve el contraste con/sin de TU historial (`whatIf()` desde `BehaviorBreakdown`) y ofrece convertirlo en experimento de 7 días.
 | Estado | Qué se ve |
 | --- | --- |
-| **On-device** (Apple Intelligence) | Texto libre + estado «Pensando…» (anunciado por VoiceOver) + explicador «Cómo funciona» (corre en tu iPhone, sin red, no inventa números); respuestas vía `LanguageModelSession` + `CoachFactsTool` |
-| **Modo esencial** (`deviceNotEligible`/`appleIntelligenceNotEnabled`/`modelNotReady`/`osTooOld`) | Explicador «por qué + qué necesitas» (iPhone/iOS/ajuste) + chips prearmados (`CoachChip`) con respuesta de plantilla del motor |
+| **On-device** (Apple Intelligence) | Opener + sugerencias; texto libre + «Pensando…» (VoiceOver); respuesta del motor reescrita por `LanguageModelSession`; en un «¿y si…?» con datos, contraste histórico + botón «Convertirlo en experimento de 7 días» → `StartExperimentSheet` (FER-307) |
+| **Modo esencial** (`deviceNotEligible`/`appleIntelligenceNotEnabled`/`modelNotReady`/`osTooOld`) | Opener + chips prearmados (`CoachChip`) con respuesta de plantilla del motor (instantánea, sin modelo); explicador «por qué + qué necesitas» (más discreto, debajo del valor) |
 | **Nivel 3** (opcional) | Fila «Respuestas más profundas con tu IA» → abre el chat externo `CoachView` (BYO-key, opt-in) — preservado |
+**Tono calibrado (FER-333):** `confidenceCaveat(n:)` hace que el coach titubee cuando la muestra es chica («con n días, tómalo como pista»).
 **Verificación on-device pendiente (spike):** calidad/latencia del español on-device y la no-conexión del Nivel 2 se validan en hardware iOS 26 / A17 Pro+ (no verificable en CI). El build compila el path FoundationModels contra el SDK iOS 26.
-**Navegación:** se presenta como `.sheet` desde `BucleView` con el tema «Instrumento» inyectado; el Nivel 3 abre `CoachView` como sub-`.sheet`.
+**Navegación:** se presenta como `.sheet` desde `BucleView` (con `behaviorInsights` para el handoff) y el tema «Instrumento» inyectado; el Nivel 3 abre `CoachView` y el handoff abre `StartExperimentSheet` como sub-`.sheet`.
 
 ---
 

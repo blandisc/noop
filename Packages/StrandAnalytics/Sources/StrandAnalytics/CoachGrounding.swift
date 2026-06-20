@@ -17,6 +17,44 @@ import Foundation
 
 // MARK: - Fact
 
+/// The with/without group means behind a behavior fact — the raw material for a grounded what-if
+/// ("on days WITH X, your recovery was A vs B"). Mirrors `BehaviorBreakdown` (FER-333).
+public struct GroundingBreakdown: Equatable, Sendable {
+    public let meanWith: Double
+    public let meanWithout: Double
+    public let nWith: Int
+    public let nWithout: Int
+
+    public init(meanWith: Double, meanWithout: Double, nWith: Int, nWithout: Int) {
+        self.meanWith = meanWith
+        self.meanWithout = meanWithout
+        self.nWith = nWith
+        self.nWithout = nWithout
+    }
+}
+
+/// A grounded "what-if" answer: the historical contrast for a logged behavior, from the user's OWN
+/// data — the differentiator only on-device history makes possible (FER-333). Carries what the
+/// experiment handoff (FER-307) needs to start a 7-day test of the same lever.
+public struct WhatIfResult: Equatable, Sendable {
+    public let behavior: String
+    public let outcome: String
+    /// The es-MX contrast + recommendation, built only from engine figures (incl. a low-n caveat).
+    public let statement: String
+    /// Total days behind the contrast (nWith + nWithout).
+    public let n: Int
+    /// +1 if keeping the behavior is associated with a better outcome, -1 if worse — for the experiment.
+    public let expectedSign: Int
+
+    public init(behavior: String, outcome: String, statement: String, n: Int, expectedSign: Int) {
+        self.behavior = behavior
+        self.outcome = outcome
+        self.statement = statement
+        self.n = n
+        self.expectedSign = expectedSign
+    }
+}
+
 /// One ranked fact handed to the coach, derived 1:1 from an `Insight`. `id` is a stable index so
 /// a reply can cite which facts it used.
 public struct GroundingFact: Equatable, Sendable {
@@ -30,9 +68,15 @@ public struct GroundingFact: Equatable, Sendable {
     public let n: Int
     public let significant: Bool
     public let confidence: InsightConfidence
+    /// For `.behavior` facts: the logged behavior name (the lever) and its outcome metric, plus the
+    /// with/without breakdown — what a grounded what-if + experiment handoff need. nil otherwise.
+    public let behavior: String?
+    public let outcome: String?
+    public let breakdown: GroundingBreakdown?
 
     public init(id: Int, kind: InsightKind, statement: String, figure: Double, unit: String,
-                metric: String, n: Int, significant: Bool, confidence: InsightConfidence) {
+                metric: String, n: Int, significant: Bool, confidence: InsightConfidence,
+                behavior: String? = nil, outcome: String? = nil, breakdown: GroundingBreakdown? = nil) {
         self.id = id
         self.kind = kind
         self.statement = statement
@@ -42,6 +86,9 @@ public struct GroundingFact: Equatable, Sendable {
         self.n = n
         self.significant = significant
         self.confidence = confidence
+        self.behavior = behavior
+        self.outcome = outcome
+        self.breakdown = breakdown
     }
 }
 
@@ -159,7 +206,13 @@ public struct CoachGrounding: Equatable, Sendable {
                           metric: ins.datum.metric,
                           n: ins.evidence.n,
                           significant: ins.evidence.significant,
-                          confidence: ins.confidence)
+                          confidence: ins.confidence,
+                          behavior: ins.lever?.behavior,
+                          outcome: ins.lever?.outcome,
+                          breakdown: ins.behaviorBreakdown.map {
+                              GroundingBreakdown(meanWith: $0.meanWith, meanWithout: $0.meanWithout,
+                                                 nWith: $0.nWith, nWithout: $0.nWithout)
+                          })
         }
 
         let rec = recovery.map { Int($0.rounded()) }
@@ -172,6 +225,10 @@ public struct CoachGrounding: Equatable, Sendable {
         for f in facts {
             allowed.formUnion(numberForms(f.figure))
             allowed.formUnion(extractNumbers(from: f.statement))
+            if let br = f.breakdown {   // with/without means a what-if may cite
+                allowed.formUnion(numberForms(br.meanWith))
+                allowed.formUnion(numberForms(br.meanWithout))
+            }
         }
         if let rec { allowed.insert(normalize("\(rec)")) }
         if let s = readiness?.summary { allowed.formUnion(extractNumbers(from: s)) }
@@ -315,6 +372,50 @@ public struct CoachGrounding: Equatable, Sendable {
             if out.count == 2 { break }
         }
         return out
+    }
+
+    // MARK: What-if (FER-333 — grounded counterfactual from the user's own history)
+
+    /// Markers that a question is a counterfactual ("¿y si…?", "¿qué pasa si…?", "¿valdría la pena…?").
+    private static let whatIfMarkers = ["y si", "que pasa si", "si dejo", "si quito", "si dejara",
+                                        "si hiciera", "valdria la pena", "deberia dejar", "deberia quitar",
+                                        "que tal si", "si tomo", "si no tomo"]
+
+    /// If `question` is a what-if about a logged behavior we have a with/without breakdown for, return
+    /// the historical contrast from the user's own data, plus what's needed to turn it into a 7-day
+    /// experiment. Returns nil when it isn't a what-if, or no behavior with data matches (honest: the
+    /// caller then answers normally, never inventing a contrast).
+    public func whatIf(_ question: String) -> WhatIfResult? {
+        let q = CoachGrounding.foldForMatch(question)
+        guard CoachGrounding.whatIfMarkers.contains(where: { q.contains($0) }) else { return nil }
+
+        // Find the highest-ranked behavior fact whose behavior name appears in the question.
+        let candidate = facts.first { fact in
+            guard fact.kind == .behavior, fact.breakdown != nil, let b = fact.behavior else { return false }
+            let tokens = CoachGrounding.foldForMatch(b).split(separator: " ").filter { $0.count >= 4 }
+            return tokens.contains { q.contains($0) }
+        }
+        guard let f = candidate, let br = f.breakdown, let behavior = f.behavior,
+              let outcome = f.outcome else { return nil }
+
+        let withV = Int(br.meanWith.rounded())
+        let withoutV = Int(br.meanWithout.rounded())
+        let n = br.nWith + br.nWithout
+        let helps = br.meanWith >= br.meanWithout
+        let verdict = helps ? "Mantenerlo parece ayudarte." : "Quitarlo podría ayudarte."
+        var statement = "En tus días con \(behavior.lowercased()), tu \(outcome.lowercased()) "
+            + "promedió \(withV) — contra \(withoutV) sin. \(verdict)"
+        if let caveat = CoachGrounding.confidenceCaveat(n: n) { statement += " " + caveat }
+
+        return WhatIfResult(behavior: behavior, outcome: outcome, statement: statement,
+                            n: n, expectedSign: helps ? 1 : -1)
+    }
+
+    /// A hedge to append when the sample is thin — honesty as the brand (FER-333). nil when n is solid.
+    static func confidenceCaveat(n: Int) -> String? {
+        if n < 10 { return "Con solo \(n) días, tómalo como pista, no certeza." }
+        if n < 20 { return "Con \(n) días es una señal razonable, aún no definitiva." }
+        return nil
     }
 
     private func joined(_ parts: [String], fallback: String) -> String {
