@@ -655,7 +655,8 @@ private struct BucleLanding: View {
         // Experiment state: a running one (with live progress + adherence), else the latest finished
         // verdict the user hasn't dismissed.
         let active = await repo.activeExperiment()
-        let runVM = await active.asyncMap { await runningVM($0, today: todayKey) } ?? nil
+        var runVM: ExperimentVM? = nil
+        if let active { runVM = await runningVM(active, today: todayKey) }
         let allExp = await repo.allExperiments()
         let latestFinished = active == nil
             ? allExp.first { $0.status == .completed && $0.id != dismissedExperimentId }
@@ -706,14 +707,6 @@ private struct ExperimentVM {
     let elapsedDay: Int
     let adherent: Int
     let verdictDate: String
-}
-
-private extension Optional {
-    /// Await a transform over a present value (keeps `load()` linear without force-unwrapping).
-    func asyncMap<T>(_ transform: (Wrapped) async -> T) async -> T? {
-        if let self { return await transform(self) }
-        return nil
-    }
 }
 
 // MARK: - Insight sheet item

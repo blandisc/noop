@@ -522,8 +522,13 @@ struct StartExperimentSheet: View {
     @Environment(\.dismiss) private var dismiss
     private static let windowDays = 7
 
-    private var behavior: String { BucleFormat.behaviorName(insight) }
-    private var outcome: String { insight.datum.metric }
+    /// The lever's RAW identity — the journal question and outcome the engine keyed it by. This is
+    /// what gets persisted and later matched (adherence, candidate→proven), NOT the display name,
+    /// which `BucleFormat.behaviorName` capitalizes (a lowercase question would never match).
+    private var leverBehavior: String { insight.lever?.behavior ?? BucleFormat.behaviorName(insight) }
+    private var leverOutcome: String { insight.lever?.outcome ?? insight.datum.metric }
+    /// The capitalized name for visible copy only.
+    private var displayName: String { BucleFormat.behaviorName(insight) }
     private var expectedSign: Int { insight.datum.value < 0 ? -1 : 1 }
     private var verdictDate: String {
         let end = Calendar.current.date(byAdding: .day, value: Self.windowDays, to: Date()) ?? Date()
@@ -534,14 +539,14 @@ struct StartExperimentSheet: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 Text("Nuevo experimento").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Text("Probar “\(behavior)”")
+                Text("Probar “\(displayName)”")
                     .font(StrandFont.title2).foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true).padding(.top, 8)
 
-                (Text("En tus datos, “\(behavior)” va con ")
+                (Text("En tus datos, “\(displayName)” va con ")
                     + Text(BucleFormat.signedDelta(insight.datum.value, unit: insight.datum.unit))
                         .foregroundColor(theme.positiveText).bold()
-                    + Text(" de \(outcome). Una semana lo confirma en tu cuerpo."))
+                    + Text(" de \(leverOutcome). Una semana lo confirma en tu cuerpo."))
                     .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true).padding(.top, 10)
 
@@ -561,7 +566,7 @@ struct StartExperimentSheet: View {
                 .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
 
                 Button {
-                    Task { await onStart(behavior, outcome, expectedSign) }
+                    Task { await onStart(leverBehavior, leverOutcome, expectedSign) }
                 } label: {
                     Text("Empezar").font(StrandFont.headline).foregroundStyle(theme.paper)
                         .frame(maxWidth: .infinity).padding(15)
