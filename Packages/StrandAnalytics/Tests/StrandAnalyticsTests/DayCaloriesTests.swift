@@ -41,6 +41,18 @@ final class DayCaloriesTests: XCTestCase {
         XCTAssertGreaterThan(activeDay, restingDay, "active day must exceed resting day")
     }
 
+    func testDayCaloriesCapsDegenerateInputAtOneDay() {
+        // 90 000 samples (>24 h at 1 Hz) must not exceed the energy of a true
+        // full day (86 400 s) — the raw API caps the seconds counted at one day.
+        let profile = UserProfile(weightKg: 80, heightCm: 180, age: 35, sex: "male")
+        let degenerate = Calories.estimateDayCalories(hrDay(bpm: 150, n: 90_000), profile: profile,
+                                                      hrmax: 185.0, restingHR: 55.0)
+        let fullDay = Calories.estimateDayCalories(hrDay(bpm: 150, n: 86_400), profile: profile,
+                                                   hrmax: 185.0, restingHR: 55.0)
+        XCTAssertEqual(degenerate, fullDay, accuracy: 1e-6,
+                       "samples beyond one day must be ignored")
+    }
+
     // A timestamp safely inside UTC day 2026-01-02 (2026-01-02T12:00:00Z).
     private let dayUtc = "2026-01-02"
     private let noonUtc = 1_767_355_200
