@@ -307,10 +307,10 @@ struct AppleHealthView: View {
                      accent: StrandPalette.metricRose, unit: String(localized: "bpm"),
                      fmt: { "\(Int($0.rounded()))" })
             statTile(key: "hrv", label: "HRV",
-                     accent: StrandPalette.metricPurple, unit: "ms",
+                     accent: StrandPalette.metricPurple, unit: String(localized: "ms"),
                      fmt: { "\(Int($0.rounded()))" })
             statTile(key: "vo2max", label: "VO₂ Max",
-                     accent: StrandPalette.accent, unit: "ml/kg",
+                     accent: StrandPalette.accent, unit: String(localized: "ml/kg"),
                      fmt: { String(format: "%.1f", $0) })
             statTile(key: "weight", label: "Weight",
                      accent: StrandPalette.accent,

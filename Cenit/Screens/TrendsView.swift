@@ -334,7 +334,7 @@ struct TrendsView: View {
             SectionHeader("Daily signals", overline: "Trends", trailing: rangeSubtitle)
             LazyVGrid(columns: cols, alignment: .leading, spacing: NoopMetrics.gap) {
                 metricChart(
-                    title: "Heart rate variability", unit: "ms",
+                    title: "Heart rate variability", unit: String(localized: "ms"),
                     points: hrvPts,
                     subtitle: hrv.caption,
                     gradient: gradient(StrandPalette.metricPurple),

@@ -277,7 +277,7 @@ private struct VitalsSection: View {
             return full.replacingOccurrences(of: " " + skinUnitLabel, with: "")
         }
         return [
-            Vital(key: "resp", label: "Resp Rate", unit: "rpm",
+            Vital(key: "resp", label: "Resp Rate", unit: String(localized: "rpm"),
                   value: d?.respRateBpm, format: { String(format: "%.1f", $0) },
                   banding: VitalBands.band(value: d?.respRateBpm, history: series { $0.respRateBpm },
                                            populationRange: 12...20, cfg: Baselines.respCfg),
@@ -295,7 +295,7 @@ private struct VitalsSection: View {
                                            history: series { $0.restingHr.map(Double.init) },
                                            populationRange: 40...60, cfg: Baselines.restingHRCfg),
                   metricColor: StrandPalette.metricRose),
-            Vital(key: "hrv", label: "HRV", unit: "ms",
+            Vital(key: "hrv", label: "HRV", unit: String(localized: "ms"),
                   value: d?.avgHrv, format: { String(Int($0.rounded())) },
                   banding: VitalBands.band(value: d?.avgHrv, history: series { $0.avgHrv },
                                            populationRange: 40...120, cfg: Baselines.hrvCfg),
