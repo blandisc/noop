@@ -1307,6 +1307,7 @@ struct TodayView: View {
                 // Esfuerzo del día — carga del día, sin valencia (Δ en tinta neutra).
                 metricTile(TodayMetricTile(
                     label: "Day Strain",
+                    icon: "bolt.fill",
                     value: strainT.map { String(format: "%.1f", $0) } ?? "—",
                     valueColor: theme.dataStrain,
                     context: tileContext(today: strainT, history: history(base) { $0.strain },
@@ -1315,6 +1316,7 @@ struct TodayView: View {
                 // Sueño — dormir más es mejor.
                 metricTile(TodayMetricTile(
                     label: "Sleep",
+                    icon: "moon.fill",
                     value: sleepR.map { sleepText($0.value) } ?? "—",
                     valueColor: theme.dataSleep,
                     fromApple: sleepR?.fromApple == true,
@@ -1326,6 +1328,7 @@ struct TodayView: View {
                 // HRV — más alto es mejor.
                 metricTile(TodayMetricTile(
                     label: "HRV",
+                    icon: "waveform.path.ecg",
                     value: hrvR.map { "\(Int($0.value.rounded()))" } ?? "—", unit: String(localized: "ms"),
                     valueColor: theme.dataHrv,
                     fromApple: hrvR?.fromApple == true,
@@ -1336,12 +1339,14 @@ struct TodayView: View {
                 // de "ayer" con qué comparar (decisión del dueño, FER-180).
                 metricTile(TodayMetricTile(
                     label: "Heart Rate",
+                    icon: "heart.fill",
                     value: hrTodayAvg.map { "\($0)" } ?? "—", unit: String(localized: "bpm"),
                     valueColor: theme.dataHeart
                 )) { metricDetail = .heartRate(avgBpm: hrTodayAvg) }
                 // FC en reposo — más alta es PEOR.
                 metricTile(TodayMetricTile(
                     label: "Resting HR",
+                    icon: "bed.double.fill",
                     value: rhrR.map { "\(Int($0.value.rounded()))" } ?? "—", unit: String(localized: "bpm"),
                     valueColor: theme.dataHeart,
                     fromApple: rhrR?.fromApple == true,
@@ -1351,6 +1356,7 @@ struct TodayView: View {
                 // Oxígeno en sangre — más alto es mejor.
                 metricTile(TodayMetricTile(
                     label: "Blood Oxygen",
+                    icon: "drop.fill",
                     value: spo2R.map { String(format: "%.0f", $0.value) } ?? "—", unit: "%",
                     valueColor: theme.dataSpO2,
                     fromApple: spo2R?.fromApple == true,
@@ -1360,6 +1366,7 @@ struct TodayView: View {
                 // Pasos — sin meta (no existe en la app); más es mejor.
                 metricTile(TodayMetricTile(
                     label: "Steps",
+                    icon: "figure.walk",
                     value: stepsT.map { intString($0) } ?? "—",
                     valueColor: theme.dataSteps,
                     fromApple: true,
@@ -1369,6 +1376,7 @@ struct TodayView: View {
                 // Estrés — más alto es PEOR; valor bandeado por nivel 0–3 (verde/ámbar/rojo).
                 metricTile(TodayMetricTile(
                     label: "Stress",
+                    icon: "gauge.medium",
                     value: stressT.map { String(format: "%.1f", $0) } ?? "—",
                     unit: stressT == nil ? nil : "/ 3",
                     valueColor: stressT.map(stressDataColor) ?? theme.inkTertiary,
@@ -1545,6 +1553,11 @@ struct TodayView: View {
     /// `NoopCard` oscuro, que no lee sobre el papel claro. Lee el tema del entorno.
     private struct TodayMetricTile: View {
         let label: LocalizedStringKey
+        /// SF Symbol de la métrica (handoff «Hoy · Estados»): un glifo junto a la etiqueta, en el color
+        /// del dato. Es otra licencia consciente sobre «color solo en el dato» (como las pastillas),
+        /// fiel al handoff; refuerza la identidad de la métrica de un vistazo. Declarado aquí (tras
+        /// `label`) para que el init sintetizado case con el orden de los call sites (icon tras label).
+        var icon: String? = nil
         let value: String
         var unit: String? = nil
         let valueColor: Color
@@ -1557,11 +1570,20 @@ struct TodayView: View {
 
         var body: some View {
             VStack(alignment: .leading, spacing: 0) {
-                // Etiqueta a UNA línea (FER-189): mantiene el tile parejo; un nombre largo (Frecuencia
-                // cardíaca) se encoge un poco en vez de envolver a 2 líneas y crecer el alto.
-                Text(label).instrumentoOverline()
-                    .foregroundStyle(theme.inkSecondary)
-                    .lineLimit(1).minimumScaleFactor(0.7)
+                // Glifo de la métrica + etiqueta a UNA línea (FER-189): el ícono en el color del dato
+                // (handoff) y un nombre largo (Frecuencia cardíaca) se encoge un poco en vez de envolver
+                // a 2 líneas y crecer el alto.
+                HStack(spacing: NoopMetrics.space1) {
+                    if let icon {
+                        Image(systemName: icon)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(valueColor)
+                            .accessibilityHidden(true)
+                    }
+                    Text(label).instrumentoOverline()
+                        .foregroundStyle(theme.inkSecondary)
+                        .lineLimit(1).minimumScaleFactor(0.7)
+                }
                 Spacer(minLength: NoopMetrics.space1)
                 HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
                     // Valor 23 (handoff «Hoy · Estados», antes 22). Piso de escala = 18/23 (FER-273): el
