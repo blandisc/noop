@@ -606,13 +606,10 @@ private struct BucleLanding: View {
                 confidence: .candidate, relevance: 0, lever: Lever(behavior: row.behavior, outcome: row.outcome))
     }
 
+    /// Native unit for an experiment's outcome path, via the single typed source (`InsightEngine.Outcome`,
+    /// FER-353) instead of a second copy of the es-MX units; `pts` covers Recuperación and any unknown label.
     private func outcomeUnit(_ metric: String) -> String {
-        switch metric {
-        case "HRV":          return "ms"
-        case "Sueño":        return "min"
-        case "FC en reposo": return "lpm"
-        default:             return "pts"
-        }
+        InsightEngine.Outcome(label: metric)?.unit ?? "pts"
     }
 
     // MARK: Hallazgos
