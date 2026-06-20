@@ -58,15 +58,15 @@ MetricExplorerView → MetricDetailView (NavigationLink push, sobre el stack de 
 **Barra de pestañas — «Barra de instrumento»** (`CenitApp/App/InstrumentTabBar.swift`, FER-163; reorganizada a
 5 tabs en FER-182). Barra inferior custom (la nativa va oculta con `.toolbar(.hidden, for: .tabBar)`, montada vía
 `safeAreaInset`) que **adapta su tratamiento a la pestaña activa**: bajo **Hoy** (papel «Instrumento diurno») viste
-el papel y respira con la hora (`instrumentoThemeByHour`); bajo Cuerpo / Coach / Entrenar / Ajustes usa el
-`StrandPalette` oscuro. El color scheme (barra de estado) sigue la pestaña: solo Hoy es clara (`isLightTab` en
-`RootTabView`); En vivo es papel claro pero vive en una **hoja** (`.sheet`) sobre Hoy, no es pestaña (FER-190). La pestaña activa se marca
+el papel y respira con la hora (`instrumentoThemeByHour`); bajo Ajustes usa el
+`StrandPalette` oscuro. El color scheme (barra de estado) sigue la pestaña: Hoy / Cuerpo / Coach / Entrenar son papel claro, Ajustes es oscura (`isLightTab` en
+`RootTabView`; Entrenar migrado a «Instrumento» en FER-342); En vivo es papel claro pero vive en una **hoja** (`.sheet`) sobre Hoy, no es pestaña (FER-190). La pestaña activa se marca
 con tinta + un punto de «ahora» (verde recovery en claro, `accent` en oscuro), nunca con relleno verde. Íconos de
 trazo fino: **Hoy** = glifo de dial 24h (`DialTabGlyph`, StrandDesign), el resto glifos de línea (Cuerpo
 `chart.xyaxis.line` · Coach `sparkles` · Entrenar `figure.strengthtraining.functional` · Ajustes `gearshape`).
 
 **Nota — «Iniciar en vivo» en el hub Entrenar (FER-197):** el hub Entrenar suma, arriba de Breathe/Intervals, una
-fila **«Iniciar en vivo»** (`LiveWorkoutHubRow`, tema oscuro `StrandPalette` como las demás filas). Está
+fila **«Iniciar en vivo»** (`LiveWorkoutHubRow`, tema claro «Instrumento» como las demás filas tras FER-342). Está
 **deshabilitada con un hint** cuando no hay HR en vivo (misma señal que `LiveView`: strap puesto + `bpm`); al
 tocarla arranca (`AppModel.startWorkout`) y abre `LiveWorkoutSheet`, una **hoja en «Instrumento» claro** (tema
 pasado **explícito** — no se hereda por `.sheet`) con overline **GRABANDO**, cronómetro, **Ritmo / Prom / Pico**

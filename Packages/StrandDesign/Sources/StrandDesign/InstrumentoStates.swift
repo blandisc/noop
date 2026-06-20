@@ -74,7 +74,7 @@ public struct LoadingStateView: View {
             }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(message ?? "Cargando")
+        .accessibilityLabel(message ?? "Loading")
     }
 }
 
@@ -168,7 +168,7 @@ public struct ErrorStateView: View {
     private let retry: (() -> Void)?
 
     public init(
-        title: LocalizedStringKey = "Algo salió mal",
+        title: LocalizedStringKey = "Something went wrong",
         message: LocalizedStringKey? = nil,
         retryTitle: LocalizedStringKey? = nil,
         retry: (() -> Void)? = nil

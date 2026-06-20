@@ -54,12 +54,6 @@
     },
     "Cénit Recovery": {
       "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cénit Erholung"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
@@ -76,12 +70,6 @@
     },
     "Recovery": {
       "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Erholung"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
@@ -98,12 +86,6 @@
     },
     "Recovery %@%%": {
       "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Erholung %@%%"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
@@ -120,12 +102,6 @@
     },
     "Recovery, live heart rate, and strap battery at a glance.": {
       "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Erholung, Live-Herzfrequenz und Strap-Akku auf einen Blick."
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
@@ -142,12 +118,6 @@
     },
     "Strap connected": {
       "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Strap verbunden"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
@@ -164,12 +134,6 @@
     },
     "Strap offline": {
       "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Strap offline"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",

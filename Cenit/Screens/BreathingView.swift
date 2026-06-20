@@ -9,10 +9,17 @@ import StrandDesign
 /// respond in real time. Pick a pace, hit start, close your eyes: one buzz on the
 /// inhale, two on the exhale. Live HR + a rolling RMSSD (an honest estimate) show
 /// the autonomic response building as the session deepens.
+///
+/// «Instrumento diurno» (FER-342): warm paper, ink labels, color only in the
+/// measured datum — live HR in `dataHeart`, HRV in `dataHrv`. The breath orb keeps
+/// the screen's signature motion but in a calm physiological glow, not saturated
+/// chrome. All session logic (paces, timers, RMSSD) is unchanged from the dark
+/// original; only the view layer was repainted.
 struct BreathingView: View {
 
     @EnvironmentObject private var model: AppModel
     @EnvironmentObject private var live: LiveState
+    @Environment(\.instrumentoTheme) private var theme
 
     // MARK: Pace presets
 
@@ -88,16 +95,22 @@ struct BreathingView: View {
     private let rrWindow = 30
 
     var body: some View {
-        ScreenScaffold(title: "Breathe",
-                       subtitle: "Haptic-paced breathing · watch your HRV respond") {
-
-            statusRow
-            orbCard
-            controlRow
-            readoutRow
-            coherenceCard
-            if !live.bonded { hapticHint }
+        ScrollView {
+            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+                header
+                statusRow
+                orbCard
+                controlRow
+                readoutRow
+                coherenceCard
+                if !live.bonded { hapticHint }
+            }
+            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.top, 18)
+            .padding(.bottom, NoopMetrics.screenPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .background(theme.paper.ignoresSafeArea())
         // Phase driver: advance the orb toward its target and flip phases.
         .onReceive(phaseTimer) { now in
             guard running else { return }
@@ -119,18 +132,30 @@ struct BreathingView: View {
         .onDisappear { stop() }
     }
 
+    // MARK: - Header
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Breathe")
+                .font(StrandFont.title1)
+                .foregroundStyle(theme.ink)
+            Text("Haptic-paced breathing · watch your HRV respond")
+                .font(StrandFont.subhead)
+                .foregroundStyle(theme.inkSecondary)
+        }
+    }
+
     // MARK: - Status row
 
     private var statusRow: some View {
         HStack(spacing: 10) {
-            StatePill(running ? "Session live" : "Ready",
-                      tone: running ? .accent : .neutral,
-                      pulsing: running)
+            pill(running ? "Session live" : "Ready",
+                 dotColor: running ? theme.dataRecovery : nil)
 
             if live.bonded {
-                StatePill("Haptics on", tone: .positive, showsDot: true)
+                pill("Haptics on", dotColor: theme.dataRecovery)
             } else {
-                StatePill("Visual only", tone: .warning, showsDot: true)
+                pill("Visual only", dotColor: theme.warning)
             }
 
             Spacer()
@@ -138,26 +163,55 @@ struct BreathingView: View {
             HStack(spacing: 6) {
                 Text(timeString(sessionSeconds))
                     .font(StrandFont.number(15))
-                    .foregroundStyle(StrandPalette.textPrimary)
-                Text("·").foregroundStyle(StrandPalette.textTertiary)
+                    .foregroundStyle(theme.ink)
+                Text("·").foregroundStyle(theme.inkTertiary)
                 Text("\(breathCount) breaths")
                     .font(StrandFont.captionNumber)
-                    .foregroundStyle(StrandPalette.textSecondary)
+                    .foregroundStyle(theme.inkSecondary)
             }
         }
+    }
+
+    /// A quiet «Instrumento» status pill — surface capsule, ink label, an optional
+    /// colored dot (the only place a hue rides chrome here, to mark live/warn state).
+    private func pill(_ text: LocalizedStringKey, dotColor: Color?) -> some View {
+        HStack(spacing: 6) {
+            if let dotColor {
+                Circle().fill(dotColor).frame(width: 6, height: 6)
+            }
+            Text(text)
+                .font(StrandFont.caption)
+                .foregroundStyle(theme.ink)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(theme.surface, in: Capsule(style: .continuous))
+        .overlay(Capsule(style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+    }
+
+    /// A contained «Instrumento» group — surface card with a hairline edge. Used
+    /// sparingly (rule 3); the orb / readouts need a held surface to sit on.
+    @ViewBuilder
+    private func card<V: View>(padding: CGFloat = 16, @ViewBuilder _ content: () -> V) -> some View {
+        content()
+            .padding(padding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                .strokeBorder(theme.hairline, lineWidth: 1))
     }
 
     // MARK: - The orb
 
     private var orbCard: some View {
-        StrandCard(padding: 24) {
+        card(padding: 24) {
             VStack(spacing: 18) {
                 HStack {
-                    Text(pace.label.uppercased()).strandOverline()
+                    Text(pace.label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     Spacer()
                     Text(String(format: "%.1f br/min", pace.bpm))
                         .font(StrandFont.captionNumber)
-                        .foregroundStyle(StrandPalette.textSecondary)
+                        .foregroundStyle(theme.inkSecondary)
                 }
 
                 breathingOrb
@@ -166,7 +220,7 @@ struct BreathingView: View {
 
                 Text(running ? phaseWord : pace.tagline)
                     .font(StrandFont.subhead)
-                    .foregroundStyle(running ? StrandPalette.accent : StrandPalette.textSecondary)
+                    .foregroundStyle(running ? theme.dataRecovery : theme.inkSecondary)
                     .animation(.easeInOut(duration: 0.2), value: phaseWord)
                     .animation(.easeInOut(duration: 0.2), value: running)
 
@@ -194,15 +248,15 @@ struct BreathingView: View {
             ZStack {
                 // Static guide ring at the inhale extent.
                 Circle()
-                    .strokeBorder(StrandPalette.hairline, lineWidth: 1)
+                    .strokeBorder(theme.hairlineStrong, lineWidth: 1)
                     .frame(width: maxDiameter, height: maxDiameter)
 
-                // Outer breathing halo.
+                // Outer breathing halo — a soft physiological glow (HRV hue), not chrome.
                 Circle()
                     .fill(
                         RadialGradient(
-                            colors: [StrandPalette.accent.opacity(0.22),
-                                     StrandPalette.accent.opacity(0.0)],
+                            colors: [theme.dataHrv.opacity(0.18),
+                                     theme.dataHrv.opacity(0.0)],
                             center: .center,
                             startRadius: diameter * 0.20,
                             endRadius: diameter * 0.70
@@ -211,35 +265,33 @@ struct BreathingView: View {
                     .frame(width: diameter * 1.35, height: diameter * 1.35)
                     .blur(radius: 18)
 
-                // The orb body — soft accent gradient fill.
+                // The orb body — a calm HRV-tinted fill on paper.
                 Circle()
                     .fill(
                         RadialGradient(
-                            colors: [StrandPalette.accentHover.opacity(0.85),
-                                     StrandPalette.accent.opacity(0.55),
-                                     StrandPalette.accentMuted.opacity(0.85)],
+                            colors: [theme.dataHrv.opacity(0.32),
+                                     theme.dataHrv.opacity(0.14)],
                             center: .init(x: 0.4, y: 0.35),
                             startRadius: 2,
                             endRadius: diameter * 0.62
                         )
                     )
                     .overlay(
-                        Circle().strokeBorder(StrandPalette.accent.opacity(0.45), lineWidth: 1)
+                        Circle().strokeBorder(theme.dataHrv.opacity(0.45), lineWidth: 1)
                     )
                     .frame(width: diameter, height: diameter)
-                    .shadow(color: StrandPalette.accent.opacity(0.30 * orbProgress), radius: 24)
 
-                // Centre readout — live HR sits inside the breath.
+                // Centre readout — live HR is the measured datum, so it carries color.
                 VStack(spacing: 2) {
                     Text(model.bpm.map(String.init) ?? "—")
                         .font(StrandFont.number(40))
-                        .foregroundStyle(StrandPalette.textPrimary)
+                        .foregroundStyle(model.bpm == nil ? theme.inkTertiary : theme.dataHeart)
                         .contentTransition(.numericText())
                         .animation(.snappy, value: model.bpm)
                     Text("BPM")
                         .font(StrandFont.footnote)
                         .tracking(0.8)
-                        .foregroundStyle(StrandPalette.textTertiary)
+                        .foregroundStyle(theme.inkTertiary)
                 }
             }
             .frame(width: geo.size.width, height: geo.size.height)
@@ -256,23 +308,31 @@ struct BreathingView: View {
                 Label(running ? "Stop session" : "Start session",
                       systemImage: running ? "stop.fill" : "play.fill")
                     .font(StrandFont.headline)
+                    .foregroundStyle(theme.paper)
                     .lineLimit(1).minimumScaleFactor(0.7)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
+                    .padding(.vertical, 14)
+                    .background(running ? theme.critical : theme.ink,
+                                in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
             }
-            .buttonStyle(.borderedProminent)
-            .tint(running ? StrandPalette.statusCritical : StrandPalette.accent)
+            .buttonStyle(.plain)
 
             Button {
                 model.buzz(loops: 1)
             } label: {
                 Label("Test buzz", systemImage: "waveform.path")
                     .font(StrandFont.body)
-                    .padding(.vertical, 12)
-                    .padding(.horizontal, 8)
+                    .foregroundStyle(theme.ink)
+                    .padding(.vertical, 14)
+                    .padding(.horizontal, 14)
+                    .background(theme.surface,
+                                in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+                        .strokeBorder(theme.hairlineStrong, lineWidth: 1))
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(.plain)
             .disabled(!live.bonded)
+            .opacity(live.bonded ? 1 : 0.5)
             .help("Fire a single haptic pulse on the strap (requires a bonded connection)")
         }
     }
@@ -284,28 +344,28 @@ struct BreathingView: View {
             readoutTile(label: "Heart rate",
                         value: model.bpm.map { "\($0)" } ?? "—",
                         unit: String(localized: "bpm"),
-                        accent: StrandPalette.metricRose,
+                        accent: theme.dataHeart,
                         caption: live.worn ? "Live" : "Strap not worn")
 
             readoutTile(label: "HRV (RMSSD)",
                         value: rmssd.map { String(format: "%.0f", $0) } ?? "—",
                         unit: "ms",
-                        accent: StrandPalette.metricPurple,
+                        accent: theme.dataHrv,
                         caption: rrBuffer.isEmpty ? "Waiting for R-R" : "Last \(rrBuffer.count) beats")
 
             readoutTile(label: "Pace",
                         value: String(format: "%.1f", pace.bpm),
                         unit: "br/min",
-                        accent: StrandPalette.accent,
+                        accent: theme.ink,
                         caption: String(format: "%.0f / %.0fs", pace.inhale, pace.exhale))
         }
     }
 
     private func readoutTile(label: String, value: String, unit: String,
                              accent: Color, caption: String) -> some View {
-        StrandCard(padding: 14) {
+        card(padding: 14) {
             VStack(alignment: .leading, spacing: 0) {
-                Text(label.uppercased()).strandOverline()
+                Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Spacer(minLength: 6)
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(value)
@@ -316,11 +376,11 @@ struct BreathingView: View {
                         .contentTransition(.numericText())
                     Text(unit)
                         .font(StrandFont.caption)
-                        .foregroundStyle(StrandPalette.textTertiary)
+                        .foregroundStyle(theme.inkTertiary)
                 }
                 Text(caption)
                     .font(StrandFont.footnote)
-                    .foregroundStyle(StrandPalette.textTertiary)
+                    .foregroundStyle(theme.inkTertiary)
                     .lineLimit(1)
                     .padding(.top, 4)
             }
@@ -331,26 +391,21 @@ struct BreathingView: View {
     // MARK: - Coherence estimate
 
     private var coherenceCard: some View {
-        StrandCard {
+        card {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text("Coherence estimate").strandOverline()
+                    Text("Coherence estimate").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     Spacer()
-                    StatePill("\(coherenceLabel)", tone: coherenceTone, showsDot: true)
+                    pill(LocalizedStringKey(coherenceLabel), dotColor: coherenceDotColor)
                 }
 
                 // A simple normalized bar — RMSSD mapped 0…120ms → 0…1.
                 GeometryReader { geo in
                     let frac = coherenceFraction
                     ZStack(alignment: .leading) {
-                        Capsule().fill(StrandPalette.surfaceInset)
+                        Capsule().fill(theme.hairline)
                         Capsule()
-                            .fill(
-                                LinearGradient(
-                                    colors: [StrandPalette.accent.opacity(0.7),
-                                             StrandPalette.accentHover],
-                                    startPoint: .leading, endPoint: .trailing)
-                            )
+                            .fill(theme.dataHrv)
                             .frame(width: max(6, geo.size.width * frac))
                             .animation(.easeInOut(duration: 0.5), value: frac)
                     }
@@ -359,7 +414,7 @@ struct BreathingView: View {
 
                 Text("Estimate only — a higher RMSSD while paced usually means your parasympathetic \"rest\" branch is engaging. It is not a clinical reading; trends over a session matter more than any single number.")
                     .font(StrandFont.footnote)
-                    .foregroundStyle(StrandPalette.textTertiary)
+                    .foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -381,12 +436,12 @@ struct BreathingView: View {
         }
     }
 
-    private var coherenceTone: StrandTone {
-        guard let r = rmssd else { return .neutral }
+    private var coherenceDotColor: Color? {
+        guard let r = rmssd else { return nil }
         switch r {
-        case ..<20:  return .warning
-        case ..<45:  return .neutral
-        default:     return .positive
+        case ..<20:  return theme.warning
+        case ..<45:  return theme.inkTertiary
+        default:     return theme.dataRecovery
         }
     }
 
@@ -395,19 +450,19 @@ struct BreathingView: View {
     private var hapticHint: some View {
         HStack(spacing: 10) {
             Image(systemName: "applewatch.radiowaves.left.and.right")
-                .foregroundStyle(StrandPalette.statusWarning)
+                .foregroundStyle(theme.warning)
             Text("Connect your strap for haptic guidance — you'll feel one pulse on the inhale, two on the exhale, so you can breathe with your eyes closed.")
                 .font(StrandFont.footnote)
-                .foregroundStyle(StrandPalette.textSecondary)
+                .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
         .padding(14)
-        .background(StrandPalette.statusWarning.opacity(0.08),
+        .background(theme.warning.opacity(0.10),
                     in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                .strokeBorder(StrandPalette.statusWarning.opacity(0.25), lineWidth: 1)
+                .strokeBorder(theme.warning.opacity(0.30), lineWidth: 1)
         )
     }
 

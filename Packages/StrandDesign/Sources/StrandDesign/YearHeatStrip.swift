@@ -156,7 +156,13 @@ public struct YearHeatStrip: View {
         return f.string(from: date)
     }
 
-    private let rowLabels = ["Mon", "", "Wed", "", "Fri", "", "Sun"]
+    // Localized weekday gutter. `shortWeekdaySymbols` is always Sunday-indexed
+    // regardless of locale, so pick Mon(1)/Wed(3)/Fri(5)/Sun(0); the grid rows are
+    // Monday-first (see rowIndex), independent of the locale's firstWeekday.
+    private var rowLabels: [String] {
+        let s = Calendar.current.shortWeekdaySymbols
+        return [s[1], "", s[3], "", s[5], "", s[0]]
+    }
 
     public var body: some View {
         let weeks = buildWeeks()
