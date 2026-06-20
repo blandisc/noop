@@ -439,6 +439,16 @@ reader so multi-hundred-MB files don't blow up memory.
   `InsightEngine.promoteProven` then projects onto the engine's output (the engine stays stateless;
   "proven" lives in the `experiment` table, not on the `Insight`). Pure + DB-free.
 
+- **`TrajectorySimulator`** (FER-311) is the goal simulator's projector: it extends a goal metric's
+  daily series over an N-day horizon as two paths — "como vas" (the trend) and "si cambias X" (the trend
+  plus a proven lever's measured effect) — inside a confidence band that grows with √h. The trend is a
+  **damped** level+slope (Gardner–McKenzie 1985) so long horizons plateau instead of extrapolating in a
+  straight line; it reuses `RecoveryForecast.olsSlope`/`sampleSD` and is **metric-agnostic** (the app
+  passes the focus series, generous `bounds`, and a *signed* `leverDelta`, so a higher-is-better metric
+  and a lower-is-better one like resting HR share one projector with no special case). Returns `nil`
+  below ~two weeks of base (the screen hides the chart). It never projects performance, only the
+  measurable signal. Pure + DB-free.
+
 Because the engine never touches the database, the same code runs over live-collected streams,
 backfilled streams, or imported data interchangeably. **All derived values are approximate.**
 
@@ -447,14 +457,16 @@ backfilled streams, or imported data interchangeably. **All derived values are a
 ## 10. Presentation (the app + StrandDesign)
 
 The `Cenit` app shell (under `CenitApp/App/`) builds a single `AppModel`, injects it plus
-`LiveState`, `Repository`, `ProfileStore`, and `BehaviorStore` into the environment, and presents the
+`LiveState`, `Repository`, `ProfileStore`, `BehaviorStore`, and `GoalStore` (the Bucle's goal — a single
+metric+date preference in `UserDefaults`, not a DB table, FER-311) into the environment, and presents the
 shared screens under `Cenit/Screens/` (Today, Live, Breathe, Intervals, Explore, Compare, Insights,
 Sleep, Trends, Workouts, Health, Stress, Apple Health, Data Sources, Automations, Settings, Support).
 The home / lock-screen widgets live in `CenitWidgets/`.
 
 Screens bind to `Repository`'s published `days`/`sleeps` caches (refreshed on data change, not on the
 ~1 Hz stream) and render with `StrandDesign` components — `RecoveryRing`, `StrainGauge`, `Hypnogram`,
-`TrendChart`, `Sparkline`, `YearHeatStrip` — over the `StrandPalette` tokens. `AppModel` also hosts
+`TrendChart`, `TrajectoryChart` (the goal simulator's two-path + confidence-band plot), `Sparkline`,
+`YearHeatStrip` — over the `StrandPalette` tokens. `AppModel` also hosts
 the opt-in, on-device behaviours (HR smoothing, illness/strain early-warning, stress nudges, HR-zone
 haptic coaching, double-tap actions, wrist-wear automation, smart alarm) — all default-off and all
 computed locally.

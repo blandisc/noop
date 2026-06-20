@@ -35,6 +35,8 @@ final class AppModel: ObservableObject {
     let profile = ProfileStore()
     /// Behaviour settings: double-tap action, wear automation, zone coaching, smart alarm, illness watch.
     let behavior = BehaviorStore()
+    /// The Bucle's goal (metric + optional date) — a single user preference, UserDefaults-backed (FER-311).
+    let goal = GoalStore()
     /// On-device WHOOP-style recovery/strain/sleep computation from raw strap streams.
     let intelligence: IntelligenceEngine
 
