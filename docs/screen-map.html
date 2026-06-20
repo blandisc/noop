@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-20 · FER-311</span>
+  <span class="tb-updated">Actualizado 2026-06-20 · FER-340</span>
 </div>
 
 <div id="wrapper">
@@ -666,7 +666,8 @@ const SCREENS = [
     file: 'Cenit/Screens/BucleView.swift (+ GoalSheets.swift)',
     icon: '✨', color: '#9B8FFF',
     states: [
-      { label: 'Arranque en frío (X de 14 noches)', type: 'empty' },
+      { label: 'Arranque en frío: <14 noches usables (X de 14, topado · «Faltan N noches») · FER-340', type: 'empty' },
+      { label: 'Esperando la lectura de hoy: ≥14 noches sin lectura de hoy (medianoche→sync) — veredicto en espera + Ayer como contexto, pero hallazgos/palancas/efectos siguen visibles · FER-340', type: 'empty' },
       { label: 'Con datos', type: 'data' },
       { label: 'Sin hallazgos', type: 'data' },
       { label: 'Pregúntale → PreguntaleView (on-device · modo esencial · externo, FER-308)', type: 'data' },
@@ -681,7 +682,7 @@ const SCREENS = [
       { label: 'Simulador: sin base <14 días (Aún reuniendo señal) · FER-311', type: 'empty' },
     ],
     nav: [],
-    components: ['Decisión de hoy (héroe-frase + % recuperación)', 'Pregúntale entry → PreguntaleView (.sheet)', 'Lo que funciona en ti (leverRow + Ver las N; «probado» vía promoteProven)', 'Prueba (Idea por probar / Tu experimento / veredicto · FER-307)', 'Hallazgos (findingRow + Ver los N)', 'Anota tu día (resumen → AnotaTuDiaSheet Sí/No)', 'Efectos de tus hábitos (EfectosExplorerSheet + SegmentedPillControl)', 'PalancaDetailSheet (evidencia + CTA Probar)', 'StartExperimentSheet (confirmación)', 'Tu meta (ancla bajo Decisión de hoy · FER-311)', 'GoalPickerSheet (3 focos + señal de condición + fecha)', 'SimulatorScreen (TrajectoryChart: 2 caminos + banda)'],
+    components: ['Decisión de hoy (héroe-frase + % recuperación; variante «Esperando la lectura de hoy» a medianoche, conserva hallazgos · FER-340)', 'Pregúntale entry → PreguntaleView (.sheet)', 'Lo que funciona en ti (leverRow + Ver las N; «probado» vía promoteProven)', 'Prueba (Idea por probar / Tu experimento / veredicto · FER-307)', 'Hallazgos (findingRow + Ver los N)', 'Anota tu día (resumen → AnotaTuDiaSheet Sí/No)', 'Efectos de tus hábitos (EfectosExplorerSheet + SegmentedPillControl)', 'PalancaDetailSheet (evidencia + CTA Probar)', 'StartExperimentSheet (confirmación)', 'Tu meta (ancla bajo Decisión de hoy · FER-311)', 'GoalPickerSheet (3 focos + señal de condición + fecha)', 'SimulatorScreen (TrajectoryChart: 2 caminos + banda)'],
   },
   {
     name: 'Pregúntale a tus datos', desc: 'Conversación sembrada + consciente del tema + what-if fundamentado con handoff a experimento; on-device (FoundationModels) / esencial / externo (FER-308·331·332·333)',
