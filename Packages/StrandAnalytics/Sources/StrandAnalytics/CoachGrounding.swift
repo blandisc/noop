@@ -204,16 +204,19 @@ public struct CoachGrounding: Equatable, Sendable {
 
     // MARK: Golden-rule guard
 
-    /// Return the numeric tokens in `answer` that the engine did NOT produce — i.e. fabricated
-    /// figures. Empty means the reply only restates engine numbers (passes the golden rule). A
-    /// non-empty result means the caller must discard the model's reply and fall back to Level 1.
+    /// Return the numeric tokens in `answer` that the model fabricated as one of the USER's own
+    /// metrics — i.e. a number stated with a user-metric unit (`%`, `ms`, `bpm`, `rpm`, `pts`) that
+    /// the engine never produced. Empty means the reply didn't misquote the user's data (passes the
+    /// golden rule).
     ///
-    /// Structural small integers (0, 1, 2) are tolerated — they appear as list counts / "una hora"
-    /// without being a claimed metric — as is any percentage/figure already in `allowedNumbers`.
+    /// Deliberately scoped (FER-330): the rule protects against the trust-killer — the model telling
+    /// you a WRONG value for your own metric ("tu recuperación es 91%" when it's 56%). It does NOT
+    /// flag free numbers in normal coaching ("duerme 7–9 horas", "zona 2", "80/20"); those carry no
+    /// user-metric unit and are legitimate advice, not a claim about your data.
     public func validate(answer: String) -> [String] {
-        let structural: Set<String> = ["0", "1", "2"]
-        return CoachGrounding.extractNumbers(from: answer)
-            .filter { !allowedNumbers.contains($0) && !structural.contains($0) }
+        CoachGrounding.metricNumbers(in: answer)
+            .subtracting(allowedNumbers)
+            .sorted()
     }
 
     // MARK: - Number helpers (pure, deterministic)
@@ -225,6 +228,39 @@ public struct CoachGrounding: Equatable, Sendable {
         s.insert(normalize(String(Int(v.rounded()))))
         s.insert(normalize(String(format: "%.1f", v)))
         return s
+    }
+
+    /// Units that mark a number as one of the USER's metrics (vs. free advice). A number immediately
+    /// followed (optionally after one space) by one of these is a claim about the user's data.
+    static let metricUnits = ["%", "ms", "bpm", "rpm", "lpm", "pts"]
+
+    /// Numbers in `text` that are stated as a user metric — i.e. trailed by a `metricUnits` unit —
+    /// normalized. "tu recuperación es 91%" → {"91"}; "duerme 7 a 9 horas" → {} (no metric unit).
+    static func metricNumbers(in text: String) -> Set<String> {
+        let chars = Array(text)
+        var out = Set<String>()
+        var i = 0
+        while i < chars.count {
+            guard chars[i].isNumber else { i += 1; continue }
+            var num = ""
+            var j = i
+            while j < chars.count,
+                  chars[j].isNumber || ((chars[j] == "." || chars[j] == ",")
+                                        && j + 1 < chars.count && chars[j + 1].isNumber) {
+                num.append(chars[j]); j += 1
+            }
+            // Skip a single optional space, then read the trailing unit token (letters or %).
+            var k = j
+            if k < chars.count && chars[k] == " " { k += 1 }
+            var unit = ""
+            while k < chars.count && (chars[k].isLetter || chars[k] == "%") { unit.append(chars[k]); k += 1 }
+            let u = unit.lowercased()
+            if metricUnits.contains(where: { u == $0 }) {
+                out.insert(normalize(num))
+            }
+            i = j
+        }
+        return out
     }
 
     /// Extract every numeric token from text, normalized. Matches integers and decimals with either

@@ -56,11 +56,15 @@ final class OnDeviceCoachEngine: ObservableObject {
             instructions: Instructions {
                 """
                 Eres un coach de recuperación y sueño que habla español de México, cálido y directo.
-                Reglas estrictas:
-                1) NUNCA inventes cifras. Llama a la herramienta obtenerHechosDelUsuario y usa SOLO los \
-                números que devuelve. Si no hay un dato, dilo; no lo estimes.
-                2) Responde corto (2–4 frases), accionable, sin tecnicismos ni emojis.
-                3) No eres médico: no diagnostiques.
+                Reglas:
+                1) Responde DIRECTO la pregunta que te hacen. Si preguntan "cuánto debería dormir", \
+                da un rango concreto; si preguntan "por qué amanecí cansado", explica la causa.
+                2) Para las CIFRAS DEL USUARIO (su recuperación, HRV, pulso, sueño, etc.) usa SOLO la \
+                herramienta obtenerHechosDelUsuario; nunca des un valor distinto al que devuelve, ni \
+                inventes una métrica suya. Si no hay un dato, dilo.
+                3) SÍ puedes dar recomendaciones generales con números (p. ej. "duerme 7–9 horas", \
+                "zona 2", "80/20") — eso es consejo normal, no una cifra del usuario.
+                4) Corto (2–4 frases), accionable, sin tecnicismos ni emojis. No eres médico: no diagnostiques.
                 """
             }
         )
@@ -82,18 +86,35 @@ final class OnDeviceCoachEngine: ObservableObject {
         defer { thinking = false }
 
         do {
-            let reply = try await session.respond(to: q).content
+            var reply = try await session.respond(to: q).content
                 .trimmingCharacters(in: .whitespacesAndNewlines)
-            let fabricated = grounding.validate(answer: reply)
-            if reply.isEmpty || !fabricated.isEmpty {
-                // Golden-rule guard tripped (or empty) → use the engine's own words instead.
-                messages.append(ChatMessage(role: .assistant, text: grounding.deterministicAnswer(forChip: .today)))
-            } else {
-                messages.append(ChatMessage(role: .assistant, text: reply))
+
+            // Golden-rule guard (FER-330): only fires if the model misquoted one of the USER's own
+            // metrics (a number with a metric unit the engine never produced). If so, ask it once to
+            // restate using only the tool's figures, keeping its answer to the same question.
+            if !reply.isEmpty, !grounding.validate(answer: reply).isEmpty {
+                let corrected = try await session.respond(to: """
+                    En tu respuesta anterior citaste una cifra de mis métricas que no está en los hechos. \
+                    Vuelve a responder LA MISMA pregunta usando solo las cifras de la herramienta para \
+                    mis datos; los consejos generales con números están bien.
+                    """).content.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !corrected.isEmpty, grounding.validate(answer: corrected).isEmpty {
+                    reply = corrected
+                } else {
+                    // Still misquoting → don't show a wrong figure, and don't dump an unrelated
+                    // template. A short, honest line keeps the answer about the user's question.
+                    reply = "Mejor no arriesgo una cifra que no tengo confirmada. Pregúntamelo de otra forma y te ayudo."
+                }
             }
+
+            if reply.isEmpty {
+                reply = "No alcancé a redactar una respuesta. Intenta de nuevo."
+            }
+            messages.append(ChatMessage(role: .assistant, text: reply))
         } catch {
-            errorText = "No pude responder en tu iPhone ahora. Te dejo la lectura del motor."
-            messages.append(ChatMessage(role: .assistant, text: grounding.deterministicAnswer(forChip: .today)))
+            errorText = "No pude responder en tu iPhone ahora. Intenta de nuevo."
+            messages.append(ChatMessage(role: .assistant,
+                                        text: "No pude responder en tu iPhone ahora. Intenta de nuevo en un momento."))
         }
     }
 }
