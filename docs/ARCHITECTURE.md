@@ -477,6 +477,17 @@ brings the JSON in, so NOOP still makes no network call.
   and a lower-is-better one like resting HR share one projector with no special case). Returns `nil`
   below ~two weeks of base (the screen hides the chart). It never projects performance, only the
   measurable signal. Pure + DB-free.
+- **`StressEngine`** (FER-376) is the intraday autonomic-activation ("stress") engine: a `0–3` curve
+  for the current day from beat-to-beat RR, normalized against a **personal waking reference** (robust
+  percentile RMSSD anchors over the recent ~7 days of *waking* buckets — high RMSSD = calm = 0, low =
+  activated = 3, clamped). It reimplements no HRV math — it delegates per window to `HRVAnalyzer`
+  (RMSSD, Task Force 1996; Malik 1989 cleaning). Unlike the daily `StressModel` it is **relative to the
+  person's own waking day** (the daily resting/sleep baseline would read "maxed out all day"); noisy or
+  active windows (HR-reserve gate, analogous to Firstbeat excluding activity) and excluded spans
+  (sleep/movement) return `nil` ("no reading"), and a short history yields no reference (cold start),
+  never a min-max fallback. The reference is computed **on the fly** from the already-stored
+  `rrInterval` rows (no new migration, mirroring how the strain curve recomputes from `hrSample`);
+  persisting a summary for performance and cross-day patterns is deferred to FER-378. Pure + DB-free.
 
 Because the engine never touches the database, the same code runs over live-collected streams,
 backfilled streams, or imported data interchangeably. **All derived values are approximate.**
