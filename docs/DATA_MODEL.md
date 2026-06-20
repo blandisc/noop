@@ -60,7 +60,7 @@ single `DatabaseQueue` and applies these PRAGMAs before any query runs:
 
 `WhoopStore` is an `actor`: all GRDB calls run on the actor's serial executor (off the main
 thread) through the `syncRead` / `syncWrite` helpers. The reported schema version is
-`WhoopStoreInfo.schemaVersion = 11`.
+`WhoopStoreInfo.schemaVersion = 13`.
 
 ---
 
@@ -75,6 +75,8 @@ The schema falls into four groups:
 | **Raw outbox** (transient) | `rawBatch` | Compressed raw BLE frames, prunable |
 | **Bookkeeping** | `cursors` | Highwater / read cursors |
 | **Metric caches** | `sleepSession`, `dailyMetric`, `journal`, `workout`, `appleDaily`, `metricSeries` | Derived metrics + CSV / Apple-Health imports |
+| **Experiments** *(v12)* | `experiment` | N-of-1 experiments (FER-307) |
+| **Strength tracker** *(v13)* | `customExercise`, `routine`, `routineExercise`, `strengthSession`, `setEntry`, `personalRecord` | User-authored routines/sessions/sets/PRs — relational, UUID PKs. The seed exercise catalog is a bundled resource in `StrandTraining`, not in SQLite. (FER-345) |
 
 All timestamp columns named `ts`, `startTs`, `endTs`, `capturedAt`, etc. are **unix seconds**
 (integers). Day-keyed cache tables use a `day` text column in `YYYY-MM-DD` form and compare it
@@ -98,6 +100,10 @@ Migrations are registered in `Packages/WhoopStore/Sources/WhoopStore/Database.sw
 | **v7** | Adds in-sleep signal aggregates to `dailyMetric`: `spo2Pct`, `skinTempDevC`, `respRateBpm` (all nullable). |
 | **v8** | Adds `journal`, `workout`, and `appleDaily` (Apple-Health daily aggregates). |
 | **v9** | Adds the generic long-format `metricSeries` table and its `(deviceId, key, day)` index. |
+| **v10** | Adds `stepSample` (WHOOP5 step-motion counter persistence). |
+| **v11** | Adds nullable `steps` + `activeKcalEst` to `dailyMetric` (on-device daily step total + calorie estimate). |
+| **v12** | Adds the `experiment` table (N-of-1 experiments, FER-307). |
+| **v13** | Strength tracker (FER-345): `customExercise`, `routine`, `routineExercise`, `strengthSession`, `setEntry`, `personalRecord` + their indexes. Relational, UUID-string PKs; array fields (muscles, cues, warm-up percents) are JSON text columns. Append-only. |
 
 ### The vestigial `synced` column
 
