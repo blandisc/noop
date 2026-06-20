@@ -134,6 +134,41 @@ final class CoachGroundingTests: XCTestCase {
         XCTAssertFalse(ups.contains(.today))
     }
 
+    // FER-332: query-aware retrieval + topic classification.
+    func testTopicClassifierMapsSpanishQuestions() {
+        XCTAssertEqual(CoachTopic.classify("¿cuánto debería dormir?"), .sleep)
+        XCTAssertEqual(CoachTopic.classify("¿por qué amanecí cansado?"), .recovery)
+        XCTAssertEqual(CoachTopic.classify("¿cómo viene mi recuperación?"), .recovery)
+        XCTAssertEqual(CoachTopic.classify("¿me afecta el alcohol?"), .behavior)
+        XCTAssertEqual(CoachTopic.classify("¿cómo está mi HRV?"), .hrv)
+        XCTAssertEqual(CoachTopic.classify("¿traigo mucha carga?"), .load)
+        XCTAssertEqual(CoachTopic.classify("hola"), .general)
+    }
+
+    func testFactsForTopicAreFocused() {
+        let mixed = [
+            insight(.sleepRegularity, reading: "Sueño tarde.", value: 1, unit: "h", metric: "Sueño", relevance: 5),
+            insight(.behavior, reading: "Alcohol baja recuperación.", value: 8, unit: "pts", metric: "Recuperación", relevance: 4),
+        ]
+        let g = CoachGrounding.from(insights: mixed, readiness: nil, recovery: 70, referenceDay: "d")
+        XCTAssertEqual(g.facts(for: .sleep).count, 1)
+        XCTAssertEqual(g.facts(for: .sleep).first?.kind, .sleepRegularity)
+        XCTAssertEqual(g.facts(for: .behavior).first?.kind, .behavior)
+    }
+
+    func testDeterministicAnswerByTopicIsOnTopic() {
+        let mixed = [
+            insight(.sleepRegularity, reading: "Tu sueño llegó 1.4 h más tarde de lo normal.",
+                    value: 1.4, unit: "h", metric: "Sueño", relevance: 5),
+        ]
+        let g = CoachGrounding.from(insights: mixed, readiness: nil, recovery: 56, referenceDay: "d")
+        let sleepAns = g.deterministicAnswer(forTopic: .sleep)
+        XCTAssertTrue(sleepAns.contains("1.4 h más tarde"))
+        XCTAssertFalse(sleepAns.contains("56"))        // a sleep question doesn't lead with recovery
+        // chip delegates to topic
+        XCTAssertEqual(g.deterministicAnswer(forChip: .sleep), sleepAns)
+    }
+
     func testMetricNumbersOnlyCatchesUnitedNumbers() {
         let found = CoachGrounding.metricNumbers(in: "91% y 80 ms, pero 9 horas y 80/20")
         XCTAssertEqual(found, ["91", "80"])
