@@ -381,13 +381,13 @@ public struct DiurnalDial: View {
 
     var accessibilityText: String {
         var parts: [String] = []
-        if syncing { parts.append("Sincronizando.") }
-        parts.append("Reloj de 24 horas. Son las \(clockString(nowHour)).")
+        if syncing { parts.append(String(localized: "Syncing.", bundle: .main)) }
+        parts.append(String(localized: "24-hour clock. It's \(clockString(nowHour)).", bundle: .main))
         if let s = solar {
-            parts.append("Amanecer \(clockString(s.sunrise)), atardecer \(clockString(s.sunset)).")
+            parts.append(String(localized: "Sunrise \(clockString(s.sunrise)), sunset \(clockString(s.sunset)).", bundle: .main))
         }
         if let sl = sleep {
-            parts.append("Ventana de sueño de \(clockString(sl.bedtime)) a \(clockString(sl.wake)).")
+            parts.append(String(localized: "Sleep window from \(clockString(sl.bedtime)) to \(clockString(sl.wake)).", bundle: .main))
         }
         return parts.joined(separator: " ")
     }
