@@ -639,15 +639,14 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 
 ### SupportView
 **Archivo:** `Cenit/Screens/SupportView.swift`  
-**Descripción:** «Acerca de y soporte» en **luz «Instrumento diurno»** (FER-67: fusiona About + Support, antes oscura): identidad + versión + «What's new» + buscar actualizaciones (GitHub, on-demand) + misión + atribución + apoyar (donación cripto: moneda → QR → copiar) + contacto + **un solo** aviso «no afiliado / no es dispositivo médico». Se abre como sheet claro desde Ajustes; en Hoy vía `SupportModalOverlay` (panel claro).
+**Descripción:** «Acerca de y soporte» en **luz «Instrumento diurno»** (FER-67 fusionó About+Support; **FER-381 la adelgazó**: se quitaron Buscar actualizaciones, la donación y el contacto). Queda: identidad + versión + «What's new» (changelog) + misión + atribución + **un solo** aviso «no afiliado / no es dispositivo médico». Se abre como sheet claro desde Ajustes; en Hoy vía `SupportModalOverlay` (panel claro).
 
 | Estado | Condición de entrada |
 |--------|---------------------|
-| Estático (mayoría) | Siempre |
-| Buscar actualizaciones | idle / checking / al día / disponible / falló |
-| Donación | moneda elegida → QR + copiar |
+| Estático | Siempre |
+| What's New | sheet del changelog |
 
-**Componentes (Instrumento):** secciones por espacio (sin card-in-card) — About (versión + `QuietButton` What's new/Check updates + misión) · Built on (atribución) · Support the build (picker de moneda + QR negro-sobre-blanco + copiar) · Contact (`QuietButton` Email) · disclaimer al pie; `SupportModalOverlay` (panel de papel para Hoy)
+**Componentes (Instrumento):** secciones por espacio (sin card-in-card) — About (versión + `QuietButton` What's new + misión) · Built on (atribución) · disclaimer al pie; `SupportModalOverlay` (panel de papel para Hoy)
 
 ---
 

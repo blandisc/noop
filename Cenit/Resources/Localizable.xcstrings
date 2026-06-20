@@ -27484,6 +27484,23 @@
           }
         }
       }
+    },
+    "%@ — all your data, none of the cloud.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ — all your data, none of the cloud."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ — todos tus datos, nada en la nube."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

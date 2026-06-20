@@ -18,6 +18,8 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
+    # FER-381 — Acerca de y soporte adelgazado: subtítulo acortado
+    '%@ — all your data, none of the cloud.': '%@ — todos tus datos, nada en la nube.',
     # FER-69 — Reskin «Automatizaciones» a «Instrumento» + saneo Mac-only
     'Make the strap do things — tap to act, train by feel, wake to a buzz.': 'Haz que la banda haga cosas — toca para actuar, entrena por sensación, despierta con un zumbido.',
     'Double-tap': 'Doble toque',

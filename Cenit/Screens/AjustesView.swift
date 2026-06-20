@@ -422,25 +422,27 @@ private struct AjustesLanding: View {
             .environmentObject(autoBackup)
             .preferredColorScheme(.light)
         case .automations:
-            // Still dark (goes light in FER-69), presented self-contained pinned to `.dark`.
+            // Light «Instrumento» now that AutomationsView is reskinned (FER-69); un-pinned from `.dark`
+            // in FER-381 (it had stayed dark-pinned, so the light screen showed dark chrome). Theme
+            // injected at the root (it doesn't cross the `.sheet` boundary, FER-162).
             NavigationStack {
                 AutomationsView()
-                    .background(StrandPalette.surfaceBase.ignoresSafeArea())
                     .navigationBarTitleDisplayMode(.inline)
-                    .toolbarBackground(StrandPalette.surfaceBase, for: .navigationBar)
+                    .toolbarBackground(theme.paper, for: .navigationBar)
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) {
-                            Button("Done") { darkScreen = nil }.foregroundStyle(StrandPalette.accent)
+                            Button("Done") { darkScreen = nil }.foregroundStyle(theme.ink)
                         }
                     }
             }
+            .instrumentoTheme(theme)
             .environmentObject(model)
             .environmentObject(repo)
             .environmentObject(live)
             .environmentObject(health)
             .environmentObject(behavior)
             .environmentObject(autoBackup)
-            .preferredColorScheme(.dark)
+            .preferredColorScheme(.light)
         }
     }
 }
