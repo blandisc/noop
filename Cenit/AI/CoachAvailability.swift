@@ -28,10 +28,10 @@ enum CoachUnavailableReason: Equatable {
     /// Short headline for the "por qué" explainer.
     var title: String {
         switch self {
-        case .deviceNotEligible:           return "Tu iPhone no es compatible"
-        case .appleIntelligenceNotEnabled: return "Activa Apple Intelligence"
-        case .modelNotReady:               return "El modelo se está preparando"
-        case .osTooOld:                    return "Necesitas iOS 26"
+        case .deviceNotEligible:           return String(localized: "Your iPhone isn't supported")
+        case .appleIntelligenceNotEnabled: return String(localized: "Turn on Apple Intelligence")
+        case .modelNotReady:               return String(localized: "The model is getting ready")
+        case .osTooOld:                    return String(localized: "You need iOS 26")
         }
     }
 
@@ -39,18 +39,18 @@ enum CoachUnavailableReason: Equatable {
     var detail: String {
         switch self {
         case .deviceNotEligible:
-            return "El texto libre lo redacta el modelo de Apple Intelligence, que corre dentro de tu iPhone. Tu equipo no lo soporta, así que respondo con preguntas prearmadas y las cifras de tu motor."
+            return String(localized: "Free text is written by the Apple Intelligence model, which runs inside your iPhone. Your device doesn't support it, so I answer with pre-built questions and your engine's numbers.")
         case .appleIntelligenceNotEnabled:
-            return "Tu iPhone es compatible. Enciende Apple Intelligence en Ajustes para escribir preguntas en texto libre."
+            return String(localized: "Your iPhone supports it. Turn on Apple Intelligence in Settings to ask free-text questions.")
         case .modelNotReady:
-            return "Apple Intelligence está descargando el modelo. Inténtalo de nuevo en unos minutos; mientras, te respondo con preguntas prearmadas."
+            return String(localized: "Apple Intelligence is downloading the model. Try again in a few minutes; meanwhile, I answer with pre-built questions.")
         case .osTooOld:
-            return "El texto libre on-device requiere iOS 26 o posterior. Mientras, te respondo con preguntas prearmadas y las cifras de tu motor."
+            return String(localized: "On-device free text needs iOS 26 or later. Meanwhile, I answer with pre-built questions and your engine's numbers.")
         }
     }
 
     /// What the user needs for the on-device tier — shown verbatim in the "qué necesitas" block.
-    static let requirements = "iPhone 15 Pro o más nuevo (chip A17 Pro+), iOS 26 o posterior, y Apple Intelligence activado en Ajustes."
+    static let requirements = String(localized: "iPhone 15 Pro or newer (A17 Pro+ chip), iOS 26 or later, and Apple Intelligence turned on in Settings.")
 }
 
 enum CoachAvailability {

@@ -85,7 +85,7 @@ final class OnDeviceCoachEngine: ObservableObject {
             let safe = (!rewritten.isEmpty && grounding.validate(answer: rewritten).isEmpty) ? rewritten : base
             messages.append(ChatMessage(role: .assistant, text: safe))
         } catch {
-            errorText = "No pude redactar en tu iPhone ahora; te dejo la lectura del motor."
+            errorText = String(localized: "I couldn't write that on your iPhone right now; here's the engine's reading.")
             messages.append(ChatMessage(role: .assistant, text: base))
         }
     }
