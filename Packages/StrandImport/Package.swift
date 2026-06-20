@@ -15,7 +15,7 @@ let package = Package(
             "WhoopProtocol", "WhoopStore",
             .product(name: "ZIPFoundation", package: "ZIPFoundation"),
         ]),
-        .testTarget(name: "StrandImportTests", dependencies: ["StrandImport"], resources: [
+        .testTarget(name: "StrandImportTests", dependencies: ["StrandImport", "WhoopStore"], resources: [
             .copy("Resources"),
         ]),
     ]

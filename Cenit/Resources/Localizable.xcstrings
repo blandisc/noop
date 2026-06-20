@@ -26142,6 +26142,414 @@
         }
       }
     },
+    "Make the strap do things — tap to act, train by feel, wake to a buzz.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make the strap do things — tap to act, train by feel, wake to a buzz."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haz que la banda haga cosas — toca para actuar, entrena por sensación, despierta con un zumbido."
+          }
+        }
+      }
+    },
+    "Double-tap": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Double-tap"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doble toque"
+          }
+        }
+      }
+    },
+    "Shortcut name": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shortcut name"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nombre del atajo"
+          }
+        }
+      }
+    },
+    "Wear & presence": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wear & presence"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uso y presencia"
+          }
+        }
+      }
+    },
+    "Run a Shortcut when taken off": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Run a Shortcut when taken off"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ejecutar un atajo al quitártela"
+          }
+        }
+      }
+    },
+    "Run a Shortcut when put back on": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Run a Shortcut when put back on"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ejecutar un atajo al ponértela"
+          }
+        }
+      }
+    },
+    "Haptic coaching": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haptic coaching"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coaching háptico"
+          }
+        }
+      }
+    },
+    "HR-zone coaching": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HR-zone coaching"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coaching por zona de FC"
+          }
+        }
+      }
+    },
+    "Resting stress nudge (experimental)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resting stress nudge (experimental)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aviso de estrés en reposo (experimental)"
+          }
+        }
+      }
+    },
+    "Smart alarm": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smart alarm"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alarma inteligente"
+          }
+        }
+      }
+    },
+    "Enable smart alarm": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable smart alarm"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activar alarma inteligente"
+          }
+        }
+      }
+    },
+    "Illness early-warning": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Illness early-warning"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aviso temprano de enfermedad"
+          }
+        }
+      }
+    },
+    "Watch for early-illness signs": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Watch for early-illness signs"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vigilar señales tempranas de enfermedad"
+          }
+        }
+      }
+    },
+    "Double-tap the strap to trigger an action. (The strap exposes a single double-tap gesture.)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Double-tap the strap to trigger an action. (The strap exposes a single double-tap gesture.)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Da doble toque a la banda para disparar una acción. (La banda expone un solo gesto de doble toque.)"
+          }
+        }
+      }
+    },
+    "Run a Shortcut when the strap comes off or goes back on — set a Focus, pause media, mark yourself away.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Run a Shortcut when the strap comes off or goes back on — set a Focus, pause media, mark yourself away."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ejecuta un atajo cuando te quitas o te pones la banda — activa un modo de Concentración, pausa el audio, márcate ausente."
+          }
+        }
+      }
+    },
+    "Presence automation — set a Focus, pause media, set away…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Presence automation — set a Focus, pause media, set away…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatización de presencia — activa un modo de Concentración, pausa el audio, márcate ausente…"
+          }
+        }
+      }
+    },
+    "Reverse the above when you return.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reverse the above when you return."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revierte lo anterior cuando regresas."
+          }
+        }
+      }
+    },
+    "Train by feel — the strap buzzes so you don't have to watch a screen.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Train by feel — the strap buzzes so you don't have to watch a screen."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entrena por sensación — la banda zumba para que no tengas que mirar una pantalla."
+          }
+        }
+      }
+    },
+    "Buzz when you hit your top zone (ease off) and again when you recover. Uses your max HR from Settings.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buzz when you hit your top zone (ease off) and again when you recover. Uses your max HR from Settings."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zumba cuando llegas a tu zona más alta (baja el ritmo) y otra vez cuando te recuperas. Usa tu FC máx de Ajustes."
+          }
+        }
+      }
+    },
+    "A gentle buzz when your HRV drops while your heart rate is calm — a cue to take a paced breath. Rate-limited to once every 15 minutes; off by default.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A gentle buzz when your HRV drops while your heart rate is calm — a cue to take a paced breath. Rate-limited to once every 15 minutes; off by default."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un zumbido suave cuando tu HRV baja mientras tu pulso está en calma — una señal para respirar con calma. Limitado a una vez cada 15 minutos; apagado por defecto."
+          }
+        }
+      }
+    },
+    "Wake to a wrist buzz. This arms the strap's own firmware alarm, so it still fires even if your iPhone is asleep or Cénit is closed.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wake to a wrist buzz. This arms the strap's own firmware alarm, so it still fires even if your iPhone is asleep or Cénit is closed."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Despierta con un zumbido en la muñeca. Esto arma la alarma del propio firmware de la banda, así que suena aunque tu iPhone esté dormido o Cénit esté cerrado."
+          }
+        }
+      }
+    },
+    "Arms the strap to buzz at your wake time.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arms the strap to buzz at your wake time."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arma la banda para que zumbe a tu hora de despertar."
+          }
+        }
+      }
+    },
+    "Watches your resting HR, HRV, skin temperature and respiration against your own 28-day baseline. On-device and approximate — informational only, not a diagnosis.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Watches your resting HR, HRV, skin temperature and respiration against your own 28-day baseline. On-device and approximate — informational only, not a diagnosis."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vigila tu FC en reposo, HRV, temperatura de la piel y respiración contra tu propia base de 28 días. En el dispositivo y aproximado — solo informativo, no un diagnóstico."
+          }
+        }
+      }
+    },
+    "Needs at least 14 days of history. When two or more signals drift together you get a notification — at most once a day.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Needs at least 14 days of history. When two or more signals drift together you get a notification — at most once a day."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Necesita al menos 14 días de historial. Cuando dos o más señales se desvían juntas, recibes una notificación — máximo una vez al día."
+          }
+        }
+      }
+    },
     "‘%1$@’ and your %2$@": {
       "localizations": {
         "en": {
