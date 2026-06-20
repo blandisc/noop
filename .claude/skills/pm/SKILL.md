@@ -88,8 +88,8 @@ Antes de preguntar, mira el código relevante para no preguntar lo que el repo y
 responde. Ej.: si es un cambio a `TodayView`, ábrela para entender el estado
 actual; si es un metric nuevo, revisa `MetricCatalog.swift`. **Lee para no
 preguntar de más, no para tardarte.** Carga contexto **al grano** —la sección o el
-archivo que toca el cambio—, no los docs completos (`SCREENS.md` / `CONTRIBUTING.md`
-enteros son caros y rara vez hacen falta). Nunca inventes nombres de archivo o
+archivo que toca el cambio—, no los docs completos (`CONTRIBUTING.md`
+entero es caro y rara vez hace falta). Nunca inventes nombres de archivo o
 símbolos: si no los confirmaste, di "archivo probable" o pregunta.
 
 ### 4. Haz pocas preguntas, las correctas
