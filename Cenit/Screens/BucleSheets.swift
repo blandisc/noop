@@ -311,13 +311,22 @@ struct AnotaTuDiaSheet: View {
     @EnvironmentObject var repo: Repository
     @StateObject private var catalog = JournalCatalogStore()
 
-    @State private var dayOffset = 0           // 0 = hoy, 1 = ayer
+    /// 0 = hoy … 13 = hace 13 días. Editable solo 0/1; los demás son solo lectura (FER-313).
+    @State private var dayOffset = 0
     @State private var answers: [String: Bool] = [:]
     @State private var importedQuestions: [String] = []
+    /// Offsets (0…13) con algún hábito anotado — marca el puntito en la tira.
+    @State private var daysWithData: Set<Int> = []
 
-    private var dayKey: String {
-        Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -dayOffset, to: Date()) ?? Date())
+    /// Cuántos días hacia atrás muestra la tira (Hoy + 13).
+    private static let historyDays = 14
+    /// Solo Hoy y Ayer se pueden editar; el resto se ve en solo lectura.
+    private var isEditable: Bool { dayOffset <= 1 }
+
+    private func dayKey(_ offset: Int) -> String {
+        Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -offset, to: Date()) ?? Date())
     }
+    private var dayKey: String { dayKey(dayOffset) }
 
     private var questions: [String] {
         JournalCatalogStore.mergeCatalog(imported: importedQuestions, custom: catalog.customQuestions)
@@ -329,13 +338,24 @@ struct AnotaTuDiaSheet: View {
                 HStack(alignment: .firstTextBaseline) {
                     Text("Anota tu día").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     Spacer()
-                    dayPill("Hoy", offset: 0)
-                    dayPill("Ayer", offset: 1)
+                    if !isEditable {
+                        Text("Solo lectura").font(StrandFont.captionNumber).foregroundStyle(theme.inkTertiary)
+                            .padding(.horizontal, 8).padding(.vertical, 2)
+                            .overlay(Capsule().stroke(theme.hairlineStrong, lineWidth: 1))
+                    }
                 }
-                Text("Sobre la noche y el día que desembocan en esta mañana.")
-                    .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.bottom, 4)
+
+                dayStrip
+
+                HStack(spacing: 6) {
+                    Image(systemName: isEditable ? "pencil" : "lock")
+                        .font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
+                    Text(isEditable ? "Lo que no marques se asume “No”."
+                                    : "Solo Hoy y Ayer se pueden editar. Los días viejos quedan fijos.")
+                        .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.top, 2).padding(.bottom, 4)
 
                 ForEach(questions, id: \.self) { q in
                     HStack {
@@ -352,31 +372,73 @@ struct AnotaTuDiaSheet: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
-        .task { await reload() }
+        .task { await reload(scanHistory: true) }
     }
 
-    private func dayPill(_ label: LocalizedStringKey, offset: Int) -> some View {
+    // MARK: Day strip
+
+    private var dayStrip: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 7) {
+                ForEach(0..<Self.historyDays, id: \.self) { offset in
+                    dayCell(offset)
+                }
+            }
+            .padding(.vertical, 1)
+        }
+    }
+
+    private func dayCell(_ offset: Int) -> some View {
         let sel = dayOffset == offset
+        let date = Calendar.current.date(byAdding: .day, value: -offset, to: Date()) ?? Date()
         return Button {
             dayOffset = offset
-            Task { await reload() }
+            Task { await reload(scanHistory: false) }
         } label: {
-            Text(label).font(StrandFont.captionNumber)
-                .foregroundStyle(sel ? theme.paper : theme.inkSecondary)
-                .padding(.horizontal, 12).padding(.vertical, 5)
-                .background(sel ? theme.ink : Color.clear, in: Capsule())
-                .overlay(Capsule().stroke(sel ? theme.ink : theme.hairlineStrong, lineWidth: 1))
+            VStack(spacing: 2) {
+                Text(dayName(offset, date)).font(.system(size: 11, weight: .medium))
+                    .textCase(.uppercase)
+                    .foregroundStyle(sel ? theme.paper : theme.inkTertiary)
+                Text(Self.dayNumber.string(from: date)).font(StrandFont.captionNumber).monospacedDigit()
+                    .foregroundStyle(sel ? theme.paper : theme.ink)
+                Circle().fill(daysWithData.contains(offset) ? (sel ? theme.paper : theme.dataRecovery) : .clear)
+                    .frame(width: 5, height: 5)
+            }
+            .frame(minWidth: 38)
+            .padding(.horizontal, 9).padding(.vertical, 7)
+            .background(sel ? theme.ink : Color.clear, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(sel ? theme.ink : theme.hairlineStrong, lineWidth: 1))
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(dayName(offset, date))
     }
+
+    private func dayName(_ offset: Int, _ date: Date) -> String {
+        switch offset {
+        case 0:  return "Hoy"
+        case 1:  return "Ayer"
+        default: return Self.weekday.string(from: date)
+        }
+    }
+
+    private static let weekday: DateFormatter = {
+        let f = DateFormatter(); f.locale = Locale(identifier: "es_MX"); f.dateFormat = "EEE"; return f
+    }()
+    private static let dayNumber: DateFormatter = {
+        let f = DateFormatter(); f.locale = Locale(identifier: "es_MX"); f.dateFormat = "d"; return f
+    }()
+
+    // MARK: Answer pill (editable only on Hoy/Ayer)
 
     private func answerPill(_ label: LocalizedStringKey, q: String, value: Bool) -> some View {
         let sel = answers[q] == value
         return Button {
+            guard isEditable else { return }
             Task {
                 if sel { await repo.clearJournalAnswer(day: dayKey, question: q) }
                 else { await repo.saveJournalAnswer(day: dayKey, question: q, answeredYes: value) }
-                await reload()
+                await reload(scanHistory: true)
                 onChanged()
             }
         } label: {
@@ -386,19 +448,35 @@ struct AnotaTuDiaSheet: View {
                 .padding(.horizontal, 13).padding(.vertical, 5)
                 .background(sel ? theme.ink : Color.clear, in: Capsule())
                 .overlay(Capsule().stroke(sel ? theme.ink : theme.hairlineStrong, lineWidth: 1))
+                .opacity(isEditable || sel ? 1 : 0.55)
         }
         .buttonStyle(.plain)
+        .disabled(!isEditable)
     }
 
-    private func reload() async {
+    private func reload(scanHistory: Bool) async {
         async let importedTask = repo.importedJournalEntries()
         async let answersTask = repo.nativeJournalAnswers(day: dayKey)
         let imported = await importedTask
         let a = await answersTask
         let importedQs = NSOrderedSet(array: imported.map(\.question)).array as? [String] ?? []
+
+        // Which of the 14 days carry any logged answer — drives the strip dots. Only scanned when the
+        // set may have changed (open / after an edit), not on plain day selection. Sequential: these
+        // are cheap SQLite reads run once on open, not a hot path.
+        var withData: Set<Int>? = nil
+        if scanHistory {
+            var out = Set<Int>()
+            for offset in 0..<Self.historyDays {
+                if !(await repo.nativeJournalAnswers(day: dayKey(offset)).isEmpty) { out.insert(offset) }
+            }
+            withData = out
+        }
+
         await MainActor.run {
             self.importedQuestions = importedQs
             self.answers = a
+            if let withData { self.daysWithData = withData }
         }
     }
 }
