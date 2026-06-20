@@ -64,6 +64,48 @@ public enum CoachChip: String, CaseIterable, Sendable {
         case .whatWorks: return "¿Qué funciona en mí?"
         }
     }
+
+    /// The subject a chip is about, so chip answers route through the same topic logic as free text.
+    var topic: CoachTopic {
+        switch self {
+        case .today:     return .general
+        case .recovery:  return .recovery
+        case .sleep:     return .sleep
+        case .whatWorks: return .behavior
+        }
+    }
+}
+
+// MARK: - Topic
+
+/// What a question is about. Free text is classified into one of these so the engine retrieves the
+/// RIGHT facts (a sleep question shouldn't be answered with recovery). es-MX keyword classifier.
+public enum CoachTopic: String, CaseIterable, Sendable {
+    case sleep
+    case recovery
+    case hrv
+    case load
+    case behavior
+    case general
+
+    /// Keyword groups, checked most-specific first. Lowercased, accent-insensitive matching.
+    private static let keywords: [(CoachTopic, [String])] = [
+        (.sleep,    ["dorm", "sueno", "siesta", "acuest", "acostar", "descans", "cama"]),
+        (.hrv,      ["hrv", "variabilidad"]),
+        (.load,     ["carga", "sobreentren", "acwr", "monoton", "esfuerzo", "volumen"]),
+        (.behavior, ["funciona", "habito", "alcohol", "cafe", "cafein", "afecta", "ayuda", "cuesta"]),
+        (.recovery, ["recuper", "listo", "entren", "empuj", "descanso", "readiness",
+                     "cansad", "amaneci", "energia", "agotad", "fatig"]),
+    ]
+
+    /// Classify a free-text question into a topic. Falls back to `.general`.
+    public static func classify(_ question: String) -> CoachTopic {
+        let q = CoachGrounding.foldForMatch(question)
+        for (topic, keys) in keywords where keys.contains(where: { q.contains($0) }) {
+            return topic
+        }
+        return .general
+    }
 }
 
 // MARK: - Grounding
@@ -142,10 +184,12 @@ public struct CoachGrounding: Equatable, Sendable {
                               allowedNumbers: allowed)
     }
 
-    // MARK: Tool context (Level 2 grounding payload)
+    // MARK: Full fact dump (compact text)
 
-    /// The compact text the on-device `Tool` returns to the model. Plain, deterministic, bounded —
-    /// `[id] statement` lines plus the readiness header. No raw series.
+    /// A compact, deterministic, bounded text dump of all facts — `[id] statement` lines plus the
+    /// readiness header, no raw series. (FER-332 inverts the hierarchy so the model rewrites a
+    /// per-topic deterministic answer rather than free-forming over this; kept as the canonical
+    /// text view of the grounding.)
     public func toolContextString() -> String {
         var lines: [String] = ["HECHOS DEL MOTOR (día \(asOf)). Usa SOLO estas cifras; no inventes números."]
         if let rec = recovery {
@@ -166,35 +210,64 @@ public struct CoachGrounding: Equatable, Sendable {
 
     // MARK: Level 1 — deterministic answer
 
-    /// The Level-1 answer for a pre-armed chip: built ONLY by concatenating the engine's own
-    /// readings/summary. No generation — by construction it can never contain a figure the engine
-    /// didn't produce. This is what "Modo esencial" shows when Apple Intelligence is unavailable.
-    public func deterministicAnswer(forChip chip: CoachChip) -> String {
-        switch chip {
-        case .today:
+    /// The facts relevant to a topic — so a sleep question is answered with sleep facts, not recovery.
+    public func facts(for topic: CoachTopic) -> [GroundingFact] {
+        switch topic {
+        case .sleep:
+            return facts.filter { $0.kind == .sleepRegularity || $0.kind == .sleepDebt
+                || $0.metric.localizedCaseInsensitiveContains("sueño") }
+        case .recovery:
+            return facts.filter { $0.metric.localizedCaseInsensitiveContains("recuper")
+                || $0.kind == .nightAnomaly || $0.kind == .forecast || $0.kind == .trend }
+        case .hrv:
+            return facts.filter { $0.metric.localizedCaseInsensitiveContains("hrv") || $0.kind == .nightAnomaly }
+        case .load:
+            return facts.filter { $0.kind == .trainingLoad || $0.kind == .activityCost }
+        case .behavior:
+            return facts.filter { $0.kind == .behavior }
+        case .general:
+            return facts
+        }
+    }
+
+    /// The deterministic, engine-only answer for a topic — the SOURCE of truth the model rewrites
+    /// (FER-332). Built only from the engine's own readings/summary, so it can never contain a figure
+    /// the engine didn't produce. This is also exactly what "Modo esencial" shows verbatim.
+    public func deterministicAnswer(forTopic topic: CoachTopic) -> String {
+        switch topic {
+        case .general:
             var parts: [String] = []
             if let rec = recovery { parts.append("Tu recuperación hoy es \(rec)%.") }
             if let s = readinessSummary { parts.append(s) }
-            let extra = facts.first { $0.kind == .forecast || $0.kind == .trend || $0.kind == .nightAnomaly }
-            if let extra { parts.append(extra.statement) }
+            if let extra = facts.first(where: { $0.kind == .forecast || $0.kind == .trend || $0.kind == .nightAnomaly }) {
+                parts.append(extra.statement)
+            }
             return joined(parts, fallback: "Aún no hay datos suficientes para una lectura de hoy. Sincroniza tu strap y vuelve en unos días.")
         case .recovery:
             var parts: [String] = []
             if let rec = recovery { parts.append("Recuperación hoy: \(rec)%.") }
             if let lvl = readinessLevel { parts.append("Estado: \(lvl).") }
             if let s = readinessSummary { parts.append(s) }
-            parts.append(contentsOf: facts.filter { $0.metric.localizedCaseInsensitiveContains("recuper") }.map(\.statement))
+            parts.append(contentsOf: facts(for: .recovery).map(\.statement))
             return joined(parts, fallback: "Todavía no tengo una lectura de recuperación. Faltan noches para calibrar.")
         case .sleep:
-            let sleepFacts = facts.filter { $0.kind == .sleepRegularity || $0.kind == .sleepDebt
-                || $0.metric.localizedCaseInsensitiveContains("sueño") }
-            return joined(sleepFacts.map(\.statement),
+            return joined(facts(for: .sleep).map(\.statement),
                           fallback: "Sin hallazgos de sueño por ahora. Cuando haya más noches registradas, aparecerán aquí.")
-        case .whatWorks:
-            let levers = facts.filter { $0.kind == .behavior }.prefix(3)
-            return joined(levers.map(\.statement),
+        case .hrv:
+            return joined(facts(for: .hrv).map(\.statement),
+                          fallback: "Aún no tengo una lectura clara de tu HRV. Faltan noches para calibrar.")
+        case .load:
+            return joined(facts(for: .load).map(\.statement),
+                          fallback: "Sin señales de carga de entrenamiento por ahora.")
+        case .behavior:
+            return joined(facts(for: .behavior).prefix(3).map(\.statement),
                           fallback: "Aún no encuentro un hábito con efecto claro en tus números. Sigue registrando tu día y lo detectaré.")
         }
+    }
+
+    /// Convenience: the deterministic answer for a pre-armed chip, via its topic.
+    public func deterministicAnswer(forChip chip: CoachChip) -> String {
+        deterministicAnswer(forTopic: chip.topic)
     }
 
     // MARK: Seeded conversation (FER-331 — kill the blank box)
@@ -334,6 +407,11 @@ public struct CoachGrounding: Equatable, Sendable {
         while let last = current.last, last == "." || last == "," { current.removeLast() }
         flush()
         return out
+    }
+
+    /// Fold text for keyword matching: lowercased and accent-insensitive ("Sueño" → "sueno").
+    static func foldForMatch(_ s: String) -> String {
+        s.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: "es"))
     }
 
     /// Normalize a numeric token for comparison: unify the decimal mark to ".", drop a trailing

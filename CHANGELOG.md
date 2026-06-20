@@ -19,6 +19,10 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Pregúntale ahora se queda en el tema que preguntaste / Ask your data now stays on the topic you asked about.**
+  **ES** — Si preguntas de sueño, te responde de sueño (antes a veces saltaba a recuperación). Por dentro, el motor de tu teléfono arma la respuesta correcta con tus cifras y el modelo de Apple Intelligence solo la **redacta bonito** — así nunca inventa un dato tuyo, y en cualquier iPhone (con o sin Apple Intelligence) ves la respuesta del motor directa, al instante.
+  **EN** — Ask about sleep and you get a sleep answer (before it sometimes jumped to recovery). Under the hood, your phone's engine builds the right answer from your numbers and the Apple Intelligence model only **phrases it nicely** — so it never invents your data, and on any iPhone (with or without Apple Intelligence) you get the engine's answer directly, instantly.
+  ([Cenit/AI/OnDeviceCoach.swift](Cenit/AI/OnDeviceCoach.swift), [Packages/StrandAnalytics/Sources/StrandAnalytics/CoachGrounding.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/CoachGrounding.swift))
 - **Pregúntale ahora empieza la conversación por ti / Ask your data now starts the conversation for you.**
   **ES** — Se acabó la caja en blanco. Al abrir «Pregúntale», el coach habla primero: te dice lo que más resalta hoy (tu hallazgo más relevante) y te ofrece preguntas sugeridas **según tu día** —si lo que destaca es tu sueño, la primera sugerencia es de sueño—. Y después de cada respuesta te propone dos seguimientos. Funciona igual con o sin Apple Intelligence.
   **EN** — No more blank box. When you open "Ask your data", the coach speaks first: it tells you what stands out today (your most relevant finding) and offers suggested questions **based on your day** — if sleep is what stands out, the first suggestion is about sleep. After each answer it proposes two follow-ups. Works the same with or without Apple Intelligence.
