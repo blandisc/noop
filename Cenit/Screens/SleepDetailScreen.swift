@@ -117,7 +117,7 @@ struct SleepDetailScreen: View {
                     Hypnogram(intervals: model.intervals,
                               height: 150,
                               showsStageAxis: true,
-                              showsHover: true,   // finger-drag scrub → stage + clock range + duration (FER-234)
+                              showsScrub: true,   // finger-drag scrub → stage + clock range + duration (FER-234)
                               nightStart: night.onsetDate)
                 } else {
                     // Apple Health / no per-epoch timeline → proportional stacked bar.
@@ -357,7 +357,7 @@ struct SleepDetailScreen: View {
                         // band cleanly. (FER-249 v3)
                         showsArea: false,
                         height: 160,
-                        showsHover: true,
+                        showsScrub: true,
                         valueFormat: bt.valueFormat,
                         axisLabelColor: theme.inkTertiary,
                         gridLineColor: theme.hairline,

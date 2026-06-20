@@ -503,7 +503,7 @@ struct RecoveryDetailScreen: View {
             days: model.heat,
             cellSize: cell,
             spacing: spacing,
-            showsHover: false,
+            showsScrub: false,
             tint: heatTint,
             emptyFill: theme.hairline,
             emptyStroke: theme.hairlineStrong,

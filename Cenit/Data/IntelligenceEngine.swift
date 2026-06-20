@@ -157,7 +157,11 @@ final class IntelligenceEngine: ObservableObject {
                                            steps: steps, dayHr: dayHr, daySteps: daySteps,
                                            skinTemp: skin, skinTempOffsetC: skinOffset,
                                            profile: up, baselines: baselines1, maxHROverride: maxHR,
-                                           tzOffsetSeconds: tzOffset)
+                                           tzOffsetSeconds: tzOffset,
+                                           // The in-progress day (offset 0) scores strain over its own
+                                           // civil day, not the ~42h window that's all of yesterday just
+                                           // after midnight (FER-341).
+                                           strainCivilDayOnly: offset == 0)
             }.value
             nightlyHrvByDay[res.daily.day] = res.daily.avgHrv
             nightlyRhrByDay[res.daily.day] = res.daily.restingHr.map(Double.init)

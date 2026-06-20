@@ -77,6 +77,10 @@ public struct ConnectionDot: View {
 
     @State private var animate = false
 
+    /// Flat (no glow / plus-lighter ripple) in the «Instrumento diurno» light language; the
+    /// pulsing dot then breathes its own opacity instead of casting a glow (FER-131 · 03).
+    @Environment(\.instrumentoFlat) private var flat
+
     public init(tone: StrandTone = .positive, pulsing: Bool = false, size: CGFloat = 9) {
         self.tone = tone
         self.pulsing = pulsing
@@ -85,7 +89,9 @@ public struct ConnectionDot: View {
 
     public var body: some View {
         ZStack {
-            if pulsing {
+            // Dark system: an expanding plus-lighter ripple. On warm paper that additive bloom only
+            // greys the dot, so the flat language drops it and breathes the dot instead (FER-131 · 03).
+            if pulsing, !flat {
                 Circle()
                     .fill(tone.color)
                     .frame(width: size, height: size)
@@ -96,7 +102,8 @@ public struct ConnectionDot: View {
             Circle()
                 .fill(tone.color)
                 .frame(width: size, height: size)
-                .shadow(color: tone.color.opacity(0.8), radius: pulsing ? 4 : 2)
+                .shadow(color: flat ? .clear : tone.color.opacity(0.8), radius: flat ? 0 : (pulsing ? 4 : 2))
+                .opacity(flat && pulsing ? (animate ? 0.4 : 1.0) : 1.0)
         }
         .frame(width: size, height: size)
         .onAppear { if pulsing { animate = true } }

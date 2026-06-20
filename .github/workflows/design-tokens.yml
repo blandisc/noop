@@ -1,0 +1,47 @@
+# Design-token drift guard (FER-131 handoff · 01).
+#
+# `Instrumento.swift` is the single source of truth for the «Instrumento diurno» tokens. This job
+# re-runs the generator (`swift run StrandDesignTokens`) and fails if the committed doc artifacts
+# (docs/design-system/DESIGN.md token table + tokens/design-tokens.json) differ from what the code
+# produces — i.e. someone changed a token without regenerating, or hand-edited the generated blocks.
+# Self-contained: plain SwiftPM on macOS, no Xcode, no signing, no secrets.
+name: Design Tokens
+
+on:
+  pull_request:
+    branches: [iOS, main]
+    paths:
+      - 'Packages/StrandDesign/**'
+      - 'docs/design-system/DESIGN.md'
+      - 'docs/design-system/tokens/design-tokens.json'
+      - '.github/workflows/design-tokens.yml'
+  push:
+    branches: [iOS, main]
+    paths:
+      - 'Packages/StrandDesign/**'
+      - 'docs/design-system/DESIGN.md'
+      - 'docs/design-system/tokens/design-tokens.json'
+      - '.github/workflows/design-tokens.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: design-tokens-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  drift:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Regenerate tokens from Instrumento.swift
+        run: swift run StrandDesignTokens
+        working-directory: Packages/StrandDesign
+
+      - name: Fail if docs drift from code
+        run: |
+          if ! git diff --exit-code -- docs/design-system/DESIGN.md docs/design-system/tokens/design-tokens.json; then
+            echo "::error::Design tokens are out of date. Run 'swift run StrandDesignTokens' in Packages/StrandDesign and commit the result."
+            exit 1
+          fi

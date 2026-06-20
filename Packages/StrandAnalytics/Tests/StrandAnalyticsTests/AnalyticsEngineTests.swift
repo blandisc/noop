@@ -239,6 +239,45 @@ final class AnalyticsEngineTests: XCTestCase {
         XCTAssertNil(utc.daily.steps)
     }
 
+    func testInProgressDayStrainExcludesYesterday() {
+        // The in-progress day (offset 0) reads a ~42h night window that, just after midnight, is ALL of
+        // yesterday. The Esfuerzo del día must NOT surface yesterday's strain as today's (FER-341): with
+        // `strainCivilDayOnly`, strain counts only the device's local civil `day`.
+        let profile = UserProfile(weightKg: 75, heightCm: 178, age: 30, sex: "male")
+        let tz = -6 * 3600
+        // Yesterday's workout: 12 min @ 175 bpm ending ~23:00 local MX (2026-06-19) = ~05:00 UTC.
+        let yStart = utcTimestamp("2026-06-20 04:48:00")            // 2026-06-19 22:48 local MX
+        var hr = (0..<720).map { HRSample(ts: yStart + $0, bpm: 175) }
+        // Today so far: 2 min @ 60 bpm at 00:10 local MX (2026-06-20) = 06:10 UTC.
+        let tStart = utcTimestamp("2026-06-20 06:10:00")            // 2026-06-20 00:10 local MX
+        hr += (0..<120).map { HRSample(ts: tStart + $0, bpm: 60) }
+        // The two blocks straddle the local civil-day boundary.
+        XCTAssertEqual(AnalyticsEngine.dayString(yStart, tzOffsetSeconds: tz), "2026-06-19")
+        XCTAssertEqual(AnalyticsEngine.dayString(tStart, tzOffsetSeconds: tz), "2026-06-20")
+
+        // Full window (a past complete day, default): strain scores the workout → non-nil.
+        let full = AnalyticsEngine.analyzeDay(day: "2026-06-20", hr: hr, profile: profile,
+                                              tzOffsetSeconds: tz)
+        XCTAssertNotNil(full.strain, "the full ~42h window includes yesterday's workout")
+        // In-progress day: strain restricted to today's own civil day — only 2 min of resting HR, too
+        // little to score → nil. So `repo.today?.strain` is nil and the tile reads «—», not yesterday's.
+        let inProgress = AnalyticsEngine.analyzeDay(day: "2026-06-20", hr: hr, profile: profile,
+                                                    tzOffsetSeconds: tz, strainCivilDayOnly: true)
+        XCTAssertNil(inProgress.strain, "the in-progress day must not surface yesterday's strain")
+    }
+
+    func testInProgressDayStrainCountsTodaysOwnActivity() {
+        // The civil-day flag doesn't blanket-zero today: a real workout TODAY still scores.
+        let profile = UserProfile(weightKg: 75, heightCm: 178, age: 30, sex: "male")
+        let tz = -6 * 3600
+        let tStart = utcTimestamp("2026-06-20 18:00:00")            // 2026-06-20 12:00 local MX
+        let hr = (0..<900).map { HRSample(ts: tStart + $0, bpm: 170) }   // 15-min hard block, all today
+        XCTAssertEqual(AnalyticsEngine.dayString(tStart, tzOffsetSeconds: tz), "2026-06-20")
+        let inProgress = AnalyticsEngine.analyzeDay(day: "2026-06-20", hr: hr, profile: profile,
+                                                    tzOffsetSeconds: tz, strainCivilDayOnly: true)
+        XCTAssertNotNil(inProgress.strain, "today's own activity still scores under the civil-day flag")
+    }
+
     func testFutureLocalDaysToPruneSelectsOnlyFutureUnwrittenRows() {
         let today = "2026-06-17"
         let written: Set<String> = ["2026-06-15", "2026-06-16", "2026-06-17"]   // re-grouped local days

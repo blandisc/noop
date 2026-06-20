@@ -1240,7 +1240,7 @@ struct TodayView: View {
         // la lista previa). El esfuerzo es strap-only (Apple no lo computa); los pasos, Apple-only.
         let hrvR    = resolveMeasured { $0.avgHrv }
         let rhrR    = resolveMeasured { $0.restingHr.map(Double.init) }
-        let sleepR  = resolveMeasured { $0.totalSleepMin }
+        let sleepR  = resolveMeasured(todayOnly: true) { $0.totalSleepMin }
         let spo2R   = resolveMeasured { $0.spo2Pct }
         let strainT = repo.today?.strain
         // Pasos: sólo Apple Salud; acota a la ventana de 14 días para no mostrar pasos rancios bajo un
@@ -1281,7 +1281,9 @@ struct TodayView: View {
                     valueColor: theme.dataSleep,
                     fromApple: sleepR?.fromApple == true,
                     context: tileContext(today: sleepR?.value, history: history(base) { $0.totalSleepMin },
-                                         betterHigher: true, deadband: 5, positive: positiveDelta) { sleepDeltaText($0) }
+                                         betterHigher: true, deadband: 5, positive: positiveDelta) { sleepDeltaText($0) },
+                    // Sin sueño de hoy todavía → «Esta noche» en vez de la cifra de ayer (FER-341).
+                    placeholder: sleepR == nil ? "Esta noche" : nil
                 )) { metricDetail = .sleep(sleepR.map { Int($0.value.rounded()) }) }
                 // HRV — más alto es mejor.
                 metricTile(TodayMetricTile(
@@ -1433,9 +1435,9 @@ struct TodayView: View {
         let change = t - mean
         if abs(change) <= deadband { return .ready(change: .equal(color: theme.inkTertiary), band: band) }
         let up = change > 0
-        // Mejora → `positive` (verde AA-en-texto-chico); empeora → `critical` (ya pasa 4.5:1);
-        // sin valencia (carga / FC) → tinta neutra.
-        let color: Color = betterHigher.map { (up == $0) ? positive : theme.critical } ?? theme.inkTertiary
+        // Mejora → `positive` (verde AA-en-texto-chico); empeora → `negativeText` (= critical, ya pasa
+        // 4.5:1); sin valencia (carga / FC) → tinta neutra. Ambos son los tokens de texto tintado <24pt.
+        let color: Color = betterHigher.map { (up == $0) ? positive : theme.negativeText } ?? theme.inkTertiary
         let mag = format(abs(change))
         return .ready(change: up ? .above(magnitude: mag, color: color)
                                  : .below(magnitude: mag, color: color), band: band)
@@ -1506,6 +1508,9 @@ struct TodayView: View {
         let valueColor: Color
         var fromApple: Bool = false
         var context: TileContext? = nil
+        /// Hint shown in the footer when there's no value/context (e.g. «Esta noche» for a day-scoped
+        /// tile with no reading for today yet). FER-341.
+        var placeholder: LocalizedStringKey? = nil
         @Environment(\.instrumentoTheme) private var theme
 
         var body: some View {
@@ -1555,6 +1560,11 @@ struct TodayView: View {
                         .lineLimit(1).minimumScaleFactor(0.7)
                     Spacer(minLength: 0)
                 case .none:
+                    if let placeholder {
+                        Text(placeholder)
+                            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                            .lineLimit(1).minimumScaleFactor(0.7)
+                    }
                     Spacer(minLength: 0)
                 }
                 sourceBadge
@@ -1854,10 +1864,14 @@ struct TodayView: View {
     /// a "Today" header would misrepresent it (same spirit as the #23/#49 trailing-window fixes).
     /// `fromApple` flags Apple-sourced values so the row badges them instead of passing them off as a
     /// live strap reading. Returns nil when nothing fresh exists → the row placeholders. (FER-62 follow-up)
-    private func resolveMeasured(_ pick: (DailyMetric) -> Double?) -> (value: Double, fromApple: Bool)? {
+    /// `todayOnly` drops the yesterday fallback: a day-scoped tile (Sueño) shows ONLY today's value, so it
+    /// never passes yesterday's off as today's at the midnight boundary (FER-341).
+    private func resolveMeasured(todayOnly: Bool = false,
+                                 _ pick: (DailyMetric) -> Double?) -> (value: Double, fromApple: Bool)? {
         let todayKey = Repository.localDayKey(Date())
         if let d = repo.today, let v = pick(d) { return (v, repo.appleHealthDays.contains(todayKey)) }
-        let cutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date())
+        let cutoff = todayOnly ? todayKey
+            : Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date())
         for day in repo.days.reversed() {
             guard day.day >= cutoff else { break }
             if let v = pick(day) { return (v, repo.appleHealthDays.contains(day.day)) }

@@ -388,7 +388,7 @@ private struct CuerpoLanding: View {
                 if showSpark, let spark {
                     Sparkline(values: spark,
                               gradient: Gradient(colors: [color.opacity(0.55), color]),
-                              lineWidth: 2, showsArea: false, showsHead: false, showsHover: false)
+                              lineWidth: 2, showsArea: false, showsHead: false, showsScrub: false)
                         .frame(width: 64, height: 28)
                 }
                 recoveryNumeral(score: score, calibrating: cal, color: color)

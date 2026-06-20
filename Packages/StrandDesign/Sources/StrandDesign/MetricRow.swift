@@ -82,7 +82,7 @@ public struct MetricRow: View {
                     Sparkline(values: sparkline,
                               gradient: Gradient(colors: [sparkColor.opacity(0.55), sparkColor]),
                               referenceBand: referenceBand, bandColor: bandColor,
-                              lineWidth: 2.0, showsArea: false, showsHead: false, showsHover: false)
+                              lineWidth: 2.0, showsArea: false, showsHead: false, showsScrub: false)
                 } else if isPlaceholder {
                     RoundedRectangle(cornerRadius: 3)
                         .fill(StrandPalette.textPrimary.opacity(0.06))

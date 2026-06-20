@@ -63,7 +63,7 @@ final class HeartRateSheetSnapshotTests: XCTestCase {
                     valueRange: range,
                     showsArea: true,
                     height: 260,
-                    showsHover: false,
+                    showsScrub: false,
                     valueFormat: { "\(Int($0.rounded())) bpm" },
                     dateFormat: { timeFmt.string(from: $0).lowercased() }
                 )
