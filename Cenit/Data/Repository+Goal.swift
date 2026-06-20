@@ -5,9 +5,10 @@ import WhoopStore
 // Repository+Goal.swift — building a goal simulation from on-device data (FER-311).
 //
 // Pure composition over `TrajectorySimulator`: no math here. The focus series comes from
-// `InsightEngine.outcomeSeries` (the single label→field source of truth), and the lever's magnitude is
-// the `effectDelta` the N-of-1 experiment measured when it PROVED the lever — not a fresh recompute, so
-// the projection uses exactly the effect the user validated.
+// `InsightEngine.outcomeSeries`, keyed by the typed `metric.outcome` (`InsightEngine.Outcome`, the single
+// label→field source of truth), and the lever's magnitude is the `effectDelta` the N-of-1 experiment
+// measured when it PROVED the lever — not a fresh recompute, so the projection uses exactly the effect
+// the user validated.
 
 extension Repository {
 
@@ -16,7 +17,7 @@ extension Repository {
     /// - `leverName == nil` → no proven lever for this metric (the "sin palancas" state).
     func goalSimulation(metric: GoalMetric, targetDate: Date?) async -> GoalSimulation {
         let sorted = days.sorted { $0.day < $1.day }
-        let seriesMap = InsightEngine.outcomeSeries(sorted, metric: metric.outcomeLabel)
+        let seriesMap = InsightEngine.outcomeSeries(sorted, metric.outcome)
         let series: [Double?] = sorted.map { seriesMap[$0.day] }
         let usable = Array(series.suffix(TrajectorySimulator.window)).compactMap { $0 }.count
         let horizon = Self.goalHorizon(targetDate: targetDate)
