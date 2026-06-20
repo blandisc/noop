@@ -894,7 +894,7 @@ private func sampleModel(score: Int?, calibration: Int?) -> RecoveryDetailModel 
         ],
         series: series,
         heat: calibration != nil ? [] : heat,
-        load: calibration != nil ? nil : .init(acwr: 1.05, monotony: 1.4, bandLabel: "Ideal load", bandFlag: .good),
+        load: calibration != nil ? nil : .init(acwr: 1.05, monotony: 1.4, bandLabel: "Balanced load", bandFlag: .good),
         loaded: true,
         isAppleHealth: false,
         forecast: RecoveryForecast.compute(recovery: series.map { $0.value }))
