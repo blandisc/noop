@@ -175,12 +175,9 @@ public enum RecoveryForecast {
     }
 
     /// Sample standard deviation (ddof = 1). `0` for fewer than two values.
+    /// Single impl lives in `ReadinessEngine.sampleSD` (FER-322).
     static func sampleSD(_ values: [Double]) -> Double {
-        let n = values.count
-        guard n >= 2 else { return 0 }
-        let mean = values.reduce(0, +) / Double(n)
-        let ss = values.reduce(0.0) { $0 + ($1 - mean) * ($1 - mean) }
-        return (ss / Double(n - 1)).squareRoot()
+        ReadinessEngine.sampleSD(values) ?? 0
     }
 
     /// Bounded, gentle drag (recovery points) from accumulated sleep debt.

@@ -87,12 +87,9 @@ extension FitnessAgeEngine {
                                   restingHR: medianRHR, activeDays: activeDays, rhrNights: rhrNights)
     }
 
-    /// Median of a value set (`nil` if empty). Even counts average the two middle values.
+    /// Median of a value set (`nil` if empty). Single impl lives in `HRVAnalyzer.median` (FER-322).
     static func median(_ values: [Double]) -> Double? {
-        guard !values.isEmpty else { return nil }
-        let s = values.sorted()
-        let n = s.count
-        return n.isMultiple(of: 2) ? (s[n / 2 - 1] + s[n / 2]) / 2 : s[n / 2]
+        values.isEmpty ? nil : HRVAnalyzer.median(values)
     }
 }
 

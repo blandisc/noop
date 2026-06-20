@@ -220,14 +220,8 @@ public enum ComparisonEngine {
         return era * 146097 + doe - 719468
     }
 
-    /// Median of an array (0 when empty).
-    static func median(_ values: [Double]) -> Double {
-        guard !values.isEmpty else { return 0 }
-        let s = values.sorted()
-        let n = s.count
-        if n % 2 == 1 { return s[n / 2] }
-        return (s[n / 2 - 1] + s[n / 2]) / 2.0
-    }
+    /// Median of an array (0 when empty). Single impl lives in `HRVAnalyzer.median` (FER-322).
+    static func median(_ values: [Double]) -> Double { HRVAnalyzer.median(values) }
 
     /// OLS slope of values against their 0-based index. 0 when n < 2 or the index
     /// has zero variance (impossible for distinct indices, but guarded anyway).
