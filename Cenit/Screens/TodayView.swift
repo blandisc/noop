@@ -1435,9 +1435,9 @@ struct TodayView: View {
         let change = t - mean
         if abs(change) <= deadband { return .ready(change: .equal(color: theme.inkTertiary), band: band) }
         let up = change > 0
-        // Mejora → `positive` (verde AA-en-texto-chico); empeora → `critical` (ya pasa 4.5:1);
-        // sin valencia (carga / FC) → tinta neutra.
-        let color: Color = betterHigher.map { (up == $0) ? positive : theme.critical } ?? theme.inkTertiary
+        // Mejora → `positive` (verde AA-en-texto-chico); empeora → `negativeText` (= critical, ya pasa
+        // 4.5:1); sin valencia (carga / FC) → tinta neutra. Ambos son los tokens de texto tintado <24pt.
+        let color: Color = betterHigher.map { (up == $0) ? positive : theme.negativeText } ?? theme.inkTertiary
         let mag = format(abs(change))
         return .ready(change: up ? .above(magnitude: mag, color: color)
                                  : .below(magnitude: mag, color: color), band: band)

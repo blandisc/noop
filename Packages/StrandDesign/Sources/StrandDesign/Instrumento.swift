@@ -125,25 +125,45 @@ public extension InstrumentoTheme {
          Color(hex: "#C4631F"), Color(hex: "#9C3D14")]
     }
 
-    /// An AA-at-text-size positive green, for the rare case a POSITIVE signal must ride
-    /// SMALL text (the Today metric tile's "↑ N vs media" delta, 12pt) rather than a large
-    /// numeral. `verdict` is tuned for AA-LARGE (3:1 at ≥18pt where the dominant numerals
-    /// live); at 12pt body text needs 4.5:1, which `verdict` misses at every hour (3.6:1 on
-    /// day paper, ~3.2:1 on the dimmer night paper). This darkens `verdict` in OKLab —
-    /// keeping its hue — only as far as needed to clear 4.5:1 against the CURRENT (already
-    /// hour-interpolated) `paper`, so the positive delta stays WCAG-AA across the whole 24h
-    /// sweep with no hand-tuned hex per anchor. `critical` already clears 4.5:1 (≈4.6:1 even
-    /// at night), so the negative delta keeps using it directly. Computed (like `hrZoneRamp`)
-    /// so it needs no change to the theme's init or the hour engine. (Auditoría Hoy · P1)
+    // MARK: Tinted-text tokens — the data/state hues at SMALL size (FER-131 handoff · 02)
+    //
+    // The data/state hues (`verdict`/`dataRecovery`/… at 3.6:1, AA-LARGE) are sized for the
+    // dominant numeral, where AA-large's 3:1 floor at ≥24pt applies. Any datum or DELTA set
+    // BELOW 24pt — the metric tile's "↑ N vs media" at 12pt — needs the 4.5:1 normal-text
+    // floor those saturated hues miss. `positiveText`/`negativeText` are the first-class
+    // tokens for that case: a hue-preserving darkening that clears 4.5:1 against whatever
+    // `paper` is live. The RULE: <24pt valence text uses these; the ≥24pt hero numeral keeps
+    // the saturated hue. Both are computed (like `hrZoneRamp`) so they need no change to the
+    // theme's init or the hour engine, and the by-the-hour paper can't silently break them.
+
+    /// AA-at-text-size POSITIVE green for a positive signal on SMALL (<24pt) text — the
+    /// Today tile's "↑ N vs media" delta (12pt). Darkens `verdict` in OKLab, keeping its hue,
+    /// only as far as needed to reach 5.0:1 against the CURRENT (already hour-interpolated)
+    /// `paper`. The handoff's hi-fi value is `#0A6B45` / ~5.0:1 on the `.base` day paper; the
+    /// 5.0 target (vs the bare 4.5 text floor) both lands on that value and balances it against
+    /// `negativeText` (= critical, 4.9:1), so ↑ and ↓ deltas read at the same weight. Computed
+    /// (not a fixed hex) so it stays WCAG-AA across the whole 24h sweep. (FER-131 handoff · 02)
     var positiveText: Color {
-        OKLab.darkened(verdict, toContrast: 4.5, against: paper)
+        OKLab.darkened(verdict, toContrast: 5.0, against: paper)
     }
+
+    /// AA-at-text-size NEGATIVE red for a negative signal on SMALL (<24pt) text — the Today
+    /// tile's "↓ N vs objetivo" delta (12pt). Equal to `critical` (`#BC3A34`), which already
+    /// clears the 4.5:1 normal-text floor (≈4.9:1 on day paper, ≥4.5:1 even on the dimmer
+    /// night paper), so no darkening is needed — but it is a NAMED token (not a raw `critical`
+    /// reference) so a negative delta reads as a first-class data role, paired with
+    /// `positiveText`. (FER-131 · 02)
+    var negativeText: Color { critical }
 }
 
 // MARK: - Environment injection
 
 private struct InstrumentoThemeKey: EnvironmentKey {
     static let defaultValue = InstrumentoTheme.base
+}
+
+private struct InstrumentoFlatKey: EnvironmentKey {
+    static let defaultValue = false
 }
 
 public extension EnvironmentValues {
@@ -153,12 +173,26 @@ public extension EnvironmentValues {
         get { self[InstrumentoThemeKey.self] }
         set { self[InstrumentoThemeKey.self] = newValue }
     }
+
+    /// True inside the «Instrumento diurno» light language: chart accents render FLAT — no
+    /// glow / bloom / colored halo. Glow is a black-screen effect; on warm paper it only
+    /// muddies the glyph's edge, so the daytime language drops it (FER-131 handoff · 03).
+    /// Defaults to `false` so the legacy DARK system keeps its glow untouched; it flips to
+    /// `true` automatically wherever `.instrumentoTheme(_:)` / `.instrumentoThemeByHour()` is
+    /// applied — i.e. exactly the views rendered on paper.
+    var instrumentoFlat: Bool {
+        get { self[InstrumentoFlatKey.self] }
+        set { self[InstrumentoFlatKey.self] = newValue }
+    }
 }
 
 public extension View {
-    /// Inject an «Instrumento diurno» theme for this subtree.
+    /// Inject an «Instrumento diurno» theme for this subtree. Also marks the subtree as the
+    /// light language (`\.instrumentoFlat`), so shared chart components drop their dark-system
+    /// glow/bloom on paper (FER-131 handoff · 03).
     func instrumentoTheme(_ theme: InstrumentoTheme) -> some View {
         environment(\.instrumentoTheme, theme)
+            .environment(\.instrumentoFlat, true)
     }
 }
 

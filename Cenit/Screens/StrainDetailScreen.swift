@@ -158,7 +158,7 @@ struct StrainDetailScreen: View {
                         valueRange: 0...max((curve.map(\.value).max() ?? 1) * 1.15, 1),
                         showsArea: true,
                         height: 160,
-                        showsHover: true,
+                        showsScrub: true,
                         valueFormat: { fmt($0) },
                         dateFormat: { Self.hourString($0) },
                         axisLabelColor: theme.inkTertiary,

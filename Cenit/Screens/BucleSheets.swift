@@ -549,7 +549,7 @@ enum BucleFormat {
     @ViewBuilder static func trendSparkline(_ values: [Double], color: Color) -> some View {
         if values.count >= 2 {
             Sparkline(values: values, gradient: Gradient(colors: [color, color]),
-                      lineWidth: 2, showsArea: false, showsHead: true, showsHover: false)
+                      lineWidth: 2, showsArea: false, showsHead: true, showsScrub: false)
                 .frame(width: 80, height: 24)
         }
     }

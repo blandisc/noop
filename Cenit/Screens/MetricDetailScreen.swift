@@ -721,7 +721,7 @@ struct MetricDetailScreen: View {
                     valueRange: Self.hrRange(v, resting: restingHR),
                     showsArea: true,
                     height: 240,
-                    showsHover: true,
+                    showsScrub: true,
                     valueFormat: { "\(Int($0.rounded())) \(unit)" },
                     dateFormat: { Self.hrClock.string(from: $0) },
                     axisLabelColor: theme.inkTertiary,

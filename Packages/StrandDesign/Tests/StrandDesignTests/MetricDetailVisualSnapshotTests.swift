@@ -41,7 +41,7 @@ final class MetricDetailVisualSnapshotTests: XCTestCase {
                 valueRange: (lo - pad)...(hi + pad),
                 showsArea: true,
                 height: 200,
-                showsHover: false,
+                showsScrub: false,
                 valueFormat: { "\(Int($0.rounded())) ms" },
                 axisLabelColor: theme.inkTertiary,
                 gridLineColor: theme.hairline
@@ -72,7 +72,7 @@ final class MetricDetailVisualSnapshotTests: XCTestCase {
                 valueRange: (lo - pad)...(hi + pad),
                 showsArea: true,
                 height: 200,
-                showsHover: false,
+                showsScrub: false,
                 valueFormat: { "\(Int($0.rounded())) ms" },
                 axisLabelColor: theme.inkTertiary,
                 gridLineColor: theme.hairline

@@ -1,18 +1,46 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
-// MARK: - Chart Hover Toolkit (reusable across every visualization)
+// MARK: - Chart Scrub Toolkit (reusable across every visualization)
 //
-// A shared, instrument-grade hover affordance: a small dark tooltip card that
-// names the exact datum under the cursor, plus geometry helpers for crosshairs
-// and nearest-point lookup. Every StrandDesign visualization inherits the same
-// look so nothing is ever a static, unexplained colour.
+// A shared, instrument-grade SCRUB affordance: this is iOS, so there is no hover —
+// the user press-drags a finger along the chart and the nearest datum snaps under
+// it. The toolkit provides a small tooltip card that names that datum, geometry
+// helpers for crosshairs and nearest-point lookup, and a light selection haptic
+// fired on each datum change. Every StrandDesign visualization inherits the same
+// affordance so nothing is ever a static, unexplained colour. (On macOS the same
+// crosshair/tooltip is driven by pointer hover — see `scrubGesture`.)
 //
 // Design tokens only: surfaceOverlay background, hairline border, StrandFont +
-// StrandPalette text, StrandMotion fade-in. Never hardcode hex.
+// StrandPalette text, StrandMotion fade-in. On warm paper (`\.instrumentoFlat`)
+// the glow/bloom is dropped and the handle reads flat (FER-131 handoff · 03/10).
+// Never hardcode hex.
+
+// MARK: - Scrub haptics
+
+/// A light selection haptic for chart scrubbing — fired when the finger snaps onto a NEW datum
+/// (iOS only; a no-op on macOS / Linux). Drive it from a chart's `.onChange(of: <snappedIndex>)`,
+/// which already fires once per datum change. One prepared generator is reused so taps stay crisp
+/// (Apple HIG: prepare + reuse). (FER-131 handoff · 10)
+public enum ChartHaptics {
+    #if canImport(UIKit) && os(iOS)
+    @MainActor private static let generator = UISelectionFeedbackGenerator()
+    #endif
+    /// Fire a selection tick for a move onto a new datum. Call only for a non-nil index
+    /// (don't buzz on finger-up).
+    @MainActor public static func datumChanged() {
+        #if canImport(UIKit) && os(iOS)
+        generator.selectionChanged()
+        generator.prepare()
+        #endif
+    }
+}
 
 // MARK: - ChartTooltip
 
-/// A small dark read-out card shown near the cursor while hovering a chart.
+/// A small dark read-out card shown near the snapped datum while scrubbing a chart.
 /// Renders a bold primary value line and a secondary label/date line.
 public struct ChartTooltip: View {
 
@@ -30,13 +58,17 @@ public struct ChartTooltip: View {
         self.accent = accent
     }
 
+    /// Flat (no glow, soft shadow) in the «Instrumento diurno» light language (FER-131 · 03).
+    @Environment(\.instrumentoFlat) private var flat
+
     public var body: some View {
         HStack(alignment: .center, spacing: 8) {
             if let accent {
                 Circle()
                     .fill(accent)
                     .frame(width: 7, height: 7)
-                    .shadow(color: accent.opacity(0.8), radius: 3)
+                    // Colored glow only in the dark system; flat on paper (FER-131 · 03).
+                    .shadow(color: flat ? .clear : accent.opacity(0.8), radius: flat ? 0 : 3)
             }
             VStack(alignment: .leading, spacing: 1) {
                 Text(value)
@@ -60,7 +92,9 @@ public struct ChartTooltip: View {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .stroke(StrandPalette.hairlineStrong, lineWidth: 1)
         )
-        .shadow(color: Color.black.opacity(0.45), radius: 10, x: 0, y: 6)
+        // Heavy black drop shadow is a dark-screen effect; on paper soften it to a quiet
+        // separation shadow so the dark card lifts off the warm paper without a glow (FER-131 · 03).
+        .shadow(color: Color.black.opacity(flat ? 0.14 : 0.45), radius: flat ? 4 : 10, x: 0, y: flat ? 2 : 6)
         .fixedSize()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label != nil ? "\(value), \(label!)" : value)
@@ -73,8 +107,8 @@ public struct ChartTooltip: View {
 /// Estimates the tooltip's size, then flips/clamps so it never spills off-edge.
 public struct ChartTooltipPlacement {
 
-    /// Compute the tooltip centre for an anchor (typically the highlighted point
-    /// or the cursor), given the tooltip's measured size and the chart bounds.
+    /// Compute the tooltip centre for an anchor (typically the snapped point under
+    /// the finger), given the tooltip's measured size and the chart bounds.
     /// Prefers to sit above-and-right of the anchor, flipping when near an edge.
     public static func position(
         anchor: CGPoint,
@@ -103,8 +137,8 @@ public struct ChartTooltipPlacement {
 
 // MARK: - Nearest-point lookup
 
-/// Geometry helpers for mapping a hover location to the nearest datum.
-public enum ChartHoverMath {
+/// Geometry helpers for mapping a scrub location to the nearest datum.
+public enum ChartScrubMath {
 
     /// Index of the sample whose x-position (evenly spaced across `width`) is
     /// closest to `x`. Returns nil for an empty series.
@@ -153,25 +187,41 @@ struct CrosshairRule: View {
 
 // MARK: - Highlighted point dot
 
-/// A small accented dot used to mark the highlighted sample on a line.
+/// A small accented dot marking the snapped sample on a line. In the dark system it blooms; on
+/// warm paper (`\.instrumentoFlat`) it reads as a flat, ENLARGED scrub handle — a paper-filled disc
+/// with a colored ring (no bloom), big enough to read as the draggable indicator (FER-131 · 03/10).
 struct HighlightDot: View {
     var color: Color
     var diameter: CGFloat = 9
 
+    @Environment(\.instrumentoFlat) private var flat
+    @Environment(\.instrumentoTheme) private var theme
+
     var body: some View {
-        ZStack {
-            Circle()
-                .fill(color)
-                .frame(width: diameter * 1.8, height: diameter * 1.8)
-                .blur(radius: diameter * 0.6)
-                .opacity(0.7)
-                .blendMode(.plusLighter)
-            Circle()
-                .fill(StrandPalette.surfaceBase)
-                .frame(width: diameter, height: diameter)
-            Circle()
-                .fill(color)
-                .frame(width: diameter - 3, height: diameter - 3)
+        Group {
+            if flat {
+                // Enlarged flat handle: paper fill + colored ring, matching the «Instrumento» chart.
+                let d = max(diameter + 4, 13)
+                ZStack {
+                    Circle().fill(theme.paper).frame(width: d, height: d)
+                    Circle().strokeBorder(color, lineWidth: 2.5).frame(width: d, height: d)
+                }
+            } else {
+                ZStack {
+                    Circle()
+                        .fill(color)
+                        .frame(width: diameter * 1.8, height: diameter * 1.8)
+                        .blur(radius: diameter * 0.6)
+                        .opacity(0.7)
+                        .blendMode(.plusLighter)
+                    Circle()
+                        .fill(StrandPalette.surfaceBase)
+                        .frame(width: diameter, height: diameter)
+                    Circle()
+                        .fill(color)
+                        .frame(width: diameter - 3, height: diameter - 3)
+                }
+            }
         }
         .allowsHitTesting(false)
     }

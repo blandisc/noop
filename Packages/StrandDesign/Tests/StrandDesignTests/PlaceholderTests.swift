@@ -109,28 +109,28 @@ final class StrandDesignTests: XCTestCase {
 
     func testNearestIndexEvenlySpaced() {
         // 5 samples across width 100 → stride 25. Cursor near each step.
-        XCTAssertEqual(ChartHoverMath.nearestIndex(toX: 0, count: 5, width: 100), 0)
-        XCTAssertEqual(ChartHoverMath.nearestIndex(toX: 26, count: 5, width: 100), 1)
-        XCTAssertEqual(ChartHoverMath.nearestIndex(toX: 60, count: 5, width: 100), 2)
-        XCTAssertEqual(ChartHoverMath.nearestIndex(toX: 100, count: 5, width: 100), 4)
+        XCTAssertEqual(ChartScrubMath.nearestIndex(toX: 0, count: 5, width: 100), 0)
+        XCTAssertEqual(ChartScrubMath.nearestIndex(toX: 26, count: 5, width: 100), 1)
+        XCTAssertEqual(ChartScrubMath.nearestIndex(toX: 60, count: 5, width: 100), 2)
+        XCTAssertEqual(ChartScrubMath.nearestIndex(toX: 100, count: 5, width: 100), 4)
         // Out of range clamps to the ends.
-        XCTAssertEqual(ChartHoverMath.nearestIndex(toX: -50, count: 5, width: 100), 0)
-        XCTAssertEqual(ChartHoverMath.nearestIndex(toX: 999, count: 5, width: 100), 4)
+        XCTAssertEqual(ChartScrubMath.nearestIndex(toX: -50, count: 5, width: 100), 0)
+        XCTAssertEqual(ChartScrubMath.nearestIndex(toX: 999, count: 5, width: 100), 4)
     }
 
     func testNearestIndexEdgeCases() {
-        XCTAssertNil(ChartHoverMath.nearestIndex(toX: 10, count: 0, width: 100))
+        XCTAssertNil(ChartScrubMath.nearestIndex(toX: 10, count: 0, width: 100))
         // Single sample always resolves to index 0.
-        XCTAssertEqual(ChartHoverMath.nearestIndex(toX: 80, count: 1, width: 100), 0)
+        XCTAssertEqual(ChartScrubMath.nearestIndex(toX: 80, count: 1, width: 100), 0)
     }
 
     func testNearestIndexArbitraryXs() {
         let xs: [CGFloat] = [0, 30, 90, 200]
-        XCTAssertEqual(ChartHoverMath.nearestIndex(toX: 5, xs: xs), 0)
-        XCTAssertEqual(ChartHoverMath.nearestIndex(toX: 35, xs: xs), 1)
-        XCTAssertEqual(ChartHoverMath.nearestIndex(toX: 100, xs: xs), 2)
-        XCTAssertEqual(ChartHoverMath.nearestIndex(toX: 195, xs: xs), 3)
-        XCTAssertNil(ChartHoverMath.nearestIndex(toX: 10, xs: []))
+        XCTAssertEqual(ChartScrubMath.nearestIndex(toX: 5, xs: xs), 0)
+        XCTAssertEqual(ChartScrubMath.nearestIndex(toX: 35, xs: xs), 1)
+        XCTAssertEqual(ChartScrubMath.nearestIndex(toX: 100, xs: xs), 2)
+        XCTAssertEqual(ChartScrubMath.nearestIndex(toX: 195, xs: xs), 3)
+        XCTAssertNil(ChartScrubMath.nearestIndex(toX: 10, xs: []))
     }
 
     func testTooltipPlacementStaysInBounds() {

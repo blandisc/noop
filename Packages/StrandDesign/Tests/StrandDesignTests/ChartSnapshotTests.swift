@@ -35,7 +35,7 @@ final class ChartSnapshotTests: XCTestCase {
                 valueRange: range,
                 showsArea: true,
                 height: NoopMetrics.chartHeight,
-                showsHover: false,
+                showsScrub: false,
                 valueFormat: { "\(Int($0.rounded())) bpm" },
                 dateFormat: { fmt.string(from: $0) }
             )
@@ -91,7 +91,7 @@ final class ChartSnapshotTests: XCTestCase {
                 valueRange: range,
                 showsArea: true,
                 height: 132,
-                showsHover: false,
+                showsScrub: false,
                 valueFormat: { String(format: "%.1f", $0) },
                 dateFormat: { fmt.string(from: $0) }
             )
@@ -137,7 +137,7 @@ final class ChartSnapshotTests: XCTestCase {
                 valueRange: 0...100,
                 showsArea: true,
                 height: NoopMetrics.chartHeight,
-                showsHover: false,
+                showsScrub: false,
                 dateFormat: { fmt.string(from: $0) }
             )
         } footer: {

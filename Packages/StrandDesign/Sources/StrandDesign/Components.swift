@@ -211,6 +211,9 @@ public struct SegmentedPillControl<T: Hashable>: View {
                         .frame(minWidth: 32, maxWidth: theme == nil ? nil : .infinity)
                         .padding(.vertical, 6).padding(.horizontal, 11)
                         .background(Capsule(style: .continuous).fill(segmentFill(sel)))
+                        // ≥44pt touch target (the capsule stays compact, centered) — iOS minimum (FER-131 · 10).
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
