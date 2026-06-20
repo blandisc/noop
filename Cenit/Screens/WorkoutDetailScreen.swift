@@ -319,12 +319,7 @@ struct WorkoutDetailScreen: View {
     // MARK: - Formatting
 
     /// Thousands-grouped integer for the energy support (e.g. "1,240").
-    private func grouped(_ v: Double) -> String {
-        Self.intFmt.string(from: NSNumber(value: Int(v.rounded()))) ?? "\(Int(v.rounded()))"
-    }
-    private static let intFmt: NumberFormatter = {
-        let f = NumberFormatter(); f.numberStyle = .decimal; f.maximumFractionDigits = 0; return f
-    }()
+    private func grouped(_ v: Double) -> String { StrandFormat.groupedInt(v) }
 }
 
 // MARK: - Shared source badge (list + detail)

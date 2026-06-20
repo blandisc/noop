@@ -1467,11 +1467,7 @@ struct TodayView: View {
     /// El color del valor de Estrés por banda 0–3, en roles del tema (regla: color saturado solo en el
     /// dato). Bajo → `verdict`, medio → `warning`, alto → `critical`. Reusa `StressBand` (StressView).
     private func stressDataColor(_ score: Double) -> Color {
-        switch StressBand(score: score) {
-        case .low:    return theme.verdict
-        case .medium: return theme.warning
-        case .high:   return theme.critical
-        }
+        StressBand(score: score).dataColor(theme)
     }
 
     /// El contexto de un tile vs su media de 7 días (FER-258): el cambio en lenguaje + la mini-banda
@@ -1879,15 +1875,7 @@ struct TodayView: View {
     }
 
     /// Thousands-grouped integer string (steps / calories).
-    private static let intFmt: NumberFormatter = {
-        let f = NumberFormatter()
-        f.numberStyle = .decimal
-        f.maximumFractionDigits = 0
-        return f
-    }()
-    private func intString(_ v: Double) -> String {
-        Self.intFmt.string(from: NSNumber(value: v)) ?? "\(Int(v.rounded()))"
-    }
+    private func intString(_ v: Double) -> String { StrandFormat.groupedInt(v) }
 
 }
 

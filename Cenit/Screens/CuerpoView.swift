@@ -1024,11 +1024,7 @@ private struct CuerpoLanding: View {
     /// Stress value color by band 0–3 (low → verdict, medium → warning, high → critical). Reuses
     /// `StressBand` (StressView), matching Today's stress tile semantics.
     private func stressDataColor(_ score: Double) -> Color {
-        switch StressBand(score: score) {
-        case .low:    return theme.verdict
-        case .medium: return theme.warning
-        case .high:   return theme.critical
-        }
+        StressBand(score: score).dataColor(theme)
     }
 
     private func recoverySubtitle(score: Int?, calibrating: Int?) -> LocalizedStringKey {
@@ -1045,12 +1041,7 @@ private struct CuerpoLanding: View {
 
     private func sleepText(_ mins: Double) -> String { "\(Int(mins) / 60)h \(Int(mins) % 60)m" }
 
-    private static let intFmt: NumberFormatter = {
-        let f = NumberFormatter(); f.numberStyle = .decimal; f.maximumFractionDigits = 0; return f
-    }()
-    private func intString(_ v: Double) -> String {
-        Self.intFmt.string(from: NSNumber(value: v)) ?? "\(Int(v.rounded()))"
-    }
+    private func intString(_ v: Double) -> String { StrandFormat.groupedInt(v) }
 
     private static func descriptor(_ key: String) -> MetricDescriptor? {
         MetricCatalog.all.first { $0.key == key }
