@@ -119,6 +119,16 @@ final class StrengthSessionModelTests: XCTestCase {
         XCTAssertEqual(s.activeExercises.count, 1, "skipped exercise dropped from the navigator")
     }
 
+    func testSkippingLastActiveExerciseNeverLeavesFocusOnSkipped() {
+        // D2: skip the only/last active exercise mid-session — focus must not rest on a skipped run.
+        let s = make([
+            StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 2), exercise: ex("bench", "Bench"), lastSets: [])
+        ])
+        s.skipExercise(0)
+        XCTAssertNil(s.current, "no active exercise left → current is nil (a «complete» state), not a skipped run")
+        XCTAssertTrue(s.isComplete, "nothing pending once the last exercise is skipped")
+    }
+
     func testMoveExerciseEarlierKeepsFocus() {
         let s = make([
             StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 1), exercise: ex("bench", "Bench"), lastSets: []),

@@ -73,7 +73,13 @@ final class StrengthSessionModel: ObservableObject {
 
     // MARK: Derived
 
-    var current: ExerciseRun? { runs.indices.contains(currentIndex) ? runs[currentIndex] : nil }
+    /// The focused exercise — nil when focus has nowhere active to land (every exercise done-and-parked is
+    /// fine, but a *skipped* run is never surfaced; the sheet shows its «complete» state instead).
+    var current: ExerciseRun? {
+        guard runs.indices.contains(currentIndex) else { return nil }
+        let run = runs[currentIndex]
+        return run.skipped ? nil : run
+    }
     var currentSet: WorkingSet? {
         guard let run = current, run.sets.indices.contains(run.currentSet) else { return nil }
         return run.sets[run.currentSet]
@@ -204,7 +210,16 @@ final class StrengthSessionModel: ObservableObject {
                 return
             }
         }
+        // Nothing pending anywhere. Never leave focus on a skipped run (the Foco would render a skipped
+        // exercise) — park it on the first still-active exercise if one remains.
+        if !runs.indices.contains(currentIndex) || runs[currentIndex].skipped {
+            if let active = runs.firstIndex(where: { !$0.skipped }) { currentIndex = active }
+        }
     }
+
+    /// True when every set across all non-skipped exercises is done (or all exercises were skipped) — the
+    /// Foco then shows a «complete» state instead of a finished exercise's last set.
+    var isComplete: Bool { pendingCount == 0 }
 
     // MARK: Persistence
 
@@ -287,7 +302,9 @@ struct LiveStrengthSheet: View {
         ScrollView {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                 topBar
-                if session.phase == .resting, session.restEndsAt != nil {
+                if session.current == nil {
+                    completePhase
+                } else if session.phase == .resting, session.restEndsAt != nil {
                     restPhase
                 } else {
                     capturePhase
@@ -313,9 +330,11 @@ struct LiveStrengthSheet: View {
             Button("Finish", role: .destructive) { model.endStrengthSession(save: true); dismiss() }
             Button("Keep going", role: .cancel) {}
         } message: {
-            Text(session.pendingCount > 0
-                 ? "\(session.pendingCount) sets aren't logged yet. Finish anyway and save the ones you did?"
-                 : "Save this workout?")
+            Text(session.doneCount == 0
+                 ? "No sets logged yet — finishing will discard this workout."
+                 : (session.pendingCount > 0
+                    ? "\(session.pendingCount) sets aren't logged yet. Finish anyway and save the ones you did?"
+                    : "Save this workout?"))
         }
     }
 
@@ -461,6 +480,30 @@ struct LiveStrengthSheet: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("Open the set table"))
+    }
+
+    // MARK: Complete / empty phase (every exercise done or skipped)
+
+    private var completePhase: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Image(systemName: "checkmark.seal.fill").font(.system(size: 40))
+                .foregroundStyle(theme.dataRecovery).accessibilityHidden(true)
+            Text(session.doneCount > 0 ? "All done" : "Nothing left")
+                .font(StrandFont.title1).foregroundStyle(theme.ink)
+            Text(session.doneCount > 0
+                 ? "You logged \(session.doneCount) sets. Finish to save this workout."
+                 : "Every exercise was skipped. Finish to close, or resume from the hub.")
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Button { model.endStrengthSession(save: true); dismiss() } label: {
+                Label("Finish", systemImage: "checkmark")
+                    .font(StrandFont.headline).foregroundStyle(theme.paper)
+                    .frame(maxWidth: .infinity).padding(.vertical, 15)
+                    .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+            }
+            .buttonStyle(.plain).padding(.top, 4)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: Rest phase (fixed countdown + the «change exercise» bridge)
