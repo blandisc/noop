@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-20 · FER-372</span>
+  <span class="tb-updated">Actualizado 2026-06-20 · Sesión guiada de fuerza (FER-347)</span>
 </div>
 
 <div id="wrapper">
@@ -425,17 +425,18 @@ const SCREENS = [
   },
   {
     id: 'stress', x: 792, y: 60,
-    name: 'Detalle de Estrés', desc: 'Detalle «Instrumento» (FER-241) · solo desde Cuerpo',
+    name: 'Detalle de Estrés', desc: 'Detalle «Instrumento» (FER-241) + «mapa del día» calendario (FER-377) · solo desde Cuerpo',
     file: 'Cenit/Screens/StressDetailScreen.swift',
     icon: '🌡', color: '#F5A623',
     states: [
       { label: 'Con datos: hero = valor de HOY (0–3) en color de banda + bandas universales + qué lo mueve (RHR/HRV) + tendencia + consistencia + tiempo en calma', type: 'data' },
       { label: 'Sin datos (model == nil): hero «—» + cómo obtener datos', type: 'empty' },
       { label: 'Pocos días (<2): se ocultan tendencia/consistencia', type: 'loading' },
-      { label: 'Placeholder «Estrés por momento del día» deshabilitado (cruce con calendario = FER-38)', type: 'empty' },
+      { label: '«Estrés a lo largo del día» (el «mapa del día», FER-377): carril vertical = curva intradía por banda + eventos del calendario como filas + pico ligado a su evento + línea de coincidencia («cayó dentro de», no causa)', type: 'data' },
+      { label: 'Mapa: sin permiso (invitación, no auto-prompt) · denegado (aviso + «Abrir Ajustes») · restringido · sin calendarios (elegir) · sin eventos hoy · cargando · arranque frío («aún aprendiendo tu ritmo»)', type: 'empty' },
     ],
     nav: [],
-    components: ['InfoAccordion (ⓘ por concepto)', 'TrendChart (línea 0–3 sobre bandas)', 'SegmentedPillControl', 'StressModel/StressMath/StressBand', 'ComparisonEngine', 'SeriesShape (CV/decimación)'],
+    components: ['InfoAccordion (ⓘ por concepto)', 'TrendChart (línea 0–3 sobre bandas)', 'SegmentedPillControl', 'StressModel/StressMath/StressBand', 'ComparisonEngine', 'SeriesShape (CV/decimación)', 'StressDayMapBlock + StressCarril + CalendarPickerSheet (FER-377)', 'CalendarDayMap (EventKit on-device)', 'StressEngine + StressDayMap (StrandAnalytics, puros)'],
   },
   {
     id: 'skintemp-detail', x: 1052, y: 60,
@@ -970,20 +971,37 @@ const SCREENS = [
       { label: 'Banda · Sube/Mantén/Baja (oculta sin recovery)', type: 'data' },
     ],
     nav: [],
-    components: ['Tarjeta «Hoy» (theme.surface)', 'RecoveryBand (compartida)', 'Mis rutinas (WhoopStore.routines())', 'Herramientas: En vivo / Respira / Intervalos', 'TrainingSoonSheet (builder «llega pronto» — FER-346)'],
+    components: ['Tarjeta «Hoy» (theme.surface)', 'RecoveryBand (compartida)', 'Mis rutinas (WhoopStore.routines())', 'Herramientas: Reanudar sesión (FER-347) / En vivo / Respira / Intervalos', 'Hospeda la hoja de sesión guiada (.sheet, FER-347)', 'TrainingSoonSheet (builder «llega pronto» — FER-346)'],
   },
   {
     id: 'rutina-de-hoy', x: 284, y: 3470,
-    name: 'Rutina de hoy', desc: 'Pantalla previa al inicio (FER-343): plan + slot de banda de recuperación',
+    name: 'Rutina de hoy', desc: 'Pantalla previa al inicio (FER-343): plan + banda + botón «Empezar» (FER-347)',
     file: 'Cenit/Screens/RutinaDeHoyScreen.swift',
     icon: '📋', color: '#0C8F62',
     states: [
       { label: 'Con plan · ejercicios + esquema + descanso', type: 'data' },
       { label: 'Sin ejercicios', type: 'empty' },
       { label: 'Banda (oculta sin recovery)', type: 'data' },
+      { label: 'Empezar / Reanudar (sesión activa) — FER-347', type: 'data' },
     ],
     nav: [],
-    components: ['RecoveryBand (contenedor; regla = FER-349)', 'Filas de plan (series×reps·peso + chip descanso)', 'Respeta unidades (UnitPrefs)', 'Nota honesta inicio guiado (FER-347)'],
+    components: ['RecoveryBand (contenedor; regla = FER-349)', 'Filas de plan (series×reps·peso + chip descanso)', 'Respeta unidades (UnitPrefs)', 'Botón «Empezar»/«Reanudar» (FER-347)'],
+  },
+  {
+    id: 'sesion-guiada', x: 540, y: 3470,
+    name: 'Sesión guiada de fuerza', desc: 'Foco (peso dominante) + cajón-tabla + descanso fijo + cambiar ejercicio (FER-347)',
+    file: 'Cenit/Screens/LiveStrengthSheet.swift',
+    icon: '🏋', color: '#C4631F',
+    states: [
+      { label: 'Foco · peso (naranja) × reps · registrar serie', type: 'data' },
+      { label: 'Ref «la última vez» + sugerido / Primera vez', type: 'data' },
+      { label: 'Cajón-tabla (detents) · editar/agregar/saltar serie', type: 'data' },
+      { label: 'Descanso fijo · −15/+15/saltar + navegador del plan', type: 'data' },
+      { label: 'Terminar · confirma series pendientes', type: 'data' },
+      { label: 'Tabla refluye a AX5 (Dynamic Type)', type: 'data' },
+    ],
+    nav: [],
+    components: ['StrengthSessionModel (estado global en AppModel; sobrevive cerrar/tab)', 'LiveStrengthSheet (.sheet Instrumento, sin NavigationStack)', 'SetTableDrawer (.presentationDetents medio/grande, botón Cerrar)', 'Navegador del plan (saltar/reordenar)', 'Escribe SetEntry (WhoopStore.saveSession) — FER-345', 'Corre offline / sin HealthKit'],
   },
 ];
 
@@ -1001,6 +1019,8 @@ const EDGES = [
   { from: 'data-sources', to: 'apple-health', label: 'Ver datos importados', type: 'push' },
   { from: 'support',  to: 'whats-new',      label: 'What\'s New',       type: 'sheet'      },
   { from: 'entrenar', to: 'rutina-de-hoy',  label: '«Rutina de hoy»',  type: 'push'       },
+  { from: 'rutina-de-hoy', to: 'sesion-guiada', label: 'Empezar (hoja)', type: 'sheet'    },
+  { from: 'entrenar', to: 'sesion-guiada',  label: 'Reanudar (hoja)',  type: 'sheet'      },
   { from: 'entrenar', to: 'live-workout',   label: 'En vivo',          type: 'sheet'      },
   { from: 'entrenar', to: 'breathing',      label: 'Respira',          type: 'push'       },
   { from: 'entrenar', to: 'interval',       label: 'Intervalos',       type: 'push'       },

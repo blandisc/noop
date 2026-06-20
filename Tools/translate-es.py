@@ -18,6 +18,30 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
+    # FER-377 — Estrés × calendario: el «mapa del día»
+    'No events today and no stress readings yet — your curve fills in as your strap syncs.': 'Hoy no hay eventos ni lecturas de estrés todavía — tu curva se llena conforme tu banda sincroniza.',
+    'Stress through the day': 'Estrés a lo largo del día',
+    'Information about stress through the day': 'Información sobre el estrés a lo largo del día',
+    'Connect my calendar': 'Conectar mi calendario',
+    'Open Settings': 'Abrir Ajustes',
+    "Your calendar isn't available on this device because of a system restriction.": 'Tu calendario no está disponible en este dispositivo por una restricción del sistema.',
+    "Choose which calendars to cross with your stress. You'll only see the ones you pick; nothing is shared.": 'Elige qué calendarios cruzar con tu estrés. Solo verás los que elijas; nada se comparte.',
+    'Choose calendars': 'Elegir calendarios',
+    'Crossing your day…': 'Cruzando tu día…',
+    "You have no events today in the calendars you chose. Your stress curve is still here; come back when something's scheduled to see coincidences.": 'Hoy no tienes eventos en los calendarios que elegiste. Tu curva de estrés sigue aquí; vuelve cuando tengas algo agendado para ver coincidencias.',
+    "I'm still learning your rhythm — I need a few days of waking readings to mark your peaks. Your events are already here.": 'Aún estoy aprendiendo tu ritmo — necesito unos días de lecturas de vigilia para marcar tus picos. Tus eventos ya están aquí.',
+    'All day': 'Todo el día',
+    'Your highest point today, %@, fell within “%@”.': 'Tu punto más alto de hoy, %@, cayó dentro de «%@».',
+    "Your highest point today was at %@. It didn't coincide with any of your events.": 'Tu punto más alto de hoy fue a las %@. No coincidió con ninguno de tus eventos.',
+    'Calendars: %@': 'Calendarios: %@',
+    '· change': '· cambiar',
+    "We'll only cross the ones you pick.": 'Solo cruzaremos los que elijas.',
+    'There are no calendars on this iPhone yet.': 'Aún no hay calendarios en este iPhone.',
+    'All day: %@. Not matched to a moment.': 'Todo el día: %@. No se cruza con un momento.',
+    '(untitled)': '(sin título)',
+    "Cross today's stress curve with your calendar to see what your most activated moments coincided with. Everything stays on your iPhone.": 'Cruza tu curva de estrés de hoy con tu calendario para ver con qué coincidieron tus momentos más activados. Todo se queda en tu iPhone.',
+    'Calendar access is off. Turn it on in Settings › Privacy & Security › Calendars › Cénit to see this cross-reference.': 'El acceso a tu calendario está desactivado. Actívalo en Ajustes › Privacidad y seguridad › Calendarios › Cénit para ver este cruce.',
+    "We put your day's stress curve next to your events so you can see what your most and least activated moments coincided with. You choose which calendars are included; all-day events aren't matched to a moment. It reads coincidence, not cause — seeing two things together doesn't mean one caused the other. Everything is computed on your iPhone; nothing is shared.": 'Ponemos tu curva de estrés del día junto a tus eventos para que veas con qué coincidieron tus momentos más y menos activados. Tú eliges qué calendarios entran; los eventos de todo el día no se cruzan con un momento. Es una observación de coincidencias, no de causas: ver dos cosas juntas no significa que una haya causado la otra. Todo se calcula en tu iPhone; nada se comparte.',
     # FER-372 — Dieta: tracking diario (% de apego + checklist tri-estado)
     'Diet · today': 'Dieta · hoy',
     'adherence · %lld of %lld meals': 'apego · %lld de %lld comidas',

@@ -75,6 +75,7 @@
       "ink":             { "$value": "#221D16", "$description": "primary text & the hero numeral — 14.8:1" },
       "inkSecondary":    { "$value": "#5C5648", "$description": "supporting copy & labels — 6.5:1" },
       "inkTertiary":     { "$value": "#6F6857", "$description": "overlines, captions, axis — 4.9:1" },
+      "inkDim":          { "$value": "#AFAA9D", "$description": "no-data cells — the «—» + its glyph; intentionally low-contrast, NOT AA text (derived from inkTertiary→paper)" },
       "dataRecovery":    { "$value": "#0C8F62", "$description": "recovery datum — color on the numeral (AA-large, ≥24pt) — 3.6:1" },
       "dataStrain":      { "$value": "#C4631F", "$description": "strain datum — color on the numeral (AA-large, ≥24pt) — 3.6:1" },
       "dataSleep":       { "$value": "#5D5A9E", "$description": "sleep trend hue (FER-147) — 5.4:1" },

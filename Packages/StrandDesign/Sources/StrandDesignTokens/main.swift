@@ -62,6 +62,7 @@ let roles: [Role] = [
     Role(key: "ink",            color: t.ink,            isSurface: false, desc: "primary text & the hero numeral"),
     Role(key: "inkSecondary",   color: t.inkSecondary,   isSurface: false, desc: "supporting copy & labels"),
     Role(key: "inkTertiary",    color: t.inkTertiary,    isSurface: false, desc: "overlines, captions, axis"),
+    Role(key: "inkDim",         color: t.inkDim,         isSurface: true,  desc: "no-data cells — the «—» + its glyph; intentionally low-contrast, NOT AA text (derived from inkTertiary→paper)"),
     Role(key: "dataRecovery",   color: t.dataRecovery,   isSurface: false, desc: "recovery datum — color on the numeral (AA-large, ≥24pt)"),
     Role(key: "dataStrain",     color: t.dataStrain,     isSurface: false, desc: "strain datum — color on the numeral (AA-large, ≥24pt)"),
     Role(key: "dataSleep",      color: t.dataSleep,      isSurface: false, desc: "sleep trend hue (FER-147)"),
