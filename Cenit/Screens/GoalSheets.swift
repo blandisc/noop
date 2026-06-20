@@ -224,7 +224,7 @@ struct SimulatorScreen: View {
         let xEnd = targetDate.map { Self.shortDate.string(from: $0) } ?? "+\(proj.horizonDays) d"
         return TrajectoryChart(
             baseline: base, withLever: lever, startValue: proj.level,
-            goal: nil, goalLabel: nil, accent: accent, higherIsBetter: metric.higherIsBetter,
+            accent: accent, higherIsBetter: metric.higherIsBetter,
             xStartLabel: "hoy", xEndLabel: xEnd, accessibilityText: a11y(proj))
             .frame(height: 200)
     }
@@ -272,7 +272,7 @@ struct SimulatorScreen: View {
     private func gateState(_ usable: Int) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Aún reuniendo señal")
-                .font(.system(size: 22, weight: .semibold)).foregroundStyle(theme.ink)
+                .font(StrandFont.title2).foregroundStyle(theme.ink)
             Text("\(usable) de \(TrajectorySimulator.minDays) días")
                 .font(StrandFont.subhead).monospacedDigit().foregroundStyle(theme.inkTertiary)
             Text("Con un par de semanas de base verás tu trayectoria y el costo de no cambiar.")
@@ -283,14 +283,8 @@ struct SimulatorScreen: View {
 
     // MARK: Helpers
 
-    private var accent: Color {
-        switch metric {
-        case .recovery:  return theme.dataRecovery
-        case .sleep:     return theme.dataSleep
-        case .hrv:       return theme.dataHrv
-        case .restingHr: return theme.dataHeart
-        }
-    }
+    /// The metric's data hue — the same FER-147 table the rest of the Bucle uses (color only on the datum).
+    private var accent: Color { BucleFormat.metricColor(metric.outcomeLabel, theme) }
 
     private func a11y(_ proj: TrajectorySimulator.Projection) -> String {
         let baseEnd = proj.baseline.last?.estimate ?? proj.level

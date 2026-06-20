@@ -41,10 +41,6 @@ public struct TrajectoryChart: View {
     public let withLever: [Point]?
     /// Today's anchor value, where both paths start (x = 0).
     public let startValue: Double
-    /// The goal threshold, drawn as a labeled rule. `nil` hides it.
-    public let goal: Double?
-    /// Label on the goal rule (e.g. "meta 80").
-    public let goalLabel: String?
     /// The metric hue — applied ONLY to the lever path + its endpoint.
     public let accent: Color
     /// Whether higher is better (orients the corner hint only).
@@ -58,13 +54,11 @@ public struct TrajectoryChart: View {
     @Environment(\.instrumentoTheme) private var theme
 
     public init(baseline: [Point], withLever: [Point]?, startValue: Double,
-                goal: Double?, goalLabel: String?, accent: Color, higherIsBetter: Bool,
+                accent: Color, higherIsBetter: Bool,
                 xStartLabel: String, xEndLabel: String, accessibilityText: String) {
         self.baseline = baseline
         self.withLever = withLever
         self.startValue = startValue
-        self.goal = goal
-        self.goalLabel = goalLabel
         self.accent = accent
         self.higherIsBetter = higherIsBetter
         self.xStartLabel = xStartLabel
@@ -87,7 +81,6 @@ public struct TrajectoryChart: View {
         for p in baseline + (withLever ?? []) {
             lo = Swift.min(lo, p.low); hi = Swift.max(hi, p.high)
         }
-        if let goal { lo = Swift.min(lo, goal); hi = Swift.max(hi, goal) }
         let pad = Swift.max((hi - lo) * 0.12, 1)
         return (lo - pad)...(hi + pad)
     }
@@ -102,18 +95,6 @@ public struct TrajectoryChart: View {
             }
             .foregroundStyle(theme.inkTertiary.opacity(0.12))
             .interpolationMethod(.monotone)
-
-            // Goal rule — ink, dashed, labeled.
-            if let goal {
-                RuleMark(y: .value("meta", goal))
-                    .foregroundStyle(theme.ink.opacity(0.45))
-                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [2, 3]))
-                    .annotation(position: .top, alignment: .trailing) {
-                        if let goalLabel {
-                            Text(goalLabel).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                        }
-                    }
-            }
 
             // "Como vas" — ink, dashed (separates from the lever path without color).
             ForEach(Array(anchored.enumerated()), id: \.offset) { _, p in
@@ -190,12 +171,12 @@ public struct TrajectoryChart: View {
 
     return VStack(spacing: 28) {
         TrajectoryChart(baseline: full.0, withLever: full.1, startValue: 65,
-                        goal: 80, goalLabel: "meta 80", accent: InstrumentoTheme.base.dataHrv,
+                        accent: InstrumentoTheme.base.dataHrv,
                         higherIsBetter: true, xStartLabel: "hoy", xEndLabel: "+22 d",
                         accessibilityText: "Como vas llegas a 70. Si cambias, 78.")
             .frame(height: 180)
         TrajectoryChart(baseline: bare.0, withLever: bare.1, startValue: 65,
-                        goal: 80, goalLabel: "meta 80", accent: InstrumentoTheme.base.dataHrv,
+                        accent: InstrumentoTheme.base.dataHrv,
                         higherIsBetter: true, xStartLabel: "hoy", xEndLabel: "+22 d",
                         accessibilityText: "Como vas llegas a 70.")
             .frame(height: 180)

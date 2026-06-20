@@ -36,8 +36,7 @@ extension Repository {
         let projection = TrajectorySimulator.project(series: series, horizonDays: horizon,
                                                      leverDelta: leverDelta, bounds: metric.bounds)
 
-        return GoalSimulation(metric: metric, horizonDays: horizon, targetDate: targetDate,
-                              projection: projection,
+        return GoalSimulation(projection: projection,
                               leverName: leverDelta != nil ? best?.behavior : nil,
                               usableDays: usable)
     }

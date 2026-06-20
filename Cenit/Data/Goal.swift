@@ -106,11 +106,9 @@ extension GoalFocus {
 }
 
 /// One built goal simulation, ready to render. `projection == nil` → not enough base yet (gate);
-/// `leverName == nil` → no proven lever for this metric (the "sin palancas" state).
+/// `leverName == nil` → no proven lever for this metric (the "sin palancas" state). The screen already
+/// holds the metric/date/horizon, so they don't ride here.
 struct GoalSimulation {
-    let metric: GoalMetric
-    let horizonDays: Int
-    let targetDate: Date?
     let projection: TrajectorySimulator.Projection?
     let leverName: String?
     let usableDays: Int
