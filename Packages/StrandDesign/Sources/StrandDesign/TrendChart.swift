@@ -73,7 +73,7 @@ public struct TrendChart: View {
     public var showsArea: Bool
     public var height: CGFloat
     /// Whether hovering reveals a crosshair + tooltip for the nearest point.
-    public var showsHover: Bool
+    public var showsScrub: Bool
     /// Formats a point's value for the tooltip's bold line (default: rounded int).
     public var valueFormat: (Double) -> String
     /// Formats a point's date for the tooltip's secondary line.
@@ -111,7 +111,7 @@ public struct TrendChart: View {
         valueRange: ClosedRange<Double> = 0...100,
         showsArea: Bool = true,
         height: CGFloat = 220,
-        showsHover: Bool = true,
+        showsScrub: Bool = true,
         valueFormat: @escaping (Double) -> String = { String(Int($0.rounded())) },
         dateFormat: @escaping (Date) -> String = { TrendChart.defaultDateString($0) },
         axisLabelColor: Color = StrandPalette.textTertiary,
@@ -130,7 +130,7 @@ public struct TrendChart: View {
         self.valueRange = valueRange
         self.showsArea = showsArea
         self.height = height
-        self.showsHover = showsHover
+        self.showsScrub = showsScrub
         self.valueFormat = valueFormat
         self.dateFormat = dateFormat
         self.axisLabelColor = axisLabelColor
@@ -306,16 +306,22 @@ public struct TrendChart: View {
         .chartOverlay { proxy in
             GeometryReader { geo in
                 let plot = geo[proxy.plotAreaFrame]
+                // The datum currently under the finger (nil when not scrubbing). Drives the selection
+                // haptic: `.onChange` fires once per snap onto a new point (FER-131 handoff · 10).
+                let snappedIndex: Int? = (showsScrub ? hoverX : nil).flatMap { hx in
+                    nearestPoint(toX: hx, proxy: proxy, plot: plot).flatMap { points.firstIndex(of: $0) }
+                }
                 ZStack(alignment: .topLeading) {
-                    // A full-bleed transparent layer so the overlay (and its scrub gesture / hover)
-                    // covers the WHOLE plot from the first touch. Without it the ZStack only has the
-                    // crosshair+tooltip as children — which exist solely WHILE hovering — so before
+                    // A full-bleed transparent layer so the overlay (and its scrub gesture) covers the
+                    // WHOLE plot from the first touch. Without it the ZStack only has the
+                    // crosshair+tooltip as children — which exist solely WHILE scrubbing — so before
                     // the first touch the ZStack is 0×0 and `.contentShape` had no hittable area, so
                     // the drag never started (the "scrub does nothing on iOS" bug). Color.clear is
                     // greedy and fills the GeometryReader, giving the gesture a full-size target. (#118)
                     Color.clear
+                        .onChange(of: snappedIndex) { idx in if idx != nil { ChartHaptics.datumChanged() } }
 
-                    if showsHover,
+                    if showsScrub,
                        let hx = hoverX,
                        let p = nearestPoint(toX: hx, proxy: proxy, plot: plot),
                        let px = proxy.position(forX: p.date),
@@ -345,7 +351,7 @@ public struct TrendChart: View {
                 }
                 .animation(StrandMotion.fade, value: hoverX)
                 .contentShape(Rectangle())
-                .scrubGesture(enabled: showsHover, hoverX: $hoverX)
+                .scrubGesture(enabled: showsScrub, hoverX: $hoverX)
             }
         }
         .frame(height: height)

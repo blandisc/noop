@@ -238,6 +238,7 @@ public struct QuietButton: View {
                 .foregroundStyle(theme.ink)
                 .padding(.horizontal, 18)
                 .padding(.vertical, 10)
+                .frame(minWidth: 44, minHeight: 44)   // iOS minimum touch target (FER-131 handoff · 10)
                 .background(theme.surface, in: Capsule(style: .continuous))
                 .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
         }

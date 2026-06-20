@@ -22,7 +22,7 @@ public struct RecoveryRing: View {
     /// Whether to show the center read-out (number + state + supporting).
     public var showsLabel: Bool
     /// Whether hovering the ring shows a subtle tooltip (score + state word).
-    public var showsHover: Bool
+    public var showsScrub: Bool
     /// Formats the score for the hover tooltip's bold line.
     public var valueFormat: (Double) -> String
 
@@ -32,7 +32,7 @@ public struct RecoveryRing: View {
         diameter: CGFloat = 240,
         lineWidth: CGFloat = 16,
         showsLabel: Bool = true,
-        showsHover: Bool = true,
+        showsScrub: Bool = true,
         valueFormat: @escaping (Double) -> String = { "Recovery \(Int($0.rounded()))" }
     ) {
         self.score = score
@@ -40,7 +40,7 @@ public struct RecoveryRing: View {
         self.diameter = diameter
         self.lineWidth = lineWidth
         self.showsLabel = showsLabel
-        self.showsHover = showsHover
+        self.showsScrub = showsScrub
         self.valueFormat = valueFormat
     }
 
@@ -68,7 +68,7 @@ public struct RecoveryRing: View {
         ZStack {
             ring
             if showsLabel { centerLabel }
-            if showsHover, let pt = hoverPoint {
+            if showsScrub, let pt = hoverPoint {
                 PositionedTooltip(
                     anchor: pt,
                     container: CGSize(width: diameter, height: diameter),
@@ -84,7 +84,7 @@ public struct RecoveryRing: View {
         .frame(width: diameter, height: diameter)
         .contentShape(Rectangle())
         .onContinuousHover(coordinateSpace: .local) { phase in
-            guard showsHover else { return }
+            guard showsScrub else { return }
             switch phase {
             case .active(let location): hoverPoint = location
             case .ended: hoverPoint = nil

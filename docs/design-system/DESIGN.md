@@ -268,7 +268,7 @@ See [`assets/`](assets/) (and its [README](assets/README.md)):
 - **Data colors come from scales, chrome comes from `accent`.** Never tint a metric with `accent`; never reuse a status color as a recovery color.
 - **Numerics are tabular.** Any live value uses a `*Number` font or `StrandFont.number(...)` so digits don't shift.
 - **Compose from the locked set.** New cards = `NoopCard` + the components above, not bespoke surfaces.
-- **Regenerating tokens:** this doc and [`tokens/design-tokens.json`](tokens/design-tokens.json) are derived from the Swift package; re-derive them when `Palette` / `Typography` / `Motion` / `Components` change.
+- **Regenerating tokens:** this doc and [`tokens/design-tokens.json`](tokens/design-tokens.json) are derived from the Swift package; re-derive them when `Palette` / `Typography` / `Motion` / `Components` change. The «Instrumento» color blocks (§8.2 + `color.instrumento`) are emitted from `Instrumento.swift` by `swift run StrandDesignTokens` (run it in `Packages/StrandDesign`); CI fails if they drift (FER-131 handoff · 01).
 
 ---
 
@@ -294,28 +294,38 @@ screen reads it from the environment, so recoloring by the hour is free.
 
 Warm paper surfaces, warm-gray ink, saturated hue reserved for the measured value.
 Every pair clears **WCAG AA** (large-text 3:1 for the data numerals, normal 4.5:1 for ink).
+Data accents carry color **only on a large numeral** (≥24pt, where AA-large is 3:1); a datum or
+delta on **<24pt** text uses `positiveText` / `negativeText` instead (FER-131 · 02). The «On paper»
+column is the WCAG contrast against `paper`. The by-the-hour engine (FER-132) re-derives every data
+hue against the live paper so this 3:1 floor holds at every hour (FER-131 handoff · 08).
 
+> ⚠️ The table below is **generated from `Instrumento.swift`** by `swift run StrandDesignTokens`
+> (FER-131 handoff · 01). Do not edit it by hand — change the token in code and re-run the generator;
+> CI fails if the committed table or `tokens/design-tokens.json` drifts from code.
+
+<!-- GENERATED:INSTRUMENTO-COLORS:START -->
 | Role | Hex | On paper | Use |
 |---|---|---|---|
-| `paper` | `#F4F1E8` | — | App canvas — warm bone (never pure white) |
-| `surface` | `#FBF9F2` | — | A *sparingly*-used raised surface; never nested |
-| `hairline` / `hairlineStrong` | `#E6E0D2` / `#D8D0BD` | — | Faint warm rule / on emphasis |
-| `ink` | `#221D16` | 14.8:1 | Primary text & the hero numeral |
-| `inkSecondary` | `#5C5648` | 6.5:1 | Supporting copy, labels |
-| `inkTertiary` | `#6F6857` | 4.9:1 | Overlines, captions, axis |
-| `dataRecovery` | `#0C8F62` | 3.6:1¹ | Recovery / "good" datum |
-| `dataStrain` | `#C4631F` | 3.6:1¹ | Strain / "output" datum |
-| `dataSleep` | `#5D5A9E` | 5.4:1 | Sleep trend hue (per-metric chart) — FER-147 |
-| `dataHrv` | `#2E7D6B` | 4.4:1 | HRV trend hue — FER-147 |
-| `dataHeart` | `#B85068` | 4.2:1 | Heart-rate trend hue (HR & resting HR) — FER-147 |
-| `dataSpO2` | `#3B6FA0` | 4.7:1 | Blood-oxygen trend hue — FER-147 |
-| `dataSteps` | `#4C8998` | 3.5:1 | Steps trend hue — FER-147 |
-| `verdict` | `#0C8F62` | 3.6:1¹ | The day's verdict accent (positive green) |
-| `warning` | `#9C5E10` | 4.6:1 | Caution / "strained" |
-| `critical` | `#BC3A34` | 4.9:1 | Depleted / error — contained brick red |
-
-¹ Data accents carry color **only on a large numeral** (≥24pt), where AA-large is 3:1.
-They are never used on label-size or body text.
+| `paper` | `#F4F1E8` | — | canvas — warm bone paper (never pure white) |
+| `surface` | `#FBF9F2` | — | a sparingly-used raised surface; never nested |
+| `hairline` | `#E6E0D2` | — | faint warm 1px rule |
+| `hairlineStrong` | `#D8D0BD` | — | rule on emphasis |
+| `ink` | `#221D16` | 14.8:1 | primary text & the hero numeral |
+| `inkSecondary` | `#5C5648` | 6.5:1 | supporting copy & labels |
+| `inkTertiary` | `#6F6857` | 4.9:1 | overlines, captions, axis |
+| `dataRecovery` | `#0C8F62` | 3.6:1 | recovery datum — color on the numeral (AA-large, ≥24pt) |
+| `dataStrain` | `#C4631F` | 3.6:1 | strain datum — color on the numeral (AA-large, ≥24pt) |
+| `dataSleep` | `#5D5A9E` | 5.4:1 | sleep trend hue (FER-147) |
+| `dataHrv` | `#147C8C` | 4.3:1 | HRV trend hue — cyan, distinct from the verdict green (FER-206) |
+| `dataHeart` | `#B85068` | 4.2:1 | heart-rate trend hue, shared by HR & resting HR (FER-147) |
+| `dataSpO2` | `#3B6FA0` | 4.7:1 | blood-oxygen trend hue (FER-147) |
+| `dataSteps` | `#4C8998` | 3.5:1 | steps trend hue (FER-147) |
+| `verdict` | `#0C8F62` | 3.6:1 | day verdict accent — positive green |
+| `warning` | `#9C5E10` | 4.6:1 | caution / strained |
+| `critical` | `#BC3A34` | 4.9:1 | depleted / error — contained brick red |
+| `positiveText` | `#00774B` | 5.0:1 | positive delta on <24pt text — darkened verdict to clear text-AA (FER-131 · 02) |
+| `negativeText` | `#BC3A34` | 4.9:1 | negative delta on <24pt text (= critical) (FER-131 · 02) |
+<!-- GENERATED:INSTRUMENTO-COLORS:END -->
 
 ### 8.3 Type voice (`InstrumentoType`)
 
@@ -352,3 +362,25 @@ Not tokens — how the tokens are allowed to combine. `/qa` checks screens again
 > **Data-state family is out of scope for FER-131.** "No recent data / N days unsynced",
 > partial 14-day trends, and gaps in charts are *data* states (of a chart or metric, not a
 > whole screen). They get their own requirement, designed with real data in front of them.
+
+### 8.6 Daytime specifics — flat surfaces, touch scrub, tinted text (FER-131 handoff)
+
+The «Instrumento diurno» language differs from the legacy dark system in four ways that the
+shared components handle automatically once a subtree is themed with `.instrumentoTheme(_:)` /
+`.instrumentoThemeByHour()` (which also sets `\.instrumentoFlat = true`):
+
+- **Flat, no glow (03).** Glow / bloom (the additive plus-lighter halos on chart dots, the REM
+  band, the connection dot; the heavy black tooltip shadow) are black-screen effects that muddy
+  a glyph on warm paper. On paper they're dropped: the highlight reads as a flat, enlarged
+  **paper-fill + colored-ring** scrub handle, the sparkline head is a solid dot, the tooltip
+  keeps only a quiet separation shadow. Motion keeps only the physical springs + `breathe`.
+- **Hour-derived data hues (08).** The by-the-hour engine darkens every data hue against the live
+  paper (`InstrumentoTheme.contrastSafeDataHues()`, the `positiveText` OKLab technique generalized)
+  so each holds the **3:1** numeral floor at every minute — never hand-tuned per anchor.
+- **Tinted text <24pt (02).** A datum or delta below 24pt uses `positiveText` / `negativeText`
+  (the 4.5:1+ text-tier tokens), never a saturated data hue; the ≥24pt hero numeral keeps the hue.
+- **Touch, not hover (10).** Charts respond to a finger **press-drag scrub** (`DragGesture`, snap to
+  nearest datum, tooltip follows the finger, **selection haptic** on each datum change via
+  `ChartHaptics`). Controls (`SegmentedPillControl`, `QuietButton`) and the scrub plot meet the
+  **44pt** touch minimum. The toolkit's public API carries no "hover" term (it's `showsScrub`,
+  `ChartScrubMath`, `ChartScrub.swift`).

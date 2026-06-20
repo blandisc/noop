@@ -163,7 +163,7 @@ struct MetricTrendChart<Empty: View>: View {
             valueRange: style.valueRange(lineValues),
             showsArea: style.showsArea,
             height: style.height,
-            showsHover: true,
+            showsScrub: true,
             valueFormat: style.valueFormat,
             axisLabelColor: theme.inkTertiary,
             gridLineColor: theme.hairline,

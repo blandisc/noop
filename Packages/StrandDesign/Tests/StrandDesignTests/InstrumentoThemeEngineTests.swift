@@ -148,6 +148,51 @@ final class InstrumentoThemeEngineTests: XCTestCase {
         XCTAssertLessThan(lab(t.positiveText).L, lab(t.verdict).L, "positiveText must be darker than verdict")
     }
 
+    // MARK: data hues derived per-hour against the live paper (FER-131 handoff · 08)
+
+    /// The headline of change 08: with the by-the-hour paper, NO data hue may drop below the 3:1
+    /// numeral floor at ANY minute — because `theme(at:)` now derives each hue against the live
+    /// paper (the `positiveText` technique generalized). Sweep all 1440 minutes and assert the floor.
+    func testEveryDataHueClears3to1AtEveryMinute() {
+        let cal = utcCalendar(), base = midnight(cal)
+        let hues: [(String, (InstrumentoTheme) -> Color)] = [
+            ("dataRecovery", \.dataRecovery), ("dataStrain", \.dataStrain), ("dataSleep", \.dataSleep),
+            ("dataHrv", \.dataHrv), ("dataHeart", \.dataHeart), ("dataSpO2", \.dataSpO2),
+            ("dataSteps", \.dataSteps), ("verdict", \.verdict),
+        ]
+        for minute in stride(from: 0, through: 24 * 60, by: 1) {
+            let t = InstrumentoThemeEngine.theme(at: base.addingTimeInterval(Double(minute) * 60), calendar: cal)
+            for (name, hue) in hues {
+                XCTAssertGreaterThanOrEqual(contrast(hue(t), t.paper), 3.0 - 1e-6,
+                    "\(name) under 3:1 at \(minute / 60):\(String(format: "%02d", minute % 60))")
+            }
+        }
+    }
+
+    /// The MECHANISM, proven adversarially: plant a hue too light for a dim paper and confirm the
+    /// derivation rescues it (darkens to ≥3:1) while leaving its hue green-cyan, and that a hue
+    /// already passing — and every non-data role — is returned byte-for-byte unchanged.
+    func testContrastSafeDataHuesRescuesAPlantedLightHue() {
+        let b = InstrumentoTheme.base
+        let dim = InstrumentoThemeEngine.night.paper      // dimmer paper than day
+        let tooLight = Color(hex: "#9FE3EF")              // pale cyan — fails 3:1 on dim paper
+        let bad = InstrumentoTheme(
+            paper: dim, surface: b.surface, hairline: b.hairline, hairlineStrong: b.hairlineStrong,
+            ink: b.ink, inkSecondary: b.inkSecondary, inkTertiary: b.inkTertiary,
+            dataRecovery: b.dataRecovery, dataStrain: b.dataStrain, dataSleep: b.dataSleep,
+            dataHrv: b.dataHrv, dataHeart: b.dataHeart, dataSpO2: b.dataSpO2, dataSteps: tooLight,
+            verdict: b.verdict, warning: b.warning, critical: b.critical)
+        XCTAssertLessThan(contrast(bad.dataSteps, bad.paper), 3.0, "precondition: planted hue must fail on dim paper")
+
+        let fixed = bad.contrastSafeDataHues()
+        XCTAssertGreaterThanOrEqual(contrast(fixed.dataSteps, fixed.paper), 3.0 - 0.02, "floor must rescue the planted hue")
+        XCTAssertLessThan(lab(fixed.dataSteps).L, lab(bad.dataSteps).L, "rescue must DARKEN (lower OKLab L)")
+        let k = fixed.dataSteps.rgbaComponents
+        XCTAssertGreaterThan(k.b, k.r, "rescued hue must stay cyan-ish (B > R)")
+        // A non-data role is untouched, and already-passing hues are unchanged.
+        XCTAssertEqual(lab(fixed.ink).L, lab(bad.ink).L, accuracy: 1e-9, "ink (non-data) must be untouched")
+    }
+
     // MARK: datum stays legible at night
 
     func testDataAccentsLegibleAtNightAnchor() {

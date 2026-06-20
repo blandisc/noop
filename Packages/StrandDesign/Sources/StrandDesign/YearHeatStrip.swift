@@ -28,7 +28,7 @@ public struct YearHeatStrip: View {
     public var showsMonthLabels: Bool
     /// Whether hovering a cell highlights it with a ring and shows a tooltip
     /// (date + score + recovery state word). Defaults on.
-    public var showsHover: Bool
+    public var showsScrub: Bool
     /// Tints a day's cell from its recovery score. Defaults to the dark-system recovery gradient so
     /// the shipped (dark) Trends caller is unchanged; the light «Instrumento» detail passes a warm
     /// band-color closure instead, so the calendar reads on warm paper. (FER-225)
@@ -57,7 +57,7 @@ public struct YearHeatStrip: View {
         cellSize: CGFloat = 12,
         spacing: CGFloat = 3,
         showsMonthLabels: Bool = true,
-        showsHover: Bool = true,
+        showsScrub: Bool = true,
         tint: @escaping (Double) -> Color = { StrandPalette.recoveryColor($0) },
         emptyFill: Color = StrandPalette.surfaceInset,
         emptyStroke: Color = StrandPalette.hairline.opacity(0.6),
@@ -70,7 +70,7 @@ public struct YearHeatStrip: View {
         self.cellSize = cellSize
         self.spacing = spacing
         self.showsMonthLabels = showsMonthLabels
-        self.showsHover = showsHover
+        self.showsScrub = showsScrub
         self.tint = tint
         self.emptyFill = emptyFill
         self.emptyStroke = emptyStroke
@@ -202,7 +202,7 @@ public struct YearHeatStrip: View {
         .overlay(hoverOverlay(weeks: weeks, gridSize: CGSize(width: gridWidth, height: gridHeight)))
         .contentShape(Rectangle())
         .onContinuousHover(coordinateSpace: .local) { phase in
-            guard showsHover else { return }
+            guard showsScrub else { return }
             switch phase {
             case .active(let location):
                 hoverCell = cellIndex(at: location, weekCount: weeks.count)
@@ -254,7 +254,7 @@ public struct YearHeatStrip: View {
 
     @ViewBuilder
     private func hoverOverlay(weeks: [Week], gridSize: CGSize) -> some View {
-        if showsHover, let h = hoverCell, h.week < weeks.count,
+        if showsScrub, let h = hoverCell, h.week < weeks.count,
            let day = weeks[h.week].cells[h.row], let score = day.score {
             let center = cellCenter(week: h.week, row: h.row)
             ZStack(alignment: .topLeading) {

@@ -23,7 +23,7 @@ public struct Sparkline: View {
     public var showsArea: Bool
     public var showsHead: Bool
     /// Whether hovering highlights the nearest sample + shows a compact tooltip.
-    public var showsHover: Bool
+    public var showsScrub: Bool
     /// Formats a sample value for the tooltip's bold line.
     public var valueFormat: (Double) -> String
     /// Optional secondary label for a sample by index (e.g. a timestamp). When
@@ -39,7 +39,7 @@ public struct Sparkline: View {
         lineWidth: CGFloat = 2,
         showsArea: Bool = true,
         showsHead: Bool = true,
-        showsHover: Bool = true,
+        showsScrub: Bool = true,
         valueFormat: @escaping (Double) -> String = { Sparkline.defaultValueString($0) },
         indexLabel: ((Int) -> String)? = nil
     ) {
@@ -51,13 +51,16 @@ public struct Sparkline: View {
         self.lineWidth = lineWidth
         self.showsArea = showsArea
         self.showsHead = showsHead
-        self.showsHover = showsHover
+        self.showsScrub = showsScrub
         self.valueFormat = valueFormat
         self.indexLabel = indexLabel
     }
 
     /// The hovered x-position in local coordinates.
     @State private var hoverX: CGFloat? = nil
+
+    /// Flat (no glow/bloom) when rendered in the «Instrumento diurno» light language (FER-131 · 03).
+    @Environment(\.instrumentoFlat) private var flat
 
     /// Default value formatting: integer when whole, else one decimal.
     public static func defaultValueString(_ v: Double) -> String {
@@ -115,16 +118,22 @@ public struct Sparkline: View {
                 }
                 if showsHead, let head = pts.last {
                     let c = StrandPalette.sample(stops: gradient.stops, at: 1.0)
-                    Circle().fill(c).frame(width: lineWidth * 3.2, height: lineWidth * 3.2)
-                        .blur(radius: lineWidth * 1.2).opacity(0.8).blendMode(.plusLighter)
-                        .position(head)
-                    Circle().fill(Color.white).frame(width: lineWidth * 1.6, height: lineWidth * 1.6)
-                        .position(head)
+                    if flat {
+                        // Paper language: a solid head dot in the metric hue, no bloom (FER-131 · 03).
+                        Circle().fill(c).frame(width: lineWidth * 2.4, height: lineWidth * 2.4)
+                            .position(head)
+                    } else {
+                        Circle().fill(c).frame(width: lineWidth * 3.2, height: lineWidth * 3.2)
+                            .blur(radius: lineWidth * 1.2).opacity(0.8).blendMode(.plusLighter)
+                            .position(head)
+                        Circle().fill(Color.white).frame(width: lineWidth * 1.6, height: lineWidth * 1.6)
+                            .position(head)
+                    }
                 }
 
                 // Hover affordance: crosshair + highlighted sample + tooltip.
-                if showsHover, !values.isEmpty, let hx = hoverX,
-                   let idx = ChartHoverMath.nearestIndex(toX: hx, count: values.count, width: geo.size.width),
+                if showsScrub, !values.isEmpty, let hx = hoverX,
+                   let idx = ChartScrubMath.nearestIndex(toX: hx, count: values.count, width: geo.size.width),
                    idx < pts.count {
                     let p = pts[idx]
                     let color = sampleColor(forIndex: idx)
@@ -145,7 +154,7 @@ public struct Sparkline: View {
             .animation(StrandMotion.fade, value: hoverX)
             .contentShape(Rectangle())
             .onContinuousHover(coordinateSpace: .local) { phase in
-                guard showsHover else { return }
+                guard showsScrub else { return }
                 switch phase {
                 case .active(let location): hoverX = location.x
                 case .ended: hoverX = nil

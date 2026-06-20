@@ -32,7 +32,7 @@ public struct Hypnogram: View {
     public var showsStageAxis: Bool
     /// Whether hovering a stage band highlights it and shows a tooltip
     /// (stage name, clock start–end, duration). Defaults on.
-    public var showsHover: Bool
+    public var showsScrub: Bool
     /// Optional wall-clock time the night began. When set, the tooltip shows
     /// real clock times (e.g. "23:42–00:04"); otherwise it shows elapsed time
     /// from the start of the night (e.g. "0:06–0:28").
@@ -42,18 +42,21 @@ public struct Hypnogram: View {
         intervals: [SleepInterval],
         height: CGFloat = 180,
         showsStageAxis: Bool = true,
-        showsHover: Bool = true,
+        showsScrub: Bool = true,
         nightStart: Date? = nil
     ) {
         self.intervals = intervals.sorted { $0.start < $1.start }
         self.height = height
         self.showsStageAxis = showsStageAxis
-        self.showsHover = showsHover
+        self.showsScrub = showsScrub
         self.nightStart = nightStart
     }
 
     /// Index of the hovered interval, or nil.
     @State private var hoverIndex: Int? = nil
+
+    /// Flat (no REM glow) when rendered in the «Instrumento diurno» light language (FER-131 · 03).
+    @Environment(\.instrumentoFlat) private var flat
 
     private static let clockFormatter: DateFormatter = {
         let f = DateFormatter(); f.dateFormat = "HH:mm"; return f
@@ -104,8 +107,9 @@ public struct Hypnogram: View {
                         let rect = bandRect(for: interval, in: geo.size)
                         let color = StrandPalette.sleepStageColor(interval.stage)
                         let dimmed = hoverIndex != nil && hoverIndex != idx
-                        // glow under REM for the "REM glowing" requirement
-                        if interval.stage == .rem {
+                        // glow under REM for the dark "REM glowing" requirement — dropped on warm
+                        // paper, where bloom only muddies the band's edge (FER-131 handoff · 03).
+                        if !flat, interval.stage == .rem {
                             RoundedRectangle(cornerRadius: rect.height / 2)
                                 .fill(color)
                                 .frame(width: rect.width, height: rect.height)
@@ -122,7 +126,7 @@ public struct Hypnogram: View {
                     }
 
                     // Hover affordance: crosshair, band highlight ring, tooltip.
-                    if showsHover, let idx = hoverIndex, idx < intervals.count {
+                    if showsScrub, let idx = hoverIndex, idx < intervals.count {
                         let interval = intervals[idx]
                         let rect = bandRect(for: interval, in: geo.size)
                         let color = StrandPalette.sleepStageColor(interval.stage)
@@ -145,11 +149,13 @@ public struct Hypnogram: View {
                     }
                 }
                 .animation(StrandMotion.fade, value: hoverIndex)
+                // Light selection haptic each time the finger snaps onto a new stage band (FER-131 · 10).
+                .onChange(of: hoverIndex) { idx in if idx != nil { ChartHaptics.datumChanged() } }
                 .contentShape(Rectangle())
                 // Finger-drag scrub on iOS (pointer-hover on macOS). `highPriorityGesture` wins the
                 // touch over the parent sheet's vertical ScrollView while the finger is on the band —
                 // same affordance the metric `TrendChart` uses (FER-234, mirrors its `scrubGesture`).
-                .hypnogramScrub(enabled: showsHover, size: geo.size,
+                .hypnogramScrub(enabled: showsScrub, size: geo.size,
                                 hoverIndex: $hoverIndex, locate: intervalIndex)
             }
             .frame(height: height)

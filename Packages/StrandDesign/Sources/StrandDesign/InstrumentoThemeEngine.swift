@@ -150,7 +150,9 @@ public enum InstrumentoThemeEngine {
             if hour >= a.h && hour <= b.h {
                 let span = b.h - a.h
                 let t = span > 0 ? (hour - a.h) / span : 0
-                return a.t.interpolated(to: b.t, fraction: t)
+                // Derive each data hue against THIS minute's paper so it always clears the 3:1
+                // numeral floor — the `positiveText` technique generalized to every accent (FER-131 · 08).
+                return a.t.interpolated(to: b.t, fraction: t).contrastSafeDataHues()
             }
         }
         return day   // unreachable (hour ∈ [0,24]); satisfies the compiler
@@ -205,6 +207,29 @@ extension InstrumentoTheme {
             verdict:        mix(verdict, other.verdict),
             warning:        mix(warning, other.warning),
             critical:       mix(critical, other.critical)
+        )
+    }
+
+    /// Re-derive every DATA hue against THIS theme's own `paper` so each clears the AA-large 3:1
+    /// numeral floor — generalizing the `positiveText` OKLab technique (FER-131 handoff · 08) from
+    /// one hue to all of them. The by-the-hour engine dims the paper toward night; a light hue left
+    /// FIXED (e.g. `dataSteps`, ~3.5:1 by day) would slip under 3:1 on the darker paper. Rather than
+    /// hand-tune a hex per anchor, darken each hue — preserving its hue/chroma in OKLab — only as far
+    /// as needed to hold 3:1 against whatever paper is live; a hue already clearing 3:1 is returned
+    /// unchanged, so the approved daytime anchors are visually untouched and only an at-risk hue (or
+    /// an in-between minute on dimmer paper) is corrected. Applied in `theme(at:)`, so EVERY emitted
+    /// theme is contrast-safe BY CONSTRUCTION at every minute — not just the minutes a test samples.
+    /// Data accents ride the dominant numeral / the trend line (≥24pt → AA-large 3:1); the text-tier
+    /// 4.5:1 case for a <24pt delta is handled separately by `positiveText` / `negativeText`.
+    func contrastSafeDataHues() -> InstrumentoTheme {
+        func safe(_ c: Color) -> Color { OKLab.darkened(c, toContrast: 3.0, against: paper) }
+        return InstrumentoTheme(
+            paper: paper, surface: surface, hairline: hairline, hairlineStrong: hairlineStrong,
+            ink: ink, inkSecondary: inkSecondary, inkTertiary: inkTertiary,
+            dataRecovery: safe(dataRecovery), dataStrain: safe(dataStrain),
+            dataSleep: safe(dataSleep), dataHrv: safe(dataHrv), dataHeart: safe(dataHeart),
+            dataSpO2: safe(dataSpO2), dataSteps: safe(dataSteps),
+            verdict: safe(verdict), warning: warning, critical: critical
         )
     }
 }
