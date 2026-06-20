@@ -96,6 +96,7 @@ private struct BucleLanding: View {
                 if coldStart {
                     coldStartHero
                     preguntaleEntry
+                    pruebaSection
                 } else {
                     decisionSection
                     preguntaleEntry
@@ -341,6 +342,30 @@ private struct BucleLanding: View {
             experimentVerdictSection(fin)
         } else if let idea = ideaPorProbar {
             ideaPorProbarSection(idea)
+        } else {
+            pruebaInvitation
+        }
+    }
+
+    /// No experiment, no candidate yet — the «sin experimento» invitation. Shows even at cold start
+    /// (it teaches the mechanic and routes to the journal that creates candidates). Informational, so
+    /// no surface card and no color: hierarchy by space, ink only.
+    private var pruebaInvitation: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Prueba").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("Pon a prueba una idea").font(StrandFont.headline).foregroundStyle(theme.ink)
+            Text("Cuando el Bucle vea un hábito que va con tu recuperación, te propondrá probarlo una semana para confirmarlo en tu cuerpo. Empieza por anotar tus días.")
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Button { showAnota = true } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "square.and.pencil").font(.system(size: 14))
+                    Text("Anota tu día").font(StrandFont.subhead)
+                    Image(systemName: "arrow.right").font(.system(size: 13))
+                }
+                .foregroundStyle(theme.ink)
+            }
+            .buttonStyle(.plain).padding(.top, 4)
         }
     }
 

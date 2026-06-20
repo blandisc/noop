@@ -378,7 +378,8 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 
 | Estado de Prueba | Qué muestra |
 |------------------|-------------|
-| Idea por probar | Sin experimento: tarjeta-entrada con el candidato más fuerte → `StartExperimentSheet` |
+| Invitación vacía | Sin experimento y sin candidato: «Pon a prueba una idea» + acceso a «Anota tu día». **Visible aun en arranque en frío** (enseña la mecánica). Informativa: sin tarjeta, sin color |
+| Idea por probar | Sin experimento, con candidato: tarjeta-entrada con el candidato más fuerte → `StartExperimentSheet` |
 | Tu experimento (en curso) | «Día N de M» + barra de avance + adherencia («cumpliste X de N días») + fecha de veredicto + Cancelar |
 | Tu experimento (veredicto) | Resultado: **se sostuvo** (datum a color, el único color del estado) / **no se sostuvo** / **sin señal suficiente**; «Listo» lo descarta (id en `@AppStorage`) |
 
