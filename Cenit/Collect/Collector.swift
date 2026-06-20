@@ -136,7 +136,7 @@ final class Collector {
         // and `Streams` is Sendable so the result crosses back cleanly.
         let devRef = ref.device, wallRef = ref.wall
         let streams = await Task.detached {
-            extractStreams(frames.map { parseFrame($0) }, deviceClockRef: devRef, wallClockRef: wallRef)
+            extractStreams(frames.map { parseFrame($0, annotate: false) }, deviceClockRef: devRef, wallClockRef: wallRef)
         }.value
         do {
             try await store.insert(streams, deviceId: deviceId)   // DECODED FIRST (durable)

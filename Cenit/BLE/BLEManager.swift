@@ -1631,7 +1631,7 @@ extension BLEManager: CBPeripheralDelegate {
                 // Parse each complete frame ONCE and reuse the ParsedFrame across the live router, the
                 // GET_CLOCK read, the clock-correlation and the live-gesture gate (FER-183). Previously
                 // the same bytes were parsed up to 3× per frame on the main thread under the ~2/s flow.
-                let parsed = parseFrame(frame, family: router.family)
+                let parsed = parseFrame(frame, family: router.family, annotate: false)
                 if backfilling, BLEManager.isOffloadFrame(frame, family: .whoop4) {
                     // Historical replay is bulk sync traffic, not live UI traffic. Feed it only to
                     // the Backfiller; parsing every record through FrameRouter updates SwiftUI for
@@ -1702,7 +1702,7 @@ extension BLEManager: CBPeripheralDelegate {
             if BLEManager.whoop5NotifyChars.contains(characteristic.uuid) {
                 for frame in reassembler.feed(bytes) {
                     // Parse once, reuse for routing + the live-gesture gate (FER-183).
-                    let parsed = parseFrame(frame, family: router.family)
+                    let parsed = parseFrame(frame, family: router.family, annotate: false)
                     if backfilling, BLEManager.isOffloadFrame(frame, family: .whoop5) {
                         // Same policy as WHOOP4: historical offload frames are bulk sync traffic.
                         // Keep them out of the live UI parser during backfill and let Backfiller
