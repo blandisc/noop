@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **«Automatizaciones» en papel cálido, y solo lo que aplica a tu iPhone / "Automations" on warm paper, iPhone-only.**
+  **ES** — La pantalla de Automatizaciones pasó del tema oscuro a la luz «Instrumento diurno». De paso quitamos lo que solo tenía sentido en Mac (bloquear la Mac al quitarte la banda) y ajustamos el texto: lo que queda funciona en tu iPhone — doble toque para disparar un atajo o marcar un momento, ejecutar un atajo al quitarte/ponerte la banda, coaching háptico, alarma inteligente y aviso temprano de enfermedad.
+  **EN** — The Automations screen moved from the dark theme to the light «Instrumento diurno» language. We also removed what only made sense on a Mac (locking the Mac when you take the strap off) and fixed the copy: what is left works on your iPhone — double-tap to fire a Shortcut or mark a moment, run a Shortcut on wrist off/on, haptic coaching, smart alarm and illness early-warning.
+  ([Cenit/Screens/AutomationsView.swift](Cenit/Screens/AutomationsView.swift))
 - **«Acerca de y soporte» en papel cálido (y una sola pantalla) / "About & support" on warm paper (and a single screen).**
   **ES** — La pantalla de Acerca de y soporte —versión, novedades, buscar actualizaciones, la misión del proyecto, atribuciones, apoyar con cripto y contacto— pasó del tema oscuro a la luz «Instrumento diurno», con un solo aviso de «no afiliado / no es dispositivo médico» (antes se repetía). Las mismas funciones; ahora combina con el resto de la app.
   **EN** — The About & support screen —version, what's new, check for updates, the project's mission, attributions, crypto support and contact— moved from the dark theme to the light «Instrumento diurno» language, with a single "not affiliated / not a medical device" notice (it used to be duplicated). Same features; now it matches the rest of the app.
