@@ -18,6 +18,31 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
+    # FER-69 — Reskin «Automatizaciones» a «Instrumento» + saneo Mac-only
+    'Make the strap do things — tap to act, train by feel, wake to a buzz.': 'Haz que la banda haga cosas — toca para actuar, entrena por sensación, despierta con un zumbido.',
+    'Double-tap': 'Doble toque',
+    'Shortcut name': 'Nombre del atajo',
+    'Wear & presence': 'Uso y presencia',
+    'Run a Shortcut when taken off': 'Ejecutar un atajo al quitártela',
+    'Run a Shortcut when put back on': 'Ejecutar un atajo al ponértela',
+    'Haptic coaching': 'Coaching háptico',
+    'HR-zone coaching': 'Coaching por zona de FC',
+    'Resting stress nudge (experimental)': 'Aviso de estrés en reposo (experimental)',
+    'Smart alarm': 'Alarma inteligente',
+    'Enable smart alarm': 'Activar alarma inteligente',
+    'Illness early-warning': 'Aviso temprano de enfermedad',
+    'Watch for early-illness signs': 'Vigilar señales tempranas de enfermedad',
+    'Double-tap the strap to trigger an action. (The strap exposes a single double-tap gesture.)': 'Da doble toque a la banda para disparar una acción. (La banda expone un solo gesto de doble toque.)',
+    'Run a Shortcut when the strap comes off or goes back on — set a Focus, pause media, mark yourself away.': 'Ejecuta un atajo cuando te quitas o te pones la banda — activa un modo de Concentración, pausa el audio, márcate ausente.',
+    'Presence automation — set a Focus, pause media, set away…': 'Automatización de presencia — activa un modo de Concentración, pausa el audio, márcate ausente…',
+    'Reverse the above when you return.': 'Revierte lo anterior cuando regresas.',
+    "Train by feel — the strap buzzes so you don't have to watch a screen.": 'Entrena por sensación — la banda zumba para que no tengas que mirar una pantalla.',
+    'Buzz when you hit your top zone (ease off) and again when you recover. Uses your max HR from Settings.': 'Zumba cuando llegas a tu zona más alta (baja el ritmo) y otra vez cuando te recuperas. Usa tu FC máx de Ajustes.',
+    'A gentle buzz when your HRV drops while your heart rate is calm — a cue to take a paced breath. Rate-limited to once every 15 minutes; off by default.': 'Un zumbido suave cuando tu HRV baja mientras tu pulso está en calma — una señal para respirar con calma. Limitado a una vez cada 15 minutos; apagado por defecto.',
+    "Wake to a wrist buzz. This arms the strap's own firmware alarm, so it still fires even if your iPhone is asleep or Cénit is closed.": 'Despierta con un zumbido en la muñeca. Esto arma la alarma del propio firmware de la banda, así que suena aunque tu iPhone esté dormido o Cénit esté cerrado.',
+    'Arms the strap to buzz at your wake time.': 'Arma la banda para que zumbe a tu hora de despertar.',
+    'Watches your resting HR, HRV, skin temperature and respiration against your own 28-day baseline. On-device and approximate — informational only, not a diagnosis.': 'Vigila tu FC en reposo, HRV, temperatura de la piel y respiración contra tu propia base de 28 días. En el dispositivo y aproximado — solo informativo, no un diagnóstico.',
+    'Needs at least 14 days of history. When two or more signals drift together you get a notification — at most once a day.': 'Necesita al menos 14 días de historial. Cuando dos o más señales se desvían juntas, recibes una notificación — máximo una vez al día.',
     # FER-337 — Rediseño de Ajustes a «Instrumento»: raíz + sub-pantallas (Unidades, Log) + huérfanos rehubicados
     'Your numbers, your strap, and how Cénit works. All on this iPhone.': 'Tus números, tu banda y cómo funciona Cénit. Todo en este iPhone.',
     'Your strap': 'Tu banda',
