@@ -25330,6 +25330,278 @@
           }
         }
       }
+    },
+    "Your iPhone isn't supported": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your iPhone isn't supported"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu iPhone no es compatible"
+          }
+        }
+      }
+    },
+    "Turn on Apple Intelligence": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on Apple Intelligence"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activa Apple Intelligence"
+          }
+        }
+      }
+    },
+    "The model is getting ready": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The model is getting ready"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El modelo se está preparando"
+          }
+        }
+      }
+    },
+    "You need iOS 26": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You need iOS 26"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Necesitas iOS 26"
+          }
+        }
+      }
+    },
+    "Free text is written by the Apple Intelligence model, which runs inside your iPhone. Your device doesn't support it, so I answer with pre-built questions and your engine's numbers.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free text is written by the Apple Intelligence model, which runs inside your iPhone. Your device doesn't support it, so I answer with pre-built questions and your engine's numbers."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El texto libre lo redacta el modelo de Apple Intelligence, que corre dentro de tu iPhone. Tu equipo no lo soporta, así que respondo con preguntas prearmadas y las cifras de tu motor."
+          }
+        }
+      }
+    },
+    "Your iPhone supports it. Turn on Apple Intelligence in Settings to ask free-text questions.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your iPhone supports it. Turn on Apple Intelligence in Settings to ask free-text questions."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu iPhone es compatible. Enciende Apple Intelligence en Ajustes para escribir preguntas en texto libre."
+          }
+        }
+      }
+    },
+    "Apple Intelligence is downloading the model. Try again in a few minutes; meanwhile, I answer with pre-built questions.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Intelligence is downloading the model. Try again in a few minutes; meanwhile, I answer with pre-built questions."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Intelligence está descargando el modelo. Inténtalo de nuevo en unos minutos; mientras, te respondo con preguntas prearmadas."
+          }
+        }
+      }
+    },
+    "On-device free text needs iOS 26 or later. Meanwhile, I answer with pre-built questions and your engine's numbers.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On-device free text needs iOS 26 or later. Meanwhile, I answer with pre-built questions and your engine's numbers."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El texto libre on-device requiere iOS 26 o posterior. Mientras, te respondo con preguntas prearmadas y las cifras de tu motor."
+          }
+        }
+      }
+    },
+    "iPhone 15 Pro or newer (A17 Pro+ chip), iOS 26 or later, and Apple Intelligence turned on in Settings.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iPhone 15 Pro or newer (A17 Pro+ chip), iOS 26 or later, and Apple Intelligence turned on in Settings."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iPhone 15 Pro o más nuevo (chip A17 Pro+), iOS 26 o posterior, y Apple Intelligence activado en Ajustes."
+          }
+        }
+      }
+    },
+    "I couldn't write that on your iPhone right now; here's the engine's reading.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I couldn't write that on your iPhone right now; here's the engine's reading."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No pude redactar en tu iPhone ahora; te dejo la lectura del motor."
+          }
+        }
+      }
+    },
+    "Add your own API key first to use the coach.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add your own API key first to use the coach."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agrega tu propia clave de API para usar el coach."
+          }
+        }
+      }
+    },
+    "Type a question for the coach.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type a question for the coach."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escribe una pregunta para el coach."
+          }
+        }
+      }
+    },
+    "That API key was rejected. Check the key and the provider you selected.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That API key was rejected. Check the key and the provider you selected."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esa clave de API fue rechazada. Revisa la clave y el proveedor que elegiste."
+          }
+        }
+      }
+    },
+    "The provider is rate-limiting requests right now. Wait a moment and try again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The provider is rate-limiting requests right now. Wait a moment and try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El proveedor está limitando las solicitudes ahora mismo. Espera un momento e inténtalo de nuevo."
+          }
+        }
+      }
+    },
+    "The provider returned an error (%lld)%@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The provider returned an error (%lld)%@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El proveedor devolvió un error (%lld)%@."
+          }
+        }
+      }
+    },
+    "Network problem: %@. The coach is the only feature that needs the internet.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Network problem: %@. The coach is the only feature that needs the internet."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Problema de red: %@. El coach es la única función que necesita internet."
+          }
+        }
+      }
+    },
+    "Couldn't read the provider's reply. Try again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't read the provider's reply. Try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No pude leer la respuesta del proveedor. Inténtalo de nuevo."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

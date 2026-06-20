@@ -168,20 +168,20 @@ enum AICoachError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .noKey:
-            return "Add your own API key first to use the coach."
+            return String(localized: "Add your own API key first to use the coach.")
         case .emptyQuestion:
-            return "Type a question for the coach."
+            return String(localized: "Type a question for the coach.")
         case .badKey:
-            return "That API key was rejected. Check the key and the provider you selected."
+            return String(localized: "That API key was rejected. Check the key and the provider you selected.")
         case .rateLimited:
-            return "The provider is rate-limiting requests right now. Wait a moment and try again."
+            return String(localized: "The provider is rate-limiting requests right now. Wait a moment and try again.")
         case .server(let code, let detail):
             let extra = detail.isEmpty ? "" : " — \(detail)"
-            return "The provider returned an error (\(code))\(extra)."
+            return String(localized: "The provider returned an error (\(code))\(extra).")
         case .network(let detail):
-            return "Network problem: \(detail). The coach is the only feature that needs the internet."
+            return String(localized: "Network problem: \(detail). The coach is the only feature that needs the internet.")
         case .decode:
-            return "Couldn't read the provider's reply. Try again."
+            return String(localized: "Couldn't read the provider's reply. Try again.")
         }
     }
 }
