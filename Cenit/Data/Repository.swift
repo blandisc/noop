@@ -400,6 +400,24 @@ final class Repository: ObservableObject {
         return Set(entries.filter { $0.question == behavior && $0.answeredYes }.map(\.day)).count
     }
 
+    // MARK: - Diet plan (FER-371)
+    //
+    // The prescribed diet plan is native on-device user data, partitioned under the same
+    // `journalDeviceId` source as the journal/experiments it will correlate with. MVP is one active
+    // plan (the most recently saved); replacing it just saves a newer one.
+
+    /// The active diet plan (most recent), or nil when none has been captured.
+    func activeDietPlan() async -> DietPlanRow? {
+        guard let store = await ensureStore() else { return nil }
+        return (try? await store.activeDietPlan(deviceId: Self.journalDeviceId)) ?? nil
+    }
+
+    /// Persist a captured plan and make it the active one.
+    func saveDietPlan(_ row: DietPlanRow) async {
+        guard let store = await ensureStore() else { return }
+        _ = try? await store.upsertDietPlan(row, deviceId: Self.journalDeviceId)
+    }
+
     /// End a running experiment early, with no verdict.
     func cancelExperiment(_ row: ExperimentRow) async {
         guard let store = await ensureStore() else { return }

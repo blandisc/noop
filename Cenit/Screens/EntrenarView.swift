@@ -26,10 +26,11 @@ struct EntrenarView: View {
     var openRoutine: (String) -> Void
     var openBreathe: () -> Void
     var openIntervals: () -> Void
+    var openDiet: () -> Void
 
     var body: some View {
         EntrenarLanding(openRoutine: openRoutine,
-                        openBreathe: openBreathe, openIntervals: openIntervals)
+                        openBreathe: openBreathe, openIntervals: openIntervals, openDiet: openDiet)
             .instrumentoThemeByHour(solar: solar)
     }
 }
@@ -41,6 +42,7 @@ private struct EntrenarLanding: View {
     var openRoutine: (String) -> Void
     var openBreathe: () -> Void
     var openIntervals: () -> Void
+    var openDiet: () -> Void
 
     @State private var loaded = false
     @State private var routines: [Routine] = []
@@ -217,6 +219,8 @@ private struct EntrenarLanding: View {
                 toolRow("Breathe", "wind", action: openBreathe)
                 divider
                 toolRow("Intervals", "timer", action: openIntervals)
+                divider
+                toolRow("Diet", "fork.knife", action: openDiet)
             }
         }
     }
