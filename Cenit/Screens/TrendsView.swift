@@ -51,14 +51,6 @@ struct TrendsView: View {
     /// The input signature the cached `model` was built from; when it differs we rebuild.
     @State private var modelKey: TrendsInputKey?
 
-    // yyyy-MM-dd → Date (en_US_POSIX, UTC), per task spec.
-    private static let dayParser: DateFormatter = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "UTC")
-        f.dateFormat = "yyyy-MM-dd"
-        return f
-    }()
     private struct ResolvedMetric {
         var points: [TrendPoint]
         var effective: Range
@@ -122,7 +114,7 @@ struct TrendsView: View {
         var parsed: [String: Date] = [:]
         parsed.reserveCapacity(days.count)
         for d in days where parsed[d.day] == nil {
-            parsed[d.day] = Self.dayParser.date(from: d.day)
+            parsed[d.day] = Repository.parseDayKey(d.day)
         }
 
         // Trailing-day window RELATIVE TO TODAY (the phone's local date) — not the latest recorded

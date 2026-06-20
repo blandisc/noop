@@ -312,18 +312,14 @@ struct DataSourcesView: View {
         ("vo2max", "VO₂ Max"),
     ]
 
-    // Coverage span is stored as "yyyy-MM-dd" (UTC); parse with a fixed parser, display in the user's
+    // Coverage span is stored as "yyyy-MM-dd" (UTC); parse with the shared parser, display in the user's
     // locale ("12 May" / "12 may").
-    private static let dayParser: DateFormatter = {
-        let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "UTC"); f.dateFormat = "yyyy-MM-dd"; return f
-    }()
     private static let shortDate: DateFormatter = {
         let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("dMMM"); return f
     }()
     private static func coverageSummaryText(_ cov: AppleHealthCoverage) -> String {
         guard let fs = cov.firstDay, let ls = cov.lastDay,
-              let f = dayParser.date(from: fs), let l = dayParser.date(from: ls) else {
+              let f = Repository.parseDayKey(fs), let l = Repository.parseDayKey(ls) else {
             return "\(cov.totalDays) d"
         }
         return "\(shortDate.string(from: f)) → \(shortDate.string(from: l)) · \(cov.totalDays) d"

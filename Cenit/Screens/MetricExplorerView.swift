@@ -368,7 +368,7 @@ struct MetricDetailView: View {
             ? await repo.series(key: metric.key, source: metric.source)
             : focalOnDevice
         series = focalSeries
-        parsed = focalSeries.map { ($0.day, MetricWindowMath.dayParser.date(from: $0.day), $0.value) }
+        parsed = focalSeries.map { ($0.day, Repository.parseDayKey($0.day), $0.value) }
         // TaskGroup completion order is nondeterministic — restore catalog order so the correlation list
         // is stable across loads (recomputeCorrelations re-sorts by |r| for display).
         let catalogIndex = Dictionary(uniqueKeysWithValues: MetricCatalog.all.enumerated().map { ($1.id, $0) })
@@ -381,7 +381,7 @@ struct MetricDetailView: View {
 
     private func hero(window: MetricWindow) -> some View {
         let asOf: String = {
-            guard let day = latest?.day, let d = MetricWindowMath.dayParser.date(from: day) else { return "—" }
+            guard let day = latest?.day, let d = Repository.parseDayKey(day) else { return "—" }
             return String(localized: "as of \(longDate(d))")
         }()
         let heroValue = latest.map { fmt($0.value) } ?? "—"

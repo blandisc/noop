@@ -85,7 +85,7 @@ struct StrainDetailScreen: View {
         .modifier(StrainSheetPaperBackground(paper: theme.paper))
         .task {
             range = .month
-            parsed = model.series.map { ($0.day, Self.dayParser.date(from: $0.day), $0.value) }
+            parsed = model.series.map { ($0.day, Repository.parseDayKey($0.day), $0.value) }
             curve = await curveLoader()
             curveLoaded = true
         }
@@ -378,14 +378,6 @@ struct StrainDetailScreen: View {
         return Swift.max(0, lo - pad)...Swift.min(21, hi + pad)
     }
 
-    static let dayParser: DateFormatter = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "UTC")
-        f.dateFormat = "yyyy-MM-dd"
-        return f
-    }()
-
     /// Locale-aware hour label for the intraday curve's x-axis (12/24h per region).
     private static let hourFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -462,7 +454,8 @@ struct StrainDetailModel {
 private func sampleStrainSeries(days: Int = 60) -> [(day: String, value: Double)] {
     let cal = Calendar(identifier: .gregorian)
     let today = cal.startOfDay(for: Date())
-    let f = StrainDetailScreen.dayParser
+    let f = DateFormatter()
+    f.locale = Locale(identifier: "en_US_POSIX"); f.timeZone = TimeZone(identifier: "UTC"); f.dateFormat = "yyyy-MM-dd"
     return (0..<days).map { i in
         let date = cal.date(byAdding: .day, value: -(days - 1 - i), to: today)!
         let v = 11 + 5 * sin(Double(i) / 5.0) + Double((i * 7) % 5) - 2

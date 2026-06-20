@@ -96,7 +96,7 @@ struct RecoveryDetailScreen: View {
         .modifier(RecoverySheetPaperBackground(paper: theme.paper))
         .task {
             range = .month
-            parsed = model.series.map { ($0.day, Self.dayParser.date(from: $0.day), $0.value) }
+            parsed = model.series.map { ($0.day, Repository.parseDayKey($0.day), $0.value) }
         }
     }
 
@@ -844,7 +844,7 @@ struct RecoveryDetailModel {
     static func buildHeat(days: [DailyMetric], todayKey: String) -> [RecoveryDay] {
         var rec: [String: Double] = [:]
         for d in days { if let r = d.recovery { rec[d.day] = r } }
-        guard let today = RecoveryDetailScreen.dayParser.date(from: todayKey) else { return [] }
+        guard let today = Repository.parseDayKey(todayKey) else { return [] }
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = TimeZone(identifier: "UTC")!
         var out: [RecoveryDay] = []

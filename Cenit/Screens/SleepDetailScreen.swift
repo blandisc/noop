@@ -951,15 +951,6 @@ struct SleepDetailModel {
 
     // MARK: - Build
 
-    /// yyyy-MM-dd → Date (en_US_POSIX, UTC).
-    private static let dayParser: DateFormatter = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "UTC")
-        f.dateFormat = "yyyy-MM-dd"
-        return f
-    }()
-
     /// Personal sleep need (minutes): mean asleep, never below a 7.5 h floor.
     private static func sleepNeedMin(_ days: [DailyMetric]) -> Double {
         let totals = days.compactMap { $0.totalSleepMin }.filter { $0 > 0 }
@@ -1059,7 +1050,7 @@ struct SleepDetailModel {
         // total sleep so it carries surplus too; the headline total above still honours imported debt.
         let debtNights: [DebtNight] = days.suffix(7).compactMap { d in
             guard let asleep = d.totalSleepMin, asleep > 0, need > 0,
-                  let date = dayParser.date(from: d.day) else { return nil }
+                  let date = Repository.parseDayKey(d.day) else { return nil }
             return DebtNight(date: date, vsNeedMin: asleep - need, sleptMin: asleep)
         }
 
@@ -1111,7 +1102,7 @@ struct SleepDetailModel {
     /// where the value is missing; empty when there's nothing to chart. (FER-227)
     private static func metricTrend(_ days: [DailyMetric], _ pick: (DailyMetric) -> Double?) -> [TrendPoint] {
         let pts = days.compactMap { d -> TrendPoint? in
-            guard let v = pick(d), let date = dayParser.date(from: d.day) else { return nil }
+            guard let v = pick(d), let date = Repository.parseDayKey(d.day) else { return nil }
             return TrendPoint(date: date, value: v)
         }
         return Array(pts.suffix(14))
@@ -1145,7 +1136,7 @@ struct SleepDetailModel {
         let deep = d.deepMin ?? 0, rem = d.remMin ?? 0, light = d.lightMin ?? 0
         guard deep + rem + light > 0 else { return nil }
         let stages = Stages(awake: 0, light: light, deep: deep, rem: rem)
-        let startTs = Int((dayParser.date(from: d.day) ?? Date()).timeIntervalSince1970) + 12 * 3600
+        let startTs = Int((Repository.parseDayKey(d.day) ?? Date()).timeIntervalSince1970) + 12 * 3600
         return Night(startTs: startTs, endTs: startTs, efficiency: d.efficiency,
                      respRate: d.respRateBpm, stages: stages)
     }
@@ -1156,7 +1147,7 @@ struct SleepDetailModel {
         func build(_ slice: ArraySlice<DailyMetric>) -> [TrendPoint] {
             slice.compactMap { d -> TrendPoint? in
                 guard let mins = d.totalSleepMin, mins > 0,
-                      let date = dayParser.date(from: d.day) else { return nil }
+                      let date = Repository.parseDayKey(d.day) else { return nil }
                 return TrendPoint(date: date, value: mins / 60.0)
             }
         }

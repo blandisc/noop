@@ -39,16 +39,6 @@ enum MetricWindowMath {
     /// One parsed series row: the `yyyy-MM-dd` key, its `Date` memoised once by the screen, and the value.
     typealias Parsed = [(day: String, date: Date?, value: Double)]
 
-    /// `yyyy-MM-dd` parser (en_US_POSIX / UTC), matching every screen's `dayParser`. Used only to give the
-    /// decimated points a representative `Date` for the x-axis.
-    static let dayParser: DateFormatter = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "UTC")
-        f.dateFormat = "yyyy-MM-dd"
-        return f
-    }()
-
     /// Trailing-N-days slice for `r`, taken RELATIVE TO THE LATEST point (not "now"). Reads the memoized
     /// `date` from `parsed` — no `DateFormatter` work here.
     static func slice(_ parsed: Parsed, for r: ExploreRange) -> [(day: String, value: Double)] {
@@ -84,7 +74,7 @@ enum MetricWindowMath {
         let n = Swift.min(rows.count, values.count)
         guard n > maxPoints, maxPoints > 1 else {
             return zip(rows, values).compactMap { row, value in
-                dayParser.date(from: row.day).map { TrendPoint(date: $0, value: value) }
+                Repository.parseDayKey(row.day).map { TrendPoint(date: $0, value: value) }
             }
         }
         let decimated = SeriesShape.decimate(Array(values.prefix(n)), maxPoints: maxPoints)
@@ -94,7 +84,7 @@ enum MetricWindowMath {
             let lo = (n * b) / maxPoints
             let hi = (n * (b + 1)) / maxPoints
             let mid = Swift.min(lo + (hi - lo) / 2, n - 1)
-            if let date = dayParser.date(from: rows[mid].day) {
+            if let date = Repository.parseDayKey(rows[mid].day) {
                 out.append(TrendPoint(date: date, value: decimated[b]))
             }
         }
