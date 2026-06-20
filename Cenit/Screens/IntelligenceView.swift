@@ -1,5 +1,6 @@
 import SwiftUI
 import StrandDesign
+import StrandAnalytics
 
 /// Intelligence — NOOP's own recovery/strain/sleep scores, computed on-device from raw strap data
 /// using the WHOOP model shape. Makes the app independent of WHOOP's cloud for live-collected days.
@@ -95,8 +96,12 @@ struct IntelligenceView: View {
 
     private func recoveryColor(_ r: Double?) -> Color {
         guard let r else { return StrandPalette.textSecondary }
-        if r >= 67 { return StrandPalette.statusPositive }
-        if r >= 34 { return StrandPalette.statusWarning }
-        return StrandPalette.statusCritical
+        // Classify via the single source of recovery bands (RecoveryScorer.band) instead of
+        // re-hardcoding the 34/67 cutoffs, so this can't silently drift from the engine (FER-327).
+        switch RecoveryScorer.band(r) {
+        case "green":  return StrandPalette.statusPositive
+        case "yellow": return StrandPalette.statusWarning
+        default:       return StrandPalette.statusCritical
+        }
     }
 }
