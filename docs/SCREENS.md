@@ -49,7 +49,7 @@ TodayView   → LiveView (sheet, detente grande) · MetricInfoSheet (sheet; incl
 CuerpoView  → RecoveryDetailScreen (sheet «Instrumento»: Recuperación — FER-225) ·
              StrainDetailScreen (sheet claro «Instrumento»: Esfuerzo del día — FER-238) ·
              MetricDetailScreen (sheet claro, .full: HRV/FC reposo/Respiración/SpO₂/Frecuencia cardíaca/Pasos — FER-185; SpO₂ con banda clínica fija 95–100% + «Noches bajo 95%» — FER-252; Frecuencia cardíaca con curva intradía + pico marcado + piso de reposo + «Tiempo en zonas» — FER-253; Pasos = conteo de hoy + promedio 7d + tendencia diaria, sin bandas — FER-254) ·
-             StressDetailScreen (sheet claro «Instrumento»: Estrés — valor de hoy + bandas universales + qué lo mueve + ⓘ por concepto — FER-241) ·
+             StressDetailScreen (sheet claro «Instrumento»: Estrés — valor de hoy + bandas universales + qué lo mueve + ⓘ por concepto — FER-241; **«Estrés a lo largo del día»**: el «mapa del día» = carril vertical con la curva intradía cruzada con el calendario, EventKit on-device + `StressEngine`, `StressDayMapBlock` — FER-377) ·
              SkinTempDetailScreen (sheet claro «Instrumento»: Temperatura de la piel — última lectura + tendencia con banda ±típica + consistencia en SD °C — FER-256) ·
              BodyAgeSheet (sheet claro: Edad corporal + Vitalidad — FER-145) ·
              SleepDetailScreen (sheet claro «Instrumento»: Sueño + regularidad del horario — FER-212) ·

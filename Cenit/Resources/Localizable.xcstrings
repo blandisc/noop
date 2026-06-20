@@ -29507,6 +29507,390 @@
           }
         }
       }
+    },
+    "Stress through the day": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stress through the day"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estrés a lo largo del día"
+          }
+        }
+      }
+    },
+    "We put your day's stress curve next to your events so you can see what your most and least activated moments coincided with. You choose which calendars are included; all-day events aren't matched to a moment. It reads coincidence, not cause — seeing two things together doesn't mean one caused the other. Everything is computed on your iPhone; nothing is shared.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We put your day's stress curve next to your events so you can see what your most and least activated moments coincided with. You choose which calendars are included; all-day events aren't matched to a moment. It reads coincidence, not cause — seeing two things together doesn't mean one caused the other. Everything is computed on your iPhone; nothing is shared."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ponemos tu curva de estrés del día junto a tus eventos para que veas con qué coincidieron tus momentos más y menos activados. Tú eliges qué calendarios entran; los eventos de todo el día no se cruzan con un momento. Es una observación de coincidencias, no de causas: ver dos cosas juntas no significa que una haya causado la otra. Todo se calcula en tu iPhone; nada se comparte."
+          }
+        }
+      }
+    },
+    "Information about stress through the day": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Information about stress through the day"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Información sobre el estrés a lo largo del día"
+          }
+        }
+      }
+    },
+    "Cross today's stress curve with your calendar to see what your most activated moments coincided with. Everything stays on your iPhone.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cross today's stress curve with your calendar to see what your most activated moments coincided with. Everything stays on your iPhone."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cruza tu curva de estrés de hoy con tu calendario para ver con qué coincidieron tus momentos más activados. Todo se queda en tu iPhone."
+          }
+        }
+      }
+    },
+    "Connect my calendar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect my calendar"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conectar mi calendario"
+          }
+        }
+      }
+    },
+    "Calendar access is off. Turn it on in Settings › Privacy & Security › Calendars › Cénit to see this cross-reference.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calendar access is off. Turn it on in Settings › Privacy & Security › Calendars › Cénit to see this cross-reference."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El acceso a tu calendario está desactivado. Actívalo en Ajustes › Privacidad y seguridad › Calendarios › Cénit para ver este cruce."
+          }
+        }
+      }
+    },
+    "Open Settings": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Settings"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abrir Ajustes"
+          }
+        }
+      }
+    },
+    "Your calendar isn't available on this device because of a system restriction.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your calendar isn't available on this device because of a system restriction."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu calendario no está disponible en este dispositivo por una restricción del sistema."
+          }
+        }
+      }
+    },
+    "Choose which calendars to cross with your stress. You'll only see the ones you pick; nothing is shared.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose which calendars to cross with your stress. You'll only see the ones you pick; nothing is shared."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elige qué calendarios cruzar con tu estrés. Solo verás los que elijas; nada se comparte."
+          }
+        }
+      }
+    },
+    "Choose calendars": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose calendars"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elegir calendarios"
+          }
+        }
+      }
+    },
+    "Crossing your day…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crossing your day…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cruzando tu día…"
+          }
+        }
+      }
+    },
+    "You have no events today in the calendars you chose. Your stress curve is still here; come back when something's scheduled to see coincidences.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You have no events today in the calendars you chose. Your stress curve is still here; come back when something's scheduled to see coincidences."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoy no tienes eventos en los calendarios que elegiste. Tu curva de estrés sigue aquí; vuelve cuando tengas algo agendado para ver coincidencias."
+          }
+        }
+      }
+    },
+    "I'm still learning your rhythm — I need a few days of waking readings to mark your peaks. Your events are already here.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I'm still learning your rhythm — I need a few days of waking readings to mark your peaks. Your events are already here."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún estoy aprendiendo tu ritmo — necesito unos días de lecturas de vigilia para marcar tus picos. Tus eventos ya están aquí."
+          }
+        }
+      }
+    },
+    "All day": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All day"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todo el día"
+          }
+        }
+      }
+    },
+    "Your highest point today, %@, fell within “%@”.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your highest point today, %@, fell within “%@”."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu punto más alto de hoy, %@, cayó dentro de «%@»."
+          }
+        }
+      }
+    },
+    "Your highest point today was at %@. It didn't coincide with any of your events.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your highest point today was at %@. It didn't coincide with any of your events."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu punto más alto de hoy fue a las %@. No coincidió con ninguno de tus eventos."
+          }
+        }
+      }
+    },
+    "Calendars: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calendars: %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calendarios: %@"
+          }
+        }
+      }
+    },
+    "· change": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· change"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· cambiar"
+          }
+        }
+      }
+    },
+    "none": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "none"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ninguno"
+          }
+        }
+      }
+    },
+    "We'll only cross the ones you pick.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We'll only cross the ones you pick."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo cruzaremos los que elijas."
+          }
+        }
+      }
+    },
+    "There are no calendars on this iPhone yet.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "There are no calendars on this iPhone yet."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no hay calendarios en este iPhone."
+          }
+        }
+      }
+    },
+    "All day: %@. Not matched to a moment.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All day: %@. Not matched to a moment."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todo el día: %@. No se cruza con un momento."
+          }
+        }
+      }
+    },
+    "(untitled)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(untitled)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(sin título)"
+          }
+        }
+      }
+    },
+    "No events today and no stress readings yet — your curve fills in as your strap syncs.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No events today and no stress readings yet — your curve fills in as your strap syncs."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoy no hay eventos ni lecturas de estrés todavía — tu curva se llena conforme tu banda sincroniza."
+          }
+        }
+      }
     }
   },
   "version": "1.1"
