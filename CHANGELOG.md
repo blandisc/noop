@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Ajustes: Automatizaciones ya se ve clara y «Acerca de» queda más simple / Settings: Automations renders light and «About» is simpler.**
+  **ES** — Dos ajustes finos al rediseño de Ajustes: la pantalla de **Automatizaciones** ya abre en papel claro (se había quedado con barra/croma oscuro). Y **Acerca de y soporte** se simplificó — quitamos «Buscar actualizaciones», la sección de donación y la de contacto; queda la versión, **Novedades** (el changelog), la misión, las atribuciones y el aviso legal.
+  **EN** — Two fine-tunes to the Settings redesign: the **Automations** screen now opens on warm paper (it had been left with a dark bar/chrome). And **About & support** is simpler — we removed "Check for updates", the donation section and the contact section; what is left is the version, **What's New** (the changelog), the mission, attributions and the legal notice.
+  ([Cenit/Screens/AjustesView.swift](Cenit/Screens/AjustesView.swift), [Cenit/Screens/SupportView.swift](Cenit/Screens/SupportView.swift))
 - **El Detalle de Métrica respira «Instrumento» / The Metric detail breathes «Instrumento».**
   **ES** — La hoja que abre al tocar una métrica en **Hoy** se pulió en el lenguaje «Instrumento diurno»: el **dato manda** —el numeral pasa a héroe (SF Mono, tabular) y el nombre baja a rótulo, así dejan de competir—, el **ritmo es por espacio** (secciones más calmadas, grupos internos más juntos) y la **tabla de bandas** suelta la flecha redundante para que el rango respire. Misma estructura, misma lógica, mismos tokens; la hoja sigue cabiendo sin scroll.
   **EN** — The sheet that opens when you tap a metric on **Today** was polished in the «Instrumento diurno» language: the **datum leads** — the value becomes the hero numeral (SF Mono, tabular) and the name drops to an overline, so they no longer compete —, **rhythm comes from space** (calmer sections, tighter inner groups), and the **bands table** drops its redundant arrow so the range can breathe. Same structure, same logic, same tokens; the sheet still fits without scrolling.
