@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-20 · FER-342</span>
+  <span class="tb-updated">Actualizado 2026-06-20 · FER-337</span>
 </div>
 
 <div id="wrapper">
@@ -699,16 +699,20 @@ const SCREENS = [
   },
   {
     id: 'settings', x: 284, y: 2660,
-    name: 'Settings', desc: 'Configuración y perfil',
-    file: 'Cenit/Screens/SettingsView.swift',
+    name: 'Ajustes', desc: 'Raíz clara «Instrumento» (FER-337): perfil + tu strap; mató «Más» y el doble nivel',
+    file: 'Cenit/Screens/AjustesView.swift',
     icon: '⚙', color: '#888',
     states: [
       { label: 'Vista única (scrollable)', type: 'data' },
+      { label: 'Tu strap: vinculado / conectado / idle / desconectado', type: 'data' },
+      { label: 'Log de la banda: vacío / con líneas', type: 'data' },
     ],
     nav: [
-      { to: 'whats-new', label: 'What\'s New', type: 'sheet' },
+      { to: 'data-sources', label: 'Datos y fuentes', type: 'sheet' },
+      { to: 'automations',  label: 'Automatizaciones', type: 'sheet' },
+      { to: 'support',      label: 'Acerca de y soporte', type: 'sheet' },
     ],
-    components: ['SettingsSection cards', 'FormRow (age/sex/weight/height)', 'Units toggles (metric/imperial/°C/°F)', 'Strap card (+ registro del strap embebido, Copiar/Guardar)', 'Experimental toggle (Puffin)', 'Backup card (export/restore)', 'About card'],
+    components: ['Perfil (FormRow: Stepper/Picker nativos)', 'Tu strap (estado + batería + Re-escanear/Desconectar)', 'Log de la banda (sheet claro · Copiar/Guardar)', 'Unidades y formato (sheet claro)', 'Pruebas WHOOP 5/MG (toggle)', 'navRow → sub-pantallas'],
   },
   {
     id: 'data-sources', x: 538, y: 2660,
@@ -885,7 +889,11 @@ const EDGES = [
   { from: 'today',    to: 'metric-info',    label: 'sheet',            type: 'sheet'      },
   { from: 'today',    to: 'support',        label: 'toolbar ❤',        type: 'toolbar'    },
   { from: 'workouts', to: 'manual-workout', label: 'sheet',            type: 'sheet'      },
-  { from: 'settings', to: 'whats-new',      label: 'sheet',            type: 'sheet'      },
+  { from: 'settings', to: 'data-sources',   label: 'Datos y fuentes',  type: 'sheet'      },
+  { from: 'settings', to: 'automations',    label: 'Automatizaciones', type: 'sheet'      },
+  { from: 'settings', to: 'support',        label: 'Acerca de y soporte', type: 'sheet'   },
+  { from: 'data-sources', to: 'apple-health', label: 'Ver datos importados', type: 'push' },
+  { from: 'support',  to: 'whats-new',      label: 'What\'s New',       type: 'sheet'      },
 ];
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

@@ -22,9 +22,10 @@ struct RootTabView: View {
     private enum SecondaryScreen: String, Hashable {
         case intelligence, insights, coach        // Coach hub
         case breathe, intervals                   // Entrenar hub
-        case settings                             // Ajustes — primary
+        // Reachable via DEBUG screenshot-nav (pushed onto the Ajustes stack). Explore/Compare/Workouts
+        // also still open from Cuerpo's footer; the rest open as sheets from the Ajustes root (FER-337).
         case explore, compare, workouts, health, stress
-        case applehealth, datasources, automations, support   // Ajustes — «Más»
+        case applehealth, datasources, automations, support
     }
 
     /// Whether Today is the active tab — published up to ContentView, which owns the color scheme
@@ -71,26 +72,26 @@ struct RootTabView: View {
                 }
             }
 
-            // Ajustes — Settings + a temporary «Más» section holding every still-orphan screen so
-            // nothing from the old shell (incl. Sleep, which lost its tab) becomes unreachable.
-            hubTab(.settings, "Ajustes", "gearshape.fill", path: $settingsStack) {
-                Section {
-                    row(.settings, "Settings", "gearshape.fill")
-                }
-                // Sleep · Health · Stress moved to «Cuerpo» as métricas (FER-186) — Sueño opens the
-                // light «Instrumento» Detalle de Sueño from Cuerpo (FER-212), and Health's vitals +
-                // Stress are rows there. The rest stay in this interim drawer until their sibling issues
-                // give them a home.
-                Section("More") {
-                    row(.explore,     "Explore",      "square.grid.2x2.fill")
-                    row(.compare,     "Compare",      "rectangle.split.2x1.fill")
-                    row(.workouts,    "Workouts",     "figure.run")
-                    row(.applehealth, "Apple Health", "heart.fill")
-                    row(.datasources, "Data Sources", "externaldrive.fill")
-                    row(.automations, "Automations",  "wand.and.stars")
-                    row(.support,     "Support",      "hands.clap.fill")
-                }
+            // Ajustes — the redesigned light «Instrumento» Settings root (FER-337). Replaces the old
+            // list → SettingsView indirection AND the «Más» drawer: the tab now opens directly here.
+            // The visible UI navigates by SHEET (AjustesView), like Cuerpo; the NavigationStack here
+            // exists only so DEBUG screenshot-nav can still push a secondary screen — its path only
+            // ever carries `SecondaryScreen` (one value type), so there's no FER-171 mixed-path crash.
+            // Explore · Compare · Workouts are gone from Ajustes (they open from Cuerpo now).
+            NavigationStack(path: $settingsStack) {
+                AjustesView()
+                    .barReservation(barHeight)
+                    .navigationDestination(for: SecondaryScreen.self) { screen in
+                        secondaryDestination(screen)
+                            .background(StrandPalette.surfaceBase.ignoresSafeArea())
+                            .barReservation(barHeight)
+                            .navigationBarTitleDisplayMode(.inline)
+                            .toolbarBackground(StrandPalette.surfaceBase, for: .navigationBar)
+                    }
             }
+            .toolbar(.hidden, for: .tabBar)
+            .tabItem { Label("Ajustes", systemImage: "gearshape.fill") }
+            .tag(Tab.settings)
         }
         // `.tint` no longer paints the tab bar (it's hidden below; the custom
         // `InstrumentTabBar` sets its own ink), but it still tints links/controls
@@ -171,7 +172,7 @@ struct RootTabView: View {
     /// via `isTodayActive` and the instrument bar's `isLight`). Hoy and Cuerpo — the «historia» landing
     /// is warm paper too (FER-186), color only on the datum; every other tab is the dark instrument
     /// panel. (En vivo's light paper lives in a cover over Hoy, not a tab.)
-    private func isLightTab(_ tab: Tab) -> Bool { tab == .today || tab == .body || tab == .coach || tab == .train }
+    private func isLightTab(_ tab: Tab) -> Bool { tab == .today || tab == .body || tab == .coach || tab == .train || tab == .settings }
 
     /// The hub tab that owns a given secondary screen (for debug navigation).
     private func hub(for screen: SecondaryScreen) -> Tab {
@@ -276,7 +277,6 @@ struct RootTabView: View {
         case .coach:        CoachView()
         case .breathe:      BreathingView()
         case .intervals:    IntervalTimerView()
-        case .settings:     SettingsView()
         case .explore:      MetricExplorerView()
         case .compare:      CompareView()
         case .workouts:     WorkoutsView()
