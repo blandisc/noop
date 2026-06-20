@@ -105,6 +105,35 @@ final class CoachGroundingTests: XCTestCase {
         XCTAssertTrue(g.validate(answer: "Tu HRV es 65 ms, excelente.").isEmpty)
     }
 
+    // FER-331: seeded conversation.
+    func testOpenerLeadsWithTopFact() {
+        let ins = [insight(.sleepRegularity, reading: "Tu sueño llegó 1.4 h más tarde de lo normal.",
+                           value: 1.4, unit: "h", metric: "Sueño", relevance: 5)]
+        let g = CoachGrounding.from(insights: ins, readiness: nil, recovery: 60, referenceDay: "d")
+        XCTAssertTrue(g.opener().contains("1.4 h más tarde"))
+    }
+
+    func testOpenerColdStartInvitesSync() {
+        let g = CoachGrounding.from(insights: [], readiness: nil, recovery: nil, referenceDay: "d")
+        XCTAssertTrue(g.opener().localizedCaseInsensitiveContains("sincroniza"))
+    }
+
+    func testSuggestedChipsLeadWithStandoutTopic() {
+        let sleepLed = [insight(.sleepRegularity, reading: "s", value: 1, unit: "h", metric: "Sueño", relevance: 9)]
+        let g = CoachGrounding.from(insights: sleepLed, readiness: nil, recovery: 70, referenceDay: "d")
+        let chips = g.suggestedChips()
+        XCTAssertEqual(chips.count, 3)
+        XCTAssertEqual(chips.first, .sleep)            // standout leads
+        XCTAssertEqual(Set(chips).count, 3)            // no duplicates
+    }
+
+    func testFollowUpsNeverRepeatAsked() {
+        let g = CoachGrounding.from(insights: [], readiness: nil, recovery: 70, referenceDay: "d")
+        let ups = g.followUpChips(after: .today)
+        XCTAssertEqual(ups.count, 2)
+        XCTAssertFalse(ups.contains(.today))
+    }
+
     func testMetricNumbersOnlyCatchesUnitedNumbers() {
         let found = CoachGrounding.metricNumbers(in: "91% y 80 ms, pero 9 horas y 80/20")
         XCTAssertEqual(found, ["91", "80"])

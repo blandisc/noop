@@ -19,6 +19,10 @@ approximate; downloads are on the [Releases](https://github.com/NoopApp/noop/rel
 
 ## Unreleased
 
+- **Pregúntale ahora empieza la conversación por ti / Ask your data now starts the conversation for you.**
+  **ES** — Se acabó la caja en blanco. Al abrir «Pregúntale», el coach habla primero: te dice lo que más resalta hoy (tu hallazgo más relevante) y te ofrece preguntas sugeridas **según tu día** —si lo que destaca es tu sueño, la primera sugerencia es de sueño—. Y después de cada respuesta te propone dos seguimientos. Funciona igual con o sin Apple Intelligence.
+  **EN** — No more blank box. When you open "Ask your data", the coach speaks first: it tells you what stands out today (your most relevant finding) and offers suggested questions **based on your day** — if sleep is what stands out, the first suggestion is about sleep. After each answer it proposes two follow-ups. Works the same with or without Apple Intelligence.
+  ([Cenit/Screens/PreguntaleView.swift](Cenit/Screens/PreguntaleView.swift), [Packages/StrandAnalytics/Sources/StrandAnalytics/CoachGrounding.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/CoachGrounding.swift))
 - **Pregúntale: respuestas que de verdad contestan tu pregunta / Ask your data: answers that actually address your question.**
   **ES** — Afinamos el coach on-device. Antes, si el modelo daba un consejo normal con números (como «duerme 7–9 horas»), una verificación demasiado estricta lo descartaba y lo cambiaba por un texto genérico que respondía otra cosa. Ahora la protección cuida lo que importa —que el modelo **no te diga un valor equivocado de TUS métricas** (tu recuperación, tu HRV…)— pero deja pasar los consejos normales. Resultado: responde directo lo que preguntaste.
   **EN** — We tuned the on-device coach. Before, if the model gave normal advice with numbers (like "sleep 7–9 hours"), an over-strict check threw it away and swapped in a generic text that answered something else. Now the guard protects what matters — that the model **never states a wrong value for YOUR metrics** (your recovery, your HRV…) — while letting normal advice through. The result: it answers what you actually asked.

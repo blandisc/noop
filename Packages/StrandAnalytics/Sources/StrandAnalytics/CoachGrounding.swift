@@ -197,6 +197,53 @@ public struct CoachGrounding: Equatable, Sendable {
         }
     }
 
+    // MARK: Seeded conversation (FER-331 — kill the blank box)
+
+    /// The coach's opening line: the single most-relevant fact framed as an invitation. When there
+    /// are no facts yet, it falls back to the readiness read, then to a cold-start nudge. This is what
+    /// the coach "says first" so the user never faces an empty box.
+    public func opener() -> String {
+        if let top = facts.first {
+            return "Lo que más resalta hoy: \(top.statement) ¿Quieres que veamos qué hacer?"
+        }
+        if let s = readinessSummary {
+            return "\(s) ¿En qué te ayudo hoy?"
+        }
+        return "Aún reúno señal de tus noches. Pregúntame lo que quieras, o sincroniza tu strap para lecturas más precisas."
+    }
+
+    /// Up to three pre-armed questions to suggest, ordered by what stands out today (the standout
+    /// fact's topic leads), padded with sensible defaults. Dynamic: a sleep-led day suggests the sleep
+    /// question first. Returned as `CoachChip` so both tiers can answer them (templates or model).
+    public func suggestedChips() -> [CoachChip] {
+        var ordered: [CoachChip] = []
+        func add(_ c: CoachChip) { if !ordered.contains(c) { ordered.append(c) } }
+
+        if let top = facts.first {
+            switch top.kind {
+            case .sleepRegularity, .sleepDebt: add(.sleep)
+            case .behavior:                    add(.whatWorks)
+            default:                           add(.recovery)
+            }
+        }
+        if facts.contains(where: { $0.kind == .sleepRegularity || $0.kind == .sleepDebt }) { add(.sleep) }
+        if facts.contains(where: { $0.kind == .behavior }) { add(.whatWorks) }
+        add(.today); add(.recovery); add(.whatWorks); add(.sleep)   // defaults pad to 3
+        return Array(ordered.prefix(3))
+    }
+
+    /// Two follow-up questions to offer after answering `asked` — the most relevant remaining chips,
+    /// never repeating what was just asked.
+    public func followUpChips(after asked: CoachChip) -> [CoachChip] {
+        let prioritized = suggestedChips() + CoachChip.allCases
+        var out: [CoachChip] = []
+        for c in prioritized where c != asked && !out.contains(c) {
+            out.append(c)
+            if out.count == 2 { break }
+        }
+        return out
+    }
+
     private func joined(_ parts: [String], fallback: String) -> String {
         let clean = parts.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
         return clean.isEmpty ? fallback : clean.joined(separator: " ")

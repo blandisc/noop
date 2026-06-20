@@ -133,18 +133,32 @@ private struct EssentialModeScreen: View {
     @Environment(\.instrumentoTheme) private var theme
     @EnvironmentObject private var coach: AICoachEngine
     @State private var answer: String?
+    @State private var lastAsked: CoachChip?
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 PreguntaleHeader(onDevice: false)
 
-                // Why it's only the essential mode + what's needed.
+                // The coach speaks first — seed with today's standout so the box is never blank.
+                CoachOpenerBubble(text: grounding.opener())
+
+                // Dynamic suggestions (ordered by what stands out today), or follow-ups after answering.
+                let chips = answer == nil ? grounding.suggestedChips()
+                                          : grounding.followUpChips(after: lastAsked ?? .today)
+                FlowChips(chips: chips, theme: theme) { chip in
+                    lastAsked = chip
+                    answer = grounding.deterministicAnswer(forChip: chip)
+                }
+
+                if let answer { AnswerBubble(text: answer) }
+
+                // Why it's only the essential mode + what's needed (quieter, below the value).
                 VStack(alignment: .leading, spacing: 8) {
                     Label(reason.title, systemImage: "info.circle")
-                        .font(StrandFont.headline).foregroundStyle(theme.ink)
+                        .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.inkSecondary)
                         .labelStyle(.titleAndIcon)
-                    Text(reason.detail).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    Text(reason.detail).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
                     Divider().overlay(theme.hairline)
                     Text("Qué necesitas").font(StrandFont.footnote.weight(.semibold)).foregroundStyle(theme.ink)
                     Text(CoachUnavailableReason.requirements)
@@ -156,18 +170,27 @@ private struct EssentialModeScreen: View {
                 .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
                     .stroke(theme.hairline, lineWidth: 1))
 
-                // Pre-armed chips.
-                FlowChips(chips: CoachChip.allCases, theme: theme) { chip in
-                    answer = grounding.deterministicAnswer(forChip: chip)
-                }
-
-                if let answer { AnswerBubble(text: answer) }
-
                 ExternalUpgradeRow(hasKey: coach.hasKey, action: openExternal)
             }
             .padding(NoopMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+}
+
+/// The coach's opening line as a left bubble (no "engine figures" footer — it's an invitation, not a datum).
+private struct CoachOpenerBubble: View {
+    let text: String
+    @Environment(\.instrumentoTheme) private var theme
+
+    var body: some View {
+        Text(text)
+            .font(StrandFont.body).foregroundStyle(theme.ink)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                .stroke(theme.hairline, lineWidth: 1))
     }
 }
 
@@ -231,6 +254,14 @@ private struct OnDeviceChatScreen: View {
                     .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
                         .stroke(theme.hairline, lineWidth: 1))
 
+                    // The coach speaks first + dynamic suggestions, until the user starts.
+                    if engine.messages.isEmpty {
+                        CoachOpenerBubble(text: grounding.opener())
+                        FlowChips(chips: grounding.suggestedChips(), theme: theme) { chip in
+                            Task { await engine.send(chip.question) }
+                        }
+                    }
+
                     ForEach(engine.messages) { msg in
                         if msg.role == .user {
                             Text(msg.text)
@@ -250,6 +281,13 @@ private struct OnDeviceChatScreen: View {
                         }
                         .accessibilityElement(children: .combine)
                         .accessibilityLabel("Pensando")
+                    }
+
+                    // Follow-up suggestions once there's an answer on screen.
+                    if !engine.messages.isEmpty && !engine.thinking {
+                        FlowChips(chips: grounding.followUpChips(after: .today), theme: theme) { chip in
+                            Task { await engine.send(chip.question) }
+                        }
                     }
 
                     ExternalUpgradeRow(hasKey: coach.hasKey, action: openExternal)
