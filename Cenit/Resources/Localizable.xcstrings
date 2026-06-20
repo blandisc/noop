@@ -25772,6 +25772,358 @@
           }
         }
       }
+    },
+    "What's good for me today?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What's good for me today?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Qué me conviene hoy?"
+          }
+        }
+      }
+    },
+    "How's my recovery coming along?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How's my recovery coming along?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Cómo viene mi recuperación?"
+          }
+        }
+      }
+    },
+    "What's affecting my sleep?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What's affecting my sleep?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Qué me está afectando el sueño?"
+          }
+        }
+      }
+    },
+    "What works for me?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What works for me?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Qué funciona en mí?"
+          }
+        }
+      }
+    },
+    "Your recovery today is %lld%%.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your recovery today is %lld%%."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu recuperación hoy es %lld%%."
+          }
+        }
+      }
+    },
+    "There isn't enough data for a read today yet. Sync your strap and come back in a few days.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "There isn't enough data for a read today yet. Sync your strap and come back in a few days."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no hay datos suficientes para una lectura de hoy. Sincroniza tu strap y vuelve en unos días."
+          }
+        }
+      }
+    },
+    "Recovery today: %lld%%.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovery today: %lld%%."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuperación hoy: %lld%%."
+          }
+        }
+      }
+    },
+    "Status: %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status: %@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estado: %@."
+          }
+        }
+      }
+    },
+    "I don't have a recovery read yet. A few more nights are needed to calibrate.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I don't have a recovery read yet. A few more nights are needed to calibrate."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todavía no tengo una lectura de recuperación. Faltan noches para calibrar."
+          }
+        }
+      }
+    },
+    "No sleep findings yet. They'll appear here once more nights are recorded.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No sleep findings yet. They'll appear here once more nights are recorded."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin hallazgos de sueño por ahora. Cuando haya más noches registradas, aparecerán aquí."
+          }
+        }
+      }
+    },
+    "I don't have a clear read on your HRV yet. A few more nights are needed to calibrate.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I don't have a clear read on your HRV yet. A few more nights are needed to calibrate."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no tengo una lectura clara de tu HRV. Faltan noches para calibrar."
+          }
+        }
+      }
+    },
+    "No training-load signals yet.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No training-load signals yet."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin señales de carga de entrenamiento por ahora."
+          }
+        }
+      }
+    },
+    "I haven't found a habit with a clear effect on your numbers yet. Keep logging your day and I'll spot it.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I haven't found a habit with a clear effect on your numbers yet. Keep logging your day and I'll spot it."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no encuentro un hábito con efecto claro en tus números. Sigue registrando tu día y lo detectaré."
+          }
+        }
+      }
+    },
+    "What stands out most today: %@ Want to look at what to do?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What stands out most today: %@ Want to look at what to do?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lo que más resalta hoy: %@ ¿Quieres que veamos qué hacer?"
+          }
+        }
+      }
+    },
+    "%@ How can I help today?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ How can I help today?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ¿En qué te ayudo hoy?"
+          }
+        }
+      }
+    },
+    "I'm still gathering signal from your nights. Ask me anything, or sync your strap for more precise reads.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I'm still gathering signal from your nights. Ask me anything, or sync your strap for more precise reads."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún reúno señal de tus noches. Pregúntame lo que quieras, o sincroniza tu strap para lecturas más precisas."
+          }
+        }
+      }
+    },
+    "I don't see a clear difference yet.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I don't see a clear difference yet."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No veo una diferencia clara todavía."
+          }
+        }
+      }
+    },
+    "Keeping it seems to help you.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keeping it seems to help you."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mantenerlo parece ayudarte."
+          }
+        }
+      }
+    },
+    "Dropping it could help you.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dropping it could help you."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quitarlo podría ayudarte."
+          }
+        }
+      }
+    },
+    "On your days with %1$@, your %2$@ averaged %3$lld — versus %4$lld without.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On your days with %1$@, your %2$@ averaged %3$lld — versus %4$lld without."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En tus días con %1$@, tu %2$@ promedió %3$lld — contra %4$lld sin."
+          }
+        }
+      }
+    },
+    "With just %lld days, take it as a hint, not certainty.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "With just %lld days, take it as a hint, not certainty."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Con solo %lld días, tómalo como pista, no certeza."
+          }
+        }
+      }
+    },
+    "With %lld days it's a reasonable signal, not yet definitive.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "With %lld days it's a reasonable signal, not yet definitive."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Con %lld días es una señal razonable, aún no definitiva."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

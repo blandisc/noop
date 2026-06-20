@@ -114,8 +114,10 @@ final class CoachGroundingTests: XCTestCase {
     }
 
     func testOpenerColdStartInvitesSync() {
+        // Source language is English; without the app catalog (test bundle) the localized
+        // cold-start opener resolves to its English source ("…sync your strap…").
         let g = CoachGrounding.from(insights: [], readiness: nil, recovery: nil, referenceDay: "d")
-        XCTAssertTrue(g.opener().localizedCaseInsensitiveContains("sincroniza"))
+        XCTAssertTrue(g.opener().localizedCaseInsensitiveContains("sync"))
     }
 
     func testSuggestedChipsLeadWithStandoutTopic() {
@@ -209,7 +211,8 @@ final class CoachGroundingTests: XCTestCase {
     }
 
     func testConfidenceCaveatHedgesWhenThin() {
-        XCTAssertTrue(CoachGrounding.confidenceCaveat(n: 5)?.localizedCaseInsensitiveContains("pista") ?? false)
+        // English source in the test bundle: "With just 5 days, take it as a hint, not certainty."
+        XCTAssertTrue(CoachGrounding.confidenceCaveat(n: 5)?.localizedCaseInsensitiveContains("hint") ?? false)
         XCTAssertNil(CoachGrounding.confidenceCaveat(n: 25))
     }
 

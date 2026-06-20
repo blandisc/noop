@@ -105,10 +105,10 @@ public enum CoachChip: String, CaseIterable, Sendable {
     /// The es-MX question text shown on the chip.
     public var question: String {
         switch self {
-        case .today:     return "¿Qué me conviene hoy?"
-        case .recovery:  return "¿Cómo viene mi recuperación?"
-        case .sleep:     return "¿Qué me está afectando el sueño?"
-        case .whatWorks: return "¿Qué funciona en mí?"
+        case .today:     return String(localized: "What's good for me today?", bundle: .main)
+        case .recovery:  return String(localized: "How's my recovery coming along?", bundle: .main)
+        case .sleep:     return String(localized: "What's affecting my sleep?", bundle: .main)
+        case .whatWorks: return String(localized: "What works for me?", bundle: .main)
         }
     }
 
@@ -299,31 +299,31 @@ public struct CoachGrounding: Equatable, Sendable {
         switch topic {
         case .general:
             var parts: [String] = []
-            if let rec = recovery { parts.append("Tu recuperación hoy es \(rec)%.") }
+            if let rec = recovery { parts.append(String(localized: "Your recovery today is \(rec)%.", bundle: .main)) }
             if let s = readinessSummary { parts.append(s) }
             if let extra = facts.first(where: { $0.kind == .forecast || $0.kind == .trend || $0.kind == .nightAnomaly }) {
                 parts.append(extra.statement)
             }
-            return joined(parts, fallback: "Aún no hay datos suficientes para una lectura de hoy. Sincroniza tu strap y vuelve en unos días.")
+            return joined(parts, fallback: String(localized: "There isn't enough data for a read today yet. Sync your strap and come back in a few days.", bundle: .main))
         case .recovery:
             var parts: [String] = []
-            if let rec = recovery { parts.append("Recuperación hoy: \(rec)%.") }
-            if let lvl = readinessLevel { parts.append("Estado: \(lvl).") }
+            if let rec = recovery { parts.append(String(localized: "Recovery today: \(rec)%.", bundle: .main)) }
+            if let lvl = readinessLevel { parts.append(String(localized: "Status: \(lvl).", bundle: .main)) }
             if let s = readinessSummary { parts.append(s) }
             parts.append(contentsOf: facts(for: .recovery).map(\.statement))
-            return joined(parts, fallback: "Todavía no tengo una lectura de recuperación. Faltan noches para calibrar.")
+            return joined(parts, fallback: String(localized: "I don't have a recovery read yet. A few more nights are needed to calibrate.", bundle: .main))
         case .sleep:
             return joined(facts(for: .sleep).map(\.statement),
-                          fallback: "Sin hallazgos de sueño por ahora. Cuando haya más noches registradas, aparecerán aquí.")
+                          fallback: String(localized: "No sleep findings yet. They'll appear here once more nights are recorded.", bundle: .main))
         case .hrv:
             return joined(facts(for: .hrv).map(\.statement),
-                          fallback: "Aún no tengo una lectura clara de tu HRV. Faltan noches para calibrar.")
+                          fallback: String(localized: "I don't have a clear read on your HRV yet. A few more nights are needed to calibrate.", bundle: .main))
         case .load:
             return joined(facts(for: .load).map(\.statement),
-                          fallback: "Sin señales de carga de entrenamiento por ahora.")
+                          fallback: String(localized: "No training-load signals yet.", bundle: .main))
         case .behavior:
             return joined(facts(for: .behavior).prefix(3).map(\.statement),
-                          fallback: "Aún no encuentro un hábito con efecto claro en tus números. Sigue registrando tu día y lo detectaré.")
+                          fallback: String(localized: "I haven't found a habit with a clear effect on your numbers yet. Keep logging your day and I'll spot it.", bundle: .main))
         }
     }
 
@@ -339,12 +339,12 @@ public struct CoachGrounding: Equatable, Sendable {
     /// the coach "says first" so the user never faces an empty box.
     public func opener() -> String {
         if let top = facts.first {
-            return "Lo que más resalta hoy: \(top.statement) ¿Quieres que veamos qué hacer?"
+            return String(localized: "What stands out most today: \(top.statement) Want to look at what to do?", bundle: .main)
         }
         if let s = readinessSummary {
-            return "\(s) ¿En qué te ayudo hoy?"
+            return String(localized: "\(s) How can I help today?", bundle: .main)
         }
-        return "Aún reúno señal de tus noches. Pregúntame lo que quieras, o sincroniza tu strap para lecturas más precisas."
+        return String(localized: "I'm still gathering signal from your nights. Ask me anything, or sync your strap for more precise reads.", bundle: .main)
     }
 
     /// Up to three pre-armed questions to suggest, ordered by what stands out today (the standout
@@ -414,17 +414,17 @@ public struct CoachGrounding: Equatable, Sendable {
         let verdict: String
         let sign: Int
         if abs(diff) < 1 {                       // no meaningful difference either way
-            verdict = "No veo una diferencia clara todavía."
+            verdict = String(localized: "I don't see a clear difference yet.", bundle: .main)
             sign = 1
         } else if diff > 0 {
-            verdict = "Mantenerlo parece ayudarte."
+            verdict = String(localized: "Keeping it seems to help you.", bundle: .main)
             sign = 1
         } else {
-            verdict = "Quitarlo podría ayudarte."
+            verdict = String(localized: "Dropping it could help you.", bundle: .main)
             sign = -1
         }
-        var statement = "En tus días con \(behavior.lowercased()), tu \(outcome.lowercased()) "
-            + "promedió \(withV) — contra \(withoutV) sin. \(verdict)"
+        var statement = String(localized: "On your days with \(behavior.lowercased()), your \(outcome.lowercased()) averaged \(withV) — versus \(withoutV) without.", bundle: .main)
+            + " " + verdict
         if let caveat = CoachGrounding.confidenceCaveat(n: n) { statement += " " + caveat }
 
         return WhatIfResult(behavior: behavior, outcome: outcome, statement: statement,
@@ -433,8 +433,8 @@ public struct CoachGrounding: Equatable, Sendable {
 
     /// A hedge to append when the sample is thin — honesty as the brand (FER-333). nil when n is solid.
     static func confidenceCaveat(n: Int) -> String? {
-        if n < 10 { return "Con solo \(n) días, tómalo como pista, no certeza." }
-        if n < 20 { return "Con \(n) días es una señal razonable, aún no definitiva." }
+        if n < 10 { return String(localized: "With just \(n) days, take it as a hint, not certainty.", bundle: .main) }
+        if n < 20 { return String(localized: "With \(n) days it's a reasonable signal, not yet definitive.", bundle: .main) }
         return nil
     }
 
