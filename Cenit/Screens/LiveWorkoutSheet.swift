@@ -5,56 +5,53 @@ import WhoopStore
 // MARK: - Train hub: live-workout entry + recording sheet (FER-197)
 //
 // Restores the manually-started live workout tracker removed from Live in FER-184, now living in the
-// Train hub. The Train hub migrated to light «Instrumento» paper (FER-342), so the HUB ROW now reads in
-// the same warm palette as Breathe/Intervals; tapping it opens a SHEET in the same language — coherent with Live, which is
-// itself a light sheet (FER-190). The recording lives in `AppModel` (global), so closing the sheet or
-// switching tabs never stops the session; the row then reads "Recording m:ss" and reopens the sheet.
+// Train hub. The Train hub is the light «Instrumento» paper hub (FER-342 / FER-343), so this entry reads
+// in the same warm palette as the other tools; tapping it opens a SHEET in the same language — coherent
+// with Live, which is itself a light sheet (FER-190). The recording lives in `AppModel` (global), so
+// closing the sheet or switching tabs never stops the session; the row then reads "Recording m:ss".
 //
-// Theme note: the dark hub has no `instrumentoTheme` in its environment, and `.sheet` starts a fresh
-// environment anyway — so the by-the-hour theme is computed here and passed to the sheet EXPLICITLY.
+// FER-343 moved this from a List `Section` into a plain row that sits in the hub's «Tools» VStack: it
+// reads the theme from the environment (the hub themes its whole subtree), and passes that same theme to
+// the sheet EXPLICITLY (the theme does not cross the `.sheet` boundary — FER-162).
 
-/// The Train-hub Section: a "Start live" action (disabled without a worn strap streaming HR), a
-/// "Recording m:ss" row while a session runs, and a brief saved/discarded notice afterwards.
+/// The Train-hub «En vivo» row: a "Start live" action (disabled without a worn strap streaming HR), a
+/// "Recording m:ss" state while a session runs, and a brief saved/discarded notice afterwards.
 struct LiveWorkoutHubRow: View {
     @EnvironmentObject private var model: AppModel
     @EnvironmentObject private var live: LiveState
-
-    /// Sunrise/sunset so the sheet's «Instrumento» paper tracks the hour, like Today/Live. Passed from
-    /// RootTabView (which already computes it for the instrument bar). `nil` → fixed-hour fallback.
-    var solar: SolarWindow?
+    @Environment(\.instrumentoTheme) private var theme
 
     @State private var showSheet = false
 
     /// The same "HR is genuinely streaming from a worn strap" signal Live uses to light its monitor.
     private var isLiveHR: Bool { live.heartRate != nil && live.worn }
     private var isDisabled: Bool { model.activeWorkout == nil && !isLiveHR }
-    private var sheetTheme: InstrumentoTheme { InstrumentoThemeEngine.theme(at: Date(), solar: solar) }
 
     var body: some View {
-        Section {
+        VStack(alignment: .leading, spacing: 0) {
             // ONE stable Button hosts the sheet, so flipping start → recording never tears it down.
             Button { primaryTap() } label: { rowLabel }
+                .buttonStyle(.plain)
                 .disabled(isDisabled)
-                .listRowBackground(sheetTheme.surface)
                 .accessibilityLabel(Text(model.activeWorkout != nil ? "Recording" : "Start live"))
                 .accessibilityHint(isDisabled ? Text("Connect and wear your strap to record live.") : Text(""))
                 .sheet(isPresented: $showSheet) {
-                    LiveWorkoutSheet(theme: sheetTheme)
+                    LiveWorkoutSheet(theme: theme)
                         .environmentObject(model)
                         .presentationDetents([.medium, .large])
                         .presentationDragIndicator(.visible)
-                        .presentationBackground(sheetTheme.paper)
+                        .presentationBackground(theme.paper)
                         .preferredColorScheme(.light)
                 }
 
-            if model.activeWorkout == nil, model.lastWorkout != nil || model.lastWorkoutDiscarded {
-                outcomeRow
-            }
-        } footer: {
             if isDisabled {
                 Text("Connect and wear your strap to record live.")
-                    .font(StrandFont.footnote)
-                    .foregroundStyle(sheetTheme.inkTertiary)
+                    .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.bottom, 6)
+            }
+            if model.activeWorkout == nil, model.lastWorkout != nil || model.lastWorkoutDiscarded {
+                outcomeRow
             }
         }
     }
@@ -66,21 +63,35 @@ struct LiveWorkoutHubRow: View {
 
     @ViewBuilder private var rowLabel: some View {
         if let w = model.activeWorkout {
-            HStack(spacing: 10) {
-                Circle().fill(sheetTheme.dataRecovery).frame(width: 8, height: 8)
-                Text("Recording").font(StrandFont.body).foregroundStyle(sheetTheme.ink)
-                Spacer()
+            HStack(spacing: 12) {
+                Image(systemName: "circle.fill").frame(width: 30)
+                    .font(.system(size: 9)).foregroundStyle(theme.dataRecovery)
+                Text("Recording").font(StrandFont.body).foregroundStyle(theme.ink)
+                Spacer(minLength: 8)
                 TimelineView(.periodic(from: w.start, by: 1)) { ctx in
                     Text(Self.elapsed(from: w.start, to: ctx.date))
-                        .font(StrandFont.bodyNumber).foregroundStyle(sheetTheme.inkSecondary)
+                        .font(StrandFont.bodyNumber).foregroundStyle(theme.inkSecondary)
                 }
-                Image(systemName: "chevron.right").font(.caption2).foregroundStyle(sheetTheme.inkTertiary)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
+            .frame(minHeight: 48).contentShape(Rectangle())
         } else {
-            Label("Start live", systemImage: "play.fill")
-                .font(StrandFont.body)
-                .foregroundStyle(isLiveHR ? sheetTheme.dataRecovery : sheetTheme.inkTertiary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            HStack(spacing: 12) {
+                Image(systemName: "play.fill").frame(width: 30)
+                    .font(.system(size: 17))
+                    .foregroundStyle(isLiveHR ? theme.dataRecovery : theme.inkTertiary)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Start live").font(StrandFont.body)
+                        .foregroundStyle(isDisabled ? theme.inkTertiary : theme.ink)
+                    Text("Record heart rate and effort with your strap")
+                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+            }
+            .frame(minHeight: 48).contentShape(Rectangle())
         }
     }
 
@@ -89,11 +100,11 @@ struct LiveWorkoutHubRow: View {
         let discarded = model.lastWorkoutDiscarded
         return HStack(spacing: 10) {
             Image(systemName: discarded ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
-                .foregroundStyle(discarded ? sheetTheme.warning : sheetTheme.dataRecovery)
-            Text(noticeText).font(StrandFont.subhead).foregroundStyle(sheetTheme.inkSecondary)
+                .foregroundStyle(discarded ? theme.warning : theme.dataRecovery)
+            Text(noticeText).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             Spacer(minLength: 0)
         }
-        .listRowBackground(sheetTheme.surface)
+        .padding(.vertical, 6)
         .task {
             try? await Task.sleep(nanoseconds: 4_000_000_000)
             model.acknowledgeLastWorkout()

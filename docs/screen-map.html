@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-20 · FER-69</span>
+  <span class="tb-updated">Actualizado 2026-06-20 · FER-343</span>
 </div>
 
 <div id="wrapper">
@@ -879,6 +879,32 @@ const SCREENS = [
     nav: [],
     components: ['Expectations Card', 'Release Cards (AppChangelog.releases)'],
   },
+  {
+    id: 'entrenar', x: 30, y: 3470,
+    name: 'Entrenar · hub', desc: 'Hub claro «Instrumento» (FER-343): tarjeta «Hoy» + banda · Mis rutinas · Herramientas',
+    file: 'Cenit/Screens/EntrenarView.swift',
+    icon: '🏋', color: '#0C8F62',
+    states: [
+      { label: 'Sin rutinas · CTA «Nueva rutina · plantilla»', type: 'empty' },
+      { label: 'Con rutinas · tarjeta «Hoy» + Mis rutinas', type: 'data' },
+      { label: 'Banda · Sube/Mantén/Baja (oculta sin recovery)', type: 'data' },
+    ],
+    nav: [],
+    components: ['Tarjeta «Hoy» (theme.surface)', 'RecoveryBand (compartida)', 'Mis rutinas (WhoopStore.routines())', 'Herramientas: En vivo / Respira / Intervalos', 'TrainingSoonSheet (builder «llega pronto» — FER-346)'],
+  },
+  {
+    id: 'rutina-de-hoy', x: 284, y: 3470,
+    name: 'Rutina de hoy', desc: 'Pantalla previa al inicio (FER-343): plan + slot de banda de recuperación',
+    file: 'Cenit/Screens/RutinaDeHoyScreen.swift',
+    icon: '📋', color: '#0C8F62',
+    states: [
+      { label: 'Con plan · ejercicios + esquema + descanso', type: 'data' },
+      { label: 'Sin ejercicios', type: 'empty' },
+      { label: 'Banda (oculta sin recovery)', type: 'data' },
+    ],
+    nav: [],
+    components: ['RecoveryBand (contenedor; regla = FER-349)', 'Filas de plan (series×reps·peso + chip descanso)', 'Respeta unidades (UnitPrefs)', 'Nota honesta inicio guiado (FER-347)'],
+  },
 ];
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -894,6 +920,10 @@ const EDGES = [
   { from: 'settings', to: 'support',        label: 'Acerca de y soporte', type: 'sheet'   },
   { from: 'data-sources', to: 'apple-health', label: 'Ver datos importados', type: 'push' },
   { from: 'support',  to: 'whats-new',      label: 'What\'s New',       type: 'sheet'      },
+  { from: 'entrenar', to: 'rutina-de-hoy',  label: '«Rutina de hoy»',  type: 'push'       },
+  { from: 'entrenar', to: 'live-workout',   label: 'En vivo',          type: 'sheet'      },
+  { from: 'entrenar', to: 'breathing',      label: 'Respira',          type: 'push'       },
+  { from: 'entrenar', to: 'interval',       label: 'Intervalos',       type: 'push'       },
 ];
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

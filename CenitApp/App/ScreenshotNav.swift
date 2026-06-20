@@ -11,7 +11,7 @@ import SwiftUI
 /// Supported screen keys (FER-182 — 5-tab shell):
 ///   Tabs: today · body (aliases: trends, sleep — Sueño lives inside Cuerpo now) · coach ·
 ///     train (alias: entrenar) · settings (aliases: ajustes, more)
-///   Pushed onto a hub: intelligence · insights · breathe · intervals ·
+///   Pushed onto a hub: intelligence · insights · breathe · intervals · routineToday ·
 ///     explore · compare · workouts · health · stress ·
 ///     applehealth · datasources · automations · support
 ///   (En vivo is no longer a key — it opens as a cover from Today's "beat by beat".)
@@ -39,7 +39,7 @@ final class DebugNavWatcher {
     private static let prefix = "noop.nav."
     private static let screens = [
         "today", "body", "trends", "coach", "train", "entrenar", "settings", "ajustes", "more",
-        "intelligence", "insights", "breathe", "intervals",
+        "intelligence", "insights", "breathe", "intervals", "routineToday",
         "sleep", "explore", "compare", "workouts", "health", "stress",
         "applehealth", "datasources", "automations", "support",
     ]

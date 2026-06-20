@@ -34,7 +34,7 @@ Tab shell (FER-182) → 5 pestañas: Hoy · Cuerpo · Coach · Entrenar · Ajust
   Hoy      → TodayView
   Cuerpo   → CuerpoView (landing curado de la capa «historia», FER-186)
   Coach    → BucleView (pantalla única «el Bucle», FER-292; reemplaza el hub Intelligence · Insights · Coach)
-  Entrenar → hub-lista → «Iniciar en vivo» (LiveWorkoutHubRow) · BreathingView · IntervalTimerView
+  Entrenar → EntrenarView (hub claro «Instrumento», FER-343): tarjeta «Hoy» + banda de recuperación · «Mis rutinas» · Herramientas (En vivo · Respira · Intervalos)
   Ajustes  → AjustesView (raíz clara «Instrumento», FER-337): Perfil · Tu strap (estado + Log de la banda + 5/MG)
              · filas → Unidades y formato · Datos y fuentes · Automatizaciones · Acerca de y soporte
              (mató «Más» + el doble nivel lista→Settings; Explore/Compare/Workouts viven en Cuerpo;
@@ -54,7 +54,8 @@ CuerpoView  → RecoveryDetailScreen (sheet «Instrumento»: Recuperación — F
              WorkoutsView (sheet claro «Instrumento» + NavigationStack propio — FER-260) ·
              CompareView · MetricExplorerView · DataSourcesView — estos oscuros como sheet fijado a .dark (FER-186)
 WorkoutsView → WorkoutDetailScreen (push, detalle de sesión — FER-261) · ManualWorkoutSheet (sheet: add / edit)
-LiveWorkoutHubRow → LiveWorkoutSheet (sheet, detente medio — grabación en vivo, FER-197)
+EntrenarView → RutinaDeHoyScreen (push, «Rutina de hoy» — FER-343) · BreathingView (push) · IntervalTimerView (push) · TrainingSoonSheet (sheet, builder «llega pronto» — FER-346)
+LiveWorkoutHubRow → LiveWorkoutSheet (sheet, detente medio — grabación en vivo, FER-197; fila «En vivo» del hub Entrenar)
 MetricExplorerView → MetricDetailView (NavigationLink push, sobre el stack de la pestaña «Ajustes» — FER-171)
 ```
 
@@ -68,8 +69,22 @@ con tinta + un punto de «ahora» (verde recovery en claro, `accent` en oscuro),
 trazo fino: **Hoy** = glifo de dial 24h (`DialTabGlyph`, StrandDesign), el resto glifos de línea (Cuerpo
 `chart.xyaxis.line` · Coach `sparkles` · Entrenar `figure.strengthtraining.functional` · Ajustes `gearshape`).
 
-**Nota — «Iniciar en vivo» en el hub Entrenar (FER-197):** el hub Entrenar suma, arriba de Breathe/Intervals, una
-fila **«Iniciar en vivo»** (`LiveWorkoutHubRow`, tema claro «Instrumento» como las demás filas tras FER-342). Está
+**Nota — hub «Entrenar» «Instrumento» (FER-343):** el tab Entrenar dejó de ser una lista interina y es ahora
+`EntrenarView` (papel claro «Instrumento», puerta del tracker de fuerza — épico FER-39). Estructura: una **tarjeta
+«Hoy»** (la rutina del día — por ahora la más reciente, sin scheduler aún — + la **banda de recuperación**) que
+abre `RutinaDeHoyScreen`; la sección **«Mis rutinas»** (filas que leen `WhoopStore.routines()`, cada una abre su
+plan); y **«Herramientas»** (En vivo · Respira · Intervalos). Estado **vacío** (sin rutinas) → tarjeta con CTA
+**«Nueva rutina · o desde plantilla»**. El **builder** (FER-346) y el **inicio guiado serie por serie** (FER-347)
+están fuera de alcance: sus accesos muestran una nota honesta «llega pronto» (`TrainingSoonSheet`), sin acción real.
+La **banda de recuperación** (`RecoveryBand`, compartida con `RutinaDeHoyScreen`) es solo el **contenedor visual**:
+mapea la recuperación de hoy a **Sube / Mantén / Baja** (mapeo provisional por recuperación; la regla con evidencia
+—HRV-guided + RIR/RPE— es FER-349) y **se oculta sin recuperación** (no inventa). Navega por **push** sobre el
+`trainStack` de la pestaña (warm paper de extremo a extremo → sin puente de barra de estado); ese stack también deja
+que la nav de capturas (DEBUG) alcance «Rutina de hoy» / Respira / Intervalos.
+
+**Nota — «Iniciar en vivo» en el hub Entrenar (FER-197 · reubicada FER-343):** dentro de «Herramientas», la
+fila **«Iniciar en vivo»** (`LiveWorkoutHubRow`, tema claro «Instrumento»; en FER-343 pasó de `Section` de lista a
+fila plana en el `VStack` del hub, lee el tema del entorno). Está
 **deshabilitada con un hint** cuando no hay HR en vivo (misma señal que `LiveView`: strap puesto + `bpm`); al
 tocarla arranca (`AppModel.startWorkout`) y abre `LiveWorkoutSheet`, una **hoja en «Instrumento» claro** (tema
 pasado **explícito** — no se hereda por `.sheet`) con overline **GRABANDO**, cronómetro, **Ritmo / Prom / Pico**
@@ -513,6 +528,34 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 | Strap bonded | Strap vinculado |
 
 **Componentes (Instrumento):** secciones por espacio (sin card-in-card) — Doble toque (`Picker` + campo de atajo + Test action `QuietButton` + estado de strap inline + momentos) · Uso y presencia (atajos off/on) · Coaching háptico · Alarma inteligente · Aviso de enfermedad; `toggleRow`/`DatePicker`/`Picker` nativos tintados a Instrumento.
+
+---
+
+### EntrenarView
+**Archivo:** `Cenit/Screens/EntrenarView.swift`  
+**Descripción:** Raíz del tab **Entrenar** (hub claro «Instrumento», FER-343): tarjeta «Hoy» (rutina del día + banda de recuperación) → `RutinaDeHoyScreen`; sección «Mis rutinas» (lee `WhoopStore.routines()`); «Herramientas» (En vivo · Respira · Intervalos). Puerta del tracker de fuerza (épico FER-39). Builder (FER-346) e inicio guiado (FER-347) fuera de alcance → nota honesta `TrainingSoonSheet`.
+
+| Estado | Condición de entrada |
+|--------|---------------------|
+| Sin rutinas | `routines()` vacío → tarjeta vacía + CTA «Nueva rutina · o desde plantilla» |
+| Con rutinas | Tarjeta «Hoy» + «Mis rutinas» |
+| Banda de recuperación | con recovery → Sube/Mantén/Baja; sin recovery → oculta (no inventa) |
+
+**Componentes:** `RecoveryBand` (compartida), `LiveWorkoutHubRow` (En vivo), `QuietButton`, `TrainingSoonSheet`, tokens Instrumento (`theme.surface`/`hairline`/`ink`, `NoopMetrics`).
+
+---
+
+### RutinaDeHoyScreen
+**Archivo:** `Cenit/Screens/RutinaDeHoyScreen.swift`  
+**Descripción:** «Rutina de hoy» — la pantalla **previa al inicio** (FER-343): el plan (ejercicios + esquema objetivo `series × reps · peso` + regla de descanso) y el **slot de la banda de recuperación** (oculto sin recuperación). Push desde `EntrenarView` en «Instrumento» claro. Carga la rutina por id (o la más reciente) de `WhoopStore`; resuelve nombres con `ExerciseCatalog` + ejercicios propios. El **inicio guiado serie por serie** es FER-347 → nota honesta «llega pronto», sin botón funcional. La **regla** de la banda es W3·bucle/FER-349; aquí solo el contenedor visual (`RecoveryBand`).
+
+| Estado | Condición de entrada |
+|--------|---------------------|
+| Con plan | Rutina con ejercicios |
+| Sin ejercicios | Rutina vacía → «Esta rutina aún no tiene ejercicios.» |
+| Banda | con recovery → tarjeta Sube/Mantén/Baja; sin recovery → oculta |
+
+**Componentes:** `RecoveryBand` (compartida), filas de plan (esquema `bodyNumber` + chip de descanso), respeta unidades (`UnitPrefs`), tokens Instrumento.
 
 ---
 
