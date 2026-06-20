@@ -374,9 +374,22 @@ La fila **Edad física** es custom (no `MetricRow`): el delta vive bajo la etiqu
 | Con datos | Veredicto + palancas + hallazgos + registro + efectos |
 | Sin hallazgos | Hay datos pero el motor no encontró hallazgos → «Todo en orden, sin hallazgos nuevos» |
 
-**Secciones:** Header (`Coach · fecha` + badge «On-device») · **Decisión de hoy** (héroe-frase del `ReadinessEngine` + recuperación como evidencia) · **Pregúntale a tus datos** (única puerta al chat LLM externo `CoachView`, presentado como `.sheet`) · **Lo que funciona en ti** (palancas curadas del `InsightEngine`, top 2 + «Ver las N») · **Hallazgos** (anomalía/tendencia/relación/pronóstico, topados + «Ver los N») · **Anota tu día** (resumen → hoja Sí/No tri-estado, escribe al journal existente) · **Efectos de tus hábitos** (explorador histórico por métrica).  
+**Secciones:** Header (`Coach · fecha` + badge «On-device») · **Decisión de hoy** (héroe-frase del `ReadinessEngine` + recuperación como evidencia) · **Pregúntale a tus datos** (única puerta; abre `PreguntaleView`, que routea por nivel — ver su entrada) · **Lo que funciona en ti** (palancas curadas del `InsightEngine`, top 2 + «Ver las N») · **Hallazgos** (anomalía/tendencia/relación/pronóstico, topados + «Ver los N») · **Anota tu día** (resumen → hoja Sí/No tri-estado, escribe al journal existente) · **Efectos de tus hábitos** (explorador histórico por métrica).  
 **Hojas (`BucleSheets.swift`):** `PalancaDetailSheet` (evidencia: muestra, significancia, tamaño de efecto, confianza) · `HallazgosListSheet` · `EfectosExplorerSheet` (selector de métrica) · `AnotaTuDiaSheet` (Hoy/Ayer + Sí/No).  
 **Navegación:** `RootTabView` la monta como `lazyTab(.coach)` directo (ya no `hubTab`). El chat LLM externo se preserva intacto (`AICoachEngine` + Keychain); `CoachView` se rediseñó a «Instrumento diurno» claro (FER-309) y se abre como `.sheet` con el tema inyectado (sin pin `.dark`). Los hallazgos de tendencia llevan sparkline a color por hue (FER-147) y el detalle de palanca muestra barras con/sin desde el campo `Insight.behaviorBreakdown` (FER-309).
+
+---
+
+### PreguntaleView — «Pregúntale a tus datos» (FER-308)
+**Archivo:** `Cenit/Screens/PreguntaleView.swift` (+ `Cenit/AI/CoachAvailability.swift`, `Cenit/AI/OnDeviceCoach.swift`)  
+**Descripción:** La hoja de «Pregúntale» del Bucle, unificada en tres niveles. El nivel se decide con `CoachAvailability.current()` (lee `SystemLanguageModel.availability` de Apple, todo detrás de `#if canImport(FoundationModels)` + `@available(iOS 26)`). El modelo **no calcula**: solo redacta sobre el resumen puro `CoachGrounding` (StrandAnalytics, FER-290/308), y toda respuesta pasa por `validate()` (regla de oro: si cita una cifra que no vino del motor, se descarta y cae al texto determinista).
+| Estado | Qué se ve |
+| --- | --- |
+| **On-device** (Apple Intelligence) | Texto libre + estado «Pensando…» (anunciado por VoiceOver) + explicador «Cómo funciona» (corre en tu iPhone, sin red, no inventa números); respuestas vía `LanguageModelSession` + `CoachFactsTool` |
+| **Modo esencial** (`deviceNotEligible`/`appleIntelligenceNotEnabled`/`modelNotReady`/`osTooOld`) | Explicador «por qué + qué necesitas» (iPhone/iOS/ajuste) + chips prearmados (`CoachChip`) con respuesta de plantilla del motor |
+| **Nivel 3** (opcional) | Fila «Respuestas más profundas con tu IA» → abre el chat externo `CoachView` (BYO-key, opt-in) — preservado |
+**Verificación on-device pendiente (spike):** calidad/latencia del español on-device y la no-conexión del Nivel 2 se validan en hardware iOS 26 / A17 Pro+ (no verificable en CI). El build compila el path FoundationModels contra el SDK iOS 26.
+**Navegación:** se presenta como `.sheet` desde `BucleView` con el tema «Instrumento» inyectado; el Nivel 3 abre `CoachView` como sub-`.sheet`.
 
 ---
 

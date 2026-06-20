@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-20 · FER-310</span>
+  <span class="tb-updated">Actualizado 2026-06-20 · FER-308</span>
 </div>
 
 <div id="wrapper">
@@ -669,10 +669,21 @@ const SCREENS = [
       { label: 'Arranque en frío (X de 14 noches)', type: 'empty' },
       { label: 'Con datos', type: 'data' },
       { label: 'Sin hallazgos', type: 'data' },
-      { label: 'Pregúntale → chat LLM externo (CoachView, Instrumento claro · FER-309)', type: 'data' },
+      { label: 'Pregúntale → PreguntaleView (on-device · modo esencial · externo, FER-308)', type: 'data' },
     ],
     nav: [],
-    components: ['Decisión de hoy (héroe-frase + % recuperación)', 'Pregúntale entry → CoachView (.sheet)', 'Lo que funciona en ti (leverRow + Ver las N)', 'Hallazgos (findingRow + Ver los N)', 'Anota tu día (resumen → AnotaTuDiaSheet Sí/No)', 'Efectos de tus hábitos (EfectosExplorerSheet + SegmentedPillControl)', 'PalancaDetailSheet (evidencia)'],
+    components: ['Decisión de hoy (héroe-frase + % recuperación)', 'Pregúntale entry → PreguntaleView (.sheet)', 'Lo que funciona en ti (leverRow + Ver las N)', 'Hallazgos (findingRow + Ver los N)', 'Anota tu día (resumen → AnotaTuDiaSheet Sí/No)', 'Efectos de tus hábitos (EfectosExplorerSheet + SegmentedPillControl)', 'PalancaDetailSheet (evidencia)'],
+  },
+  {
+    name: 'Pregúntale a tus datos', desc: 'Texto libre on-device (FoundationModels) fundamentado en el motor + Modo esencial con chips + LLM externo (FER-308)',
+    file: 'Cenit/Screens/PreguntaleView.swift',
+    states: [
+      { label: 'On-device: texto libre + «Pensando…» + cómo funciona', type: 'data' },
+      { label: 'Modo esencial: por qué + qué necesitas + chips', type: 'empty' },
+      { label: 'Nivel 3: chat externo CoachView (BYO-key, opt-in)', type: 'data' },
+    ],
+    nav: [],
+    components: ['CoachAvailability.current() (gating)', 'OnDeviceCoachEngine + CoachFactsTool (LanguageModelSession)', 'CoachGrounding (resumen puro + validate, StrandAnalytics)', 'Chips CoachChip + respuesta de plantilla', 'ExternalUpgradeRow → CoachView (.sheet)'],
   },
   {
     id: 'settings', x: 284, y: 2660,
