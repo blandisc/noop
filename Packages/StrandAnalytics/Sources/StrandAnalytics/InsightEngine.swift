@@ -87,29 +87,72 @@ public enum InsightEngine {
 
     // MARK: - Outcomes (the M metrics behaviors & correlations are tested against)
 
-    /// A daily outcome metric: a label, unit, and how to read it off a DailyMetric.
-    private struct Metric {
-        let label: String
-        let unit: String
-        let value: (DailyMetric) -> Double?
+    /// The daily outcome metrics every inferential detector tests against — and the single, typed source
+    /// of the join key that a `Lever.outcome` carries, an N-of-1 experiment runs on, and a Bucle goal
+    /// projects toward (`GoalMetric.outcome`). Minting each metric's label / unit / field-accessor in ONE
+    /// place means a rename is a single edit and a new outcome is a compile-time `switch` obligation —
+    /// there is no second, hand-typed copy of these es-MX strings to drift out of sync. (The bug this
+    /// guards against: a silent rename used to leave `outcomeSeries` returning `[:]` and the goal
+    /// simulator projecting an empty series, with nothing failing to compile.)
+    ///
+    /// Declaration order is also the order the FDR association family is built in (`behaviorCandidates`),
+    /// so append new cases rather than reordering.
+    public enum Outcome: String, CaseIterable, Sendable {
+        case recovery, hrv, sleep, restingHr
+
+        /// es-MX label — the string a `Lever.outcome` carries and `outcomeSeries(_:metric:)` matches.
+        public var label: String {
+            switch self {
+            case .recovery:  return "Recuperación"
+            case .hrv:       return "HRV"
+            case .sleep:     return "Sueño"
+            case .restingHr: return "FC en reposo"
+            }
+        }
+
+        /// Native unit of the daily value (`min` for sleep — the goal screen converts to hours for display).
+        public var unit: String {
+            switch self {
+            case .recovery:  return "pts"
+            case .hrv:       return "ms"
+            case .sleep:     return "min"
+            case .restingHr: return "lpm"
+            }
+        }
+
+        /// Read this outcome off a daily row; `nil` when that day lacks the value.
+        func value(_ d: DailyMetric) -> Double? {
+            switch self {
+            case .recovery:  return d.recovery
+            case .hrv:       return d.avgHrv
+            case .sleep:     return d.totalSleepMin
+            case .restingHr: return d.restingHr.map(Double.init)
+            }
+        }
+
+        /// The outcome whose `label` matches, or `nil`. The persisted-string paths (a `Lever.outcome`, an
+        /// experiment row's `outcome`) re-resolve to a case through here instead of comparing raw strings.
+        public init?(label: String) {
+            guard let m = Self.allCases.first(where: { $0.label == label }) else { return nil }
+            self = m
+        }
     }
 
-    private static let outcomes: [Metric] = [
-        Metric(label: "Recuperación", unit: "pts", value: { $0.recovery }),
-        Metric(label: "HRV", unit: "ms", value: { $0.avgHrv }),
-        Metric(label: "Sueño", unit: "min", value: { $0.totalSleepMin }),
-        Metric(label: "FC en reposo", unit: "lpm", value: { $0.restingHr.map(Double.init) }),
-    ]
-
-    /// The "yyyy-MM-dd" → value series for one outcome metric label (the same labels a `Lever.outcome`
-    /// carries), read off `days`. Empty when the label is unknown or no day has the value. The N-of-1
-    /// experiment verdict (FER-307) feeds this into `ExperimentVerdict` so the label→field mapping
-    /// stays in one place — here, where the candidate's outcome label was minted.
-    public static func outcomeSeries(_ days: [DailyMetric], metric: String) -> [String: Double] {
-        guard let m = outcomes.first(where: { $0.label == metric }) else { return [:] }
+    /// The "yyyy-MM-dd" → value series for one `Outcome`, read off `days`. Empty when no day carries the
+    /// value. This is the typed join the goal simulator uses (`GoalMetric.outcome`), so it can never be
+    /// handed a stale label.
+    public static func outcomeSeries(_ days: [DailyMetric], _ outcome: Outcome) -> [String: Double] {
         var out: [String: Double] = [:]
-        for d in days { if let v = m.value(d) { out[d.day] = v } }
+        for d in days { if let v = outcome.value(d) { out[d.day] = v } }
         return out
+    }
+
+    /// Label-keyed sibling for the persisted-string paths: an experiment row's `outcome` (FER-307) or a
+    /// `Lever.outcome` carry a `String`, not an `Outcome`. Re-resolves the label through `Outcome` and
+    /// returns `[:]` for an unknown one, so the label→field mapping still lives in exactly one place.
+    public static func outcomeSeries(_ days: [DailyMetric], metric: String) -> [String: Double] {
+        guard let outcome = Outcome(label: metric) else { return [:] }
+        return outcomeSeries(days, outcome)
     }
 
     // MARK: - Generate
@@ -195,7 +238,7 @@ public enum InsightEngine {
                                            behaviors: [String: Set<String>]) -> [Candidate] {
         guard !days.isEmpty, !behaviors.isEmpty else { return [] }
         var cands: [Candidate] = []
-        for metric in outcomes {
+        for metric in Outcome.allCases {
             // outcomeByDay for this metric.
             var outcomeByDay: [String: Double] = [:]
             for d in days { if let v = metric.value(d) { outcomeByDay[d.day] = v } }
@@ -222,10 +265,10 @@ public enum InsightEngine {
     private static func correlationCandidates(_ days: [DailyMetric]) -> [Candidate] {
         // A small, curated grid of meaningful pairs — not every metric × every metric
         // (that would inflate the family with physiologically meaningless tests).
-        let pairs: [(x: Metric, y: Metric)] = [
-            (outcomes[2], outcomes[0]),   // Sueño → Recuperación
-            (outcomes[1], outcomes[0]),   // HRV → Recuperación
-            (outcomes[3], outcomes[0]),   // FC en reposo → Recuperación
+        let pairs: [(x: Outcome, y: Outcome)] = [
+            (.sleep, .recovery),       // Sueño → Recuperación
+            (.hrv, .recovery),         // HRV → Recuperación
+            (.restingHr, .recovery),   // FC en reposo → Recuperación
         ]
         var cands: [Candidate] = []
         for pair in pairs {
@@ -248,7 +291,7 @@ public enum InsightEngine {
 
     // MARK: - Insight builders for the association family
 
-    private static func behaviorInsight(_ e: BehaviorEffect, metric: Metric,
+    private static func behaviorInsight(_ e: BehaviorEffect, metric: Outcome,
                                         qAdjusted: Double, significant: Bool, n: Int) -> Insight {
         let dir = e.delta < 0 ? "baja" : "sube"
         let pct = e.pctChange.map { abs($0) } ?? 0
@@ -268,7 +311,7 @@ public enum InsightEngine {
                                                             nWith: e.nWith, nWithout: e.nWithout))
     }
 
-    private static func correlationInsight(_ c: Correlation, x: Metric, y: Metric,
+    private static func correlationInsight(_ c: Correlation, x: Outcome, y: Outcome,
                                            qAdjusted: Double, significant: Bool) -> Insight {
         let rel = c.r < 0 ? "inversa" : "directa"
         let title = "\(x.label) y \(y.label) van juntos"
