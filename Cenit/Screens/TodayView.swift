@@ -479,7 +479,9 @@ struct TodayView: View {
                 // El acceso al monitor en vivo «latido a latido» vive como pastilla de pulso en el
                 // encabezado de «Métricas de hoy» (FER-194), no como fila al pie. Ver `iosMetricsSection`.
                 Spacer(minLength: NoopMetrics.space2)
-                iosMetricsSection
+                // Sin ninguna fuente (ni strap ni Apple Health), las 8 tiles vacías no aportan: se
+                // ocultan y dejan paso a la tarjeta para conectar fuentes, y Hoy cabe de una. (FER-364)
+                if noSources { emptySourcesCard } else { iosMetricsSection }
                 // Gap mínimo bajo las métricas: 0 — el margen inferior lo da `.padding(.bottom)`. Cuando
                 // sobra espacio, este Spacer crece igual que el de arriba y «Métricas de hoy» queda
                 // centrada en el sobrante (opción aprobada por el dueño, FER-217).
@@ -925,7 +927,7 @@ struct TodayView: View {
                 }
                 Text(strapSeen
                      ? "Tu base está lista. Usa el strap esta noche y la recuperación, el esfuerzo y el sueño de la mañana aparecen al sincronizar."
-                     : "Conecta tu strap WHOOP para ver la disposición, la recuperación y la frecuencia cardiaca de la mañana.")
+                     : "Conecta Apple Health para empezar. Tu banda WHOOP afina la lectura.")
                     .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -994,11 +996,13 @@ struct TodayView: View {
     /// limpio: número + veredicto. En veredicto / espera-con-strap el pie del héroe no muestra nada.
     @ViewBuilder private func heroFooter(_ s: HeroState) -> some View {
         switch s {
-        case .verdict, .downloading:
+        case .verdict, .downloading, .waiting:
+            // En espera sin fuentes el CTA vive en la tarjeta de fuentes (`emptySourcesCard`), no en
+            // el pie del héroe. (FER-364)
             EmptyView()
         case .calibrating:
             appleHealthShortcut { showDataSources = true }
-        case .importedBaseline, .waiting:
+        case .importedBaseline:
             if !strapSeen { scanButton }
         }
     }
@@ -1015,6 +1019,45 @@ struct TodayView: View {
         }
         .buttonStyle(.plain)
         .padding(.top, NoopMetrics.space1)
+    }
+
+    /// Cero fuentes: ni strap visto, ni datos de Apple Health, ni permiso de Health concedido. (FER-364)
+    private var noSources: Bool {
+        !strapSeen && repo.appleHealthDays.isEmpty && health.auth != .authorized
+    }
+
+    /// La tarjeta de «conecta tus fuentes» del estado vacío: Apple Health como base, la banda como capa
+    /// opcional. Reemplaza el botón verde y el viejo link de Apple Salud, y deja que Hoy quepa de una. (FER-364)
+    private var emptySourcesCard: some View {
+        VStack(spacing: 0) {
+            sourceRow(icon: "heart.fill", tint: theme.dataSpO2,
+                      title: "Conectar Apple Health", subtitle: "la base de tus datos") { showDataSources = true }
+            Divider().overlay(theme.hairline).padding(.leading, NoopMetrics.cardPadding)
+            sourceRow(icon: "applewatch.side.right", tint: theme.inkTertiary,
+                      title: "Emparejar banda WHOOP", subtitle: "afina la señal · opcional") { model.scan() }
+        }
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+            .strokeBorder(theme.hairline, lineWidth: 1))
+        .shadow(color: theme.ink.opacity(0.08), radius: 8, y: 3)
+    }
+
+    private func sourceRow(icon: String, tint: Color, title: LocalizedStringKey,
+                           subtitle: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: NoopMetrics.gap) {
+                Image(systemName: icon).font(.system(size: 15)).foregroundStyle(tint).frame(width: 22)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(title).font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
+                    Text(subtitle).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right").font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
+            }
+            .padding(NoopMetrics.cardPadding)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     /// Chip de procedencia — la base viene de Apple Health, dicho de frente. Tono de dato (azul de Apple
@@ -1293,9 +1336,6 @@ struct TodayView: View {
         // `positiveText` oscurece el verdict lo justo para pasar AA contra el papel de la hora. Se
         // resuelve UNA vez por render (su bisección OKLab no debe correr por-tile) y se pasa a cada tile.
         let positiveDelta = theme.positiveText
-        // Nudge para conectar Apple Salud sólo si no está conectado y falta alguna señal medida.
-        let notConnected = health.auth != .authorized && health.auth != .unavailable
-        let anyMeasuredMissing = hrvR == nil || sleepR == nil || rhrR == nil || spo2R == nil || stepsFresh == nil
 
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
             // El pulso vivo se mudó a la línea del veredicto (FER-282); el rótulo de sección «Métricas de
@@ -1387,20 +1427,6 @@ struct TodayView: View {
             // FER-278: la leyenda de fuente «W Strap · Apple Salud» del pie se quitó. Ahora el strap es
             // la fuente esperada (sin marca) y solo lo prestado de Apple Salud lleva ♥ en su tile, así
             // que la leyenda explícita era redundante (y ya estaba oculta a VoiceOver).
-            if notConnected && anyMeasuredMissing {
-                Button { showDataSources = true } label: {
-                    HStack(spacing: NoopMetrics.space2) {
-                        Image(systemName: "heart.fill")
-                        Text("Conectar Apple Salud")
-                        Spacer(minLength: 0)
-                        Image(systemName: "chevron.right")
-                            .foregroundStyle(theme.inkTertiary)
-                    }
-                    .font(StrandFont.caption)
-                    .foregroundStyle(theme.inkSecondary)
-                }
-                .buttonStyle(.plain)
-            }
         }
     }
 
