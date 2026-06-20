@@ -29891,6 +29891,22 @@
           }
         }
       }
+    },
+    "Suggestion · you decide": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suggestion · you decide"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sugerencia · tú decides"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
