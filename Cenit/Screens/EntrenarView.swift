@@ -24,12 +24,14 @@ struct EntrenarView: View {
     var solar: SolarWindow?
     /// Push «Rutina de hoy» for a given routine id (the tab's NavigationStack owns the path).
     var openRoutine: (String) -> Void
+    /// Push the exercise library (browse) onto the tab's NavigationStack.
+    var openLibrary: () -> Void
     var openBreathe: () -> Void
     var openIntervals: () -> Void
     var openDiet: () -> Void
 
     var body: some View {
-        EntrenarLanding(openRoutine: openRoutine,
+        EntrenarLanding(openRoutine: openRoutine, openLibrary: openLibrary,
                         openBreathe: openBreathe, openIntervals: openIntervals, openDiet: openDiet)
             .instrumentoThemeByHour(solar: solar)
     }
@@ -40,6 +42,7 @@ private struct EntrenarLanding: View {
     @Environment(\.instrumentoTheme) private var theme
 
     var openRoutine: (String) -> Void
+    var openLibrary: () -> Void
     var openBreathe: () -> Void
     var openIntervals: () -> Void
     var openDiet: () -> Void
@@ -47,8 +50,8 @@ private struct EntrenarLanding: View {
     @State private var loaded = false
     @State private var routines: [Routine] = []
     @State private var exerciseCounts: [String: Int] = [:]
-    /// Honest placeholder for the not-yet-built routine builder (FER-346).
-    @State private var showBuilderSoon = false
+    /// Drives the routine builder sheet (FER-346): `.new` or `.edit(routine)`.
+    @State private var builderTarget: BuilderTarget? = nil
 
     /// Today's recovery (0–100), nil until a score exists. Drives whether the band shows.
     private var recovery: Double? { repo.today?.recovery }
@@ -77,15 +80,9 @@ private struct EntrenarLanding: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
-        .sheet(isPresented: $showBuilderSoon) {
-            TrainingSoonSheet(
-                overline: "Routines",
-                title: "Build your own",
-                message: "The routine builder — pick exercises, set your work sets, and save reusable routines or start from a template — arrives in a coming update."
-            )
-            .instrumentoTheme(theme)
-            .presentationDetents([.medium])
-            .presentationDragIndicator(.visible)
+        .sheet(item: $builderTarget) { target in
+            RoutineBuilderScreen(routine: target.routine) { await load() }
+                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
         .task { await load() }
     }
@@ -147,7 +144,7 @@ private struct EntrenarLanding: View {
                     if r.id != routines.last?.id { divider }
                 }
                 divider
-                Button { showBuilderSoon = true } label: {
+                Button { builderTarget = .new } label: {
                     HStack(spacing: 12) {
                         Image(systemName: "plus").frame(width: 30)
                             .font(.system(size: 17)).foregroundStyle(theme.inkSecondary)
@@ -176,6 +173,12 @@ private struct EntrenarLanding: View {
             .frame(minHeight: 48).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .contextMenu {
+            Button { builderTarget = .edit(r) } label: { Label("Edit routine", systemImage: "slider.horizontal.3") }
+            Button(role: .destructive) {
+                Task { try? await repo.deleteRoutine(id: r.id); await load() }
+            } label: { Label("Delete routine", systemImage: "trash") }
+        }
     }
 
     // MARK: - Empty state (no routines yet → CTA, FER-343 criterion)
@@ -191,9 +194,9 @@ private struct EntrenarLanding: View {
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
             VStack(spacing: 8) {
-                QuietButton("New routine") { showBuilderSoon = true }
-                Button { showBuilderSoon = true } label: {
-                    Text("or from a template")
+                QuietButton("New routine") { builderTarget = .new }
+                Button { openLibrary() } label: {
+                    Text("Browse the exercise library")
                         .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 }
                 .buttonStyle(.plain)
@@ -215,6 +218,8 @@ private struct EntrenarLanding: View {
             Text("Tools").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             VStack(alignment: .leading, spacing: 0) {
                 LiveWorkoutHubRow()
+                divider
+                toolRow("Exercise library", "book", action: openLibrary)
                 divider
                 toolRow("Breathe", "wind", action: openBreathe)
                 divider

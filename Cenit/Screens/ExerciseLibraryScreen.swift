@@ -1,0 +1,331 @@
+#if os(iOS)
+import SwiftUI
+import StrandDesign
+import StrandTraining
+
+// ExerciseLibraryScreen.swift — browse the on-device exercise catalog (FER-346). Two modes from one
+// view: BROWSE (opened from the Train hub — tap an exercise to open its detail) and ADD (presented by
+// the routine builder with `onAdd` — multi-select, then "Add N" hands the picks back). Search + muscle
+// and equipment filters narrow a long catalog; «Create exercise» adds a user-defined one. «Báscula de
+// papel»: ink on paper, no datum here so no color; selection is quiet ink chrome.
+
+struct ExerciseLibraryScreen: View {
+    /// Non-nil → ADD mode: multi-select with an "Add N" action that returns the picks. Nil → BROWSE.
+    var onAdd: (([Exercise]) -> Void)? = nil
+
+    @Environment(\.instrumentoTheme) private var theme
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var repo: Repository
+
+    @State private var exercises: [Exercise] = []
+    @State private var muscleOptions: [String] = []
+    @State private var equipmentOptions: [String] = []
+    @State private var loaded = false
+    @State private var search = ""
+    @State private var muscle: String? = nil
+    @State private var equipment: String? = nil
+    @State private var selected: Set<String> = []
+    @State private var detail: Exercise? = nil
+    @State private var showCreate = false
+
+    private var addMode: Bool { onAdd != nil }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                header
+                searchField
+                filterChips
+                Divider().overlay(theme.hairline)
+                exerciseList
+                createRow
+            }
+            .padding(.top, 20)
+            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.bottom, addMode ? 88 : NoopMetrics.screenPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(theme.paper.ignoresSafeArea())
+        .safeAreaInset(edge: .bottom) { if addMode { addBar } }
+        .task { await reload() }
+        .sheet(item: $detail) { ex in
+            NavigationStack {
+                ExerciseDetailScreen(exercise: ex)
+                    .toolbar { ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { detail = nil }.foregroundStyle(theme.ink)
+                    } }
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbarBackground(theme.paper, for: .navigationBar)
+            }
+            .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        }
+        .sheet(isPresented: $showCreate) {
+            CreateExerciseSheet(muscles: muscleOptions, equipment: equipmentOptions) { ex in
+                Task { try? await repo.saveCustomExercise(ex); await reload() }
+            }
+            .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        }
+    }
+
+    // MARK: - Header
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(addMode ? "Add to routine" : "Train")
+                .instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("Library").font(StrandFont.title1).foregroundStyle(theme.ink)
+        }
+    }
+
+    private var searchField: some View {
+        HStack(spacing: 9) {
+            Image(systemName: "magnifyingglass").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
+            TextField("Search exercise", text: $search)
+                .font(StrandFont.body).foregroundStyle(theme.ink)
+                .autocorrectionDisabled().textInputAutocapitalization(.never)
+            if !search.isEmpty {
+                Button { search = "" } label: {
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(theme.inkTertiary)
+                }.buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 13).padding(.vertical, 9)
+        .background(theme.hairline.opacity(0.6), in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+    }
+
+    // MARK: - Filters
+
+    private var filterChips: some View {
+        HStack(spacing: 8) {
+            filterMenu(title: String(localized: "Muscle"), selection: $muscle, options: muscleOptions)
+            filterMenu(title: String(localized: "Equipment"), selection: $equipment, options: equipmentOptions)
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func filterMenu(title: String, selection: Binding<String?>, options: [String]) -> some View {
+        let active = selection.wrappedValue
+        return Menu {
+            Button { selection.wrappedValue = nil } label: {
+                Label("All", systemImage: active == nil ? "checkmark" : "")
+            }
+            ForEach(options, id: \.self) { opt in
+                Button { selection.wrappedValue = opt } label: {
+                    Label(StrengthDisplay.titleCase(opt), systemImage: active == opt ? "checkmark" : "")
+                }
+            }
+        } label: {
+            HStack(spacing: 5) {
+                Text(active.map(StrengthDisplay.titleCase) ?? title)
+                    .font(StrandFont.subhead)
+                    .foregroundStyle(active == nil ? theme.ink : theme.paper)
+                Image(systemName: "chevron.down").font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(active == nil ? theme.inkTertiary : theme.paper)
+            }
+            .padding(.horizontal, 12).padding(.vertical, 6)
+            .background(active == nil ? Color.clear : theme.ink,
+                        in: Capsule(style: .continuous))
+            .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: active == nil ? 1 : 0))
+        }
+    }
+
+    // MARK: - List
+
+    private var exerciseList: some View {
+        let rows = filtered   // filter the 800+ catalog once per body pass, not per ForEach read
+        return LazyVStack(alignment: .leading, spacing: 0) {
+            if loaded && rows.isEmpty {
+                Text("No exercises match your filters.")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 18)
+            }
+            ForEach(rows) { ex in
+                exerciseRow(ex)
+                if ex.id != rows.last?.id { Divider().overlay(theme.hairline.opacity(0.7)) }
+            }
+        }
+    }
+
+    private func exerciseRow(_ ex: Exercise) -> some View {
+        Button {
+            if addMode { toggle(ex) } else { detail = ex }
+        } label: {
+            HStack(spacing: 13) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(ex.name).font(StrandFont.body).foregroundStyle(theme.ink)
+                        .multilineTextAlignment(.leading)
+                    Text(StrengthDisplay.subtitle(ex)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                }
+                Spacer(minLength: 8)
+                if addMode {
+                    Image(systemName: selected.contains(ex.id) ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 21))
+                        .foregroundStyle(selected.contains(ex.id) ? theme.ink : theme.hairlineStrong)
+                } else {
+                    Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(theme.inkTertiary)
+                }
+            }
+            .padding(.vertical, 11).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var createRow: some View {
+        Button { showCreate = true } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "plus").font(.system(size: 14, weight: .semibold))
+                Text("Create exercise").font(StrandFont.body)
+            }
+            .foregroundStyle(theme.inkSecondary).padding(.vertical, 13).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Add bar (ADD mode)
+
+    private var addBar: some View {
+        Button { onAdd?(exercises.filter { selected.contains($0.id) }); dismiss() } label: {
+            Text(selected.isEmpty ? "Select exercises" : "Add \(selected.count) exercise\(selected.count == 1 ? "" : "s")")
+                .font(StrandFont.headline).foregroundStyle(selected.isEmpty ? theme.inkTertiary : theme.ink)
+                .frame(maxWidth: .infinity).padding(.vertical, 14)
+                .background(theme.surface, in: Capsule(style: .continuous))
+                .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
+        }
+        .buttonStyle(.plain).disabled(selected.isEmpty)
+        .padding(.horizontal, NoopMetrics.screenPadding).padding(.bottom, 8)
+        .background(theme.paper.opacity(0.96).ignoresSafeArea(edges: .bottom))
+    }
+
+    // MARK: - Data
+
+    private func reload() async {
+        exercises = await repo.allExercises()
+        // Filter options are invariant between reloads — derive them once here, not per body pass.
+        muscleOptions = Set(exercises.flatMap { $0.primaryMuscles }).sorted()
+        equipmentOptions = Set(exercises.compactMap { $0.equipment }).sorted()
+        loaded = true
+    }
+
+    private func toggle(_ ex: Exercise) {
+        if selected.contains(ex.id) { selected.remove(ex.id) } else { selected.insert(ex.id) }
+    }
+
+    private var filtered: [Exercise] {
+        exercises.filter { ex in
+            (search.isEmpty || ex.name.localizedCaseInsensitiveContains(search))
+            && (muscle == nil || ex.primaryMuscles.contains(muscle!) || ex.secondaryMuscles.contains(muscle!))
+            && (equipment == nil || ex.equipment == equipment)
+        }
+    }
+}
+
+// MARK: - Create exercise (sheet)
+
+/// «Crear ejercicio propio»: name + primary muscle + equipment + record type. Builds a user-defined
+/// `Exercise` (a fresh UUID id) and hands it back; the catalog stays read-only.
+private struct CreateExerciseSheet: View {
+    let muscles: [String]
+    let equipment: [String]
+    let onCreate: (Exercise) -> Void
+
+    @Environment(\.instrumentoTheme) private var theme
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var name = ""
+    @State private var muscle: String = ""
+    @State private var equip: String = ""
+    @State private var type: ExerciseType = .weightReps
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Library").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text("New exercise").font(StrandFont.title1).foregroundStyle(theme.ink)
+                }
+
+                VStack(alignment: .leading, spacing: 9) {
+                    Text("Name").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    TextField("e.g. Svend press", text: $name)
+                        .font(StrandFont.body).foregroundStyle(theme.ink)
+                        .padding(.horizontal, 13).padding(.vertical, 11)
+                        .background(theme.hairline.opacity(0.6), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    pickerRow("Primary muscle", selection: $muscle, options: muscles, placeholder: String(localized: "Pick a muscle"))
+                    Divider().overlay(theme.hairline)
+                    pickerRow("Equipment", selection: $equip, options: equipment, placeholder: String(localized: "Pick equipment"))
+                }
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Record type").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    ForEach(ExerciseType.allCases, id: \.self) { t in typeOption(t) }
+                }
+
+                Button { create() } label: {
+                    Text("Create exercise").font(StrandFont.headline)
+                        .foregroundStyle(canCreate ? theme.ink : theme.inkTertiary)
+                        .frame(maxWidth: .infinity).padding(.vertical, 13)
+                        .background(theme.surface, in: Capsule(style: .continuous))
+                        .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                }
+                .buttonStyle(.plain).disabled(!canCreate)
+            }
+            .padding(.top, 20).padding(.horizontal, NoopMetrics.screenPadding).padding(.bottom, NoopMetrics.screenPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(theme.paper.ignoresSafeArea())
+    }
+
+    private func pickerRow(_ title: LocalizedStringKey, selection: Binding<String>, options: [String], placeholder: String) -> some View {
+        HStack(spacing: 12) {
+            Text(title).font(StrandFont.body).foregroundStyle(theme.ink).frame(maxWidth: .infinity, alignment: .leading)
+            Menu {
+                ForEach(options, id: \.self) { opt in
+                    Button { selection.wrappedValue = opt } label: {
+                        Label(StrengthDisplay.titleCase(opt), systemImage: selection.wrappedValue == opt ? "checkmark" : "")
+                    }
+                }
+            } label: {
+                HStack(spacing: 5) {
+                    Text(selection.wrappedValue.isEmpty ? placeholder : StrengthDisplay.titleCase(selection.wrappedValue))
+                        .font(StrandFont.body).foregroundStyle(selection.wrappedValue.isEmpty ? theme.inkTertiary : theme.inkSecondary)
+                    Image(systemName: "chevron.down").font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
+                }
+            }
+        }
+        .frame(minHeight: 40)
+    }
+
+    private func typeOption(_ t: ExerciseType) -> some View {
+        Button { type = t } label: {
+            HStack(spacing: 11) {
+                Image(systemName: StrengthDisplay.typeIcon(t)).font(.system(size: 17))
+                    .foregroundStyle(type == t ? theme.ink : theme.inkTertiary).frame(width: 22)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(StrengthDisplay.typeLabel(t)).font(StrandFont.body).foregroundStyle(theme.ink)
+                    Text(StrengthDisplay.typeDetail(t)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                }
+                Spacer(minLength: 8)
+                if type == t { Image(systemName: "checkmark").font(.system(size: 14, weight: .semibold)).foregroundStyle(theme.ink) }
+            }
+            .padding(.horizontal, 13).padding(.vertical, 11).contentShape(Rectangle())
+            .background(type == t ? theme.surface : Color.clear, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
+                .strokeBorder(type == t ? theme.ink : theme.hairline, lineWidth: type == t ? 1.5 : 1))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var canCreate: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
+
+    private func create() {
+        let ex = Exercise(id: UUID().uuidString, name: name.trimmingCharacters(in: .whitespaces),
+                          type: type, equipment: equip.isEmpty ? nil : equip,
+                          primaryMuscles: muscle.isEmpty ? [] : [muscle], secondaryMuscles: [], cues: [])
+        onCreate(ex); dismiss()
+    }
+}
+#endif

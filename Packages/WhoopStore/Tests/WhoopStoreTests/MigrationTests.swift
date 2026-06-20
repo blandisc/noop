@@ -1,5 +1,6 @@
 import XCTest
 import GRDB
+import StrandTraining
 @testable import WhoopStore
 
 final class MigrationTests: XCTestCase {
@@ -40,7 +41,61 @@ final class MigrationTests: XCTestCase {
             let cols = try await store.columnNamesForTest(table: table)
             XCTAssertTrue(cols.contains("synced"), "\(table) missing synced column")
         }
-        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 14)
+        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 15)
+    }
+
+    /// v15 (FER-346) adds a nullable `supersetGroup` to `routineExercise` via ALTER ADD COLUMN, and
+    /// must be append-only: a DB that only reached v13 upgrades without losing rows, and the old row
+    /// gets NULL. Drives the migrator directly (upTo v13 → insert a v13-shaped row → migrate to v15).
+    func testV15AddsSupersetGroupAndPreservesV13Rows() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = WhoopStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v13")
+
+        // A v13-shaped routine + exercise (no supersetGroup column exists yet).
+        try await dbQueue.write { db in
+            try db.execute(sql:
+                "INSERT INTO routine (id, name, createdTs, updatedTs, sortOrder) VALUES ('r1','Old',0,0,0)")
+            try db.execute(sql: """
+                INSERT INTO routineExercise
+                    (id, routineId, exerciseId, position, targetSets, warmupPercents, restMode, restSeconds)
+                VALUES ('re1','r1','ex1',0,3,'[]','fixed',90)
+                """)
+        }
+
+        try migrator.migrate(dbQueue)   // → v15 (through v14 Diet, which doesn't touch routineExercise)
+
+        try await dbQueue.read { db in
+            let cols = try db.columns(in: "routineExercise").map(\.name)
+            XCTAssertTrue(cols.contains("supersetGroup"), "v15 must add supersetGroup")
+            let row = try Row.fetchOne(db, sql: "SELECT supersetGroup FROM routineExercise WHERE id='re1'")
+            XCTAssertNotNil(row, "the v13 row must survive the upgrade")
+            XCTAssertNil(row?["supersetGroup"] as Int?, "an old row's supersetGroup is NULL (standalone)")
+        }
+
+        // Both NULL and an Int insert cleanly post-migration.
+        try await dbQueue.write { db in
+            try db.execute(sql: """
+                INSERT INTO routineExercise
+                    (id, routineId, exerciseId, position, targetSets, warmupPercents, restMode, restSeconds, supersetGroup)
+                VALUES ('re2','r1','ex2',1,3,'[]','fixed',90,1)
+                """)
+        }
+    }
+
+    /// Superset grouping round-trips through the public store API, in `position` order. `[1, 1, nil]` =
+    /// a two-exercise superset followed by a standalone exercise.
+    func testSupersetGroupRoundTrip() async throws {
+        let store = try await WhoopStore.inMemory()
+        let routine = Routine(id: "r1", name: "Empuje", createdTs: 0, updatedTs: 0)
+        let exs = [
+            RoutineExercise(id: "a", routineId: "r1", exerciseId: "ex1", position: 0, targetSets: 4, supersetGroup: 1),
+            RoutineExercise(id: "b", routineId: "r1", exerciseId: "ex2", position: 1, targetSets: 4, supersetGroup: 1),
+            RoutineExercise(id: "c", routineId: "r1", exerciseId: "ex3", position: 2, targetSets: 3, supersetGroup: nil),
+        ]
+        try await store.saveRoutine(routine, exercises: exs)
+        let read = try await store.routineExercises(routineId: "r1")
+        XCTAssertEqual(read.map(\.supersetGroup), [1, 1, nil])
     }
 
     /// v12 (FER-307) creates the `experiment` table with `id` as the sole primary key.
