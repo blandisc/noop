@@ -52,4 +52,57 @@ final class StressModelTests: XCTestCase {
         let days = [dm("2026-06-18", rhr: 60, hrv: 50)]
         XCTAssertNil(StressModel(days: days, stored: [], todayKey: "2026-06-17"))
     }
+
+    // MARK: - FER-397 — fall back to the most recent reading (cap: yesterday), never blank the screen
+
+    /// Today's row is still empty (midnight boundary, pre-sync) but yesterday has a reading → the hero
+    /// anchors to yesterday, flagged NOT-today so the view dates it. The screen is not blanked.
+    func testTodayEmptyFallsBackToYesterdayDated() {
+        var days = baseline()
+        days.append(dm("2026-06-16", rhr: 60, hrv: 40))   // yesterday: a real reading
+        days.append(dm("2026-06-17"))                      // today: still empty
+        let model = StressModel(days: days, stored: [], todayKey: "2026-06-17")
+        XCTAssertNotNil(model)
+        XCTAssertEqual(model?.heroIsFresh, true)
+        XCTAssertEqual(model?.anchorIsToday, false, "yesterday's reading must be dated, not passed as today's")
+        XCTAssertEqual(model?.anchorDayKey, "2026-06-16")
+        XCTAssertEqual(model?.rhrToday, 60)
+    }
+
+    /// The fallback also works off a STORED stress value on yesterday (no RHR/HRV needed).
+    func testStoredYesterdayFallbackWhenTodayEmpty() {
+        var days = baseline()
+        days.append(dm("2026-06-16"))                      // yesterday: no RHR/HRV
+        days.append(dm("2026-06-17"))                      // today: empty
+        let model = StressModel(days: days, stored: [("2026-06-16", 2.2)], todayKey: "2026-06-17")
+        XCTAssertNotNil(model)
+        XCTAssertEqual(model?.anchorDayKey, "2026-06-16")
+        XCTAssertEqual(model?.heroIsFresh, true)
+        XCTAssertEqual(model?.anchorIsToday, false)
+        XCTAssertEqual(model?.usingStored, true)
+        XCTAssertEqual(model?.score ?? 0, 2.2, accuracy: 0.001)
+    }
+
+    /// Neither today nor yesterday has a reading, but older history does → the model is still built (the
+    /// trend renders) but the hero is NOT fresh, so the view shows the empty hero instead of a stale one.
+    func testStaleAnchorKeepsTrendButHeroNotFresh() {
+        var days = baseline()                              // 2026-06-01…10 carry signal
+        days.append(dm("2026-06-16"))                      // yesterday empty
+        days.append(dm("2026-06-17"))                      // today empty
+        let model = StressModel(days: days, stored: [], todayKey: "2026-06-17")
+        XCTAssertNotNil(model)
+        XCTAssertEqual(model?.heroIsFresh, false, "anchor (2026-06-10) is older than yesterday → hide hero")
+        XCTAssertEqual(model?.anchorDayKey, "2026-06-10")
+        XCTAssertGreaterThanOrEqual(model?.fullTrend.count ?? 0, 2, "the history must still be there")
+    }
+
+    /// Today has a reading → fresh and NOT dated (no regression to the normal path).
+    func testTodayPresentIsFreshAndNotDated() {
+        var days = baseline()
+        days.append(dm("2026-06-17", rhr: 59, hrv: 39))
+        let model = StressModel(days: days, stored: [], todayKey: "2026-06-17")
+        XCTAssertEqual(model?.heroIsFresh, true)
+        XCTAssertEqual(model?.anchorIsToday, true)
+        XCTAssertEqual(model?.anchorDayKey, "2026-06-17")
+    }
 }

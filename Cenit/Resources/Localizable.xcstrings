@@ -31898,6 +31898,40 @@
           }
         }
       }
+    },
+    "Yesterday · %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yesterday · %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ayer · %@"
+          }
+        }
+      }
+    },
+    "No reading in the last couple of days. Wear your strap overnight and it'll refresh after it syncs — your history is below.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No reading in the last couple of days. Wear your strap overnight and it'll refresh after it syncs — your history is below."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin lectura en los últimos días. Usa tu banda de noche y se actualizará cuando sincronice — tu historial está abajo."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

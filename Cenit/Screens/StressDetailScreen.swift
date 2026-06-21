@@ -69,14 +69,21 @@ struct StressDetailScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 if let model {
-                    // Level 1 · the answer: hero + what's moving it (RHR / HRV vs base — the real why).
-                    hero(model)
-                    blockDivider
-                    whatMovesItBlock(model)
+                    // Level 1 · the answer. The hero falls back to yesterday's reading (dated) when
+                    // today is still incomplete; if even that's missing it shows the empty hero — but
+                    // either way the history below still renders, so the screen is never blanked. (FER-397)
+                    if model.heroIsFresh {
+                        hero(model)
+                        blockDivider
+                        whatMovesItBlock(model)
+                        blockDivider
+                    } else {
+                        noRecentHero
+                        blockDivider
+                    }
                     // Level 2 · «Your patterns»: calm time + consistency, fused to plain lines. The
                     // former «Normal range» block is gone from the daily scroll — those Low/Mod/High
                     // bands are already drawn behind the trend line as its legend (one dispersion read).
-                    blockDivider
                     patternsBlock(model)
                     // Level 3 · «See your history»: the daily trend over the bands + the mapa del día.
                     blockDivider
@@ -118,6 +125,11 @@ struct StressDetailScreen: View {
             theme: theme
         ) {
             VStack(alignment: .leading, spacing: 6) {
+                // When the reading isn't today's (fell back to yesterday at the midnight boundary), date
+                // it so it's never passed off as today's. (FER-397)
+                if !model.anchorIsToday {
+                    heroDateChip(model.anchorDayKey)
+                }
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(fmt(model.score))
                         .instrumentoHero(46)
@@ -135,12 +147,37 @@ struct StressDetailScreen: View {
         }
     }
 
-    /// The empty hero: no usable signal yet. Honest "—" + a line on how to get data (mirrors the siblings).
+    /// A small dated qualifier for a fallback hero (always yesterday — freshness is capped there). Reads
+    /// "ayer · sáb 20 jun". Formatted in UTC to match the day key's zone so it never drifts a day at the
+    /// boundary. (FER-397)
+    private func heroDateChip(_ dayKey: String) -> some View {
+        let formatted = Self.dayParser.date(from: dayKey).map { Self.chipDateFormatter.string(from: $0) } ?? ""
+        return HStack(spacing: 5) {
+            Image(systemName: "clock.arrow.circlepath").font(StrandFont.footnote)
+            Text("Yesterday · \(formatted)")
+        }
+        .font(StrandFont.footnote)
+        .foregroundStyle(theme.inkTertiary)
+        .accessibilityElement(children: .combine)
+    }
+
+    /// The cold-start empty hero: no usable signal anywhere. Honest "—" + how to get data.
     private var emptyHero: some View {
+        emptyHeroShell("No stress reading yet. Wear your strap overnight and open this again after it syncs — or import your WHOOP history in Data Sources. Stress is read from your resting heart rate and HRV.")
+    }
+
+    /// Has history, but no reading in the last couple of days (anchor older than yesterday). Honest "—",
+    /// and the trend + patterns below STILL render — the screen is never blanked. (FER-397)
+    private var noRecentHero: some View {
+        emptyHeroShell("No reading in the last couple of days. Wear your strap overnight and it'll refresh after it syncs — your history is below.")
+    }
+
+    /// Shared shell for the two empty-hero states: the «Stress» overline, a tertiary "—", and a line.
+    private func emptyHeroShell(_ message: LocalizedStringKey) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Stress").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             Text("—").instrumentoHero(46).foregroundStyle(theme.inkTertiary)
-            Text("No stress reading yet. Wear your strap overnight and open this again after it syncs — or import your WHOOP history in Data Sources. Stress is read from your resting heart rate and HRV.")
+            Text(message)
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -521,6 +558,16 @@ struct StressDetailScreen: View {
         f.locale = Locale(identifier: "en_US_POSIX")
         f.timeZone = TimeZone(identifier: "UTC")
         f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
+    /// Short localized date for the fallback-hero chip ("sáb 20 jun"). UTC zone matches the day key so
+    /// the rendered day never drifts at the midnight boundary; the format template localizes per the
+    /// current locale. (FER-397)
+    static let chipDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.timeZone = TimeZone(identifier: "UTC")
+        f.setLocalizedDateFormatFromTemplate("EEE d MMM")
         return f
     }()
 }
