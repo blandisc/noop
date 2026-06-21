@@ -1652,9 +1652,10 @@ struct TodayView: View {
                 footer
             }
             .padding(.horizontal, NoopMetrics.gap).padding(.vertical, NoopMetrics.space2)
-            // Alto fijo (FER-265): 88 → 76 — la mini-banda y el cambio caben en UNA línea de pie, así
-            // que el tile vuelve a ser compacto y la sección no se desborda.
-            .frame(maxWidth: .infinity, minHeight: 76, maxHeight: 76, alignment: .topLeading)
+            // Alto base 76 (FER-265): compacto, la sección no se desborda en el tamaño por defecto.
+            // FER-394: piso, no tope — el tile crece en vez de cortar texto con Dynamic Type grande;
+            // en el tamaño por defecto el contenido cabe en 76, así que se ve idéntico.
+            .frame(maxWidth: .infinity, minHeight: 76, alignment: .topLeading)
             // Tarjeta blanca con elevación sutil (handoff «Hoy · Estados»): radio 17 + una sombra cálida
             // tenue (`ink` al 5 %, y:1) sobre el papel — la sombra va en la SILUETA del tile (la forma del
             // fondo), no en el contenido, así no proyecta el texto. El relleno sigue siendo el `surface`

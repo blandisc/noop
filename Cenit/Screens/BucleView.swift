@@ -253,6 +253,7 @@ private struct BucleLanding: View {
                 }
                 Text(verdictWord)
                     .font(.system(size: 34, weight: .semibold))
+                    .lineLimit(1).minimumScaleFactor(0.6)   // FER-394
                     .foregroundStyle(theme.ink)
                     .padding(.top, 10)
                 verdictReading
@@ -529,6 +530,7 @@ private struct BucleLanding: View {
 
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text("Día \(vm.elapsedDay)").font(.system(size: 30, weight: .semibold)).monospacedDigit()
+                    .lineLimit(1).minimumScaleFactor(0.6)   // FER-394
                     .foregroundStyle(theme.ink)
                 Text("de \(vm.row.windowDays)").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
             }
@@ -566,6 +568,7 @@ private struct BucleLanding: View {
                 HStack(alignment: .firstTextBaseline, spacing: 9) {
                     Text(BucleFormat.signedDelta(delta, unit: outcomeUnit(exp.outcome)))
                         .font(.system(size: 40, weight: .semibold)).monospacedDigit()
+                        .lineLimit(1).minimumScaleFactor(0.6)   // FER-394
                         .foregroundStyle(theme.dataRecovery)
                     Text(exp.outcome).font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
                 }

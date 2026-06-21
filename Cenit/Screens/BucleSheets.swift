@@ -38,6 +38,7 @@ struct PalancaDetailSheet: View {
                     Text(datumText)
                         .font(.system(size: 40, weight: .semibold))
                         .monospacedDigit()
+                        .lineLimit(1).minimumScaleFactor(0.6)   // FER-394
                         .foregroundStyle(datumColor)
                     Text(insight.datum.metric)
                         .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
@@ -767,7 +768,9 @@ struct DecisionExplainerSheet: View {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("Decisión de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     Text(verdictWord)
-                        .font(.system(size: 30, weight: .semibold)).foregroundStyle(theme.ink)
+                        .font(.system(size: 30, weight: .semibold))
+                        .lineLimit(1).minimumScaleFactor(0.6)   // FER-394
+                        .foregroundStyle(theme.ink)
                         .padding(.top, 8)
                 }
 

@@ -6,47 +6,60 @@ import SwiftUI
 // live values. SF Mono for raw/log views. Overline = sparing ALL-CAPS w/ tracking.
 //
 // All numeric styles use `.monospacedDigit()` so live values don't reflow.
+//
+// Dynamic Type (FER-394): the reading-text tokens are anchored to native text styles
+// (`Font.system(.textStyle)`) so they scale with the user's text-size setting. The DS
+// point sizes already sit on Apple's scale (28=.title, 22=.title2, 17=.headline,
+// 15=.subheadline, 13=.footnote, 12=.caption, 11=.caption2) → at the default size (L)
+// the rendered size is IDENTICAL to the old fixed sizes, with zero call-site changes.
+// `display(_:)` / `number(_:)` / `mono(_:)` stay FIXED on purpose: they size numerals
+// embedded in geometry (the recovery ring, the dial, chart-driven values), which must
+// not move with Dynamic Type. The app caps the upper range at xxxLarge at the root.
 
 public enum StrandFont {
 
     // MARK: Scale (§9.2)
 
-    /// Display 64–80 / Semibold — the recovery ring number. Tabular digits.
+    /// Display 64–80 / Semibold — the recovery ring number. FIXED size (geometry-driven:
+    /// scales with the ring/dial diameter, NOT Dynamic Type). Tabular digits.
     public static func display(_ size: CGFloat = 72) -> Font {
         .system(size: size, weight: .semibold, design: .default).monospacedDigit()
     }
 
-    /// Title1 28 / Bold.
-    public static let title1 = Font.system(size: 28, weight: .bold)
+    /// Title1 28 / Bold — scales with Dynamic Type (relative to `.title`, 28pt at default).
+    public static let title1 = Font.system(.title, weight: .bold)
 
-    /// Title2 22 / Semibold.
-    public static let title2 = Font.system(size: 22, weight: .semibold)
+    /// Title2 22 / Semibold (relative to `.title2`, 22pt at default).
+    public static let title2 = Font.system(.title2, weight: .semibold)
 
-    /// Headline 17 / Semibold.
-    public static let headline = Font.system(size: 17, weight: .semibold)
+    /// Headline 17 / Semibold (relative to `.headline`, 17pt semibold at default).
+    public static let headline = Font.system(.headline)
 
-    /// Body 15 / Regular.
-    public static let body = Font.system(size: 15, weight: .regular)
+    /// Body 15 / Regular (relative to `.subheadline`, 15pt at default).
+    public static let body = Font.system(.subheadline)
 
-    /// Subhead 13.
-    public static let subhead = Font.system(size: 13, weight: .regular)
+    /// Subhead 13 (relative to `.footnote`, 13pt at default).
+    public static let subhead = Font.system(.footnote)
 
-    /// Caption 12.
-    public static let caption = Font.system(size: 12, weight: .regular)
+    /// Caption 12 (relative to `.caption`, 12pt at default).
+    public static let caption = Font.system(.caption)
 
-    /// Footnote 11.
-    public static let footnote = Font.system(size: 11, weight: .regular)
+    /// Footnote 11 (relative to `.caption2`, 11pt at default).
+    public static let footnote = Font.system(.caption2)
 
     /// Unit 13 — the small trailing unit next to a metric value (ms / bpm / %). Subordinate to the
     /// value but a step above footnote so it reads as part of the datum, not chrome.
-    public static let unit = Font.system(size: 13, weight: .regular)
+    /// (relative to `.footnote`, 13pt at default).
+    public static let unit = Font.system(.footnote)
 
     /// Overline 11 / Semibold, +0.8 tracking (apply `.tracking(0.8)` at use site;
     /// `overlineText(_:)` does it for you). Sparing ALL-CAPS labels.
-    public static let overline = Font.system(size: 11, weight: .semibold)
+    /// (relative to `.caption2`, 11pt at default).
+    public static let overline = Font.system(.caption2, weight: .semibold)
 
     /// Mono 13 (SF Mono) — raw / log views. Tabular by nature.
-    public static let mono = Font.system(size: 13, weight: .regular, design: .monospaced)
+    /// (relative to `.footnote`, 13pt at default).
+    public static let mono = Font.system(.footnote, design: .monospaced)
 
     // MARK: Numeric variants (tabular digits)
 
@@ -55,11 +68,13 @@ public enum StrandFont {
         .system(size: size, weight: weight, design: .default).monospacedDigit()
     }
 
-    /// Monospaced-digit body — for inline live values that should align.
-    public static let bodyNumber = Font.system(size: 15, weight: .regular).monospacedDigit()
+    /// Monospaced-digit body — for inline live values that should align
+    /// (relative to `.subheadline`, 15pt at default; scales with Dynamic Type).
+    public static let bodyNumber = Font.system(.subheadline).monospacedDigit()
 
-    /// Monospaced-digit caption — for small live values (sparklines, chips).
-    public static let captionNumber = Font.system(size: 12, weight: .medium).monospacedDigit()
+    /// Monospaced-digit caption — for small live values (sparklines, chips)
+    /// (relative to `.caption`, 12pt medium at default; scales with Dynamic Type).
+    public static let captionNumber = Font.system(.caption, weight: .medium).monospacedDigit()
 
     /// Mono at an arbitrary size.
     public static func mono(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
