@@ -82,6 +82,13 @@ final class HealthKitBridge: ObservableObject {
         for id in HealthKitBridge.quantityReadIds { if let t = HKObjectType.quantityType(forIdentifier: id) { s.insert(t) } }
         if let sleep = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) { s.insert(sleep) }
         s.insert(HKObjectType.workoutType())
+        // Características del perfil para el auto-fill del onboarding (FER-361): sexo, fecha de
+        // nacimiento (→ edad), peso y estatura. Se consumen en `readProfileCharacteristics()`.
+        if let sex = HKObjectType.characteristicType(forIdentifier: .biologicalSex) { s.insert(sex) }
+        if let dob = HKObjectType.characteristicType(forIdentifier: .dateOfBirth) { s.insert(dob) }
+        for id in [HKQuantityTypeIdentifier.bodyMass, .height] {
+            if let t = HKObjectType.quantityType(forIdentifier: id) { s.insert(t) }
+        }
         return s
     }
 
@@ -117,6 +124,52 @@ final class HealthKitBridge: ObservableObject {
             await refreshStatus()   // surface granted write scopes + any prior coverage immediately
         } catch {
             auth = .denied
+        }
+    }
+
+    // MARK: - Profile characteristics (FER-361)
+
+    /// Sexo / edad / peso / estatura de Apple Health para prellenar el Perfil del onboarding. Todo
+    /// opcional: cada campo viene solo si Health lo tiene (auto-fill parcial, campo por campo).
+    struct ProfileCharacteristics: Equatable {
+        var sex: String?       // "male" | "female" | "nonbinary"
+        var age: Int?
+        var weightKg: Double?
+        var heightCm: Double?
+    }
+
+    /// Lee las características del perfil de Apple Health. On-device; nada sale del dispositivo.
+    func readProfileCharacteristics() async -> ProfileCharacteristics {
+        guard HKHealthStore.isHealthDataAvailable() else { return ProfileCharacteristics() }
+        var out = ProfileCharacteristics()
+        if let bs = try? store.biologicalSex().biologicalSex {
+            switch bs {
+            case .male:   out.sex = "male"
+            case .female: out.sex = "female"
+            case .other:  out.sex = "nonbinary"
+            default:      break
+            }
+        }
+        if let comps = try? store.dateOfBirthComponents(),
+           let dob = Calendar.current.date(from: comps),
+           let years = Calendar.current.dateComponents([.year], from: dob, to: Date()).year,
+           (13...120).contains(years) {
+            out.age = years
+        }
+        out.weightKg = await mostRecentQuantity(.bodyMass, unit: .gramUnit(with: .kilo))
+        out.heightCm = await mostRecentQuantity(.height, unit: .meterUnit(with: .centi))
+        return out
+    }
+
+    /// La muestra más reciente de un tipo de cantidad, en la unidad dada. `nil` si no hay ninguna.
+    private func mostRecentQuantity(_ id: HKQuantityTypeIdentifier, unit: HKUnit) async -> Double? {
+        guard let type = HKObjectType.quantityType(forIdentifier: id) else { return nil }
+        return await withCheckedContinuation { cont in
+            let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
+            let q = HKSampleQuery(sampleType: type, predicate: nil, limit: 1, sortDescriptors: [sort]) { _, samples, _ in
+                cont.resume(returning: (samples?.first as? HKQuantitySample)?.quantity.doubleValue(for: unit))
+            }
+            store.execute(q)
         }
     }
 

@@ -14,8 +14,9 @@ import Foundation
 // Longevity, each a `theme.surface` card whose grouped stats (label · value in its data hue · optional
 // legend) tap straight into their detail, with the «How you wake after each sport» insight nested under
 // a hairline inside Activity → connect nudge → global actions (Compare · See all metrics) at the foot.
-// Each stat is its own tap target (the direct shortcut the old rows had); the card-header chevron opens
-// Explore. Only the hero carries a trend on the landing — the dense stats are a number, not a chart.
+// Each stat is its own tap target (the direct shortcut the old rows had); the card header is a quiet
+// label (no chevron — «See all metrics» at the foot is the one catalog door, no duplicate). Only the
+// hero carries a trend on the landing — the dense stats are a number, not a chart.
 //
 // Detail bridge: every vital now opens a light «Instrumento» sheet — the scalar vitals (HRV / Resting HR /
 // Respiración / SpO₂) through the unified `MetricDetailScreen` (FER-185), and the composite/own-shaped ones
@@ -344,22 +345,14 @@ private struct CuerpoLanding: View {
 
     // MARK: - Domain card scaffolding (Instrumento rule 3: one surface, no card-in-card)
 
-    /// A domain card: a quiet overline header (tappable chevron → the metric catalog) over its grouped
-    /// stats, on a single `theme.surface` panel.
-    private func domainCard<Content: View>(_ title: LocalizedStringKey, headerTap: @escaping () -> Void,
+    /// A domain card: a quiet overline header (a label — it only orients, Instrumento rule 4) over its
+    /// grouped stats, on a single `theme.surface` panel. The catalog door is the footer's «See all
+    /// metrics»; the header carries no chevron so it doesn't duplicate that destination.
+    private func domainCard<Content: View>(_ title: LocalizedStringKey,
                                            @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            Button(action: headerTap) {
-                HStack(spacing: 8) {
-                    Text(title).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    Spacer(minLength: 8)
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityHint("Opens all metrics.")
+            Text(title).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                .frame(maxWidth: .infinity, alignment: .leading)
             content()
         }
         .padding(.vertical, 16).padding(.horizontal, 20)
@@ -409,7 +402,7 @@ private struct CuerpoLanding: View {
 
     /// Rest & load — Sleep · Day Strain · Stress, each column into its detail.
     private var restLoadCard: some View {
-        domainCard("Rest & load", headerTap: { showExplore = true }) {
+        domainCard("Rest & load") {
             HStack(spacing: 13) {
                 sleepStat
                 vsep
@@ -450,7 +443,7 @@ private struct CuerpoLanding: View {
 
     /// Vitals — a 3×2 grid of scalar vitals, each into its `MetricDetailScreen`.
     private var vitalsCard: some View {
-        domainCard("Vitals", headerTap: { showExplore = true }) {
+        domainCard("Vitals") {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .leading), count: 3),
                       alignment: .leading, spacing: 18) {
                 hrvStat; rhrStat; spo2Stat; heartStat; respStat; skinTempStat
@@ -460,7 +453,7 @@ private struct CuerpoLanding: View {
 
     /// Activity — Steps · Workouts·14d, with «How you wake after each sport» nested under a hairline.
     private var activityCard: some View {
-        domainCard("Activity", headerTap: { showExplore = true }) {
+        domainCard("Activity") {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(spacing: 13) {
                     stepsStat
@@ -475,7 +468,7 @@ private struct CuerpoLanding: View {
 
     /// Longevity — Physical age · Body age · VO₂ Max, each with a micro-legend, into its sheet.
     private var longevityCard: some View {
-        domainCard("Longevity", headerTap: { showExplore = true }) {
+        domainCard("Longevity") {
             HStack(alignment: .top, spacing: 13) {
                 physicalAgeStat
                 vsep

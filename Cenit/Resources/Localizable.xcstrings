@@ -31182,6 +31182,23 @@
           }
         }
       }
+    },
+    "Tomado de Apple Health · editable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From Apple Health · editable"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tomado de Apple Health · editable"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
