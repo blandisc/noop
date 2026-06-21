@@ -32204,6 +32204,74 @@
           }
         }
       }
+    },
+    "Note: ": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note: "
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nota: "
+          }
+        }
+      }
+    },
+    "Indications": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Indications"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Indicaciones"
+          }
+        }
+      }
+    },
+    "Plan target · reference": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan target · reference"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Objetivo del plan · referencia"
+          }
+        }
+      }
+    },
+    "Only what your plan declared. NOOP doesn't count calories.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only what your plan declared. NOOP doesn't count calories."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo lo que tu plan declaró. NOOP no cuenta calorías."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

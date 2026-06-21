@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Las indicaciones de tu nutriólogo, a la vista / Your nutritionist's guidance, in view.**
+  **ES** — El tracker de Dieta ahora muestra las **indicaciones** que venían en tu plan: las **reglas** generales (toma 2 L de agua, evita el azúcar…) en una sección quieta, y la **nota** de cada comida bajo sus alimentos. Si tu plan **declaró** objetivos (calorías/macros), aparecen como **referencia** —nunca los contamos ni los inventamos—. Si tu plan no trae nada de esto, no se muestra nada.
+  **EN** — The Diet tracker now shows the **guidance** your plan came with: the general **rules** (drink 2 L of water, avoid added sugar…) in a quiet section, and each meal's **note** under its foods. If your plan **declared** targets (calories/macros), they show up as a **reference** —we never count or invent them. If your plan has none of this, nothing shows.
+  ([Cenit/Screens/DietCaptureView.swift](Cenit/Screens/DietCaptureView.swift))
 - **Elige qué opción de tu dieta comiste / Choose which option of your diet you ate.**
   **ES** — Cuando una comida de tu plan trae **equivalentes** (cena A o cena B…), el tracker ahora te deja **elegir cuál comiste** —queda registrada— en vez de un simple «cumplí». Si comiste algo fuera del plan, marca **Otra**; si te la saltaste, **Salté**. De paso, ves tu **plan completo** con todas las opciones de cada comida. Tu **% de apego no cambia**: comer cualquier opción cuenta como cumplido.
   **EN** — When a meal in your plan has **equivalents** (dinner A or dinner B…), the tracker now lets you **pick which one you ate** —it's recorded— instead of a plain «followed». Ate something off‑plan? Mark **Other**; skipped it? **Skipped**. You also see your **full plan** with every option per meal. Your **adherence % doesn't change**: eating any option counts as followed.

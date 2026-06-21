@@ -269,8 +269,54 @@ struct DietCaptureView: View {
         return VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
             dayNav
             adherenceHero(pct: pct, marked: marked, planned: planned)
-            if let plan = activeParsed { mealTracker(plan) }
+            if let plan = activeParsed {
+                mealTracker(plan)
+                indications(plan)
+            }
             QuietButton("Replace plan") { startCapture() }
+        }
+    }
+
+    /// The nutritionist's plan-level guidance, shown only when the plan actually carries it (FER-411):
+    /// rules verbatim, plus any declared daily targets as a quiet reference — never invented, never counted.
+    @ViewBuilder
+    private func indications(_ plan: DietPlan) -> some View {
+        let rules = (plan.rules ?? []).filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+        let targets = plan.dailyTargets ?? [:]
+        if !rules.isEmpty || !targets.isEmpty {
+            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+                Text("Indications").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                ForEach(rules, id: \.self) { rule in
+                    HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space2) {
+                        Text(verbatim: "•").foregroundStyle(theme.inkTertiary)
+                        Text(verbatim: rule).foregroundStyle(theme.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .font(StrandFont.subhead)
+                }
+                if !targets.isEmpty { targetsReference(targets) }
+            }
+        }
+    }
+
+    /// Declared daily targets as reference chips — the keys are whatever the plan declared (the format
+    /// doesn't fix them), so we show them verbatim and never map to units or count.
+    private func targetsReference(_ targets: [String: Double]) -> some View {
+        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+            Text("Plan target · reference").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                .padding(.top, NoopMetrics.space1)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: NoopMetrics.space2) {
+                    ForEach(targets.sorted(by: { $0.key < $1.key }), id: \.key) { key, value in
+                        Text(verbatim: "\(key.replacingOccurrences(of: "_", with: " ")) · \(value.formatted())")
+                            .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                            .padding(.horizontal, NoopMetrics.gap).padding(.vertical, NoopMetrics.space1)
+                            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
+                    }
+                }
+            }
+            Text("Only what your plan declared. NOOP doesn't count calories.")
+                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
         }
     }
 
@@ -346,6 +392,11 @@ struct DietCaptureView: View {
         let status = todayStatuses[meal.id]
         return VStack(alignment: .leading, spacing: NoopMetrics.space2) {
             nameText(meal.name, fallback: "Meal").font(StrandFont.body).foregroundStyle(theme.ink)
+            if let note = meal.notes?.trimmingCharacters(in: .whitespaces), !note.isEmpty {
+                (Text("Note: ") + Text(verbatim: note))
+                    .font(StrandFont.footnote).italic().foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             if meal.options.count > 1 {
                 optionPicker(meal, status: status)
             } else {
