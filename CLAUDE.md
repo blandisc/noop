@@ -37,9 +37,11 @@ iOS app (the Xcode project is generated from `project.yml`, never committed):
 
 ```bash
 xcodegen generate                           # after adding/removing files or editing project.yml
-xcodebuild -project Cenit.xcodeproj -scheme Cenit -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build
-xcodebuild -project Cenit.xcodeproj -scheme Cenit -destination 'generic/platform=iOS' test
+xcodebuild -project Cenit.xcodeproj -scheme Cenit -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO -jobs 4 build
+xcodebuild -project Cenit.xcodeproj -scheme Cenit -destination 'generic/platform=iOS' -jobs 4 test
 ```
+
+**Always pass `-jobs 4`** on full app builds. The dev Mac has 16 GB / 8 cores; an uncapped `xcodebuild` fans `swift-frontend` across all 8 cores, and parallel worktree sessions building at once exhaust RAM ("system has run out of application memory"). Capping to 4 keeps two concurrent builds survivable. The fast loop (`swift build`/`swift test` on `Packages/**`) doesn't hit this — prefer it whenever the change doesn't touch the app layer.
 
 CI runs `swift build`/`swift test` only on `Packages/**` changes. (If `swift`/`xcodebuild` fail while fetching SwiftPM dependencies, a local `GIT_CONFIG` override is the known workaround.)
 
