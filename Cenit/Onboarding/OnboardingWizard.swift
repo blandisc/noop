@@ -579,7 +579,10 @@ private struct BondedStep: View {
 private struct ProfileStep: View {
     let onContinue: () -> Void
     @EnvironmentObject private var profile: ProfileStore
+    @EnvironmentObject private var health: HealthKitBridge
     @Environment(\.instrumentoTheme) private var theme
+    @State private var fromHealth: Set<String> = []
+    @State private var didAutoFill = false
 
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
@@ -628,6 +631,16 @@ private struct ProfileStep: View {
             .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
             .padding(.top, NoopMetrics.sectionGap)
 
+            if !fromHealth.isEmpty {
+                HStack(spacing: NoopMetrics.space2) {
+                    Image(systemName: "heart.fill").font(.system(size: 11)).foregroundStyle(theme.dataSpO2)
+                    Text("Tomado de Apple Health · editable")
+                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                }
+                .padding(.top, NoopMetrics.space2)
+                .accessibilityElement(children: .combine)
+            }
+
             HStack(spacing: NoopMetrics.space2) {
                 Image(systemName: "bolt.heart").foregroundStyle(theme.inkTertiary)
                 Text("Frecuencia cardiaca máxima estimada · \(profile.hrMax) lpm")
@@ -639,6 +652,22 @@ private struct ProfileStep: View {
             Spacer(minLength: NoopMetrics.sectionGap)
             InkButton("Continuar", action: onContinue)
         }
+        .task { await autoFill() }
+    }
+
+    /// Prellena el Perfil desde Apple Health una sola vez al aparecer (FER-361): aplica solo los campos
+    /// que Health tiene (parcial, campo por campo) y marca su procedencia. Las ediciones del usuario son
+    /// posteriores, así que ganan.
+    private func autoFill() async {
+        guard !didAutoFill, health.auth == .authorized else { return }
+        didAutoFill = true
+        let c = await health.readProfileCharacteristics()
+        var marked: Set<String> = []
+        if let s = c.sex { profile.sex = s; marked.insert("sex") }
+        if let a = c.age, (13...100).contains(a) { profile.age = a; marked.insert("age") }
+        if let w = c.weightKg, (30...250).contains(w) { profile.weightKg = w; marked.insert("weight") }
+        if let h = c.heightCm, (120...230).contains(h) { profile.heightCm = h; marked.insert("height") }
+        fromHealth = marked
     }
 }
 
