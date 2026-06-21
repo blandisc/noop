@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La pantalla de novedades va a juego con el resto de la app / The What's New screen matches the rest of the app.**
+  **ES** — La pantalla **«Novedades»** (la que ves tras actualizar, y también desde Soporte) pasó del tema oscuro al **papel cálido «Instrumento»**, como el resto de Cénit: el mismo contenido, ahora legible y consistente. Parte de la limpieza que retira el último tema oscuro de la app.
+  **EN** — The **What's New** screen (shown after an update, and from Support) moved from the dark theme to the warm **«Instrumento» paper**, like the rest of Cénit: the same content, now consistent and legible. Part of retiring the last of the app's dark theme.
+  ([Cenit/Screens/WhatsNewView.swift](Cenit/Screens/WhatsNewView.swift))
 - **Recordatorios para no saltarte una comida / Reminders so you don't skip a meal.**
   **ES** — Si tu plan trae **horas sugeridas**, ahora puedes activar **recordatorios por comida**: una notificación a la hora de cada comida para que marques tu apego. Es **opcional** (apagado por default) y **todo en tu iPhone** —sin servidor ni nube—. Al activarlo te pide permiso; si lo apagas, se cancelan; y si cambias de plan, se reacomodan solos. Si tu plan no trae horas, el interruptor te lo dice.
   **EN** — If your plan has **suggested times**, you can now turn on **per-meal reminders**: a notification at each meal's time so you mark your adherence. It's **opt-in** (off by default) and **all on your iPhone** —no server, no cloud. Turning it on asks permission; turning it off cancels them; and changing your plan re-aims them. If your plan has no times, the switch tells you.

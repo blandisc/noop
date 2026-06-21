@@ -56,8 +56,9 @@ struct ContentView: View {
                 lastSeenChangelog = AppChangelog.currentVersion
                 showWhatsNew = false
             })
-            // La hoja vive fuera del árbol tematizado; la fijamos en oscuro como antes del cambio.
-            .preferredColorScheme(.dark)
+            // La hoja es papel «Instrumento» (FER-415); la fijamos en claro para que la barra de estado
+            // quede en tinta oscura aunque se abra desde una pestaña oscura (p. ej. Support en Ajustes).
+            .preferredColorScheme(.light)
         }
         .onAppear {
             // Existing users who updated: their last-seen version is behind the current one.
