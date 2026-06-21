@@ -137,6 +137,13 @@ ES: dict[str, str] = {
     # FER-401 — Dieta: elegir la opción/equivalente por comida
     'pick what you ate': 'elige la que comiste',
     'Other': 'Otra',
+    # FER-431 — Dieta: ciclo semanal
+    'Rest day · no meals planned': 'Día libre · sin comidas hoy',
+    'Rest day — your plan has no meals today. Come back tomorrow or use ‹ ›.': 'Día libre — tu plan no tiene comidas hoy. Vuelve mañana o usa ‹ ›.',
+    'Days': 'Días',
+    "That plan's cycle isn't supported — it must be daily or weekly.": 'El ciclo de ese plan no es válido — debe ser diario o semanal.',
+    'One of the meals has invalid days — use weekday numbers 1–7. Check the file and try again.': 'Una comida tiene días inválidos — usa números de día 1–7. Revisa el archivo e inténtalo de nuevo.',
+    "A weekly plan needs each meal's days. Check the file and try again.": 'Un plan semanal necesita los días de cada comida. Revisa el archivo e inténtalo de nuevo.',
     # FER-412 — Dieta: recordatorios locales por comida
     'Meal reminders': 'Recordatorios por comida',
     "We'll remind you at each meal's time. All on your iPhone.": 'Te avisamos a la hora de cada comida. Todo en tu iPhone.',
