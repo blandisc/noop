@@ -18,11 +18,9 @@ import StrandAnalytics
 // Out of scope here (each its own issue): the routine builder (FER-346) and the guided session
 // (FER-347). Their entry points show an honest «coming soon» note rather than a dead action.
 
-/// Theme wrapper: drives `\.instrumentoTheme` by the hour (like Today / Cuerpo / Ajustes) so Entrenar
-/// warms with the real sun, then hands to `EntrenarLanding`, which reads the resolved theme.
+/// Theme wrapper: anchors `\.instrumentoTheme` to the single warm day paper (`.base`), then hands to
+/// `EntrenarLanding`, which reads the resolved theme. (FER-398 retired the by-the-hour tint.)
 struct EntrenarView: View {
-    /// Sunrise/sunset for today (from RootTabView, which already computes it for the instrument bar).
-    var solar: SolarWindow?
     /// Push «Rutina de hoy» for a given routine id (the tab's NavigationStack owns the path).
     var openRoutine: (String) -> Void
     /// Push the exercise library (browse) onto the tab's NavigationStack.
@@ -34,7 +32,7 @@ struct EntrenarView: View {
     var body: some View {
         EntrenarLanding(openRoutine: openRoutine, openLibrary: openLibrary,
                         openBreathe: openBreathe, openIntervals: openIntervals, openDiet: openDiet)
-            .instrumentoThemeByHour(solar: solar)
+            .instrumentoTheme(.base)
     }
 }
 

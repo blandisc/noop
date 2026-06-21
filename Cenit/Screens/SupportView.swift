@@ -1,7 +1,6 @@
 #if os(iOS)
 import SwiftUI
 import StrandDesign
-import StrandAnalytics
 
 // MARK: - «Acerca de y soporte» — FER-67 · adelgazada en FER-381
 //
@@ -11,16 +10,13 @@ import StrandAnalytics
 // What's New (changelog) + mission + attributions + a single «not affiliated / not a medical device»
 // disclaimer. Logic unchanged; presentation only.
 
-/// Theme wrapper: drives `\.instrumentoTheme` by the hour, then hands to the content (which reads the
-/// resolved theme from the environment). The theme is also injected explicitly by every sheet caller
-/// (it doesn't cross the `.sheet` boundary — FER-162); the by-hour wrap keeps it correct elsewhere too.
+/// Theme wrapper: anchors `\.instrumentoTheme` to the single warm day paper (`.base`), then hands to
+/// the content (which reads the resolved theme from the environment). The theme is also injected
+/// explicitly by every sheet caller (it doesn't cross the `.sheet` boundary — FER-162). (FER-398
+/// retired the by-the-hour tint.)
 struct SupportView: View {
     var body: some View {
-        SupportContent().instrumentoThemeByHour(solar: Self.solarWindow())
-    }
-    private static func solarWindow() -> SolarWindow? {
-        guard let w = SolarClock.sunWindow(on: Date(), in: .current) else { return nil }
-        return SolarWindow(sunrise: w.sunrise, sunset: w.sunset)
+        SupportContent().instrumentoTheme(.base)
     }
 }
 

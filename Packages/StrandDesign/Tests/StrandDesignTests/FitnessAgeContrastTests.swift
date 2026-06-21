@@ -6,10 +6,9 @@ import SwiftUI
 /// `dataRecovery` when the user reads younger, ámbar `warning` when older, over the «Instrumento»
 /// paper. At hero size (~64pt) the applicable WCAG floor is AA-large, 3:1.
 ///
-/// The full by-the-hour sweep is already covered by
-/// `InstrumentoThemeEngineTests.testAAOnEveryPairAcrossTheWholeDay` (verdict ≥3.0, warning ≥4.5). This
-/// suite pins the Fitness Age use-case EXPLICITLY — so a future retint of the theme can't silently dip
-/// the directional hero below 3:1 without a red test pointing back at this screen.
+/// FER-398 retired the by-the-hour engine, so there is a single `.base` paper. This suite pins the
+/// Fitness Age use-case EXPLICITLY — so a future retint of the theme can't silently dip the directional
+/// hero below 3:1 without a red test pointing back at this screen.
 final class FitnessAgeContrastTests: XCTestCase {
 
     private func luminance(_ c: Color) -> Double {
@@ -21,14 +20,10 @@ final class FitnessAgeContrastTests: XCTestCase {
         return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
     }
 
-    /// Both directional hues clear AA-large (3:1) on paper at every anchor of the day.
+    /// Both directional hues clear AA-large (3:1) on the base paper.
     func testPhysicalAgeNumeralHuesClearAALargeOnPaper() {
         let anchors: [(String, InstrumentoTheme)] = [
-            ("base",  .base),
-            ("dawn",  InstrumentoThemeEngine.dawn),
-            ("day",   InstrumentoThemeEngine.day),
-            ("dusk",  InstrumentoThemeEngine.dusk),
-            ("night", InstrumentoThemeEngine.night),
+            ("base", .base),
         ]
         for (name, t) in anchors {
             XCTAssertGreaterThanOrEqual(contrast(t.verdict, t.paper), 3.0,

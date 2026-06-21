@@ -1,7 +1,6 @@
 #if os(iOS)
 import SwiftUI
 import StrandDesign
-import StrandAnalytics
 import WhoopStore
 
 // MARK: - Ajustes (the Settings tab root) — FER-337
@@ -22,19 +21,13 @@ import WhoopStore
 // Explore · Compare · Workouts are NOT here: they already open from Cuerpo's footer; the old «Más»
 // duplicate is gone.
 
-/// Theme wrapper: drives `\.instrumentoTheme` by the hour (like Today / Cuerpo) so Ajustes warms with
-/// the real sun, then hands to `AjustesLanding`, which reads the resolved theme from the environment.
+/// Theme wrapper: anchors `\.instrumentoTheme` to the single warm day paper (`.base`), then hands to
+/// `AjustesLanding`, which reads the resolved theme from the environment. (FER-398 retired the
+/// by-the-hour tint; Ajustes no longer changes colour with the clock.)
 struct AjustesView: View {
     var body: some View {
         AjustesLanding()
-            .instrumentoThemeByHour(solar: Self.solarWindow())
-    }
-
-    /// Sunrise/sunset for today, GPS- and permission-free (same `SolarClock` source Today/Cuerpo use).
-    /// `nil` in polar cases falls back to fixed hours.
-    private static func solarWindow() -> SolarWindow? {
-        guard let w = SolarClock.sunWindow(on: Date(), in: .current) else { return nil }
-        return SolarWindow(sunrise: w.sunrise, sunset: w.sunset)
+            .instrumentoTheme(.base)
     }
 }
 

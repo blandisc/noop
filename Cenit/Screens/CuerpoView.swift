@@ -31,19 +31,13 @@ import Foundation
 // on-device computed scores live in daily-metrics under `my-whoop-noop`, so `series("my-whoop")` is
 // empty for a BLE user — `displayDays` resolves for both import and strap users (FER-149).
 
-/// Theme wrapper: drives `\.instrumentoTheme` by the hour (like Today) so the landing warms with the
-/// real sun, then hands off to `CuerpoLanding`, which reads the resolved theme from the environment.
+/// Theme wrapper: anchors `\.instrumentoTheme` to the single warm day paper (`.base`), then hands off
+/// to `CuerpoLanding`, which reads the resolved theme from the environment. (FER-398 retired the
+/// by-the-hour tint; the app no longer changes colour with the clock.)
 struct CuerpoView: View {
     var body: some View {
         CuerpoLanding()
-            .instrumentoThemeByHour(solar: Self.solarWindow())
-    }
-
-    /// Sunrise/sunset for today, GPS- and permission-free (same `SolarClock` source Today uses), so
-    /// the paper tracks the sun. `nil` in polar cases falls back to fixed hours.
-    private static func solarWindow() -> SolarWindow? {
-        guard let w = SolarClock.sunWindow(on: Date(), in: .current) else { return nil }
-        return SolarWindow(sunrise: w.sunrise, sunset: w.sunset)
+            .instrumentoTheme(.base)
     }
 }
 

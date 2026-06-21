@@ -7,10 +7,10 @@ import SwiftUI
 // replaces the literal sun glyph (dropped as generic).
 //
 // It speaks the language (see Instrumento.swift):
-//   • Reads the active theme from `\.instrumentoTheme`, so the by-the-hour engine
-//     (FER-132) recolors the whole dial for free — the ring warms from day to dusk
-//     to night, and its colored chrome rides the same per-hour data tokens (so the
-//     hue quiets and darkens into the night anchor with the rest of the screen).
+//   • Reads the active theme from `\.instrumentoTheme` — now always `InstrumentoTheme.base`
+//     (FER-398 retired the by-the-hour engine), so the dial draws in the single warm day
+//     palette at every hour. The TIME still shows in the geometry: the now-dot's position,
+//     the day arc, and the sleep band all track the real clock — that's the diurnal datum.
 //   • COLOR IN THE CHROME, AS DIURNAL CONTEXT (FER-165). The face carries hue to
 //     read like the «A color» app icon: the day arc is `dataStrain` amber, the
 //     sleep band `dataSleep` indigo, the now-dot `dataRecovery` green, the noon
@@ -436,7 +436,7 @@ public struct DiurnalDial: View {
     let bed = SleepWindow(bedtime: 23.5, wake: 7.25)
 
     func panel(_ label: String, _ date: Date, solar: SolarWindow?) -> some View {
-        let theme = InstrumentoThemeEngine.theme(at: date, calendar: utc(), solar: solar)
+        let theme = InstrumentoTheme.base
         return VStack(spacing: 10) {
             DiurnalDial(now: date, calendar: utc(), solar: solar, sleep: bed, diameter: 150)
             Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
@@ -473,7 +473,7 @@ public struct DiurnalDial: View {
     let date = utc().date(from: DateComponents(year: 2026, month: 6, day: 16, hour: 14))!
     let sun = SolarWindow(sunrise: 6.2, sunset: 19.8)
     let bed = SleepWindow(bedtime: 23.5, wake: 7.25)
-    let theme = InstrumentoThemeEngine.theme(at: date, calendar: utc(), solar: sun)
+    let theme = InstrumentoTheme.base
 
     func panel(_ label: String, armProgress: Double = 0, syncing: Bool = false) -> some View {
         VStack(spacing: 10) {

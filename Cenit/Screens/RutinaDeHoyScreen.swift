@@ -16,11 +16,10 @@ import StrandTraining
 struct RutinaDeHoyScreen: View {
     /// Which routine to show; nil = today's pick (the most recent), used by DEBUG screenshot-nav.
     var routineId: String?
-    var solar: SolarWindow?
 
     var body: some View {
         RutinaDeHoyContent(routineId: routineId)
-            .instrumentoThemeByHour(solar: solar)
+            .instrumentoTheme(.base)
     }
 }
 

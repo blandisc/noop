@@ -514,26 +514,31 @@ the opt-in, on-device behaviours (HR smoothing, illness/strain early-warning, st
 haptic coaching, double-tap actions, wrist-wear automation, smart alarm) — all default-off and all
 computed locally.
 
-### The «Instrumento diurno» by-the-hour theme engine
+### The «Instrumento diurno» theme (single warm day paper)
 
 `StrandDesign` carries a second, light-mode visual language («Instrumento diurno», warm paper) whose
-`InstrumentoTheme` role struct is injected through the `\.instrumentoTheme` Environment key (default
-`.base`). `InstrumentoThemeEngine` (FER-132) varies that theme by the device clock: it interpolates
-all seventeen roles between four anchors (dawn / day / dusk / night, `day == .base`) in the perceptual
-**OKLab** space (Ottosson 2020), so adjacent minutes drift cleanly instead of dimming through sRGB.
-`InstrumentoThemeEngine.theme(at:calendar:solar:)` is a **pure, deterministic function** (the clock is
-passed in, never read internally); a `@MainActor InstrumentoThemeDriver` recomputes it on a 60-second
-timer and on `scenePhase == .active`, and `View.instrumentoThemeByHour(solar:)` overrides
-`\.instrumentoTheme` app-wide so every descendant (`ScreenScaffold`, the state views, future re-skinned
-screens) recolors by time of day for free.
+`InstrumentoTheme` role struct is injected through the `\.instrumentoTheme` Environment key. Screens
+anchor it to the single day paper, `InstrumentoTheme.base`, via `.instrumentoTheme(.base)` (which also
+sets `\.instrumentoFlat`, so shared chart components drop the legacy dark-system glow on paper). The
+theme does **not** change with the clock.
 
-Two invariants hold the design together. **AA at every hour:** the night anchor is a *dimmed warm
-parchment*, never an inverted dark mode — keeping ink the dark pole at every anchor stops the
-interpolation from crossing a point where text and background share luminance (contrast 1:1), so every
-text/background pair clears WCAG AA across the whole 24-hour sweep (asserted minute-by-minute in
-`InstrumentoThemeEngineTests`). Data accents cover recovery, strain, and five per-metric hues (sleep, HRV, heart, SpO₂, steps; FER-147); the night anchor was darkened to a greyer parchment (`#A39C8F`), with ink and accents darkened in step so every pair still clears AA on the dimmer paper. **Package purity:** sunrise/sunset (`StrandAnalytics.SolarClock`,
-FER-133) is consumed by **injection** of a plain `SolarWindow` value, never imported — `StrandDesign`
-remains the dependency-free leaf of the package graph, and the engine stays 100% offline
+FER-132 originally varied the theme by the device clock — a 60-second `InstrumentoThemeDriver`
+interpolating all seventeen roles between dawn/day/dusk/night anchors in the perceptual **OKLab** space,
+overridden app-wide by `View.instrumentoThemeByHour(solar:)`. **FER-398 retired that engine:** the owner
+found the dimmed night parchment (`#A39C8F`) read as "the brightness dropped" rather than warmth, and
+the design research placed time-of-day colour in *content*, not chrome (and Apple's convention is a
+stable, user-controlled appearance). The app is now a single warm light paper at every hour, on every
+screen — far less machinery (no anchors, no per-minute interpolation, no timer).
+
+What survives in `InstrumentoThemeEngine.swift` is load-bearing for the parts that still encode the day:
+`InstrumentoThemeEngine.localHour(of:calendar:)` and the injected `SolarWindow` feed the «Hoy»
+`DiurnalDial` (its now-dot, day arc and sleep band still track the real clock — time as *datum*, not
+tint), and the pure **OKLab** colour math (Ottosson 2020) backs the paper gradient
+(`paperHi`/`paperLo`/`inkDim`), `DiurnalDial.dayGold`, `ReferenceRange`, and the AA-repairing
+`positiveText`/`negativeText` (the base anchor's hues clear WCAG AA on its paper; pinned in
+`InstrumentoThemeEngineTests` / `FitnessAgeContrastTests`). **Package purity:** sunrise/sunset
+(`StrandAnalytics.SolarClock`, FER-133) is consumed by **injection** of a plain `SolarWindow` value,
+never imported — `StrandDesign` remains the dependency-free leaf of the package graph, 100% offline
 (`Date`/`Calendar` only).
 
 ---
