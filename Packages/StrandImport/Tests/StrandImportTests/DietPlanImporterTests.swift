@@ -125,8 +125,9 @@ final class DietPlanImporterTests: XCTestCase {
     }
 
     func testRejectsUnsupportedCiclo() {
-        assertThrows(#"{ "schema":"noop.diet.v1", "idioma":"es", "ciclo":"semanal", "comidas":[{"opciones":[{"alimentos":["a"]}]}] }"#,
-                     .unsupportedCiclo(found: "semanal"))
+        // diario | semanal are accepted now (FER-431); anything else is rejected.
+        assertThrows(#"{ "schema":"noop.diet.v1", "idioma":"es", "ciclo":"quincenal", "comidas":[{"opciones":[{"alimentos":["a"]}]}] }"#,
+                     .unsupportedCiclo(found: "quincenal"))
     }
 
     func testRejectsNoMeals() {
@@ -151,6 +152,77 @@ final class DietPlanImporterTests: XCTestCase {
         // Negative value.
         assertThrows(#"{ "schema":"noop.diet.v1", "idioma":"es", "objetivos_diarios":{"kcal":-5}, "comidas":[{"id":"d","opciones":[{"alimentos":["a"]}]}] }"#,
                      .invalidDailyTargets)
+    }
+
+    // MARK: - Weekly cycle (FER-431)
+
+    private let weeklyES = """
+    { "schema":"noop.diet.v1", "idioma":"es", "nombre":"Semana", "ciclo":"semanal",
+      "comidas":[
+        { "id":"desayuno", "nombre":"Desayuno", "opciones":[{"alimentos":["avena"]}], "dias":[1,2,3,4,5,6,7] },
+        { "id":"comida-lmv", "nombre":"Comida", "opciones":[{"alimentos":["pollo"]}], "dias":[1,3,5] },
+        { "id":"cena-dom", "nombre":"Cena", "opciones":[{"alimentos":["sopa"]}], "dias":[7] }
+      ] }
+    """
+
+    func testSemanalParsesAndFilters() throws {
+        let plan = try importer.parse(text: weeklyES)
+        XCTAssertEqual(plan.cycle, .semanal)
+        XCTAssertEqual(plan.meals(forISOWeekday: 1).map(\.id), ["desayuno", "comida-lmv"])  // lunes
+        XCTAssertEqual(plan.meals(forISOWeekday: 2).map(\.id), ["desayuno"])                 // martes
+        XCTAssertEqual(plan.meals(forISOWeekday: 7).map(\.id), ["desayuno", "cena-dom"])     // domingo
+    }
+
+    func testDiarioMealsApplyEveryDay() throws {
+        let plan = try importer.parse(text: validES)   // diario, sin dias
+        for iso in 1...7 { XCTAssertEqual(plan.meals(forISOWeekday: iso).count, plan.meals.count) }
+        XCTAssertTrue(plan.meals.allSatisfy { $0.days == nil })
+    }
+
+    func testCalendarToISOWeekdayBridge() {
+        // Apple Calendar weekday (1=Sun…7=Sat) → ISO (1=Mon…7=Sun).
+        XCTAssertEqual(DietWeekday.isoWeekday(forCalendarWeekday: 1), 7)   // domingo
+        XCTAssertEqual(DietWeekday.isoWeekday(forCalendarWeekday: 2), 1)   // lunes
+        XCTAssertEqual(DietWeekday.isoWeekday(forCalendarWeekday: 7), 6)   // sábado
+        // And against a real Calendar for a known date: 2026-06-22 is a Monday → ISO 1.
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "America/Mexico_City")!
+        let monday = DateComponents(calendar: cal, year: 2026, month: 6, day: 22).date!
+        XCTAssertEqual(DietWeekday.isoWeekday(forCalendarWeekday: cal.component(.weekday, from: monday)), 1)
+    }
+
+    func testNormalizesDiasSortedDeduped() throws {
+        let json = #"{ "schema":"noop.diet.v1", "idioma":"es", "ciclo":"semanal", "comidas":[{"id":"d","opciones":[{"alimentos":["a"]}],"dias":[5,1,5,3]}] }"#
+        XCTAssertEqual(try importer.parse(text: json).meals.first?.days, [1, 3, 5])
+    }
+
+    func testRejectsInvalidDias() {
+        for bad in ["[0]", "[8]", "[1.5]", "[]", "\"lunes\"", "[true]"] {
+            let json = #"{ "schema":"noop.diet.v1", "idioma":"es", "ciclo":"semanal", "comidas":[{"id":"d","opciones":[{"alimentos":["a"]}],"dias":\#(bad)}] }"#
+            assertThrows(json, .invalidDias(id: "d"))
+        }
+    }
+
+    func testRejectsSemanalWithoutDias() {
+        assertThrows(#"{ "schema":"noop.diet.v1", "idioma":"es", "ciclo":"semanal", "comidas":[{"id":"d","opciones":[{"alimentos":["a"]}]}] }"#,
+                     .semanalWithoutDias)
+    }
+
+    func testDiarioWithDiasIsHarmlessForwardCompat() throws {
+        let json = #"{ "schema":"noop.diet.v1", "idioma":"es", "ciclo":"diario", "comidas":[{"id":"d","opciones":[{"alimentos":["a"]}],"dias":[1,2]}] }"#
+        let plan = try importer.parse(text: json)
+        XCTAssertEqual(plan.cycle, .diario)
+        XCTAssertEqual(plan.meals.first?.days, [1, 2])   // preserved, not rejected
+    }
+
+    func testSemanalRoundTripsThroughStore() async throws {
+        let plan = try importer.parse(text: weeklyES)
+        let row = try importer.makeDietPlanRow(plan, id: "w1", createdAt: 1000)
+        XCTAssertEqual(row.cycle, "semanal")
+        let store = try await WhoopStore.inMemory()
+        try await store.upsertDietPlan(row, deviceId: "dev")
+        let stored = try await store.activeDietPlan(deviceId: "dev")
+        XCTAssertEqual(try importer.parse(text: try XCTUnwrap(stored).payloadJSON), plan)
     }
 
     // MARK: - Round-trip (parse → makeDietPlanRow → store → re-parse == original)

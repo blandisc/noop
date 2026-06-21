@@ -62,11 +62,11 @@ public struct YearHeatStrip: View {
         showsMonthLabels: Bool = true,
         showsScrub: Bool = true,
         tint: @escaping (Double) -> Color = { StrandPalette.recoveryColor($0) },
-        emptyFill: Color = StrandPalette.surfaceInset,
-        emptyStroke: Color = StrandPalette.hairline.opacity(0.6),
-        labelColor: Color = StrandPalette.textTertiary,
+        emptyFill: Color = InstrumentoTheme.base.hairline,
+        emptyStroke: Color = InstrumentoTheme.base.hairline.opacity(0.6),
+        labelColor: Color = InstrumentoTheme.base.inkTertiary,
         onSelect: ((RecoveryDay) -> Void)? = nil,
-        selectionColor: Color = StrandPalette.hairlineStrong,
+        selectionColor: Color = InstrumentoTheme.base.hairlineStrong,
         valueFormat: @escaping (Double) -> String = { "Recovery \(Int($0.rounded()))" },
         valueWord: String = "recovery"
     ) {
@@ -271,7 +271,7 @@ public struct YearHeatStrip: View {
             ZStack(alignment: .topLeading) {
                 // subtle highlight ring on the hovered cell
                 RoundedRectangle(cornerRadius: 3, style: .continuous)
-                    .stroke(StrandPalette.hairlineStrong, lineWidth: 1.5)
+                    .stroke(InstrumentoTheme.base.hairlineStrong, lineWidth: 1.5)
                     .frame(width: cellSize + 3, height: cellSize + 3)
                     .position(center)
                 PositionedTooltip(
@@ -384,12 +384,12 @@ private func sampleYear() -> [RecoveryDay] {
     VStack(alignment: .leading, spacing: 12) {
         Text("Recovery — past year").strandOverline()
         Text("Hover a cell: ring + date, score and recovery-state tooltip.")
-            .font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
+            .font(StrandFont.footnote).foregroundStyle(InstrumentoTheme.base.inkTertiary)
         YearHeatStrip(days: sampleYear())
     }
     .padding(28)
     .frame(width: 900, height: 240)
-    .background(StrandPalette.surfaceBase)
+    .background(InstrumentoTheme.base.paper)
     .preferredColorScheme(.dark)
 }
 #endif

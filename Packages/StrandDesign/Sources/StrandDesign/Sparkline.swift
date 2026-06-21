@@ -35,7 +35,7 @@ public struct Sparkline: View {
         gradient: Gradient = StrandPalette.recoveryGradient,
         range: ClosedRange<Double>? = nil,
         referenceBand: ClosedRange<Double>? = nil,
-        bandColor: Color = StrandPalette.hairlineStrong,
+        bandColor: Color = InstrumentoTheme.base.hairlineStrong,
         lineWidth: CGFloat = 2,
         showsArea: Bool = true,
         showsHead: Bool = true,
@@ -222,8 +222,8 @@ private func sampleHR() -> [Double] {
 #Preview("Sparkline") {
     VStack(alignment: .leading, spacing: 20) {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text("64").font(StrandFont.number(34)).foregroundStyle(StrandPalette.textPrimary)
-            Text("bpm").font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
+            Text("64").font(StrandFont.number(34)).foregroundStyle(InstrumentoTheme.base.ink)
+            Text("bpm").font(StrandFont.caption).foregroundStyle(InstrumentoTheme.base.inkTertiary)
             Spacer()
             Sparkline(
                 values: sampleHR(),
@@ -236,14 +236,14 @@ private func sampleHR() -> [Double] {
             .frame(height: 60)
         Sparkline(values: sampleHR(),
                   referenceBand: ReferenceRange.interquartile(sampleHR()),
-                  bandColor: StrandPalette.hairlineStrong)
+                  bandColor: InstrumentoTheme.base.hairlineStrong)
             .frame(height: 60)
         Text("Hover any sparkline to read the exact sample under the cursor. The third shows the p25–p75 reference band.")
-            .font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
+            .font(StrandFont.footnote).foregroundStyle(InstrumentoTheme.base.inkTertiary)
     }
     .padding(24)
     .frame(width: 380, height: 240)
-    .background(StrandPalette.surfaceRaised)
+    .background(InstrumentoTheme.base.surface)
     .preferredColorScheme(.dark)
 }
 #endif

@@ -48,17 +48,27 @@ enum DietReminderScheduler {
         await cancelAll()
         guard isEnabled, await authorizationStatus() == .authorized else { return }
         let center = UNUserNotificationCenter.current()
-        for (index, slot) in reminderSlots(meals).enumerated() {
-            let content = UNMutableNotificationContent()
-            content.title = slot.title
-            content.body = String(localized: "Did you mark this meal?")
-            content.sound = .default
-            var when = DateComponents()
-            when.hour = slot.hour
-            when.minute = slot.minute
-            let trigger = UNCalendarNotificationTrigger(dateMatching: when, repeats: true)
-            let request = UNNotificationRequest(identifier: "\(prefix)\(index)", content: content, trigger: trigger)
-            try? await center.add(request)
+        var index = 0
+        for meal in meals {
+            guard let raw = meal.suggestedTime, let hm = parseHourMinute(raw) else { continue }
+            let name = meal.name.trimmingCharacters(in: .whitespaces)
+            let title = name.isEmpty ? String(localized: "Diet reminder") : name
+            // A semanal meal fires only on its weekdays; a diario meal (days == nil) fires every day. (FER-431)
+            let calendarWeekdays: [Int?] = meal.days
+                .map { $0.map { Optional(DietWeekday.calendarWeekday(forISOWeekday: $0)) } } ?? [nil]
+            for weekday in calendarWeekdays {
+                let content = UNMutableNotificationContent()
+                content.title = title
+                content.body = String(localized: "Did you mark this meal?")
+                content.sound = .default
+                var when = DateComponents()
+                when.hour = hm.hour
+                when.minute = hm.minute
+                if let weekday { when.weekday = weekday }
+                let trigger = UNCalendarNotificationTrigger(dateMatching: when, repeats: true)
+                try? await center.add(UNNotificationRequest(identifier: "\(prefix)\(index)", content: content, trigger: trigger))
+                index += 1
+            }
         }
     }
 

@@ -48,9 +48,9 @@ public struct NoopCard<Content: View>: View {
         content()
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(StrandPalette.surfaceRaised, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+            .background(InstrumentoTheme.base.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                .strokeBorder(hover ? StrandPalette.hairlineStrong : StrandPalette.hairline, lineWidth: 1))
+                .strokeBorder(hover ? InstrumentoTheme.base.hairlineStrong : InstrumentoTheme.base.hairline, lineWidth: 1))
             .shadow(color: .black.opacity(hover ? 0.25 : 0), radius: 10, y: 4)
             .onHover { hover = $0 }
             .animation(.easeOut(duration: 0.16), value: hover)
@@ -68,11 +68,11 @@ public struct SectionHeader: View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 2) {
                 if let overline { Text(overline).strandOverline() }
-                Text(title).font(StrandFont.title2).foregroundStyle(StrandPalette.textPrimary)
+                Text(title).font(StrandFont.title2).foregroundStyle(InstrumentoTheme.base.ink)
             }
             Spacer()
             if let trailing {
-                Text(trailing).font(StrandFont.footnote).foregroundStyle(StrandPalette.textSecondary)
+                Text(trailing).font(StrandFont.footnote).foregroundStyle(InstrumentoTheme.base.inkSecondary)
             }
         }
     }
@@ -83,15 +83,15 @@ public struct SectionHeader: View {
 public struct StatTile: View {
     let label: LocalizedStringKey, value: String
     var caption: String? = nil
-    var accent: Color = StrandPalette.textPrimary
+    var accent: Color = InstrumentoTheme.base.ink
     var delta: String? = nil
-    var deltaColor: Color = StrandPalette.textTertiary
+    var deltaColor: Color = InstrumentoTheme.base.inkTertiary
     var sparkline: [Double]? = nil
     var sparkColor: Color = StrandPalette.accent
 
     public init(label: LocalizedStringKey, value: String, caption: String? = nil,
-                accent: Color = StrandPalette.textPrimary, delta: String? = nil,
-                deltaColor: Color = StrandPalette.textTertiary,
+                accent: Color = InstrumentoTheme.base.ink, delta: String? = nil,
+                deltaColor: Color = InstrumentoTheme.base.inkTertiary,
                 sparkline: [Double]? = nil, sparkColor: Color = StrandPalette.accent) {
         self.label = label; self.value = value; self.caption = caption; self.accent = accent
         self.delta = delta; self.deltaColor = deltaColor; self.sparkline = sparkline; self.sparkColor = sparkColor
@@ -112,7 +112,7 @@ public struct StatTile: View {
                     Sparkline(values: sparkline).frame(height: 22).padding(.top, 4)
                 }
                 HStack(spacing: 6) {
-                    if let caption { Text(caption).font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary).lineLimit(1) }
+                    if let caption { Text(caption).font(StrandFont.footnote).foregroundStyle(InstrumentoTheme.base.inkTertiary).lineLimit(1) }
                     Spacer(minLength: 0)
                     if let delta { Text(delta).font(StrandFont.captionNumber).foregroundStyle(deltaColor) }
                 }
@@ -152,16 +152,16 @@ public struct ChartCard<ChartBody: View, Footer: View>: View {
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(title).strandOverline()
-                        if let subtitle { Text(subtitle).font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary) }
+                        if let subtitle { Text(subtitle).font(StrandFont.footnote).foregroundStyle(InstrumentoTheme.base.inkTertiary) }
                     }
                     Spacer()
                     if let badge { badge }
-                    if let trailing { Text(trailing).font(StrandFont.bodyNumber).foregroundStyle(StrandPalette.textPrimary) }
+                    if let trailing { Text(trailing).font(StrandFont.bodyNumber).foregroundStyle(InstrumentoTheme.base.ink) }
                 }
                 chart().frame(height: height).clipped()  // contain any mark overshoot to the plot frame so it never bleeds onto the footer
                 let f = footer()
                 if !(f is EmptyView) {
-                    Divider().overlay(StrandPalette.hairline)
+                    Divider().overlay(InstrumentoTheme.base.hairline)
                     f
                 }
             }
@@ -177,8 +177,8 @@ public struct ChartFooter: View {
         HStack(spacing: 0) {
             ForEach(Array(items.enumerated()), id: \.offset) { _, it in
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(it.0).textCase(.uppercase).font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
-                    Text(it.1).font(StrandFont.captionNumber).foregroundStyle(StrandPalette.textSecondary)
+                    Text(it.0).textCase(.uppercase).font(StrandFont.footnote).foregroundStyle(InstrumentoTheme.base.inkTertiary)
+                    Text(it.1).font(StrandFont.captionNumber).foregroundStyle(InstrumentoTheme.base.inkSecondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -229,15 +229,15 @@ public struct SegmentedPillControl<T: Hashable>: View {
     // Legacy (theme == nil) keeps the exact dark-palette values; the Instrumento variant maps to
     // paper-friendly tokens — active = subtle ink tint, never the bright accent.
     private func segmentText(_ sel: Bool) -> Color {
-        guard let theme else { return sel ? StrandPalette.surfaceBase : StrandPalette.textSecondary }
+        guard let theme else { return sel ? InstrumentoTheme.base.paper : InstrumentoTheme.base.inkSecondary }
         return sel ? theme.ink : theme.inkSecondary
     }
     private func segmentFill(_ sel: Bool) -> Color {
         guard let theme else { return sel ? StrandPalette.accent : Color.clear }
         return sel ? theme.ink.opacity(0.08) : Color.clear
     }
-    private var trackFill: Color { theme?.surface ?? StrandPalette.surfaceInset }
-    private var trackStroke: Color { theme?.hairlineStrong ?? StrandPalette.hairline }
+    private var trackFill: Color { theme?.surface ?? InstrumentoTheme.base.hairline }
+    private var trackStroke: Color { theme?.hairlineStrong ?? InstrumentoTheme.base.hairline }
 }
 
 // MARK: - Badges

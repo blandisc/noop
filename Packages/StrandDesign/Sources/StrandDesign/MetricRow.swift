@@ -33,16 +33,16 @@ public struct MetricRow: View {
     var chevronColor: Color
 
     public init(label: LocalizedStringKey, value: String, unit: String? = nil,
-                valueColor: Color = StrandPalette.textPrimary,
-                labelColor: Color = StrandPalette.textSecondary,
-                unitColor: Color = StrandPalette.textTertiary,
+                valueColor: Color = InstrumentoTheme.base.ink,
+                labelColor: Color = InstrumentoTheme.base.inkSecondary,
+                unitColor: Color = InstrumentoTheme.base.inkTertiary,
                 flag: LocalizedStringKey? = nil, flagColor: Color = StrandPalette.statusWarning,
-                sparkline: [Double]? = nil, sparkColor: Color = StrandPalette.textSecondary,
+                sparkline: [Double]? = nil, sparkColor: Color = InstrumentoTheme.base.inkSecondary,
                 referenceBand: ClosedRange<Double>? = nil,
-                bandColor: Color = StrandPalette.hairlineStrong,
+                bandColor: Color = InstrumentoTheme.base.hairlineStrong,
                 isPlaceholder: Bool = false,
                 showsChevron: Bool = false,
-                chevronColor: Color = StrandPalette.textTertiary) {
+                chevronColor: Color = InstrumentoTheme.base.inkTertiary) {
         self.label = label
         self.value = value
         self.unit = unit
@@ -85,7 +85,7 @@ public struct MetricRow: View {
                               lineWidth: 2.0, showsArea: false, showsHead: false, showsScrub: false)
                 } else if isPlaceholder {
                     RoundedRectangle(cornerRadius: 3)
-                        .fill(StrandPalette.textPrimary.opacity(0.06))
+                        .fill(InstrumentoTheme.base.ink.opacity(0.06))
                         .frame(height: 8)
                 }
             }
@@ -164,17 +164,17 @@ public struct InlineFlagChip: View {
         MetricRow(label: "Day Strain", value: "8.5",
                   sparkline: [6, 9, 7, 11, 8, 10, 8.5], sparkColor: StrandPalette.strain066,
                   showsChevron: true)
-        Divider().overlay(StrandPalette.hairline)
+        Divider().overlay(InstrumentoTheme.base.hairline)
         MetricRow(label: "HRV", value: "41", unit: "ms", valueColor: StrandPalette.metricPurple,
                   flag: "Low conf", sparkline: [58, 55, 52, 49, 46, 43, 41], sparkColor: StrandPalette.statusWarning,
                   showsChevron: true)
-        Divider().overlay(StrandPalette.hairline)
+        Divider().overlay(InstrumentoTheme.base.hairline)
         // No data: chevron still shows — the detail exists even without a reading today.
         MetricRow(label: "Blood Oxygen", value: "—", isPlaceholder: true, showsChevron: true)
     }
     .padding(.horizontal, 18)
     .frame(width: 340, height: 220)
-    .background(StrandPalette.surfaceBase)
+    .background(InstrumentoTheme.base.paper)
     .preferredColorScheme(.dark)
 }
 
@@ -185,10 +185,10 @@ public struct InlineFlagChip: View {
                   sparkline: [6, 9, 7, 11, 8, 10, 8.5], sparkColor: StrandPalette.strain066,
                   showsChevron: true)
     }
-    .buttonStyle(MetricRowButtonStyle(pressedFill: StrandPalette.textPrimary.opacity(0.06)))
+    .buttonStyle(MetricRowButtonStyle(pressedFill: InstrumentoTheme.base.ink.opacity(0.06)))
     .padding(.horizontal, 18)
     .frame(width: 340, height: 80)
-    .background(StrandPalette.surfaceBase)
+    .background(InstrumentoTheme.base.paper)
     .preferredColorScheme(.dark)
 }
 #endif
