@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La hoja «Efectos de tus hábitos» abre a la medida / The "Effects of your habits" sheet opens to fit.**
+  **ES** — Al abrir **«Efectos de tus hábitos»** (desde «Lo que funciona en ti» en Coach), la hoja ya no sube hasta cubrir toda la pantalla: abre **justo a la altura que su contenido necesita**. Si tienes muchos hábitos, la puedes arrastrar hacia arriba para verlos todos. Solo cambia cómo se presenta.
+  **EN** — When you open **"Effects of your habits"** (from "What works for you" in Coach), the sheet no longer jumps to full screen: it opens **just as tall as its content needs**. With many habits, you can drag it up to see them all. Only how it's presented changes.
+  ([Cenit/Screens/BucleSheets.swift](Cenit/Screens/BucleSheets.swift))
 - **Los selectores claros se ven y se tocan mejor / The light selectors are easier to read and tap.**
   **ES** — Los selectores de pestaña en papel (el de **«Efectos de tus hábitos»** —HRV · Sueño · FC en reposo— y el de periodos del **Detalle de métrica** —S · M · 3M · 6M · 1A · Todo—) se rediseñaron al estilo nativo de iOS: texto un poco más grande y la opción elegida resalta como una pastilla elevada y clara sobre una pista hundida, en vez del tinte casi invisible de antes. Se lee y se distingue de un vistazo.
   **EN** — The light, paper segmented selectors (the **"Effects of your habits"** one —HRV · Sleep · Resting HR— and the **Metric detail** period one —W · M · 3M · 6M · 1Y · All—) were redesigned in the native iOS style: slightly larger text and the selected option now stands out as a raised, light thumb on a recessed track, instead of the previous near-invisible tint. It reads and stands apart at a glance.

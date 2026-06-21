@@ -235,12 +235,20 @@ struct HallazgosListSheet: View {
 
 // MARK: Efectos de tus hábitos (explorer)
 
+/// Carries the «Efectos» content's measured natural height up so its detent fits it exactly (FER-438).
+private struct EfectosSheetHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+
 struct EfectosExplorerSheet: View {
     let behaviors: [Insight]
     let theme: InstrumentoTheme
     let onPick: (Insight) -> Void
 
     @State private var metric: String = "Recuperación"
+    /// Natural height of the content, so the sheet opens just as tall as it needs (FER-438).
+    @State private var contentHeight: CGFloat = 0
 
     /// Outcome metrics present, in the engine's canonical order (`InsightEngine.Outcome.allCases`,
     /// FER-353) so this list can't drift from the typed source.
@@ -290,8 +298,15 @@ struct EfectosExplorerSheet: View {
             }
             .padding(NoopMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .background(GeometryReader { g in
+                Color.clear.preference(key: EfectosSheetHeightKey.self, value: g.size.height)
+            })
         }
         .background(theme.paper.ignoresSafeArea())
+        .onPreferenceChange(EfectosSheetHeightKey.self) { contentHeight = $0 }
+        // Open at the content's natural height (no full-screen for a few rows); «.large» stays for long lists.
+        .presentationDetents(contentHeight > 0 ? [.height(contentHeight), .large] : [.large])
+        .presentationDragIndicator(.visible)
         .onAppear { if let first = metrics.first, !metrics.contains(metric) { metric = first } }
     }
 
