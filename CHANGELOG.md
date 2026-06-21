@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Toca una señal y entiende qué es (y qué es ese «σ») / Tap a signal to understand it (and that "σ").**
+  **ES** — En **Coach**, ahora puedes **tocar** HRV o FC en reposo en «Señales de hoy» y se abre una hoja que te explica, sin tecnicismos: **qué es** esa métrica, **qué significa tu lectura de hoy** y —lo que más confunde— **qué es la unidad «σ»** (mide qué tan lejos estás de **tu propio** promedio de las últimas semanas, no del de otras personas). El número sigue igual en la fila; la explicación vive en el toque. Incluye el método y la nota de que no es diagnóstico médico.
+  **EN** — In **Coach**, you can now **tap** HRV or Resting HR in "Today's signals" and a sheet opens that explains, jargon-free: **what** the metric is, **what today's reading means**, and —the most confusing part— **what the "σ" unit is** (how far you are from **your own** recent average, not other people's). The number stays the same on the row; the explanation lives in the tap. It includes the method and a not-a-medical-diagnosis note.
+  ([Cenit/Screens/BucleView.swift](Cenit/Screens/BucleView.swift), [Cenit/Screens/BucleSheets.swift](Cenit/Screens/BucleSheets.swift))
 - **La hoja «Efectos de tus hábitos» abre a la medida / The "Effects of your habits" sheet opens to fit.**
   **ES** — Al abrir **«Efectos de tus hábitos»** (desde «Lo que funciona en ti» en Coach), la hoja ya no sube hasta cubrir toda la pantalla: abre **justo a la altura que su contenido necesita**. Si tienes muchos hábitos, la puedes arrastrar hacia arriba para verlos todos. Solo cambia cómo se presenta.
   **EN** — When you open **"Effects of your habits"** (from "What works for you" in Coach), the sheet no longer jumps to full screen: it opens **just as tall as its content needs**. With many habits, you can drag it up to see them all. Only how it's presented changes.
