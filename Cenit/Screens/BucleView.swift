@@ -75,6 +75,8 @@ private struct BucleLanding: View {
     @State private var info: BucleInfo? = nil
     /// «Decisión de hoy» explainer — opens on tapping the hero (what to do + why). FER-312.
     @State private var showDecision = false
+    /// A tapped HRV / FC-en-reposo signal — opens its explainer (qué es + qué significa el σ). FER-437.
+    @State private var signalInfo: SignalItem? = nil
 
     // Meta + simulador (FER-311).
     @EnvironmentObject private var goalStore: GoalStore
@@ -187,6 +189,10 @@ private struct BucleLanding: View {
                 DecisionExplainerSheet(readiness: r, recovery: recovery, theme: theme)
             }
         }
+        .sheet(item: $signalInfo) { item in
+            SignalExplainerSheet(signal: item.signal, theme: theme)
+                .instrumentoTheme(theme)
+        }
         .sheet(item: $goalSheet) { kind in
             switch kind {
             case .picker:
@@ -293,7 +299,13 @@ private struct BucleLanding: View {
                             Rectangle().fill(theme.hairline).frame(width: 1)
                                 .padding(.vertical, 2).padding(.horizontal, 13)
                         }
-                        signalCell(s)
+                        if Self.isExplainable(s) {
+                            Button { signalInfo = SignalItem(signal: s) } label: { signalCell(s) }
+                                .buttonStyle(.plain)
+                                .accessibilityHint("Toca para saber qué es \(s.label) y qué significa")
+                        } else {
+                            signalCell(s)
+                        }
                     }
                 }
             }
@@ -318,6 +330,10 @@ private struct BucleLanding: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
+
+    /// HRV and resting-HR are the z-score signals that get a per-signal explainer (FER-437); the
+    /// others (training load) stay non-tappable.
+    private static func isExplainable(_ s: ReadinessEngine.Signal) -> Bool { s.key == "hrv" || s.key == "rhr" }
 
     private func signalFlagColor(_ flag: ReadinessEngine.Flag) -> Color {
         switch flag {
@@ -1028,5 +1044,11 @@ private struct ExperimentVM {
 private struct InsightItem: Identifiable {
     let id = UUID()
     let insight: Insight
+}
+
+/// Identifiable wrapper so a `ReadinessEngine.Signal` can ride `.sheet(item:)`. FER-437.
+private struct SignalItem: Identifiable {
+    let signal: ReadinessEngine.Signal
+    var id: String { signal.key }
 }
 #endif

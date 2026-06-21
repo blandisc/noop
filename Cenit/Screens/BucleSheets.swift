@@ -902,4 +902,118 @@ struct DecisionExplainerSheet: View {
         }
     }
 }
+
+// MARK: - Señal explainer (FER-437)
+
+/// Carries the «Señal» content's measured natural height so its detent fits it exactly (FER-437).
+private struct SignalSheetHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+
+/// A per-signal explainer opened from «Señales de hoy» (HRV / FC en reposo). The σ stays on the row;
+/// this sheet answers, in plain es-MX, three things users miss: what the metric is, what today's
+/// reading means, and what the «σ» unit even is (how far you are from YOUR own normal). It reads the
+/// engine's already-localized `detail`/`flag`; no clinical claims. (FER-437)
+struct SignalExplainerSheet: View {
+    let signal: ReadinessEngine.Signal
+    let theme: InstrumentoTheme
+    @State private var contentHeight: CGFloat = 0
+
+    private struct Copy { let title: String; let subtitle: String; let queEs: String; let sigma: String; let method: String }
+
+    var body: some View {
+        let c = copy
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Señal de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text(c.title).font(.system(size: 23, weight: .semibold))
+                        .foregroundStyle(theme.ink).fixedSize(horizontal: false, vertical: true)
+                    if !c.subtitle.isEmpty {
+                        Text(c.subtitle).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    }
+                }
+
+                // Today's reading — the σ + flag dot + the engine's own plain one-liner.
+                HStack(alignment: .top, spacing: 9) {
+                    Circle().fill(flagColor).frame(width: 9, height: 9).padding(.top, 5)
+                    VStack(alignment: .leading, spacing: 3) {
+                        if let v = signal.value {
+                            Text(v).font(StrandFont.mono(15, weight: .semibold)).foregroundStyle(theme.ink)
+                        }
+                        Text(signal.value == nil ? "Aún no hay lectura de hoy." : signal.detail)
+                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding(.vertical, 11).padding(.horizontal, 13)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(theme.hairline, lineWidth: 1))
+
+                section("Qué es", c.queEs, soft: false)
+                section("Qué significa el número", c.sigma, soft: true)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Rectangle().fill(theme.hairline).frame(height: 0.5)
+                    Text(c.method).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(NoopMetrics.screenPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(GeometryReader { g in
+                Color.clear.preference(key: SignalSheetHeightKey.self, value: g.size.height)
+            })
+        }
+        .background(theme.paper.ignoresSafeArea())
+        .onPreferenceChange(SignalSheetHeightKey.self) { contentHeight = $0 }
+        .presentationDetents(contentHeight > 0 ? [.height(contentHeight), .large] : [.large])
+        .presentationDragIndicator(.visible)
+    }
+
+    private func section(_ title: String, _ body: String, soft: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(title).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(body).font(StrandFont.subhead).foregroundStyle(soft ? theme.inkSecondary : theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var flagColor: Color {
+        switch signal.flag {
+        case .good:    return theme.dataRecovery
+        case .neutral: return theme.inkTertiary
+        case .watch:   return theme.warning
+        case .bad:     return theme.critical
+        }
+    }
+
+    private var copy: Copy {
+        switch signal.key {
+        case "hrv":
+            return Copy(
+                title: "Variabilidad cardiaca",
+                subtitle: "HRV · variabilidad de la frecuencia cardiaca",
+                queEs: "Las pequeñas diferencias de tiempo entre un latido y el siguiente, medidas mientras duermes. Suele ser más alta cuando estás recuperado y tu sistema nervioso está en calma; más baja con fatiga, estrés o algo gestándose.",
+                sigma: "El número en σ («sigma») no te compara con otras personas: dice qué tan lejos está tu lectura de hoy de tu propio promedio de las últimas semanas. 0 = en tu normal · +1σ = bastante por encima · −1σ = bastante por debajo. Mientras más grande, más se sale de lo habitual para ti.",
+                method: "Cénit usa el RMSSD de tu sueño contra una línea base personal robusta. Método: Task Force (1996). No es diagnóstico médico.")
+        case "rhr":
+            return Copy(
+                title: "Frecuencia cardiaca en reposo",
+                subtitle: "FC en reposo",
+                queEs: "Qué tan lento late tu corazón en tu sueño más profundo. Más baja suele indicar mejor recuperación y condición; una subida puede acompañar fatiga, estrés, calor o el inicio de algo.",
+                sigma: "Mismo principio: qué tan lejos estás de tu propio promedio reciente, no del de otras personas. El número va en σ («sigma»); en la FC en reposo, más bajo suele ser mejor, y el punto de color te dice si la lectura juega a tu favor.",
+                method: "Se compara tu FC en reposo de anoche contra tu línea base personal de las últimas semanas. No es diagnóstico médico.")
+        default:
+            return Copy(
+                title: signal.label, subtitle: "",
+                queEs: signal.detail,
+                sigma: "El número va en σ («sigma»): dice qué tan lejos está tu lectura de hoy de tu propio promedio reciente, no del de otras personas.",
+                method: "Se compara contra tu línea base personal de las últimas semanas. No es diagnóstico médico.")
+        }
+    }
+}
 #endif
