@@ -14,12 +14,12 @@ import UIKit
 //
 // Flow (additive, ~6 screens):
 //   welcome        — Cénit + "tus datos, nada en la nube" (one honest line)
-//   appleHealth    — connect the base (with "Ahora no"); 5 states
+//   appleHealth    — connect the base (with "Not now"); 5 states
 //   whoopQuestion  — ¿tienes un WHOOP?  Sí → pairing · No → straight to profile
 //   prepare/scan/bonded — pairing (only on the "Sí" branch)
 //   profile        — age / sex / weight / height
 //   importData     — optional history import
-//   done           — "Entrar a Cénit" → onFinished()
+//   done           — "Enter Cénit" → onFinished()
 //
 // Surface is `InstrumentoTheme.base.paper`; color appears ONLY on a real measured
 // state (verdict-green for "connected", critical-red for "denied"). CTAs are the
@@ -98,13 +98,13 @@ public struct OnboardingWizard: View {
                 Button(action: back) {
                     HStack(spacing: 6) {
                         Image(systemName: "chevron.left")
-                        Text("Atrás")
+                        Text("Back")
                     }
                     .font(StrandFont.subhead)
                     .foregroundStyle(InstrumentoTheme.base.inkSecondary)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Atrás")
+                .accessibilityLabel("Back")
             }
             Spacer()
         }
@@ -194,17 +194,17 @@ private struct WelcomeStep: View {
             Text("Cénit")
                 .instrumentoHero(56)
                 .foregroundStyle(theme.ink)
-            Text("Tus datos, nada en la nube.")
+            Text("Your data, none of the cloud.")
                 .font(StrandFont.title2)
                 .foregroundStyle(theme.inkSecondary)
                 .padding(.top, NoopMetrics.space1)
-            Text("Cénit lee tu recuperación, sueño y esfuerzo y los guarda solo en tu iPhone. Sin cuenta, sin servidores. Dale unos días de datos y empezarás a ver tus patrones.")
+            Text("Cénit reads your recovery, sleep and strain and keeps them only on your iPhone. No account, no servers. Give it a few days of data and you'll start to see your patterns.")
                 .font(StrandFont.body)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, NoopMetrics.sectionGap)
             Spacer(minLength: NoopMetrics.sectionGap)
-            InkButton("Comenzar", action: onContinue)
+            InkButton("Get started", action: onContinue)
         }
     }
 }
@@ -231,19 +231,19 @@ private struct AppleHealthStep: View {
         .onAppear { if health.auth == .unavailable { onContinue() } }
     }
 
-    // Initial priming + the request, in flight ("Conectando…").
+    // Initial priming + the request, in flight ("Connecting…").
     private var priming: some View {
         StepShell {
-            Overline(text: "Paso 1 · La base")
+            Overline(text: "Step 1 · The base")
             Text("Conecta Apple Health")
                 .font(StrandFont.title1)
                 .foregroundStyle(theme.ink)
                 .padding(.top, NoopMetrics.space2)
-            Text("Es la base de tus datos en Cénit.")
+            Text("It's the base of your data in Cénit.")
                 .font(StrandFont.body)
                 .foregroundStyle(theme.inkSecondary)
                 .padding(.top, NoopMetrics.space2)
-            Text("Cénit lee tu sueño, pasos, entrenamientos, peso y frecuencia cardiaca desde Apple Health para darte una lectura honesta de tu cuerpo.")
+            Text("Cénit reads your sleep, steps, workouts, weight and heart rate from Apple Health to give you an honest read of your body.")
                 .font(StrandFont.body)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -256,7 +256,7 @@ private struct AppleHealthStep: View {
                     .font(.system(size: 13))
                     .foregroundStyle(theme.inkTertiary)
                     .accessibilityHidden(true)
-                Text("Todo se queda en tu iPhone. Cénit no sube nada a ningún servidor.")
+                Text("Everything stays on your iPhone. Cénit doesn't upload anything to any server.")
                     .font(StrandFont.subhead)
                     .foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -264,7 +264,7 @@ private struct AppleHealthStep: View {
             .padding(.top, NoopMetrics.gap)
 
             Spacer(minLength: NoopMetrics.sectionGap)
-            InkButton(requesting ? "Conectando…" : "Conectar Apple Health") {
+            InkButton(requesting ? "Connecting…" : "Conectar Apple Health") {
                 guard !requesting else { return }
                 requesting = true
                 Task {
@@ -274,7 +274,7 @@ private struct AppleHealthStep: View {
                 }
             }
             .disabled(requesting)
-            OutlineButton("Ahora no", action: onContinue)
+            OutlineButton("Not now", action: onContinue)
                 .opacity(requesting ? 0.45 : 1)
                 .disabled(requesting)
         }
@@ -284,30 +284,30 @@ private struct AppleHealthStep: View {
         CenteredState(
             glyph: "checkmark.circle.fill",
             glyphColor: theme.verdict,
-            title: "Apple Health conectado.",
+            title: "Apple Health connected.",
             titleColor: theme.verdict,
-            message: "Ya tienes la base. Sigamos."
+            message: "You've got the base. Let's keep going."
         ) {
-            InkButton("Continuar", action: onContinue)
+            InkButton("Continue", action: onContinue)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Apple Health conectado")
+        .accessibilityLabel("Apple Health connected")
     }
 
     private var denied: some View {
         CenteredState(
             glyph: "exclamationmark.circle",
             glyphColor: theme.critical,
-            title: "Acceso desactivado",
+            title: "Access turned off",
             titleColor: theme.ink,
-            message: "Dejaste el acceso a Apple Health desactivado. Puedes activarlo cuando quieras desde Ajustes. Cénit funciona sin él, con menos detalle."
+            message: "You left Apple Health access turned off. You can turn it on anytime in Settings. Cénit works without it, with less detail."
         ) {
-            OutlineButton("Abrir Ajustes") {
+            OutlineButton("Open Settings") {
                 #if canImport(UIKit)
                 if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
                 #endif
             }
-            OutlineButton("Continuar de todos modos", action: onContinue)
+            OutlineButton("Continue anyway", action: onContinue)
         }
     }
 
@@ -315,11 +315,11 @@ private struct AppleHealthStep: View {
         CenteredState(
             glyph: "heart.slash",
             glyphColor: theme.inkTertiary,
-            title: "Apple Health no está disponible en este iPhone.",
+            title: "Apple Health isn't available on this iPhone.",
             titleColor: theme.ink,
             message: nil
         ) {
-            InkButton("Continuar", action: onContinue)
+            InkButton("Continue", action: onContinue)
         }
     }
 }
@@ -370,20 +370,20 @@ private struct WhoopQuestionStep: View {
     @Environment(\.instrumentoTheme) private var theme
     var body: some View {
         StepShell {
-            Overline(text: "Paso 2 · Afina la señal")
-            Text("¿Tienes una banda WHOOP?")
+            Overline(text: "Step 2 · Sharpen the signal")
+            Text("Do you have a WHOOP strap?")
                 .font(StrandFont.title1)
                 .foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, NoopMetrics.space2)
-            Text("Se monta sobre Apple Health y afina la señal: HRV continuo y recuperación de grado banda.")
+            Text("It sits on top of Apple Health and sharpens the signal: continuous HRV and strap-grade recovery.")
                 .font(StrandFont.body)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, NoopMetrics.gap)
             Spacer(minLength: NoopMetrics.sectionGap)
-            InkButton("Sí, tengo una WHOOP") { onChoose(true) }
-            OutlineButton("No tengo una") { onChoose(false) }
+            InkButton("Yes, I have a WHOOP") { onChoose(true) }
+            OutlineButton("I don't have one") { onChoose(false) }
         }
     }
 }
@@ -395,20 +395,20 @@ private struct PrepareStep: View {
     @Environment(\.instrumentoTheme) private var theme
     var body: some View {
         StepShell {
-            Overline(text: "Paso 3 · Tu banda")
-            Text("Prepara tu banda")
+            Overline(text: "Step 3 · Your strap")
+            Text("Get your strap ready")
                 .font(StrandFont.title1)
                 .foregroundStyle(theme.ink)
                 .padding(.top, NoopMetrics.space2)
-            Text("Un momento antes de conectar.")
+            Text("A moment before connecting.")
                 .font(StrandFont.body)
                 .foregroundStyle(theme.inkSecondary)
                 .padding(.top, NoopMetrics.space2)
 
             VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-                Checkline("Póntela ajustada — el sensor necesita contacto con la piel.")
-                Checkline("Asegúrate de que tenga carga.")
-                Checkline("Mantén el Bluetooth de tu iPhone activado.")
+                Checkline("Wear it snug — the sensor needs skin contact.")
+                Checkline("Make sure it has charge.")
+                Checkline("Keep your iPhone's Bluetooth on.")
             }
             .padding(.top, NoopMetrics.sectionGap)
 
@@ -419,7 +419,7 @@ private struct PrepareStep: View {
                     .font(.system(size: 13))
                     .foregroundStyle(theme.inkTertiary)
                     .accessibilityHidden(true)
-                Text("En un momento tu iPhone pedirá permiso de Bluetooth. Elige Permitir para que Cénit encuentre tu banda. La conexión es directa: nada pasa por la nube.")
+                Text("In a moment your iPhone will ask for Bluetooth permission. Choose Allow so Cénit can find your strap. The connection is direct: nothing goes through the cloud.")
                     .font(StrandFont.subhead)
                     .foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -427,7 +427,7 @@ private struct PrepareStep: View {
             .padding(.top, NoopMetrics.gap)
 
             Spacer(minLength: NoopMetrics.sectionGap)
-            InkButton("Buscar mi banda", action: onContinue)
+            InkButton("Find my strap", action: onContinue)
         }
     }
 }
@@ -449,8 +449,8 @@ private struct ScanStep: View {
 
     var body: some View {
         StepShell {
-            Overline(text: "Paso 3 · Conectar")
-            Text("Buscando tu banda…")
+            Overline(text: "Step 3 · Connect")
+            Text("Looking for your strap…")
                 .font(StrandFont.title1)
                 .foregroundStyle(theme.ink)
                 .padding(.top, NoopMetrics.space2)
@@ -458,8 +458,8 @@ private struct ScanStep: View {
                 .padding(.top, NoopMetrics.gap)
 
             VStack(alignment: .leading, spacing: NoopMetrics.space2) {
-                Text("¿Cuál banda?").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                Picker("¿Cuál banda?", selection: Binding(
+                Text("Which strap?").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                Picker("Which strap?", selection: Binding(
                     get: { selectedModel },
                     set: { restartScan(for: $0) }
                 )) {
@@ -475,9 +475,9 @@ private struct ScanStep: View {
             if showHelp { reassurance.padding(.top, NoopMetrics.gap) }
 
             Spacer(minLength: NoopMetrics.sectionGap)
-            OutlineButton(scanning ? "Buscando…" : "Buscar de nuevo") { startScan() }
+            OutlineButton(scanning ? "Searching…" : "Search again") { startScan() }
                 .disabled(scanning)
-            OutlineButton("Continuar sin emparejar", action: onContinue)
+            OutlineButton("Continue without pairing", action: onContinue)
         }
         .onAppear(perform: startAutoScanIfNeeded)
         .onDisappear { scanning = false }
@@ -486,32 +486,32 @@ private struct ScanStep: View {
     @ViewBuilder
     private var statusLine: some View {
         if live.bonded {
-            Label("Conectado", systemImage: "checkmark.circle.fill")
+            Label("Connected", systemImage: "checkmark.circle.fill")
                 .font(StrandFont.subhead).foregroundStyle(theme.verdict)
         } else if live.connected {
-            Label("Conectando…", systemImage: "dot.radiowaves.left.and.right")
+            Label("Connecting…", systemImage: "dot.radiowaves.left.and.right")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
         } else if scanning {
-            Label("Buscando…", systemImage: "dot.radiowaves.left.and.right")
+            Label("Searching…", systemImage: "dot.radiowaves.left.and.right")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
         } else {
-            Label("Listo para buscar", systemImage: "magnifyingglass")
+            Label("Ready to search", systemImage: "magnifyingglass")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
         }
     }
 
     private var reassurance: some View {
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-            Text("¿No aparece? Es normal.")
+            Text("Not showing up? That's normal.")
                 .font(StrandFont.headline)
                 .foregroundStyle(theme.ink)
-            Text("Las bandas WHOOP no salen en Ajustes › Bluetooth de tu iPhone — usan un perfil propio que solo apps como Cénit pueden ver. No hay nada que emparejar ahí.")
+            Text("WHOOP straps don't show up in your iPhone's Settings › Bluetooth — they use a custom profile only apps like Cénit can see. There's nothing to pair there.")
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
-            Checkline("Está cargada y puesta — el sensor despierta con la piel.")
-            Checkline("No la tiene tomada la app de WHOOP. Solo un host a la vez: ciérrala o apaga su Bluetooth.")
-            Checkline("Está a menos de un metro de tu iPhone.")
+            Checkline("It's charged and worn — the sensor wakes with skin contact.")
+            Checkline("The WHOOP app isn't holding it. Only one host at a time: close it or turn off its Bluetooth.")
+            Checkline("It's within a metre of your iPhone.")
         }
         .padding(NoopMetrics.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -557,20 +557,20 @@ private struct BondedStep: View {
         CenteredState(
             glyph: "checkmark.circle.fill",
             glyphColor: theme.verdict,
-            title: "Lista. Estás conectado.",
+            title: "Done. You're connected.",
             titleColor: theme.ink,
             message: batteryLine
         ) {
-            InkButton("Continuar", action: onContinue)
+            InkButton("Continue", action: onContinue)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Conectado")
+        .accessibilityLabel("Connected")
     }
     private var batteryLine: LocalizedStringKey {
         if let pct = live.batteryPct {
-            return "Tu banda está conectada · \(Int(pct))% de batería."
+            return "Your strap is connected · \(Int(pct))% battery."
         }
-        return "Tu banda está conectada y lista."
+        return "Your strap is connected and ready."
     }
 }
 
@@ -593,12 +593,12 @@ private struct ProfileStep: View {
 
     var body: some View {
         StepShell {
-            Overline(text: "Sobre ti")
-            Text("Sobre ti")
+            Overline(text: "About you")
+            Text("About you")
                 .font(StrandFont.title1)
                 .foregroundStyle(theme.ink)
                 .padding(.top, NoopMetrics.space2)
-            Text("Para calcular tus zonas de frecuencia cardiaca y tus líneas base.")
+            Text("To compute your heart-rate zones and your baselines.")
                 .font(StrandFont.body)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -606,13 +606,13 @@ private struct ProfileStep: View {
 
             VStack(spacing: NoopMetrics.gap) {
                 Stepper(value: $profile.age, in: 13...100) {
-                    FieldRow(label: "Edad", value: "\(profile.age)")
+                    FieldRow(label: "Age", value: "\(profile.age)")
                 }
                 .tint(theme.inkSecondary)
                 Divider().overlay(theme.hairline)
                 VStack(alignment: .leading, spacing: NoopMetrics.space2) {
-                    Overline(text: "Sexo")
-                    Picker("Sexo", selection: $profile.sex) {
+                    Overline(text: "Sex")
+                    Picker("Sex", selection: $profile.sex) {
                         ForEach(sexes, id: \.0) { key, label in Text(label).tag(key) }
                     }
                     .pickerStyle(.segmented)
@@ -620,12 +620,12 @@ private struct ProfileStep: View {
                 }
                 Divider().overlay(theme.hairline)
                 Stepper(value: $profile.weightKg, in: 30...250, step: 0.5) {
-                    FieldRow(label: "Peso", value: UnitFormatter.massFromKilograms(profile.weightKg, system: unitSystem))
+                    FieldRow(label: "Weight", value: UnitFormatter.massFromKilograms(profile.weightKg, system: unitSystem))
                 }
                 .tint(theme.inkSecondary)
                 Divider().overlay(theme.hairline)
                 Stepper(value: $profile.heightCm, in: 120...230, step: 1) {
-                    FieldRow(label: "Estatura", value: UnitFormatter.heightFromCentimeters(profile.heightCm, system: unitSystem))
+                    FieldRow(label: "Height", value: UnitFormatter.heightFromCentimeters(profile.heightCm, system: unitSystem))
                 }
                 .tint(theme.inkSecondary)
             }
@@ -637,7 +637,7 @@ private struct ProfileStep: View {
             if !fromHealth.isEmpty {
                 HStack(spacing: NoopMetrics.space2) {
                     Image(systemName: "heart.fill").font(.system(size: 11)).foregroundStyle(theme.dataSpO2)
-                    Text("Tomado de Apple Health · editable")
+                    Text("From Apple Health · editable")
                         .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
                 .padding(.top, NoopMetrics.space2)
@@ -646,14 +646,14 @@ private struct ProfileStep: View {
 
             HStack(spacing: NoopMetrics.space2) {
                 Image(systemName: "bolt.heart").foregroundStyle(theme.inkTertiary)
-                Text("Frecuencia cardiaca máxima estimada · \(profile.hrMax) lpm")
+                Text("Estimated max heart rate · \(profile.hrMax) bpm")
                     .font(StrandFont.footnote)
                     .foregroundStyle(theme.inkTertiary)
             }
             .padding(.top, NoopMetrics.gap)
 
             Spacer(minLength: NoopMetrics.sectionGap)
-            InkButton("Continuar", action: onContinue)
+            InkButton("Continue", action: onContinue)
         }
         .task { await autoFill() }
     }
@@ -685,26 +685,26 @@ private struct ImportStep: View {
 
     var body: some View {
         StepShell {
-            Overline(text: "Tu historia")
-            Text("Trae tu historia")
+            Overline(text: "Your history")
+            Text("Bring your history")
                 .font(StrandFont.title1)
                 .foregroundStyle(theme.ink)
                 .padding(.top, NoopMetrics.space2)
-            Text("Opcional. Llena tu panel desde el primer día.")
+            Text("Optional. Fill your dashboard from day one.")
                 .font(StrandFont.body)
                 .foregroundStyle(theme.inkSecondary)
                 .padding(.top, NoopMetrics.space2)
-            Text("Un export de WHOOP rellena recuperación, esfuerzo, sueño y entrenamientos. Un export de Apple Health agrega FC, HRV, sueño, oxígeno, pasos y peso.")
+            Text("A WHOOP export backfills recovery, strain, sleep and workouts. An Apple Health export adds HR, HRV, sleep, blood oxygen, steps and weight.")
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, NoopMetrics.gap)
 
             VStack(spacing: NoopMetrics.gap) {
-                ImportRow(title: model.isImporting(.whoop) ? "Importando…" : "Importar export de WHOOP",
+                ImportRow(title: model.isImporting(.whoop) ? "Importing…" : "Import WHOOP export",
                           systemImage: "tray.and.arrow.down",
                           disabled: model.hasActiveImport) { presentImporter(.whoop) }
-                ImportRow(title: model.isImporting(.appleHealth) ? "Importando…" : "Importar export de Apple Health",
+                ImportRow(title: model.isImporting(.appleHealth) ? "Importing…" : "Import Apple Health export",
                           systemImage: "heart.fill",
                           disabled: model.hasActiveImport) { presentImporter(.appleHealth) }
             }
@@ -732,7 +732,7 @@ private struct ImportStep: View {
             }
 
             Spacer(minLength: NoopMetrics.sectionGap)
-            OutlineButton("Ahora no", action: onContinue)
+            OutlineButton("Not now", action: onContinue)
         }
         .fileImporter(
             isPresented: $showingImporter,
@@ -786,11 +786,11 @@ private struct DoneStep: View {
         CenteredState(
             glyph: "checkmark.seal",
             glyphColor: theme.verdict,
-            title: "Todo listo.",
+            title: "All set.",
             titleColor: theme.ink,
-            message: "Cada noche y cada día se irán tejiendo en una sola lectura de ti. Bienvenido a Cénit."
+            message: "Every night and every day will weave into a single read of you. Welcome to Cénit."
         ) {
-            InkButton("Entrar a Cénit", action: onFinish)
+            InkButton("Enter Cénit", action: onFinish)
         }
     }
 }

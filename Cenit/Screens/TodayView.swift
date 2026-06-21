@@ -909,10 +909,10 @@ struct TodayView: View {
         case .downloading:
             // FER-286: el dial ya gira (FER-221); aquí el copy honesto de que el dato viene en camino.
             VStack(alignment: .center, spacing: NoopMetrics.space2) {
-                Text("Descargando la noche…")
+                Text("Downloading last night…")
                     .font(StrandFont.headline).foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
-                Text("Tus datos de anoche están llegando. La primera sincronización del día puede tardar unos minutos.")
+                Text("Your data from last night is arriving. The first sync of the day can take a few minutes.")
                     .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -948,7 +948,7 @@ struct TodayView: View {
                 }
                 Text(strapSeen
                      ? "Tu base está lista. Usa el strap esta noche y la recuperación, el esfuerzo y el sueño de la mañana aparecen al sincronizar."
-                     : "Conecta Apple Health para empezar. Tu banda WHOOP afina la lectura.")
+                     : "Connect Apple Health to start. Your WHOOP strap sharpens the reading.")
                     .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -994,7 +994,7 @@ struct TodayView: View {
                 // conserva (a11y / otros consumidores), pero el Hero ya no lo muestra entero.
                 HStack(spacing: NoopMetrics.space2) {
                     Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 10))
-                    Text("Noche corta — confianza baja").font(StrandFont.caption)
+                    Text("Short night — low confidence").font(StrandFont.caption)
                 }
                 .foregroundStyle(theme.warning)
             }
@@ -1052,10 +1052,10 @@ struct TodayView: View {
     private var emptySourcesCard: some View {
         VStack(spacing: 0) {
             sourceRow(icon: "heart.fill", tint: theme.dataSpO2,
-                      title: "Conectar Apple Health", subtitle: "la base de tus datos") { showDataSources = true }
+                      title: "Conectar Apple Health", subtitle: "the base of your data") { showDataSources = true }
             Divider().overlay(theme.hairline).padding(.leading, NoopMetrics.cardPadding)
             sourceRow(icon: "applewatch.side.right", tint: theme.inkTertiary,
-                      title: "Emparejar banda WHOOP", subtitle: "afina la señal · opcional") { model.scan() }
+                      title: "Pair WHOOP strap", subtitle: "sharpens the signal · optional") { model.scan() }
         }
         .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)

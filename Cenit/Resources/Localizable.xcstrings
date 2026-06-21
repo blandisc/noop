@@ -53,7 +53,7 @@
         }
       }
     },
-    "Noche corta — confianza baja": {
+    "Short night — low confidence": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -70,7 +70,7 @@
         }
       }
     },
-    "Descargando la noche…": {
+    "Downloading last night…": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -87,7 +87,7 @@
         }
       }
     },
-    "Tus datos de anoche están llegando. La primera sincronización del día puede tardar unos minutos.": {
+    "Your data from last night is arriving. The first sync of the day can take a few minutes.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -6561,7 +6561,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Frecuencia cardiaca máxima estimada · %lld bpm"
+            "value": "Frecuencia cardiaca máxima estimada · %lld lpm"
           }
         }
       }
@@ -28012,24 +28012,7 @@
         }
       }
     },
-    "Abrir Ajustes": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abrir Ajustes"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abrir Ajustes"
-          }
-        }
-      }
-    },
-    "Acceso desactivado": {
+    "Access turned off": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28063,7 +28046,7 @@
         }
       }
     },
-    "Apple Health conectado": {
+    "Apple Health connected": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28080,7 +28063,7 @@
         }
       }
     },
-    "Apple Health conectado.": {
+    "Apple Health connected.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28097,7 +28080,7 @@
         }
       }
     },
-    "Apple Health no está disponible en este iPhone.": {
+    "Apple Health isn't available on this iPhone.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28114,7 +28097,7 @@
         }
       }
     },
-    "Asegúrate de que tenga carga.": {
+    "Make sure it has charge.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28131,24 +28114,7 @@
         }
       }
     },
-    "Atrás": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Atrás"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Atrás"
-          }
-        }
-      }
-    },
-    "Buscando tu banda…": {
+    "Looking for your strap…": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28165,7 +28131,7 @@
         }
       }
     },
-    "Buscando…": {
+    "Searching…": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28182,7 +28148,7 @@
         }
       }
     },
-    "Buscar de nuevo": {
+    "Search again": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28199,7 +28165,7 @@
         }
       }
     },
-    "Buscar mi banda": {
+    "Find my strap": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28216,7 +28182,7 @@
         }
       }
     },
-    "Cada noche y cada día se irán tejiendo en una sola lectura de ti. Bienvenido a Cénit.": {
+    "Every night and every day will weave into a single read of you. Welcome to Cénit.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28233,7 +28199,7 @@
         }
       }
     },
-    "Comenzar": {
+    "Get started": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28267,40 +28233,6 @@
         }
       }
     },
-    "Conectado": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Conectado"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Conectado"
-          }
-        }
-      }
-    },
-    "Conectando…": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Conectando…"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Conectando…"
-          }
-        }
-      }
-    },
     "Conectar Apple Health": {
       "extractionState": "manual",
       "localizations": {
@@ -28318,7 +28250,7 @@
         }
       }
     },
-    "Continuar de todos modos": {
+    "Continue anyway": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28335,7 +28267,7 @@
         }
       }
     },
-    "Continuar sin emparejar": {
+    "Continue without pairing": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28352,24 +28284,7 @@
         }
       }
     },
-    "Continuar": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Continuar"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Continuar"
-          }
-        }
-      }
-    },
-    "Cénit lee tu recuperación, sueño y esfuerzo y los guarda solo en tu iPhone. Sin cuenta, sin servidores. Dale unos días de datos y empezarás a ver tus patrones.": {
+    "Cénit reads your recovery, sleep and strain and keeps them only on your iPhone. No account, no servers. Give it a few days of data and you'll start to see your patterns.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28386,7 +28301,7 @@
         }
       }
     },
-    "Cénit lee tu sueño, pasos, entrenamientos, peso y frecuencia cardiaca desde Apple Health para darte una lectura honesta de tu cuerpo.": {
+    "Cénit reads your sleep, steps, workouts, weight and heart rate from Apple Health to give you an honest read of your body.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28403,7 +28318,7 @@
         }
       }
     },
-    "Dejaste el acceso a Apple Health desactivado. Puedes activarlo cuando quieras desde Ajustes. Cénit funciona sin él, con menos detalle.": {
+    "You left Apple Health access turned off. You can turn it on anytime in Settings. Cénit works without it, with less detail.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28420,24 +28335,7 @@
         }
       }
     },
-    "Edad": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Edad"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Edad"
-          }
-        }
-      }
-    },
-    "En un momento tu iPhone pedirá permiso de Bluetooth. Elige Permitir para que Cénit encuentre tu banda. La conexión es directa: nada pasa por la nube.": {
+    "In a moment your iPhone will ask for Bluetooth permission. Choose Allow so Cénit can find your strap. The connection is direct: nothing goes through the cloud.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28454,7 +28352,7 @@
         }
       }
     },
-    "Entrar a Cénit": {
+    "Enter Cénit": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28471,7 +28369,7 @@
         }
       }
     },
-    "Es la base de tus datos en Cénit.": {
+    "It's the base of your data in Cénit.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28488,24 +28386,7 @@
         }
       }
     },
-    "Estatura": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Estatura"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Estatura"
-          }
-        }
-      }
-    },
-    "Está a menos de un metro de tu iPhone.": {
+    "It's within a metre of your iPhone.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28522,7 +28403,7 @@
         }
       }
     },
-    "Está cargada y puesta — el sensor despierta con la piel.": {
+    "It's charged and worn — the sensor wakes with skin contact.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28535,23 +28416,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Está cargada y puesta — el sensor despierta con la piel."
-          }
-        }
-      }
-    },
-    "Frecuencia cardiaca máxima estimada · %lld lpm": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Estimated max heart rate · %lld bpm"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Frecuencia cardiaca máxima estimada · %lld lpm"
           }
         }
       }
@@ -28573,24 +28437,7 @@
         }
       }
     },
-    "Importando…": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Importando…"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Importando…"
-          }
-        }
-      }
-    },
-    "Importar export de Apple Health": {
+    "Import Apple Health export": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28607,7 +28454,7 @@
         }
       }
     },
-    "Importar export de WHOOP": {
+    "Import WHOOP export": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28624,7 +28471,7 @@
         }
       }
     },
-    "Las bandas WHOOP no salen en Ajustes › Bluetooth de tu iPhone — usan un perfil propio que solo apps como Cénit pueden ver. No hay nada que emparejar ahí.": {
+    "WHOOP straps don't show up in your iPhone's Settings › Bluetooth — they use a custom profile only apps like Cénit can see. There's nothing to pair there.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28641,7 +28488,7 @@
         }
       }
     },
-    "Lista. Estás conectado.": {
+    "Done. You're connected.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28658,7 +28505,7 @@
         }
       }
     },
-    "Listo para buscar": {
+    "Ready to search": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28675,7 +28522,7 @@
         }
       }
     },
-    "Mantén el Bluetooth de tu iPhone activado.": {
+    "Keep your iPhone's Bluetooth on.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28709,7 +28556,7 @@
         }
       }
     },
-    "No la tiene tomada la app de WHOOP. Solo un host a la vez: ciérrala o apaga su Bluetooth.": {
+    "The WHOOP app isn't holding it. Only one host at a time: close it or turn off its Bluetooth.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28726,7 +28573,7 @@
         }
       }
     },
-    "No tengo una": {
+    "I don't have one": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28743,7 +28590,7 @@
         }
       }
     },
-    "Opcional. Llena tu panel desde el primer día.": {
+    "Optional. Fill your dashboard from day one.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28777,7 +28624,7 @@
         }
       }
     },
-    "Para calcular tus zonas de frecuencia cardiaca y tus líneas base.": {
+    "To compute your heart-rate zones and your baselines.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28794,7 +28641,7 @@
         }
       }
     },
-    "Paso 1 · La base": {
+    "Step 1 · The base": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28811,7 +28658,7 @@
         }
       }
     },
-    "Paso 2 · Afina la señal": {
+    "Step 2 · Sharpen the signal": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28828,7 +28675,7 @@
         }
       }
     },
-    "Paso 3 · Conectar": {
+    "Step 3 · Connect": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28845,7 +28692,7 @@
         }
       }
     },
-    "Paso 3 · Tu banda": {
+    "Step 3 · Your strap": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28862,24 +28709,7 @@
         }
       }
     },
-    "Peso": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Peso"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Peso"
-          }
-        }
-      }
-    },
-    "Prepara tu banda": {
+    "Get your strap ready": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28896,7 +28726,7 @@
         }
       }
     },
-    "Póntela ajustada — el sensor necesita contacto con la piel.": {
+    "Wear it snug — the sensor needs skin contact.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28913,7 +28743,7 @@
         }
       }
     },
-    "Se monta sobre Apple Health y afina la señal: HRV continuo y recuperación de grado banda.": {
+    "It sits on top of Apple Health and sharpens the signal: continuous HRV and strap-grade recovery.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28930,24 +28760,7 @@
         }
       }
     },
-    "Sexo": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sexo"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sexo"
-          }
-        }
-      }
-    },
-    "Sobre ti": {
+    "About you": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28964,7 +28777,7 @@
         }
       }
     },
-    "Sí, tengo una WHOOP": {
+    "Yes, I have a WHOOP": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28981,7 +28794,7 @@
         }
       }
     },
-    "Todo listo.": {
+    "All set.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -28998,7 +28811,7 @@
         }
       }
     },
-    "Todo se queda en tu iPhone. Cénit no sube nada a ningún servidor.": {
+    "Everything stays on your iPhone. Cénit doesn't upload anything to any server.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -29015,7 +28828,7 @@
         }
       }
     },
-    "Trae tu historia": {
+    "Bring your history": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -29032,7 +28845,7 @@
         }
       }
     },
-    "Tu banda está conectada y lista.": {
+    "Your strap is connected and ready.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -29049,24 +28862,7 @@
         }
       }
     },
-    "Tu banda está conectada · %lld% de batería.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your strap is connected · %lld%% battery."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu banda está conectada · %lld% de batería."
-          }
-        }
-      }
-    },
-    "Tu historia": {
+    "Your history": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -29083,7 +28879,7 @@
         }
       }
     },
-    "Tus datos, nada en la nube.": {
+    "Your data, none of the cloud.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -29100,7 +28896,7 @@
         }
       }
     },
-    "Un export de WHOOP rellena recuperación, esfuerzo, sueño y entrenamientos. Un export de Apple Health agrega FC, HRV, sueño, oxígeno, pasos y peso.": {
+    "A WHOOP export backfills recovery, strain, sleep and workouts. An Apple Health export adds HR, HRV, sleep, blood oxygen, steps and weight.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -29117,7 +28913,7 @@
         }
       }
     },
-    "Un momento antes de conectar.": {
+    "A moment before connecting.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -29134,7 +28930,7 @@
         }
       }
     },
-    "Ya tienes la base. Sigamos.": {
+    "You've got the base. Let's keep going.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -29168,24 +28964,7 @@
         }
       }
     },
-    "¿Cuál banda?": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "¿Cuál banda?"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "¿Cuál banda?"
-          }
-        }
-      }
-    },
-    "¿No aparece? Es normal.": {
+    "Not showing up? That's normal.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -29202,7 +28981,7 @@
         }
       }
     },
-    "¿Tienes una banda WHOOP?": {
+    "Do you have a WHOOP strap?": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -29440,7 +29219,7 @@
         }
       }
     },
-    "Conecta Apple Health para empezar. Tu banda WHOOP afina la lectura.": {
+    "Connect Apple Health to start. Your WHOOP strap sharpens the reading.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -29457,7 +29236,7 @@
         }
       }
     },
-    "la base de tus datos": {
+    "the base of your data": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -29474,7 +29253,7 @@
         }
       }
     },
-    "Emparejar banda WHOOP": {
+    "Pair WHOOP strap": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -29491,7 +29270,7 @@
         }
       }
     },
-    "afina la señal · opcional": {
+    "sharpens the signal · optional": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -31183,7 +30962,7 @@
         }
       }
     },
-    "Tomado de Apple Health · editable": {
+    "From Apple Health · editable": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -32320,6 +32099,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tu apego de cada día aparecerá aquí conforme marques tus comidas."
+          }
+        }
+      }
+    },
+    "Your strap is connected · %lld%% battery.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your strap is connected · %lld%% battery."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu banda está conectada · %lld%% de batería."
           }
         }
       }
