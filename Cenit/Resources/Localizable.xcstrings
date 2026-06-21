@@ -31658,6 +31658,214 @@
           }
         }
       }
+    },
+    "Your patterns": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your patterns"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus patrones"
+          }
+        }
+      }
+    },
+    "Across your recent days, this is a moment that tends to run higher or lower in stress. It's a tendency we observe, not a cause — and it needs several days before it shows. Computed on your iPhone.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Across your recent days, this is a moment that tends to run higher or lower in stress. It's a tendency we observe, not a cause — and it needs several days before it shows. Computed on your iPhone."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En tus días recientes, este es un momento que tiende a estar más alto o más bajo en estrés. Es una tendencia que observamos, no una causa — y necesita varios días para aparecer. Se calcula en tu iPhone."
+          }
+        }
+      }
+    },
+    "Information about your stress patterns": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Information about your stress patterns"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Información sobre tus patrones de estrés"
+          }
+        }
+      }
+    },
+    "Explore it in the Coach": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explore it in the Coach"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explóralo en el Coach"
+          }
+        }
+      }
+    },
+    "Your stress tends to run higher in the %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your stress tends to run higher in the %@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu estrés tiende a ser más alto por las %@."
+          }
+        }
+      }
+    },
+    "Your stress tends to run lower in the %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your stress tends to run lower in the %@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu estrés tiende a ser más bajo por las %@."
+          }
+        }
+      }
+    },
+    "Your stress tends to run higher on %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your stress tends to run higher on %@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu estrés tiende a ser más alto los %@."
+          }
+        }
+      }
+    },
+    "Your stress tends to run lower on %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your stress tends to run lower on %@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu estrés tiende a ser más bajo los %@."
+          }
+        }
+      }
+    },
+    "Your stress usually peaks around %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your stress usually peaks around %@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu estrés suele alcanzar su punto más alto alrededor de las %@."
+          }
+        }
+      }
+    },
+    "mornings": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "mornings"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "mañanas"
+          }
+        }
+      }
+    },
+    "afternoons": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "afternoons"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tardes"
+          }
+        }
+      }
+    },
+    "evenings": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "evenings"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "noches"
+          }
+        }
+      }
+    },
+    "late nights": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "late nights"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "madrugadas"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

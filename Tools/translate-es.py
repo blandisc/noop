@@ -18,6 +18,20 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
+    # FER-378 — Patrones de estrés por momento del día
+    'Your patterns': 'Tus patrones',
+    'Information about your stress patterns': 'Información sobre tus patrones de estrés',
+    'Explore it in the Coach': 'Explóralo en el Coach',
+    'Your stress tends to run higher in the %@.': 'Tu estrés tiende a ser más alto por las %@.',
+    'Your stress tends to run lower in the %@.': 'Tu estrés tiende a ser más bajo por las %@.',
+    'Your stress tends to run higher on %@.': 'Tu estrés tiende a ser más alto los %@.',
+    'Your stress tends to run lower on %@.': 'Tu estrés tiende a ser más bajo los %@.',
+    'Your stress usually peaks around %@.': 'Tu estrés suele alcanzar su punto más alto alrededor de las %@.',
+    'mornings': 'mañanas',
+    'afternoons': 'tardes',
+    'evenings': 'noches',
+    'late nights': 'madrugadas',
+    "Across your recent days, this is a moment that tends to run higher or lower in stress. It's a tendency we observe, not a cause — and it needs several days before it shows. Computed on your iPhone.": 'En tus días recientes, este es un momento que tiende a estar más alto o más bajo en estrés. Es una tendencia que observamos, no una causa — y necesita varios días para aparecer. Se calcula en tu iPhone.',
     # FER-351 — Variantes del Foco por tipo de ejercicio
     'Time': 'Tiempo',
     'Bodyweight': 'Peso corporal',

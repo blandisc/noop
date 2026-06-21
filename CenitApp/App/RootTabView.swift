@@ -34,6 +34,9 @@ struct RootTabView: View {
     /// (and with it the status bar): Today is light paper → dark status bar, the rest are dark.
     @Binding var isTodayActive: Bool
 
+    /// App-level cross-tab navigation (FER-378). A screen can ask to jump tabs; we apply + clear it.
+    @EnvironmentObject private var tabRouter: TabRouter
+
     /// The visible tab. Starts on Today, the launch screen.
     @State private var selection: Tab = .today
     /// Tabs whose content has been shown at least once. Only Today is built at launch; the one heavy
@@ -151,6 +154,17 @@ struct RootTabView: View {
             isTodayActive = isLightTab(newValue)
         }
         .onAppear { isTodayActive = isLightTab(selection) }
+        // Cross-tab navigation requests (FER-378 «Explóralo en el Coach»). One-shot: apply + clear.
+        .onReceive(tabRouter.$requested.compactMap { $0 }) { req in
+            switch req {
+            case .today:    selection = .today
+            case .body:     selection = .body
+            case .coach:    selection = .coach
+            case .train:    selection = .train
+            case .settings: selection = .settings
+            }
+            tabRouter.requested = nil
+        }
         #if DEBUG
         .onReceive(NotificationCenter.default.publisher(for: .noopDebugNav)) { note in
             guard let screen = note.object as? String else { return }

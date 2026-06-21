@@ -280,6 +280,79 @@ final class Repository: ObservableObject {
         return pts.map { ($0.day, $0.value) }
     }
 
+    // MARK: - Intraday stress summaries (FER-378) — persisted in metricSeries, no new table
+
+    private static let stressPartPrefix = "stress-part-"     // + PartOfDay.rawValue
+    private static let stressPeakHourKey = "stress-peak-hour"
+    private static let stressDayMeanKey = "stress-day-mean"
+
+    /// Sleep spans (wall-clock seconds) overlapping `[from, to]`, to exclude from the waking reference.
+    private func sleepSpans(from: Int, to: Int) async -> [ClosedRange<Int>] {
+        (await sleepSessions(from: from, to: to)).compactMap { $0.startTs <= $0.endTs ? $0.startTs...$0.endTs : nil }
+    }
+
+    /// Per-day intraday-stress summaries (FER-378), reassembled from `metricSeries`, last `days` days.
+    /// Only days with a stored day-mean appear. Read under the on-device computed device id.
+    func stressDaySummaries(days: Int = 60) async -> [String: StressDaySummary] {
+        guard let store = await ensureStore() else { return [:] }
+        let (from, to) = Self.dayWindow(days: days)
+        func points(_ key: String) async -> [MetricPoint] {
+            (try? await store.metricSeries(deviceId: computedDeviceId, key: key, from: from, to: to)) ?? []
+        }
+        var parts: [String: [PartOfDay: Double]] = [:]
+        for part in PartOfDay.allCases {
+            for p in await points(Self.stressPartPrefix + part.rawValue) { parts[p.day, default: [:]][part] = p.value }
+        }
+        let peakByDay = Dictionary(await points(Self.stressPeakHourKey).map { ($0.day, Int($0.value)) }, uniquingKeysWith: { _, b in b })
+        let meanByDay = Dictionary(await points(Self.stressDayMeanKey).map { ($0.day, $0.value) }, uniquingKeysWith: { _, b in b })
+        var out: [String: StressDaySummary] = [:]
+        for (day, mean) in meanByDay {
+            out[day] = StressDaySummary(partMeans: parts[day] ?? [:], peakHour: peakByDay[day], dayMean: mean)
+        }
+        return out
+    }
+
+    /// Compute + persist any MISSING per-day stress summaries over the last `days` days (FER-378).
+    /// Idempotent — only days without a stored day-mean are computed. Builds ONE recent waking reference
+    /// (sleep excluded) and applies it to all days (documented approximation; the pattern signal is
+    /// relative). No-op without RR / a usable reference. Additive: does NOT touch IntelligenceEngine.
+    func backfillStressSummaries(days: Int = 60, restingHR: Double, maxHR: Double) async {
+        guard let store = await ensureStore() else { return }
+        let existing = await stressDaySummaries(days: days)
+        let cal = Calendar.current
+        let startOfToday = cal.startOfDay(for: Date())
+
+        var refDays: [[RRInterval]] = [], refExcluded: [[ClosedRange<Int>]] = []
+        for back in 1...7 {
+            let s = cal.date(byAdding: .day, value: -back, to: startOfToday)!
+            let e = cal.date(byAdding: .day, value: 1, to: s)!
+            let from = Int(s.timeIntervalSince1970), to = Int(e.timeIntervalSince1970)
+            refDays.append(await rrIntervals(from: from, to: to))
+            refExcluded.append(await sleepSpans(from: from, to: to))
+        }
+        guard let reference = StressEngine.wakingReference(daysRR: refDays, excludedPerDay: refExcluded,
+                                                           restingHR: restingHR, maxHR: maxHR) else { return }
+
+        var rows: [MetricPoint] = []
+        for back in 0..<days {
+            let dayStart = cal.date(byAdding: .day, value: -back, to: startOfToday)!
+            let key = Repository.localDayKey(dayStart)
+            if existing[key]?.dayMean != nil { continue }                 // already summarized
+            let dayEnd = cal.date(byAdding: .day, value: 1, to: dayStart)!
+            let from = Int(dayStart.timeIntervalSince1970), to = Int(dayEnd.timeIntervalSince1970)
+            let rr = await rrIntervals(from: from, to: to)
+            guard !rr.isEmpty else { continue }
+            let curve = StressEngine.intradayStress(rr, reference: reference, excluded: await sleepSpans(from: from, to: to),
+                                                    restingHR: restingHR, maxHR: maxHR)
+            let sum = StressEngine.daySummary(curve)
+            guard let mean = sum.dayMean else { continue }
+            for (part, m) in sum.partMeans { rows.append(MetricPoint(day: key, key: Self.stressPartPrefix + part.rawValue, value: m)) }
+            if let pk = sum.peakHour { rows.append(MetricPoint(day: key, key: Self.stressPeakHourKey, value: Double(pk))) }
+            rows.append(MetricPoint(day: key, key: Self.stressDayMeanKey, value: mean))
+        }
+        if !rows.isEmpty { _ = try? await store.upsertMetricSeries(rows, deviceId: computedDeviceId) }
+    }
+
     func availableKeys(source: String) async -> [String] {
         guard let store = await ensureStore() else { return [] }
         return (try? await store.metricKeys(deviceId: source)) ?? []

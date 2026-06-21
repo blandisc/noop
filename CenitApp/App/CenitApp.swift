@@ -8,6 +8,8 @@ struct CenitApp: App {
     @StateObject private var model: AppModel
     @StateObject private var health: HealthKitBridge
     @StateObject private var autoBackup = AutoBackup()
+    /// App-level cross-tab navigation (FER-378 «Explóralo en el Coach»).
+    @StateObject private var tabRouter = TabRouter()
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
@@ -39,6 +41,7 @@ struct CenitApp: App {
                 .environmentObject(model.coach)
                 .environmentObject(health)
                 .environmentObject(autoBackup)
+                .environmentObject(tabRouter)
                 // El color scheme ya NO se fuerza global aquí: lo decide ContentView según la pestaña
                 // activa (Hoy = papel claro → barra de estado en tinta oscura; resto = oscuro), con el
                 // gate de onboarding/terms en oscuro. Ponerlo aquí (lo más cercano a la raíz) ganaba

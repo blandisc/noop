@@ -322,7 +322,7 @@ body {
     <div class="leg"><div class="leg-dot" style="background:#FF5A5A"></div>Error</div>
   </div>
   <div class="sep"></div>
-  <span class="tb-updated">Actualizado 2026-06-20 · Sesión guiada de fuerza (FER-347)</span>
+  <span class="tb-updated">Actualizado 2026-06-21 · Detalle de Estrés → «Tus patrones» + handoff al Coach (FER-378)</span>
 </div>
 
 <div id="wrapper">
@@ -425,7 +425,7 @@ const SCREENS = [
   },
   {
     id: 'stress', x: 792, y: 60,
-    name: 'Detalle de Estrés', desc: 'Detalle «Instrumento» (FER-241) + «mapa del día» calendario (FER-377) · solo desde Cuerpo',
+    name: 'Detalle de Estrés', desc: 'Detalle «Instrumento» (FER-241) + «mapa del día» calendario (FER-377) + «Tus patrones» (FER-378) · solo desde Cuerpo',
     file: 'Cenit/Screens/StressDetailScreen.swift',
     icon: '🌡', color: '#F5A623',
     states: [
@@ -434,9 +434,12 @@ const SCREENS = [
       { label: 'Pocos días (<2): se ocultan tendencia/consistencia', type: 'loading' },
       { label: '«Estrés a lo largo del día» (el «mapa del día», FER-377): carril vertical = curva intradía por banda + eventos del calendario como filas + pico ligado a su evento + línea de coincidencia («cayó dentro de», no causa)', type: 'data' },
       { label: 'Mapa: sin permiso (invitación, no auto-prompt) · denegado (aviso + «Abrir Ajustes») · restringido · sin calendarios (elegir) · sin eventos hoy · cargando · arranque frío («aún aprendiendo tu ritmo»)', type: 'empty' },
+      { label: '«Tus patrones» (FER-378): una línea de estrés por momento del día («tu estrés tiende a ser más alto por las tardes», no causal) + «Explóralo en el Coach» → salta a la pestaña Coach (TabRouter). Solo con suficientes días; nada si no.', type: 'data' },
     ],
-    nav: [],
-    components: ['InfoAccordion (ⓘ por concepto)', 'TrendChart (línea 0–3 sobre bandas)', 'SegmentedPillControl', 'StressModel/StressMath/StressBand', 'ComparisonEngine', 'SeriesShape (CV/decimación)', 'StressDayMapBlock + StressCarril + CalendarPickerSheet (FER-377)', 'CalendarDayMap (EventKit on-device)', 'StressEngine + StressDayMap (StrandAnalytics, puros)'],
+    nav: [
+      { to: 'coach', label: '«Explóralo en el Coach» → pestaña Coach (TabRouter, FER-378)', type: 'tab' },
+    ],
+    components: ['InfoAccordion (ⓘ por concepto)', 'TrendChart (línea 0–3 sobre bandas)', 'SegmentedPillControl', 'StressModel/StressMath/StressBand', 'ComparisonEngine', 'SeriesShape (CV/decimación)', 'StressDayMapBlock + StressCarril + CalendarPickerSheet (FER-377)', 'CalendarDayMap (EventKit on-device)', 'StressEngine + StressDayMap + StressDaySummary + StressTimeOfDayPatterns (StrandAnalytics, puros)', 'TabRouter (handoff al Coach, FER-378)'],
   },
   {
     id: 'skintemp-detail', x: 1052, y: 60,
