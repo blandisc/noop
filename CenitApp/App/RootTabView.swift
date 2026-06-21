@@ -20,13 +20,13 @@ struct RootTabView: View {
     /// Every screen reachable by pushing onto a hub tab's stack. Raw values match the `noop.nav.<key>`
     /// debug-navigation keys (`ScreenshotNav.swift`) so screenshot automation still reaches each one.
     private enum SecondaryScreen: String, Hashable {
-        case intelligence, insights, coach        // Coach hub
+        case coach                                // Coach hub
         case library                              // Entrenar hub — exercise library (FER-346)
         case breathe, intervals, dieta            // Entrenar hub
         case routineToday                         // Entrenar hub — «Rutina de hoy» (DEBUG screenshot-nav)
         // Reachable via DEBUG screenshot-nav (pushed onto the Ajustes stack). Explore/Compare/Workouts
         // also still open from Cuerpo's footer; the rest open as sheets from the Ajustes root (FER-337).
-        case explore, compare, workouts, health, stress
+        case explore, compare, workouts
         case applehealth, datasources, automations, support
     }
 
@@ -210,7 +210,7 @@ struct RootTabView: View {
     /// The hub tab that owns a given secondary screen (for debug navigation).
     private func hub(for screen: SecondaryScreen) -> Tab {
         switch screen {
-        case .intelligence, .insights, .coach: return .coach
+        case .coach: return .coach
         case .library, .breathe, .intervals, .dieta, .routineToday: return .train
         default:                               return .settings
         }
@@ -271,8 +271,6 @@ struct RootTabView: View {
     @ViewBuilder
     private func secondaryDestination(_ screen: SecondaryScreen) -> some View {
         switch screen {
-        case .intelligence: IntelligenceView()
-        case .insights:     InsightsView()
         case .coach:        CoachView()
         case .library:      ExerciseLibraryScreen()
         case .breathe:      BreathingView()
@@ -282,8 +280,6 @@ struct RootTabView: View {
         case .explore:      MetricExplorerView()
         case .compare:      CompareView()
         case .workouts:     WorkoutsView()
-        case .health:       HealthView()
-        case .stress:       StressView()
         case .applehealth:  AppleHealthView()
         case .datasources:  DataSourcesView()
         case .automations:  AutomationsView()
