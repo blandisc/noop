@@ -2,6 +2,7 @@
 import SwiftUI
 import StrandDesign
 import StrandTraining
+import StrandAnalytics
 import WhoopStore
 
 // Plate weights read cleaner without a trailing «.0» (60, not 60.0) but keep a half-plate decimal (2.5).
@@ -29,6 +30,30 @@ private func massString(_ kg: Double, units: UnitSystem) -> String {
 // rest chip. Runs fully offline and without HealthKit (logging strength is manual).
 
 // MARK: - Session model (the durable, observable state owned by AppModel)
+
+/// The post-session receipt (FER-409): everything `summaryPhase` renders, computed once at finish in
+/// `AppModel`. A plain value type — no live recompute. `strain`/`costBand` stay nil until a session
+/// carries strap HR (FER-399); the view omits those blocks rather than inventing a zero.
+struct StrengthSummary: Equatable {
+    var routineName: String
+    var durationS: Int
+    var volumeKg: Double
+    var setCount: Int
+    var strain: Double?
+    var costBand: SessionRecoveryCost.Band?
+    var prs: [PR]
+    var muscles: [String]
+    var isFirstTime: Bool
+
+    /// One new record set this session (already filtered to those that strictly beat a prior PR).
+    struct PR: Equatable, Identifiable {
+        var id: String { "\(exercise):\(metric.rawValue)" }
+        let exercise: String
+        let metric: PRMetric
+        let valueKg: Double?
+        let reps: Int?
+    }
+}
 
 /// A guided strength session in progress. A reference type owned by `AppModel` and observed directly by
 /// the sheet, so the many small edits (steppers, table edits, rest ticks) don't republish all of AppModel.
@@ -79,6 +104,10 @@ final class StrengthSessionModel: ObservableObject {
     /// When the current set's stopwatch started; nil when not running. For `time`/`distance` Foco. Durable
     /// (an absolute Date), so the running clock survives closing the sheet or switching tabs.
     @Published var timerStart: Date?
+    /// Non-nil once «Finish» saved the session: the post-session receipt the sheet renders as its terminal
+    /// `summaryPhase` (FER-409). Computed once at finish in `AppModel`; the session stays alive until the
+    /// user taps «Listo» so the summary has somewhere to live.
+    @Published var summary: StrengthSummary?
 
     init(id: String = UUID().uuidString, routineId: String?, routineName: String,
          startTs: Int, runs: [ExerciseRun]) {
@@ -331,8 +360,8 @@ final class StrengthSessionModel: ObservableObject {
 /// navigator. The session itself lives in `AppModel`, so dismissing this sheet never ends it.
 struct LiveStrengthSheet: View {
     @EnvironmentObject private var model: AppModel
+    @EnvironmentObject private var tabRouter: TabRouter
     @ObservedObject var session: StrengthSessionModel
-    @Environment(\.dismiss) private var dismiss
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     var theme: InstrumentoTheme = .base
 
@@ -356,13 +385,17 @@ struct LiveStrengthSheet: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
-                topBar
-                if session.current == nil {
-                    completePhase
-                } else if session.phase == .resting, session.restEndsAt != nil {
-                    restPhase
+                if let summary = session.summary {
+                    summaryPhase(summary)
                 } else {
-                    capturePhase
+                    topBar
+                    if session.current == nil {
+                        completePhase
+                    } else if session.phase == .resting, session.restEndsAt != nil {
+                        restPhase
+                    } else {
+                        capturePhase
+                    }
                 }
             }
             .padding(.horizontal, NoopMetrics.screenPadding)
@@ -382,7 +415,7 @@ struct LiveStrengthSheet: View {
                 .preferredColorScheme(.light)
         }
         .alert("Finish workout?", isPresented: $confirmFinish) {
-            Button("Finish", role: .destructive) { model.endStrengthSession(save: true); dismiss() }
+            Button("Finish", role: .destructive) { model.endStrengthSession(save: true) }
             Button("Keep going", role: .cancel) {}
         } message: {
             Text(session.doneCount == 0
@@ -795,7 +828,7 @@ struct LiveStrengthSheet: View {
                  : "Every exercise was skipped. Finish to close, or resume from the hub.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
-            Button { model.endStrengthSession(save: true); dismiss() } label: {
+            Button { model.endStrengthSession(save: true) } label: {
                 Label("Finish", systemImage: "checkmark")
                     .font(StrandFont.headline).foregroundStyle(theme.paper)
                     .frame(maxWidth: .infinity).padding(.vertical, 15)
@@ -804,6 +837,191 @@ struct LiveStrengthSheet: View {
             .buttonStyle(.plain).padding(.top, 4)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: Summary phase (the post-session receipt · FER-409)
+
+    @ViewBuilder
+    private func summaryPhase(_ s: StrengthSummary) -> some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Summary").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text(s.routineName).font(StrandFont.title1).foregroundStyle(theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            // Hero: effort (strain) in the effort hue, or duration in ink when the session had no HR.
+            if let strain = s.strain {
+                summaryHero(label: "Effort", value: Self.strainText(strain), unit: nil,
+                            color: theme.dataStrain, caption: "What this session cost your body.")
+            } else {
+                summaryHero(label: "Duration", value: "\(s.durationS / 60)", unit: "min",
+                            color: theme.ink, caption: "No heart rate this session.")
+            }
+
+            Divider().overlay(theme.hairline)
+            summarySecondaries(s)
+
+            if !s.prs.isEmpty {
+                Divider().overlay(theme.hairline)
+                summaryRecords(s.prs)
+            } else if s.isFirstTime {
+                Divider().overlay(theme.hairline)
+                Text("First time logging these. From here on you'll see your progress.")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if let band = s.costBand {
+                Divider().overlay(theme.hairline)
+                summaryCost(band)
+            }
+
+            if !s.muscles.isEmpty {
+                Divider().overlay(theme.hairline)
+                summaryMuscles(s.muscles)
+            }
+
+            Button { model.closeStrengthSummary() } label: {
+                Text("Done")
+                    .font(StrandFont.headline).foregroundStyle(theme.paper)
+                    .frame(maxWidth: .infinity).padding(.vertical, 15)
+                    .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+            }
+            .buttonStyle(.plain).padding(.top, 6)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func summaryHero(label: LocalizedStringKey, value: String, unit: String?,
+                             color: Color, caption: LocalizedStringKey) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(value).instrumentoHero(64).foregroundStyle(color)
+                    .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
+                if let unit { Text(unit).font(StrandFont.unit).foregroundStyle(theme.inkTertiary) }
+            }
+            Text(caption).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder
+    private func summarySecondaries(_ s: StrengthSummary) -> some View {
+        // Duration is the hero when there's no strain → don't repeat it as a secondary. At large type
+        // sizes the row reflows to a column so the three numbers never clip.
+        let cells = Group {
+            summaryStat("Volume", massText(s.volumeKg))
+            summaryStat("Sets", "\(s.setCount)")
+            if s.strain != nil { summaryStat("Duration", "\(s.durationS / 60) min") }
+        }
+        if reflow {
+            VStack(alignment: .leading, spacing: 12) { cells }
+        } else {
+            HStack(alignment: .top, spacing: 18) { cells; Spacer(minLength: 0) }
+        }
+    }
+
+    private func summaryStat(_ label: LocalizedStringKey, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(value).font(StrandFont.number(19, weight: .semibold)).foregroundStyle(theme.ink).monospacedDigit()
+            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+        }
+        .frame(minWidth: reflow ? nil : 60, alignment: .leading)
+        .accessibilityElement(children: .combine)
+    }
+
+    private func summaryRecords(_ prs: [StrengthSummary.PR]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("New records").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            ForEach(prs) { pr in
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("Record").font(StrandFont.caption).foregroundStyle(theme.dataRecovery)
+                    Text(pr.exercise).font(StrandFont.subhead).foregroundStyle(theme.ink)
+                    Spacer(minLength: 8)
+                    (Text(Self.prMetricLabel(pr.metric)) + Text(verbatim: " · \(prValue(pr))"))
+                        .font(StrandFont.caption).foregroundStyle(theme.inkSecondary).monospacedDigit()
+                }
+                .accessibilityElement(children: .combine)
+            }
+        }
+    }
+
+    private func summaryCost(_ band: SessionRecoveryCost.Band) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Recovery cost").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(Self.bandLabel(band)).font(StrandFont.title2).foregroundStyle(bandColor(band))
+            Text(Self.bandDetail(band)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("Estimate · you decide").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private func summaryMuscles(_ muscles: [String]) -> some View {
+        VStack(alignment: .leading, spacing: 9) {
+            Text("Today's muscles").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("Tap a muscle to see when to train it again.")
+                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                .fixedSize(horizontal: false, vertical: true)
+            ChipFlow(spacing: 7) {
+                ForEach(muscles, id: \.self) { m in
+                    Button { openFatigueMap() } label: {
+                        Text(m).font(StrandFont.subhead).foregroundStyle(theme.ink)
+                            .padding(.horizontal, 11).padding(.vertical, 6)
+                            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous)
+                                .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint(Text("Opens the fatigue map"))
+                }
+            }
+        }
+    }
+
+    /// Close the summary and hand off to «Cuerpo» → fatigue map (no third sheet stacked on the session).
+    private func openFatigueMap() {
+        tabRouter.openFatigueMap()
+        model.closeStrengthSummary()
+    }
+
+    // MARK: Summary formatting
+
+    private static func strainText(_ v: Double) -> String { String(format: "%.1f", v) }
+
+    private func prValue(_ pr: StrengthSummary.PR) -> String {
+        switch pr.metric {
+        case .maxWeight: return massText(pr.valueKg ?? 0)
+        case .maxReps:   return "\(pr.reps ?? 0)"
+        case .maxVolume: return "\(massText(pr.valueKg ?? 0)) × \(pr.reps ?? 0)"
+        }
+    }
+
+    private static func prMetricLabel(_ m: PRMetric) -> LocalizedStringKey {
+        switch m {
+        case .maxWeight: return "Max weight"
+        case .maxReps:   return "Most reps"
+        case .maxVolume: return "Best set"
+        }
+    }
+
+    private static func bandLabel(_ b: SessionRecoveryCost.Band) -> LocalizedStringKey {
+        switch b { case .light: return "Light"; case .moderate: return "Moderate"; case .high: return "High" }
+    }
+
+    private static func bandDetail(_ b: SessionRecoveryCost.Band) -> LocalizedStringKey {
+        switch b {
+        case .light:    return "Low cardiovascular cost. Your body barely felt it."
+        case .moderate: return "A session that counted. Give yourself some rest."
+        case .high:     return "A demanding session. Make sleep a priority today."
+        }
+    }
+
+    private func bandColor(_ b: SessionRecoveryCost.Band) -> Color {
+        switch b { case .light: return theme.dataRecovery; case .moderate: return theme.dataStrain; case .high: return theme.dataHeart }
     }
 
     // MARK: Rest phase (fixed countdown + the «change exercise» bridge)
@@ -1115,5 +1333,35 @@ private struct SetTableDrawer: View {
     }
 
     private func massText(_ kg: Double) -> String { massString(kg, units: units) }
+}
+
+/// Minimal flow layout: lays subviews left-to-right, wrapping to a new row when the next would overflow
+/// the proposed width. Used for the summary's muscle chips (FER-409) so they wrap instead of truncating
+/// at large Dynamic Type sizes.
+private struct ChipFlow: Layout {
+    var spacing: CGFloat = 7
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let maxW = proposal.width ?? .infinity
+        var x: CGFloat = 0, y: CGFloat = 0, rowH: CGFloat = 0
+        for v in subviews {
+            let sz = v.sizeThatFits(.unspecified)
+            if x > 0, x + sz.width > maxW { x = 0; y += rowH + spacing; rowH = 0 }
+            x += sz.width + spacing
+            rowH = max(rowH, sz.height)
+        }
+        return CGSize(width: maxW.isFinite ? maxW : x, height: y + rowH)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x: CGFloat = 0, y: CGFloat = 0, rowH: CGFloat = 0
+        for v in subviews {
+            let sz = v.sizeThatFits(.unspecified)
+            if x > 0, x + sz.width > bounds.width { x = 0; y += rowH + spacing; rowH = 0 }
+            v.place(at: CGPoint(x: bounds.minX + x, y: bounds.minY + y), proposal: ProposedViewSize(sz))
+            x += sz.width + spacing
+            rowH = max(rowH, sz.height)
+        }
+    }
 }
 #endif

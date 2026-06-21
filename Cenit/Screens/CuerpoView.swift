@@ -228,6 +228,12 @@ private struct CuerpoLanding: View {
                 .environmentObject(repo)
                 .preferredColorScheme(.light)
         }
+        // Handoff from the strength summary's muscle chips (FER-409): open the fatigue map on arrival.
+        // `onAppear` covers a lazily-built tab; `onChange` covers the case where Cuerpo is already visible.
+        .onAppear { if tabRouter.openMuscleMap { showMuscleMap = true; tabRouter.openMuscleMap = false } }
+        .onChange(of: tabRouter.openMuscleMap) { _, open in
+            if open { showMuscleMap = true; tabRouter.openMuscleMap = false }
+        }
         .sheet(item: $darkSheet) { sheet in darkSheetContent(sheet) }
         .sheet(isPresented: $showCompare) {
             // Light «Instrumento» Comparar — the theme is injected at the root (it doesn't cross the

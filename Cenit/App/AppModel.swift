@@ -4,6 +4,7 @@ import WhoopProtocol
 import WhoopStore
 import StrandImport
 import StrandAnalytics
+import StrandTraining
 
 /// Data source currently running an import from the Data Sources screen.
 enum DataSourceImportKind {
@@ -449,23 +450,30 @@ final class AppModel: ObservableObject {
     /// Re-show the sheet for the in-progress session (the hub's «Resume»).
     func resumeStrengthSession() { if strengthSession != nil { strengthSheetPresented = true } }
 
-    /// Finish the guided session. When `save` is true and at least one set was logged, persist it as a
-    /// `StrengthSession` + its `SetEntry` rows (PRs derive in the store); otherwise just discard.
+    /// Finish the guided session. With ≥1 logged set: persist it, mirror to Apple Health (opt-in), and
+    /// compute the post-session receipt (FER-409) — keeping the session ALIVE so the sheet renders its
+    /// `summaryPhase`. With nothing logged: discard and close. The receipt is ended by `closeStrengthSummary`
+    /// («Listo» or a swipe of the summary).
     func endStrengthSession(save: Bool) {
-        let session = strengthSession
-        strengthSession = nil
-        strengthSheetPresented = false
-        guard save, let session, session.doneCount > 0 else { return }
+        guard let session = strengthSession else { strengthSheetPresented = false; return }
         let endTs = Int(Date().timeIntervalSince1970)
+        guard save, session.doneCount > 0 else {        // nothing logged → discard + close
+            strengthSession = nil
+            strengthSheetPresented = false
+            return
+        }
         let (record, sets) = session.buildForSave(deviceId: deviceId, endTs: endTs)
         // Snapshot the profile on the main actor for the calorie estimate before hopping off it.
         let userProfile = UserProfile(weightKg: profile.weightKg, heightCm: profile.heightCm,
                                       age: Double(profile.age), sex: profile.sex)
         Task { [weak self] in
-            guard let self else { return }
-            if let store = await self.repo.storeHandle() {
-                try? await store.saveSession(record, sets: sets)
-            }
+            guard let self, let store = await self.repo.storeHandle() else { return }
+            // Prior PRs (BEFORE save) so the receipt can tell which records are NEW this session.
+            let prior = await self.priorStrengthPRs(store: store, ids: Set(sets.map(\.exerciseId)))
+            try? await store.saveSession(record, sets: sets)
+            // Surface the receipt on the live session — the sheet renders summaryPhase (session stays alive).
+            session.summary = await self.buildStrengthSummary(session: session, record: record,
+                                                              sets: sets, prior: prior, store: store)
             // Opt-in mirror to Apple Health (FER-390): a no-op unless the user enabled it. Runs AFTER
             // the local save (the source of truth) and never throws — Health is strictly best-effort.
             await self.healthBridge?.saveStrengthWorkoutIfEnabled(
@@ -474,6 +482,72 @@ final class AppModel: ObservableObject {
                 end: Date(timeIntervalSince1970: TimeInterval(endTs)),
                 profile: userProfile)
         }
+    }
+
+    /// End the session once the user has seen the receipt (FER-409): «Listo» or a swipe of the summary.
+    func closeStrengthSummary() {
+        strengthSession = nil
+        strengthSheetPresented = false
+    }
+
+    /// Prior best-per-metric PRs per exercise, BEFORE this session's save — the baseline new records beat.
+    private func priorStrengthPRs(store: WhoopStore, ids: Set<String>) async -> [String: [PRMetric: PersonalRecord]] {
+        var out: [String: [PRMetric: PersonalRecord]] = [:]
+        for id in ids {
+            let prs = (try? await store.personalRecords(exerciseId: id)) ?? []
+            out[id] = Dictionary(prs.map { ($0.metric, $0) }, uniquingKeysWith: { a, _ in a })
+        }
+        return out
+    }
+
+    /// Build the post-session receipt (FER-409): volume/duration, the records that STRICTLY beat a prior PR
+    /// (a first-ever entry is not a record), worked muscles, and the recovery-cost band — `nil` until the
+    /// session carries strain (FER-399), so the view omits the cost block rather than inventing a zero.
+    private func buildStrengthSummary(session: StrengthSessionModel, record: StrengthSession,
+                                      sets: [SetEntry], prior: [String: [PRMetric: PersonalRecord]],
+                                      store: WhoopStore) async -> StrengthSummary {
+        let work = sets.filter { $0.kind == .work && $0.done }
+        let volumeKg = work.reduce(0.0) { $0 + (($1.weightKg ?? 0) * Double($1.reps ?? 0)) }
+        let durationS = max(0, (record.endTs ?? record.startTs) - record.startTs)
+
+        // Resolve exercises (bundled catalog + user-created) for names + muscles.
+        let custom = (try? await store.customExercises()) ?? []
+        let customByID = Dictionary(custom.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        func exercise(_ id: String) -> Exercise? { ExerciseCatalog.byID(id) ?? customByID[id] }
+
+        // NEW records: this session's per-exercise bests that strictly beat the prior PR.
+        var prs: [StrengthSummary.PR] = []
+        for (id, exSets) in Dictionary(grouping: work, by: \.exerciseId) {
+            let name = exercise(id)?.name ?? String(localized: "Exercise")
+            let p = prior[id] ?? [:]
+            if let w = exSets.compactMap(\.weightKg).max(), let was = p[.maxWeight], w > (was.valueKg ?? 0) {
+                prs.append(.init(exercise: name, metric: .maxWeight, valueKg: w, reps: nil))
+            }
+            if let r = exSets.compactMap(\.reps).max(), let was = p[.maxReps], r > (was.reps ?? 0) {
+                prs.append(.init(exercise: name, metric: .maxReps, valueKg: nil, reps: r))
+            }
+            if let best = exSets.compactMap({ s -> (vol: Double, w: Double, r: Int)? in
+                guard let w = s.weightKg, let r = s.reps else { return nil }
+                return (w * Double(r), w, r)
+            }).max(by: { $0.vol < $1.vol }),
+               let was = p[.maxVolume], best.vol > (was.valueKg ?? 0) * Double(was.reps ?? 0) {
+                prs.append(.init(exercise: name, metric: .maxVolume, valueKg: best.w, reps: best.r))
+            }
+        }
+        prs.sort { $0.exercise < $1.exercise }
+
+        // Worked muscles, in set order, deduped, title-cased, capped.
+        var seen = Set<String>(); var muscles: [String] = []
+        for s in work {
+            for m in exercise(s.exerciseId)?.primaryMuscles ?? [] where !seen.contains(m) {
+                seen.insert(m); muscles.append(StrengthDisplay.titleCase(m))
+            }
+        }
+
+        return StrengthSummary(routineName: session.routineName, durationS: durationS,
+                               volumeKg: volumeKg, setCount: work.count, strain: record.strain,
+                               costBand: SessionRecoveryCost.cost(sessionStrain: record.strain)?.band,
+                               prs: prs, muscles: Array(muscles.prefix(6)), isFirstTime: prior.allSatisfy { $0.value.isEmpty })
     }
 
     /// Dismiss the just-ended confirmation / discard notice shown in the Train hub once the user has

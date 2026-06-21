@@ -12,7 +12,14 @@ final class TabRouter: ObservableObject {
 
     /// A one-shot tab-switch request. `RootTabView` consumes it (sets it back to nil) on receipt.
     @Published var requested: Tab?
+    /// One-shot: after landing on «Cuerpo», open the muscle-fatigue map. Consumed (reset to false) by
+    /// `CuerpoView`. Lets the strength summary's muscle chips reach the map without stacking a third
+    /// sheet over the session (FER-409).
+    @Published var openMuscleMap = false
 
     func select(_ tab: Tab) { requested = tab }
+
+    /// Switch to «Cuerpo» and ask it to open the fatigue map (the strength summary's muscle chips).
+    func openFatigueMap() { openMuscleMap = true; requested = .body }
 }
 #endif

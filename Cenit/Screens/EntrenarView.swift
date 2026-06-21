@@ -39,6 +39,7 @@ struct EntrenarView: View {
 private struct EntrenarLanding: View {
     @EnvironmentObject var repo: Repository
     @EnvironmentObject var model: AppModel
+    @EnvironmentObject var tabRouter: TabRouter
     @Environment(\.instrumentoTheme) private var theme
 
     var openRoutine: (String) -> Void
@@ -94,10 +95,15 @@ private struct EntrenarLanding: View {
         // The guided strength session (FER-347). Hosted here at the hub root so it survives pushing
         // «Rutina de hoy» / switching tabs; the session itself lives in AppModel, so swiping the sheet
         // down only hides it (the «Resume» row below re-opens). A `.sheet` — no nested NavigationStack.
-        .sheet(isPresented: $model.strengthSheetPresented) {
+        .sheet(isPresented: $model.strengthSheetPresented, onDismiss: {
+            // Swiping the summary away ends the session (FER-409); a mid-session swipe keeps it (the
+            // «Resume» row re-opens). Only the post-finish receipt carries a `summary`.
+            if model.strengthSession?.summary != nil { model.closeStrengthSummary() }
+        }) {
             if let session = model.strengthSession {
                 LiveStrengthSheet(session: session, theme: theme)
                     .environmentObject(model)
+                    .environmentObject(tabRouter)
                     .presentationDetents([.large])
                     .presentationDragIndicator(.visible)
                     .presentationBackground(theme.paper)
