@@ -1,0 +1,19 @@
+#!/bin/sh
+# Guard: block commits that introduce reference cycles in String Catalogs.
+# Xcode 26.3 recurses infinitely on a cyclic .xcstrings and OOMs the Mac (FER-395).
+# Logic is versioned in Tools/check-xcstrings-cycles.py; this hook is local.
+# Install / reinstall after a fresh clone:
+#   cp Tools/git-hooks/pre-commit .git/hooks/ && chmod +x .git/hooks/pre-commit
+changed=$(git diff --cached --name-only --diff-filter=ACM | grep -E 'Localizable\.xcstrings$')
+[ -z "$changed" ] && exit 0
+command -v python3 >/dev/null 2>&1 || { echo "pre-commit: sin python3, salto chequeo de ciclos xcstrings"; exit 0; }
+root=$(git rev-parse --show-toplevel)
+script="$root/Tools/check-xcstrings-cycles.py"
+[ -f "$script" ] || exit 0
+if ! python3 "$script"; then
+  echo ""
+  echo "✋ Commit bloqueado: ciclo en un String Catalog (crashea Xcode 26.3 → OOM)."
+  echo "   Rómpelo con el patrón FER-395, o commitea con --no-verify si sabes lo que haces."
+  exit 1
+fi
+exit 0
