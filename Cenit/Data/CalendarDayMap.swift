@@ -25,18 +25,26 @@ final class CalendarDayMap: ObservableObject {
         case ready(DayMap)
     }
 
-    /// Everything the carril needs once built.
+    /// Everything the «Momentos primero» block needs once built.
     struct DayMap: Equatable {
         var curve: [StressEngine.StressPoint]      // today's 0–3 readings (nil = no reading)
         var timed: [StressDayMap.DayEvent]         // today's timed events, time-ordered
         var allDay: [StressDayMap.DayEvent]        // today's all-day events (listed apart)
-        var coincidence: StressDayMap.Coincidence? // peak ↔ event
+        var coincidence: StressDayMap.Coincidence? // peak ↔ event (the headline)
+        var moments: StressMoments.DayMoments      // ranked activated moments + calmest (FER-433)
         var referenceMissing: Bool                 // cold start: no waking reference yet
-        var selectedNames: [String]                // chosen calendar titles (header chip)
+        var selectedNames: [String]                // chosen calendar labels «title (account)» (footer)
         var now: Date
     }
 
-    struct CalInfo: Identifiable, Equatable { let id: String; let title: String }
+    struct CalInfo: Identifiable, Equatable {
+        let id: String
+        let title: String
+        /// The calendar's source/account («iCloud», «Gmail», …) — distinguishes same-named calendars.
+        let account: String
+        /// Display label: «title (account)» when the account is known, else just the title. (FER-433)
+        var label: String { account.isEmpty ? title : "\(title) (\(account))" }
+    }
 
     @Published private(set) var phase: Phase = .needsPermission
     @Published private(set) var calendars: [CalInfo] = []
@@ -107,8 +115,13 @@ final class CalendarDayMap: ObservableObject {
 
     private func loadCalendars() {
         calendars = store.calendars(for: .event)
-            .map { CalInfo(id: $0.calendarIdentifier, title: $0.title) }
+            .map(Self.info)
             .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+    }
+
+    /// A `CalInfo` for a calendar — the single place that reads `title` + `source.title`. (FER-433)
+    private static func info(_ cal: EKCalendar) -> CalInfo {
+        CalInfo(id: cal.calendarIdentifier, title: cal.title, account: cal.source?.title ?? "")
     }
 
     private func buildMap() async {
@@ -149,9 +162,11 @@ final class CalendarDayMap: ObservableObject {
         }.value
 
         let coincidence = StressDayMap.peakCoincidence(result.curve, events: timed)
+        // Ranked moments are a cheap O(n) pure reduction → fine on the main actor (no detached needed).
+        let moments = StressMoments.detect(result.curve, events: timed)
         phase = .ready(DayMap(curve: result.curve, timed: timed, allDay: allDay,
-                              coincidence: coincidence, referenceMissing: result.missing,
-                              selectedNames: names, now: now))
+                              coincidence: coincidence, moments: moments,
+                              referenceMissing: result.missing, selectedNames: names, now: now))
     }
 
     /// Read the day's events from the selected calendars, split timed vs all-day (both time-ordered).
@@ -171,7 +186,7 @@ final class CalendarDayMap: ObservableObject {
         }
         timed.sort { $0.start < $1.start }
         allDay.sort { $0.start < $1.start }
-        return (timed, allDay, chosen.map(\.title))
+        return (timed, allDay, chosen.map { Self.info($0).label })
     }
 
     /// Historical event-type tags for the last `days` days (FER-388): `title → set of local day keys`

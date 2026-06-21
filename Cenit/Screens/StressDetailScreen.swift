@@ -24,11 +24,11 @@ import Foundation
 // modelo (z-score logístico; bandas 0–1/1–2/2–3). El hero muestra el VALOR DE HOY (no la media 7d) porque el
 // índice ya viene normalizado a la base de cada quien; las bandas son fijas por la misma razón.
 //
-// Bloques, cada uno con su ⓘ (`InfoAccordion`) salvo el método: 1) Hero (valor de hoy en
-// color de banda) · 2) Selector de periodo + Tendencia (línea 0–3 sobre las bandas) · 3) Rango normal (bandas
-// universales) · 4) Qué lo mueve (RHR/HRV vs base) · 5) Consistencia (CV) · 6) Tiempo en calma · 7) Estrés a lo
-// largo del día (el «mapa del día»: carril vertical + cruce con el calendario, `StressDayMapBlock`, FER-377) ·
-// 8) Ver el método.
+// Bloques, cada uno con su ⓘ (`InfoAccordion`) salvo el método: 1) Hero (valor de hoy en color de banda) ·
+// 1.5) Estrés a lo largo del día — el «mapa del día» en «Momentos primero» (titular del pico + barras de
+// apoyo + momentos rankeados cruzados con el calendario, `StressDayMapBlock`, FER-433), ahora a PRIMER
+// NIVEL (antes vivía bajo «See your history») · 2) Qué lo mueve (RHR/HRV vs base) · 3) Tus patrones (tiempo
+// en calma + consistencia) · 4) Ver tu historial (Tendencia 0–3 sobre las bandas) · 5) Ver el método.
 
 /// Light «Instrumento» Detalle de Estrés. Built from a `StressModel` (the caller injects it so the screen
 /// stays DB-free), themed explicitly for the sheet boundary. `model == nil` → the honest empty state.
@@ -81,13 +81,23 @@ struct StressDetailScreen: View {
                         noRecentHero
                         blockDivider
                     }
+                    // Level 1.5 · «Stress through the day» — the «Momentos primero» block, now FIRST-CLASS
+                    // (FER-433): promoted out of «See your history» so the day's most-activated moments and
+                    // the calendar cross are visible without expanding anything.
+                    if let dayMap {
+                        StressDayMapBlock(model: dayMap, theme: theme)
+                        blockDivider
+                    }
                     // Level 2 · «Your patterns»: calm time + consistency, fused to plain lines. The
                     // former «Normal range» block is gone from the daily scroll — those Low/Mod/High
                     // bands are already drawn behind the trend line as its legend (one dispersion read).
                     patternsBlock(model)
-                    // Level 3 · «See your history»: the daily trend over the bands + the mapa del día.
-                    blockDivider
-                    historySection(model)
+                    // Level 3 · «See your history»: the daily trend over the fixed bands (the mapa del día
+                    // moved up to Level 1.5).
+                    if model.fullTrend.count >= 2 {
+                        blockDivider
+                        historySection(model)
+                    }
                     blockDivider
                     methodDisclosure(model)
                 } else {
@@ -191,15 +201,8 @@ struct StressDetailScreen: View {
         band.dataColor(theme)
     }
 
-    /// Sentence-case band word for the hero / legend ("Low" / "Moderate" / "High"). Distinct from
-    /// `StressBand.title` (which is ALL-CAPS, for the dark legacy gauge).
-    private func bandWord(_ band: StressBand) -> LocalizedStringKey {
-        switch band {
-        case .low:    return "Low"
-        case .medium: return "Moderate"
-        case .high:   return "High"
-        }
-    }
+    /// Sentence-case band word for the hero / legend — delegates to the single source on `StressBand`.
+    private func bandWord(_ band: StressBand) -> LocalizedStringKey { band.displayWord }
 
     // MARK: - 2. Selector de periodo + Tendencia (línea diaria 0–3 sobre las bandas)
 
@@ -378,27 +381,18 @@ struct StressDetailScreen: View {
         }
     }
 
-    // MARK: - Level 3 · «See your history» — the daily trend over the bands + the mapa del día
+    // MARK: - Level 3 · «See your history» — the daily trend over the bands
     //
-    // The analyst's view, one tap down. An in-place disclosure (NOT a navigation push). Holds the
-    // period-selector trend (the daily 0–3 line over the fixed Low/Mod/High bands + its legend) and the
-    // «mapa del día» (StressDayMapBlock, FER-377) when its driver is present. (Detalles escalonados)
-    //
-    // NOTE: the old «Stress by time of day · Soon» placeholder is already gone — FER-377 replaced it with
-    // the real StressDayMapBlock — so there's no "Soon" block left to retire here.
+    // The analyst's view, one tap down. An in-place disclosure (NOT a navigation push). Holds just the
+    // period-selector trend (the daily 0–3 line over the fixed Low/Mod/High bands + its legend). The
+    // «mapa del día» (StressDayMapBlock) used to live here too, but FER-433 promoted it to Level 1.5.
 
     @ViewBuilder
     private func historySection(_ model: StressModel) -> some View {
         VStack(alignment: .leading, spacing: historyExpanded ? 22 : 0) {
-            historyDisclosureHeader(caption: "trend · bands · day map")
-            if historyExpanded {
-                if model.fullTrend.count >= 2 {
-                    trendBlock(model)
-                }
-                if let dayMap {
-                    if model.fullTrend.count >= 2 { blockDivider }
-                    StressDayMapBlock(model: dayMap, theme: theme)
-                }
+            historyDisclosureHeader(caption: "trend · bands")
+            if historyExpanded, model.fullTrend.count >= 2 {
+                trendBlock(model)
             }
         }
     }
