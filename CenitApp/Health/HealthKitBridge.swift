@@ -1,6 +1,7 @@
 #if os(iOS)
 import Foundation
 import HealthKit
+import StrandAnalytics
 import StrandImport
 import WhoopStore
 
@@ -63,6 +64,10 @@ final class HealthKitBridge: ObservableObject {
     /// leaving Today's Key Metrics empty until a manual reconnect. (FER-94)
     private static let connectedDefaultsKey = "appleHealthConnected"
 
+    /// Mirrors the Settings toggle (`@AppStorage`): write finished strength sessions to Apple Health
+    /// as `HKWorkout`s (FER-390). Default off — opt-in, so we never write or prompt without consent.
+    static let saveStrengthWorkoutsKey = "health.saveStrengthWorkouts"
+
     init(repo: Repository, appleDeviceId: String, noopDeviceId: String) {
         self.repo = repo
         self.appleDeviceId = appleDeviceId
@@ -99,6 +104,15 @@ final class HealthKitBridge: ObservableObject {
         return s
     }
 
+    /// Share types requested ONLY when the user opts into saving strength workouts (FER-390). Kept
+    /// out of `writeTypes` on purpose: connecting Apple Health must never surface a workout-write
+    /// prompt to someone who didn't ask for it (privacy; same discipline as FER-103).
+    private var workoutShareTypes: Set<HKSampleType> {
+        var s: Set<HKSampleType> = [HKObjectType.workoutType()]
+        if let energy = HKObjectType.quantityType(forIdentifier: .activeEnergyBurned) { s.insert(energy) }
+        return s
+    }
+
     // Every id here ends up in the HealthKit permission dialog. Only request what `sync` actually
     // aggregates into `DayAgg`; adding read scopes the app never consumes makes the consent prompt
     // noisier and surfaces a privacy ask we don't honour.
@@ -125,6 +139,14 @@ final class HealthKitBridge: ObservableObject {
         } catch {
             auth = .denied
         }
+    }
+
+    /// Request share (write) permission for workouts + active energy — asked ONLY when the user turns
+    /// on "Guardar entrenamientos en Apple Salud" (FER-390), so a workout-write prompt never reaches
+    /// someone who didn't opt in. Read scopes and the main connection state are left untouched.
+    func requestWorkoutShareAuthorization() async {
+        guard HKHealthStore.isHealthDataAvailable() else { return }
+        try? await store.requestAuthorization(toShare: workoutShareTypes, read: [])
     }
 
     // MARK: - Profile characteristics (FER-361)
@@ -352,6 +374,61 @@ final class HealthKitBridge: ObservableObject {
     /// (no metadata, no delete) flooded Health with duplicates on every `sync()`.
     ///
     /// Throws on save failure so the caller can decide whether to advance `lastSync`.
+    // MARK: - Strength session → Apple Health (FER-390)
+
+    /// Write a finished guided strength session into Apple Health as an `HKWorkout`, but only when the
+    /// user opted in. Best-effort and **non-throwing**: the session is already persisted in `WhoopStore`
+    /// (the source of truth), so a Health failure must never throw to the caller or block the session.
+    /// Idempotent by external UUID — re-saving the same session replaces its prior workout instead of
+    /// duplicating it. The estimated active-energy sample inside `[start, end]` is what lets the iPhone's
+    /// **Move ring** credit the session (no Apple Watch needed). Energy is a MET-based estimate
+    /// (`Calories.estimateStrengthCalories`, Ainsworth 2011) — the session records no per-second HR.
+    func saveStrengthWorkoutIfEnabled(sessionId: String, start: Date, end: Date, profile: UserProfile) async {
+        guard UserDefaults.standard.bool(forKey: Self.saveStrengthWorkoutsKey) else { return }
+        guard HKHealthStore.isHealthDataAvailable(), end > start else { return }
+        // Gate on the workout share grant directly (independent of the read connection): if the user
+        // toggled on but the prompt wasn't granted, surface it honestly — never crash, never block.
+        guard store.authorizationStatus(for: HKObjectType.workoutType()) == .sharingAuthorized else {
+            lastError = "No pudimos guardar el entrenamiento en Apple Salud. Revisa los permisos en Ajustes."
+            return
+        }
+
+        let kcal = Calories.estimateStrengthCalories(durationSeconds: end.timeIntervalSince(start), profile: profile)
+        let externalUUID = "noop:strength:\(sessionId)"
+        let config = HKWorkoutConfiguration()
+        config.activityType = .traditionalStrengthTraining
+
+        do {
+            // Idempotency: delete our own prior workout for this session, then write a fresh one.
+            // Scoped to this app's samples + this session's external UUID (mirrors `writeBack`).
+            let bySource = HKQuery.predicateForObjects(from: HKSource.default())
+            let byKey = HKQuery.predicateForObjects(withMetadataKey: HKMetadataKeyExternalUUID,
+                                                    allowedValues: [externalUUID])
+            let pred = NSCompoundPredicate(andPredicateWithSubpredicates: [bySource, byKey])
+            _ = try? await store.deleteObjects(of: HKObjectType.workoutType(), predicate: pred)
+
+            let builder = HKWorkoutBuilder(healthStore: store, configuration: config, device: .local())
+            try await builder.beginCollection(at: start)
+            if kcal > 0, let energyType = HKObjectType.quantityType(forIdentifier: .activeEnergyBurned) {
+                let energy = HKQuantitySample(type: energyType,
+                                              quantity: HKQuantity(unit: .kilocalorie(), doubleValue: kcal),
+                                              start: start, end: end)
+                // `HKWorkoutBuilder.add(_:)` ships completion-only (no async bridge), so wrap it.
+                try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+                    builder.add([energy]) { _, error in
+                        if let error { cont.resume(throwing: error) } else { cont.resume() }
+                    }
+                }
+            }
+            try await builder.addMetadata([HKMetadataKeyExternalUUID: externalUUID])
+            try await builder.endCollection(at: end)
+            _ = try await builder.finishWorkout()
+            lastError = nil
+        } catch {
+            lastError = error.localizedDescription
+        }
+    }
+
     private func writeBack(whoopStore: WhoopStore, days: Int = 14) async throws {
         guard auth == .authorized else { return }
         let cal = Calendar.current

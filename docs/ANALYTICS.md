@@ -390,6 +390,10 @@ Active samples are grouped into runs (merging gaps < `mergeGapS = 150 s`), then 
 
 Per-second blend of **Keytel (2005)** active expenditure and **revised Harris–Benedict** BMR (resting), with sex-specific coefficients (`male` / `female` / `nonbinary`). Below a `RHR + 0.30 × HRR` threshold the resting rate is used; above it, the HR-driven active rate. Returns `(kcal, kJ)`. **Approximate** — not laboratory calorimetry.
 
+### Strength sessions (`Calories.estimateStrengthCalories`)
+
+A guided strength session records no per-second HR, so the Keytel HR model above doesn't apply. The active energy a session writes to Apple Health (FER-390) is instead a MET estimate: `kcal = MET × bodyMassKg × hours`, with MET from the **Compendium of Physical Activities (Ainsworth et al. 2011)** — resistance training ≈ 3.5 MET (8–15 reps, varied resistance), the moderate value since a session doesn't measure effort. Body mass falls back to 70 kg when unknown; duration is clamped to [0, 6 h]. **Approximate** — not laboratory calorimetry.
+
 ---
 
 ## `FitnessAgeEngine` — on-device "Fitness Age" (Nes/HUNT)

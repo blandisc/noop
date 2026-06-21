@@ -32,6 +32,8 @@ struct DataSourcesView: View {
     // Live two-way Apple Health. Injected by CenitApp.
     @EnvironmentObject private var health: HealthKitBridge
     @State private var hkBusy = false
+    /// Opt-in mirror of finished strength sessions into Apple Health (FER-390). Off by default.
+    @AppStorage(HealthKitBridge.saveStrengthWorkoutsKey) private var saveStrengthWorkouts = false
     #endif
 
     // Backup & restore + automatic iCloud backup — migrated here from SettingsView for FER-337 so no
@@ -202,6 +204,10 @@ struct DataSourcesView: View {
                 Text(verbatim: err)
                     .font(StrandFont.footnote).foregroundStyle(theme.warning)
             }
+
+            divider
+            strengthWorkoutToggle
+
             // Reachability for the per-source Apple Health viewer. Pushed within this screen's
             // NavigationStack — «Ver datos importados ›».
             divider
@@ -220,6 +226,28 @@ struct DataSourcesView: View {
         // Load coverage + write permissions on appear so opening the screen shows "X days imported"
         // and the per-metric list without forcing a re-import first.
         .task { await health.refreshStatus() }
+    }
+
+    /// Opt-in: write finished strength sessions to Apple Health as workouts so they show in Health /
+    /// Fitness and (via estimated active energy) count toward the iPhone's Move ring — no Apple Watch
+    /// needed (FER-390). Off by default; flipping it on requests only the workout + active-energy
+    /// share, independent of the main sync connection above.
+    @ViewBuilder
+    private var strengthWorkoutToggle: some View {
+        Toggle(isOn: $saveStrengthWorkouts) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Save workouts to Apple Health")
+                    .font(StrandFont.body).foregroundStyle(theme.ink)
+                Text("Your strength sessions appear in Health and count toward your Move ring, with estimated calories.")
+                    .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .tint(theme.verdict)
+        .disabled(health.auth == .unavailable)
+        .onChange(of: saveStrengthWorkouts) { _, on in
+            if on { Task { await health.requestWorkoutShareAuthorization() } }
+        }
     }
 
     /// Authorized: the sync/reimport control, then either live progress (mid-sync) or the coverage
