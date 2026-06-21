@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Se retira el widget por ahora (vendrá uno nuevo) / The widget is retired for now (a new one is coming).**
+  **ES** — El widget de pantalla de inicio / bloqueo (recuperación, frecuencia cardiaca y batería) se **quita** por ahora: era del diseño oscuro viejo y no encajaba con la app en papel. En su lugar habrá una **nueva estrategia de widgets** más adelante. Si lo tenías puesto, desaparecerá; nada más dentro de la app cambia.
+  **EN** — The Home/Lock-Screen widget (recovery, heart rate and battery) is **removed** for now: it belonged to the old dark design and didn't fit the paper app. A **new widget strategy** will come later. If you had it placed, it'll go away; nothing else inside the app changes.
+  ([project.yml](project.yml))
 - **Tu dieta puede cambiar según el día de la semana / Your diet can change by day of the week.**
   **ES** — Muchos planes varían por día (lun/mié/vie ≠ mar/jue). Ahora Dieta soporta planes **semanales**: al navegar por fecha, el tracker muestra **las comidas de ese día** y tu % es de ese día. Un día sin comidas (p. ej. domingo libre) se ve como **día libre** y no te penaliza. En la captura a mano, cada comida trae chips de **días** —todos = todos los días; quita alguno y tu plan se vuelve semanal—; y el prompt de la IA ya lo entiende. Los recordatorios llegan solo los días que aplican. Los planes diarios siguen exactamente igual.
   **EN** — Many plans vary by day (Mon/Wed/Fri ≠ Tue/Thu). Diet now supports **weekly** plans: as you navigate by date, the tracker shows **that day's meals** and your % is for that day. A day with no meals (e.g. a free Sunday) reads as a **rest day** and doesn't penalize you. In manual capture, each meal has **day** chips —all = every day; deselect any and your plan becomes weekly—; and the AI prompt understands it too. Reminders fire only on the days that apply. Daily plans stay exactly the same.
