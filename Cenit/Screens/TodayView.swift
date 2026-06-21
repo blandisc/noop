@@ -225,6 +225,13 @@ struct TodayView: View {
                 let rows  = await repo.hrBuckets(from: start, to: now, bucketSeconds: 300)
                 hrPoints  = rows.map { TrendPoint(date: Date(timeIntervalSince1970: TimeInterval($0.ts)), value: $0.bpm) }
             }
+            // «Hoy» nunca pedía la carga del strap por su cuenta: dependía del sondeo del keep-alive
+            // (cada ~60 s, y SUSPENDIDO durante el offload), así que tras el sync matutino la batería
+            // quedaba en `nil` y el header no la mostraba. Refresca la lectura al aparecer y cuando el
+            // enlace queda libre —recién conectado o terminó el backfill—, respetando no picar al strap
+            // a mitad del offload (la WHOOP 4.0 la trae por GET_BATTERY_LEVEL, el mismo comando que ya
+            // usan el keep-alive y Live; no se agrega ninguno nuevo al set seguro).
+            .task(id: "\(live.connected)|\(live.backfilling)") { refreshStrapBatteryIfIdle() }
             .toolbar {
                 ToolbarItem {
                     Button { showingSupport = true } label: {
@@ -478,7 +485,9 @@ struct TodayView: View {
                 // crece a la par del de abajo y despega las métricas del héroe.
                 // El acceso al monitor en vivo «latido a latido» vive como pastilla de pulso en el
                 // encabezado de «Métricas de hoy» (FER-194), no como fila al pie. Ver `iosMetricsSection`.
-                Spacer(minLength: NoopMetrics.space2)
+                // Mínimo a `space1` (4) en el caso compacto: cuando el contenido desborda, este Spacer va
+                // a su mínimo y cada punto cuenta para que Hoy quepa; cuando sobra espacio igual crece.
+                Spacer(minLength: NoopMetrics.space1)
                 // Sin ninguna fuente (ni strap ni Apple Health), las 8 tiles vacías no aportan: se
                 // ocultan y dejan paso a la tarjeta para conectar fuentes, y Hoy cabe de una. (FER-364)
                 if noSources { emptySourcesCard } else { iosMetricsSection }
@@ -498,7 +507,7 @@ struct TodayView: View {
             // Inset superior `gap` (FER-202): el héroe queda alto pero respira; márgenes h/inferior estándar.
             .padding(.horizontal, NoopMetrics.screenPadding)
             .padding(.bottom, NoopMetrics.screenPadding)
-            .padding(.top, NoopMetrics.gap)
+            .padding(.top, NoopMetrics.space2)
             // Llena al menos el alto visible para que los `Spacer` tengan sobrante que repartir; si el
             // contenido lo excede (p. ej. calibrando en pantalla chica), crece y hace scroll igual.
             .frame(maxWidth: .infinity, minHeight: proxy.size.height, alignment: .leading)
@@ -602,6 +611,15 @@ struct TodayView: View {
             await pullToSync()
             pullSyncing = false
         }
+    }
+
+    /// Pide una lectura de batería del strap SOLO cuando el enlace está libre (conectado y sin offload
+    /// en curso) — nunca a mitad del backfill, igual que el keep-alive evita picar al strap entonces
+    /// (`guard !backfilling`, BLEManager). `refreshBattery()` es agnóstico al modelo (4.0 → comando
+    /// GET_BATTERY_LEVEL; 5/MG → lectura 0x2A19) y no introduce ningún comando nuevo.
+    @MainActor private func refreshStrapBatteryIfIdle() {
+        guard live.connected, !live.backfilling else { return }
+        model.getBattery()
     }
 
     /// Recovery score driving the hero numeral (0–100). nil while calibrating.
@@ -753,14 +771,17 @@ struct TodayView: View {
     /// derecha — incluso en espera — para que la pantalla nunca se vea a medio construir.
     @ViewBuilder private var heroInstrument: some View {
         let state = heroState
-        VStack(spacing: NoopMetrics.gap) {
+        // Ritmo vertical compacto: gap del héroe a `space2` (8) en vez de `gap` (12) para que «Hoy»
+        // quepa de una durante la calibración —cuando la barra «afinando» suma una fila extra— sin
+        // tocar el dial grande de 180 (FER-205). El dueño eligió «compactar el ritmo» sobre achicar el dial.
+        VStack(spacing: NoopMetrics.space2) {
             // FER-283/284: la overline del héroe usa `instrumentoOverlineProminent` (14/medium) en tinta
             // secundaria — más presencia sin competir con el numeral. Un nudge de aire arriba la baja un
             // poco del estado/fecha, y queda centrada (también si el texto envuelve).
             Text(heroOverline(state)).instrumentoOverlineProminent().foregroundStyle(theme.inkSecondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.top, NoopMetrics.space2)
+                .padding(.top, NoopMetrics.space1)
             // Instrumento concéntrico (FER-169): el numeral domina el CENTRO del dial de 24h, no a su lado.
             // Sin número que medir (em-dash) el dial es el protagonista; con número, el dato vive dentro del
             // reloj. El dial preside SIEMPRE y centrado para que la pantalla nunca se vea a medio construir.
@@ -1304,7 +1325,7 @@ struct TodayView: View {
             }
             .frame(height: 5)
         }
-        .padding(.top, NoopMetrics.gap)
+        .padding(.top, NoopMetrics.space2)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("Confianza de calibración"))
         .accessibilityValue(Text(baselineFromApple
