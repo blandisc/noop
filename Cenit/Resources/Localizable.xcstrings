@@ -32272,6 +32272,57 @@
           }
         }
       }
+    },
+    "Adherence · history": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adherence · history"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apego · histórico"
+          }
+        }
+      }
+    },
+    "Each cell is a day · greener = higher adherence. Tap a day to view it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Each cell is a day · greener = higher adherence. Tap a day to view it."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada celda es un día · más verde = más apego. Toca un día para verlo."
+          }
+        }
+      }
+    },
+    "Your daily adherence will appear here as you mark your meals.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your daily adherence will appear here as you mark your meals."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu apego de cada día aparecerá aquí conforme marques tus comidas."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

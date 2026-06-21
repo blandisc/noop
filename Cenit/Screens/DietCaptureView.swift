@@ -44,6 +44,7 @@ struct DietCaptureView: View {
     @State private var todayStatuses: [String: DietMealStatus] = [:]
     @State private var todayOptions: [String: Int] = [:]   // mealId → chosen equivalent option (FER-401)
     @State private var adherence7d: [Double] = []
+    @State private var heatDays: [RecoveryDay] = []   // last 90 days for the adherence heatmap (FER-410)
     @State private var todayKey = ""
     @State private var selectedDay = ""
     // Manual capture (FER-403): the form being typed.
@@ -273,6 +274,7 @@ struct DietCaptureView: View {
                 mealTracker(plan)
                 indications(plan)
             }
+            adherenceCalendar
             QuietButton("Replace plan") { startCapture() }
         }
     }
@@ -317,6 +319,48 @@ struct DietCaptureView: View {
             }
             Text("Only what your plan declared. NOOP doesn't count calories.")
                 .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+        }
+    }
+
+    /// A 90-day adherence heatmap (FER-410): each cell a day, tinted green by its apego %, faint when
+    /// untracked. Reuses `YearHeatStrip`; tapping a day jumps the tracker to it.
+    private var adherenceCalendar: some View {
+        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+            Text("Adherence · history").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            if heatDays.contains(where: { $0.score != nil }) {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    YearHeatStrip(
+                        days: heatDays,
+                        cellSize: 13,
+                        spacing: 3,
+                        showsScrub: false,
+                        tint: { theme.dataRecovery.opacity(0.20 + 0.80 * Swift.min(1, Swift.max(0, $0) / 100)) },
+                        emptyFill: theme.hairline,
+                        emptyStroke: theme.hairlineStrong,
+                        labelColor: theme.inkTertiary,
+                        onSelect: { goToDay(Repository.localDayKey($0.date)) },
+                        selectionColor: theme.ink,
+                        valueFormat: { "\(Int($0.rounded()))%" },
+                        valueWord: "adherence"
+                    )
+                }
+                Text("Each cell is a day · greener = higher adherence. Tap a day to view it.")
+                    .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            } else {
+                Text("Your daily adherence will appear here as you mark your meals.")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            }
+        }
+    }
+
+    /// Build the trailing-90-day adherence heatmap (today-relative, contiguous so gaps show as faint
+    /// untracked days). Score = the day's apego %, nil when there's no record.
+    private static func buildHeatDays(_ byDay: [String: Double], todayKey: String) -> [RecoveryDay] {
+        guard let today = dayKeyParser.date(from: todayKey) else { return [] }
+        return (0..<90).reversed().compactMap { off -> RecoveryDay? in
+            guard let date = Calendar.current.date(byAdding: .day, value: -off, to: today) else { return nil }
+            let key = Repository.localDayKey(date)
+            return RecoveryDay(date: date.addingTimeInterval(12 * 3600), score: byDay[key])
         }
     }
 
@@ -551,6 +595,13 @@ struct DietCaptureView: View {
         todayOptions = Dictionary(marks.compactMap { row in row.optionIndex.map { (row.mealId, $0) } },
                                   uniquingKeysWith: { first, _ in first })
         adherence7d = await repo.dietAdherenceSeries(from: Self.weekAgoKey(of: selectedDay), to: selectedDay)
+        await loadHeat()
+    }
+
+    /// Load the trailing-90-day adherence heatmap (today-relative, independent of the viewed day).
+    private func loadHeat() async {
+        let byDay = await repo.dietAdherenceByDay(from: Self.shiftDay(todayKey, by: -89), to: todayKey)
+        heatDays = Self.buildHeatDays(byDay, todayKey: todayKey)
     }
 
     /// Jump to a day (never past today) and reload its marks + trend.
@@ -571,6 +622,7 @@ struct DietCaptureView: View {
             await repo.saveDietAdherence(day: day, mealId: mealId, status: status,
                                          plannedMeals: planned, optionIndex: option)
             adherence7d = await repo.dietAdherenceSeries(from: Self.weekAgoKey(of: day), to: day)
+            await loadHeat()
         }
     }
 
