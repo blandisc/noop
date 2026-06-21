@@ -243,7 +243,7 @@ struct DataSourcesView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .tint(theme.verdict)
+        .toggleStyle(.instrumento)
         .disabled(health.auth == .unavailable)
         .onChange(of: saveStrengthWorkouts) { _, on in
             if on { Task { await health.requestWorkoutShareAuthorization() } }

@@ -1,5 +1,22 @@
 #if os(iOS)
 import SwiftUI
+import UIKit
+import StrandDesign
+
+/// Re-skins the native `UISegmentedControl` to the «Instrumento» language (FER-408): a warm selected
+/// pill in ink text instead of the system's pure-white pill. `.pickerStyle(.segmented)` ignores SwiftUI
+/// `.tint`, so this UIKit appearance pass is the contained, app-wide way to theme every segmented
+/// picker at once. Safe because the app anchors to the single light `.base` theme everywhere (FER-398),
+/// so there is no dark segmented control to mis-theme. (Toggles use `InstrumentoToggleStyle`; steppers
+/// keep `.tint`.)
+@MainActor private func configureInstrumentoControlAppearance() {
+    let t = InstrumentoTheme.base
+    let seg = UISegmentedControl.appearance()
+    seg.selectedSegmentTintColor = UIColor(t.surface)        // warm pill, never pure white
+    seg.backgroundColor = UIColor(t.hairline)                // warm track behind the segments
+    seg.setTitleTextAttributes([.foregroundColor: UIColor(t.inkSecondary)], for: .normal)
+    seg.setTitleTextAttributes([.foregroundColor: UIColor(t.ink)], for: .selected)
+}
 
 /// iOS entry point. A single `WindowGroup`; the glanceable role is filled by the Home/Lock-Screen
 /// widget.
@@ -17,6 +34,7 @@ struct CenitApp: App {
         // silent no-op (PendingIntents, WidgetSnapshot.publish, Live Activity) can mask the issue as
         // "the widget doesn't show anything yet." No-op in Release.
         WidgetSnapshot.assertGroupProvisioned()
+        configureInstrumentoControlAppearance()   // FER-408: warm the native segmented control once at launch
         let model = AppModel()
         _model = StateObject(wrappedValue: model)
         let healthBridge = HealthKitBridge(

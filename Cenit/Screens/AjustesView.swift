@@ -109,7 +109,7 @@ private struct AjustesLanding: View {
                         .font(StrandFont.bodyNumber).foregroundStyle(theme.ink)
                         .frame(minWidth: 28, alignment: .trailing)
                     Stepper("Age", value: $profile.age, in: 13...100)
-                        .labelsHidden().tint(theme.dataRecovery)
+                        .labelsHidden().tint(theme.inkSecondary)
                         .accessibilityLabel("Age, \(profile.age) years")
                 }
             }
@@ -161,7 +161,7 @@ private struct AjustesLanding: View {
                 Text(unit).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             }
             Stepper(accessibility, value: value, in: range, step: step)
-                .labelsHidden().tint(theme.dataRecovery).accessibilityLabel(accessibility)
+                .labelsHidden().tint(theme.inkSecondary).accessibilityLabel(accessibility)
         }
     }
 
@@ -178,7 +178,7 @@ private struct AjustesLanding: View {
                 Text("lb").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             }
             Stepper("Weight in pounds", value: lb, in: 66...551, step: 1)
-                .labelsHidden().tint(theme.dataRecovery)
+                .labelsHidden().tint(theme.inkSecondary)
                 .accessibilityLabel("Weight, \(Int(lb.wrappedValue.rounded())) pounds")
         }
     }
@@ -194,7 +194,7 @@ private struct AjustesLanding: View {
                 .font(StrandFont.bodyNumber).foregroundStyle(theme.ink)
                 .frame(minWidth: 56, alignment: .trailing)
             Stepper("Height in inches", value: inches, in: 47...91, step: 1)
-                .labelsHidden().tint(theme.dataRecovery)
+                .labelsHidden().tint(theme.inkSecondary)
                 .accessibilityLabel("Height, \(parts.feet) feet \(parts.inches) inches")
         }
     }
@@ -207,7 +207,7 @@ private struct AjustesLanding: View {
                 .foregroundStyle(profile.hrMaxOverride > 0 ? theme.ink : theme.inkTertiary)
                 .frame(minWidth: 44, alignment: .trailing)
             Stepper("Max heart rate override", value: $profile.hrMaxOverride, in: 0...230, step: 1)
-                .labelsHidden().tint(theme.dataRecovery)
+                .labelsHidden().tint(theme.inkSecondary)
                 .accessibilityLabel("Max heart rate override, \(profile.hrMaxOverride == 0 ? "automatic" : "\(profile.hrMaxOverride) \(String(localized: "bpm"))")")
         }
     }
@@ -258,7 +258,7 @@ private struct AjustesLanding: View {
         Toggle(isOn: $puffinExperiments) {
             Text("WHOOP 5/MG protocol probes").font(StrandFont.body).foregroundStyle(theme.ink)
         }
-        .toggleStyle(.switch).tint(theme.dataRecovery).padding(.vertical, 4)
+        .toggleStyle(.instrumento).padding(.vertical, 4)
         Text("On a 5/MG connection Cénit sends a probe after the handshake and logs what comes back. No effect on WHOOP 4.0.")
             .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             .fixedSize(horizontal: false, vertical: true)
@@ -266,7 +266,7 @@ private struct AjustesLanding: View {
         Toggle(isOn: $puffinCapture) {
             Text("Record 5/MG frames to a file").font(StrandFont.body).foregroundStyle(theme.ink)
         }
-        .toggleStyle(.switch).tint(theme.dataRecovery).padding(.vertical, 4)
+        .toggleStyle(.instrumento).padding(.vertical, 4)
         if live.puffinCaptureCount > 0 {
             HStack(spacing: 10) {
                 Text("\(live.puffinCaptureCount) frame\(live.puffinCaptureCount == 1 ? "" : "s") captured this session.")

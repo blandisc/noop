@@ -83,7 +83,7 @@ struct CoachView: View {
             }
             Spacer(minLength: 8)
             Toggle("", isOn: $coach.dataConsent)
-                .labelsHidden().toggleStyle(.switch).tint(theme.dataRecovery)
+                .labelsHidden().toggleStyle(.instrumento)
                 .accessibilityLabel("Let the coach use my data")
         }
         .padding(12)
