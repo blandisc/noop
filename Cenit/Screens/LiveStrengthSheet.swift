@@ -34,11 +34,17 @@ private func massString(_ kg: Double, units: UnitSystem) -> String {
 /// the sheet, so the many small edits (steppers, table edits, rest ticks) don't republish all of AppModel.
 @MainActor
 final class StrengthSessionModel: ObservableObject {
-    /// One logged/planned set within an exercise. Weight is stored in kilograms (display converts).
+    /// One logged/planned set within an exercise. Which fields matter depends on the exercise's
+    /// `ExerciseType`: weight+reps / reps(+optional lastre) / time / distance(+time). Weight is stored
+    /// in kilograms, time in seconds, distance in meters (display converts). Unused fields stay nil/0.
     struct WorkingSet: Identifiable, Equatable {
         let id: String
         var weightKg: Double
         var reps: Int
+        /// Captured seconds for `time`/`distance` sets (nil until the stopwatch is stopped).
+        var timeS: Int?
+        /// Captured meters for `distance` sets.
+        var distanceM: Double?
         var done: Bool
         var doneTs: Int?
     }
@@ -70,6 +76,9 @@ final class StrengthSessionModel: ObservableObject {
     @Published var phase: Phase = .capturing
     /// When the fixed rest countdown ends; nil when not resting. Durable so the timer survives a tab switch.
     @Published var restEndsAt: Date?
+    /// When the current set's stopwatch started; nil when not running. For `time`/`distance` Foco. Durable
+    /// (an absolute Date), so the running clock survives closing the sheet or switching tabs.
+    @Published var timerStart: Date?
 
     init(id: String = UUID().uuidString, routineId: String?, routineName: String,
          startTs: Int, runs: [ExerciseRun]) {
@@ -108,6 +117,25 @@ final class StrengthSessionModel: ObservableObject {
     func setCurrentReps(_ reps: Int) { mutateCurrentSet { $0.reps = max(0, reps) } }
     func bumpWeight(byKg delta: Double) { mutateCurrentSet { $0.weightKg = max(0, $0.weightKg + delta) } }
     func bumpReps(_ delta: Int) { mutateCurrentSet { $0.reps = max(0, $0.reps + delta) } }
+    func bumpDistance(byMeters delta: Double) { mutateCurrentSet { $0.distanceM = max(0, ($0.distanceM ?? 0) + delta) } }
+
+    // MARK: Stopwatch (time / distance Foco)
+
+    /// Live elapsed seconds of the running stopwatch (0 when stopped). Driven by a `TimelineView`.
+    func timerElapsed(now: Date = Date()) -> Int {
+        guard let start = timerStart else { return 0 }
+        return max(0, Int(now.timeIntervalSince(start)))
+    }
+    /// Start the current set's stopwatch.
+    func startSetTimer(now: Date = Date()) { phase = .capturing; timerStart = now }
+    /// Stop the stopwatch and fold its elapsed seconds onto the current set's `timeS` (accumulates, so
+    /// start/stop/start keeps the total). A no-op if it wasn't running.
+    func stopSetTimer(now: Date = Date()) {
+        guard let start = timerStart else { return }
+        let elapsed = max(0, Int(now.timeIntervalSince(start)))
+        mutateCurrentSet { $0.timeS = ($0.timeS ?? 0) + elapsed }
+        timerStart = nil
+    }
 
     private func mutateCurrentSet(_ change: (inout WorkingSet) -> Void) {
         guard runs.indices.contains(currentIndex) else { return }
@@ -123,13 +151,16 @@ final class StrengthSessionModel: ObservableObject {
         currentIndex = exerciseIndex
         runs[exerciseIndex].currentSet = setIndex
         phase = .capturing
+        timerStart = nil
     }
 
     // MARK: Set actions
 
     /// Register the current set (mark done) and start the fixed rest. Then advance to the next pending set.
+    /// A running stopwatch is captured first, so «register» on a time/distance set logs its elapsed time.
     func registerCurrentSet(now: Date = Date()) {
         guard runs.indices.contains(currentIndex) else { return }
+        if timerStart != nil { stopSetTimer(now: now) }
         let i = runs[currentIndex].currentSet
         guard runs[currentIndex].sets.indices.contains(i) else { return }
         runs[currentIndex].sets[i].done = true
@@ -147,6 +178,7 @@ final class StrengthSessionModel: ObservableObject {
         runs[currentIndex].sets.append(set)
         runs[currentIndex].currentSet = runs[currentIndex].sets.count - 1
         phase = .capturing
+        timerStart = nil
     }
 
     /// Skip the current (pending) set: drop it from the plan. A done set is left untouched.
@@ -156,6 +188,7 @@ final class StrengthSessionModel: ObservableObject {
         guard runs[currentIndex].sets.indices.contains(i), !runs[currentIndex].sets[i].done else { return }
         runs[currentIndex].sets.remove(at: i)
         runs[currentIndex].currentSet = min(i, max(0, runs[currentIndex].sets.count - 1))
+        timerStart = nil
         advanceToNextPending()
     }
 
@@ -168,13 +201,14 @@ final class StrengthSessionModel: ObservableObject {
         runs[index].currentSet = runs[index].sets.firstIndex { !$0.done } ?? 0
         phase = .capturing
         restEndsAt = nil
+        timerStart = nil
     }
 
     /// Mark an exercise as skipped (it no longer counts / shows as current). Advances off it if it was current.
     func skipExercise(_ index: Int) {
         guard runs.indices.contains(index) else { return }
         runs[index].skipped = true
-        if index == currentIndex { phase = .capturing; restEndsAt = nil; advanceToNextPending(fromStart: true) }
+        if index == currentIndex { phase = .capturing; restEndsAt = nil; timerStart = nil; advanceToNextPending(fromStart: true) }
     }
 
     /// Move an exercise one slot earlier in the plan (reorder), keeping the current exercise focused.
@@ -230,7 +264,9 @@ final class StrengthSessionModel: ObservableObject {
 
     // MARK: Persistence
 
-    /// Build the `StrengthSession` + its done `SetEntry` rows for saving (work sets only; warm-ups are FER-351).
+    /// Build the `StrengthSession` + its done `SetEntry` rows for saving (work sets only). Each set
+    /// persists only the fields its exercise type measures, so a time/distance set never carries the
+    /// model's placeholder reps and the weight×reps path stays exactly as it was.
     func buildForSave(deviceId: String?, endTs: Int) -> (StrengthSession, [SetEntry]) {
         let session = StrengthSession(id: id, routineId: routineId, startTs: startTs,
                                       endTs: endTs, deviceId: deviceId)
@@ -238,10 +274,11 @@ final class StrengthSessionModel: ObservableObject {
         var position = 0
         for run in runs where !run.skipped {
             for set in run.sets where set.done {
+                let f = SetCapture.fields(type: run.type, weightKg: set.weightKg, reps: set.reps,
+                                          timeS: set.timeS, distanceM: set.distanceM)
                 entries.append(SetEntry(id: set.id, sessionId: id, exerciseId: run.exerciseId,
                                         position: position, kind: .work,
-                                        weightKg: set.weightKg > 0 ? set.weightKg : nil,
-                                        reps: set.reps > 0 ? set.reps : nil,
+                                        weightKg: f.weightKg, reps: f.reps, timeS: f.timeS, distanceM: f.distanceM,
                                         done: true, ts: set.doneTs ?? endTs))
                 position += 1
             }
@@ -262,18 +299,21 @@ final class StrengthSessionModel: ObservableObject {
     static func make(routineId: String?, routineName: String, slots: [PlanSlot],
                      startTs: Int) -> StrengthSessionModel {
         let runs: [ExerciseRun] = slots.map { slot in
+            let type = slot.exercise?.type ?? .weightReps
+            let usesReps = type == .weightReps || type == .bodyweight
             let last = slot.lastSets.first
             let lastWeight = last?.weightKg
             let lastReps = last?.reps
             let count = max(1, slot.re.targetSets)
             let weight = slot.re.targetWeightKg ?? lastWeight ?? 0
-            let reps = slot.re.targetReps ?? lastReps ?? 8
+            // Reps only seed the rep-based types; time/distance capture their datum live, so 0 here.
+            let reps = usesReps ? (slot.re.targetReps ?? lastReps ?? 8) : 0
             let sets = (0..<count).map { _ in
                 WorkingSet(id: UUID().uuidString, weightKg: weight, reps: reps, done: false)
             }
             return ExerciseRun(id: slot.re.id, exerciseId: slot.re.exerciseId,
                                name: slot.exercise?.name ?? String(localized: "Exercise"),
-                               type: slot.exercise?.type ?? .weightReps,
+                               type: type,
                                restSeconds: slot.re.restSeconds,
                                lastWeightKg: lastWeight, lastReps: lastReps,
                                sets: sets, currentSet: 0, skipped: false)
@@ -296,14 +336,22 @@ struct LiveStrengthSheet: View {
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     var theme: InstrumentoTheme = .base
 
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var showTable = false
     @State private var confirmFinish = false
+    /// Per-exercise time goal (seconds) for the `time` Foco — a display target, default 30s.
+    @State private var goals: [String: Int] = [:]
 
     private var units: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
     private var imperial: Bool { units == .imperial }
     /// Plate step: 2.5 kg metric, 5 lb imperial — stored as kg.
     private var weightStepKg: Double { imperial ? 5 * Self.kgPerPound : 2.5 }
     static let kgPerPound = 0.45359237
+    static let metersPerMile = 1609.344
+    /// Distance step: 0.1 km metric, 0.1 mi imperial — stored as meters.
+    private var distanceStepM: Double { imperial ? Self.metersPerMile * 0.1 : 100 }
+    /// At large accessibility sizes the cardio two-up reflows to a single column so nothing clips.
+    private var reflow: Bool { typeSize >= .accessibility1 }
 
     var body: some View {
         ScrollView {
@@ -389,14 +437,45 @@ struct LiveStrengthSheet: View {
                                 .strokeBorder(theme.hairline, lineWidth: 1))
                             .accessibilityLabel(Text("Rest \(run.restSeconds) seconds"))
                     }
-                    referenceLine(run)
+                    if run.type == .weightReps { referenceLine(run) } else { setTypeLine(run) }
                 }
 
-                weightFoco(run)
-                repsRow
-                registerButton
+                // The Foco adapts to the exercise type (FER-351): weight×reps, reps(+lastre), a
+                // stopwatch with a goal, or distance/time with the strap's live HR.
+                switch run.type {
+                case .weightReps:
+                    weightFoco(run)
+                    repsRow
+                    registerButton
+                case .bodyweight:
+                    repsFoco(run)
+                    lastreRow(run)
+                    registerButton
+                case .time:
+                    timeControls(run)
+                case .distance:
+                    distanceControls(run)
+                }
                 tableHandle(run)
             }
+        }
+    }
+
+    /// Set counter + the measure word, for the non-weight×reps variants (which don't show «la última vez»).
+    private func setTypeLine(_ run: StrengthSessionModel.ExerciseRun) -> some View {
+        HStack(spacing: 8) {
+            Text(setCounterText(run)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            Spacer(minLength: 8)
+            Text(typeWord(run.type)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+        }
+    }
+
+    private func typeWord(_ t: ExerciseType) -> LocalizedStringKey {
+        switch t {
+        case .weightReps: return "Weight"
+        case .bodyweight: return "Bodyweight"
+        case .time:       return "Time"
+        case .distance:   return "Distance"
         }
     }
 
@@ -467,6 +546,220 @@ struct LiveStrengthSheet: View {
                 .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
         }
         .buttonStyle(.plain)
+    }
+
+    // MARK: Bodyweight Foco (reps lead; lastre optional)
+
+    /// The dominant datum for a bodyweight exercise: the reps, in the effort hue, flanked by steppers.
+    private func repsFoco(_ run: StrengthSessionModel.ExerciseRun) -> some View {
+        HStack {
+            stepper(system: "minus") { session.bumpReps(-1) }
+                .accessibilityLabel(Text("Decrease reps"))
+            Spacer(minLength: 8)
+            VStack(spacing: 0) {
+                Text("\(session.currentSet?.reps ?? 0)")
+                    .instrumentoHero(76).foregroundStyle(theme.dataStrain)
+                    .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
+                Text("reps").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
+            }
+            Spacer(minLength: 8)
+            stepper(system: "plus") { session.bumpReps(1) }
+                .accessibilityLabel(Text("Increase reps"))
+        }
+        .accessibilityElement(children: .contain)
+    }
+
+    /// Optional added load («lastre») for a bodyweight set — starts at zero (bodyweight only).
+    private func lastreRow(_ run: StrengthSessionModel.ExerciseRun) -> some View {
+        let kg = session.currentSet?.weightKg ?? 0
+        return HStack {
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Added weight").font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                Text(kg > 0 ? "optional" : "optional · bodyweight only")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            }
+            Spacer()
+            HStack(spacing: 16) {
+                stepper(system: "minus", size: 34) { session.bumpWeight(byKg: -weightStepKg) }
+                    .accessibilityLabel(Text("Decrease added weight"))
+                Text("+\(plateNumber(displayWeight(kg))) \(UnitFormatter.massUnit(units))")
+                    .font(StrandFont.title2).monospacedDigit()
+                    .foregroundStyle(kg > 0 ? theme.ink : theme.inkTertiary)
+                stepper(system: "plus", size: 34) { session.bumpWeight(byKg: weightStepKg) }
+                    .accessibilityLabel(Text("Increase added weight"))
+            }
+        }
+        .accessibilityElement(children: .contain)
+    }
+
+    // MARK: Time Foco (stopwatch with a goal; registers on stop)
+
+    @ViewBuilder private func timeControls(_ run: StrengthSessionModel.ExerciseRun) -> some View {
+        let running = session.timerStart != nil
+        if running {
+            TimelineView(.periodic(from: Date(), by: 1)) { ctx in
+                timeReadout(elapsed: session.timerElapsed(now: ctx.date), run: run)
+            }
+        } else {
+            timeReadout(elapsed: session.currentSet?.timeS ?? 0, run: run)
+        }
+        Button { withAnimation(.snappy) { running ? session.registerCurrentSet() : session.startSetTimer() } } label: {
+            Label(running ? "Stop and save" : "Start", systemImage: running ? "stop.fill" : "play.fill")
+                .font(StrandFont.headline).foregroundStyle(theme.paper)
+                .frame(maxWidth: .infinity).padding(.vertical, 15)
+                .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func timeReadout(elapsed: Int, run: StrengthSessionModel.ExerciseRun) -> some View {
+        let goal = goalSeconds(run)
+        let met = elapsed >= goal && elapsed > 0
+        let isRunning = session.timerStart != nil
+        return VStack(spacing: 8) {
+            Text(Self.clock(elapsed))
+                .instrumentoHero(72).monospacedDigit()
+                .foregroundStyle(elapsed > 0 ? theme.dataStrain : theme.inkTertiary)
+                .minimumScaleFactor(0.5).lineLimit(1)
+            HStack(spacing: 14) {
+                stepper(system: "minus", size: 30) { adjustGoal(run, -15) }
+                    .accessibilityLabel(Text("Decrease goal"))
+                Text(met ? "Goal \(Self.clock(goal)) · reached" : "Goal \(Self.clock(goal))")
+                    .font(StrandFont.subhead).monospacedDigit()
+                    .foregroundStyle(met ? theme.dataRecovery : theme.inkSecondary)
+                stepper(system: "plus", size: 30) { adjustGoal(run, 15) }
+                    .accessibilityLabel(Text("Increase goal"))
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(isRunning ? "Timing, \(elapsed) seconds. Goal \(goal) seconds."
+                                 : "\(elapsed) seconds. Goal \(goal) seconds."))
+    }
+
+    private func goalSeconds(_ run: StrengthSessionModel.ExerciseRun) -> Int { goals[run.id] ?? 30 }
+    private func adjustGoal(_ run: StrengthSessionModel.ExerciseRun, _ delta: Int) {
+        goals[run.id] = max(5, goalSeconds(run) + delta)
+    }
+
+    // MARK: Distance / cardio Foco (distance + time in ink; strap HR + zone in color)
+
+    @ViewBuilder private func distanceControls(_ run: StrengthSessionModel.ExerciseRun) -> some View {
+        let dist = session.currentSet?.distanceM ?? 0
+        let running = session.timerStart != nil
+        if reflow {
+            VStack(spacing: 12) { distanceCard(dist); timeCard(running: running) }
+        } else {
+            HStack(spacing: 12) { distanceCard(dist); timeCard(running: running) }
+        }
+        hrZoneRow
+        let captured = dist > 0 || (session.currentSet?.timeS ?? 0) > 0 || running
+        Button { withAnimation(.snappy) { session.registerCurrentSet() } } label: {
+            Label("Register set", systemImage: "checkmark")
+                .font(StrandFont.headline).foregroundStyle(theme.paper)
+                .frame(maxWidth: .infinity).padding(.vertical, 15)
+                .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .disabled(!captured)
+        .opacity(captured ? 1 : 0.5)
+    }
+
+    private func distanceCard(_ meters: Double) -> some View {
+        cardioCard {
+            Text(distanceNumber(meters))
+                .instrumentoHero(40).foregroundStyle(theme.ink)
+                .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
+            Text(imperial ? "mi" : "km").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            HStack(spacing: 18) {
+                stepper(system: "minus", size: 34) { session.bumpDistance(byMeters: -distanceStepM) }
+                    .accessibilityLabel(Text("Decrease distance"))
+                stepper(system: "plus", size: 34) { session.bumpDistance(byMeters: distanceStepM) }
+                    .accessibilityLabel(Text("Increase distance"))
+            }
+            .padding(.top, 2)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text("Distance \(distanceNumber(meters)) \(imperial ? "miles" : "kilometers")"))
+    }
+
+    @ViewBuilder private func timeCard(running: Bool) -> some View {
+        if running {
+            TimelineView(.periodic(from: Date(), by: 1)) { ctx in
+                timeCardBody(elapsed: session.timerElapsed(now: ctx.date), running: true)
+            }
+        } else {
+            timeCardBody(elapsed: session.currentSet?.timeS ?? 0, running: false)
+        }
+    }
+
+    private func timeCardBody(elapsed: Int, running: Bool) -> some View {
+        cardioCard {
+            Text(Self.clock(elapsed))
+                .instrumentoHero(40).foregroundStyle(theme.ink)
+                .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
+            Text("time").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            Button { withAnimation(.snappy) { running ? session.stopSetTimer() : session.startSetTimer() } } label: {
+                Text(running ? "Stop" : "Start")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .frame(maxWidth: .infinity).padding(.vertical, 7)
+                    .background(theme.paper, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+                        .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 2)
+            .accessibilityLabel(Text(running ? "Stop the timer" : "Start the timer"))
+        }
+    }
+
+    /// A surface card used by the cardio two-up (distance / time).
+    private func cardioCard<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        VStack(spacing: 6) { content() }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14).padding(.horizontal, 10)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                .strokeBorder(theme.hairline, lineWidth: 1))
+    }
+
+    /// The strap's live HR + zone, in the zone hue. Absent (degraded) when no strap is streaming.
+    @ViewBuilder private var hrZoneRow: some View {
+        if let hr = model.bpm {
+            let zone = hrZone(hr)
+            let hue = theme.hrZoneRamp[max(0, min(theme.hrZoneRamp.count - 1, zone - 1))]
+            HStack(spacing: 10) {
+                Image(systemName: "heart.fill").font(.system(size: 17)).foregroundStyle(hue)
+                Text("\(hr)").font(StrandFont.title2).monospacedDigit().foregroundStyle(hue)
+                Text("bpm").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                Spacer()
+                Text("Zone \(zone)").font(StrandFont.caption).foregroundStyle(hue)
+                    .padding(.horizontal, 9).padding(.vertical, 3)
+                    .background(theme.paper, in: RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous)
+                        .strokeBorder(theme.hairline, lineWidth: 1))
+            }
+            .padding(.horizontal, 14).padding(.vertical, 11)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                .strokeBorder(theme.hairline, lineWidth: 1))
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(Text("Heart rate \(hr) beats per minute, zone \(zone)"))
+        }
+    }
+
+    /// Coarse 1–5 HR zone from %HRmax — the same thresholds as the live zone-coaching haptics.
+    private func hrZone(_ hr: Int) -> Int {
+        let maxHR = Double(model.profile.hrMax)
+        guard maxHR > 0 else { return 1 }
+        let pct = Double(hr) / maxHR
+        return pct >= 0.9 ? 5 : pct >= 0.8 ? 4 : pct >= 0.7 ? 3 : pct >= 0.6 ? 2 : 1
+    }
+
+    /// Stored meters → the user's unit (km / mi), two decimals.
+    private func distanceNumber(_ meters: Double) -> String {
+        let v = imperial ? meters / Self.metersPerMile : meters / 1000
+        return String(format: "%.2f", v)
     }
 
     private func tableHandle(_ run: StrengthSessionModel.ExerciseRun) -> some View {
@@ -610,7 +903,17 @@ struct LiveStrengthSheet: View {
     private var nextUpText: String {
         guard let run = session.current, let set = session.currentSet else { return String(localized: "Workout complete") }
         let n = (run.sets.firstIndex { $0.id == set.id } ?? 0) + 1
-        return String(localized: "Up next · Set \(n) · \(massText(set.weightKg)) × \(set.reps)")
+        return String(localized: "Up next · Set \(n) · \(upNextMeasure(run, set))")
+    }
+
+    /// The «up next» measure for the rest screen, by exercise type.
+    private func upNextMeasure(_ run: StrengthSessionModel.ExerciseRun, _ set: StrengthSessionModel.WorkingSet) -> String {
+        switch run.type {
+        case .weightReps: return "\(massText(set.weightKg)) × \(set.reps)"
+        case .bodyweight: return set.weightKg > 0 ? "\(set.reps) reps · +\(massText(set.weightKg))" : String(localized: "\(set.reps) reps")
+        case .time:       return Self.clock(goalSeconds(run))
+        case .distance:   return String(localized: "distance")
+        }
     }
 
     // MARK: Small builders
@@ -708,7 +1011,7 @@ private struct SetTableDrawer: View {
                         drawerButton("Add set", "plus") { session.addSet() }
                         drawerButton("Skip set", "forward.end") { session.skipCurrentSet() }
                     }
-                    Text("Tap a set to edit its weight or reps in the Focus.")
+                    Text("Tap a set to edit it in the Focus.")
                         .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
@@ -736,21 +1039,18 @@ private struct SetTableDrawer: View {
     private func rowButton(run: StrengthSessionModel.ExerciseRun, index: Int,
                            set: StrengthSessionModel.WorkingSet) -> some View {
         let focused = index == run.currentSet
+        let summary = setSummary(run, set)
         return Button { session.select(exerciseIndex: session.currentIndex, setIndex: index) } label: {
             Group {
                 if reflow {
                     VStack(alignment: .leading, spacing: 4) {
                         HStack { setBadge(index: index, set: set, focused: focused); Spacer(); statusIcon(set) }
-                        Text("\(massText(set.weightKg)) · \(set.reps) reps")
-                            .font(StrandFont.body).foregroundStyle(set.done ? theme.inkSecondary : theme.ink)
+                        Text(summary).font(StrandFont.body).foregroundStyle(set.done ? theme.inkSecondary : theme.ink)
                     }
                 } else {
                     HStack(spacing: 8) {
                         setBadge(index: index, set: set, focused: focused)
-                        Text(massText(set.weightKg)).font(StrandFont.body).monospacedDigit()
-                            .foregroundStyle(set.done ? theme.inkSecondary : theme.ink)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        Text("\(set.reps)").font(StrandFont.body).monospacedDigit()
+                        Text(summary).font(StrandFont.body).monospacedDigit()
                             .foregroundStyle(set.done ? theme.inkSecondary : theme.ink)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         statusIcon(set)
@@ -762,9 +1062,28 @@ private struct SetTableDrawer: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text("Set \(index + 1), \(massText(set.weightKg)) by \(set.reps) reps, \(set.done ? "done" : "pending")"))
+        .accessibilityLabel(Text("Set \(index + 1), \(summary), \(set.done ? "done" : "pending")"))
         .accessibilityHint(Text("Tap to edit"))
         .accessibilityAddTraits(focused ? .isSelected : [])
+    }
+
+    /// A type-aware one-line summary of a set: weight×reps / reps(+lastre) / time / distance·time.
+    private func setSummary(_ run: StrengthSessionModel.ExerciseRun, _ set: StrengthSessionModel.WorkingSet) -> String {
+        switch run.type {
+        case .weightReps:
+            return "\(massText(set.weightKg)) · \(set.reps) reps"
+        case .bodyweight:
+            return set.weightKg > 0 ? "\(set.reps) reps · +\(massText(set.weightKg))" : String(localized: "\(set.reps) reps")
+        case .time:
+            return LiveStrengthSheet.clock(set.timeS ?? 0)
+        case .distance:
+            return "\(distanceText(set.distanceM ?? 0)) · \(LiveStrengthSheet.clock(set.timeS ?? 0))"
+        }
+    }
+
+    private func distanceText(_ meters: Double) -> String {
+        let v = units == .imperial ? meters / LiveStrengthSheet.metersPerMile : meters / 1000
+        return String(format: "%.2f %@", v, units == .imperial ? "mi" : "km")
     }
 
     private func setBadge(index: Int, set: StrengthSessionModel.WorkingSet, focused: Bool) -> some View {
