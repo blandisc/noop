@@ -14,8 +14,9 @@ import Foundation
 // Longevity, each a `theme.surface` card whose grouped stats (label · value in its data hue · optional
 // legend) tap straight into their detail, with the «How you wake after each sport» insight nested under
 // a hairline inside Activity → connect nudge → global actions (Compare · See all metrics) at the foot.
-// Each stat is its own tap target (the direct shortcut the old rows had); the card-header chevron opens
-// Explore. Only the hero carries a trend on the landing — the dense stats are a number, not a chart.
+// Each stat is its own tap target (the direct shortcut the old rows had); the card header is a quiet
+// label (no chevron — «See all metrics» at the foot is the one catalog door, no duplicate). Only the
+// hero carries a trend on the landing — the dense stats are a number, not a chart.
 //
 // Detail bridge: every vital now opens a light «Instrumento» sheet — the scalar vitals (HRV / Resting HR /
 // Respiración / SpO₂) through the unified `MetricDetailScreen` (FER-185), and the composite/own-shaped ones
@@ -65,6 +66,25 @@ private enum CuerpoSheet: Identifiable {
         switch self {
         case .screen(let s): return "screen-\(s)"
         }
+    }
+}
+
+// MARK: - Press feedback for surface cards
+
+/// Press feedback for a card that paints its OWN `theme.surface` background inside the button label:
+/// `MetricRowButtonStyle` fills BEHIND the label, which an opaque surface would hide, so this overlays
+/// the tint ON TOP, clipped to the card's rounded shape. Same 5%-ink + easeOut(0.12) feel as the stats.
+private struct CardPressStyle: ButtonStyle {
+    var tint: Color
+    var radius: CGFloat = NoopMetrics.cardRadius
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .overlay {
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .fill(tint)
+                    .opacity(configuration.isPressed ? 1 : 0)
+            }
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
 
@@ -130,7 +150,9 @@ private struct CuerpoLanding: View {
     @State private var showBodyAge = false
 
     // Loaded once per refresh (memoized in `loadAll`) so the body never re-scans history per render.
-    @State private var sparks: [String: [Double]] = [:]
+    /// The 14-day Recovery trend — the ONLY sparkline on the card landing (the hero). The dense stats
+    /// are a number, not a chart, so no per-metric sparks are computed anymore. (FER-186 card redesign)
+    @State private var recoverySpark: [Double] = []
     @State private var hrPoints: [TrendPoint] = []
     @State private var appleDays: [AppleDaily] = []
     @State private var appleMetricDays: [DailyMetric] = []
@@ -323,22 +345,14 @@ private struct CuerpoLanding: View {
 
     // MARK: - Domain card scaffolding (Instrumento rule 3: one surface, no card-in-card)
 
-    /// A domain card: a quiet overline header (tappable chevron → the metric catalog) over its grouped
-    /// stats, on a single `theme.surface` panel.
-    private func domainCard<Content: View>(_ title: LocalizedStringKey, headerTap: @escaping () -> Void,
+    /// A domain card: a quiet overline header (a label — it only orients, Instrumento rule 4) over its
+    /// grouped stats, on a single `theme.surface` panel. The catalog door is the footer's «See all
+    /// metrics»; the header carries no chevron so it doesn't duplicate that destination.
+    private func domainCard<Content: View>(_ title: LocalizedStringKey,
                                            @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            Button(action: headerTap) {
-                HStack(spacing: 8) {
-                    Text(title).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    Spacer(minLength: 8)
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityHint("Opens all metrics.")
+            Text(title).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                .frame(maxWidth: .infinity, alignment: .leading)
             content()
         }
         .padding(.vertical, 16).padding(.horizontal, 20)
@@ -388,7 +402,7 @@ private struct CuerpoLanding: View {
 
     /// Rest & load — Sleep · Day Strain · Stress, each column into its detail.
     private var restLoadCard: some View {
-        domainCard("Rest & load", headerTap: { showExplore = true }) {
+        domainCard("Rest & load") {
             HStack(spacing: 13) {
                 sleepStat
                 vsep
@@ -429,7 +443,7 @@ private struct CuerpoLanding: View {
 
     /// Vitals — a 3×2 grid of scalar vitals, each into its `MetricDetailScreen`.
     private var vitalsCard: some View {
-        domainCard("Vitals", headerTap: { showExplore = true }) {
+        domainCard("Vitals") {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .leading), count: 3),
                       alignment: .leading, spacing: 18) {
                 hrvStat; rhrStat; spo2Stat; heartStat; respStat; skinTempStat
@@ -439,7 +453,7 @@ private struct CuerpoLanding: View {
 
     /// Activity — Steps · Workouts·14d, with «How you wake after each sport» nested under a hairline.
     private var activityCard: some View {
-        domainCard("Activity", headerTap: { showExplore = true }) {
+        domainCard("Activity") {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(spacing: 13) {
                     stepsStat
@@ -454,7 +468,7 @@ private struct CuerpoLanding: View {
 
     /// Longevity — Physical age · Body age · VO₂ Max, each with a micro-legend, into its sheet.
     private var longevityCard: some View {
-        domainCard("Longevity", headerTap: { showExplore = true }) {
+        domainCard("Longevity") {
             HStack(alignment: .top, spacing: 13) {
                 physicalAgeStat
                 vsep
@@ -470,8 +484,8 @@ private struct CuerpoLanding: View {
     private var recoveryHero: some View {
         let score = repo.today?.recovery.map { Int($0.rounded()) }
         let cal = recoveryCalibration
-        let spark = sparks["recovery"]
-        let showSpark = (spark?.count ?? 0) > 1 && score != nil
+        let spark = recoverySpark
+        let showSpark = spark.count > 1 && score != nil
         let color = score.map(recoveryColor) ?? theme.inkTertiary
         return Button {
             recoveryDetail = RecoveryDetailItem(model: RecoveryDetailModel.build(
@@ -503,7 +517,10 @@ private struct CuerpoLanding: View {
                 .strokeBorder(theme.hairline, lineWidth: 1))
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        // Press feedback to match the stats: the hero draws its own `surface` background, so a fill
+        // BEHIND the label (MetricRowButtonStyle) wouldn't show — `CardPressStyle` overlays the tint on
+        // top, clipped to the same rounded shape. (FER-186 follow-up)
+        .buttonStyle(CardPressStyle(tint: theme.ink.opacity(0.05)))
         .accessibilityElement(children: .combine)
     }
 
@@ -910,20 +927,11 @@ private struct CuerpoLanding: View {
             nightlyHrv: repo.days.map(\.avgHrv),
             hasRecovery: repo.today?.recovery != nil)
 
-        // Sparklines from the merged display dashboard (in memory) so they resolve for both import and
-        // BLE users — `series()` is import-only for computed metrics (FER-149).
-        let w = trailingDisplay(14)
-        sparks["recovery"]        = w.compactMap(\.recovery)
-        sparks["sleep_total_min"] = w.compactMap(\.totalSleepMin)
-        sparks["strain"]          = w.compactMap(\.strain)
-        sparks["hrv"]             = w.compactMap(\.avgHrv)
-        sparks["rhr"]             = w.compactMap { $0.restingHr.map(Double.init) }
-        sparks["spo2"]            = w.compactMap(\.spo2Pct)
-        sparks["resp_rate"]       = w.compactMap(\.respRateBpm)
-        sparks["skin_temp"]       = w.compactMap(\.skinTempDevC)
+        // The hero's 14-day Recovery trend — the only sparkline on the card landing. From the merged
+        // display dashboard (in memory) so it resolves for both import and BLE users (FER-149).
+        recoverySpark = trailingDisplay(14).compactMap(\.recovery)
 
-        // Steps live in the apple-health series, not the daily dashboard; today's HR is bucketed.
-        async let steps      = sparkValues("steps", source: "apple-health", window: 14)
+        // Today's HR is bucketed; the rest of the daily/Apple rows feed values, not sparklines.
         async let adRows     = repo.appleDailyRows()
         async let amRows     = repo.appleDailyMetricRows()
         async let wkRows     = repo.workoutRows()
@@ -933,7 +941,6 @@ private struct CuerpoLanding: View {
         let nowTs = Int(Date().timeIntervalSince1970)
         async let hrRows = repo.hrBuckets(from: startOfToday, to: nowTs, bucketSeconds: 300)
 
-        sparks["steps"] = await steps
         appleDays = await adRows
         appleMetricDays = (await amRows).sorted { $0.day < $1.day }
         let workouts = await wkRows
@@ -951,7 +958,6 @@ private struct CuerpoLanding: View {
         // displayDays = Apple-health fallback (FER-149); local todayKey ignores a UTC "tomorrow" row (FER-226).
         let stress = StressModel(days: repo.displayDays, stored: await stressRows, todayKey: Repository.localDayKey(Date()))
         stressModel = stress
-        sparks["stress"] = stress.map { Array($0.fullTrend.suffix(14).map(\.value)) } ?? []
 
         fitnessAge = computeFitnessAge()
 
@@ -1138,14 +1144,6 @@ private struct CuerpoLanding: View {
 
     private static func descriptor(_ key: String) -> MetricDescriptor? {
         MetricCatalog.all.first { $0.key == key }
-    }
-
-    /// Trailing-window series values from the metric-series table (apple-health metrics like steps).
-    private func sparkValues(_ key: String, source: String, window: Int) async -> [Double] {
-        let all = await repo.series(key: key, source: source, days: window + 2)
-        guard !all.isEmpty else { return [] }
-        let cutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -(window - 1), to: Date()) ?? Date())
-        return all.filter { $0.day >= cutoff }.map { $0.value }
     }
 
 }
