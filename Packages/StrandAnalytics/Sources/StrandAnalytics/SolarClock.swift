@@ -4,11 +4,12 @@ import Foundation
 // any location permission. Pure and database-free (the StrandAnalytics rule); the
 // only platform dependency is Foundation's `TimeZone` / `Calendar`.
 //
-// Method — the NOAA sunrise/sunset solar-geometry approximation (NOAA Global
-// Monitoring Laboratory, Solar Calculator: https://gml.noaa.gov/grad/solcalc/).
-// We use the low-precision form that models Earth's orbit as circular and ignores
-// the equation of time, which is accurate to roughly ±15 min at low and mid
-// latitudes — plenty for a 24-hour dial face. The steps (all angles in degrees):
+// Method — a low-precision solar-geometry approximation: Cooper's (1969) circular-orbit
+// declination with the standard sunrise/sunset hour-angle equation. (NOAA's own Solar
+// Calculator, https://gml.noaa.gov/grad/solcalc/, uses the higher-precision Meeus
+// algorithm; we adopt only its −0.833° sunrise/sunset altitude convention below.) Modeling
+// Earth's orbit as circular and ignoring the equation of time is accurate to roughly ±15 min
+// at low and mid latitudes — plenty for a 24-hour dial face. The steps (all angles in degrees):
 //
 //   declination   δ    = −23.44° · cos( 360/365 · (N + 10) )      (N = day-of-year)
 //   hour angle    cosH = ( sin(−0.833°) − sinφ·sinδ ) / (cosφ·cosδ)
@@ -41,7 +42,7 @@ public enum SolarClock {
         -> (sunrise: Double, sunset: Double)? {
         let deg = Double.pi / 180.0
 
-        // Solar declination — Cooper's approximation, as used by the NOAA calculator.
+        // Solar declination — Cooper's (1969) approximation (Solar Energy 12(3):333–346).
         let declination = -23.44 * cos((360.0 / 365.0) * Double(dayOfYear + 10) * deg)
 
         let phi = lat * deg

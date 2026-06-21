@@ -5,10 +5,12 @@ import WhoopStore
 import StrandAnalytics
 
 /// On-device "intelligence": computes recovery / day-strain / sleep from the raw strap streams using
-/// the same model shape WHOOP uses (HRV vs personal baseline ~60%, resting HR ~20%, sleep ~15%,
-/// respiration ~5%; strain 0–21 from cardiovascular load). This is what makes NOOP independent of
-/// WHOOP's cloud — for any day the strap collected raw data with NOOP connected, NOOP scores it
-/// itself rather than relying on the values WHOOP computed in the imported CSV.
+/// NOOP's own WHOOP-like, HRV-dominant recovery composite — HRV vs personal baseline as the dominant
+/// term, then resting HR, sleep and respiration, baseline-normalized (strain 0–21 from cardiovascular
+/// load). The blend weights are NOOP's own product-calibration choice, NOT WHOOP's: WHOOP discloses
+/// only the qualitative ordering, not its recovery weights (see docs/ANALYTICS.md). This is what makes
+/// NOOP independent of WHOOP's cloud — for any day the strap collected raw data with NOOP connected,
+/// NOOP scores it itself rather than relying on the values WHOOP computed in the imported CSV.
 @MainActor
 final class IntelligenceEngine: ObservableObject {
     private let repo: Repository

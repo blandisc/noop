@@ -28,9 +28,10 @@ public enum DietAdherence {
         return Int((Double(adherent) / Double(plannedMeals) * 100).rounded())
     }
 
-    /// A day counts as "followed the plan" at this adherence % or above (FER-385). 80% is the standard
-    /// «clinically meaningful adherence» cut in the medication-adherence literature (PDC/MPR ≥ 80% =
-    /// "adherent"; Karve et al. 2009; Cramer et al. / ISPOR 2008) — high enough that a day is genuinely
+    /// A day counts as "followed the plan" at this adherence % or above (FER-385). The 80% cut is
+    /// borrowed BY ANALOGY from the medication-adherence literature, where PDC/MPR ≥ 80% is the common
+    /// "adherent" convention (Karve et al. 2009) — there is no validated 80% cutoff for *diet* adherence,
+    /// so this is a NOOP product convention, not a clinical threshold: high enough that a day is genuinely
     /// on-plan, forgiving enough that one swap or skip out of several meals still counts.
     public static let adherentDayThreshold: Int = 80
 

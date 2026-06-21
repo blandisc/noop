@@ -131,6 +131,17 @@ final class BaselinesTests: XCTestCase {
         XCTAssertEqual(s.nValid, 0)
     }
 
+    func testRollingMeanSDFloorsSpreadInSameSpaceAsEWMA() {
+        // A flat HRV series: rollingMeanSD (display band) must floor the spread in the SAME internal
+        // abs-dev space as foldHistory/update (scoring baseline), so they agree near the floor. Before
+        // the fix rollingMeanSD floored σ at floorSpread (0.08) while the EWMA path floored it at
+        // floorSpread·1.253 (0.10) — a 1.253× mismatch.
+        let rolling = Baselines.rollingMeanSD(Array(repeating: 50.0, count: 14), cfg: Baselines.hrvCfg)
+        let ewma = Baselines.foldHistory(Array(repeating: 50.0, count: 14), cfg: Baselines.hrvCfg)
+        XCTAssertEqual(rolling.spread, ewma.spread, accuracy: 1e-9)
+        XCTAssertEqual(rolling.spread, Baselines.hrvCfg.floorSpread, accuracy: 1e-9)   // 0.08, not 0.0638
+    }
+
     // MARK: - Confidence shrinkage (FER-13)
 
     func testConfidenceRampEndpoints() {

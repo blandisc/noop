@@ -6,10 +6,30 @@ import XCTest
 final class VO2maxReferenceTests: XCTestCase {
 
     func testMenAndWomenKnownPoints() {
-        // Men: 58.3 − 0.42·age. Women: 45.8 − 0.32·age.
-        XCTAssertEqual(VO2maxReference.expected(age: 40, sex: "male"), 41.5, accuracy: 0.6)
-        XCTAssertEqual(VO2maxReference.expected(age: 40, sex: "female"), 33.0, accuracy: 0.6)
-        XCTAssertEqual(VO2maxReference.expected(age: 25, sex: "male"), 47.8, accuracy: 0.6)
+        // Men: 59.25 − 0.474·age. Women: 44.66 − 0.373·age (least-squares over the FRIEND decade medians).
+        XCTAssertEqual(VO2maxReference.expected(age: 40, sex: "male"), 40.3, accuracy: 0.6)
+        XCTAssertEqual(VO2maxReference.expected(age: 40, sex: "female"), 29.7, accuracy: 0.6)
+        XCTAssertEqual(VO2maxReference.expected(age: 25, sex: "male"), 47.4, accuracy: 0.6)
+    }
+
+    func testTracksFriendDecadeMedians() {
+        // The fitted curve should stay within ~2 ml/kg/min of the published FRIEND p50 medians.
+        let men: [(Int, Double)] = [(25, 48.0), (35, 42.4), (45, 37.8), (55, 32.6), (65, 28.2), (75, 24.4)]
+        let women: [(Int, Double)] = [(25, 37.6), (35, 30.2), (45, 26.7), (55, 23.4), (65, 20.0), (75, 18.3)]
+        for (age, p50) in men {
+            XCTAssertEqual(VO2maxReference.expected(age: age, sex: "male"), p50, accuracy: 2.0, "men \(age)")
+        }
+        for (age, p50) in women {
+            XCTAssertEqual(VO2maxReference.expected(age: age, sex: "female"), p50, accuracy: 2.5, "women \(age)")
+        }
+    }
+
+    func testFriendMedianWomanClassifiesAverage() {
+        // FER fix: a woman measuring the real FRIEND p50 for her age must read "average", not "low"
+        // (the old curve over-stated the women's median by ~+4–5 and pushed age-peer-median women to "low").
+        for (age, p50) in [(35, 30.2), (45, 26.7), (55, 23.4), (65, 20.0)] {
+            XCTAssertEqual(VO2maxReference.category(value: p50, age: age, sex: "female"), .average, "age \(age)")
+        }
     }
 
     func testDeclinesWithAge() {

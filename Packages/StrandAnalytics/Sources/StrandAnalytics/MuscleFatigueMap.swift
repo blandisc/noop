@@ -27,8 +27,12 @@ import Foundation
 //     no fragile absolute constant.
 //
 //   • Weekly volume (`weeklySets`) is the RAW count of involvement-weighted work sets in the last
-//     7 days (no decay), shown in the detail and judged against the hypertrophy guideline of
-//     ~10–20 sets/week per muscle:
+//     7 days (no decay), shown in the detail and judged against a ~10–20 sets/week-per-muscle band.
+//     The ~10-set LOWER anchor (a near-maximal hypertrophy threshold on a graded dose-response) is
+//     from Schoenfeld 2017; that meta-analysis explicitly notes the evidence is INSUFFICIENT to set
+//     an upper limit (data are sparse beyond ~10–12 weekly sets), so the 20-set ceiling here is a
+//     practical product convention, NOT a Schoenfeld finding — high volume is flagged for awareness,
+//     not called unsafe:
 //        Schoenfeld BJ, Ogborn D, Krieger JW. "Dose-response relationship between weekly resistance
 //        training volume and increases in muscle mass: a systematic review and meta-analysis."
 //        J Sports Sci 35(11):1073–82, 2017.
@@ -136,12 +140,19 @@ public enum MuscleFatigueMap {
         let inWindow = events.filter { $0.daysAgo >= 0 && $0.daysAgo <= window.days }
         guard !inWindow.isEmpty else { return [] }
 
-        var decayed: [String: Double] = [:]
+        // Weekly volume is a fixed 7-day count, INDEPENDENT of the display window: compute it over the
+        // FULL event set, not `inWindow`. (Bug fix: accumulating over `inWindow` meant the .d3 lens
+        // dropped sets at daysAgo 4…7 before the ≤7 guard ran — identical data read 1.0 set/wk on .d3 vs
+        // 3.0 on .d7/.d14, which could flip a muscle's Schoenfeld band purely from the chosen lens.)
         var weekly: [String: Double] = [:]
+        for e in events where e.daysAgo >= 0 && e.daysAgo <= 7 {
+            weekly[e.muscle, default: 0] += e.involvement
+        }
+
+        var decayed: [String: Double] = [:]
         var lastSeen: [String: Int] = [:]
         for e in inWindow {
             decayed[e.muscle, default: 0] += e.involvement * decay(daysAgo: e.daysAgo)
-            if e.daysAgo <= 7 { weekly[e.muscle, default: 0] += e.involvement }
             lastSeen[e.muscle] = min(lastSeen[e.muscle] ?? Int.max, e.daysAgo)
         }
 

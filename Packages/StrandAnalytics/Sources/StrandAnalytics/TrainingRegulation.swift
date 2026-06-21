@@ -8,8 +8,8 @@ import Foundation
 // blocks training.
 //
 // This is autoregulation — adjusting the day's training to the athlete's measured readiness:
-//   • Kiviniemi, A.M. et al. "Endurance training guided individually by daily measures of heart
-//     rate variability." Eur J Appl Physiol 102(3):311–320, 2007. The HRV-guided arm — raise /
+//   • Kiviniemi, A.M. et al. "Endurance training guided individually by daily heart rate
+//     variability measurements." Eur J Appl Physiol 101(6):743–751, 2007. The HRV-guided arm — raise /
 //     hold / lower the day's load relative to each athlete's own band — out-performed a fixed
 //     program. This rule is that pattern: measure today against your normal, then adjust.
 //   • The ±½σ actionable threshold reuses the criterion already documented in ReadinessEngine

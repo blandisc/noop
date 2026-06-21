@@ -11,7 +11,8 @@ import WhoopStore
 /// - **HRV readiness** — z-score of today's HRV against the personal trailing baseline. A drop of
 ///   roughly half a standard deviation flags autonomic fatigue (Plews et al. 2013; Buchheit 2014).
 /// - **Resting-HR drift** — elevated resting HR vs baseline is a classic overtraining / illness
-///   signal (Lamberts et al. 2004).
+///   signal (Buchheit 2014, Front Physiol 5:73 — resting / exercise / recovery HR for training-status
+///   monitoring; Lamberts et al. 2004 covers *submaximal-exercise* HR, a different measure).
 /// - **Respiratory-rate drift** — a rise in sleeping respiratory rate is an early illness signal.
 /// - **Training Stress Balance (ACWR)** — acute (7-day) vs chronic (28-day) strain. The 0.8–1.3
 ///   band reads as balanced load (Gabbett 2016). NOOP treats it as a load-balance descriptor, not an

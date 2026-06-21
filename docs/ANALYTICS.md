@@ -445,10 +445,10 @@ An expert review against current primary literature found the upstream coefficie
 2. **Sleep duration — asymmetric.** Optimum 7.0 h (±0.5 neutral); short arm 0.060, long arm 0.120 (Yin 2017; Cappuccio 2010), replacing the symmetric 0.110 that over-penalized short sleep.
 3. **Overlap shrink — factor-count-dependent.** `1/(1+0.35·(n−1))` instead of a fixed 0.75, which over-counted correlated signals and unfairly cut users with few inputs (e.g. steps only, no strap).
 4. **HRV — attenuated.** Weight 0.160 → 0.110, in log form (`ln(norm/rmssd)`, Hillebrand 2013) — the HRs come from clinical short-term ECG, not nocturnal PPG, and the daytime-calibrated norm table already makes the factor conservative. Carries a mandatory non-clinical domain caveat.
-5. **Sleep regularity — reference.** Slope kept (Windred 2024 — regularity predicts mortality more strongly than duration); ref 0.75 → 0.60 (the SRI population median). The orchestration (FER-145, `CuerpoView.computeSleepRegularity` → `SleepRegularityIndex.fromSessions`) passes a **real SRI/100**; the engine's `sleepConsistency` (1 − CV of durations) remains only as a cold-start fallback.
+5. **Sleep regularity — reference.** Slope kept; the SRI p5-vs-median all-cause-mortality HR 1.53 (95% CI 1.41–1.66) and the population median SRI ≈60 (→0.60 on an SRI/100 scale) are from **Cribb 2023** (*eLife* 12:RP88359). Windred 2024 is the "regularity predicts mortality more strongly than duration" result — its cohort median runs higher (~81), so it is *not* the source of the 0.60 reference. Upstream ref 0.75 → 0.60 so the average user is neutral. The orchestration (FER-145, `CuerpoView.computeSleepRegularity` → `SleepRegularityIndex.fromSessions`) passes a **real SRI/100**; the engine's `sleepConsistency` (1 − CV of durations) remains only as a cold-start fallback.
 6. **Steps — age-aware threshold.** Reference `age ≥ 60 ? 7000 : 8500` (Paluch 2022); per-1,000 weight 0.064 and the 11k protection cap kept (conservative vs Jayedi 2022).
 
-Kept **verbatim** (well-centered, documented): VO₂max 0.130/MET (Kodama 2009 / Singh 2025; estimated ≈ measured); Gompertz MRDT 8 yr (within the human 7.7–9.9 range, a global ±~15% scale). The full per-coefficient review with primary sources is logged on the FER-124 issue. References: **Zhang 2016 / Aune 2017** (RHR), **Kodama 2009 / Singh 2025** (VO₂max), **Yin 2017 / Cappuccio 2010** (sleep), **Windred 2024** (regularity), **Jarczok 2022 / Hillebrand 2013** (HRV), **Paluch 2022 / Jayedi 2022** (steps).
+Kept **verbatim** (well-centered, documented): VO₂max 0.130/MET (Kodama 2009 / Singh 2025; estimated ≈ measured); Gompertz MRDT 8 yr (within the human 7.7–9.9 range, a global ±~15% scale). The full per-coefficient review with primary sources is logged on the FER-124 issue. References: **Zhang 2016 / Aune 2017** (RHR), **Kodama 2009 / Singh 2025** (VO₂max), **Yin 2017 / Cappuccio 2010** (sleep), **Cribb 2023 / Windred 2024** (regularity), **Jarczok 2022 / Hillebrand 2013** (HRV), **Paluch 2022 / Jayedi 2022** (steps).
 
 ---
 
@@ -456,13 +456,13 @@ Kept **verbatim** (well-centered, documented): VO₂max 0.130/MET (Kodama 2009 /
 
 Source: `ReadinessEngine.swift`. Live in `TodayView` (the verdict hero). A pure, deterministic synthesis of a handful of established sports-science signals from the daily-metrics history into one readiness `Level` (`primed` / `balanced` / `strained` / `rundown` / `insufficient`) plus the drivers behind it. Each signal is a flag (`good` / `neutral` / `watch` / `bad`):
 
-- **HRV / resting-HR / respiratory-rate / skin-temp** — z-scores against the **same** robust EWMA personal baseline `RecoveryScorer` consumes (so the verdict and the score never tell two different stories), shrunk toward neutral on thin baselines. HRV-drop and RHR-rise flag autonomic fatigue / overtraining (Plews et al. 2013; Buchheit 2014; Lamberts et al. 2004); a respiratory-rate or skin-temperature rise is an early illness marker.
+- **HRV / resting-HR** — z-scores against the robust EWMA personal baseline `RecoveryScorer` also consumes (shrunk toward neutral on thin baselines). An HRV drop / RHR rise flags autonomic fatigue / overtraining (Plews et al. 2013; Buchheit 2014). **Respiratory rate** uses a plain trailing-window Gaussian z (mean / sample-SD over the recent baseline window) and **skin-temperature** uses fixed °C deviation thresholds (≈ +0.4 / +0.8 °C) rather than a baseline z — a rise in either is an early illness marker. (`RecoveryScorer.recovery()` *does* route all four through the EWMA baseline, so the score and this verdict can differ slightly for resp / skin-temp.)
 - **Training Stress Balance (ACWR)** — acute (7-day) ÷ chronic (28-day) workload, banded `<0.8 / 0.8–1.3 / 1.3–1.5 / ≥1.5` (sweet spot 0.8–1.3; ≥1.5 = higher injury risk). Computed on a **linearized** TRIMP-like load (inverting `StrainScorer`'s log map) so a spike reads as a spike, not flattened. Needs ≥ `minChronic` (14) days of strain.
 - **Training monotony** — week-long mean ÷ SD of strain; high monotony (low day-to-day variety) is associated with higher strain/illness (Foster 1998).
 
 A short night (< 6 h) flags the morning read **low-confidence** (a short night suppresses HRV / lifts RHR regardless of true recovery). A separate, testable `BridgeKind` reconciles a high recovery score against a cautious verdict (the classic "you woke up recovered, but your training load is the thing to watch" divergence), reusing `RecoveryScorer.bandYellowMax` as the "recovery high" threshold.
 
-**Honest note — the ACWR is coupled.** The acute window is a subset of the chronic window (acute ⊂ chronic), faithful to the original Gabbett formulation; this is the "coupled" ACWR whose statistical properties (spurious correlation, ratio artefacts) were critiqued by **Lolli et al. 2019** — an uncoupled ACWR (acute vs the *preceding* chronic block) avoids the shared term. NOOP keeps the coupled form deliberately (it matches the published bands users may know), and the readout is an association, not a clinical risk model. APPROXIMATE. References: **Gabbett 2016** (*Br J Sports Med* 50:273–280, ACWR); **Foster 1998** (*Med Sci Sports Exerc* 30(7), monotony); **Lolli et al. 2019** (*Br J Sports Med* 53:1577–1578, coupled-vs-uncoupled critique); **Plews et al. 2013**, **Buchheit 2014**, **Lamberts et al. 2004** (HRV/RHR).
+**Honest note — the ACWR is coupled.** The acute window is a subset of the chronic window (acute ⊂ chronic), faithful to the original Gabbett formulation; this is the "coupled" ACWR whose statistical properties (spurious correlation, ratio artefacts) were critiqued by **Lolli et al. 2019** — an uncoupled ACWR (acute vs the *preceding* chronic block) avoids the shared term. NOOP keeps the coupled form deliberately (it matches the published bands users may know), and the readout is an association, not a clinical risk model. APPROXIMATE. References: **Gabbett 2016** (*Br J Sports Med* 50:273–280, ACWR); **Foster 1998** (*Med Sci Sports Exerc* 30(7), monotony); **Lolli et al. 2019** (*Br J Sports Med* 53(15):921–922, PMID 29101104, mathematical-coupling critique); **Plews et al. 2013**, **Buchheit 2014** (HRV/RHR).
 
 ---
 
@@ -494,18 +494,18 @@ r         = Σ(x−x̄)(y−ȳ) / sqrt( Σ(x−x̄)² · Σ(y−ȳ)² )
 slope     = Σ(x−x̄)(y−ȳ) / Σ(x−x̄)²          (OLS, y on x)
 intercept = ȳ − slope·x̄
 t         = r · sqrt( (n−2) / (1−r²) )
-p         = 2·(1 − Φ(|t|))                  (normal approximation)
+p         = 2·Iₓ(df/2, ½),  x = df/(df+t²)  (exact two-sided Student-t tail, df = n−2)
 ```
 
 - Returns `nil` for fewer than 3 pairs or zero variance in either variable.
-- Φ uses the Abramowitz & Stegun 7.1.26 `erf` approximation. The normal approximation slightly **understates** p for small n (true Student-t tails are heavier) but is fully deterministic with no special-function tables.
+- The tail is the **exact** two-sided Student-t p-value via the regularised incomplete beta `Iₓ(df/2, ½)` (continued-fraction evaluation, Lentz's method; *Numerical Recipes* §6.4), df = n−2 — fully deterministic, no special-function tables. (FER-299 replaced the earlier normal approximation, which **understated** p for small n because the true Student-t tails are heavier.)
 - `alignByDay(...)` inner-joins two `yyyy-MM-dd`-keyed series; `lagged(x:y:lagDays:)` shifts y forward by `lagDays` (UTC day arithmetic) to probe directional/delayed effects — e.g. *today's strain vs tomorrow's recovery*.
 
 ### `BehaviorInsights`
 
 Source: `BehaviorInsights.swift`. The headline "does this behavior move an outcome?" feature. Splits days where a behavior was logged (e.g. *Alcohol*, *Late meal*, *Meditation*) from days it was not, and compares an outcome metric between the groups.
 
-For each behavior/outcome it reports group means, signed `delta`, `pctChange`, **Cohen's d** (pooled SD), and a **Welch t-test** p-value (unequal variances, Welch–Satterthwaite df, normal-approx tail):
+For each behavior/outcome it reports group means, signed `delta`, `pctChange`, **Cohen's d** (pooled SD), and a **Welch t-test** p-value (unequal variances, Welch–Satterthwaite df, exact Student-t tail via the regularised incomplete beta):
 
 ```
 sp = sqrt( ((n1−1)·s1² + (n2−1)·s2²) / (n1+n2−2) )     d = (m1 − m2) / sp
@@ -516,7 +516,7 @@ t  = (m1 − m2) / sqrt(s1²/n1 + s2²/n2)
 - `rank(...)` orders effects by `|d|` descending, significant first.
 - `sentence(_:)` renders plain English, e.g. *"On days you logged 'Alcohol', Recovery was 12% lower (avg 61 vs 69, n=140 vs 498)."*
 
-**Eligible-day restriction (FER-385).** `effect(… , eligibleDays:)` takes an optional universe of days the behavior is even *measured* on. For journal behaviors it stays `nil` — absence of a log means "didn't do it", so every day is eligible. For **diet adherence** it's the set of days that carry a `diet-adherence` point: a day with no record is *unknown*, not non-adherent, and falls into **neither** group. The binary behavior is *"I followed my diet"* = days with `diet-adherence ≥ 80%` (`DietAdherence.adherentDayThreshold`; the ≥80% "clinically meaningful adherence" convention — Karve 2009; Cramer/ISPOR 2008). `InsightEngine.Inputs.eligibleDaysByBehavior` threads the per-behavior universe in; the **N-of-1 experiment deliberately does NOT restrict** (its "without" group is the full baseline — restricting a 7-day window would starve it below the `minGroup` floor).
+**Eligible-day restriction (FER-385).** `effect(… , eligibleDays:)` takes an optional universe of days the behavior is even *measured* on. For journal behaviors it stays `nil` — absence of a log means "didn't do it", so every day is eligible. For **diet adherence** it's the set of days that carry a `diet-adherence` point: a day with no record is *unknown*, not non-adherent, and falls into **neither** group. The binary behavior is *"I followed my diet"* = days with `diet-adherence ≥ 80%` (`DietAdherence.adherentDayThreshold`; 80% is borrowed *by analogy* from the medication-adherence PDC/MPR convention — Karve 2009 — not a validated diet cutoff, so it's a NOOP product convention). `InsightEngine.Inputs.eligibleDaysByBehavior` threads the per-behavior universe in; the **N-of-1 experiment deliberately does NOT restrict** (its "without" group is the full baseline — restricting a 7-day window would starve it below the `minGroup` floor).
 
 ### `ComparisonEngine`
 
@@ -614,7 +614,7 @@ Apple Health XML ──┘                                         │
 
 ## Conventions & honesty notes
 
-- **Approximate by design.** Recovery, strain, sleep stages, workout intensity, and calories are transparent approximations of published methods — not reproductions of any proprietary algorithm. Each engine's source header states exactly where it approximates (e.g. Malik instead of Kubios; RMSSD-only parasympathetic tone; normal-approx p-values).
+- **Approximate by design.** Recovery, strain, sleep stages, workout intensity, and calories are transparent approximations of published methods — not reproductions of any proprietary algorithm. Each engine's source header states exactly where it approximates (e.g. Malik instead of Kubios; RMSSD-only parasympathetic tone).
 - **Deterministic.** No randomness, no wall-clock dependence inside the math, no DB/network access. Same inputs → same outputs, which makes the package unit-testable against fixed vectors.
 - **Robust statistics.** z-scores use EWMA mean-absolute-deviation (`× 1.253` to a Gaussian σ); resting HR uses 5-minute bin minima; HR display uses windowed medians — all chosen to resist single-sample outliers.
 - **Cold-start honesty.** When a baseline isn't trustworthy yet, the recovery scorer returns `nil` rather than a fabricated number.

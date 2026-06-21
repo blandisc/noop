@@ -110,6 +110,25 @@ final class WorkoutDetectorTests: XCTestCase {
         XCTAssertTrue(WorkoutDetector.detect(hr: hr, gravity: grav, age: 30).isEmpty)
     }
 
+    func testShortBoutHasNilStrain() {
+        // A detected bout shorter than StrainScorer's ~10-min (600-sample) floor reports strain == nil
+        // by design (accepted span ~290–598 s). Pinned so the documented behavior can't silently change.
+        let start = 9_000_000
+        let (hr, grav) = workoutDay(workoutStart: start, workoutDur: 7 * 60)  // 7 min → 420 samples < 600
+        let sessions = WorkoutDetector.detect(hr: hr, gravity: grav, age: 30)
+        XCTAssertEqual(sessions.count, 1)
+        XCTAssertNil(sessions[0].strain, "a ~7-min bout is below StrainScorer's 600-sample floor → nil")
+    }
+
+    func testLongBoutHasStrain() {
+        // The companion: a 20-min bout clears the floor and gets a numeric strain.
+        let start = 9_500_000
+        let (hr, grav) = workoutDay(workoutStart: start, workoutDur: 20 * 60)
+        let sessions = WorkoutDetector.detect(hr: hr, gravity: grav, age: 30)
+        XCTAssertEqual(sessions.count, 1)
+        XCTAssertNotNil(sessions[0].strain)
+    }
+
     func testDetectEmptyStreams() {
         XCTAssertTrue(WorkoutDetector.detect(hr: [], gravity: [], age: 30).isEmpty)
         let grav = [GravitySample(ts: 0, x: 0, y: 0, z: 1)]

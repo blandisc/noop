@@ -57,7 +57,7 @@ struct PalancaDetailSheet: View {
                 VStack(spacing: 0) {
                     evidenceRow("Muestra", "\(insight.evidence.n)")
                     if let p = insight.evidence.pAdjusted ?? insight.evidence.pValue {
-                        evidenceRow("Significancia", significanceText(p, sig: insight.evidence.significant))
+                        evidenceRow("Significancia", significanceText(p, sig: insight.evidence.significant, kind: insight.kind))
                     }
                     if let d = insight.evidence.effectSize {
                         evidenceRow("Tamaño de efecto", String(format: "%.2f · %@", d, BucleFormat.magnitudeWord(d)))
@@ -156,8 +156,12 @@ struct PalancaDetailSheet: View {
         return BucleFormat.isGood(insight) ? theme.dataRecovery : theme.critical
     }
 
-    private func significanceText(_ p: Double, sig: Bool) -> String {
+    private func significanceText(_ p: Double, sig: Bool, kind: InsightKind) -> String {
         let pStr = p < 0.01 ? "p < 0.01" : String(format: "p = %.2f", p)
+        // Daily metric series are autocorrelated, so a cross-metric correlation's p overstates certainty:
+        // never stamp it "significativo" (mirrors InsightsView's discipline). Behavior with/without
+        // comparisons are the less-dependent case the engine does flag.
+        if kind == .correlation { return "\(pStr) · exploratorio" }
         return sig ? "\(pStr) · significativo" : "\(pStr) · exploratorio"
     }
 
