@@ -605,7 +605,7 @@ ES: dict[str, str] = {
 
     # Units / short tokens.
     "% Max": "% Máx",
-    "bpm": "bpm",
+    "bpm": "lpm",
     "BPM": "BPM",
     "Δ vs prev": "Δ vs. ant.",
     "REM": "REM",
@@ -635,7 +635,7 @@ ES: dict[str, str] = {
     "%lld overlapping days · %@ %@ correlation": "%lld días en común · vínculo %@ %@",
     "%lld–%lld%@ · step %lld": "%lld–%lld%@ · paso %lld",
     "Age, %lld years": "Edad, %lld años",
-    "Auto · %lld bpm (Tanaka)": "Auto · %lld bpm (Tanaka)",
+    "Auto · %lld bpm (Tanaka)": "Auto · %lld lpm (Tanaka)",
     "Battery %lld%%": "Batería %lld%%",
     "Choose the buzz pattern for %@": "Elige el patrón de vibración para %@",
     "Coach said: %@": "El Coach dijo: %@",
@@ -643,6 +643,11 @@ ES: dict[str, str] = {
     "Email %@": "Escribir a %@",
     "Error: %@": "Error: %@",
     "Estimated max heart rate · %lld bpm": "Frecuencia cardiaca máxima estimada · %lld lpm",
+    # FER-435 — unidad de FC en español = «lpm» (consolida las cadenas que vivían solo en el catálogo)
+    "Average today · min %@ · max %@ bpm · resting %lld": "Promedio de hoy · mín %@ · máx %@ lpm · reposo %lld",
+    "Average today · min %@ · max %@ bpm": "Promedio de hoy · mín %@ · máx %@ lpm",
+    "Peak %lld bpm · %@": "Pico %lld lpm · %@",
+    "Zones as a percentage of your max heart rate (%lld bpm, Tanaka). The rest of the day you were resting or very light.": "Zonas como porcentaje de tu frecuencia cardiaca máxima (%lld lpm, Tanaka). El resto del día estuviste en reposo o muy ligero.",
     "Fetch the available models from %@ using your saved key": "Obtener los modelos disponibles de %@ con tu clave guardada",
     "Heart rate %lld beats per minute": "Frecuencia cardiaca de %lld latidos por minuto",
     "Max heart rate override, %@": "Ajuste manual de FC máxima, %@",
@@ -1140,7 +1145,7 @@ ES: dict[str, str] = {
     "Nothing's flagging. Train to feel — your body's holding steady.": "Nada está flaqueando. Entrena según te sientas — tu cuerpo se mantiene estable.",
 
     # Illness early-warning banner (AppModel.evaluateIllness).
-    "resting HR +%lld bpm": "FC en reposo +%lld bpm",
+    "resting HR +%lld bpm": "FC en reposo +%lld lpm",
     "HRV −%lld%%": "HRV −%lld%%",
     "skin temp +%@°C": "temp. de piel +%@°C",
     "respiration up": "respiración elevada",
@@ -1341,8 +1346,8 @@ ES: dict[str, str] = {
     # has its own copy in CenitWidgets/Localizable.xcstrings).
     "%": "%",
     "–": "–",
-    "%@ bpm": "%@ bpm",
-    "%@ bpm · %@": "%@ bpm · %@",
+    "%@ bpm": "%@ lpm",
+    "%@ bpm · %@": "%@ lpm · %@",
     "%lld%%": "%lld%%",
     "NOOP Recovery": "Recuperación NOOP",
     "Recovery %@%%": "Recuperación %@%%",
