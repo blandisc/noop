@@ -1,4 +1,5 @@
 import XCTest
+import WhoopProtocol
 @testable import StrandAnalytics
 
 /// `Calories.estimateStrengthCalories` — the MET-based active-energy estimate a guided strength
@@ -10,6 +11,33 @@ final class CaloriesStrengthTests: XCTestCase {
 
     private func profile(weightKg: Double) -> UserProfile {
         UserProfile(weightKg: weightKg, heightCm: 175, age: 30, sex: "male")
+    }
+
+    // MARK: estimateStrengthEnergy — Keytel when HR present, MET fallback otherwise (FER-399)
+
+    func testStrengthEnergyFallsBackToMETWithoutHR() {
+        // No HR samples → MET path, identical to estimateStrengthCalories: 3.5 × 80 × 0.75 = 210
+        let kcal = Calories.estimateStrengthEnergy(hrSamples: [], durationSeconds: 45 * 60,
+                                                   profile: profile(weightKg: 80))
+        XCTAssertEqual(kcal, 210.0, accuracy: 0.001)
+    }
+
+    func testStrengthEnergyBelowThresholdFallsBackToMET() {
+        // 1 sample (< minSamples 2) → still MET, not Keytel.
+        let kcal = Calories.estimateStrengthEnergy(hrSamples: [HRSample(ts: 0, bpm: 140)],
+                                                   durationSeconds: 60 * 60, profile: profile(weightKg: 70))
+        XCTAssertEqual(kcal, 245.0, accuracy: 0.001)   // 3.5 × 70 × 1.0
+    }
+
+    func testStrengthEnergyUsesKeytelWithHR() {
+        // ≥2 HR samples → the Keytel/HR path (estimateBoutCalories), a different value than MET.
+        let samples = (0..<120).map { HRSample(ts: $0, bpm: 140) }
+        let p = profile(weightKg: 80)
+        let keytel = Calories.estimateStrengthEnergy(hrSamples: samples, durationSeconds: 45 * 60,
+                                                     profile: p, hrMax: 190, restingHR: 60)
+        let met = Calories.estimateStrengthCalories(durationSeconds: 45 * 60, profile: p)
+        XCTAssertGreaterThan(keytel, 0)
+        XCTAssertNotEqual(keytel, met, accuracy: 0.5)   // took the HR path, not the MET fallback
     }
 
     func testModerate80kg45min() {

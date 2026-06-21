@@ -392,6 +392,7 @@ final class AppModel: ObservableObject {
         let vals = hrWindow.map(\.v).sorted()
         bpm = vals.isEmpty ? nil : Int(vals[vals.count / 2].rounded())
         captureWorkoutSample()
+        captureStrengthSample()
         evaluateStress()
     }
 
@@ -462,7 +463,17 @@ final class AppModel: ObservableObject {
             strengthSheetPresented = false
             return
         }
-        let (record, sets) = session.buildForSave(deviceId: deviceId, endTs: endTs)
+        let built = session.buildForSave(deviceId: deviceId, endTs: endTs)
+        let sets = built.1
+        var record = built.0
+        // FER-399: if the strap streamed HR during the session, derive avgHr + strain (same model as the
+        // live workout) and persist them — this lights up the summary's Effort hero + recovery-cost block.
+        let hrSamples = session.hrSamples
+        if hrSamples.count >= 2 {
+            record.avgHr = Int((hrSamples.map { Double($0.bpm) }.reduce(0, +) / Double(hrSamples.count)).rounded())
+            record.strain = StrainScorer.strain(hrSamples, maxHR: Double(profile.hrMax), sex: profile.sex)
+        }
+        let hrMax = profile.hrMax
         // Snapshot the profile on the main actor for the calorie estimate before hopping off it.
         let userProfile = UserProfile(weightKg: profile.weightKg, heightCm: profile.heightCm,
                                       age: Double(profile.age), sex: profile.sex)
@@ -480,7 +491,7 @@ final class AppModel: ObservableObject {
                 sessionId: record.id,
                 start: Date(timeIntervalSince1970: TimeInterval(record.startTs)),
                 end: Date(timeIntervalSince1970: TimeInterval(endTs)),
-                profile: userProfile)
+                profile: userProfile, hrSamples: hrSamples, hrMax: hrMax)
         }
     }
 
@@ -555,6 +566,15 @@ final class AppModel: ObservableObject {
     func acknowledgeLastWorkout() {
         lastWorkout = nil
         lastWorkoutDiscarded = false
+    }
+
+    /// Append the current smoothed `bpm` to the active strength session's HR buffer (FER-399), so finishing
+    /// can derive avgHr/strain + a Keytel calorie estimate. In-memory only; a no-op when no strength session
+    /// is running, the receipt is already shown, or there's no fresh HR. Same main-actor cadence as
+    /// `captureWorkoutSample` — never touches the BLE drain.
+    private func captureStrengthSample() {
+        guard let s = strengthSession, s.summary == nil, let hr = bpm else { return }
+        s.hrSamples.append(HRSample(ts: Int(Date().timeIntervalSince1970), bpm: hr))
     }
 
     /// Append the current smoothed `bpm` to the active workout and recompute its running strain. Called
