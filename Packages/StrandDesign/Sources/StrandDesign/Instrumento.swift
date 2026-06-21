@@ -17,10 +17,10 @@ import SwiftUI
 //   • AA at every hour — every text/background pair clears WCAG AA.
 //
 // The roles are an instance `struct` (not static like `StrandPalette`) on
-// purpose: the by-the-hour theme engine (FER-132) produces dawn/day/dusk/night
-// variants by interpolating these same roles. `.base` is the neutral daytime
-// anchor that engine starts from. FER-131 ships only `.base`; nothing here
-// touches the legacy palette or any screen.
+// purpose: the design originally varied them by the hour (FER-132), but FER-398
+// retired that engine — the app now uses the single `.base` daytime anchor at
+// every hour. The instance shape stays (cheap, and keeps the door open). Nothing
+// here touches the legacy palette or any screen.
 
 /// The semantic color roles of the «Instrumento diurno» language, in one
 /// instance so the hour engine (FER-132) can vary them. Inject with
@@ -156,7 +156,7 @@ public extension InstrumentoTheme {
     // tokens for that case: a hue-preserving darkening that clears 4.5:1 against whatever
     // `paper` is live. The RULE: <24pt valence text uses these; the ≥24pt hero numeral keeps
     // the saturated hue. Both are computed (like `hrZoneRamp`) so they need no change to the
-    // theme's init or the hour engine, and the by-the-hour paper can't silently break them.
+    // theme's init, and the `.base` paper can't silently break them.
 
     /// AA-at-text-size POSITIVE green for a positive signal on SMALL (<24pt) text — the
     /// Today tile's "↑ N vs media" delta (12pt). Darkens `verdict` in OKLab, keeping its hue,
@@ -181,14 +181,12 @@ public extension InstrumentoTheme {
     //
     // The daytime «Hoy» canvas reads as paper with a faint pool of light near the
     // top-centre that deepens to a slightly warmer rim — a radial gradient, not a flat
-    // fill. Rather than store two more roles on every hour anchor, the two stops are
-    // DERIVED from the LIVE `paper` in OKLab (the `positiveText` technique generalized):
-    // `paperHi` lightens toward white, `paperLo` deepens toward the warm `hairline`, so
-    // the gradient "dawns" and "dims" with the by-the-hour paper for free and needs no
-    // change to the init, the four anchors, or `interpolated(to:)`. Both stops stay in
+    // fill. Rather than store two more roles, the two stops are DERIVED from the LIVE
+    // `paper` in OKLab (the `positiveText` technique generalized): `paperHi` lightens
+    // toward white, `paperLo` deepens toward the warm `hairline`. Both stops stay in
     // the bone-paper family (never a cool white at the centre), so rule 3's "warm paper,
     // never pure white" still holds at the surface. Computed (like `hrZoneRamp`), so the
-    // theme's `Equatable` and the engine are untouched.
+    // theme's `Equatable` is untouched.
 
     /// Gradient highlight — the lighter pool of light near the top-centre of the paper.
     var paperHi: Color { OKLab.mix(paper, Color(.sRGB, red: 1, green: 1, blue: 1), 0.5) }
@@ -197,7 +195,7 @@ public extension InstrumentoTheme {
 
     /// Muted ink for NO-DATA cells — the «—» placeholder and its metric glyph when there's no reading
     /// (handoff «Hoy · Estados»). A faded warm gray, derived from `inkTertiary` toward the live `paper`
-    /// in OKLab (like `paperHi`/`paperLo`), so it dims with the by-the-hour paper too. INTENTIONALLY
+    /// in OKLab (like `paperHi`/`paperLo`), tracking the live `.base` paper. INTENTIONALLY
     /// low-contrast — it signals "nothing here yet", so it is NOT held to the AA text floor (unlike the
     /// ink roles); never use it for information the user must read.
     var inkDim: Color { OKLab.mix(inkTertiary, paper, 0.5) }
@@ -225,8 +223,8 @@ public extension EnvironmentValues {
     /// glow / bloom / colored halo. Glow is a black-screen effect; on warm paper it only
     /// muddies the glyph's edge, so the daytime language drops it (FER-131 handoff · 03).
     /// Defaults to `false` so the legacy DARK system keeps its glow untouched; it flips to
-    /// `true` automatically wherever `.instrumentoTheme(_:)` / `.instrumentoThemeByHour()` is
-    /// applied — i.e. exactly the views rendered on paper.
+    /// `true` automatically wherever `.instrumentoTheme(_:)` is applied — i.e. exactly the
+    /// views rendered on paper.
     var instrumentoFlat: Bool {
         get { self[InstrumentoFlatKey.self] }
         set { self[InstrumentoFlatKey.self] = newValue }

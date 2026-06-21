@@ -23,17 +23,12 @@ import WhoopStore
 // con signo en efectos y el datum de los hallazgos es el «más color en tendencias» que
 // el dueño pidió, contenido al dato medido (FER-292).
 
-/// Theme wrapper: drives `\.instrumentoTheme` by the hour (like Today / Cuerpo) so the
-/// paper warms with the real sun, then hands off to `BucleLanding`.
+/// Theme wrapper: anchors `\.instrumentoTheme` to the single warm day paper (`.base`), then hands off
+/// to `BucleLanding`. (FER-398 retired the by-the-hour tint.)
 struct BucleView: View {
     var body: some View {
         BucleLanding()
-            .instrumentoThemeByHour(solar: Self.solarWindow())
-    }
-
-    private static func solarWindow() -> SolarWindow? {
-        guard let w = SolarClock.sunWindow(on: Date(), in: .current) else { return nil }
-        return SolarWindow(sunrise: w.sunrise, sunset: w.sunset)
+            .instrumentoTheme(.base)
     }
 }
 

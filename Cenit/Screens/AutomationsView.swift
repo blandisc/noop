@@ -1,7 +1,6 @@
 #if os(iOS)
 import SwiftUI
 import StrandDesign
-import StrandAnalytics
 
 // MARK: - «Automatizaciones» — FER-69
 //
@@ -14,11 +13,7 @@ import StrandAnalytics
 
 struct AutomationsView: View {
     var body: some View {
-        AutomationsContent().instrumentoThemeByHour(solar: Self.solarWindow())
-    }
-    private static func solarWindow() -> SolarWindow? {
-        guard let w = SolarClock.sunWindow(on: Date(), in: .current) else { return nil }
-        return SolarWindow(sunrise: w.sunrise, sunset: w.sunset)
+        AutomationsContent().instrumentoTheme(.base)
     }
 }
 

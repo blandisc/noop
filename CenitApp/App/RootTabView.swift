@@ -76,7 +76,6 @@ struct RootTabView: View {
             // paper throughout, so there's no light-tab → dark-screen status-bar bridge to manage.
             NavigationStack(path: $trainStack) {
                 EntrenarView(
-                    solar: barSolar,
                     openRoutine: { id in trainStack.append(RoutineRoute(routineId: id)) },
                     openLibrary: { trainStack.append(SecondaryScreen.library) },
                     openBreathe: { trainStack.append(SecondaryScreen.breathe) },
@@ -88,7 +87,7 @@ struct RootTabView: View {
                     trainChrome(secondaryDestination(screen))
                 }
                 .navigationDestination(for: RoutineRoute.self) { route in
-                    trainChrome(RutinaDeHoyScreen(routineId: route.routineId, solar: barSolar))
+                    trainChrome(RutinaDeHoyScreen(routineId: route.routineId))
                 }
             }
             .toolbar(.hidden, for: .tabBar)
@@ -131,14 +130,14 @@ struct RootTabView: View {
         // CONTENT level (`barReservation`), where the inset does propagate to scroll
         // views. The bar reports its height via `BarHeightKey`.
         //
-        // `instrumentoThemeByHour` drives `\.instrumentoTheme` so that — under Hoy —
-        // the bar warms with the clock exactly like TodayView; under the dark screens
+        // `.instrumentoTheme(.base)` drives `\.instrumentoTheme` so that — under Hoy —
+        // the bar reads the warm day paper exactly like TodayView; under the dark screens
         // it ignores the theme and uses `StrandPalette`. (Color scheme itself is owned
         // by ContentView via `isTodayActive` — FER-160; the bar uses explicit colors
-        // either way.)
+        // either way. FER-398 retired the by-the-hour tint.)
         .overlay(alignment: .bottom) {
             InstrumentTabBar(items: barItems, selection: $selection, isLight: isLightTab(selection))
-                .instrumentoThemeByHour(solar: barSolar)
+                .instrumentoTheme(.base)
                 .background(
                     GeometryReader { proxy in
                         Color.clear.preference(key: BarHeightKey.self, value: proxy.size.height)
@@ -269,14 +268,6 @@ struct RootTabView: View {
         ]
     }
 
-    /// Sunrise/sunset for today, GPS- and permission-free (same `SolarClock` source
-    /// TodayView uses), so the bar's by-the-hour theme tracks the real sun in step
-    /// with the screen above it. `nil` in polar cases falls back to fixed hours.
-    private var barSolar: SolarWindow? {
-        guard let w = SolarClock.sunWindow(on: Date(), in: .current) else { return nil }
-        return SolarWindow(sunrise: w.sunrise, sunset: w.sunset)
-    }
-
     @ViewBuilder
     private func secondaryDestination(_ screen: SecondaryScreen) -> some View {
         switch screen {
@@ -286,7 +277,7 @@ struct RootTabView: View {
         case .library:      ExerciseLibraryScreen()
         case .breathe:      BreathingView()
         case .intervals:    IntervalTimerView()
-        case .routineToday: RutinaDeHoyScreen(routineId: nil, solar: barSolar)
+        case .routineToday: RutinaDeHoyScreen(routineId: nil)
         case .dieta:        DietCaptureView()
         case .explore:      MetricExplorerView()
         case .compare:      CompareView()

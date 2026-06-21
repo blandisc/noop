@@ -44,8 +44,8 @@ struct TodayView: View {
     // off a real BLE scan (`AppModel.scan()`). macOS never renders the iOS body, so it never reads this.
     @EnvironmentObject var model: AppModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    /// El tema activo de «Instrumento diurno» (FER-135). El `iosBody` lo inyecta por hora con
-    /// `instrumentoThemeByHour(solar:)`; cada sub-vista lo lee de aquí para colorear en TINTA del tema.
+    /// El tema activo de «Instrumento diurno» (FER-135). El `iosBody` lo ancla al papel de día con
+    /// `.instrumentoTheme(.base)`; cada sub-vista lo lee de aquí para colorear en TINTA del tema.
     @Environment(\.instrumentoTheme) private var theme
     /// Presents the live beat-to-beat monitor (LiveView) over Today when the calibration card's
     /// "See it beat by beat" affordance is tapped.
@@ -375,16 +375,16 @@ struct TodayView: View {
 
     // MARK: - Today (instrumento diurno · veredicto dominante · dial 24h · métricas en tinta)
     //
-    // Escrito en el lenguaje «Instrumento diurno» (FER-135): tema claro por hora del día
-    // (`instrumentoThemeByHour`), un solo número dominante (la recuperación), jerarquía por ESPACIO
+    // Escrito en el lenguaje «Instrumento diurno» (FER-135): tema claro de papel cálido
+    // (`.instrumentoTheme(.base)`), un solo número dominante (la recuperación), jerarquía por ESPACIO
     // (sin card-in-card), y COLOR SOLO en el dato — el número de recuperación, la palabra del veredicto
     // y la línea+punto de cada gráfica; todo lo demás (labels, valores, dial, iconos, chevrons,
     // overlines) en TINTA del tema. Conserva toda la lógica de estados/datos previa; solo reacomoda y
     // recolorea.
     //
-    // El tema se aplica UNA vez envolviendo el iosBody (acotado a TodayView, NUNCA en RootTabView): el
-    // `SolarWindow` lo computa `SolarClock` para la fecha/zona actuales, de modo que el papel «amanece»
-    // y «anochece» con el sol real. Cada sub-vista lee `@Environment(\.instrumentoTheme)`.
+    // El tema se aplica UNA vez envolviendo el iosBody (acotado a TodayView, NUNCA en RootTabView). El
+    // `SolarWindow` (de `SolarClock`) ya solo alimenta el `DiurnalDial`. Cada sub-vista lee
+    // `@Environment(\.instrumentoTheme)`. (FER-398 retiró el tinte por hora del día.)
 
     private var iosBody: some View {
         // Reparto del aire sobrante (FER-217): un `GeometryReader` da el alto visible (`proxy.size.height`)
@@ -404,11 +404,11 @@ struct TodayView: View {
         // `.sensoryFeedback` por el cambio de `syncHaptic` que hace `pullToSync` (heredado de FER-204).
         .sensoryFeedback(.impact(weight: .medium), trigger: syncHaptic)
         // El fondo es el papel del tema (`PaperBackground` lee `\.instrumentoTheme` DENTRO del subárbol
-        // tematizado, así que el lienzo también se recolorea por hora). El tema por hora se inyecta aquí,
-        // acotado a TodayView (NUNCA en RootTabView): todo el árbol de abajo lee `\.instrumentoTheme` y
-        // se recolorea según la hora del día gratis.
+        // tematizado). El tema se ancla aquí al papel de día `.base`, acotado a TodayView (NUNCA en
+        // RootTabView): todo el árbol de abajo lee `\.instrumentoTheme`. FER-398 retiró el tinte por hora;
+        // el momento del día ya solo vive en el `DiurnalDial` (posición del «ahora», arco solar, sueño).
         .background(PaperBackground())
-        .instrumentoThemeByHour(solar: solarWindow)
+        .instrumentoTheme(.base)
         // El color scheme (y con él la barra de estado: Hoy = papel claro → tinta oscura) se decide
         // en ContentView según la pestaña activa, porque `preferredColorScheme` lo resuelve el
         // controlador raíz del WindowGroup y un valor puesto AQUÍ (dentro del TabView) no llega.
@@ -633,8 +633,8 @@ struct TodayView: View {
     }
 
     /// Ventana solar (amanecer/atardecer) para HOY, en horas reloj, derivada de `SolarClock` para la
-    /// zona horaria actual SIN GPS ni permisos. Mapeada al `SolarWindow` de StrandDesign que consumen
-    /// el motor de tema por hora y el `DiurnalDial`. `nil` en los casos polares (sin cruce de horizonte).
+    /// zona horaria actual SIN GPS ni permisos. Mapeada al `SolarWindow` de StrandDesign que consume
+    /// el `DiurnalDial` para su arco solar. `nil` en los casos polares (sin cruce de horizonte).
     private var solarWindow: SolarWindow? {
         guard let w = SolarClock.sunWindow(on: Date(), in: .current) else { return nil }
         return SolarWindow(sunrise: w.sunrise, sunset: w.sunset)

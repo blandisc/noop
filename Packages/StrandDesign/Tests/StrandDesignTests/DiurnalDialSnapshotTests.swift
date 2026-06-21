@@ -26,7 +26,7 @@ final class DiurnalDialSnapshotTests: XCTestCase {
         let bed = SleepWindow(bedtime: 23.5, wake: 7.25)
 
         func panel(_ label: String, _ date: Date, solar: SolarWindow?, syncing: Bool = false) -> some View {
-            let theme = InstrumentoThemeEngine.theme(at: date, calendar: utc(), solar: solar)
+            let theme = InstrumentoTheme.base
             return VStack(spacing: 12) {
                 DiurnalDial(now: date, calendar: utc(), solar: solar, sleep: bed, diameter: 170,
                             syncing: syncing, animated: false)
@@ -87,7 +87,7 @@ final class DiurnalDialSnapshotTests: XCTestCase {
         let date = utc().date(from: DateComponents(year: 2026, month: 6, day: 16, hour: 14))!
         let sun = SolarWindow(sunrise: 6.2, sunset: 19.8)
         let bed = SleepWindow(bedtime: 23.5, wake: 7.25)
-        let theme = InstrumentoThemeEngine.theme(at: date, calendar: utc(), solar: sun)
+        let theme = InstrumentoTheme.base
 
         func panel(_ label: String, armProgress: Double = 0, syncing: Bool = false) -> some View {
             VStack(spacing: 12) {

@@ -7,7 +7,7 @@ import AppKit
 /// FER-163 — renders the «Hoy» dial glyph and a faithful static mock of the
 /// «Barra de instrumento» (the real bar lives in the app target, so the row is
 /// reproduced here with the same tokens + SF Symbols) so the icon set, the
-/// ink/now-dot states, and the by-the-hour light theme vs. the dark theme can be
+/// ink/now-dot states, and the light day theme vs. the dark theme can be
 /// eyeballed without a simulator. Developer render harness, not a CI assertion.
 /// Run: swift test --filter DialTabGlyphSnapshotTests
 final class DialTabGlyphSnapshotTests: XCTestCase {
@@ -58,23 +58,14 @@ final class DialTabGlyphSnapshotTests: XCTestCase {
 
     @MainActor
     func test_renderBarAndGlyph() throws {
-        func at(_ h: Int) -> InstrumentoTheme {
-            var c = Calendar(identifier: .gregorian)
-            c.timeZone = TimeZone(identifier: "UTC")!
-            let d = c.date(from: DateComponents(year: 2026, month: 6, day: 16, hour: h))!
-            return InstrumentoThemeEngine.theme(at: d, calendar: c)
-        }
         func caption(_ s: String, _ t: InstrumentoTheme?) -> some View {
             Text(s).font(.system(size: 11, weight: .medium))
                 .foregroundStyle((t?.inkTertiary) ?? StrandPalette.textSecondary)
         }
 
         let content = VStack(spacing: 14) {
-            caption("Bajo Hoy — por hora (amanecer · mediodía · atardecer · noche)", .base)
-            bar(theme: at(6),  activeIndex: 0)
-            bar(theme: at(13), activeIndex: 0)
-            bar(theme: at(19), activeIndex: 0)
-            bar(theme: at(23), activeIndex: 0)
+            caption("Bajo Hoy — papel de día «Instrumento» (.base)", .base)
+            bar(theme: .base, activeIndex: 0)
             caption("Bajo Tendencias / En vivo / Sueño / Más — oscuro", nil)
             bar(theme: nil, activeIndex: 1)
         }
