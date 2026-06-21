@@ -48,7 +48,8 @@ private struct SupportContent: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .sheet(isPresented: $showWhatsNew) {
-            WhatsNewView(onClose: { showWhatsNew = false })
+            WhatsNewView(onClose: { showWhatsNew = false }, theme: theme)
+                .preferredColorScheme(.light)   // papel «Instrumento» → barra de estado en tinta oscura (FER-415)
         }
     }
 
