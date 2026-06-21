@@ -366,6 +366,13 @@ struct StressModel {
     let calmTimeCaption: String  // e.g. "of last 30 days"
     let usingStored: Bool        // true when today's value came from the stored series
 
+    // FER-397 — the hero is anchored to the most recent day that actually carries a reading, so a still-
+    // empty "today" row at the midnight boundary doesn't blank the screen. These describe that anchor.
+    let anchorDayKey: String     // the day the hero score is from
+    let anchorIsToday: Bool      // false → the view MUST date the hero (it's yesterday's, never "today's")
+    let heroIsFresh: Bool        // anchor ∈ {today, yesterday}: show the hero. Older → hide it, but the
+                                 // trend/patterns below still render from `fullTrend`.
+
     /// Last up-to-14 trend values, for the hero tile sparkline.
     var sparkValues: [Double] { Array(fullTrend.suffix(14)).map(\.value) }
 
@@ -373,12 +380,13 @@ struct StressModel {
     /// Build from oldest→newest daily metrics plus any stored "stress" series.
     /// Returns nil only when there is no usable signal at all.
     init?(days: [DailyMetric], stored: [(day: String, value: Double)], todayKey: String) {
-        // Anchor "today" to the device's LOCAL day and ignore any future-dated row: a daily can be
-        // bucketed under "tomorrow" in UTC (FER-226), and `days.last` would then read its empty
-        // RHR/HRV and drop the tile to "—". Take the most recent row at or before today instead —
-        // the same local-day anchoring ReadinessEngine uses (#23/#24).
+        // Anchor the hero to the most recent LOCAL day (≤ today) that actually carries a reading — a
+        // stored value or some RHR/HRV — so a still-empty "today" row at the midnight boundary doesn't
+        // blank the screen (FER-397). The DISPLAY then caps freshness at yesterday (`heroIsFresh`); an
+        // older anchor still feeds the trend, but the view shows the empty hero. Future-dated UTC ghost
+        // rows (FER-226) are dropped by the `<= todayKey` filter.
         let usable = days.filter { $0.day <= todayKey }
-        guard let today = usable.last else { return nil }
+        guard !usable.isEmpty else { return nil }
 
         // Stored values keyed by day, clamped to 0–3.
         let storedByDay: [String: Double] = Dictionary(
@@ -386,10 +394,16 @@ struct StressModel {
             uniquingKeysWith: { _, b in b }
         )
 
-        // Baseline window: up to 30 days ending the day BEFORE today, so "today"
-        // is measured against its own recent past rather than itself.
-        let history = Array(usable.dropLast())
-        let baseline = Array(history.suffix(30))
+        // The anchor = the newest usable day with a raw signal (stored value or any RHR/HRV).
+        func hasRawSignal(_ d: DailyMetric) -> Bool {
+            storedByDay[d.day] != nil || d.restingHr != nil || d.avgHrv != nil
+        }
+        guard let anchorIdx = usable.lastIndex(where: hasRawSignal) else { return nil }
+        let anchor = usable[anchorIdx]
+
+        // Baseline window: up to 30 usable days strictly BEFORE the anchor, so it's measured against its
+        // own recent past rather than itself.
+        let baseline = Array(usable[..<anchorIdx].suffix(30))
 
         let rhrBase = baseline.compactMap { $0.restingHr }.map(Double.init)
         let hrvBase = baseline.compactMap { $0.avgHrv }
@@ -399,25 +413,26 @@ struct StressModel {
         let meanHRV = StressMath.mean(hrvBase)
         let sdHRV   = StressMath.std(hrvBase, mean: meanHRV)
 
-        let rhrT = today.restingHr.map(Double.init)
-        let hrvT = today.avgHrv
+        let rhrT = anchor.restingHr.map(Double.init)
+        let hrvT = anchor.avgHrv
 
-        // Resolve today's score: prefer a stored value, else derive.
+        // Resolve the anchor's score: prefer a stored value, else derive. A raw-signal day with no stored
+        // value AND no baseline before it to derive against (e.g. the very first day) is not usable.
         let derivedAvailable = (rhrT != nil && meanRHR != nil) || (hrvT != nil && meanHRV != nil)
-        let storedToday = storedByDay[today.day]
-        guard storedToday != nil || derivedAvailable else { return nil }
+        let storedAnchor = storedByDay[anchor.day]
+        guard storedAnchor != nil || derivedAvailable else { return nil }
 
-        let derivedToday: Double? = derivedAvailable
+        let derivedScore: Double? = derivedAvailable
             ? StressMath.squash(StressMath.rawScore(
                 rhrToday: rhrT, meanRHR: meanRHR, sdRHR: sdRHR,
                 hrvToday: hrvT, meanHRV: meanHRV, sdHRV: sdHRV))
             : nil
 
-        let s = storedToday ?? derivedToday ?? 1.5
-        self.usingStored = storedToday != nil
+        let s = storedAnchor ?? derivedScore ?? 1.5
+        self.usingStored = storedAnchor != nil
         self.score = s
         self.band = StressBand(score: s)
-        self.rhrToday = today.restingHr
+        self.rhrToday = anchor.restingHr
         self.hrvToday = hrvT
         self.rhrDelta = (rhrT != nil && meanRHR != nil) ? (rhrT! - meanRHR!) : nil
         self.hrvDelta = (hrvT != nil && meanHRV != nil) ? (hrvT! - meanHRV!) : nil
@@ -428,6 +443,14 @@ struct StressModel {
             hrvDelta: self.hrvDelta,
             usingStored: self.usingStored
         )
+
+        // The anchor's date + whether it's fresh enough to surface as the hero (today or, at most,
+        // yesterday). An older anchor → `heroIsFresh == false`: the view hides the hero but still draws
+        // the trend/patterns below.
+        self.anchorDayKey = anchor.day
+        self.anchorIsToday = anchor.day == todayKey
+        let yesterdayKey = Repository.previousDayKey(todayKey)
+        self.heroIsFresh = anchor.day == todayKey || anchor.day == yesterdayKey
 
         // Full daily proxy history: stored value if present for the day, else the
         // z-score derivation against the SAME baseline so the line is comparable.

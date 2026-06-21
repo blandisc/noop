@@ -103,6 +103,14 @@ final class Repository: ObservableObject {
     }()
     nonisolated static func parseDayKey(_ s: String) -> Date? { dayKeyParser.date(from: s) }
 
+    /// The `yyyy-MM-dd` key for the day BEFORE `s`, computed in UTC (one fixed 24 h step — UTC has no
+    /// DST) so it stays on the same DST-stable footing as `parseDayKey`. Used to cap a "fall back to the
+    /// most recent reading" at yesterday (FER-397).
+    nonisolated static func previousDayKey(_ s: String) -> String? {
+        guard let d = dayKeyParser.date(from: s) else { return nil }
+        return dayKeyParser.string(from: d.addingTimeInterval(-86_400))
+    }
+
     private func ensureStore() async -> WhoopStore? {
         if let store { return store }
         if let storeInit { return await storeInit.value }   // a creation is already in flight — join it

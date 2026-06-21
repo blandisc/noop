@@ -18,6 +18,9 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
+    # FER-397 — Estrés: fallback al último día con dato (tope ayer, fechado)
+    'Yesterday · %@': 'ayer · %@',
+    "No reading in the last couple of days. Wear your strap overnight and it'll refresh after it syncs — your history is below.": 'Sin lectura en los últimos días. Usa tu banda de noche y se actualizará cuando sincronice — tu historial está abajo.',
     # FER-388 — Patrones de estrés por evento
     '«%@» tends to coincide with higher stress.': '«%@» tiende a coincidir con tu estrés alto.',
     '«%@» tends to coincide with lower stress.': '«%@» tiende a coincidir con tu estrés bajo.',
