@@ -48,30 +48,27 @@ struct StressDetailScreen: View {
     /// `date` straight from here (no string re-parsing). Built in `.task`. (FER-216 lesson)
     @State private var parsed: [(day: String, date: Date?, value: Double)] = []
     @State private var methodExpanded = false
+    /// Level-3 disclosure: the daily trend (over the fixed Low/Mod/High bands) + the «mapa del día» live
+    /// under «See your history», collapsed on open. The only new state the re-sequencing adds. (Detalles
+    /// escalonados)
+    @State private var historyExpanded = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 if let model {
+                    // Level 1 · the answer: hero + what's moving it (RHR / HRV vs base — the real why).
                     hero(model)
-                    if model.fullTrend.count >= 2 {
-                        blockDivider
-                        trendBlock(model)
-                    }
-                    blockDivider
-                    normalRangeBlock(model)
-                    blockDivider
-                    calmTimeBlock(model)
                     blockDivider
                     whatMovesItBlock(model)
-                    if consistency(model) != nil {
-                        blockDivider
-                        consistencyBlock(model)
-                    }
-                    if let dayMap {
-                        blockDivider
-                        StressDayMapBlock(model: dayMap, theme: theme)
-                    }
+                    // Level 2 · «Your patterns»: calm time + consistency, fused to plain lines. The
+                    // former «Normal range» block is gone from the daily scroll — those Low/Mod/High
+                    // bands are already drawn behind the trend line as its legend (one dispersion read).
+                    blockDivider
+                    patternsBlock(model)
+                    // Level 3 · «See your history»: the daily trend over the bands + the mapa del día.
+                    blockDivider
+                    historySection(model)
                     blockDivider
                     methodDisclosure(model)
                 } else {
@@ -218,39 +215,109 @@ struct StressDetailScreen: View {
         v < 1 ? .low : (v < 2 ? .medium : .high)
     }
 
-    // MARK: - 3. Rango normal — bandas UNIVERSALES (no baseline personal)
+    // MARK: - Level 2 · «Your patterns» — calm time + consistency, fused to plain lines
+    //
+    // The re-sequencing (Detalles escalonados) folds «Calm time» and «Consistency» into one condensed
+    // strip, and drops the standalone «Normal range» block: the Low/Moderate/High bands are already the
+    // legend behind the trend line one level down, so the screen carries ONE dispersion read, not three.
+    // The CV jargon stays in the ⓘ; the face is plain. No new math — calm time and the CV come straight
+    // from the model.
 
-    private func normalRangeBlock(_ model: StressModel) -> some View {
+    private func patternsBlock(_ model: StressModel) -> some View {
         InfoAccordion(
-            title: "Normal range",
-            explanation: "These bands are the same for everyone because the index is already adjusted to your own baseline, not to the population — a 1.5 sits at YOUR normal. So there's no personal ± range to compute: what's worth watching is drifting into «High» for several days in a row.",
-            accessibilityLabel: "Information about the normal range",
+            title: "Your patterns",
+            explanation: "How much of the last month sat in the Low band (calm time — higher is better), and how steady your daily stress is week to week (its coefficient of variation, CV — low = steady). The Low / Moderate / High bands (0–1 / 1–2 / 2–3) are the same for everyone because the index is already adjusted to your own baseline; they're drawn as the trend's legend below. (Plews 2013)",
+            accessibilityLabel: "Information about your stress patterns",
             theme: theme
         ) {
-            VStack(alignment: .leading, spacing: 8) {
-                bandRow("Low", "0 – 1", color: theme.verdict, isCurrent: model.band == .low)
-                bandRow("Moderate", "1 – 2", color: theme.warning, isCurrent: model.band == .medium)
-                bandRow("High", "2 – 3", color: theme.critical, isCurrent: model.band == .high)
+            VStack(alignment: .leading, spacing: 12) {
+                patternLine(label: "Calm time",
+                            value: model.calmTimeValue,
+                            valueColor: theme.verdict,
+                            note: "of last month")
+                if let pct = consistency(model) {
+                    patternLine(label: "Steadiness",
+                                value: consistencyWord(pct),
+                                note: "week to week")
+                }
             }
         }
     }
 
-    private func bandRow(_ label: LocalizedStringKey, _ range: LocalizedStringKey, color: Color, isCurrent: Bool) -> some View {
-        HStack(spacing: 10) {
-            RoundedRectangle(cornerRadius: 3, style: .continuous).fill(color).frame(width: 10, height: 10)
-            Text(label)
-                .font(isCurrent ? StrandFont.subhead.weight(.semibold) : StrandFont.subhead)
-                .foregroundStyle(isCurrent ? theme.ink : theme.inkSecondary)
-            if isCurrent {
-                Text("· today").font(StrandFont.footnote).foregroundStyle(color)
-            }
+    /// One «Your patterns» line: a quiet overline label, a plain value (the datum), an optional note.
+    private func patternLine(label: LocalizedStringKey, value: String,
+                             valueColor: Color? = nil, note: LocalizedStringKey?) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
             Spacer(minLength: 8)
-            Text(range).font(StrandFont.captionNumber).foregroundStyle(theme.inkTertiary)
+            Text(value).font(StrandFont.bodyNumber).foregroundStyle(valueColor ?? theme.ink)
+            if let note {
+                Text(note).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            }
         }
         .accessibilityElement(children: .combine)
     }
 
-    // MARK: - 4. Qué lo mueve — RHR / HRV de hoy vs tu base
+    /// A plain word for steadiness from the CV percent (the number itself stays in the ⓘ).
+    private func consistencyWord(_ pct: Int) -> String {
+        switch pct {
+        case ..<8:   return String(localized: "Very steady")
+        case 8..<15: return String(localized: "Steady")
+        default:     return String(localized: "Variable")
+        }
+    }
+
+    // MARK: - Level 3 · «See your history» — the daily trend over the bands + the mapa del día
+    //
+    // The analyst's view, one tap down. An in-place disclosure (NOT a navigation push). Holds the
+    // period-selector trend (the daily 0–3 line over the fixed Low/Mod/High bands + its legend) and the
+    // «mapa del día» (StressDayMapBlock, FER-377) when its driver is present. (Detalles escalonados)
+    //
+    // NOTE: the old «Stress by time of day · Soon» placeholder is already gone — FER-377 replaced it with
+    // the real StressDayMapBlock — so there's no "Soon" block left to retire here.
+
+    @ViewBuilder
+    private func historySection(_ model: StressModel) -> some View {
+        VStack(alignment: .leading, spacing: historyExpanded ? 22 : 0) {
+            historyDisclosureHeader(caption: "trend · bands · day map")
+            if historyExpanded {
+                if model.fullTrend.count >= 2 {
+                    trendBlock(model)
+                }
+                if let dayMap {
+                    if model.fullTrend.count >= 2 { blockDivider }
+                    StressDayMapBlock(model: dayMap, theme: theme)
+                }
+            }
+        }
+    }
+
+    /// The «See your history» row: a tappable header toggling the Level-3 disclosure in place. The
+    /// chevron rotates with the house interactive spring. Shared shape across the four detail screens.
+    private func historyDisclosureHeader(caption: LocalizedStringKey) -> some View {
+        Button {
+            withAnimation(StrandMotion.interactive) { historyExpanded.toggle() }
+        } label: {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("See your history").instrumentoOverline().foregroundStyle(theme.ink)
+                    Text(caption).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(theme.inkTertiary)
+                    .rotationEffect(.degrees(historyExpanded ? 0 : -90))
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityValue(Text(historyExpanded ? "expanded" : "collapsed"))
+    }
+
+    // MARK: - Qué lo mueve — RHR / HRV de hoy vs tu base
 
     private func whatMovesItBlock(_ model: StressModel) -> some View {
         InfoAccordion(
@@ -310,53 +377,15 @@ struct StressDetailScreen: View {
         .accessibilityElement(children: .combine)
     }
 
-    // MARK: - 5. Consistencia (coeficiente de variación)
+    // MARK: - Consistencia (coeficiente de variación) — folded into «Your patterns»
 
-    /// CV of the full stress series (nil when there aren't enough points), so the block can be skipped.
+    /// CV of the full stress series (nil when there aren't enough points). Feeds the «Your patterns»
+    /// steadiness line; the standalone «Consistency» block folded into it (Detalles escalonados).
     private func consistency(_ model: StressModel) -> Int? {
         SeriesShape.coefficientOfVariation(model.fullTrend.map(\.value), window: 7).map { Int(($0 * 100).rounded()) }
     }
 
-    @ViewBuilder private func consistencyBlock(_ model: StressModel) -> some View {
-        if let pct = consistency(model) {
-            InfoAccordion(
-                title: "Consistency",
-                explanation: "Coefficient of variation = how spread out your daily stress is around its own average, as a percentage. Low = steady. A steadier signal usually means your load and recovery are in balance. (Plews 2013)",
-                accessibilityLabel: "Information about consistency",
-                theme: theme
-            ) {
-                ConsistencySummary(cvPercent: pct,
-                                   reading: "How steady your stress stays from one week to the next.",
-                                   theme: theme)
-            }
-        }
-    }
-
-    // MARK: - 6. Tiempo en calma — % de días en banda baja (últimos 30d)
-
-    private func calmTimeBlock(_ model: StressModel) -> some View {
-        InfoAccordion(
-            title: "Calm time",
-            explanation: "The share of your recent days that sat in the Low band (under 1.0). Higher is better — it means your body had room to recover. It's a count of days, not a measure of how low any single day went.",
-            accessibilityLabel: "Information about calm time",
-            theme: theme
-        ) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(model.calmTimeValue)
-                    .font(StrandFont.number(28))
-                    .foregroundStyle(theme.verdict)
-                // The window / needs-history note lives in this localized reading line — we deliberately
-                // do NOT render `model.calmTimeCaption` (an English-only String built in the model) so
-                // nothing leaks English under es/de. (FER-241, QA D1)
-                Text("How much of the last month you spent with low autonomic load.")
-                    .font(StrandFont.caption)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-    }
-
-    // MARK: - 8. Ver el método (DisclosureGroup, patrón de las otras pantallas)
+    // MARK: - Ver el método (DisclosureGroup, patrón de las otras pantallas)
 
     private func methodDisclosure(_ model: StressModel) -> some View {
         DisclosureGroup(isExpanded: $methodExpanded) {
