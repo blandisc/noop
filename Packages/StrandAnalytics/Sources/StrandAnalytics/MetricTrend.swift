@@ -26,9 +26,9 @@ extension CorrelationEngine {
     /// - `minPairs`: aligned daily observations required. 42 ≈ six weeks of paired
     ///   nights — the low end of FER-209's 6–8 week window, so the block appears as
     ///   soon as it's trustworthy while the strength tests below still guard noise.
-    /// - `minAbsR`: a |r| floor of 0.20 — Cohen's (1988) threshold for a "small" effect.
-    ///   Below it we don't claim a direction even when n is large enough to make a
-    ///   trivial r statistically significant.
+    /// - `minAbsR`: a |r| floor of 0.20 — stricter than Cohen's (1988) 0.10 "small"-effect
+    ///   cut, so we don't claim a direction on trivially small relationships even when n is
+    ///   large enough to make a tiny r statistically significant.
     /// - `maxP`: significance ceiling (two-sided, read from `Correlation.pApprox`). 0.05
     ///   rejects relationships that could plausibly be chance on this much data.
     public struct TrendGate: Equatable, Sendable {

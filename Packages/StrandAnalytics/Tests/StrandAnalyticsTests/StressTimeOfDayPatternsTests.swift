@@ -31,6 +31,23 @@ final class StressTimeOfDayPatternsTests: XCTestCase {
                       "a daily peak clustered at 9 should surface")
     }
 
+    func testPartOfDayUsesPerDayPairedContrast() {
+        // The day's overall level wanders, but morning stays well above its OWN day's other parts. A
+        // per-day paired contrast detects this steady within-day effect (each day = ONE observation);
+        // the old pseudo-replicated pooling would have drowned it in the between-day level swings.
+        var s: [String: StressDaySummary] = [:]
+        for i in 0..<16 {
+            let base = 1.0 + 0.3 * sin(Double(i))            // the day's level wanders
+            let margin = 0.9 + 0.06 * sin(Double(i) * 2)     // morning steady above its own day
+            s[dayKey(i)] = StressDaySummary(
+                partMeans: [.morning: base + margin, .afternoon: base, .evening: base - 0.1],
+                peakHour: nil, dayMean: base + margin / 3)
+        }
+        let patterns = StressTimeOfDayPatterns.detect(summariesByDay: s, maxPatterns: 10)
+        XCTAssertTrue(patterns.contains { $0.family == .partOfDay(.morning) && $0.higher },
+                      "a steady within-day morning elevation should surface via the paired contrast")
+    }
+
     func testNoPatternsBelowMinDays() {
         var s: [String: StressDaySummary] = [:]
         for i in 0..<10 {     // < minDays

@@ -7,10 +7,11 @@ import Foundation
 // model's own self-consistent comparison (FitnessAgeEngine). This is just the population median so a
 // raw number ("48 ml/kg/min") reads as something the user can place ("above / below average").
 //
-// Method: a linear approximation of the FRIEND Registry sex-specific p50 (median) VO₂max by decade
-// (Kaminsky et al., "Reference Standards for Cardiorespiratory Fitness…", Mayo Clin Proc 2015 — a
-// healthy US adult reference cohort). Regressed over the per-decade medians; a coarse normative
-// REFERENCE for context, never a clinical norm or diagnosis.
+// Method: a least-squares linear fit of the FRIEND Registry sex-specific p50 (median) treadmill VO₂max
+// over the decade midpoints (Kaminsky LA, Arena R, Myers J, "Reference Standards for Cardiorespiratory
+// Fitness…", Mayo Clin Proc 2015;90(11):1515–1523 — a healthy US adult reference cohort). FRIEND p50 by
+// decade (20s→70s): men 48.0 / 42.4 / 37.8 / 32.6 / 28.2 / 24.4; women 37.6 / 30.2 / 26.7 / 23.4 / 20.0 /
+// 18.3 ml/kg/min. A coarse normative REFERENCE for context, never a clinical norm or diagnosis.
 
 public enum VO2maxReference {
 
@@ -21,8 +22,8 @@ public enum VO2maxReference {
         let a = Double(min(80, max(20, age)))
         let v: Double
         switch sex.lowercased() {
-        case "female": v = 45.8 - 0.32 * a   // FRIEND p50, women (≈39 at 20 → ≈20 at 80)
-        default:       v = 58.3 - 0.42 * a   // FRIEND p50, men   (≈50 at 20 → ≈25 at 80)
+        case "female": v = 44.66 - 0.373 * a   // FRIEND p50, women (least-squares over the decade medians)
+        default:       v = 59.25 - 0.474 * a   // FRIEND p50, men   (least-squares over the decade medians)
         }
         return max(15, v)
     }
@@ -66,8 +67,8 @@ public enum VO2maxReference {
     public static func equivalentAge(value: Double, sex: String) -> Int {
         let a: Double
         switch sex.lowercased() {
-        case "female": a = (45.8 - value) / 0.32
-        default:       a = (58.3 - value) / 0.42
+        case "female": a = (44.66 - value) / 0.373
+        default:       a = (59.25 - value) / 0.474
         }
         return Int(min(80, max(20, a)).rounded())
     }

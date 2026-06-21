@@ -49,12 +49,15 @@ import Foundation
 //      the old fraction-of-mean, and require adequate nocturnal coverage upstream (orchestration,
 //      FER-145). No mortality HR has ever been validated for nocturnal-PPG RMSSD — a soft, capped input.
 //
-//   5. SLEEP REGULARITY — reference. Slope kept (0.450; Windred 2024, Sleep 47(1):zsad253, SRI p5-vs-median
-//      HR 1.53 — regularity predicts mortality MORE strongly than duration). But the upstream ref 0.75
-//      is the ~p95, not the population median: on an SRI/100 scale the typical value is ≈0.60. Fix:
-//      ref 0.75 → 0.60 so the average user is neutral. NOTE: `sleepConsistency(nightlyHours:)` below
-//      (1 − CV of durations) is an INTERIM proxy, not the real Sleep Regularity Index the HR is drawn
-//      from — the orchestrator passes a real SRI/100 (FER-145, done; CV proxy is the cold-start fallback).
+//   5. SLEEP REGULARITY — reference. Slope kept (0.450). The SRI p5-vs-median all-cause-mortality
+//      HR 1.53 (95% CI 1.41–1.66) and the population median SRI ≈60 (→0.60 on an SRI/100 scale) are
+//      from Cribb et al. 2023 (eLife 12:RP88359, UK Biobank, n≈89k). Windred et al. 2024 (Sleep
+//      47(1):zsad253) is the "regularity predicts mortality MORE strongly than duration" result; its
+//      own cohort's SRI median runs higher (~81), so it is NOT the source of the 0.60 reference. The
+//      upstream ref 0.75 is a ~p95, not the median. Fix: ref 0.75 → 0.60 so the average user is neutral.
+//      NOTE: `sleepConsistency(nightlyHours:)` below (1 − CV of durations) is an INTERIM proxy, not the
+//      real Sleep Regularity Index the HR is drawn from — the orchestrator passes a real SRI/100
+//      (FER-145, done; CV proxy is the cold-start fallback).
 //
 //   6. STEPS — age-aware threshold. The benefit plateau is age-dependent (Paluch 2022, PMC9289978:
 //      ≥60 yr 6–8k, <60 yr 8–10k); a fixed 7,000 under-penalizes younger users. Fix: reference
@@ -210,8 +213,9 @@ public enum VitalityEngine {
                                     lnHazard: clamp(dev, 0, 3) * slope))
         }
         if let c = inputs.sleepConsistency {
-            // Correction #5: slope kept (Windred 2024 SRI); reference 0.75 → 0.60 (the population median
-            // on an SRI/100 scale, not the p95). Less regular than the median ages you.
+            // Correction #5: slope kept; reference 0.75 → 0.60 (the population median on an SRI/100
+            // scale, not the p95) — median SRI ≈60 and the HR 1.53 are from Cribb 2023 (eLife
+            // 12:RP88359). Less regular than the median ages you.
             out.append(Contribution(key: "consistency", label: "Sleep regularity",
                                     lnHazard: (0.60 - clamp(c, 0, 1)) * 0.450))
         }

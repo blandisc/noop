@@ -70,6 +70,21 @@ final class MuscleFatigueMapTests: XCTestCase {
         XCTAssertEqual(loads.first { $0.muscle == "lats" }!.weeklySets, 1.0, accuracy: 1e-9)
     }
 
+    // weeklySets is a fixed 7-day count, INDEPENDENT of the display window: a muscle in the .d3 map that
+    // also trained 5–6 days ago shows the full 7-day volume, identical to .d7 (regression for the .d3
+    // truncation bug, where days 4–7 were dropped before the ≤7 weekly guard and read 1.0 vs 3.0).
+    func testWeeklySetsIndependentOfWindow() {
+        let events = [
+            Event(muscle: "back", involvement: 1.0, daysAgo: 1),  // inside .d3 → muscle appears in map
+            Event(muscle: "back", involvement: 1.0, daysAgo: 5),  // outside .d3 window, inside 7-day count
+            Event(muscle: "back", involvement: 1.0, daysAgo: 6),
+        ]
+        let d3 = MuscleFatigueMap.loads(events: events, window: .d3).first { $0.muscle == "back" }!
+        let d7 = MuscleFatigueMap.loads(events: events, window: .d7).first { $0.muscle == "back" }!
+        XCTAssertEqual(d3.weeklySets, 3.0, accuracy: 1e-9)   // was 1.0 before the fix
+        XCTAssertEqual(d3.weeklySets, d7.weeklySets, accuracy: 1e-9)
+    }
+
     // 7 — cross with systemic recovery: red recovery gates everything; high recovery clears fresh muscles.
     func testSystemicRecoveryGate() {
         let loads = MuscleFatigueMap.loads(events: [

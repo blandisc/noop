@@ -196,6 +196,22 @@ final class CoachGroundingTests: XCTestCase {
         XCTAssertTrue(wi?.statement.contains("71") ?? false)
     }
 
+    func testWhatIfRespectsLowerIsBetterMetric() {
+        // FER fix: for "FC en reposo" (lower is better), a behavior linked to a HIGHER resting HR is
+        // WORSE, so the verdict must advise dropping it — not "keeping it helps". expectedSign stays the
+        // raw-delta direction (+1); it only drives the experiment's reproduction check, not good/bad.
+        let g = CoachGrounding.from(insights: [behaviorInsight("Alcohol", outcome: "FC en reposo",
+                                                               meanWith: 58, meanWithout: 54, n: 24)],
+                                    readiness: nil, recovery: nil, referenceDay: "d")
+        let wi = g.whatIf("¿y si dejo el alcohol?")
+        XCTAssertNotNil(wi)
+        XCTAssertEqual(wi?.outcome, "FC en reposo")
+        XCTAssertEqual(wi?.expectedSign, 1)   // raw delta +4 → reproduction sign, unchanged by direction
+        XCTAssertTrue(wi?.statement.contains("Dropping it could help you") ?? false,
+                      "higher resting HR is worse → advise dropping, not keeping")
+        XCTAssertFalse(wi?.statement.contains("Keeping it seems to help you") ?? true)
+    }
+
     func testWhatIfNilWhenNotAWhatIf() {
         let g = CoachGrounding.from(insights: [behaviorInsight("Alcohol", outcome: "Recuperación",
                                                                meanWith: 63, meanWithout: 71, n: 24)],

@@ -411,18 +411,21 @@ public struct CoachGrounding: Equatable, Sendable {
         let withoutV = Int(br.meanWithout.rounded())
         let n = br.nWith + br.nWithout
         let diff = br.meanWith - br.meanWithout
+        // Orient toward "better" by the outcome's direction: for a lower-is-better metric (resting HR) a
+        // positive raw delta is actually WORSE, so the verdict word must flip. `expectedSign` stays the
+        // RAW-delta direction — it only drives the experiment's reproduction check (ExperimentVerdict),
+        // which tests that the same association recurs, not whether it's good.
+        let higherIsBetter = InsightEngine.Outcome.higherIsBetter(outcomeLabel: outcome)
+        let improvement = higherIsBetter ? diff : -diff
         let verdict: String
-        let sign: Int
         if abs(diff) < 1 {                       // no meaningful difference either way
             verdict = String(localized: "I don't see a clear difference yet.", bundle: .main)
-            sign = 1
-        } else if diff > 0 {
+        } else if improvement > 0 {
             verdict = String(localized: "Keeping it seems to help you.", bundle: .main)
-            sign = 1
         } else {
             verdict = String(localized: "Dropping it could help you.", bundle: .main)
-            sign = -1
         }
+        let sign: Int = abs(diff) < 1 ? 1 : (diff > 0 ? 1 : -1)
         var statement = String(localized: "On your days with \(behavior.lowercased()), your \(outcome.lowercased()) averaged \(withV) — versus \(withoutV) without.", bundle: .main)
             + " " + verdict
         if let caveat = CoachGrounding.confidenceCaveat(n: n) { statement += " " + caveat }

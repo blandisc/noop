@@ -354,9 +354,13 @@ public enum Baselines {
             sd = cfg.floorSpread * 1.253
         }
 
-        // Apply the σ floor in σ-space, then convert to internal abs-dev space.
-        let sigmaFloored = max(cfg.floorSpread, sd)
-        let spreadInternal = sigmaFloored / 1.253
+        // Floor the spread in the SAME internal abs-dev space the EWMA `update` path uses, so the
+        // scoring baseline and this displayed normal-range band agree near the floor: convert the σ to
+        // abs-dev (÷1.253), then floor at `floorSpread` exactly like `update` does. Effective σ floor =
+        // floorSpread·1.253 (≈0.10 for HRV) — matching `update` and the n<2 fallback above (which was
+        // already `floorSpread·1.253`). (Was `max(floorSpread, sd)/1.253`, a σ floor of `floorSpread`
+        // ≈0.08 — a 1.253× mismatch vs the scoring path.)
+        let spreadInternal = max(cfg.floorSpread, sd / 1.253)
 
         return BaselineState(baseline: fromCenter(mean, logDomain: cfg.logDomain), spread: spreadInternal, nValid: n,
                              nightsSinceUpdate: 0,

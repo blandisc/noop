@@ -117,6 +117,17 @@ public enum InsightEngine {
             }
         }
 
+        /// Whether a HIGHER daily value is the better/healthier direction. Resting HR is the lone
+        /// lower-is-better outcome (the UI mirrors this as `metric != "FC en reposo"`). Used to orient
+        /// "this helps / hurts you" verdicts so a lower-is-better metric isn't read upside-down.
+        public var higherIsBetter: Bool { self != .restingHr }
+
+        /// Direction looked up from the es-MX `label` a `Lever` / grounding fact carries; an unknown
+        /// label defaults to higher-is-better.
+        public static func higherIsBetter(outcomeLabel: String) -> Bool {
+            allCases.first { $0.label == outcomeLabel }?.higherIsBetter ?? true
+        }
+
         /// Localized DISPLAY name for readings/titles — distinct from `label`, which is the stable es-MX
         /// key that levers/experiments persist and `outcomeSeries`/the coach's topic filter match on.
         /// Reuses the catalog keys the rest of the app already carries (Recovery/HRV/Sleep/Resting HR).

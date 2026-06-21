@@ -7,11 +7,15 @@ import Foundation
 // "Tends to / usually", NEVER causal — this is structured output; the view writes the (localized,
 // non-causal) sentence.
 //
-// REUSES the repo's vetted statistics, no new math: `BehaviorInsights.rank` runs a Welch t-test +
-// Cohen's d per group with a ≥5-per-side floor, and Benjamini-Hochberg FDR across each family — so a
-// part/weekday is only reported when it clears multiple-comparison correction, not by chance. A day or
-// weekday simply won't reach the ≥5 floor until enough history accrues, which is the prudence the issue
-// asks for (no fabricated pattern on thin data).
+// REUSES the repo's vetted statistics. The WEEKDAY family runs `BehaviorInsights.rank` (Welch t-test +
+// Cohen's d, ≥5-per-side floor, Benjamini-Hochberg FDR) — each day lands in exactly one weekday group,
+// so the two arms are independent. The PART-OF-DAY family instead uses a per-DAY PAIRED contrast (this
+// part's mean minus the day's other-parts mean) tested with a one-sample t on the repo's exact Student-t
+// tail (`CorrelationEngine.studentTTwoSided`) + BH across the parts: a calendar day is ONE independent
+// observation, not one per (day, part). (The earlier design pooled `day#part` pseudo-days and put the
+// same day in both arms of a between-groups t-test — within-day correlation made the p anti-conservative;
+// BH controls multiplicity, not serial dependence, so it could not repair it.) A part/weekday is only
+// reported once it clears FDR and the ≥5-day / effect-size floors — no fabricated pattern on thin data.
 //
 // Pure + DB-free.
 
@@ -66,20 +70,30 @@ public enum StressTimeOfDayPatterns {
             }
         }
 
-        // 2) Part-of-day family — each part's stress vs the rest of the day, across all (day, part) obs.
-        var partOutcome: [String: Double] = [:]
-        var partGroups: [String: Set<String>] = [:]
-        for (day, s) in withMean {
-            for (part, mean) in s.partMeans {
-                let key = "\(day)#\(part.rawValue)"
-                partOutcome[key] = mean
-                partGroups[part.rawValue, default: []].insert(key)
+        // 2) Part-of-day family — per-DAY paired contrast: this part's mean minus the mean of that day's
+        //    OTHER parts, so each calendar day is one independent observation. One-sample t per part
+        //    (H0: mean contrast = 0) on the exact Student-t tail, then BH across the tested parts.
+        var contrastsByPart: [PartOfDay: [Double]] = [:]
+        for (_, s) in withMean {
+            let parts = s.partMeans
+            guard parts.count >= 2 else { continue }   // need ≥2 parts that day to form a within-day contrast
+            let total = parts.values.reduce(0, +)
+            for (part, mean) in parts {
+                let othersMean = (total - mean) / Double(parts.count - 1)
+                contrastsByPart[part, default: []].append(mean - othersMean)
             }
         }
-        for e in BehaviorInsights.rank(behaviors: partGroups, outcomeByDay: partOutcome, outcome: stressOutcome)
-        where e.significant && abs(e.cohensD) >= minEffect {
-            if let part = PartOfDay(rawValue: e.behavior) {
-                out.append(Pattern(family: .partOfDay(part), higher: e.delta > 0, cohensD: abs(e.cohensD)))
+        let testedParts = contrastsByPart
+            .filter { $0.value.count >= BehaviorInsights.minGroupForSignificance }
+            .sorted { $0.key.rawValue < $1.key.rawValue }   // deterministic order for BH
+        if !testedParts.isEmpty {
+            let stats = testedParts.map { oneSampleT($0.value) }
+            let qs = MultipleComparisons.benjaminiHochberg(
+                stats.map { CorrelationEngine.studentTTwoSided(t: $0.t, df: $0.df) })
+            for (i, entry) in testedParts.enumerated()
+            where qs[i] < 0.05 && abs(stats[i].d) >= minEffect {
+                out.append(Pattern(family: .partOfDay(entry.key),
+                                   higher: stats[i].mean > 0, cohensD: abs(stats[i].d)))
             }
         }
 
@@ -95,6 +109,22 @@ public enum StressTimeOfDayPatterns {
     // MARK: - Internals
 
     static let stressOutcome = "stress"
+
+    /// One-sample t-test stats for a within-day contrast series (H0: mean = 0). Returns the t-statistic,
+    /// df = n−1, one-sample Cohen's d (mean / SD), and the mean (its sign = direction). A degenerate
+    /// series (n < 2 or zero variance) returns t = 0 so the Student-t tail reads p = 1 (no claim).
+    static func oneSampleT(_ xs: [Double]) -> (t: Double, df: Double, d: Double, mean: Double) {
+        let n = xs.count
+        guard n >= 1 else { return (0, 0, 0, 0) }
+        let mean = xs.reduce(0, +) / Double(n)
+        guard n >= 2 else { return (0, 0, 0, mean) }
+        var ss = 0.0
+        for x in xs { let dd = x - mean; ss += dd * dd }
+        let sd = (ss / Double(n - 1)).squareRoot()
+        guard sd > 0 else { return (0, Double(n - 1), 0, mean) }
+        let t = mean / (sd / Double(n).squareRoot())
+        return (t, Double(n - 1), mean / sd, mean)
+    }
 
     /// Fixed UTC calendar so a `yyyy-MM-dd` key maps to the same weekday regardless of device zone.
     public static let utcCalendar: Calendar = {
