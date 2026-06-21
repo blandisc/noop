@@ -114,8 +114,8 @@ public struct TrendChart: View {
         showsScrub: Bool = true,
         valueFormat: @escaping (Double) -> String = { String(Int($0.rounded())) },
         dateFormat: @escaping (Date) -> String = { TrendChart.defaultDateString($0) },
-        axisLabelColor: Color = StrandPalette.textTertiary,
-        gridLineColor: Color = StrandPalette.hairline,
+        axisLabelColor: Color = InstrumentoTheme.base.inkTertiary,
+        gridLineColor: Color = InstrumentoTheme.base.hairline,
         bands: [TrendBand] = [],
         bandColor: Color = .clear,
         yAxisValues: [Double]? = nil,
@@ -481,12 +481,12 @@ private func sampleTrend(days: Int, base: Double, swing: Double) -> [TrendPoint]
     VStack(alignment: .leading, spacing: 12) {
         Text("Recovery — 30 days").strandOverline()
         Text("Hover the line: crosshair + dot + date/value tooltip.")
-            .font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
+            .font(StrandFont.footnote).foregroundStyle(InstrumentoTheme.base.inkTertiary)
         TrendChart(points: sampleTrend(days: 30, base: 62, swing: 22))
     }
     .padding(28)
     .frame(width: 720, height: 340)
-    .background(StrandPalette.surfaceBase)
+    .background(InstrumentoTheme.base.paper)
     .preferredColorScheme(.dark)
 }
 
@@ -494,7 +494,7 @@ private func sampleTrend(days: Int, base: Double, swing: Double) -> [TrendPoint]
     VStack(alignment: .leading, spacing: 12) {
         Text("HRV (ms) — 30 days").strandOverline()
         Text("Hover to read each day's HRV in ms.")
-            .font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
+            .font(StrandFont.footnote).foregroundStyle(InstrumentoTheme.base.inkTertiary)
         TrendChart(
             points: sampleTrend(days: 30, base: 58, swing: 14),
             gradient: StrandPalette.recoveryGradient,
@@ -505,7 +505,7 @@ private func sampleTrend(days: Int, base: Double, swing: Double) -> [TrendPoint]
     }
     .padding(28)
     .frame(width: 720, height: 340)
-    .background(StrandPalette.surfaceBase)
+    .background(InstrumentoTheme.base.paper)
     .preferredColorScheme(.dark)
 }
 #endif

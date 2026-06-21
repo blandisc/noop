@@ -74,11 +74,11 @@ public struct ChartTooltip: View {
                 Text(value)
                     .font(StrandFont.captionNumber)
                     .fontWeight(.semibold)
-                    .foregroundStyle(StrandPalette.textPrimary)
+                    .foregroundStyle(InstrumentoTheme.base.ink)
                 if let label {
                     Text(label)
                         .font(StrandFont.footnote)
-                        .foregroundStyle(StrandPalette.textSecondary)
+                        .foregroundStyle(InstrumentoTheme.base.inkSecondary)
                 }
             }
         }
@@ -86,11 +86,11 @@ public struct ChartTooltip: View {
         .padding(.vertical, 6)
         .background(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(StrandPalette.surfaceOverlay)
+                .fill(InstrumentoTheme.base.surface)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(StrandPalette.hairlineStrong, lineWidth: 1)
+                .stroke(InstrumentoTheme.base.hairlineStrong, lineWidth: 1)
         )
         // Heavy black drop shadow is a dark-screen effect; on paper soften it to a quiet
         // separation shadow so the dark card lifts off the warm paper without a glow (FER-131 · 03).
@@ -170,7 +170,7 @@ public enum ChartScrubMath {
 struct CrosshairRule: View {
     var x: CGFloat
     var height: CGFloat
-    var color: Color = StrandPalette.hairlineStrong
+    var color: Color = InstrumentoTheme.base.hairlineStrong
 
     var body: some View {
         Path { p in
@@ -215,7 +215,7 @@ struct HighlightDot: View {
                         .opacity(0.7)
                         .blendMode(.plusLighter)
                     Circle()
-                        .fill(StrandPalette.surfaceBase)
+                        .fill(InstrumentoTheme.base.paper)
                         .frame(width: diameter, height: diameter)
                     Circle()
                         .fill(color)
@@ -268,7 +268,7 @@ struct PositionedTooltip: View {
     }
     .padding(40)
     .frame(width: 320, height: 240)
-    .background(StrandPalette.surfaceBase)
+    .background(InstrumentoTheme.base.paper)
     .preferredColorScheme(.dark)
 }
 #endif

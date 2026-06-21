@@ -96,7 +96,7 @@ public struct Hypnogram: View {
                             p.move(to: CGPoint(x: 0, y: y))
                             p.addLine(to: CGPoint(x: geo.size.width, y: y))
                         }
-                        .stroke(StrandPalette.hairline.opacity(0.4), lineWidth: 1)
+                        .stroke(InstrumentoTheme.base.hairline.opacity(0.4), lineWidth: 1)
                     }
 
                     // connecting risers
@@ -134,7 +134,7 @@ public struct Hypnogram: View {
                         CrosshairRule(x: rect.midX, height: geo.size.height)
                         // ring around the hovered band
                         RoundedRectangle(cornerRadius: (rect.height + 6) / 2)
-                            .stroke(StrandPalette.hairlineStrong, lineWidth: 1.5)
+                            .stroke(InstrumentoTheme.base.hairlineStrong, lineWidth: 1.5)
                             .frame(width: rect.width + 6, height: rect.height + 6)
                             .position(x: rect.midX, y: rect.midY)
                         PositionedTooltip(
@@ -185,7 +185,7 @@ public struct Hypnogram: View {
             ForEach(stagesTopToBottom, id: \.self) { stage in
                 Text(stage.label)
                     .font(StrandFont.footnote)
-                    .foregroundStyle(StrandPalette.textTertiary)
+                    .foregroundStyle(InstrumentoTheme.base.inkTertiary)
                     .frame(maxHeight: .infinity, alignment: .center)
             }
         }
@@ -224,7 +224,7 @@ public struct Hypnogram: View {
                 p.addLine(to: CGPoint(x: x, y: yb))
             }
         }
-        .stroke(StrandPalette.textTertiary.opacity(0.5), lineWidth: 2)
+        .stroke(InstrumentoTheme.base.inkTertiary.opacity(0.5), lineWidth: 2)
     }
 }
 
@@ -289,12 +289,12 @@ private func sampleNight() -> [SleepInterval] {
     return VStack(alignment: .leading, spacing: 12) {
         Text("Last night").strandOverline()
         Text("Hover a band: stage name, clock start–end and duration.")
-            .font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
+            .font(StrandFont.footnote).foregroundStyle(InstrumentoTheme.base.inkTertiary)
         Hypnogram(intervals: sampleNight(), height: 200, nightStart: start)
     }
     .padding(28)
     .frame(width: 720, height: 340)
-    .background(StrandPalette.surfaceBase)
+    .background(InstrumentoTheme.base.paper)
     .preferredColorScheme(.dark)
 }
 #endif

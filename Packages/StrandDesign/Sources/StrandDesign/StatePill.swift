@@ -16,7 +16,7 @@ public enum StrandTone: Sendable {
 
     public var color: Color {
         switch self {
-        case .neutral:  return StrandPalette.textSecondary
+        case .neutral:  return InstrumentoTheme.base.inkSecondary
         case .accent:   return StrandPalette.accent
         case .positive: return StrandPalette.statusPositive
         case .warning:  return StrandPalette.statusWarning
@@ -131,21 +131,21 @@ public struct ConnectionDot: View {
         // mimic the sidebar strap-status footer chip
         HStack(spacing: 10) {
             Image(systemName: "applewatch")
-                .foregroundStyle(StrandPalette.textSecondary)
+                .foregroundStyle(InstrumentoTheme.base.inkSecondary)
             VStack(alignment: .leading, spacing: 1) {
-                Text("Whoop 4.0").font(StrandFont.subhead).foregroundStyle(StrandPalette.textPrimary)
-                Text("87% · streaming").font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
+                Text("Whoop 4.0").font(StrandFont.subhead).foregroundStyle(InstrumentoTheme.base.ink)
+                Text("87% · streaming").font(StrandFont.footnote).foregroundStyle(InstrumentoTheme.base.inkTertiary)
             }
             Spacer()
             ConnectionDot(tone: .positive, pulsing: true)
         }
         .padding(12)
-        .background(StrandPalette.surfaceRaised, in: RoundedRectangle(cornerRadius: 12))
+        .background(InstrumentoTheme.base.surface, in: RoundedRectangle(cornerRadius: 12))
         .frame(width: 300)
     }
     .padding(28)
     .frame(width: 560, height: 280)
-    .background(StrandPalette.surfaceBase)
+    .background(InstrumentoTheme.base.paper)
     .preferredColorScheme(.dark)
 }
 #endif
