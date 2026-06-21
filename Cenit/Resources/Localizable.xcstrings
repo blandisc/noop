@@ -28018,7 +28018,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open Settings"
+            "value": "Abrir Ajustes"
           }
         },
         "es": {
@@ -28052,7 +28052,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not now"
+            "value": "Ahora no"
           }
         },
         "es": {
@@ -28137,7 +28137,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Back"
+            "value": "Atrás"
           }
         },
         "es": {
@@ -28273,7 +28273,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Connected"
+            "value": "Conectado"
           }
         },
         "es": {
@@ -28290,7 +28290,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Connecting…"
+            "value": "Conectando…"
           }
         },
         "es": {
@@ -28358,7 +28358,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Continue"
+            "value": "Continuar"
           }
         },
         "es": {
@@ -28426,7 +28426,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Age"
+            "value": "Edad"
           }
         },
         "es": {
@@ -28494,7 +28494,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Height"
+            "value": "Estatura"
           }
         },
         "es": {
@@ -28579,7 +28579,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Importing…"
+            "value": "Importando…"
           }
         },
         "es": {
@@ -28868,7 +28868,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Weight"
+            "value": "Peso"
           }
         },
         "es": {
@@ -28936,7 +28936,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sex"
+            "value": "Sexo"
           }
         },
         "es": {
@@ -29157,7 +29157,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld records"
+            "value": "%lld registros"
           }
         },
         "es": {
@@ -29174,7 +29174,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Which strap?"
+            "value": "¿Cuál banda?"
           }
         },
         "es": {
