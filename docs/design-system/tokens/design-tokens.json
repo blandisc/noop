@@ -1,28 +1,10 @@
 {
   "$schema": "https://design-tokens.github.io/community-group/format/",
-  "$description": "Strand / NOOP design tokens. Two languages coexist: the legacy dark, instrument-grade system (every shipped screen) and «Instrumento diurno» (FER-131) — the light, warm-paper redesign language under color.instrumento, whose instance roles the by-the-hour theme engine (FER-132) varies. Extracted from the StrandDesign Swift package. Hex values are exact; do not substitute.",
+  "$description": "Strand / NOOP design tokens. The app speaks one visual language — «Instrumento diurno» (FER-131): light warm paper, color only on the datum — under color.instrumento. The dark legacy system was retired in FER-430. Besides instrumento, what remains are the shared data scales (recovery / strain / sleep / hrZone / status / metric) and the chrome accent. Extracted from the StrandDesign Swift package. Hex values are exact; do not substitute.",
   "color": {
     "$type": "color",
-    "surface": {
-      "base":          { "$value": "#060A08", "$description": "near-black, faint green — app background" },
-      "raised":        { "$value": "#0D1512", "$description": "dark green-black cards" },
-      "overlay":       { "$value": "#121D18", "$description": "raised / popovers / sheets" },
-      "inset":         { "$value": "#0A100D", "$description": "wells / chart insets" },
-      "hairline":      { "$value": "#1B2620", "$description": "soft green-grey 1px border" },
-      "hairlineStrong":{ "$value": "#27362E", "$description": "hover / emphasis border" }
-    },
-    "text": {
-      "primary":   { "$value": "#F4F7F5" },
-      "secondary": { "$value": "#8B9690" },
-      "tertiary":  { "$value": "#7A857F", "$description": "FER-46: lifted from #6F7A74 to clear WCAG AA on surface.raised (4.84:1)" }
-    },
-    "glow": {
-      "ambient": { "$value": "#1B2A3A" }
-    },
     "accent": {
       "default":   { "$value": "#18C98B", "$description": "health green — chrome, not data" },
-      "hover":     { "$value": "#2FE0A0" },
-      "muted":     { "$value": "#10271F", "$description": "dark-green tint (selected rows)" },
       "focusRing": { "$value": "#18C98B" }
     },
     "status": {

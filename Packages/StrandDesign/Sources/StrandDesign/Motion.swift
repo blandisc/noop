@@ -89,10 +89,10 @@ private struct MotionDemo: View {
                 .onAppear { breathing = true }
                 .animation(StrandMotion.breathe, value: breathing)
             Button("Toggle gentle spring") { on.toggle() }
-                .foregroundStyle(StrandPalette.textPrimary)
+                .foregroundStyle(InstrumentoTheme.base.ink)
         }
         .frame(width: 360, height: 320)
-        .background(StrandPalette.surfaceBase)
+        .background(InstrumentoTheme.base.paper)
         .preferredColorScheme(.dark)
     }
 }

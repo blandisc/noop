@@ -44,7 +44,7 @@ final class VerdictHeroSnapshotTests: XCTestCase {
         let view = content
             .padding(width == 390 ? NoopMetrics.screenPadding : 0)
             .frame(width: width)
-            .background(StrandPalette.surfaceBase)
+            .background(InstrumentoTheme.base.paper)
             .environment(\.colorScheme, .dark)
         let renderer = ImageRenderer(content: view)
         renderer.scale = 2
@@ -78,7 +78,7 @@ private struct VerdictHeroPreview: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("VEREDICTO DE HOY")
                 .font(StrandFont.overline).tracking(StrandFont.overlineTracking)
-                .foregroundStyle(StrandPalette.textTertiary)
+                .foregroundStyle(InstrumentoTheme.base.inkTertiary)
             HStack(spacing: 10) {
                 box("Veredicto", tint: levelColor) {
                     Text(verdict).font(StrandFont.title2).foregroundStyle(levelColor)
@@ -95,15 +95,15 @@ private struct VerdictHeroPreview: View {
                 }
             }
             Text(bridge)
-                .font(StrandFont.subhead).foregroundStyle(StrandPalette.textPrimary)
+                .font(StrandFont.subhead).foregroundStyle(InstrumentoTheme.base.ink)
                 .fixedSize(horizontal: false, vertical: true)
-            Divider().overlay(StrandPalette.hairline)
+            Divider().overlay(InstrumentoTheme.base.hairline)
             HStack(spacing: 7) {
                 Image(systemName: "info.circle").font(.system(size: 13))
                 Text(whyLabel).font(StrandFont.caption)
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(StrandPalette.textTertiary)
+                    .foregroundStyle(InstrumentoTheme.base.inkTertiary)
             }
             .foregroundStyle(StrandPalette.metricCyan)
         }
@@ -119,7 +119,7 @@ private struct VerdictHeroPreview: View {
         VStack(alignment: .leading, spacing: 3) {
             Text(label.uppercased())
                 .font(StrandFont.overline).tracking(StrandFont.overlineTracking)
-                .foregroundStyle(StrandPalette.textTertiary)
+                .foregroundStyle(InstrumentoTheme.base.inkTertiary)
             content()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -134,17 +134,17 @@ private struct VerdictHeroPreview: View {
 private struct WhyVerdictSheetPreview: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Capsule().fill(StrandPalette.hairlineStrong).frame(width: 36, height: 4)
+            Capsule().fill(InstrumentoTheme.base.hairlineStrong).frame(width: 36, height: 4)
                 .frame(maxWidth: .infinity).padding(.top, 9).padding(.bottom, 14)
             HStack {
-                Text("¿Por qué exigido?").font(StrandFont.headline).foregroundStyle(StrandPalette.textPrimary)
+                Text("¿Por qué exigido?").font(StrandFont.headline).foregroundStyle(InstrumentoTheme.base.ink)
                 Spacer(minLength: 0)
-                Image(systemName: "xmark").font(.system(size: 15)).foregroundStyle(StrandPalette.textTertiary)
+                Image(systemName: "xmark").font(.system(size: 15)).foregroundStyle(InstrumentoTheme.base.inkTertiary)
             }.padding(.bottom, 12)
 
             HStack(spacing: 8) {
                 Circle().fill(StrandPalette.statusWarning).frame(width: 11, height: 11)
-                Text("Hoy tu día es ámbar — Exigido").font(StrandFont.subhead).foregroundStyle(StrandPalette.textPrimary)
+                Text("Hoy tu día es ámbar — Exigido").font(StrandFont.subhead).foregroundStyle(InstrumentoTheme.base.ink)
             }
             .padding(.horizontal, 11).padding(.vertical, 8)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -153,22 +153,22 @@ private struct WhyVerdictSheetPreview: View {
             .padding(.bottom, 11)
 
             Text("Tu recuperación salió alta (92), pero el veredicto pesa una señal: tu carga de entrenamiento viene elevada. Por eso ámbar y no verde.")
-                .font(StrandFont.subhead).foregroundStyle(StrandPalette.textSecondary)
+                .font(StrandFont.subhead).foregroundStyle(InstrumentoTheme.base.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true).padding(.bottom, 16)
 
             Text("TUS SEÑALES HOY").font(StrandFont.overline).tracking(StrandFont.overlineTracking)
-                .foregroundStyle(StrandPalette.textTertiary).padding(.bottom, 10)
+                .foregroundStyle(InstrumentoTheme.base.inkTertiary).padding(.bottom, 10)
             VStack(alignment: .leading, spacing: 11) {
                 signal(StrandPalette.accent, "HRV", "sobre tu base — bien recuperado")
-                signal(StrandPalette.textTertiary, "FC en reposo", "en tu rango normal")
-                signal(StrandPalette.textTertiary, "Respiración", "normal")
+                signal(InstrumentoTheme.base.inkTertiary, "FC en reposo", "en tu rango normal")
+                signal(InstrumentoTheme.base.inkTertiary, "Respiración", "normal")
                 signal(StrandPalette.statusWarning, "Carga de entrenamiento", "alta · 1.6 agudo:crónico — mayor riesgo de lesión")
             }
 
-            Divider().overlay(StrandPalette.hairline).padding(.vertical, 14)
+            Divider().overlay(InstrumentoTheme.base.hairline).padding(.vertical, 14)
 
             Text("QUÉ SIGNIFICA CADA COLOR").font(StrandFont.overline).tracking(StrandFont.overlineTracking)
-                .foregroundStyle(StrandPalette.textTertiary).padding(.bottom, 10)
+                .foregroundStyle(InstrumentoTheme.base.inkTertiary).padding(.bottom, 10)
             VStack(alignment: .leading, spacing: 4) {
                 legend(StrandPalette.statusPrimed, "Listo", "señales alineadas y carga que aguanta", here: false)
                 legend(StrandPalette.statusPositive, "Equilibrado", "nada está flaggeando", here: false)
@@ -178,15 +178,15 @@ private struct WhyVerdictSheetPreview: View {
         }
         .padding(.horizontal, 20).padding(.bottom, 22)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(StrandPalette.surfaceOverlay, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(InstrumentoTheme.base.surface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
     private func signal(_ color: Color, _ label: String, _ detail: String) -> some View {
         HStack(alignment: .top, spacing: 8) {
             Circle().fill(color).frame(width: 7, height: 7).padding(.top, 4)
             VStack(alignment: .leading, spacing: 2) {
-                Text(label).font(StrandFont.caption).foregroundStyle(StrandPalette.textPrimary)
-                Text(detail).font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
+                Text(label).font(StrandFont.caption).foregroundStyle(InstrumentoTheme.base.ink)
+                Text(detail).font(StrandFont.footnote).foregroundStyle(InstrumentoTheme.base.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
@@ -196,8 +196,8 @@ private struct WhyVerdictSheetPreview: View {
     private func legend(_ color: Color, _ name: String, _ condition: String, here: Bool) -> some View {
         HStack(spacing: 9) {
             Circle().fill(color).frame(width: 9, height: 9)
-            Text(name).font(StrandFont.caption).foregroundStyle(StrandPalette.textPrimary).frame(width: 86, alignment: .leading)
-            Text(condition).font(StrandFont.footnote).foregroundStyle(here ? color : StrandPalette.textTertiary)
+            Text(name).font(StrandFont.caption).foregroundStyle(InstrumentoTheme.base.ink).frame(width: 86, alignment: .leading)
+            Text(condition).font(StrandFont.footnote).foregroundStyle(here ? color : InstrumentoTheme.base.inkTertiary)
             Spacer(minLength: 0)
             if here {
                 Text("HOY").font(.system(size: 9, weight: .semibold)).foregroundStyle(color)

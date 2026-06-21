@@ -85,7 +85,7 @@ final class SourcesSectionSnapshotTests: XCTestCase {
             .padding(.horizontal, NoopMetrics.screenPadding)
             .padding(.vertical, NoopMetrics.screenPadding)
             .frame(width: width)
-            .background(StrandPalette.surfaceBase)
+            .background(InstrumentoTheme.base.paper)
             .environment(\.colorScheme, .dark)
 
         let renderer = ImageRenderer(content: view)
@@ -136,13 +136,13 @@ struct ProdSourcesCard: View {
                             count: SourcesSample.appleCount, tint: StrandPalette.metricCyan)
                     }
                 }
-                if hasData { Divider().overlay(StrandPalette.hairline) }
+                if hasData { Divider().overlay(InstrumentoTheme.base.hairline) }
                 switch state {
                 case .error:
                     syncLine(text: "No se pudo sincronizar el historial", tone: .warning,
                              color: StrandPalette.statusWarning)
                 case .synced:
-                    syncLine(text: SourcesSample.sync, tone: .neutral, color: StrandPalette.textTertiary)
+                    syncLine(text: SourcesSample.sync, tone: .neutral, color: InstrumentoTheme.base.inkTertiary)
                 }
             }
         }
@@ -154,9 +154,9 @@ struct ProdSourcesCard: View {
                 .font(.system(size: NoopMetrics.sourceGlyph, weight: .semibold))
                 .foregroundStyle(tint)
                 .frame(width: 18)
-            Text(name).font(StrandFont.subhead).foregroundStyle(StrandPalette.textPrimary)
+            Text(name).font(StrandFont.subhead).foregroundStyle(InstrumentoTheme.base.ink)
             Spacer(minLength: 8)
-            Text(count).font(StrandFont.captionNumber).foregroundStyle(StrandPalette.textSecondary)
+            Text(count).font(StrandFont.captionNumber).foregroundStyle(InstrumentoTheme.base.inkSecondary)
         }
     }
 
@@ -180,7 +180,7 @@ struct SourcesVariantA: View {
             HStack(spacing: 14) {
                 sourceItem(symbol: "bolt.heart.fill", name: "WHOOP",
                            count: SourcesSample.whoopCount, tint: StrandPalette.accent)
-                Rectangle().fill(StrandPalette.hairline)
+                Rectangle().fill(InstrumentoTheme.base.hairline)
                     .frame(width: 1, height: 22)
                 sourceItem(symbol: "heart.fill", name: "APPLE HEALTH",
                            count: SourcesSample.appleCount, tint: StrandPalette.metricCyan)
@@ -197,9 +197,9 @@ struct SourcesVariantA: View {
                 .foregroundStyle(tint)
             VStack(alignment: .leading, spacing: 1) {
                 Text(name).font(StrandFont.overline).tracking(StrandFont.overlineTracking)
-                    .foregroundStyle(StrandPalette.textSecondary)
+                    .foregroundStyle(InstrumentoTheme.base.inkSecondary)
                 Text(count).font(StrandFont.captionNumber)
-                    .foregroundStyle(StrandPalette.textTertiary)
+                    .foregroundStyle(InstrumentoTheme.base.inkTertiary)
             }
         }
     }
@@ -220,11 +220,11 @@ struct SourcesVariantB: View {
                           count: SourcesSample.whoopCount, tint: StrandPalette.accent)
                 sourceRow(symbol: "heart.fill", name: "Apple Health",
                           count: SourcesSample.appleCount, tint: StrandPalette.metricCyan)
-                Divider().overlay(StrandPalette.hairline)
+                Divider().overlay(InstrumentoTheme.base.hairline)
                 HStack(spacing: 6) {
                     ConnectionDot(tone: .neutral, size: 6)
                     Text(SourcesSample.sync).font(StrandFont.footnote)
-                        .foregroundStyle(StrandPalette.textTertiary)
+                        .foregroundStyle(InstrumentoTheme.base.inkTertiary)
                 }
             }
         }
@@ -236,10 +236,10 @@ struct SourcesVariantB: View {
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(tint)
                 .frame(width: 18)
-            Text(name).font(StrandFont.subhead).foregroundStyle(StrandPalette.textPrimary)
+            Text(name).font(StrandFont.subhead).foregroundStyle(InstrumentoTheme.base.ink)
             Spacer(minLength: 8)
             Text(count).font(StrandFont.captionNumber)
-                .foregroundStyle(StrandPalette.textSecondary)
+                .foregroundStyle(InstrumentoTheme.base.inkSecondary)
         }
     }
 }
@@ -261,7 +261,7 @@ struct SourcesVariantC: View {
             HStack(spacing: 6) {
                 ConnectionDot(tone: .accent, size: 6)
                 Text(SourcesSample.sync).font(StrandFont.footnote)
-                    .foregroundStyle(StrandPalette.textTertiary)
+                    .foregroundStyle(InstrumentoTheme.base.inkTertiary)
             }
         }
     }
@@ -270,15 +270,15 @@ struct SourcesVariantC: View {
         HStack(spacing: 7) {
             Image(systemName: symbol)
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(StrandPalette.textSecondary)
+                .foregroundStyle(InstrumentoTheme.base.inkSecondary)
             Text(name).font(StrandFont.overline).tracking(StrandFont.overlineTracking)
-                .foregroundStyle(StrandPalette.textSecondary)
+                .foregroundStyle(InstrumentoTheme.base.inkSecondary)
             Text(count).font(StrandFont.captionNumber)
-                .foregroundStyle(StrandPalette.textTertiary)
+                .foregroundStyle(InstrumentoTheme.base.inkTertiary)
         }
         .padding(.horizontal, 10).padding(.vertical, 7)
-        .background(StrandPalette.surfaceInset, in: Capsule(style: .continuous))
-        .overlay(Capsule(style: .continuous).strokeBorder(StrandPalette.hairline, lineWidth: 1))
+        .background(InstrumentoTheme.base.hairline, in: Capsule(style: .continuous))
+        .overlay(Capsule(style: .continuous).strokeBorder(InstrumentoTheme.base.hairline, lineWidth: 1))
     }
 }
 #endif

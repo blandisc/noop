@@ -1,14 +1,13 @@
 # Strand / NOOP — Design System
 
-> **Dark-only, instrument-grade.** Every screen reads like a precision instrument:
-> calm dark-green-black surfaces, tabular numerics that never reflow, physiological
-> motion (breathe / pulse / flow — no cartoon bounce), and a locked component set
-> that guarantees a uniform look.
+> **One language: «Instrumento diurno».** Every screen reads like a precision instrument on warm
+> day paper: one dominant number, **color only on the datum**, hierarchy by space (not boxes),
+> tabular numerics that never reflow, and physiological motion (breathe / pulse / flow — no cartoon
+> bounce). The canonical surface / text / role tokens live in **[§8](#8-instrumento-diurno--the-daytime-language-fer-131)**.
 
-> **Two languages, one package.** The system above is the **legacy** one — dark, and
-> what every *shipped* screen still uses. A second language, **«Instrumento diurno»**
-> (light, warm paper, one dominant number) is being built for the redesign and lives
-> *alongside* it, not replacing it — see [§8](#8-instrumento-diurno--the-daytime-language-fer-131).
+> **The dark legacy system was retired (FER-430).** Cénit used to ship a dark, instrument-grade
+> language alongside Instrumento; it has been removed. What remains in §1 below is the shared,
+> language-agnostic data (recovery / strain / sleep / HR-zone / status / metric scales) + the chrome accent.
 
 - **Source of truth:** the `StrandDesign` Swift package — `Packages/StrandDesign/Sources/StrandDesign/`
 - **Package version:** `0.1.0` (`StrandDesign.version`)
@@ -24,27 +23,9 @@
 
 ## 1. Foundations
 
-### 1.1 Color — surfaces
+### 1.1 Color — surfaces & text
 
-Dark green-black stack. Layer surfaces from `base` (the canvas) up to `overlay` (sheets/popovers).
-
-| Token | Hex | Use |
-|---|---|---|
-| `surface.base` | `#060A08` | App background — near-black, faint green |
-| `surface.raised` | `#0D1512` | Cards |
-| `surface.overlay` | `#121D18` | Popovers / sheets |
-| `surface.inset` | `#0A100D` | Wells / chart insets |
-| `hairline` | `#1B2620` | 1px border (default) |
-| `hairlineStrong` | `#27362E` | 1px border on hover / emphasis |
-| `glow.ambient` | `#1B2A3A` | Soft ambient glow behind hero elements |
-
-### 1.2 Color — text
-
-| Token | Hex | Use |
-|---|---|---|
-| `text.primary` | `#F4F7F5` | Values, titles |
-| `text.secondary` | `#8B9690` | Supporting copy, labels |
-| `text.tertiary` | `#6F7A74` | Overlines, captions, axis |
+Surfaces and text are **«Instrumento diurno»** (warm paper + ink) — see **[§8](#8-instrumento-diurno--the-daytime-language-fer-131)** for the canonical roles (`paper`, `surface`, `hairline`, `hairlineStrong`, `ink`, `inkSecondary`, `inkTertiary`). The dark `surface.*` / `text.*` / `glow` tokens were **retired in FER-430**.
 
 `opacity.disabled = 0.45` — shared dim value for disabled sections (don't invent your own).
 
@@ -55,8 +36,6 @@ The accent is for UI chrome (selection, focus, links), **never** to encode a met
 | Token | Hex |
 |---|---|
 | `accent` | `#18C98B` (health green) |
-| `accent.hover` | `#2FE0A0` |
-| `accent.muted` | `#10271F` (selected-row tint) |
 | `focusRing` | `#18C98B` |
 
 ### 1.4 Color — status

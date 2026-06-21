@@ -105,10 +105,10 @@ struct RootTabView: View {
                     .barReservation(barHeight)
                     .navigationDestination(for: SecondaryScreen.self) { screen in
                         secondaryDestination(screen)
-                            .background(StrandPalette.surfaceBase.ignoresSafeArea())
+                            .background(InstrumentoTheme.base.paper.ignoresSafeArea())
                             .barReservation(barHeight)
                             .navigationBarTitleDisplayMode(.inline)
-                            .toolbarBackground(StrandPalette.surfaceBase, for: .navigationBar)
+                            .toolbarBackground(InstrumentoTheme.base.paper, for: .navigationBar)
                     }
             }
             .toolbar(.hidden, for: .tabBar)
@@ -228,7 +228,7 @@ struct RootTabView: View {
                 Color.clear   // placeholder until first selected; never visible (selecting builds it)
             }
         }
-        .background(StrandPalette.surfaceBase.ignoresSafeArea())
+        .background(InstrumentoTheme.base.paper.ignoresSafeArea())
         // Reserve the floating bar's height at the content level so the page's
         // ScrollView stops above the bar (the inset reaches scroll views here; it
         // would not from the TabView — see `body`).
