@@ -28,34 +28,17 @@ public extension Color {
 
 // MARK: - Strand Palette
 //
-// Every semantic token from design spec §9.1. Dark-only, instrument-grade.
+// The data scales (recovery / strain / sleep / zones / status / metric) + the chrome accent. The
+// dark «instrument-grade» surface / text / hairline / glow tokens were retired in FER-430;
+// «Instrumento diurno» (Instrumento.swift / InstrumentoTheme) is now the only surface/text language.
 // Hex values are exact per the spec — do not substitute.
 
 public enum StrandPalette {
 
-    // MARK: Surfaces (§9.1)
-    public static let surfaceBase    = Color(hex: "#060A08") // near-black, faint green (brief)
-    public static let surfaceRaised  = Color(hex: "#0D1512") // dark green-black cards
-    public static let surfaceOverlay = Color(hex: "#121D18") // raised / popovers / sheets
-    public static let surfaceInset   = Color(hex: "#0A100D") // wells / chart insets
-    public static let hairline       = Color(hex: "#1B2620") // soft green-grey 1px border
-    public static let hairlineStrong = Color(hex: "#27362E") // hover / emphasis border
-
-    // MARK: Text (§9.1)
-    public static let textPrimary    = Color(hex: "#F4F7F5")
-    public static let textSecondary  = Color(hex: "#8B9690")
-    // FER-46: lifted #6F7A74 → #7A857F so overlines/captions clear WCAG AA on the
-    // surface they actually sit on — cards (surface.raised) were the binding case
-    // (4.16:1 → 4.84:1; base 4.47:1 → 5.20:1). Still clearly below textSecondary.
-    public static let textTertiary   = Color(hex: "#7A857F")
-
-    // MARK: Glow (§9.1)
-    public static let glowAmbient    = Color(hex: "#1B2A3A")
-
     // MARK: Accent — chrome, not data (§9.1)
+    // FER-430 retired the dark surfaces / text / hairline / glow tokens (and the unused accent
+    // hover/muted). What remains is the shared accent + the data scales below.
     public static let accent         = Color(hex: "#18C98B") // health green (brief)
-    public static let accentHover    = Color(hex: "#2FE0A0")
-    public static let accentMuted    = Color(hex: "#10271F") // dark-green tint (selected rows)
     /// Opacity for dimmed/disabled sections (shared so screens don't invent their own value).
     public static let disabledOpacity: Double = 0.45
 
@@ -259,34 +242,19 @@ extension Color {
 }
 
 #if DEBUG
-#Preview("Palette") {
+#Preview("Palette — data scales") {
     ScrollView {
         VStack(alignment: .leading, spacing: 24) {
-            swatchRow("Surfaces", [
-                ("base", StrandPalette.surfaceBase),
-                ("raised", StrandPalette.surfaceRaised),
-                ("overlay", StrandPalette.surfaceOverlay),
-                ("inset", StrandPalette.surfaceInset),
-                ("hairline", StrandPalette.hairline),
-                ("hairline.strong", StrandPalette.hairlineStrong),
-            ])
-            swatchRow("Text", [
-                ("primary", StrandPalette.textPrimary),
-                ("secondary", StrandPalette.textSecondary),
-                ("tertiary", StrandPalette.textTertiary),
-            ])
             swatchRow("Accent", [
                 ("accent", StrandPalette.accent),
-                ("hover", StrandPalette.accentHover),
-                ("muted", StrandPalette.accentMuted),
             ])
             VStack(alignment: .leading, spacing: 8) {
-                Text("RECOVERY GRADIENT").font(.caption).foregroundStyle(StrandPalette.textTertiary)
+                Text("RECOVERY GRADIENT").font(.caption).foregroundStyle(InstrumentoTheme.base.inkTertiary)
                 LinearGradient(gradient: StrandPalette.recoveryGradient, startPoint: .leading, endPoint: .trailing)
                     .frame(height: 36).clipShape(RoundedRectangle(cornerRadius: 8))
             }
             VStack(alignment: .leading, spacing: 8) {
-                Text("STRAIN RAMP").font(.caption).foregroundStyle(StrandPalette.textTertiary)
+                Text("STRAIN RAMP").font(.caption).foregroundStyle(InstrumentoTheme.base.inkTertiary)
                 LinearGradient(gradient: StrandPalette.strainGradient, startPoint: .leading, endPoint: .trailing)
                     .frame(height: 36).clipShape(RoundedRectangle(cornerRadius: 8))
             }
@@ -304,9 +272,9 @@ extension Color {
         }
         .padding(24)
     }
-    .frame(width: 520, height: 760)
-    .background(StrandPalette.surfaceBase)
-    .preferredColorScheme(.dark)
+    .frame(width: 520, height: 600)
+    .background(InstrumentoTheme.base.paper)
+    .preferredColorScheme(.light)
 }
 
 @ViewBuilder
@@ -314,15 +282,15 @@ private func swatchRow(_ title: String, _ items: [(String, Color)]) -> some View
     VStack(alignment: .leading, spacing: 8) {
         Text(title.uppercased())
             .font(.caption)
-            .foregroundStyle(StrandPalette.textTertiary)
+            .foregroundStyle(InstrumentoTheme.base.inkTertiary)
         HStack(spacing: 10) {
             ForEach(items, id: \.0) { name, color in
                 VStack(spacing: 6) {
                     RoundedRectangle(cornerRadius: 8)
                         .fill(color)
                         .frame(width: 64, height: 48)
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(StrandPalette.hairline, lineWidth: 1))
-                    Text(name).font(.system(size: 9)).foregroundStyle(StrandPalette.textSecondary)
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(InstrumentoTheme.base.hairline, lineWidth: 1))
+                    Text(name).font(.system(size: 9)).foregroundStyle(InstrumentoTheme.base.inkSecondary)
                 }
             }
         }

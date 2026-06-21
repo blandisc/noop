@@ -5,15 +5,9 @@ import StrandDesign
 // MARK: - «Barra de instrumento» — the bottom tab bar (FER-163)
 //
 // Replaces the native dark `TabView` chrome (a heavy bar, green `.tint` painting
-// the icons) with a quiet bar that speaks the app's two languages and ADAPTS to
-// the visible screen:
-//
-//   • Under «Hoy» (light «Instrumento diurno»): warm `paper`, a single hairline,
-//     and it breathes with the hour — it reads `\.instrumentoTheme`, which the
-//     shell drives by the clock, so the bar warms from dawn to dusk to night just
-//     like the screen above it.
-//   • Under the still-dark screens (Tendencias / En vivo / Sueño / Más): the dark
-//     `StrandPalette`, so it stays of a piece with them.
+// the icons) with a quiet bar in the app's «Instrumento diurno» language: warm
+// `paper` (read from `\.instrumentoTheme`), a single hairline, ink labels. The
+// dark legacy variant was retired in FER-430 — every screen is paper now.
 //
 // The active tab is marked by INK + a now-dot (the green datum), never by a green
 // fill — color stays on the datum, not the chrome. The now-dot reuses the
@@ -50,11 +44,13 @@ struct InstrumentTabBar<Tag: Hashable>: View {
     @Environment(\.instrumentoTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private var surface: Color { isLight ? theme.paper : StrandPalette.surfaceBase }
-    private var rule: Color { isLight ? theme.hairline : StrandPalette.hairline }
-    private var activeInk: Color { isLight ? theme.ink : StrandPalette.textPrimary }
-    private var idleInk: Color { isLight ? theme.inkTertiary : StrandPalette.textSecondary }
-    private var nowDotColor: Color { isLight ? theme.dataRecovery : StrandPalette.accent }
+    // The bar is always warm «Instrumento» paper now (the dark legacy was retired — FER-430).
+    // `isLight` is kept only as the appear-animation trigger; it no longer switches palettes.
+    private var surface: Color { theme.paper }
+    private var rule: Color { theme.hairline }
+    private var activeInk: Color { theme.ink }
+    private var idleInk: Color { theme.inkTertiary }
+    private var nowDotColor: Color { theme.dataRecovery }
 
     var body: some View {
         HStack(alignment: .top, spacing: 0) {

@@ -230,18 +230,18 @@ struct ECGShape: Shape {
 #if DEBUG
 #Preview("ECGWave") {
     VStack(alignment: .leading, spacing: 16) {
-        Text("60 BPM (monitor en vivo)").font(.caption).foregroundStyle(StrandPalette.textTertiary)
+        Text("60 BPM (monitor en vivo)").font(.caption).foregroundStyle(InstrumentoTheme.base.inkTertiary)
         ECGWave(color: StrandPalette.accent, animate: true, bpm: 60).frame(width: 152)
-        Text("120 BPM (latidos más juntos)").font(.caption).foregroundStyle(StrandPalette.textTertiary)
+        Text("120 BPM (latidos más juntos)").font(.caption).foregroundStyle(InstrumentoTheme.base.inkTertiary)
         ECGWave(color: StrandPalette.recovery100, animate: true, bpm: 120).frame(width: 152)
-        Text("Sin BPM (estático)").font(.caption).foregroundStyle(StrandPalette.textTertiary)
+        Text("Sin BPM (estático)").font(.caption).foregroundStyle(InstrumentoTheme.base.inkTertiary)
         ECGWave(color: StrandPalette.statusWarning).frame(width: 152)
-        Text("Flatline (sin datos)").font(.caption).foregroundStyle(StrandPalette.textTertiary)
-        ECGWave(color: StrandPalette.textTertiary, flat: true).frame(width: 152)
+        Text("Flatline (sin datos)").font(.caption).foregroundStyle(InstrumentoTheme.base.inkTertiary)
+        ECGWave(color: InstrumentoTheme.base.inkTertiary, flat: true).frame(width: 152)
     }
     .padding(24)
     .frame(width: 320, height: 320)
-    .background(StrandPalette.surfaceBase)
+    .background(InstrumentoTheme.base.paper)
     .preferredColorScheme(.dark)
 }
 #endif
