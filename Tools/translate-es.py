@@ -131,6 +131,9 @@ ES: dict[str, str] = {
     'Skipped': 'Salté',
     # FER-385 — Coach: la dieta como palanca/experimento (etiqueta del comportamiento)
     'I followed my diet': 'Seguí mi dieta',
+    # FER-402 — Dieta: navegación por día en el tracker (accesibilidad)
+    'Previous day': 'Día anterior',
+    'Next day': 'Día siguiente',
     # FER-381 — Acerca de y soporte adelgazado: subtítulo acortado
     '%@ — all your data, none of the cloud.': '%@ — todos tus datos, nada en la nube.',
     # FER-371 — Dieta: pantalla de captura (BYO-LLM)

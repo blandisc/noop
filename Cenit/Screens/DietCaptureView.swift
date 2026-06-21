@@ -32,10 +32,13 @@ struct DietCaptureView: View {
     @State private var copied = false
     @State private var showFileImporter = false
 
-    // Daily tracker (FER-372): today's per-meal marks, the 7-day adherence trend, and today's key.
+    // Daily tracker (FER-372): per-meal marks for the viewed day + its 7-day adherence trend.
+    // Day navigation (FER-402): `selectedDay` is the day shown; `todayKey` caps the forward arrow so
+    // you can't mark the future.
     @State private var todayStatuses: [String: DietMealStatus] = [:]
     @State private var adherence7d: [Double] = []
     @State private var todayKey = ""
+    @State private var selectedDay = ""
 
     private let importer = DietPlanImporter()
 
@@ -151,9 +154,31 @@ struct DietCaptureView: View {
         let pct = marked == 0 ? nil
             : DietAdherence.dayPercent(statuses: Array(todayStatuses.values), plannedMeals: planned)
         return VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            dayNav
             adherenceHero(pct: pct, marked: marked, planned: planned)
             if let plan = activeParsed { mealTracker(plan) }
             QuietButton("Replace plan") { startCapture() }
+        }
+    }
+
+    /// Day navigation (FER-402): ‹ date › steps one day at a time; the forward arrow is disabled on
+    /// today (no future to mark). The date and arrows stay in ink — color lives only in the apego %.
+    private var dayNav: some View {
+        let atToday = selectedDay >= todayKey
+        return HStack {
+            Button { goToDay(Self.shiftDay(selectedDay, by: -1)) } label: {
+                Image(systemName: "chevron.left").font(StrandFont.headline).foregroundStyle(theme.ink)
+            }
+            .accessibilityLabel("Previous day")
+            Spacer()
+            Text(dayLabel(selectedDay)).font(StrandFont.subhead).foregroundStyle(theme.ink)
+            Spacer()
+            Button { goToDay(Self.shiftDay(selectedDay, by: 1)) } label: {
+                Image(systemName: "chevron.right").font(StrandFont.headline)
+                    .foregroundStyle(atToday ? theme.hairlineStrong : theme.ink)
+            }
+            .disabled(atToday)
+            .accessibilityLabel("Next day")
         }
     }
 
@@ -162,7 +187,7 @@ struct DietCaptureView: View {
     private func adherenceHero(pct: Int?, marked: Int, planned: Int) -> some View {
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
             VStack(alignment: .leading, spacing: NoopMetrics.space1) {
-                Text("Diet · today").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text(selectedDay == todayKey ? "Diet · today" : "Diet").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
                     if let pct {
                         Text("\(pct)").instrumentoHero(62).foregroundStyle(theme.dataRecovery)
@@ -313,34 +338,73 @@ struct DietCaptureView: View {
 
     private func loadIfNeeded() async {
         guard !loaded else { return }
+        todayKey = Repository.localDayKey(Date())
+        selectedDay = todayKey
         activePlan = await repo.activeDietPlan()
         activeParsed = activePlan.flatMap { try? importer.parse(text: $0.payloadJSON) }
         if activePlan != nil { await loadTrackerData() }
         loaded = true
     }
 
-    /// Load today's per-meal marks + the recent adherence trend for the tracker.
+    /// Load the viewed day's per-meal marks + the 7-day adherence trend ending on that day.
     private func loadTrackerData() async {
-        todayKey = Repository.localDayKey(Date())
-        let marks = await repo.dietAdherence(day: todayKey)
+        let marks = await repo.dietAdherence(day: selectedDay)
         todayStatuses = Dictionary(marks.map { ($0.mealId, $0.status) }, uniquingKeysWith: { first, _ in first })
-        adherence7d = await repo.dietAdherenceSeries(from: Self.weekAgoKey(), to: todayKey)
+        adherence7d = await repo.dietAdherenceSeries(from: Self.weekAgoKey(of: selectedDay), to: selectedDay)
     }
 
-    /// Mark one meal's status: optimistic local update (the hero % recomputes at once), then persist +
-    /// refresh the trend off the render path.
+    /// Jump to a day (never past today) and reload its marks + trend.
+    private func goToDay(_ key: String) {
+        guard key <= todayKey else { return }
+        selectedDay = key
+        Task { await loadTrackerData() }
+    }
+
+    /// Mark one meal's status on the viewed day: optimistic local update (the hero % recomputes at
+    /// once), then persist + refresh the trend off the render path.
     private func mark(_ mealId: String, _ status: DietMealStatus) {
         todayStatuses[mealId] = status
         let planned = activeParsed?.meals.count ?? 0
+        let day = selectedDay
         Task {
-            await repo.saveDietAdherence(day: todayKey, mealId: mealId, status: status, plannedMeals: planned)
-            adherence7d = await repo.dietAdherenceSeries(from: Self.weekAgoKey(), to: todayKey)
+            await repo.saveDietAdherence(day: day, mealId: mealId, status: status, plannedMeals: planned)
+            adherence7d = await repo.dietAdherenceSeries(from: Self.weekAgoKey(of: day), to: day)
         }
     }
 
-    private static func weekAgoKey() -> String {
-        Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -6, to: Date()) ?? Date())
+    /// A readable label for a day key — «Today · <date>» on today, the date alone on past days.
+    private func dayLabel(_ key: String) -> String {
+        guard let d = Self.dayKeyParser.date(from: key) else { return key }
+        let date = Self.dayLabelFormatter.string(from: d)
+        return key == todayKey ? "\(String(localized: "Today")) · \(date)" : date
     }
+
+    /// Six days before `key` — the start of the 7-day window ending on it.
+    private static func weekAgoKey(of key: String) -> String {
+        guard let d = dayKeyParser.date(from: key),
+              let start = Calendar.current.date(byAdding: .day, value: -6, to: d) else { return key }
+        return Repository.localDayKey(start)
+    }
+
+    /// Shift a "yyyy-MM-dd" key by whole days, re-keyed in the local calendar.
+    private static func shiftDay(_ key: String, by days: Int) -> String {
+        guard let d = dayKeyParser.date(from: key),
+              let shifted = Calendar.current.date(byAdding: .day, value: days, to: d) else { return key }
+        return Repository.localDayKey(shifted)
+    }
+
+    private static let dayKeyParser: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
+    private static let dayLabelFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.setLocalizedDateFormatFromTemplate("EEE d MMM")
+        return f
+    }()
 
     private func startCapture() {
         pasteText = ""

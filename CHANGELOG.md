@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Marca tu dieta de cualquier día, no solo hoy / Track your diet for any day, not just today.**
+  **ES** — El tracker de Dieta estrena un **navegador de fecha (‹ ›)**: vuelve a días anteriores para marcar «ayer se me pasó» o revisar cómo te fue, y regresa a hoy. Cada día muestra su propio **% de apego** y su tendencia; no puedes adelantarte al futuro. Es básico en cualquier app de hábitos y antes no lo teníamos.
+  **EN** — The Diet tracker gains a **date navigator (‹ ›)**: step back to earlier days to mark «I slipped yesterday» or review how you did, then return to today. Each day shows its own **adherence %** and trend; you can't jump past today. It's table stakes for any habit app and we were missing it.
+  ([Cenit/Screens/DietCaptureView.swift](Cenit/Screens/DietCaptureView.swift))
 - **Tus comidas se capturan con nombres más limpios / Your meals are captured with cleaner names.**
   **ES** — Al capturar tu dieta, el prompt ahora le pide a la IA que el **nombre de cada comida** sea una etiqueta corta del momento del día (Desayuno, Comida, Cena, Snack, Pre‑entreno…) en vez del platillo completo; los alimentos quedan en sus opciones. El tracker se ve más ordenado y queda listo para elegir entre equivalentes.
   **EN** — When you capture your diet, the prompt now asks the AI to make each **meal's name** a short label for the time of day (Breakfast, Lunch, Dinner, Snack, Pre‑workout…) instead of the full dish; the foods stay in their options. The tracker reads cleaner and is ready for choosing between equivalents.
