@@ -376,7 +376,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ bpm"
+            "value": "%@ lpm"
           }
         }
       }
@@ -393,7 +393,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ bpm · %@"
+            "value": "%@ lpm · %@"
           }
         }
       }
@@ -3050,7 +3050,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Auto · %lld bpm (Tanaka)"
+            "value": "Auto · %lld lpm (Tanaka)"
           }
         }
       }
@@ -19835,7 +19835,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "bpm"
+            "value": "lpm"
           }
         }
       }
@@ -20921,7 +20921,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "FC en reposo +%lld bpm"
+            "value": "FC en reposo +%lld lpm"
           }
         }
       }
@@ -23415,7 +23415,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Promedio de hoy · mín %@ · máx %@ bpm · reposo %lld"
+            "value": "Promedio de hoy · mín %@ · máx %@ lpm · reposo %lld"
           }
         }
       }
@@ -23431,7 +23431,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Promedio de hoy · mín %@ · máx %@ bpm"
+            "value": "Promedio de hoy · mín %@ · máx %@ lpm"
           }
         }
       }
@@ -23479,7 +23479,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pico %lld bpm · %@"
+            "value": "Pico %lld lpm · %@"
           }
         }
       }
@@ -23623,7 +23623,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zonas como porcentaje de tu frecuencia cardiaca máxima (%lld bpm, Tanaka). El resto del día estuviste en reposo o muy ligero."
+            "value": "Zonas como porcentaje de tu frecuencia cardiaca máxima (%lld lpm, Tanaka). El resto del día estuviste en reposo o muy ligero."
           }
         }
       }

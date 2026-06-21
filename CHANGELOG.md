@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La unidad de pulso dice «lpm» en español de forma pareja / Heart-rate unit reads "lpm" consistently in Spanish.**
+  **ES** — En español, la unidad de frecuencia cardiaca ahora se muestra como **«lpm»** (latidos por minuto) de forma consistente en toda la app —Hoy, Cuerpo, Entrenamientos, Apple Health y los detalles de métrica— en vez de la mezcla anterior con «bpm». La unidad cambia sola según el idioma del teléfono: en inglés sigue siendo «bpm». Cambia solo la abreviatura; los números no se tocan.
+  **EN** — In Spanish, the heart-rate unit now consistently reads **"lpm"** (latidos por minuto) across the whole app —Today, Body, Workouts, Apple Health and the metric details— instead of the previous mix with "bpm". The unit switches automatically by device language; English still shows "bpm". Only the abbreviation changes; the numbers are untouched.
+  ([Tools/translate-es.py](Tools/translate-es.py), [Cenit/Resources/Localizable.xcstrings](Cenit/Resources/Localizable.xcstrings))
 - **La pantalla de bienvenida (términos) también va en papel / The welcome (terms) screen is on paper too.**
   **ES** — La pantalla de **aceptación de términos** que ves la primera vez (y si los términos cambian) pasó del tema oscuro al **papel cálido «Instrumento»**, como el resto de la app. Mismo texto y mismo funcionamiento: marcas el interruptor y tocas «Accept & Continue». Solo cambia el aspecto.
   **EN** — The first-run **terms acceptance** screen (and when terms change) moved from the dark theme to the warm **«Instrumento» paper**, like the rest of the app. Same wording and same behavior: flip the switch and tap "Accept & Continue". Only the look changes.
