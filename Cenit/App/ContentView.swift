@@ -47,9 +47,9 @@ struct ContentView: View {
         .animation(.easeInOut(duration: 0.35), value: onboarded)
         .animation(.easeInOut(duration: 0.35), value: acceptedTerms)
         // El color scheme se decide AQUÍ (lo más cercano a la raíz del WindowGroup, que es donde el
-        // controlador raíz lee `preferredColorScheme` para la barra de estado): mientras el gate
-        // (terms/onboarding) está arriba va en oscuro; ya dentro, Hoy es papel claro (barra de estado
-        // en tinta oscura) y el resto de pestañas en oscuro.
+        // controlador raíz lee `preferredColorScheme` para la barra de estado): el gate de Términos es
+        // papel claro (FER-416) → barra en tinta oscura; el onboarding sigue oscuro; ya dentro, Hoy es
+        // papel claro y el resto de pestañas oscuras.
         .preferredColorScheme(resolvedColorScheme)
         .sheet(isPresented: $showWhatsNew) {
             WhatsNewView(onClose: {
@@ -85,11 +85,13 @@ struct ContentView: View {
         #endif
     }
 
-    /// Gate screens (terms/onboarding) are dark-designed → `.dark`. Once inside the app the scheme
-    /// follows the active tab: Today is light paper (so the status bar renders in dark ink), every
-    /// other tab is the dark instrument panel.
+    /// The Terms gate is light «Instrumento» paper (FER-416) and sits over everything until accepted →
+    /// light scheme so its status bar renders in dark ink. The onboarding wizard is still dark. Once
+    /// inside the app the scheme follows the active tab: Today is light paper (dark-ink status bar),
+    /// every other tab is the dark instrument panel.
     private var resolvedColorScheme: ColorScheme {
-        guard onboarded, acceptedTerms == Terms.currentVersion else { return .dark }
+        if acceptedTerms != Terms.currentVersion { return .light }   // Terms gate (paper) is on top
+        guard onboarded else { return .dark }                        // onboarding wizard is still dark
         return isTodayTab ? .light : .dark
     }
 

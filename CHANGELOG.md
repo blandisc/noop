@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La pantalla de bienvenida (términos) también va en papel / The welcome (terms) screen is on paper too.**
+  **ES** — La pantalla de **aceptación de términos** que ves la primera vez (y si los términos cambian) pasó del tema oscuro al **papel cálido «Instrumento»**, como el resto de la app. Mismo texto y mismo funcionamiento: marcas el interruptor y tocas «Accept & Continue». Solo cambia el aspecto.
+  **EN** — The first-run **terms acceptance** screen (and when terms change) moved from the dark theme to the warm **«Instrumento» paper**, like the rest of the app. Same wording and same behavior: flip the switch and tap "Accept & Continue". Only the look changes.
+  ([Cenit/App/TermsGateView.swift](Cenit/App/TermsGateView.swift))
 - **La pantalla de novedades va a juego con el resto de la app / The What's New screen matches the rest of the app.**
   **ES** — La pantalla **«Novedades»** (la que ves tras actualizar, y también desde Soporte) pasó del tema oscuro al **papel cálido «Instrumento»**, como el resto de Cénit: el mismo contenido, ahora legible y consistente. Parte de la limpieza que retira el último tema oscuro de la app.
   **EN** — The **What's New** screen (shown after an update, and from Support) moved from the dark theme to the warm **«Instrumento» paper**, like the rest of Cénit: the same content, now consistent and legible. Part of retiring the last of the app's dark theme.
