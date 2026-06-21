@@ -39,6 +39,16 @@ enum StressBand {
         }
     }
 
+    /// Sentence-case band word for «Instrumento» surfaces ("Low" / "Moderate" / "High"). Single source
+    /// for the band→word mapping; distinct from `title` (ALL-CAPS, for the dark legacy gauge).
+    var displayWord: LocalizedStringKey {
+        switch self {
+        case .low:    return "Low"
+        case .medium: return "Moderate"
+        case .high:   return "High"
+        }
+    }
+
     var tone: StrandTone {
         switch self {
         case .low:    return .positive
