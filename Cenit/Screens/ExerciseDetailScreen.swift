@@ -62,6 +62,15 @@ struct ExerciseDetailScreen: View {
     private var musclesSection: some View {
         VStack(alignment: .leading, spacing: 11) {
             Text("Muscles").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            // The worked-muscle silhouette (FER-389): front/back figures reusing the muscle-map atlas,
+            // primaries in full ink and assistants at half. Derived from the exercise's own muscle data —
+            // no bundled art, no network. Hidden when an exercise carries no muscles (a bare custom one).
+            if !exercise.primaryMuscles.isEmpty || !exercise.secondaryMuscles.isEmpty {
+                ExerciseMuscleFigures(theme: theme,
+                                      primary: Set(exercise.primaryMuscles),
+                                      secondary: Set(exercise.secondaryMuscles))
+                    .padding(.bottom, 4)
+            }
             VStack(alignment: .leading, spacing: 10) {
                 ForEach(exercise.primaryMuscles, id: \.self) { m in muscleBar(m, primary: true) }
                 ForEach(exercise.secondaryMuscles, id: \.self) { m in muscleBar(m, primary: false) }
@@ -245,6 +254,55 @@ struct ExerciseDetailScreen: View {
 
     private func relative(_ ts: Int) -> String {
         Self.relativeFormatter.localizedString(for: Date(timeIntervalSince1970: TimeInterval(ts)), relativeTo: Date())
+    }
+}
+
+// MARK: - Worked-muscle silhouette (FER-389)
+
+/// Front + back schematic figures that tint the muscles an exercise works — primaries in full ink,
+/// assistants at half — reusing the muscle-map atlas (`MuscleAtlas`/`RegionShape`/`BodyOutlineShape`,
+/// FER-350). Pure presentation off the exercise's own `primaryMuscles`/`secondaryMuscles`: no bundled
+/// art, no network. Involvement is anatomical, not a live datum, so it reads in ink opacity — the
+/// Instrumento «color only on the physiological datum» rule keeps color for HR/strain/recovery. The
+/// figures are decorative reinforcement; the named muscle bars below carry the VoiceOver detail.
+private struct ExerciseMuscleFigures: View {
+    let theme: InstrumentoTheme
+    let primary: Set<String>
+    let secondary: Set<String>
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            figure(.front)
+            figure(.back)
+        }
+        .accessibilityHidden(true)
+    }
+
+    private func figure(_ side: MuscleAtlas.Side) -> some View {
+        VStack(spacing: 6) {
+            ZStack {
+                BodyOutlineShape(side: side).stroke(theme.hairline, lineWidth: 1.2)
+                ForEach(MuscleAtlas.regions.filter { $0.side == side }) { region in
+                    if let fill = fill(for: region.muscle) {
+                        let shape = RegionShape(region: region)
+                        shape.fill(fill)
+                            .overlay(shape.stroke(theme.hairline.opacity(0.5), lineWidth: 0.5))
+                    }
+                }
+            }
+            .aspectRatio(100.0 / 220.0, contentMode: .fit)
+            .frame(maxHeight: 184)
+            Text(side == .front ? "Front" : "Back")
+                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    /// Full ink for a primary mover, half for an assistant, nothing for an uninvolved muscle.
+    private func fill(for muscle: String) -> Color? {
+        if primary.contains(muscle) { return theme.ink }
+        if secondary.contains(muscle) { return theme.ink.opacity(0.4) }
+        return nil
     }
 }
 #endif
