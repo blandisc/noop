@@ -69,7 +69,7 @@ struct ManualWorkoutSheet: View {
                         DatePicker("", selection: $start, in: ...Date(),
                                    displayedComponents: [.date, .hourAndMinute])
                             .labelsHidden()
-                            .tint(theme.verdict)
+                            .tint(theme.ink)
                             .accessibilityLabel("Start date and time")
                     }
                     field("Duration") {
@@ -78,6 +78,7 @@ struct ManualWorkoutSheet: View {
                                 .font(StrandFont.bodyNumber)
                                 .foregroundStyle(theme.ink)
                         }
+                        .tint(theme.inkSecondary)
                         .accessibilityLabel("Duration in minutes")
                     }
                     HStack(alignment: .top, spacing: 14) {

@@ -360,7 +360,7 @@ struct IntervalTimerView: View {
             }
             Stepper("", value: value, in: range, step: step)
                 .labelsHidden()
-                .tint(theme.dataStrain)
+                .tint(theme.inkSecondary)
                 .accessibilityLabel(title)
         }
     }

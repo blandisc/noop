@@ -139,7 +139,7 @@ struct GoalPickerSheet: View {
                         .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                 }
             }
-            .tint(theme.ink)
+            .toggleStyle(.instrumento)
 
             if useDate {
                 DatePicker("Fecha", selection: $date, in: Date()..., displayedComponents: .date)

@@ -168,7 +168,7 @@ private struct AutomationsContent: View {
                         Text("Wake at").font(StrandFont.body).foregroundStyle(theme.ink)
                         Spacer()
                         DatePicker("", selection: alarmTimeBinding, displayedComponents: .hourAndMinute)
-                            .labelsHidden().datePickerStyle(.compact).tint(theme.dataRecovery)
+                            .labelsHidden().datePickerStyle(.compact).tint(theme.ink)
                     }
                     .frame(minHeight: 42).padding(.vertical, 4)
                     Text("On WHOOP 5/MG this is experimental — arming is confirmed, but a strap-driven wake-up hasn't been verified yet, so don't rely on it as your only alarm there. WHOOP 4 is the proven path.")
@@ -237,7 +237,7 @@ private struct AutomationsContent: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
-            Toggle("", isOn: isOn).labelsHidden().toggleStyle(.switch).tint(theme.dataRecovery)
+            Toggle("", isOn: isOn).labelsHidden().toggleStyle(.instrumento)
                 .accessibilityLabel(label)
         }
         .frame(minHeight: 42).padding(.vertical, 4)

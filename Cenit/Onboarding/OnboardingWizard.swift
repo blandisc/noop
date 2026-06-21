@@ -608,6 +608,7 @@ private struct ProfileStep: View {
                 Stepper(value: $profile.age, in: 13...100) {
                     FieldRow(label: "Edad", value: "\(profile.age)")
                 }
+                .tint(theme.inkSecondary)
                 Divider().overlay(theme.hairline)
                 VStack(alignment: .leading, spacing: NoopMetrics.space2) {
                     Overline(text: "Sexo")
@@ -621,10 +622,12 @@ private struct ProfileStep: View {
                 Stepper(value: $profile.weightKg, in: 30...250, step: 0.5) {
                     FieldRow(label: "Peso", value: UnitFormatter.massFromKilograms(profile.weightKg, system: unitSystem))
                 }
+                .tint(theme.inkSecondary)
                 Divider().overlay(theme.hairline)
                 Stepper(value: $profile.heightCm, in: 120...230, step: 1) {
                     FieldRow(label: "Estatura", value: UnitFormatter.heightFromCentimeters(profile.heightCm, system: unitSystem))
                 }
+                .tint(theme.inkSecondary)
             }
             .padding(NoopMetrics.cardPadding)
             .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
