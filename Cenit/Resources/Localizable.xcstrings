@@ -2839,7 +2839,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apple Salud"
+            "value": "Apple Health"
           }
         }
       }
@@ -5088,7 +5088,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Conecta tu banda para ver tu disposición, recuperación y frecuencia cardiaca de esta mañana."
+            "value": "Conecta tu banda WHOOP para ver tu disposición, recuperación y frecuencia cardiaca de esta mañana."
           }
         }
       }
@@ -5652,7 +5652,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Listo"
+            "value": "LISTO"
           }
         }
       }
@@ -9423,7 +9423,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "La frecuencia cardiaca en vivo ya funciona en una banda 5/MG. Estas sondas van más allá e intentan sacarle más. Son conjeturas, vienen apagadas por defecto y solo tocan una banda 5/MG — WHOOP 4.0 nunca se ve afectada."
+            "value": "La frecuencia cardiaca en vivo ya funciona en una banda WHOOP 5/MG. Estas sondas van más allá e intentan sacarle más. Son conjeturas, vienen apagadas por defecto y solo tocan una banda 5/MG — WHOOP 4.0 nunca se ve afectada."
           }
         }
       }
@@ -10070,7 +10070,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Se mide de noche con tu banda; cuando no la traes, Cénit usa la frecuencia cardíaca en reposo de Apple Salud."
+            "value": "Se mide de noche con tu strap; cuando no lo traes, Cénit usa la frecuencia cardíaca en reposo de Apple Salud."
           }
         }
       }
@@ -10667,7 +10667,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "No hay HRV de anoche. Puede pasar si no usaste la banda o si la noche fue muy corta para reunir 20 latidos limpios."
+            "value": "No hay HRV de anoche. Puede pasar si no usaste el strap o si la noche fue muy corta para reunir 20 latidos limpios."
           }
         }
       }
@@ -10716,7 +10716,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aún no hay biométricos. Importa tu exportación de WHOOP (y Apple Salud si la tienes) en Fuentes de datos para llenarlo."
+            "value": "Aún no hay biométricos. Importa tu exportación de WHOOP (y Apple Health si la tienes) en Fuentes de datos para llenarlo."
           }
         }
       }
@@ -10848,7 +10848,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aún no hay noches aquí. Importa tu exportación de WHOOP — o conecta Apple Salud — en Fuentes de datos para ver tus etapas de sueño y tendencias. O abre Inteligencia para ver la noche anterior calculada desde la banda después de dormir con ella."
+            "value": "Aún no hay noches aquí. Importa tu exportación de WHOOP — o conecta Apple Health — en Fuentes de datos para ver tus etapas de sueño y tendencias. O abre Inteligencia para ver la noche anterior calculada desde la banda después de dormir con ella."
           }
         }
       }
@@ -11109,7 +11109,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "No hay banda conectada. Acerca tu banda y toca Volver a escanear para emparejar."
+            "value": "No hay banda conectada. Acerca tu WHOOP y toca Volver a escanear para emparejar."
           }
         }
       }
@@ -11152,7 +11152,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aún no hay entrenamientos. Vienen de tu historial de WHOOP y Apple Salud. Impórtalos en Fuentes de datos — o agrega uno que mediste en otro lado."
+            "value": "Aún no hay entrenamientos. Vienen de tu historial de WHOOP y Apple Health. Impórtalos en Fuentes de datos — o agrega uno que mediste en otro lado."
           }
         }
       }
@@ -11169,7 +11169,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aún no hay entrenamientos. Vienen de tu historial de WHOOP y Apple Salud. Importa en Fuentes de datos para traerlos."
+            "value": "Aún no hay entrenamientos. Vienen de tu historial de WHOOP y Apple Health. Importa en Fuentes de datos para traerlos."
           }
         }
       }
@@ -12897,7 +12897,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Leyendo tu historial de Apple Salud…"
+            "value": "Leyendo tu historial de Apple Health…"
           }
         }
       }
@@ -14525,7 +14525,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Envía una vibración háptica a tu banda."
+            "value": "Envía una vibración háptica a tu banda WHOOP."
           }
         }
       }
@@ -15309,7 +15309,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fuente: Apple Salud"
+            "value": "Fuente: Apple Health"
           }
         }
       }
@@ -15325,7 +15325,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fuente: WHOOP"
+            "value": "Fuente: Whoop"
           }
         }
       }
@@ -17237,7 +17237,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Las tendencias necesitan historial para dibujarse. Importa tu exportación de WHOOP — o conecta Apple Salud — en Fuentes de datos para ver semanas, meses y años."
+            "value": "Las tendencias necesitan historial para dibujarse. Importa tu exportación de WHOOP — o conecta Apple Health — en Fuentes de datos para ver semanas, meses y años."
           }
         }
       }
@@ -17540,7 +17540,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Haz vibrar tu banda conectada."
+            "value": "Haz vibrar tu banda WHOOP conectada."
           }
         }
       }
@@ -17788,7 +17788,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aún no calculamos tu recuperación. Necesitamos al menos %lld noches con tu banda para conocer tu línea base; llevas %lld de %lld. Preferimos no darte un número inventado."
+            "value": "Aún no calculamos tu recuperación. Necesitamos al menos %lld noches con tu strap para conocer tu línea base; llevas %lld de %lld. Preferimos no darte un número inventado."
           }
         }
       }
@@ -18561,7 +18561,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "WHOOP"
+            "value": "Whoop"
           }
         }
       }
@@ -18577,7 +18577,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Importación de WHOOP"
+            "value": "Importación de Whoop"
           }
         }
       }
@@ -20822,7 +20822,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Listo"
+            "value": "listo"
           }
         }
       }
@@ -22839,7 +22839,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu Apple Watch estima el VO₂max en caminatas y carreras al aire libre con buena señal de GPS — la banda no lo registra."
+            "value": "Tu Apple Watch estima el VO₂max en caminatas y carreras al aire libre con buena señal de GPS — la banda WHOOP no lo registra."
           }
         }
       }
@@ -22890,7 +22890,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lo mide tu Apple Watch en caminatas y carreras al aire libre — la banda no lo registra."
+            "value": "Lo mide tu Apple Watch en caminatas y carreras al aire libre — la banda WHOOP no lo registra."
           }
         }
       }
@@ -25751,7 +25751,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sincroniza las últimas semanas en ambos sentidos, en el dispositivo: Cénit lee tu FC, HRV, sueño, SpO₂ y pasos de Apple Salud, y escribe de vuelta sus propias métricas derivadas de la banda. Estrictamente opcional — nada sale de tu iPhone. (Para un historial masivo de una vez, usa la importación de export de arriba.)"
+            "value": "Sincroniza las últimas semanas en ambos sentidos, en el dispositivo: Cénit lee tu FC, HRV, sueño, SpO₂ y pasos de Apple Health, y escribe de vuelta sus propias métricas derivadas de la banda. Estrictamente opcional — nada sale de tu iPhone. (Para un historial masivo de una vez, usa la importación de export de arriba.)"
           }
         }
       }
@@ -25768,7 +25768,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Banda"
+            "value": "Banda WHOOP"
           }
         }
       }
@@ -26137,7 +26137,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Un compañero independiente para tu banda. Todo se queda en este dispositivo — tu historial, tu transmisión en vivo, tus números. Nada se sube. %@ es un proyecto independiente y experimental, no la app de WHOOP."
+            "value": "Un compañero independiente para tu WHOOP. Todo se queda en este dispositivo — tu historial, tu transmisión en vivo, tus números. Nada se sube. %@ es un proyecto independiente y experimental, no la app de WHOOP."
           }
         }
       }
@@ -29163,7 +29163,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Los pasos vienen de Apple Salud — la banda no los registra. El detalle toma el total de cada día y lo suaviza en una tendencia de 7 días, para que los altibajos entre semana y fin de semana no tapen hacia dónde vas. La investigación asocia entre 7,000 y 9,000 pasos al día con menor mortalidad, y el beneficio se aplana más allá de eso: no hay nada mágico en los 10,000 exactos."
+            "value": "Los pasos vienen de Apple Salud — el strap WHOOP no los registra. El detalle toma el total de cada día y lo suaviza en una tendencia de 7 días, para que los altibajos entre semana y fin de semana no tapen hacia dónde vas. La investigación asocia entre 7,000 y 9,000 pasos al día con menor mortalidad, y el beneficio se aplana más allá de eso: no hay nada mágico en los 10,000 exactos."
           }
         }
       }
@@ -29197,7 +29197,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Los pasos vienen de Apple Salud; la banda no los registra."
+            "value": "Los pasos vienen de Apple Salud; el strap WHOOP no los registra."
           }
         }
       }
@@ -32320,6 +32320,346 @@
           "stringUnit": {
             "state": "translated",
             "value": "Un plan semanal necesita los días de cada comida. Revisa el archivo e inténtalo de nuevo."
+          }
+        }
+      }
+    },
+    "Summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Summary"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resumen"
+          }
+        }
+      }
+    },
+    "What this session cost your body.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What this session cost your body."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lo que le costó a tu cuerpo esta sesión."
+          }
+        }
+      }
+    },
+    "No heart rate this session.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No heart rate this session."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin frecuencia cardiaca esta sesión."
+          }
+        }
+      }
+    },
+    "Volume": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volume"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volumen"
+          }
+        }
+      }
+    },
+    "Sets": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sets"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Series"
+          }
+        }
+      }
+    },
+    "New records": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New records"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marcas nuevas"
+          }
+        }
+      }
+    },
+    "Record": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marca"
+          }
+        }
+      }
+    },
+    "Max weight": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Max weight"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peso máximo"
+          }
+        }
+      }
+    },
+    "Most reps": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Most reps"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Más repeticiones"
+          }
+        }
+      }
+    },
+    "Best set": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Best set"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mejor serie"
+          }
+        }
+      }
+    },
+    "Recovery cost": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovery cost"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Costo de recuperación"
+          }
+        }
+      }
+    },
+    "Low cardiovascular cost. Your body barely felt it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Low cardiovascular cost. Your body barely felt it."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Costo cardiovascular bajo. Tu cuerpo apenas lo resintió."
+          }
+        }
+      }
+    },
+    "A session that counted. Give yourself some rest.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A session that counted. Give yourself some rest."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un esfuerzo que sí contó. Date tu descanso."
+          }
+        }
+      }
+    },
+    "A demanding session. Make sleep a priority today.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A demanding session. Make sleep a priority today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una sesión exigente. Prioriza dormir hoy."
+          }
+        }
+      }
+    },
+    "Estimate · you decide": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimate · you decide"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimación · tú decides"
+          }
+        }
+      }
+    },
+    "First time logging these. From here on you'll see your progress.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "First time logging these. From here on you'll see your progress."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Primer registro de estos ejercicios. A partir de aquí vas a ver tu progreso."
+          }
+        }
+      }
+    },
+    "Today's muscles": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today's muscles"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Músculos de hoy"
+          }
+        }
+      }
+    },
+    "Tap a muscle to see when to train it again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap a muscle to see when to train it again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca un músculo para ver cuándo volver a entrenarlo."
+          }
+        }
+      }
+    },
+    "Save workouts to Apple Health": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save workouts to Apple Health"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardar entrenamientos en Apple Salud"
+          }
+        }
+      }
+    },
+    "Your strength sessions appear in Health and count toward your Move ring, with estimated calories.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your strength sessions appear in Health and count toward your Move ring, with estimated calories."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus sesiones de fuerza aparecen en Salud y cuentan para tu anillo de Movimiento, con calorías estimadas."
           }
         }
       }
