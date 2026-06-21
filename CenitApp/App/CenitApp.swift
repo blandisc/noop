@@ -31,9 +31,8 @@ struct CenitApp: App {
 
     init() {
         // Debug-only canary: trips if the App Group entitlement is missing on this target before any
-        // silent no-op (PendingIntents, WidgetSnapshot.publish, Live Activity) can mask the issue as
-        // "the widget doesn't show anything yet." No-op in Release.
-        WidgetSnapshot.assertGroupProvisioned()
+        // silent no-op (e.g. Shortcuts' PendingIntents) can mask it. No-op in Release.
+        AppGroup.assertGroupProvisioned()
         configureInstrumentoControlAppearance()   // FER-408: warm the native segmented control once at launch
         let model = AppModel()
         _model = StateObject(wrappedValue: model)
@@ -91,7 +90,6 @@ struct CenitApp: App {
                     // Snapshot the (possibly just-offloaded) strap history to iCloud Drive. Throttled
                     // to ~once a day and a no-op until the user picks a folder, so it's safe here.
                     await autoBackup.backupIfDue(checkpoint: { await model.repo.checkpointForBackup() })
-                    WidgetSnapshot.publish(from: model)
                 }
             case .background:
                 // Stop the heavy 15-min analysis while NOOP is off screen, so it doesn't compete with

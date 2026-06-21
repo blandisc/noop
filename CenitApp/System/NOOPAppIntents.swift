@@ -9,9 +9,9 @@ enum PendingIntents {
     enum Action: String { case markMoment, buzz }
 
     private static let key = "noop.pendingIntents"
-    /// Shared App-Group store, with the same logged `.standard` fallback as the widget snapshot
+    /// Shared App-Group store, with the same logged `.standard` fallback as `AppGroup.sharedDefaults`
     /// (FER-32) instead of a silent no-op when the entitlement is missing.
-    private static var defaults: UserDefaults { WidgetSnapshot.sharedDefaults() }
+    private static var defaults: UserDefaults { AppGroup.sharedDefaults() }
 
     static func append(_ action: Action) {
         let d = defaults
