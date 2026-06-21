@@ -45,10 +45,15 @@ public struct DietAdherenceRow: Equatable, Codable, Sendable {
     public let day: String           // YYYY-MM-DD (local civil day)
     public let mealId: String        // references a DietPlan meal id
     public let status: DietMealStatus
+    /// Which equivalent option was eaten — the 0-based index into the plan meal's `opciones` (v16,
+    /// FER-401). nil = not recorded (a `sustitui`/`salte` mark, or any pre-v16 row).
+    public let optionIndex: Int?
     public let note: String?
 
-    public init(day: String, mealId: String, status: DietMealStatus, note: String? = nil) {
-        self.day = day; self.mealId = mealId; self.status = status; self.note = note
+    public init(day: String, mealId: String, status: DietMealStatus,
+                optionIndex: Int? = nil, note: String? = nil) {
+        self.day = day; self.mealId = mealId; self.status = status
+        self.optionIndex = optionIndex; self.note = note
     }
 }
 
@@ -94,12 +99,13 @@ extension WhoopStore {
     public func upsertDietAdherence(_ r: DietAdherenceRow, deviceId: String) async throws -> Int {
         try syncWrite { db in
             try db.execute(sql: """
-                INSERT INTO dietAdherence (deviceId, day, mealId, status, note)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO dietAdherence (deviceId, day, mealId, status, optionIndex, note)
+                VALUES (?, ?, ?, ?, ?, ?)
                 ON CONFLICT(deviceId, day, mealId) DO UPDATE SET
                     status = excluded.status,
+                    optionIndex = excluded.optionIndex,
                     note = excluded.note
-                """, arguments: [deviceId, r.day, r.mealId, r.status.rawValue, r.note])
+                """, arguments: [deviceId, r.day, r.mealId, r.status.rawValue, r.optionIndex, r.note])
             return db.changesCount
         }
     }
@@ -109,7 +115,7 @@ extension WhoopStore {
     public func dietAdherence(deviceId: String, day: String) async throws -> [DietAdherenceRow] {
         try syncRead { db in
             try Row.fetchAll(db, sql: """
-                SELECT day, mealId, status, note FROM dietAdherence
+                SELECT day, mealId, status, optionIndex, note FROM dietAdherence
                 WHERE deviceId = ? AND day = ?
                 ORDER BY mealId ASC
                 """, arguments: [deviceId, day]).map(Self.dietAdherenceRow)
@@ -126,6 +132,6 @@ extension WhoopStore {
     private static func dietAdherenceRow(_ row: Row) -> DietAdherenceRow {
         DietAdherenceRow(day: row["day"], mealId: row["mealId"],
                          status: DietMealStatus(rawValue: row["status"]) ?? .salte,
-                         note: row["note"])
+                         optionIndex: row["optionIndex"], note: row["note"])
     }
 }

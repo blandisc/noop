@@ -340,7 +340,7 @@ UI doesn't re-render on every beat.
 
 ## 7. Storage model (WhoopStore / SQLite)
 
-GRDB drives a migrator (`WhoopStoreInfo.schemaVersion`, currently `14`). The schema groups into four
+GRDB drives a migrator (`WhoopStoreInfo.schemaVersion`, currently `16`). The schema groups into four
 concerns:
 
 **Durable decoded streams** — natural key `(deviceId, ts)`, one row per sample:
@@ -358,12 +358,13 @@ concerns:
   (`behavior` × `outcome`), `startDay`/`windowDays`, `status` (running/completed/canceled), and the
   verdict columns filled on completion. Additive only; one experiment runs at a time (app-enforced),
   but the table keeps the full history.
-- `dietPlan` / `dietAdherence` (v14, FER-370) — a prescribed diet plan stored as an opaque
+- `dietPlan` / `dietAdherence` (v14, +v16, FER-370/401) — a prescribed diet plan stored as an opaque
   `noop.diet.v1` JSON `payloadJSON` (PK `id`, + denormalized `nombre`/`idioma`/`ciclo`/`createdAt`),
   and per-meal daily adherence keyed `(deviceId, day, mealId)` with a tri-state `status`
-  (cumpli/sustitui/salte). WhoopStore never decodes the plan (that's `StrandImport.DietPlan`); the
-  apego % (FER-372) is computed from `dietAdherence` against the active plan's meal count. Mirrors
-  `journal`.
+  (cumpli/sustitui/salte) plus a nullable `optionIndex` (v16, FER-401) recording WHICH equivalent
+  `opciones` index was eaten — registro only, it does not change the apego %. WhoopStore never decodes
+  the plan (that's `StrandImport.DietPlan`); the apego % (FER-372) is computed from `dietAdherence`
+  against the active plan's meal count. Mirrors `journal`.
 
 **Generic metric series** — `metricSeries(deviceId, day, key, value REAL)`: a tall, long-format
 table so *any* scalar metric from *any* source can be queried/compared uniformly (the substrate for

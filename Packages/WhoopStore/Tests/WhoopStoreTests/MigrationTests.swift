@@ -41,7 +41,7 @@ final class MigrationTests: XCTestCase {
             let cols = try await store.columnNamesForTest(table: table)
             XCTAssertTrue(cols.contains("synced"), "\(table) missing synced column")
         }
-        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 15)
+        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 16)
     }
 
     /// v15 (FER-346) adds a nullable `supersetGroup` to `routineExercise` via ALTER ADD COLUMN, and
@@ -81,6 +81,47 @@ final class MigrationTests: XCTestCase {
                 VALUES ('re2','r1','ex2',1,3,'[]','fixed',90,1)
                 """)
         }
+    }
+
+    /// v16 (FER-401) adds a nullable `optionIndex` to `dietAdherence` via ALTER ADD COLUMN, append-only:
+    /// a DB that only reached v14 upgrades without losing rows, and the old row gets NULL.
+    func testV16AddsOptionIndexAndPreservesV14Rows() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = WhoopStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v14")
+
+        // A v14-shaped adherence row (no optionIndex column exists yet).
+        try await dbQueue.write { db in
+            try db.execute(sql: """
+                INSERT INTO dietAdherence (deviceId, day, mealId, status, note)
+                VALUES ('noop-journal','2026-06-01','m1','cumpli',NULL)
+                """)
+        }
+
+        try migrator.migrate(dbQueue)   // → v16 (through v15, which doesn't touch dietAdherence)
+
+        try await dbQueue.read { db in
+            let cols = try db.columns(in: "dietAdherence").map(\.name)
+            XCTAssertTrue(cols.contains("optionIndex"), "v16 must add optionIndex")
+            let row = try Row.fetchOne(db, sql: "SELECT optionIndex FROM dietAdherence WHERE mealId='m1'")
+            XCTAssertNotNil(row, "the v14 row must survive the upgrade")
+            XCTAssertNil(row?["optionIndex"] as Int?, "an old row's optionIndex is NULL")
+        }
+    }
+
+    /// The chosen equivalent option round-trips through the public store API; a mark without a specific
+    /// option (skip) reads back nil.
+    func testDietOptionIndexRoundTrip() async throws {
+        let store = try await WhoopStore.inMemory()
+        try await store.upsertDietAdherence(
+            DietAdherenceRow(day: "2026-06-01", mealId: "m1", status: .cumpli, optionIndex: 1),
+            deviceId: "noop-journal")
+        try await store.upsertDietAdherence(
+            DietAdherenceRow(day: "2026-06-01", mealId: "m2", status: .salte),
+            deviceId: "noop-journal")
+        let rows = try await store.dietAdherence(deviceId: "noop-journal", day: "2026-06-01")
+        XCTAssertEqual(rows.first(where: { $0.mealId == "m1" })?.optionIndex, 1)
+        XCTAssertNil(rows.first(where: { $0.mealId == "m2" })?.optionIndex)
     }
 
     /// Superset grouping round-trips through the public store API, in `position` order. `[1, 1, nil]` =
