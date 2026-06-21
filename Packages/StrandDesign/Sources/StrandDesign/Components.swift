@@ -207,13 +207,16 @@ public struct SegmentedPillControl<T: Hashable>: View {
                 let sel = item == selection
                 Button { withAnimation(StrandMotion.interactive) { selection = item } } label: {
                     Text(label(item))
-                        .font(StrandFont.captionNumber)
+                        // Instrumento reads a step larger (13 vs 12) and the active label gains weight, so
+                        // the selector isn't a tiny strip; legacy keeps the compact mono caption. (FER-439)
+                        .font(theme == nil ? StrandFont.captionNumber : StrandFont.subhead)
+                        .fontWeight(sel && theme != nil ? .semibold : nil)
                         .lineLimit(1)                  // never wrap a pill label onto a 2nd line…
                         .minimumScaleFactor(0.8)       // …shrink a tight label (e.g. «TODO») instead (FER-275)
                         .foregroundStyle(segmentText(sel))
                         .frame(minWidth: 32, maxWidth: theme == nil ? nil : .infinity)
-                        .padding(.vertical, 6).padding(.horizontal, 11)
-                        .background(Capsule(style: .continuous).fill(segmentFill(sel)))
+                        .padding(.vertical, theme == nil ? 6 : 8).padding(.horizontal, 11)
+                        .background(segmentBackground(sel))
                         // ≥44pt touch target (the capsule stays compact, centered) — iOS minimum (FER-131 · 10).
                         .frame(minWidth: 44, minHeight: 44)
                         .contentShape(Rectangle())
@@ -227,16 +230,30 @@ public struct SegmentedPillControl<T: Hashable>: View {
     }
 
     // Legacy (theme == nil) keeps the exact dark-palette values; the Instrumento variant maps to
-    // paper-friendly tokens — active = subtle ink tint, never the bright accent.
+    // paper-friendly tokens — active = a raised surface «thumb», not a faint tint.
     private func segmentText(_ sel: Bool) -> Color {
         guard let theme else { return sel ? InstrumentoTheme.base.paper : InstrumentoTheme.base.inkSecondary }
         return sel ? theme.ink : theme.inkSecondary
     }
-    private func segmentFill(_ sel: Bool) -> Color {
-        guard let theme else { return sel ? StrandPalette.accent : Color.clear }
-        return sel ? theme.ink.opacity(0.08) : Color.clear
+
+    /// The per-segment background. Instrumento: the active segment is an iOS-native raised «thumb» —
+    /// a `surface`-filled capsule with a hairline border that pops off the recessed `hairline` track
+    /// (clear when unselected). Much clearer than the old `ink.opacity(0.08)` tint. (FER-439)
+    @ViewBuilder private func segmentBackground(_ sel: Bool) -> some View {
+        if let theme {
+            Capsule(style: .continuous)
+                .fill(sel ? theme.surface : Color.clear)
+                .overlay {
+                    if sel { Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1) }
+                }
+        } else {
+            Capsule(style: .continuous).fill(sel ? StrandPalette.accent : Color.clear)
+        }
     }
-    private var trackFill: Color { theme?.surface ?? InstrumentoTheme.base.hairline }
+
+    // Instrumento track is a recessed `hairline` groove (so the lighter thumb reads as raised); legacy
+    // keeps its original fill. The border stays for both.
+    private var trackFill: Color { theme?.hairline ?? InstrumentoTheme.base.hairline }
     private var trackStroke: Color { theme?.hairlineStrong ?? InstrumentoTheme.base.hairline }
 }
 
