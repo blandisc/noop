@@ -676,11 +676,18 @@ struct TodayView: View {
             SyncInline(backfilling: live.backfilling, chunks: live.syncChunksThisSession,
                        lastSyncedAt: live.lastSyncedAt)
             if let pct = live.batteryPct {
-                Text(verbatim: "·").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                // Separador hairline entre sync y batería (handoff «Hoy · Estados»): una regla vertical
+                // `hairlineStrong` (= #D8D0BD del mock) en vez del punto «·» de antes — divide sin texto.
+                Rectangle().fill(theme.hairlineStrong)
+                    .frame(width: 1, height: 11)
+                    .accessibilityHidden(true)
                 HStack(spacing: 4) {
+                    // Acento verde en el glifo de la batería (handoff): la fuente de energía del strap
+                    // lleva el verde del veredicto (`verdict`); el «%» se queda en tinta terciaria. Es la
+                    // misma licencia consciente sobre «color solo en el dato» que los glifos de los tiles.
                     Image(systemName: batteryIcon(pct: pct, charging: live.charging == true))
                         .font(StrandFont.overline)
-                        .foregroundStyle(theme.inkTertiary)
+                        .foregroundStyle(theme.verdict)
                     Text("\(Int(pct.rounded()))%")
                         .font(StrandFont.overline)
                         .tracking(StrandFont.overlineTracking)
@@ -762,6 +769,20 @@ struct TodayView: View {
             // antes de FER-202 — el dueño prefirió el dial grande), conservando el «/100» apilado y centrado
             // debajo (FER-202). Con el dial grande Hoy puede volver a necesitar algo de scroll en calibrando.
             ZStack {
+                // Viñeta radial cálida detrás del dial (handoff «Hoy · Estados», el
+                // `radial-gradient(circle, rgba(255,255,255,.8) 0% … 72%)` del mock): un pozo de luz
+                // suave que asienta el dial sobre el papel sin una caja. Se deriva del papel vivo
+                // (`paperHi`, ya aclarado hacia blanco en OKLab y hora-consciente) → cálido, NUNCA blanco
+                // puro, así no destella de noche. Decorativa, detrás del dial y del numeral.
+                RadialGradient(
+                    gradient: Gradient(stops: [
+                        .init(color: theme.paperHi, location: 0),
+                        .init(color: theme.paperHi.opacity(0), location: 0.72)
+                    ]),
+                    center: .center, startRadius: 0, endRadius: 80
+                )
+                .frame(width: 160, height: 160)
+                .accessibilityHidden(true)
                 // FER-221: mientras la banda descarga (`backfilling`) el dial cobra vida —un arco
                 // verde gira sobre el bezel— y el numeral se atenúa («recalculando»). La honesty line
                 // del header no cambia. Al terminar, vuelve al reposo.

@@ -46,18 +46,20 @@ struct StrainDetailScreen: View {
     @State private var curve: [TrendPoint] = []
     @State private var curveLoaded = false
     @State private var methodExpanded = false
+    /// Level-3 disclosure: the 14-day trend + «What moves your strain» live under «See your history»,
+    /// collapsed on open. Strain is the LIGHT cut — no Level 2 — so this is the only re-sequencing
+    /// state, and it folds just those two blocks for consistency. (Detalles escalonados)
+    @State private var historyExpanded = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
+                // Level 1 · the answer: hero + today's intraday curve + the fixed zones. Already the
+                // daily check; Strain needed no condensing (light cut).
                 hero
                 if !model.loaded {
                     loadingWell(height: 160)
                 } else {
-                    if model.series.count >= 2 {
-                        blockDivider
-                        trendBlock
-                    }
                     // The intraday curve needs a score / activity today; it's hidden when there's none.
                     if model.hasData {
                         blockDivider
@@ -67,11 +69,10 @@ struct StrainDetailScreen: View {
                     // empty screen — the hero's "—" reading is honest about the missing score.
                     blockDivider
                     zonesBlock
-                    // "Qué mueve tu esfuerzo" — shown whenever the screen has data; renders an honest empty
-                    // state when no relationship clears the gate, instead of vanishing (FER-246).
-                    if model.hasData {
+                    // Level 3 · «See your history»: trend + what moves your strain, collapsed by default.
+                    if model.series.count >= 2 || model.hasData {
                         blockDivider
-                        whatMovesBlock
+                        historySection
                     }
                     blockDivider
                     methodDisclosure
@@ -309,7 +310,54 @@ struct StrainDetailScreen: View {
         }
     }
 
-    // MARK: - 5. Ver el método (DisclosureGroup, patrón de las otras pantallas)
+    // MARK: - Level 3 · «See your history» — trend + what moves your strain, collapsed by default
+    //
+    // The analyst's view, one tap down. An in-place disclosure (NOT a navigation push); the chevron and
+    // copy mirror «See the method». Holds the period-selector trend and the directional drivers that used
+    // to sit always-open in the daily scroll. Strain is the light cut, so this is its only fold and there
+    // is no Level 2. (Detalles escalonados)
+
+    @ViewBuilder private var historySection: some View {
+        VStack(alignment: .leading, spacing: historyExpanded ? 22 : 0) {
+            historyDisclosureHeader(caption: "14-day trend · what moves it")
+            if historyExpanded {
+                if model.series.count >= 2 {
+                    trendBlock
+                }
+                if model.hasData {
+                    if model.series.count >= 2 { blockDivider }
+                    whatMovesBlock
+                }
+            }
+        }
+    }
+
+    /// The «See your history» row: a tappable header toggling the Level-3 disclosure in place. The
+    /// chevron rotates with the house interactive spring. Shared shape across the four detail screens.
+    private func historyDisclosureHeader(caption: LocalizedStringKey) -> some View {
+        Button {
+            withAnimation(StrandMotion.interactive) { historyExpanded.toggle() }
+        } label: {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("See your history").instrumentoOverline().foregroundStyle(theme.ink)
+                    Text(caption).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(theme.inkTertiary)
+                    .rotationEffect(.degrees(historyExpanded ? 0 : -90))
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityValue(Text(historyExpanded ? "expanded" : "collapsed"))
+    }
+
+    // MARK: - Ver el método (DisclosureGroup, patrón de las otras pantallas)
 
     private var methodDisclosure: some View {
         DisclosureGroup(isExpanded: $methodExpanded) {

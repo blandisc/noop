@@ -68,6 +68,25 @@ private enum CuerpoSheet: Identifiable {
     }
 }
 
+// MARK: - Press feedback for surface cards
+
+/// Press feedback for a card that paints its OWN `theme.surface` background inside the button label:
+/// `MetricRowButtonStyle` fills BEHIND the label, which an opaque surface would hide, so this overlays
+/// the tint ON TOP, clipped to the card's rounded shape. Same 5%-ink + easeOut(0.12) feel as the stats.
+private struct CardPressStyle: ButtonStyle {
+    var tint: Color
+    var radius: CGFloat = NoopMetrics.cardRadius
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .overlay {
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .fill(tint)
+                    .opacity(configuration.isPressed ? 1 : 0)
+            }
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+    }
+}
+
 // MARK: - Landing
 
 private struct CuerpoLanding: View {
@@ -130,7 +149,9 @@ private struct CuerpoLanding: View {
     @State private var showBodyAge = false
 
     // Loaded once per refresh (memoized in `loadAll`) so the body never re-scans history per render.
-    @State private var sparks: [String: [Double]] = [:]
+    /// The 14-day Recovery trend — the ONLY sparkline on the card landing (the hero). The dense stats
+    /// are a number, not a chart, so no per-metric sparks are computed anymore. (FER-186 card redesign)
+    @State private var recoverySpark: [Double] = []
     @State private var hrPoints: [TrendPoint] = []
     @State private var appleDays: [AppleDaily] = []
     @State private var appleMetricDays: [DailyMetric] = []
@@ -470,8 +491,8 @@ private struct CuerpoLanding: View {
     private var recoveryHero: some View {
         let score = repo.today?.recovery.map { Int($0.rounded()) }
         let cal = recoveryCalibration
-        let spark = sparks["recovery"]
-        let showSpark = (spark?.count ?? 0) > 1 && score != nil
+        let spark = recoverySpark
+        let showSpark = spark.count > 1 && score != nil
         let color = score.map(recoveryColor) ?? theme.inkTertiary
         return Button {
             recoveryDetail = RecoveryDetailItem(model: RecoveryDetailModel.build(
@@ -503,7 +524,10 @@ private struct CuerpoLanding: View {
                 .strokeBorder(theme.hairline, lineWidth: 1))
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        // Press feedback to match the stats: the hero draws its own `surface` background, so a fill
+        // BEHIND the label (MetricRowButtonStyle) wouldn't show — `CardPressStyle` overlays the tint on
+        // top, clipped to the same rounded shape. (FER-186 follow-up)
+        .buttonStyle(CardPressStyle(tint: theme.ink.opacity(0.05)))
         .accessibilityElement(children: .combine)
     }
 
@@ -910,20 +934,11 @@ private struct CuerpoLanding: View {
             nightlyHrv: repo.days.map(\.avgHrv),
             hasRecovery: repo.today?.recovery != nil)
 
-        // Sparklines from the merged display dashboard (in memory) so they resolve for both import and
-        // BLE users — `series()` is import-only for computed metrics (FER-149).
-        let w = trailingDisplay(14)
-        sparks["recovery"]        = w.compactMap(\.recovery)
-        sparks["sleep_total_min"] = w.compactMap(\.totalSleepMin)
-        sparks["strain"]          = w.compactMap(\.strain)
-        sparks["hrv"]             = w.compactMap(\.avgHrv)
-        sparks["rhr"]             = w.compactMap { $0.restingHr.map(Double.init) }
-        sparks["spo2"]            = w.compactMap(\.spo2Pct)
-        sparks["resp_rate"]       = w.compactMap(\.respRateBpm)
-        sparks["skin_temp"]       = w.compactMap(\.skinTempDevC)
+        // The hero's 14-day Recovery trend — the only sparkline on the card landing. From the merged
+        // display dashboard (in memory) so it resolves for both import and BLE users (FER-149).
+        recoverySpark = trailingDisplay(14).compactMap(\.recovery)
 
-        // Steps live in the apple-health series, not the daily dashboard; today's HR is bucketed.
-        async let steps      = sparkValues("steps", source: "apple-health", window: 14)
+        // Today's HR is bucketed; the rest of the daily/Apple rows feed values, not sparklines.
         async let adRows     = repo.appleDailyRows()
         async let amRows     = repo.appleDailyMetricRows()
         async let wkRows     = repo.workoutRows()
@@ -933,7 +948,6 @@ private struct CuerpoLanding: View {
         let nowTs = Int(Date().timeIntervalSince1970)
         async let hrRows = repo.hrBuckets(from: startOfToday, to: nowTs, bucketSeconds: 300)
 
-        sparks["steps"] = await steps
         appleDays = await adRows
         appleMetricDays = (await amRows).sorted { $0.day < $1.day }
         let workouts = await wkRows
@@ -951,7 +965,6 @@ private struct CuerpoLanding: View {
         // displayDays = Apple-health fallback (FER-149); local todayKey ignores a UTC "tomorrow" row (FER-226).
         let stress = StressModel(days: repo.displayDays, stored: await stressRows, todayKey: Repository.localDayKey(Date()))
         stressModel = stress
-        sparks["stress"] = stress.map { Array($0.fullTrend.suffix(14).map(\.value)) } ?? []
 
         fitnessAge = computeFitnessAge()
 
@@ -1138,14 +1151,6 @@ private struct CuerpoLanding: View {
 
     private static func descriptor(_ key: String) -> MetricDescriptor? {
         MetricCatalog.all.first { $0.key == key }
-    }
-
-    /// Trailing-window series values from the metric-series table (apple-health metrics like steps).
-    private func sparkValues(_ key: String, source: String, window: Int) async -> [Double] {
-        let all = await repo.series(key: key, source: source, days: window + 2)
-        guard !all.isEmpty else { return [] }
-        let cutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -(window - 1), to: Date()) ?? Date())
-        return all.filter { $0.day >= cutoff }.map { $0.value }
     }
 
 }

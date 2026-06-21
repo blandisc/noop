@@ -155,6 +155,13 @@ public struct DiurnalDial: View {
     private var bandWidth: CGFloat { diameter * 0.030 }
     private var dotDiameter: CGFloat { diameter * 0.044 }
     private var haloDiameter: CGFloat { diameter * 0.12 }
+    /// The paper "moat" behind the now-dot — keeps the green mark legible where it
+    /// overlaps the amber day arc (FER-363 polish). A measure, not a token.
+    private var nowRingWidth: CGFloat { max(2, diameter * 0.011) }
+    /// The day arc's bright midday gold: `dataStrain` lightened toward white in OKLab —
+    /// the same first-class technique as `paperHi`/`positiveText`, so it stays a derived
+    /// theme color (no invented hex) and dims with the by-the-hour paper.
+    private var dayGold: Color { OKLab.mix(theme.dataStrain, Color(.sRGB, red: 1, green: 1, blue: 1), 0.32) }
     /// The spinning sync arc — a hair heavier than the day arc so the green reads as
     /// the live layer riding over the bezel.
     private var syncArcWidth: CGFloat { max(trackWidth + 1, diameter * 0.020) }
@@ -208,12 +215,26 @@ public struct DiurnalDial: View {
             ctx.stroke(circlePath(center: c, radius: r),
                        with: .color(theme.hairlineStrong), lineWidth: trackWidth)
 
-            // Day arc (sunrise → sunset, over the top). The day reads in `dataStrain`
-            // amber, drawn heavier than the track (`dayArcWidth`) — the «A color»
-            // icon's bold daytime sweep. Omitted in the polar case.
+            // Hour pips — a faint dot at each of the 24 hours so the bezel reads like a
+            // real instrument face, not just the 4 cardinals (FER-363 polish). Cardinals
+            // get their own heavier ticks below, so skip the multiples of 6 here.
+            let pipR = max(0.8, diameter * 0.006)
+            for h in stride(from: 0.0, to: 24.0, by: 1.0) where h.truncatingRemainder(dividingBy: 6) != 0 {
+                let pc = DialGeometry.point(forHour: h, center: c, radius: r)
+                ctx.fill(Path(ellipseIn: CGRect(x: pc.x - pipR, y: pc.y - pipR,
+                                                width: pipR * 2, height: pipR * 2)),
+                         with: .color(theme.inkTertiary.opacity(0.5)))
+            }
+
+            // Day arc (sunrise → sunset, over the top). An amber→gold gradient: brightest
+            // gold at the noon peak (top), settling to `dataStrain` amber toward dawn/dusk —
+            // the sun's sweep, not a flat band (FER-363 polish). Drawn heavier than the
+            // track (`dayArcWidth`) — the «A color» icon's bold daytime sweep. Omitted polar.
             if let s = solar {
                 ctx.stroke(arcPath(center: c, radius: r, fromHour: s.sunrise, toHour: s.sunset),
-                           with: .color(theme.dataStrain),
+                           with: .linearGradient(Gradient(colors: [dayGold, theme.dataStrain]),
+                                                 startPoint: CGPoint(x: c.x, y: c.y - r),
+                                                 endPoint: CGPoint(x: c.x, y: c.y)),
                            style: StrokeStyle(lineWidth: dayArcWidth, lineCap: .round))
             }
 
@@ -262,6 +283,12 @@ public struct DiurnalDial: View {
                 .scaleEffect(pulsing ? 1.3 : 0.92)
                 .opacity(pulsing ? 0.05 : 0.18)
                 .animation(allowsMotion ? StrandMotion.breathe : nil, value: pulsing)
+                .position(p)
+            // A paper ring behind the dot — a small `paper` disc that separates the green
+            // "now" mark from the amber day arc where they overlap (FER-363 polish).
+            Circle()
+                .fill(theme.paper)
+                .frame(width: dotDiameter + nowRingWidth * 2, height: dotDiameter + nowRingWidth * 2)
                 .position(p)
             // The now dot — `dataRecovery` green, fixed.
             Circle()

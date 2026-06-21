@@ -46,6 +46,9 @@ struct RecoveryDetailScreen: View {
     @State private var methodExpanded = false
     /// The calendar day the user tapped, for the read-out below the grid (touch — FER-235).
     @State private var selectedHeatDay: RecoveryDay? = nil
+    /// Level-3 disclosure: the calendar + trend live under «See your history», collapsed on open. The only
+    /// new state the re-sequencing adds; everything else is unchanged. (Detalles escalonados)
+    @State private var historyExpanded = false
 
     var body: some View {
         ScrollView {
@@ -60,28 +63,20 @@ struct RecoveryDetailScreen: View {
                     methodDisclosure
                     sourceFooter
                 } else if model.hasData {
+                    // Level 1 · the answer: what's pushing it + tomorrow's forecast.
                     blockDivider
                     whatExplainsItBlock
                     // Forward-looking, so it reads high — right after what drives today's score. (FER-277)
                     blockDivider
                     forecastBlock
+                    // Level 2 · «Your patterns»: normal range + consistency + load, fused to plain lines.
+                    if hasPatterns {
+                        blockDivider
+                        patternsBlock
+                    }
+                    // Level 3 · «See your history»: the calendar + trend, collapsed by default.
                     blockDivider
-                    normalRangeBlock
-                    // Calendar reads in the trend's old spot; the trend moves to the bottom (FER-237).
-                    blockDivider
-                    calendarBlock
-                    if consistency != nil {
-                        blockDivider
-                        consistencyBlock
-                    }
-                    if model.load != nil {
-                        blockDivider
-                        loadBlock
-                    }
-                    if model.series.count >= 2 {
-                        blockDivider
-                        trendBlock
-                    }
+                    historySection
                     blockDivider
                     methodDisclosure
                     sourceFooter
@@ -338,30 +333,80 @@ struct RecoveryDetailScreen: View {
         .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
     }
 
-    // MARK: - 3. Tu rango normal (media ± σ de tu recuperación reciente)
+    // MARK: - Level 2 · «Your patterns» — normal range + consistency + load, fused to plain lines
+    //
+    // The re-sequencing (Detalles escalonados) collapses three former blocks — «Your normal range»,
+    // «Consistency» and «Recent load» — into one condensed «Your patterns» strip of plain-language lines.
+    // The jargon (σ, CV, ACWR) stays inside the block's ⓘ via `InfoAccordion`; the face is plain. No new
+    // math: the normal range is still `ComparisonEngine.stat` ± σ, consistency is still the CV, the load
+    // line is still `model.load.bandLabel`.
 
-    @ViewBuilder private var normalRangeBlock: some View {
+    /// Whether there's any pattern to show (otherwise the whole strip is skipped).
+    private var hasPatterns: Bool {
+        normalRange != nil || consistency != nil || model.load != nil
+    }
+
+    /// The normal-range pair (lo, hi, n) over the last 30 days, or nil when there aren't enough days.
+    private var normalRange: (lo: Int, hi: Int, n: Int)? {
         let vals = Array(model.series.suffix(30)).map(\.value)
         let s = ComparisonEngine.stat(vals)
-        if s.n >= 2 {
-            let lo = Int(Swift.max(0, s.mean - s.stdev).rounded())
-            let hi = Int(Swift.min(100, s.mean + s.stdev).rounded())
-            InfoAccordion(
-                title: "Your normal range",
-                explanation: "Your personal baseline: the average of your recent recovery days ± a band of your own variation. A day outside the band is unusual for you, not for the population. (Buchheit 2014)",
-                accessibilityLabel: "Information about your normal range",
-                theme: theme
-            ) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("\(lo)–\(hi) · \(s.n) days")
-                        .font(StrandFont.bodyNumber)
-                        .foregroundStyle(theme.ink)
-                    Text("Where your recovery usually lands when you're well. Worth noting when a day falls outside it.")
-                        .font(StrandFont.caption)
-                        .foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+        guard s.n >= 2 else { return nil }
+        return (Int(Swift.max(0, s.mean - s.stdev).rounded()),
+                Int(Swift.min(100, s.mean + s.stdev).rounded()),
+                s.n)
+    }
+
+    private var patternsBlock: some View {
+        InfoAccordion(
+            title: "Your patterns",
+            explanation: "Where your recovery usually lands (the average of your recent days ± a band of your own variation, σ), how steady it is week to week (its coefficient of variation, CV), and how your training load is trending (the acute:chronic workload ratio, ACWR — context for recovery, never an injury claim). (Buchheit 2014; Plews 2013; Impellizzeri 2020)",
+            accessibilityLabel: "Information about your recovery patterns",
+            theme: theme
+        ) {
+            VStack(alignment: .leading, spacing: 12) {
+                if let r = normalRange {
+                    patternLine(label: "Usually",
+                                value: "\(r.lo)–\(r.hi)",
+                                note: "where you land when well")
+                }
+                if let pct = consistency {
+                    patternLine(label: "Steadiness",
+                                value: consistencyWord(pct),
+                                note: "week to week")
+                }
+                if let load = model.load {
+                    patternLine(label: "Training load",
+                                value: load.bandLabel,
+                                valueColor: flagColor(load.bandFlag),
+                                note: nil)
                 }
             }
+        }
+    }
+
+    /// One «Your patterns» line: a quiet overline label, a plain-language value (the datum — coloured),
+    /// and an optional trailing note in tertiary ink. Token-only.
+    private func patternLine(label: LocalizedStringKey, value: String,
+                             valueColor: Color? = nil, note: LocalizedStringKey?) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Spacer(minLength: 8)
+            Text(value)
+                .font(StrandFont.bodyNumber)
+                .foregroundStyle(valueColor ?? theme.ink)
+            if let note {
+                Text(note).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// A plain word for steadiness from the CV percent (the number itself stays in the ⓘ).
+    private func consistencyWord(_ pct: Int) -> String {
+        switch pct {
+        case ..<8:   return String(localized: "Very steady")
+        case 8..<15: return String(localized: "Steady")
+        default:     return String(localized: "Variable")
         }
     }
 
@@ -411,27 +456,58 @@ struct RecoveryDetailScreen: View {
 
     // MARK: - 5. Consistencia (coeficiente de variación)
 
-    /// CV of the full recovery series (nil when there aren't enough points), so the block can be skipped.
+    /// CV of the full recovery series (nil when there aren't enough points). Feeds the «Your patterns»
+    /// steadiness line; the standalone «Consistency» block folded into it (Detalles escalonados).
     private var consistency: Int? {
         SeriesShape.coefficientOfVariation(model.series.map(\.value), window: 7).map { Int(($0 * 100).rounded()) }
     }
 
-    @ViewBuilder private var consistencyBlock: some View {
-        if let pct = consistency {
-            InfoAccordion(
-                title: "Consistency",
-                explanation: "Coefficient of variation = how spread out your recovery is around its own average, as a percentage. Low = steady. A steadier recovery usually means your body is coping well with your load. (Plews 2013)",
-                accessibilityLabel: "Information about consistency",
-                theme: theme
-            ) {
-                ConsistencySummary(cvPercent: pct,
-                                   reading: "How steady your recovery stays from one week to the next.",
-                                   theme: theme)
+    // MARK: - Level 3 · «See your history» — the calendar + trend, collapsed by default
+    //
+    // The analyst's view, one tap down. An in-place disclosure (NOT a navigation push); the chevron and
+    // copy mirror «See the method». Holds the 90-day calendar and the period-selector trend that used to
+    // sit always-open in the daily scroll. (Detalles escalonados)
+
+    @ViewBuilder private var historySection: some View {
+        VStack(alignment: .leading, spacing: historyExpanded ? 22 : 0) {
+            historyDisclosureHeader(caption: "90-day calendar · trend")
+            if historyExpanded {
+                calendarBlock
+                if model.series.count >= 2 {
+                    blockDivider
+                    trendBlock
+                }
             }
         }
     }
 
-    // MARK: - 6. Calendario · 90 días (YearHeatStrip re-tintado, a todo el ancho)
+    /// The «See your history» row: a tappable header that toggles the Level-3 disclosure in place. The
+    /// chevron rotates with the house interactive spring (same motion as `InfoAccordion`). Shared shape
+    /// across the four detail screens. (Detalles escalonados)
+    private func historyDisclosureHeader(caption: LocalizedStringKey) -> some View {
+        Button {
+            withAnimation(StrandMotion.interactive) { historyExpanded.toggle() }
+        } label: {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("See your history").instrumentoOverline().foregroundStyle(theme.ink)
+                    Text(caption).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(theme.inkTertiary)
+                    .rotationEffect(.degrees(historyExpanded ? 0 : -90))
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityValue(Text(historyExpanded ? "expanded" : "collapsed"))
+    }
+
+    // MARK: - Calendario · 90 días (YearHeatStrip re-tintado, a todo el ancho) — en «See your history»
 
     private var calendarBlock: some View {
         InfoAccordion(
@@ -528,33 +604,7 @@ struct RecoveryDetailScreen: View {
         }
     }
 
-    // MARK: - 7. Carga reciente (ACWR + monotonía como CONTEXTO, sin claim de lesión)
-
-    @ViewBuilder private var loadBlock: some View {
-        if let load = model.load {
-            InfoAccordion(
-                title: "Recent load",
-                explanation: "The acute:chronic workload ratio (your last week vs your last month) and training monotony describe how your load is trending. They are context for your recovery — they do NOT predict injuries; that evidence doesn't hold up. (Impellizzeri 2020)",
-                accessibilityLabel: "Information about recent load",
-                theme: theme
-            ) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(load.bandLabel)
-                        .font(StrandFont.bodyNumber)
-                        .foregroundStyle(flagColor(load.bandFlag))
-                    if let mono = load.monotony, mono >= 2.0 {
-                        Text("Similar effort most days — a little variety helps.")
-                            .font(StrandFont.caption)
-                            .foregroundStyle(theme.inkSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    InlineFlagChip("context, not injury risk", color: theme.inkTertiary)
-                }
-            }
-        }
-    }
-
-    // MARK: - 8. Ver el método (DisclosureGroup, patrón de las otras pantallas)
+    // MARK: - Ver el método (DisclosureGroup, patrón de las otras pantallas)
 
     private var methodDisclosure: some View {
         DisclosureGroup(isExpanded: $methodExpanded) {
