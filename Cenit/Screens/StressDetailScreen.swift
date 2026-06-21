@@ -41,6 +41,11 @@ struct StressDetailScreen: View {
     /// The «mapa del día» driver (EventKit permission + intraday stress curve + calendar cross), built
     /// by the caller. `nil` in previews / when the block shouldn't show. (FER-377)
     var dayMap: CalendarDayMap? = nil
+    /// Loads the cross-day «moment of day» patterns (persists the daily summaries, then detects).
+    /// Injected so the screen stays DB-free. `nil` → no pattern line. (FER-378)
+    var patternsLoader: (() async -> [StressTimeOfDayPatterns.Pattern])? = nil
+    /// Tapped on «Explore it in the Coach» — the caller switches to the Coach tab. (FER-378)
+    var onExploreInCoach: (() -> Void)? = nil
 
     /// The trend block's period window (W/M/3M/6M/1Y/ALL). Defaults to a month.
     @State private var range: ExploreRange = .month
@@ -52,6 +57,8 @@ struct StressDetailScreen: View {
     /// under «See your history», collapsed on open. The only new state the re-sequencing adds. (Detalles
     /// escalonados)
     @State private var historyExpanded = false
+    /// Detected cross-day «moment of day» patterns (loaded in `.task`). Empty → no line. (FER-378)
+    @State private var patterns: [StressTimeOfDayPatterns.Pattern] = []
 
     var body: some View {
         ScrollView {
@@ -86,6 +93,7 @@ struct StressDetailScreen: View {
             parsed = (model?.fullTrend ?? []).map {
                 (Self.dayParser.string(from: $0.date), $0.date, $0.value)
             }
+            if let patternsLoader { patterns = await patternsLoader() }
         }
     }
 
@@ -240,7 +248,52 @@ struct StressDetailScreen: View {
                                 value: consistencyWord(pct),
                                 note: "week to week")
                 }
+                // The cross-day «moment of day» pattern (FER-378) — its natural home is here, under
+                // «Your patterns». One observational, non-causal line + a handoff to the Coach.
+                if let p = patterns.first {
+                    Rectangle().fill(theme.hairline).frame(height: 1).padding(.vertical, 2)
+                    patternSentence(p)
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let onExploreInCoach {
+                        Button(action: onExploreInCoach) {
+                            HStack(spacing: 6) {
+                                Text("Explore it in the Coach")
+                                Image(systemName: "arrow.right").font(StrandFont.footnote)
+                            }
+                            .font(StrandFont.subhead).foregroundStyle(theme.verdict)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
             }
+        }
+    }
+
+    /// The localized, NON-causal sentence for a «moment of day» pattern ("tends to run", never
+    /// "causes"). The structured `Pattern` is locale-free; the wording lives here. (FER-378)
+    private func patternSentence(_ p: StressTimeOfDayPatterns.Pattern) -> Text {
+        switch p.family {
+        case .partOfDay(let part):
+            let noun = partNoun(part)
+            return p.higher ? Text("Your stress tends to run higher in the \(noun).")
+                            : Text("Your stress tends to run lower in the \(noun).")
+        case .weekday(let wd):
+            let name = Calendar.current.weekdaySymbols[max(0, min(6, wd - 1))]
+            return p.higher ? Text("Your stress tends to run higher on \(name).")
+                            : Text("Your stress tends to run lower on \(name).")
+        case .peakHour(let h):
+            let d = Calendar.current.date(bySettingHour: h, minute: 0, second: 0, of: Date()) ?? Date()
+            return Text("Your stress usually peaks around \(d.formatted(.dateTime.hour())).")
+        }
+    }
+
+    private func partNoun(_ part: PartOfDay) -> String {
+        switch part {
+        case .morning:   return String(localized: "mornings")
+        case .afternoon: return String(localized: "afternoons")
+        case .evening:   return String(localized: "evenings")
+        case .night:     return String(localized: "late nights")
         }
     }
 

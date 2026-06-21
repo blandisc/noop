@@ -95,6 +95,7 @@ private struct CuerpoLanding: View {
     @EnvironmentObject var live: LiveState
     @EnvironmentObject var model: AppModel
     @EnvironmentObject var health: HealthKitBridge
+    @EnvironmentObject var tabRouter: TabRouter
     @Environment(\.instrumentoTheme) private var theme
 
     /// Light metric sheet (the same one Today opens), for metrics that have a `MetricInfo` factory.
@@ -293,7 +294,10 @@ private struct CuerpoLanding: View {
             // Light «Instrumento» Detalle de Estrés — theme passed explicitly (it doesn't propagate
             // through `.sheet`), NO nested NavigationStack (FER-171). SOLO Cuerpo. (FER-241)
             // The «mapa del día» driver (EventKit + intraday curve) is built fresh on tap. (FER-377)
-            StressDetailScreen(theme: theme, model: item.model, dayMap: stressDayMap)
+            // Patterns load + the Coach handoff (FER-378): tap → close sheet, jump to the Coach tab.
+            StressDetailScreen(theme: theme, model: item.model, dayMap: stressDayMap,
+                               patternsLoader: { await loadStressPatterns() },
+                               onExploreInCoach: { stressDetail = nil; tabRouter.select(.coach) })
         }
         .sheet(item: $skinTempDetail) { item in
             // Light «Instrumento» Detalle de Temperatura de la piel — theme passed explicitly (it doesn't
@@ -617,6 +621,14 @@ private struct CuerpoLanding: View {
                 (await repo.sleepSessions(from: from, to: to))
                     .compactMap { $0.startTs <= $0.endTs ? $0.startTs...$0.endTs : nil }
             })
+    }
+
+    /// Cross-day «moment of day» stress patterns (FER-378): ensure the recent daily summaries are
+    /// persisted (idempotent backfill), then detect. Runs off the main actor via the repo's async reads.
+    private func loadStressPatterns() async -> [StressTimeOfDayPatterns.Pattern] {
+        let resting = resolveMeasured { $0.restingHr.map(Double.init) }?.value ?? StrainScorer.defaultRestingHR
+        await repo.backfillStressSummaries(restingHR: resting, maxHR: Double(model.profile.hrMax))
+        return StressTimeOfDayPatterns.detect(summariesByDay: await repo.stressDaySummaries())
     }
 
     private var hrvStat: some View {
