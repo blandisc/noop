@@ -117,6 +117,18 @@ final class AppModel: ObservableObject {
     /// tick skips the heavy pass while a backfill/import is writing (FER-177).
     private var analysisTask: Task<Void, Never>?
 
+    /// Debounced on-device recompute fired by a *completed* backfill (FER-406). The morning catch-up
+    /// lands last night's data in a burst (~6 drain completions in <60 s); each completion
+    /// cancel-and-reschedules this Task so the heavy `analyzeRecent()` pass runs ONCE, after the burst
+    /// settles — never per-completion. It fires on completion (not during offload) and re-checks the
+    /// FER-177 guard before running, so it never contends with a live BLE write on the main actor.
+    /// Cancelled alongside `analysisTask` on background/teardown.
+    private var backfillRecomputeTask: Task<Void, Never>?
+
+    /// Debounce window after a completed backfill before the recompute runs. ~3 s lets the drain
+    /// chain's `backfilling` false→true→false flapping settle so the guard sees a quiet strap.
+    private static let backfillRecomputeDebounceNanos: UInt64 = 3_000_000_000
+
     /// True while any data-source import is writing to the local store.
     var hasActiveImport: Bool { activeImportSource != nil }
 
@@ -226,7 +238,8 @@ final class AppModel: ObservableObject {
             await self.migrateDayKeysToLocalIfNeeded()         // FER-226: one-time UTC→local re-bucket (flag-gated)
             try? await Task.sleep(nanoseconds: 6_000_000_000)  // give the first offload a moment
             while !Task.isCancelled {
-                if !self.live.backfilling, !self.hasActiveImport {
+                if Self.mayRecomputeAfterBackfill(backfilling: self.live.backfilling,
+                                                  hasActiveImport: self.hasActiveImport) {
                     await self.intelligence.analyzeRecent()
                 }
                 try? await Task.sleep(nanoseconds: 900_000_000_000)  // 15 min, matches the offload cadence
@@ -239,6 +252,8 @@ final class AppModel: ObservableObject {
     func stopAnalysisLoop() {
         analysisTask?.cancel()
         analysisTask = nil
+        backfillRecomputeTask?.cancel()
+        backfillRecomputeTask = nil
     }
 
     // MARK: - One-time day-key re-bucket (FER-226)
@@ -300,6 +315,61 @@ final class AppModel: ObservableObject {
     private func refreshAfterCompletedBackfill() async {
         live.append(log: "Backfill: refreshing dashboard cache from completed sync")
         await repo.refresh(days: 120)
+        // The completed sync just landed last night's raw data — but reloading the cache only re-reads
+        // it; the on-device scores still need recomputing. The 15-min loop is the only other recompute
+        // path and it skips while a backfill is writing (FER-177), so during the morning catch-up the
+        // verdict/sleep/strain could lag minutes behind the data. Schedule a debounced recompute here so
+        // it runs reliably once the sync settles, coalescing the burst of completions into one pass.
+        scheduleRecomputeAfterBackfill()
+    }
+
+    /// Cancel-and-reschedule the debounced recompute after a completed backfill (FER-406). Each
+    /// completion in the morning burst replaces the prior pending Task, so `analyzeRecent()` runs ONCE
+    /// after the burst settles rather than per-completion. The run re-checks the FER-177 guard so it
+    /// never competes with a live BLE/import write on the main actor; `analyzeRecent()` itself refreshes
+    /// the dashboard at the end of a non-empty pass, so the verdict appears with no manual refresh.
+    private func scheduleRecomputeAfterBackfill(retriesLeft: Int = 3) {
+        backfillRecomputeTask?.cancel()
+        backfillRecomputeTask = Self.debounced(after: Self.backfillRecomputeDebounceNanos) { [weak self] in
+            await self?.runRecomputeAfterBackfill(retriesLeft: retriesLeft)
+        }
+    }
+
+    /// Run the on-device recompute, but only while the strap/import is quiet (the FER-177 guard) — the
+    /// heavy pass must not contend with a live offload writing rows on the main actor. `analyzeRecent`
+    /// has its own re-entrancy guard and idempotent-skip, so an overlap with the 15-min tick is safe.
+    /// If a backfill re-started INSIDE the debounce window (the drain chain re-arms `backfilling` within
+    /// the same morning catch-up), the guard is closed at fire time. Rather than strand the recompute
+    /// until the next completion or the 15-min tick — the very "stays empty for minutes" symptom this
+    /// fixes — reschedule a bounded few times; a fresh completion resets the budget, and once it's spent
+    /// the periodic loop remains the backstop.
+    private func runRecomputeAfterBackfill(retriesLeft: Int) async {
+        guard Self.mayRecomputeAfterBackfill(backfilling: live.backfilling,
+                                             hasActiveImport: hasActiveImport) else {
+            if retriesLeft > 0 { scheduleRecomputeAfterBackfill(retriesLeft: retriesLeft - 1) }
+            return
+        }
+        await intelligence.analyzeRecent()
+    }
+
+    /// Whether a completed-backfill recompute may run now. Mirrors the 15-min loop's guard (FER-177):
+    /// the heavy on-device pass must not run while a backfill or import is actively writing, or it would
+    /// contend with BLE/import on the main actor. Pure (no instance state) for testing.
+    nonisolated static func mayRecomputeAfterBackfill(backfilling: Bool, hasActiveImport: Bool) -> Bool {
+        !backfilling && !hasActiveImport
+    }
+
+    /// Cancel-and-reschedule debounce primitive: a Task that runs `action` after `delayNanos` unless it
+    /// is cancelled first (by the next call replacing it). A burst of calls that each cancel the prior
+    /// Task therefore collapses to a SINGLE `action` run — the last one scheduled. Nonisolated and
+    /// instance-free so the coalescing is unit-testable without the live AppModel (FER-406).
+    nonisolated static func debounced(after delayNanos: UInt64,
+                                      action: @escaping @Sendable () async -> Void) -> Task<Void, Never> {
+        Task {
+            try? await Task.sleep(nanoseconds: delayNanos)
+            guard !Task.isCancelled else { return }
+            await action()
+        }
     }
 
     /// Fold a fresh reading into the smoothing window and republish a stable bpm.
