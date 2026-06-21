@@ -88,8 +88,17 @@ public enum ReadinessEngine {
         public let label: String    // short human label
         public let detail: String   // one-line plain-English read
         public let flag: Flag
-        public init(key: String, label: String, detail: String, flag: Flag) {
+        /// A compact, glanceable read-out of HOW FAR this signal sits from its personal baseline — the
+        /// engine's own currency exposed for the instrument cluster's «Señales» row (FER-292 v2). Signed
+        /// toward the raw direction (above baseline = `+`), independent of valence (the `flag` carries
+        /// good/bad). σ for the z-scored body signals (HRV / resting-HR / respiratory rate), °C for skin
+        /// temperature, the bare acute:chronic ratio for training load. Locale-neutral (σ, °C, a number),
+        /// so it needs no catalog string. nil when there's nothing meaningful to quantify. Additive — the
+        /// flag/level synthesis never reads it, so verdicts are unchanged.
+        public let value: String?
+        public init(key: String, label: String, detail: String, flag: Flag, value: String? = nil) {
             self.key = key; self.label = label; self.detail = detail; self.flag = flag
+            self.value = value
         }
     }
 
@@ -198,10 +207,12 @@ public enum ReadinessEngine {
                 let z = (rr - mean(base)!) / sd
                 if z >= 1.5 {
                     signals.append(Signal(key: "respRate", label: String(localized: "Respiratory rate", bundle: .main),
-                        detail: String(localized: "up vs baseline — sometimes an early sign of getting sick", bundle: .main), flag: .bad))
+                        detail: String(localized: "up vs baseline — sometimes an early sign of getting sick", bundle: .main),
+                        flag: .bad, value: String(format: "%+.1fσ", z)))
                 } else if z >= 1.0 {
                     signals.append(Signal(key: "respRate", label: String(localized: "Respiratory rate", bundle: .main),
-                        detail: String(localized: "slightly raised vs baseline", bundle: .main), flag: .watch))
+                        detail: String(localized: "slightly raised vs baseline", bundle: .main),
+                        flag: .watch, value: String(format: "%+.1fσ", z)))
                 }
             }
         }
@@ -212,10 +223,12 @@ public enum ReadinessEngine {
         if let dev = latest.skinTempDevC {
             if dev >= 0.8 {
                 signals.append(Signal(key: "skinTemp", label: String(localized: "Skin temperature", bundle: .main),
-                    detail: String(localized: "well above baseline — often an early sign of illness", bundle: .main), flag: .bad))
+                    detail: String(localized: "well above baseline — often an early sign of illness", bundle: .main),
+                    flag: .bad, value: String(format: "%+.1f °C", dev)))
             } else if dev >= 0.4 {
                 signals.append(Signal(key: "skinTemp", label: String(localized: "Skin temperature", bundle: .main),
-                    detail: String(localized: "running warm vs baseline", bundle: .main), flag: .watch))
+                    detail: String(localized: "running warm vs baseline", bundle: .main),
+                    flag: .watch, value: String(format: "%+.1f °C", dev)))
             }
         }
 
@@ -242,7 +255,8 @@ public enum ReadinessEngine {
                 monotony = mono
                 if mono >= 2.0 {
                     signals.append(Signal(key: "monotony", label: String(localized: "Training variety", bundle: .main),
-                        detail: String(localized: "low — similar strain every day raises strain/illness risk", bundle: .main), flag: .watch))
+                        detail: String(localized: "low — similar strain every day raises strain/illness risk", bundle: .main),
+                        flag: .watch, value: String(format: "%.1f", mono)))
                 }
             }
         }
@@ -297,7 +311,12 @@ public enum ReadinessEngine {
         case -1.0 ..< -0.5: flag = .watch;   text = watchText
         default:            flag = .bad;     text = badText
         }
-        return Signal(key: key, label: label, detail: text, flag: flag)
+        // The compact read-out shows the RAW deviation from baseline (above = `+`), in σ — the unit the
+        // flag itself is decided in. `dev.z` is unoriented (not flipped for lower-is-better metrics), so a
+        // high resting-HR reads `+1.2σ` (raw direction) with a `.watch`/`.bad` dot, while a high HRV reads
+        // `+1.4σ` with `.good`: the number is direction, the dot is valence.
+        let valueText = String(format: "%+.1fσ", dev.z)
+        return Signal(key: key, label: label, detail: text, flag: flag, value: valueText)
     }
 
     /// The one place the acute:chronic thresholds live. `acwrSignal` and `Readiness.loadBand`
@@ -315,19 +334,22 @@ public enum ReadinessEngine {
         let pct = String(format: "%.2f", ratio)
         let label = String(localized: "Training load", bundle: .main)
         let band = loadBand(forACWR: ratio)
+        // The compact read-out is the bare acute:chronic ratio (one decimal) — a load of 1.0 means acute
+        // == chronic. No σ here: load is already a normalized ratio, not a deviation from a baseline.
+        let value = String(format: "%.1f", ratio)
         switch band {
         case .rampingDown:
             return Signal(key: "acwr", label: label,
-                detail: String(localized: "ramping down (acute:chronic \(pct)) — room to build", bundle: .main), flag: band.flag)
+                detail: String(localized: "ramping down (acute:chronic \(pct)) — room to build", bundle: .main), flag: band.flag, value: value)
         case .sweetSpot:
             return Signal(key: "acwr", label: label,
-                detail: String(localized: "in the sweet spot (acute:chronic \(pct))", bundle: .main), flag: band.flag)
+                detail: String(localized: "in the sweet spot (acute:chronic \(pct))", bundle: .main), flag: band.flag, value: value)
         case .buildingFast:
             return Signal(key: "acwr", label: label,
-                detail: String(localized: "building fast (acute:chronic \(pct)) — watch fatigue", bundle: .main), flag: band.flag)
+                detail: String(localized: "building fast (acute:chronic \(pct)) — watch fatigue", bundle: .main), flag: band.flag, value: value)
         case .spiking:
             return Signal(key: "acwr", label: label,
-                detail: String(localized: "spiking (acute:chronic \(pct)) — higher injury risk", bundle: .main), flag: band.flag)
+                detail: String(localized: "spiking (acute:chronic \(pct)) — higher injury risk", bundle: .main), flag: band.flag, value: value)
         }
     }
 

@@ -86,6 +86,43 @@ final class ReadinessEngineTests: XCTestCase {
         XCTAssertEqual(r.level, .strained)
     }
 
+    // MARK: - Compact signal value (the «Señales» read-out, FER-292 v2)
+
+    func testSignalValueIsRawDirectionalDeviation() {
+        // HRV well above baseline (good), resting HR well below (good), load steady.
+        let r = ReadinessEngine.evaluate(days: baseline(todayHrv: 72, todayRhr: 46, todayStrain: 10))
+
+        // HRV: above baseline → a POSITIVE σ, even though "above" is the GOOD direction here.
+        let hrv = r.signals.first { $0.key == "hrv" }
+        XCTAssertEqual(hrv?.flag, .good)
+        XCTAssertEqual(hrv?.value?.hasSuffix("σ"), true)
+        XCTAssertEqual(hrv?.value?.hasPrefix("+"), true, "HRV above baseline should read as +Nσ")
+
+        // Resting HR: below baseline → a NEGATIVE σ (raw direction), and that's the GOOD direction for RHR.
+        // The number is direction, the flag is valence — they can disagree in sign.
+        let rhr = r.signals.first { $0.key == "rhr" }
+        XCTAssertEqual(rhr?.flag, .good)
+        XCTAssertEqual(rhr?.value?.hasSuffix("σ"), true)
+        XCTAssertEqual(rhr?.value?.hasPrefix("-"), true, "Resting HR below baseline should read as -Nσ")
+
+        // Load: the bare acute:chronic ratio — no σ, parses as a number near 1.0.
+        let acwr = r.signals.first { $0.key == "acwr" }
+        XCTAssertNotNil(acwr?.value)
+        XCTAssertEqual(acwr?.value?.contains("σ"), false)
+        XCTAssertNotNil(acwr?.value.flatMap { Double($0) }, "Load value should parse as a plain ratio")
+    }
+
+    func testSkinTempSignalValueIsCelsius() {
+        var days = baseline(todayHrv: 60, todayRhr: 52, todayStrain: 10)
+        days[days.count - 1] = DailyMetric(day: "2024-03-29", totalSleepMin: nil, efficiency: nil,
+            deepMin: nil, remMin: nil, lightMin: nil, disturbances: nil, restingHr: 52,
+            avgHrv: 60, recovery: nil, strain: 10, exerciseCount: nil,
+            spo2Pct: nil, skinTempDevC: 1.0, respRateBpm: nil)
+        let r = ReadinessEngine.evaluate(days: days)
+        let skin = r.signals.first { $0.key == "skinTemp" }
+        XCTAssertEqual(skin?.value?.contains("°C"), true)
+    }
+
     // MARK: - Confidence (short-night) flag
 
     /// Replace the last day of a baseline with one carrying `sleepMin` of sleep (everything else neutral).
