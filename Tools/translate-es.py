@@ -642,7 +642,7 @@ ES: dict[str, str] = {
     "Copy %@ address": "Copiar dirección de %@",
     "Email %@": "Escribir a %@",
     "Error: %@": "Error: %@",
-    "Estimated max heart rate · %lld bpm": "Frecuencia cardiaca máxima estimada · %lld bpm",
+    "Estimated max heart rate · %lld bpm": "Frecuencia cardiaca máxima estimada · %lld lpm",
     "Fetch the available models from %@ using your saved key": "Obtener los modelos disponibles de %@ con tu clave guardada",
     "Heart rate %lld beats per minute": "Frecuencia cardiaca de %lld latidos por minuto",
     "Max heart rate override, %@": "Ajuste manual de FC máxima, %@",
