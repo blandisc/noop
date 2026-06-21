@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Una vez calculado, el día ya no se «desborra» / Once computed, a day no longer un-fills itself.**
+  **ES** — Endurecimiento de datos: cuando Cénit ya calculó la recuperación, el sueño o el esfuerzo de un día, un recálculo posterior que aún no detecta esa noche **ya no puede borrar** esos valores —solo puede rellenarlos o actualizarlos con un dato real—. Antes, una pasada parcial podía regresar un día completo a vacío; ahora el guardado es **monotónico**. No cambia ningún número que ya veías; solo evita que un buen dato se pierda.
+  **EN** — Data hardening: once Cénit has computed a day's recovery, sleep or strain, a later recompute that hasn't (yet) detected that night **can no longer erase** those values — it can only fill them in or update them with a real reading. Before, a partial pass could regress a complete day back to empty; now the write is **monotonic**. It changes none of the numbers you already saw; it just keeps a good reading from being lost.
+  ([Packages/WhoopStore/Sources/WhoopStore/MetricsCache.swift](Packages/WhoopStore/Sources/WhoopStore/MetricsCache.swift))
 - **Mira tu apego a la dieta de un vistazo / See your diet adherence at a glance.**
   **ES** — El tracker de Dieta estrena un **calendario de apego**: una cuadrícula donde cada día se tiñe de **verde según qué tanto cumpliste** —más verde, más apego— y los días que no registraste salen apagados (sin inventar). Toca cualquier día para saltar a él. Reusa el mismo calendario que ya ves en Recuperación, ahora con tu dieta.
   **EN** — The Diet tracker gains an **adherence calendar**: a grid where each day is tinted **green by how well you followed your plan** —greener means more adherence— and days you didn't track stay muted (nothing invented). Tap any day to jump to it. It reuses the same calendar you already see in Recovery, now for your diet.

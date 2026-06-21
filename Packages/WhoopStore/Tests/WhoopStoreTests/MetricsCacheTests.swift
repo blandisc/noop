@@ -76,6 +76,45 @@ final class MetricsCacheTests: XCTestCase {
         XCTAssertEqual(rows[0], d2)
     }
 
+    /// FER-407: the upsert is MONOTONIC — a later PARTIAL row (nil columns) must PRESERVE an existing
+    /// complete row, never blank it; a real new value still overwrites. This is the exact regression
+    /// that could wipe a day's recovery/sleep back to NULL when the on-device engine re-scored a night
+    /// whose sleep session wasn't (yet) detected.
+    func testDailyMetricUpsertPreservesExistingValuesOnNil() async throws {
+        let store = try await WhoopStore.inMemory()
+        // A complete computed day (sleep + recovery present).
+        let complete = DailyMetric(day: "2026-06-21", totalSleepMin: 466.0, efficiency: 0.95,
+                                   deepMin: 0, remMin: 51, lightMin: 415, disturbances: 8,
+                                   restingHr: 59, avgHrv: 55.8, recovery: 82.0, strain: 5.0, exerciseCount: 0,
+                                   spo2Pct: 95.0, skinTempDevC: 0.1, respRateBpm: 14.0, steps: 1200,
+                                   activeKcalEst: 300)
+        try await store.upsertDailyMetrics([complete], deviceId: "my-whoop-noop")
+
+        // A later partial pass: the night wasn't detected → sleep/hrv/recovery nil; only the
+        // baseline-independent day fields (strain/steps/kcal) recomputed (and grew).
+        let partial = DailyMetric(day: "2026-06-21", totalSleepMin: nil, efficiency: nil,
+                                  deepMin: nil, remMin: nil, lightMin: nil, disturbances: nil,
+                                  restingHr: nil, avgHrv: nil, recovery: nil, strain: 6.5, exerciseCount: 0,
+                                  spo2Pct: nil, skinTempDevC: nil, respRateBpm: nil, steps: 3000,
+                                  activeKcalEst: 450)
+        try await store.upsertDailyMetrics([partial], deviceId: "my-whoop-noop")
+
+        let rows = try await store.dailyMetrics(deviceId: "my-whoop-noop", from: "2026-06-01", to: "2026-06-30")
+        XCTAssertEqual(rows.count, 1, "same (deviceId,day) must not duplicate")
+        let row = try XCTUnwrap(rows.first)
+        // Preserved — the nil partial did NOT blank the good values:
+        XCTAssertEqual(try XCTUnwrap(row.totalSleepMin), 466.0, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(row.avgHrv), 55.8, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(row.recovery), 82.0, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(row.restingHr), 59)
+        XCTAssertEqual(try XCTUnwrap(row.efficiency), 0.95, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(row.respRateBpm), 14.0, accuracy: 0.001)
+        // Overwritten — a real new value still wins (the day's strain/steps/kcal grew):
+        XCTAssertEqual(try XCTUnwrap(row.strain), 6.5, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(row.steps), 3000)
+        XCTAssertEqual(try XCTUnwrap(row.activeKcalEst), 450, accuracy: 0.001)
+    }
+
     func testDailyMetricDayRangeFilter() async throws {
         let store = try await WhoopStore.inMemory()
         try await store.upsertDailyMetrics([

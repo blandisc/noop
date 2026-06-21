@@ -91,6 +91,14 @@ extension WhoopStore {
     }
 
     /// Upsert cached daily metrics. Natural key (deviceId, day). Returns rows changed.
+    ///
+    /// The on-conflict update is MONOTONIC (FER-407): each column is `COALESCE(excluded.X, X)`, so a
+    /// `nil` in the incoming row PRESERVES the existing value instead of blanking it — a real new value
+    /// still overwrites. This stops a partial recompute from regressing a complete row: the on-device
+    /// engine re-scores every night in its window each pass, and a night whose sleep session isn't
+    /// (yet) detected returns `totalSleepMin/avgHrv/recovery == nil`. Without COALESCE, such a pass would
+    /// wipe a previously-good day back to NULL. To CLEAR a day, delete it (`deleteDailyMetrics`); no
+    /// caller relies on a nil-upsert to clear, and rows from different sources never share a key.
     @discardableResult
     public func upsertDailyMetrics(_ days: [DailyMetric], deviceId: String) async throws -> Int {
         // Batch into multi-row INSERTs rather than one statement per day: 18 bound vars/row,
@@ -118,22 +126,22 @@ extension WhoopStore {
                          spo2Pct, skinTempDevC, respRateBpm, steps, activeKcalEst)
                     VALUES \(values)
                     ON CONFLICT(deviceId, day) DO UPDATE SET
-                        totalSleepMin = excluded.totalSleepMin,
-                        efficiency = excluded.efficiency,
-                        deepMin = excluded.deepMin,
-                        remMin = excluded.remMin,
-                        lightMin = excluded.lightMin,
-                        disturbances = excluded.disturbances,
-                        restingHr = excluded.restingHr,
-                        avgHrv = excluded.avgHrv,
-                        recovery = excluded.recovery,
-                        strain = excluded.strain,
-                        exerciseCount = excluded.exerciseCount,
-                        spo2Pct = excluded.spo2Pct,
-                        skinTempDevC = excluded.skinTempDevC,
-                        respRateBpm = excluded.respRateBpm,
-                        steps = excluded.steps,
-                        activeKcalEst = excluded.activeKcalEst
+                        totalSleepMin = COALESCE(excluded.totalSleepMin, totalSleepMin),
+                        efficiency = COALESCE(excluded.efficiency, efficiency),
+                        deepMin = COALESCE(excluded.deepMin, deepMin),
+                        remMin = COALESCE(excluded.remMin, remMin),
+                        lightMin = COALESCE(excluded.lightMin, lightMin),
+                        disturbances = COALESCE(excluded.disturbances, disturbances),
+                        restingHr = COALESCE(excluded.restingHr, restingHr),
+                        avgHrv = COALESCE(excluded.avgHrv, avgHrv),
+                        recovery = COALESCE(excluded.recovery, recovery),
+                        strain = COALESCE(excluded.strain, strain),
+                        exerciseCount = COALESCE(excluded.exerciseCount, exerciseCount),
+                        spo2Pct = COALESCE(excluded.spo2Pct, spo2Pct),
+                        skinTempDevC = COALESCE(excluded.skinTempDevC, skinTempDevC),
+                        respRateBpm = COALESCE(excluded.respRateBpm, respRateBpm),
+                        steps = COALESCE(excluded.steps, steps),
+                        activeKcalEst = COALESCE(excluded.activeKcalEst, activeKcalEst)
                     """, arguments: StatementArguments(args))
                 n += db.changesCount
             }
