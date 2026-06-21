@@ -526,10 +526,12 @@ final class Repository: ObservableObject {
     /// (key `diet-adherence`), and return the new % (nil if the plan has no meals). The metric point is
     /// written whenever at least one meal is marked — which it always is right after this upsert.
     @discardableResult
-    func saveDietAdherence(day: String, mealId: String, status: DietMealStatus, plannedMeals: Int) async -> Int? {
+    func saveDietAdherence(day: String, mealId: String, status: DietMealStatus,
+                           plannedMeals: Int, optionIndex: Int? = nil) async -> Int? {
         guard let store = await ensureStore() else { return nil }
         _ = try? await store.upsertDietAdherence(
-            DietAdherenceRow(day: day, mealId: mealId, status: status), deviceId: Self.journalDeviceId)
+            DietAdherenceRow(day: day, mealId: mealId, status: status, optionIndex: optionIndex),
+            deviceId: Self.journalDeviceId)
         let rows = (try? await store.dietAdherence(deviceId: Self.journalDeviceId, day: day)) ?? []
         guard let pct = DietAdherence.dayPercent(statuses: rows.map(\.status), plannedMeals: plannedMeals) else { return nil }
         _ = try? await store.upsertMetricSeries(

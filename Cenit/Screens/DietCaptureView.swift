@@ -42,6 +42,7 @@ struct DietCaptureView: View {
     // Day navigation (FER-402): `selectedDay` is the day shown; `todayKey` caps the forward arrow so
     // you can't mark the future.
     @State private var todayStatuses: [String: DietMealStatus] = [:]
+    @State private var todayOptions: [String: Int] = [:]   // mealId → chosen equivalent option (FER-401)
     @State private var adherence7d: [Double] = []
     @State private var todayKey = ""
     @State private var selectedDay = ""
@@ -345,18 +346,52 @@ struct DietCaptureView: View {
         let status = todayStatuses[meal.id]
         return VStack(alignment: .leading, spacing: NoopMetrics.space2) {
             nameText(meal.name, fallback: "Meal").font(StrandFont.body).foregroundStyle(theme.ink)
-            if status == nil, let foods = meal.options.first?.foods, !foods.isEmpty {
-                Text(foods.joined(separator: " · "))
-                    .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            HStack(spacing: NoopMetrics.space2) {
-                statusChip("Followed", meal.id, .cumpli, status)
-                statusChip("Swapped",  meal.id, .sustitui, status)
-                statusChip("Skipped",  meal.id, .salte, status)
+            if meal.options.count > 1 {
+                optionPicker(meal, status: status)
+            } else {
+                if let foods = meal.options.first?.foods, !foods.isEmpty {
+                    Text(foods.joined(separator: " · "))
+                        .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                HStack(spacing: NoopMetrics.space2) {
+                    statusChip("Followed", meal.id, .cumpli, status)
+                    statusChip("Swapped",  meal.id, .sustitui, status)
+                    statusChip("Skipped",  meal.id, .salte, status)
+                }
             }
         }
         .padding(.vertical, NoopMetrics.gap)
+    }
+
+    /// A meal with ≥2 equivalent options: pick which one you ate (= cumplí, recording which), or mark
+    /// «Other» (an off-plan equivalent = sustituí) / «Skipped». All options stay visible, so the full
+    /// plan is always consultable (FER-401). Color stays out — the apego % is the only datum.
+    private func optionPicker(_ meal: DietMeal, status: DietMealStatus?) -> some View {
+        let chosen = todayOptions[meal.id]
+        return VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+            Text("pick what you ate").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            ForEach(Array(meal.options.enumerated()), id: \.offset) { index, option in
+                let sel = status == .cumpli && chosen == index
+                Button { mark(meal.id, .cumpli, option: index) } label: {
+                    HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.gap) {
+                        Image(systemName: sel ? "largecircle.fill.circle" : "circle")
+                            .font(StrandFont.subhead)
+                            .foregroundStyle(sel ? theme.ink : theme.hairlineStrong)
+                        Text(verbatim: option.foods.joined(separator: " · "))
+                            .font(StrandFont.subhead).foregroundStyle(theme.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 0)
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(sel ? [.isSelected] : [])
+            }
+            HStack(spacing: NoopMetrics.space2) {
+                statusChip("Other",   meal.id, .sustitui, status)
+                statusChip("Skipped", meal.id, .salte, status)
+            }
+        }
     }
 
     /// One tri-state chip — ink stays the language; the selected one inverts to an ink fill. No color
@@ -462,6 +497,8 @@ struct DietCaptureView: View {
     private func loadTrackerData() async {
         let marks = await repo.dietAdherence(day: selectedDay)
         todayStatuses = Dictionary(marks.map { ($0.mealId, $0.status) }, uniquingKeysWith: { first, _ in first })
+        todayOptions = Dictionary(marks.compactMap { row in row.optionIndex.map { (row.mealId, $0) } },
+                                  uniquingKeysWith: { first, _ in first })
         adherence7d = await repo.dietAdherenceSeries(from: Self.weekAgoKey(of: selectedDay), to: selectedDay)
     }
 
@@ -474,12 +511,14 @@ struct DietCaptureView: View {
 
     /// Mark one meal's status on the viewed day: optimistic local update (the hero % recomputes at
     /// once), then persist + refresh the trend off the render path.
-    private func mark(_ mealId: String, _ status: DietMealStatus) {
+    private func mark(_ mealId: String, _ status: DietMealStatus, option: Int? = nil) {
         todayStatuses[mealId] = status
+        todayOptions[mealId] = option   // nil removes the key (sustitui/salte record no option)
         let planned = activeParsed?.meals.count ?? 0
         let day = selectedDay
         Task {
-            await repo.saveDietAdherence(day: day, mealId: mealId, status: status, plannedMeals: planned)
+            await repo.saveDietAdherence(day: day, mealId: mealId, status: status,
+                                         plannedMeals: planned, optionIndex: option)
             adherence7d = await repo.dietAdherenceSeries(from: Self.weekAgoKey(of: day), to: day)
         }
     }

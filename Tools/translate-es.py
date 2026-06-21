@@ -134,6 +134,9 @@ ES: dict[str, str] = {
     # FER-402 — Dieta: navegación por día en el tracker (accesibilidad)
     'Previous day': 'Día anterior',
     'Next day': 'Día siguiente',
+    # FER-401 — Dieta: elegir la opción/equivalente por comida
+    'pick what you ate': 'elige la que comiste',
+    'Other': 'Otra',
     # FER-403 — Dieta: captura a mano (formulario sin IA)
     'Capture by hand instead': 'Mejor captúralo a mano',
     'Diet · by hand': 'Dieta · a mano',

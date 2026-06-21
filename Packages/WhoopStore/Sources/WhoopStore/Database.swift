@@ -375,6 +375,17 @@ extension WhoopStore {
                 t.add(column: "supersetGroup", .integer)   // nullable; NULL = standalone exercise
             }
         }
+
+        // v16 (FER-401): which equivalent option was eaten. One nullable column on the v14
+        // `dietAdherence` table — the 0-based index into the plan meal's `opciones` array (stable
+        // because the plan's payloadJSON is immutable while active); NULL = option not recorded (every
+        // v14 row, and any sustitui/salte mark). Append-only ALTER ADD COLUMN, touching no prior
+        // migration; does NOT change the apego % (DietAdherence.dayPercent still counts cumpli+sustitui).
+        migrator.registerMigration("v16") { db in
+            try db.alter(table: "dietAdherence") { t in
+                t.add(column: "optionIndex", .integer)   // nullable; NULL = option not recorded
+            }
+        }
         return migrator
     }
 }

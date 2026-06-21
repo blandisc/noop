@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Elige qué opción de tu dieta comiste / Choose which option of your diet you ate.**
+  **ES** — Cuando una comida de tu plan trae **equivalentes** (cena A o cena B…), el tracker ahora te deja **elegir cuál comiste** —queda registrada— en vez de un simple «cumplí». Si comiste algo fuera del plan, marca **Otra**; si te la saltaste, **Salté**. De paso, ves tu **plan completo** con todas las opciones de cada comida. Tu **% de apego no cambia**: comer cualquier opción cuenta como cumplido.
+  **EN** — When a meal in your plan has **equivalents** (dinner A or dinner B…), the tracker now lets you **pick which one you ate** —it's recorded— instead of a plain «followed». Ate something off‑plan? Mark **Other**; skipped it? **Skipped**. You also see your **full plan** with every option per meal. Your **adherence % doesn't change**: eating any option counts as followed.
+  ([Cenit/Screens/DietCaptureView.swift](Cenit/Screens/DietCaptureView.swift), [Packages/WhoopStore/Sources/WhoopStore/DietStore.swift](Packages/WhoopStore/Sources/WhoopStore/DietStore.swift))
 - **Captura tu dieta a mano, sin pasar por una IA / Capture your diet by hand, no AI needed.**
   **ES** — Además de traer tu plan con la IA, ahora puedes **escribirlo a mano**: desde la captura, toca «Mejor captúralo a mano» y arma tu plan —nombre, comidas con su nombre corto y alimentos, y opciones equivalentes— directo en la app. Ideal si tu plan es corto o prefieres no usar un chatbot. Se guarda en el mismo formato y cae en tu tracker; todo on‑device.
   **EN** — Besides bringing your plan in with AI, you can now **type it by hand**: from capture, tap «Capture by hand instead» and build your plan —name, meals with their short name and foods, and equivalent options— right in the app. Great if your plan is short or you'd rather skip a chatbot. It saves in the same format and lands in your tracker; all on‑device.
