@@ -13,6 +13,7 @@ struct ExerciseDetailScreen: View {
     let exercise: Exercise
 
     @Environment(\.instrumentoTheme) private var theme
+    @Environment(\.openURL) private var openURL
     @EnvironmentObject private var repo: Repository
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var system: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
@@ -26,9 +27,11 @@ struct ExerciseDetailScreen: View {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                 header
                 musclesSection
+                if !exercise.cues.isEmpty { howToSection }
                 if loaded {
                     if history.isEmpty { emptyHistory } else { historySection }
                 }
+                youtubeRow
             }
             .padding(.top, 20)
             .padding(.horizontal, NoopMetrics.screenPadding)
@@ -87,6 +90,64 @@ struct ExerciseDetailScreen: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(StrengthDisplay.titleCase(muscle)), \(primary ? "primary" : "assisting")")
+    }
+
+    // MARK: - How to (offline text cues from the bundled catalog · FER-387)
+
+    private var howToSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Divider().overlay(theme.hairline)
+            Text("How to").instrumentoOverline().foregroundStyle(theme.inkTertiary).padding(.top, 18)
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(Array(exercise.cues.enumerated()), id: \.offset) { index, cue in
+                    HStack(alignment: .firstTextBaseline, spacing: 10) {
+                        Text(verbatim: "\(index + 1)")
+                            .font(StrandFont.captionNumber).foregroundStyle(theme.inkTertiary)
+                            .frame(width: 18, alignment: .trailing)
+                        Text(cue)
+                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+            }
+            .padding(.top, 11)
+        }
+    }
+
+    // MARK: - Watch on YouTube (opt-in external hand-off · FER-387)
+    // Offline rule: NOOP itself makes NO network call — this only hands off to the system browser /
+    // YouTube app on an explicit user tap, and is clearly marked as leaving the app. Chrome, so it
+    // carries no saturated color (ink/surface only).
+
+    private var youtubeRow: some View {
+        Button {
+            let query = "\(exercise.name) exercise form"
+            let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+            if let url = URL(string: "https://www.youtube.com/results?search_query=\(encoded)") {
+                openURL(url)
+            }
+        } label: {
+            HStack(spacing: 11) {
+                Image(systemName: "play.rectangle").foregroundStyle(theme.inkSecondary)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Watch on YouTube").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                    Text("Opens outside the app · uses the internet")
+                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "arrow.up.forward").font(.caption).foregroundStyle(theme.inkTertiary)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                .strokeBorder(theme.hairline, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Watch \(exercise.name) on YouTube")
+        .accessibilityHint("Opens YouTube outside the app")
     }
 
     // MARK: - History (best mark / last time / estimated 1RM)
