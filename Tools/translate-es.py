@@ -137,6 +137,15 @@ ES: dict[str, str] = {
     # FER-401 — Dieta: elegir la opción/equivalente por comida
     'pick what you ate': 'elige la que comiste',
     'Other': 'Otra',
+    # FER-412 — Dieta: recordatorios locales por comida
+    'Meal reminders': 'Recordatorios por comida',
+    "We'll remind you at each meal's time. All on your iPhone.": 'Te avisamos a la hora de cada comida. Todo en tu iPhone.',
+    'On · %lld meals with a time.': 'Activos · %lld comidas con hora.',
+    'Your plan has no suggested times.': 'Tu plan no trae horas sugeridas.',
+    'Notifications are turned off.': 'Las notificaciones están desactivadas.',
+    'Open Settings': 'Abrir Ajustes',
+    'Did you mark this meal?': '¿Ya marcaste esta comida?',
+    'Diet reminder': 'Recordatorio de dieta',
     # FER-410 — Dieta: calendario/heatmap de apego
     'Adherence · history': 'Apego · histórico',
     'Each cell is a day · greener = higher adherence. Tap a day to view it.': 'Cada celda es un día · más verde = más apego. Toca un día para verlo.',
