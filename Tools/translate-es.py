@@ -137,6 +137,10 @@ ES: dict[str, str] = {
     # FER-401 — Dieta: elegir la opción/equivalente por comida
     'pick what you ate': 'elige la que comiste',
     'Other': 'Otra',
+    # FER-410 — Dieta: calendario/heatmap de apego
+    'Adherence · history': 'Apego · histórico',
+    'Each cell is a day · greener = higher adherence. Tap a day to view it.': 'Cada celda es un día · más verde = más apego. Toca un día para verlo.',
+    'Your daily adherence will appear here as you mark your meals.': 'Tu apego de cada día aparecerá aquí conforme marques tus comidas.',
     # FER-411 — Dieta: reglas/notas/objetivos del plan
     'Note: ': 'Nota: ',
     'Indications': 'Indicaciones',

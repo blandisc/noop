@@ -51,6 +51,9 @@ public struct YearHeatStrip: View {
     public var selectionColor: Color
     /// Formats a day's score for the tooltip's bold line.
     public var valueFormat: (Double) -> String
+    /// The metric word in the `.help` / VoiceOver label («date · <word> 67»). Defaults to "recovery"; a
+    /// non-recovery caller (e.g. diet adherence) passes its own so the cell doesn't read "recovery". (FER-410)
+    public var valueWord: String
 
     public init(
         days: [RecoveryDay],
@@ -64,7 +67,8 @@ public struct YearHeatStrip: View {
         labelColor: Color = StrandPalette.textTertiary,
         onSelect: ((RecoveryDay) -> Void)? = nil,
         selectionColor: Color = StrandPalette.hairlineStrong,
-        valueFormat: @escaping (Double) -> String = { "Recovery \(Int($0.rounded()))" }
+        valueFormat: @escaping (Double) -> String = { "Recovery \(Int($0.rounded()))" },
+        valueWord: String = "recovery"
     ) {
         self.days = days.sorted { $0.date < $1.date }
         self.cellSize = cellSize
@@ -78,6 +82,7 @@ public struct YearHeatStrip: View {
         self.onSelect = onSelect
         self.selectionColor = selectionColor
         self.valueFormat = valueFormat
+        self.valueWord = valueWord
     }
 
     /// The number of week columns the grid will draw for `days` (Monday-first weeks). Exposed so a
@@ -295,7 +300,7 @@ public struct YearHeatStrip: View {
                     .fill(tint(score))
                     .frame(width: cellSize, height: cellSize)
                     .opacity(isHovered ? 1.0 : (hoverCell == nil ? 1.0 : 0.78))
-                    .help("\(DateFormatterCache.day.string(from: day.date)) · recovery \(Int(score.rounded()))")
+                    .help("\(DateFormatterCache.day.string(from: day.date)) · \(valueWord) \(Int(score.rounded()))")
             } else if day != nil {
                 shape
                     .fill(emptyFill)
@@ -326,7 +331,7 @@ public struct YearHeatStrip: View {
     private func cellAccessibilityLabel(_ day: RecoveryDay) -> Text {
         let date = DateFormatterCache.day.string(from: day.date)
         if let score = day.score {
-            return Text("\(date) · recovery \(Int(score.rounded()))")
+            return Text("\(date) · \(valueWord) \(Int(score.rounded()))")
         }
         return Text("\(date) · no reading")
     }
