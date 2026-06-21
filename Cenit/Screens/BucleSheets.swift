@@ -112,8 +112,8 @@ struct PalancaDetailSheet: View {
     /// Two bars: the outcome mean on days WITH vs WITHOUT the behavior. The better group (respecting
     /// metric direction) carries the data hue; the other stays quiet ink. Color only on the datum.
     @ViewBuilder private func breakdownBars(_ bd: BehaviorBreakdown) -> some View {
-        let higherBetter = insight.datum.metric != "FC en reposo"
-        let withIsBetter = higherBetter ? (bd.meanWith >= bd.meanWithout) : (bd.meanWith <= bd.meanWithout)
+        let withIsBetter = BucleFormat.withIsBetter(metric: insight.datum.metric,
+                                                    meanWith: bd.meanWith, meanWithout: bd.meanWithout)
         let maxMean = max(bd.meanWith, bd.meanWithout, 1)
         VStack(alignment: .leading, spacing: 12) {
             breakdownBar(label: "Con el hábito", mean: bd.meanWith, n: bd.nWith,
@@ -199,7 +199,9 @@ struct HallazgosListSheet: View {
 
                 ForEach(Array(insights.enumerated()), id: \.offset) { _, insight in
                     Button { onPick(insight) } label: {
-                        HStack(alignment: .top) {
+                        HStack(alignment: .top, spacing: 13) {
+                            BucleFormat.findingGlyph(insight, trendSpark: trendSpark, theme: theme)
+                                .padding(.top, 2)
                             VStack(alignment: .leading, spacing: 5) {
                                 Text(BucleFormat.kindLabel(insight.kind)).instrumentoOverline()
                                     .foregroundStyle(theme.inkTertiary)
@@ -207,18 +209,14 @@ struct HallazgosListSheet: View {
                                     .fixedSize(horizontal: false, vertical: true)
                                 Text(insight.reading).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
                                     .fixedSize(horizontal: false, vertical: true)
-                                if insight.kind == .trend {
-                                    BucleFormat.trendSparkline(trendSpark,
-                                                               color: BucleFormat.metricColor(insight.datum.metric, theme))
-                                        .padding(.top, 4)
-                                }
                             }
-                            Spacer()
+                            Spacer(minLength: 8)
                             Image(systemName: "chevron.right").font(.system(size: 15))
                                 .foregroundStyle(theme.inkTertiary).padding(.top, 2)
                         }
                         .padding(.vertical, 13)
                         .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                 }
@@ -545,12 +543,41 @@ enum BucleFormat {
         }
     }
 
-    /// A compact, single-hue trend sparkline for «Instrumento» rows. Quiet: no area, no hover.
-    @ViewBuilder static func trendSparkline(_ values: [Double], color: Color) -> some View {
-        if values.count >= 2 {
-            Sparkline(values: values, gradient: Gradient(colors: [color, color]),
-                      lineWidth: 2, showsArea: false, showsHead: true, showsScrub: false)
-                .frame(width: 80, height: 24)
+    /// The short lead clause of a signal's read, for the compact «Señales» chip — the engine's `detail`
+    /// is a full clause ("por encima de tu base — bien recuperado" / "en zona buena (agudo:crónico 1.05)");
+    /// this trims to the part before the dash / parenthesis / separator so the 3-up row stays glanceable.
+    /// Shows the engine's OWN words (no fabricated copy) — the full read lives in the explainer sheet.
+    static func signalShortDetail(_ detail: String) -> String {
+        var s = detail
+        for sep in ["—", " (", "(", " · ", ": "] {
+            if let r = s.range(of: sep) { s = String(s[..<r.lowerBound]) }
+        }
+        return s.trimmingCharacters(in: .whitespaces)
+    }
+
+    /// Whether the WITH-habit mean is the better outcome, respecting the metric's direction (only resting
+    /// HR is lower-is-better). The one place this rule lives, shared by the lever dumbbell and the detail
+    /// sheet's breakdown bars so they can never disagree about which side wins.
+    static func withIsBetter(metric: String, meanWith: Double, meanWithout: Double) -> Bool {
+        let higherBetter = metric != "FC en reposo"
+        return higherBetter ? (meanWith >= meanWithout) : (meanWith <= meanWithout)
+    }
+
+    /// The drawn mark for a finding, by kind: relación (two intertwined curves), tendencia (the recovery
+    /// trajectory + head dot), anomalía (a spike on a quiet baseline). Other kinds draw nothing.
+    @ViewBuilder static func findingGlyph(_ insight: Insight, trendSpark: [Double],
+                                          theme: InstrumentoTheme) -> some View {
+        switch insight.kind {
+        case .correlation:
+            InsightGlyph(kind: .relation, primary: theme.dataRecovery, secondary: theme.dataHrv, theme: theme)
+        case .trend:
+            InsightGlyph(kind: .trend, values: trendSpark,
+                         primary: metricColor(insight.datum.metric, theme), secondary: theme.dataHrv, theme: theme)
+        case .nightAnomaly:
+            InsightGlyph(kind: .anomaly,
+                         primary: metricColor(insight.datum.metric, theme), secondary: theme.dataHrv, theme: theme)
+        default:
+            EmptyView()
         }
     }
 
