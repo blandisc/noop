@@ -137,6 +137,11 @@ ES: dict[str, str] = {
     # FER-401 — Dieta: elegir la opción/equivalente por comida
     'pick what you ate': 'elige la que comiste',
     'Other': 'Otra',
+    # FER-411 — Dieta: reglas/notas/objetivos del plan
+    'Note: ': 'Nota: ',
+    'Indications': 'Indicaciones',
+    'Plan target · reference': 'Objetivo del plan · referencia',
+    "Only what your plan declared. NOOP doesn't count calories.": 'Solo lo que tu plan declaró. NOOP no cuenta calorías.',
     # FER-403 — Dieta: captura a mano (formulario sin IA)
     'Capture by hand instead': 'Mejor captúralo a mano',
     'Diet · by hand': 'Dieta · a mano',
