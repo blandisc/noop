@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Tus comidas se capturan con nombres más limpios / Your meals are captured with cleaner names.**
+  **ES** — Al capturar tu dieta, el prompt ahora le pide a la IA que el **nombre de cada comida** sea una etiqueta corta del momento del día (Desayuno, Comida, Cena, Snack, Pre‑entreno…) en vez del platillo completo; los alimentos quedan en sus opciones. El tracker se ve más ordenado y queda listo para elegir entre equivalentes.
+  **EN** — When you capture your diet, the prompt now asks the AI to make each **meal's name** a short label for the time of day (Breakfast, Lunch, Dinner, Snack, Pre‑workout…) instead of the full dish; the foods stay in their options. The tracker reads cleaner and is ready for choosing between equivalents.
+  ([Cenit/Data/DietPrompt.swift](Cenit/Data/DietPrompt.swift))
 - **El texto se adapta al tamaño de letra que elijas / Text adapts to your chosen text size.**
   **ES** — La app ahora respeta el **tamaño de texto** que configuras en iOS (Ajustes → Pantalla y brillo → Tamaño del texto, o Accesibilidad): títulos, textos y etiquetas **crecen contigo** cuando lo subes, hasta un tope amplio. En el tamaño normal todo se ve **igual que antes**. Algunos números grandes (la frecuencia cardiaca en vivo, los datos del Coach) **se ajustan para no cortarse** en pantallas angostas. Los números dentro del dial y las gráficas mantienen su tamaño, porque son parte del instrumento.
   **EN** — The app now respects the **text size** you set in iOS (Settings → Display & Brightness → Text Size, or Accessibility): titles, body text and labels **grow with you** when you raise it, up to a generous cap. At the normal size everything looks **exactly as before**. Some large numbers (live heart rate, the Coach's figures) **scale down so they don't clip** on narrow screens. Numbers inside the dial and charts keep their size, since they're part of the instrument.

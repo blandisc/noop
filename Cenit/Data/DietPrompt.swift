@@ -26,10 +26,12 @@ enum DietPrompt {
 
     Reglas:
     - Detecta el idioma del plan y ponlo en "idioma": "es" o "en".
-    - NO traduzcas. Conserva los nombres de comidas y alimentos EXACTAMENTE como aparecen.
+    - NO traduzcas los ALIMENTOS: consérvalos EXACTAMENTE como aparecen.
     - Las llaves del JSON quedan en español tal como están; solo los VALORES siguen el idioma del plan.
-    - Una entrada en "comidas" por cada tiempo (desayuno/breakfast, colación/snack, comida/lunch,
-      cena/dinner…), en orden.
+    - Una entrada en "comidas" por cada tiempo, en orden.
+    - El "nombre" de cada comida es una etiqueta CORTA del momento del día (Desayuno, Colación,
+      Comida, Cena, Pre-entreno, Post-entreno…), NO el platillo; todos los alimentos van SIEMPRE
+      en "opciones".alimentos. Ej.: {"nombre":"Desayuno", "opciones":[{"alimentos":["2 huevos","1 pan integral"]}]}.
     - Si una comida da equivalentes u opciones intercambiables, ponlas como varias entradas en
       "opciones"; si no, una sola.
     - Copia las cantidades tal cual ("150 g", "1 cup", "2 pza"); si no hay, omite el dato.
@@ -53,10 +55,12 @@ enum DietPrompt {
 
     Rules:
     - Detect the plan's language and set "idioma": "es" or "en".
-    - DO NOT translate. Keep meal and food names EXACTLY as written.
+    - DO NOT translate the FOODS: keep them EXACTLY as written.
     - The JSON keys stay in Spanish as shown; only the VALUES follow the plan's language.
-    - One "comidas" entry per eating occasion (breakfast/desayuno, snack/colación, lunch/comida,
-      dinner/cena…), in order.
+    - One "comidas" entry per eating occasion, in order.
+    - Each meal's "nombre" is a SHORT label for the time of day in the plan's language (Breakfast,
+      Snack, Lunch, Dinner, Pre-workout, Post-workout / Desayuno, Comida, Cena…), NOT the dish; all
+      foods ALWAYS go in "opciones".alimentos. E.g. {"nombre":"Breakfast", "opciones":[{"alimentos":["2 eggs","1 slice whole-grain bread"]}]}.
     - If a meal offers interchangeable options/equivalents, list them as multiple "opciones"
       entries; otherwise one.
     - Copy quantities verbatim ("150 g", "1 cup", "2 pza"); omit if absent.
