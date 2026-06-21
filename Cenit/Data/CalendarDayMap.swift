@@ -174,6 +174,27 @@ final class CalendarDayMap: ObservableObject {
         return (timed, allDay, chosen.map(\.title))
     }
 
+    /// Historical event-type tags for the last `days` days (FER-388): `title → set of local day keys`
+    /// it occurred on. ONE EventKit query over the whole window (not per day), timed events only, from
+    /// the chosen calendars. On-device, NOT persisted — EventKit stays the source of truth. Empty unless
+    /// authorized with ≥1 calendar chosen. The title is the cluster key; only titles that recur enough
+    /// (≥ the stats floor) become a pattern downstream, so one-offs never do.
+    func eventDaysByTitle(days: Int = 60) -> [String: Set<String>] {
+        guard case .authorized = Self.readStatus(), !selectedIDs.isEmpty else { return [:] }
+        let chosen = store.calendars(for: .event).filter { selectedIDs.contains($0.calendarIdentifier) }
+        guard !chosen.isEmpty else { return [:] }
+        let cal = Calendar.current
+        let end = Date()
+        let start = cal.date(byAdding: .day, value: -days, to: cal.startOfDay(for: end)) ?? end
+        let predicate = store.predicateForEvents(withStart: start, end: end, calendars: chosen)
+        var byTitle: [String: Set<String>] = [:]
+        for e in store.events(matching: predicate) where !e.isAllDay {
+            guard let title = e.title?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty else { continue }
+            byTitle[title, default: []].insert(Repository.localDayKey(e.startDate))
+        }
+        return byTitle
+    }
+
     // MARK: - Authorization status (normalized across iOS 16/17)
 
     private enum Status { case needsPermission, denied, restricted, authorized }

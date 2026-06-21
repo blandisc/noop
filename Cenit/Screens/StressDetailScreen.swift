@@ -44,6 +44,9 @@ struct StressDetailScreen: View {
     /// Loads the cross-day «moment of day» patterns (persists the daily summaries, then detects).
     /// Injected so the screen stays DB-free. `nil` → no pattern line. (FER-378)
     var patternsLoader: (() async -> [StressTimeOfDayPatterns.Pattern])? = nil
+    /// Loads the cross-day «by calendar-event» patterns (one on-device EventKit read, nothing persisted).
+    /// Runs after `patternsLoader` so the daily summaries it reads are already backfilled. (FER-388)
+    var eventPatternsLoader: (() async -> [StressEventPatterns.Pattern])? = nil
     /// Tapped on «Explore it in the Coach» — the caller switches to the Coach tab. (FER-378)
     var onExploreInCoach: (() -> Void)? = nil
 
@@ -59,6 +62,8 @@ struct StressDetailScreen: View {
     @State private var historyExpanded = false
     /// Detected cross-day «moment of day» patterns (loaded in `.task`). Empty → no line. (FER-378)
     @State private var patterns: [StressTimeOfDayPatterns.Pattern] = []
+    /// Detected cross-day «by calendar-event» patterns (loaded in `.task`). Empty → no line. (FER-388)
+    @State private var eventPatterns: [StressEventPatterns.Pattern] = []
 
     var body: some View {
         ScrollView {
@@ -94,6 +99,7 @@ struct StressDetailScreen: View {
                 (Self.dayParser.string(from: $0.date), $0.date, $0.value)
             }
             if let patternsLoader { patterns = await patternsLoader() }
+            if let eventPatternsLoader { eventPatterns = await eventPatternsLoader() }
         }
     }
 
@@ -248,13 +254,21 @@ struct StressDetailScreen: View {
                                 value: consistencyWord(pct),
                                 note: "week to week")
                 }
-                // The cross-day «moment of day» pattern (FER-378) — its natural home is here, under
-                // «Your patterns». One observational, non-causal line + a handoff to the Coach.
-                if let p = patterns.first {
+                // Cross-day observational lines, their natural home under «Your patterns»: the moment
+                // of day (FER-378) and the recurring calendar event (FER-388). Non-causal; shown only
+                // when the stats clear the bar. One Coach handoff covers both.
+                if patterns.first != nil || eventPatterns.first != nil {
                     Rectangle().fill(theme.hairline).frame(height: 1).padding(.vertical, 2)
-                    patternSentence(p)
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    if let p = patterns.first {
+                        patternSentence(p)
+                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    if let e = eventPatterns.first {
+                        eventPatternSentence(e)
+                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                     if let onExploreInCoach {
                         Button(action: onExploreInCoach) {
                             HStack(spacing: 6) {
@@ -295,6 +309,13 @@ struct StressDetailScreen: View {
         case .evening:   return String(localized: "evenings")
         case .night:     return String(localized: "late nights")
         }
+    }
+
+    /// The localized, NON-causal sentence for a recurring-event pattern ("tends to coincide with", never
+    /// "causes"). The event title is the user's own, interpolated verbatim. (FER-388)
+    private func eventPatternSentence(_ e: StressEventPatterns.Pattern) -> Text {
+        e.higher ? Text("«\(e.title)» tends to coincide with higher stress.")
+                 : Text("«\(e.title)» tends to coincide with lower stress.")
     }
 
     /// One «Your patterns» line: a quiet overline label, a plain value (the datum), an optional note.
