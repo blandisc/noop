@@ -18,6 +18,29 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
+    # FER-409 / 390 — Resumen post-sesión de fuerza + toggle «Guardar en Apple Salud»
+    "Summary": "Resumen",
+    "Effort": "Esfuerzo",
+    "What this session cost your body.": "Lo que le costó a tu cuerpo esta sesión.",
+    "Duration": "Duración",
+    "No heart rate this session.": "Sin frecuencia cardiaca esta sesión.",
+    "Volume": "Volumen",
+    "Sets": "Series",
+    "New records": "Marcas nuevas",
+    "Record": "Marca",
+    "Max weight": "Peso máximo",
+    "Most reps": "Más repeticiones",
+    "Best set": "Mejor serie",
+    "Recovery cost": "Costo de recuperación",
+    "Low cardiovascular cost. Your body barely felt it.": "Costo cardiovascular bajo. Tu cuerpo apenas lo resintió.",
+    "A session that counted. Give yourself some rest.": "Un esfuerzo que sí contó. Date tu descanso.",
+    "A demanding session. Make sleep a priority today.": "Una sesión exigente. Prioriza dormir hoy.",
+    "Estimate · you decide": "Estimación · tú decides",
+    "First time logging these. From here on you'll see your progress.": "Primer registro de estos ejercicios. A partir de aquí vas a ver tu progreso.",
+    "Today's muscles": "Músculos de hoy",
+    "Tap a muscle to see when to train it again.": "Toca un músculo para ver cuándo volver a entrenarlo.",
+    "Save workouts to Apple Health": "Guardar entrenamientos en Apple Salud",
+    "Your strength sessions appear in Health and count toward your Move ring, with estimated calories.": "Tus sesiones de fuerza aparecen en Salud y cuentan para tu anillo de Movimiento, con calorías estimadas.",
     # FER-397 — Estrés: fallback al último día con dato (tope ayer, fechado)
     'Yesterday · %@': 'ayer · %@',
     "No reading in the last couple of days. Wear your strap overnight and it'll refresh after it syncs — your history is below.": 'Sin lectura en los últimos días. Usa tu banda de noche y se actualizará cuando sincronice — tu historial está abajo.',
