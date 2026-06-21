@@ -20,7 +20,7 @@ final class DialTabGlyphSnapshotTests: XCTestCase {
 
         private var ink: Color {
             if let t = theme { return active ? t.ink : t.inkTertiary }
-            return active ? StrandPalette.textPrimary : StrandPalette.textSecondary
+            return active ? InstrumentoTheme.base.ink : InstrumentoTheme.base.inkSecondary
         }
         private var dot: Color { theme?.dataRecovery ?? StrandPalette.accent }
 
@@ -42,8 +42,8 @@ final class DialTabGlyphSnapshotTests: XCTestCase {
             ({ c in AnyView(Image(systemName: "moon").font(.system(size: 21, weight: .regular)).foregroundStyle(c)) }, "Sueño"),
             ({ c in AnyView(Image(systemName: "ellipsis").font(.system(size: 21, weight: .regular)).foregroundStyle(c)) }, "Más"),
         ]
-        let surface = theme?.paper ?? StrandPalette.surfaceBase
-        let rule = theme?.hairline ?? StrandPalette.hairline
+        let surface = theme?.paper ?? InstrumentoTheme.base.paper
+        let rule = theme?.hairline ?? InstrumentoTheme.base.hairline
         return HStack(alignment: .top, spacing: 0) {
             ForEach(Array(items.enumerated()), id: \.offset) { idx, it in
                 TabMock(theme: theme, icon: it.0, label: it.1, active: idx == activeIndex)
@@ -60,7 +60,7 @@ final class DialTabGlyphSnapshotTests: XCTestCase {
     func test_renderBarAndGlyph() throws {
         func caption(_ s: String, _ t: InstrumentoTheme?) -> some View {
             Text(s).font(.system(size: 11, weight: .medium))
-                .foregroundStyle((t?.inkTertiary) ?? StrandPalette.textSecondary)
+                .foregroundStyle((t?.inkTertiary) ?? InstrumentoTheme.base.inkSecondary)
         }
 
         let content = VStack(spacing: 14) {

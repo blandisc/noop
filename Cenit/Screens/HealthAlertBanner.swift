@@ -13,7 +13,7 @@ struct HealthAlertBanner: View {
                     .accessibilityHidden(true)
                 Text(alert)
                     .font(StrandFont.subhead)
-                    .foregroundStyle(StrandPalette.textPrimary)
+                    .foregroundStyle(InstrumentoTheme.base.ink)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
             }

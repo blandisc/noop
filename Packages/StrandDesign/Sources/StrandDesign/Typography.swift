@@ -93,7 +93,7 @@ public extension Text {
         self.font(StrandFont.overline)
             .tracking(StrandFont.overlineTracking)
             .textCase(.uppercase)
-            .foregroundStyle(StrandPalette.textSecondary)
+            .foregroundStyle(InstrumentoTheme.base.inkSecondary)
     }
 }
 
@@ -108,28 +108,28 @@ public extension View {
 #Preview("Typography") {
     ScrollView {
         VStack(alignment: .leading, spacing: 18) {
-            Text("88").font(StrandFont.display(72)).foregroundStyle(StrandPalette.textPrimary)
-            Text("Title 1 / Bold 28").font(StrandFont.title1).foregroundStyle(StrandPalette.textPrimary)
-            Text("Title 2 / Semibold 22").font(StrandFont.title2).foregroundStyle(StrandPalette.textPrimary)
-            Text("Headline / Semibold 17").font(StrandFont.headline).foregroundStyle(StrandPalette.textPrimary)
+            Text("88").font(StrandFont.display(72)).foregroundStyle(InstrumentoTheme.base.ink)
+            Text("Title 1 / Bold 28").font(StrandFont.title1).foregroundStyle(InstrumentoTheme.base.ink)
+            Text("Title 2 / Semibold 22").font(StrandFont.title2).foregroundStyle(InstrumentoTheme.base.ink)
+            Text("Headline / Semibold 17").font(StrandFont.headline).foregroundStyle(InstrumentoTheme.base.ink)
             Text("Body / Regular 15 — the thread of you, read in full.")
-                .font(StrandFont.body).foregroundStyle(StrandPalette.textPrimary)
-            Text("Subhead 13").font(StrandFont.subhead).foregroundStyle(StrandPalette.textSecondary)
-            Text("Caption 12").font(StrandFont.caption).foregroundStyle(StrandPalette.textSecondary)
-            Text("Footnote 11").font(StrandFont.footnote).foregroundStyle(StrandPalette.textTertiary)
+                .font(StrandFont.body).foregroundStyle(InstrumentoTheme.base.ink)
+            Text("Subhead 13").font(StrandFont.subhead).foregroundStyle(InstrumentoTheme.base.inkSecondary)
+            Text("Caption 12").font(StrandFont.caption).foregroundStyle(InstrumentoTheme.base.inkSecondary)
+            Text("Footnote 11").font(StrandFont.footnote).foregroundStyle(InstrumentoTheme.base.inkTertiary)
             Text("Overline").strandOverline()
-            Text("0xAA 41 00 1c crc32=f3a1  mono 13").font(StrandFont.mono).foregroundStyle(StrandPalette.textSecondary)
+            Text("0xAA 41 00 1c crc32=f3a1  mono 13").font(StrandFont.mono).foregroundStyle(InstrumentoTheme.base.inkSecondary)
             HStack(spacing: 4) {
-                Text("HRV").font(StrandFont.caption).foregroundStyle(StrandPalette.textSecondary)
-                Text("62").font(StrandFont.bodyNumber).foregroundStyle(StrandPalette.textPrimary)
-                Text("ms").font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
+                Text("HRV").font(StrandFont.caption).foregroundStyle(InstrumentoTheme.base.inkSecondary)
+                Text("62").font(StrandFont.bodyNumber).foregroundStyle(InstrumentoTheme.base.ink)
+                Text("ms").font(StrandFont.caption).foregroundStyle(InstrumentoTheme.base.inkTertiary)
             }
         }
         .padding(28)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
     .frame(width: 520, height: 620)
-    .background(StrandPalette.surfaceBase)
+    .background(InstrumentoTheme.base.paper)
     .preferredColorScheme(.dark)
 }
 #endif

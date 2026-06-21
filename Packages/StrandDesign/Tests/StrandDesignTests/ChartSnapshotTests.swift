@@ -46,7 +46,7 @@ final class ChartSnapshotTests: XCTestCase {
         let view = card
             .padding(NoopMetrics.screenPadding)
             .frame(width: 390)
-            .background(StrandPalette.surfaceBase)
+            .background(InstrumentoTheme.base.paper)
             .environment(\.colorScheme, .dark)
 
         let renderer = ImageRenderer(content: view)
@@ -84,7 +84,7 @@ final class ChartSnapshotTests: XCTestCase {
         let range = 0...max(peak * 1.15, 1)
 
         let view = VStack(alignment: .leading, spacing: 12) {
-            Text("How today added up").font(StrandFont.headline).foregroundStyle(StrandPalette.textPrimary)
+            Text("How today added up").font(StrandFont.headline).foregroundStyle(InstrumentoTheme.base.ink)
             TrendChart(
                 points: points,
                 gradient: StrandPalette.strainGradient,
@@ -98,7 +98,7 @@ final class ChartSnapshotTests: XCTestCase {
         }
         .padding(20)
         .frame(width: 360)
-        .background(StrandPalette.surfaceBase)
+        .background(InstrumentoTheme.base.paper)
         .environment(\.colorScheme, .dark)
 
         let renderer = ImageRenderer(content: view)
@@ -147,7 +147,7 @@ final class ChartSnapshotTests: XCTestCase {
         let view = card
             .padding(NoopMetrics.screenPadding)
             .frame(width: 390)
-            .background(StrandPalette.surfaceBase)
+            .background(InstrumentoTheme.base.paper)
             .environment(\.colorScheme, .dark)
 
         let renderer = ImageRenderer(content: view)

@@ -88,12 +88,12 @@ public struct DialTabGlyph: View {
 
         // On the dark instrument panel.
         HStack(spacing: 28) {
-            DialTabGlyph(size: 23, color: StrandPalette.textPrimary)
-            DialTabGlyph(size: 23, color: StrandPalette.textSecondary)
-            DialTabGlyph(size: 40, color: StrandPalette.textPrimary)
+            DialTabGlyph(size: 23, color: InstrumentoTheme.base.ink)
+            DialTabGlyph(size: 23, color: InstrumentoTheme.base.inkSecondary)
+            DialTabGlyph(size: 40, color: InstrumentoTheme.base.ink)
         }
         .padding(20)
-        .background(StrandPalette.surfaceBase)
+        .background(InstrumentoTheme.base.paper)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
     .padding(24)

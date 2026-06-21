@@ -174,8 +174,8 @@ public struct DebtBars: View {
         nights: week,
         deficitColor: StrandPalette.strainColor(14),
         surplusColor: StrandPalette.recoveryColor(88),
-        ruleColor: StrandPalette.hairlineStrong,
-        axisLabelColor: StrandPalette.textTertiary,
+        ruleColor: InstrumentoTheme.base.hairlineStrong,
+        axisLabelColor: InstrumentoTheme.base.inkTertiary,
         ruleLabel: "your need",
         weekdayLabel: { d in let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("EEEEE"); return f.string(from: d) },
         valueFormat: { $0 < 0 ? "−\(hm($0))" : "+\(hm($0))" },
@@ -183,7 +183,7 @@ public struct DebtBars: View {
     )
     .padding(24)
     .frame(width: 340, height: 160)
-    .background(StrandPalette.surfaceBase)
+    .background(InstrumentoTheme.base.paper)
     .preferredColorScheme(.dark)
 }
 #endif

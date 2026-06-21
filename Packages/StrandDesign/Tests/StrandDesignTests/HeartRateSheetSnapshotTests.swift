@@ -74,11 +74,11 @@ final class HeartRateSheetSnapshotTests: XCTestCase {
 
         // The sheet header: name on the left, big value + unit on the right (mirrors MetricInfoSheet).
         let header = HStack(alignment: .firstTextBaseline) {
-            Text("Frecuencia cardíaca").font(StrandFont.title2).foregroundStyle(StrandPalette.textPrimary)
+            Text("Frecuencia cardíaca").font(StrandFont.title2).foregroundStyle(InstrumentoTheme.base.ink)
             Spacer()
             HStack(alignment: .firstTextBaseline, spacing: 3) {
                 Text("\(avg)").font(StrandFont.number(28)).foregroundStyle(StrandPalette.metricRose)
-                Text("bpm").font(StrandFont.subhead).foregroundStyle(StrandPalette.textTertiary)
+                Text("bpm").font(StrandFont.subhead).foregroundStyle(InstrumentoTheme.base.inkTertiary)
             }
         }
 
@@ -94,29 +94,29 @@ final class HeartRateSheetSnapshotTests: XCTestCase {
                 HStack(spacing: 10) {
                     Circle().fill(z.3 ? z.2 : z.2.opacity(0.35)).frame(width: 8, height: 8).padding(.leading, 14)
                     Text(z.0).font(StrandFont.subhead)
-                        .foregroundStyle(z.3 ? StrandPalette.textPrimary : StrandPalette.textSecondary)
+                        .foregroundStyle(z.3 ? InstrumentoTheme.base.ink : InstrumentoTheme.base.inkSecondary)
                     Spacer()
-                    Text(z.1).font(StrandFont.captionNumber).foregroundStyle(StrandPalette.textTertiary).padding(.trailing, 14)
+                    Text(z.1).font(StrandFont.captionNumber).foregroundStyle(InstrumentoTheme.base.inkTertiary).padding(.trailing, 14)
                 }
                 .padding(.vertical, 11)
-                if i < zones.count - 1 { Divider().overlay(StrandPalette.hairline).padding(.leading, 36) }
+                if i < zones.count - 1 { Divider().overlay(InstrumentoTheme.base.hairline).padding(.leading, 36) }
             }
         }
-        .background(StrandPalette.surfaceRaised, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(InstrumentoTheme.base.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 
         // --- The three variants, each as a faithful sheet column ---
         func column<C: View>(@ViewBuilder _ content: () -> C) -> some View {
             VStack(alignment: .leading, spacing: 22, content: content)
                 .padding(20)
                 .frame(width: 380, alignment: .leading)
-                .background(StrandPalette.surfaceBase)
+                .background(InstrumentoTheme.base.paper)
                 .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
 
         let variant1 = column {
             header
             Text("Tu frecuencia cardíaca a lo largo del día, promediada en intervalos de 5 minutos.")
-                .font(StrandFont.subhead).foregroundStyle(StrandPalette.textSecondary)
+                .font(StrandFont.subhead).foregroundStyle(InstrumentoTheme.base.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             chartCard()
         }
@@ -132,7 +132,7 @@ final class HeartRateSheetSnapshotTests: XCTestCase {
 
         func labeled<C: View>(_ title: String, @ViewBuilder _ col: () -> C) -> some View {
             VStack(alignment: .leading, spacing: 12) {
-                Text(title).font(StrandFont.headline).foregroundStyle(StrandPalette.textPrimary)
+                Text(title).font(StrandFont.headline).foregroundStyle(InstrumentoTheme.base.ink)
                 col()
             }
         }
@@ -175,7 +175,7 @@ final class HeartRateSheetSnapshotTests: XCTestCase {
             MetricRow(label: LocalizedStringKey(label), value: value, unit: unit, valueColor: color,
                       sparkline: placeholder ? nil : spark, sparkColor: sparkColor, isPlaceholder: placeholder)
         }
-        func sep() -> some View { Divider().overlay(StrandPalette.hairline) }
+        func sep() -> some View { Divider().overlay(InstrumentoTheme.base.hairline) }
 
         func section(noHR: Bool) -> some View {
             VStack(alignment: .leading, spacing: NoopMetrics.gap) {
@@ -184,7 +184,7 @@ final class HeartRateSheetSnapshotTests: XCTestCase {
                     row("Esfuerzo del día", "8.5", color: StrandPalette.strainColor(8.5),
                         spark: [6,9,7,11,8,10,8.5,9,7,8,10,9,11,8.5], sparkColor: StrandPalette.strain066)
                     sep()
-                    row("Sueño", "7h 20m", color: StrandPalette.textPrimary,
+                    row("Sueño", "7h 20m", color: InstrumentoTheme.base.ink,
                         spark: [380,420,400,460,440,410,440,430,420,450,440,400,430,440], sparkColor: StrandPalette.metricPurple)
                     sep()
                     row("HRV", "62", unit: "ms", color: StrandPalette.metricPurple,
@@ -205,20 +205,20 @@ final class HeartRateSheetSnapshotTests: XCTestCase {
                     row("Oxígeno en sangre", "97", unit: "%", color: StrandPalette.metricCyan,
                         spark: [96,97,97,96,98,97,97,96,97,97,98,97,97,97], sparkColor: StrandPalette.metricCyan)
                     sep()
-                    row("Pasos", "8,432", color: StrandPalette.textPrimary,
+                    row("Pasos", "8,432", color: InstrumentoTheme.base.ink,
                         spark: [5000,7000,6500,9000,8000,7500,8432,6000,7000,8000,9000,7500,8200,8432], sparkColor: StrandPalette.metricCyan)
                 }
             }
             .padding(.horizontal, NoopMetrics.screenPadding)
             .padding(.vertical, 20)
             .frame(width: 390, alignment: .leading)
-            .background(StrandPalette.surfaceBase)
+            .background(InstrumentoTheme.base.paper)
             .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
 
         func labeled<C: View>(_ title: String, @ViewBuilder _ c: () -> C) -> some View {
             VStack(alignment: .leading, spacing: 12) {
-                Text(title).font(StrandFont.headline).foregroundStyle(StrandPalette.textPrimary)
+                Text(title).font(StrandFont.headline).foregroundStyle(InstrumentoTheme.base.ink)
                 c()
             }
         }
