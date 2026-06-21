@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Captura tu dieta a mano, sin pasar por una IA / Capture your diet by hand, no AI needed.**
+  **ES** — Además de traer tu plan con la IA, ahora puedes **escribirlo a mano**: desde la captura, toca «Mejor captúralo a mano» y arma tu plan —nombre, comidas con su nombre corto y alimentos, y opciones equivalentes— directo en la app. Ideal si tu plan es corto o prefieres no usar un chatbot. Se guarda en el mismo formato y cae en tu tracker; todo on‑device.
+  **EN** — Besides bringing your plan in with AI, you can now **type it by hand**: from capture, tap «Capture by hand instead» and build your plan —name, meals with their short name and foods, and equivalent options— right in the app. Great if your plan is short or you'd rather skip a chatbot. It saves in the same format and lands in your tracker; all on‑device.
+  ([Cenit/Screens/DietCaptureView.swift](Cenit/Screens/DietCaptureView.swift))
 - **Marca tu dieta de cualquier día, no solo hoy / Track your diet for any day, not just today.**
   **ES** — El tracker de Dieta estrena un **navegador de fecha (‹ ›)**: vuelve a días anteriores para marcar «ayer se me pasó» o revisar cómo te fue, y regresa a hoy. Cada día muestra su propio **% de apego** y su tendencia; no puedes adelantarte al futuro. Es básico en cualquier app de hábitos y antes no lo teníamos.
   **EN** — The Diet tracker gains a **date navigator (‹ ›)**: step back to earlier days to mark «I slipped yesterday» or review how you did, then return to today. Each day shows its own **adherence %** and trend; you can't jump past today. It's table stakes for any habit app and we were missing it.

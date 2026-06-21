@@ -134,6 +134,19 @@ ES: dict[str, str] = {
     # FER-402 — Dieta: navegación por día en el tracker (accesibilidad)
     'Previous day': 'Día anterior',
     'Next day': 'Día siguiente',
+    # FER-403 — Dieta: captura a mano (formulario sin IA)
+    'Capture by hand instead': 'Mejor captúralo a mano',
+    'Diet · by hand': 'Dieta · a mano',
+    'Build your plan': 'Arma tu plan',
+    'Plan name': 'Nombre del plan',
+    'Meals': 'Comidas',
+    'Short name': 'Nombre corto',
+    'Food': 'Alimento',
+    'Add food': 'Agregar alimento',
+    'Equivalent option': 'Opción equivalente',
+    'Add meal': 'Agregar comida',
+    'or equivalent': 'o equivalente',
+    'Remove food': 'Quitar alimento',
     # FER-381 — Acerca de y soporte adelgazado: subtítulo acortado
     '%@ — all your data, none of the cloud.': '%@ — todos tus datos, nada en la nube.',
     # FER-371 — Dieta: pantalla de captura (BYO-LLM)

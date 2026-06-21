@@ -20,7 +20,13 @@ struct DietCaptureView: View {
     @EnvironmentObject private var repo: Repository
     @Environment(\.instrumentoTheme) private var theme
 
-    private enum Phase { case landing, capture, confirm }
+    private enum Phase { case landing, capture, manual, confirm }
+
+    /// Manual-capture form model (FER-403): a plan typed by hand instead of via BYO-LLM. Mirrors
+    /// `noop.diet.v1` — a meal has a short name and ≥1 option (equivalent), each a list of foods.
+    private struct ManualFood: Identifiable { let id = UUID(); var text = "" }
+    private struct ManualOption: Identifiable { let id = UUID(); var foods: [ManualFood] = [ManualFood()] }
+    private struct ManualMeal: Identifiable { let id = UUID(); var name = ""; var options: [ManualOption] = [ManualOption()] }
 
     @State private var phase: Phase = .landing
     @State private var loaded = false
@@ -39,6 +45,9 @@ struct DietCaptureView: View {
     @State private var adherence7d: [Double] = []
     @State private var todayKey = ""
     @State private var selectedDay = ""
+    // Manual capture (FER-403): the form being typed.
+    @State private var manualPlanName = ""
+    @State private var manualMeals: [ManualMeal] = [ManualMeal()]
 
     private let importer = DietPlanImporter()
 
@@ -50,6 +59,8 @@ struct DietCaptureView: View {
                 else { emptyState }
             case .capture:
                 scrolled { captureFlow }
+            case .manual:
+                scrolled { manualForm }
             case .confirm:
                 if let plan = pendingPlan { scrolled { confirmStep(plan) } } else { emptyState }
             }
@@ -95,6 +106,12 @@ struct DietCaptureView: View {
                     if let parseError { errorNote(parseError) }
                 }
             }
+
+            Button { startManual() } label: {
+                Text("Capture by hand instead")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            }
+            .buttonStyle(.plain)
         }
     }
 
@@ -143,6 +160,101 @@ struct DietCaptureView: View {
             planHeader("Review your plan", name: plan.name)
             mealList(plan)
             QuietButton("Save plan") { save(plan) }
+        }
+    }
+
+    // MARK: - Manual capture (FER-403)
+
+    /// Type a plan by hand (no LLM): plan name + meals (short name + foods), with equivalent options.
+    /// All-ink — there's no measured datum here, same as the BYO-LLM capture screen.
+    private var manualForm: some View {
+        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            header("Diet · by hand", "Build your plan")
+
+            VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+                Text("Plan name").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                manualField($manualPlanName, "Plan name")
+            }
+
+            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+                Text("Meals").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                ForEach($manualMeals) { meal in
+                    manualMealCard(meal)
+                }
+                addRow("Add meal") { manualMeals.append(ManualMeal()) }
+            }
+
+            QuietButton("Save plan") { saveManual() }
+                .disabled(!manualPlanIsValid)
+        }
+    }
+
+    private func manualMealCard(_ meal: Binding<ManualMeal>) -> some View {
+        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            manualField(meal.name, "Short name")
+            ForEach(meal.options) { option in
+                manualOption(option, isEquivalent: option.wrappedValue.id != meal.wrappedValue.options.first?.id)
+            }
+            addRow("Equivalent option") { meal.wrappedValue.options.append(ManualOption()) }
+        }
+        .padding(NoopMetrics.cardPadding)
+        .overlay(
+            RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                .strokeBorder(theme.hairline, lineWidth: 0.5)
+        )
+    }
+
+    private func manualOption(_ option: Binding<ManualOption>, isEquivalent: Bool) -> some View {
+        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+            if isEquivalent {
+                Text("or equivalent").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            }
+            ForEach(option.foods) { food in
+                HStack(spacing: NoopMetrics.space2) {
+                    manualField(food.text, "Food")
+                    Button {
+                        option.wrappedValue.foods.removeAll { $0.id == food.wrappedValue.id }
+                    } label: {
+                        Image(systemName: "xmark").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Remove food")
+                }
+            }
+            addRow("Add food") { option.wrappedValue.foods.append(ManualFood()) }
+        }
+    }
+
+    private func manualField(_ text: Binding<String>, _ placeholder: LocalizedStringKey) -> some View {
+        TextField(placeholder, text: text)
+            .font(StrandFont.body)
+            .foregroundStyle(theme.ink)
+            .padding(.horizontal, NoopMetrics.gap)
+            .padding(.vertical, NoopMetrics.space2)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous)
+                    .strokeBorder(theme.hairlineStrong, lineWidth: 1)
+            )
+    }
+
+    private func addRow(_ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: NoopMetrics.space2) {
+                Image(systemName: "plus")
+                Text(title)
+            }
+            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Savable once at least one meal has at least one option with a non-empty food.
+    private var manualPlanIsValid: Bool {
+        manualMeals.contains { meal in
+            meal.options.contains { option in
+                option.foods.contains { !$0.text.trimmingCharacters(in: .whitespaces).isEmpty }
+            }
         }
     }
 
@@ -411,6 +523,32 @@ struct DietCaptureView: View {
         pendingPlan = nil
         parseError = nil
         phase = .capture
+    }
+
+    private func startManual() {
+        manualPlanName = ""
+        manualMeals = [ManualMeal()]
+        pendingPlan = nil
+        parseError = nil
+        phase = .manual
+    }
+
+    /// Build a `noop.diet.v1` plan from the form (dropping empty foods/options) and save it. Validation
+    /// matches the importer: a meal needs ≥1 option with ≥1 food. No targets are invented; cycle = daily.
+    private func saveManual() {
+        let meals: [DietMeal] = manualMeals.compactMap { meal in
+            let options: [DietOption] = meal.options.compactMap { option in
+                let foods = option.foods.map { $0.text.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+                return foods.isEmpty ? nil : DietOption(foods: foods)
+            }
+            guard !options.isEmpty else { return nil }
+            return DietMeal(id: UUID().uuidString, name: meal.name.trimmingCharacters(in: .whitespaces),
+                            suggestedTime: nil, options: options, notes: nil)
+        }
+        guard !meals.isEmpty else { return }
+        let language: DietPlanLanguage = (Locale.current.language.languageCode?.identifier == "es") ? .es : .en
+        let plan = DietPlan(language: language, name: manualPlanName.trimmingCharacters(in: .whitespaces), meals: meals)
+        save(plan)
     }
 
     private func copyPrompt() {
