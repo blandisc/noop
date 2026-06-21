@@ -124,6 +124,8 @@ private struct BucleLanding: View {
                         awaitingDecisionHero
                     } else {
                         decisionSection
+                        senalesSection
+                        trayectoriaSection
                     }
                     metaSection
                     preguntaleEntry
@@ -251,12 +253,26 @@ private struct BucleLanding: View {
                     Text("Decisión de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     Image(systemName: "info.circle").font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
                 }
-                Text(verdictWord)
-                    .font(.system(size: 34, weight: .semibold))
-                    .foregroundStyle(theme.ink)
-                    .padding(.top, 10)
-                verdictReading
-                    .padding(.top, 10)
+                HStack(alignment: .center, spacing: 18) {
+                    RecoveryZoneGauge(score: recovery, label: "RECUPERACIÓN", theme: theme)
+                    VStack(alignment: .leading, spacing: 9) {
+                        Text(verdictWord)
+                            .font(.system(size: 30, weight: .semibold))
+                            .foregroundStyle(theme.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                        // The recovery figure lives in the gauge now, so the reading drops the «Recuperación X%»
+                        // prefix and shows just the engine's one-line summary (the «why» is the Señales row +
+                        // the explainer sheet). FER-292 v2.
+                        if let summary = readiness?.summary, !summary.isEmpty {
+                            Text(summary)
+                                .font(StrandFont.subhead)
+                                .foregroundStyle(theme.inkSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.top, 14)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
@@ -265,24 +281,92 @@ private struct BucleLanding: View {
         .accessibilityHint("Toca para ver por qué y qué hacer hoy")
     }
 
-    /// The reading: the verdict summary, with the recovery datum tinted green (the one colored datum).
-    @ViewBuilder private var verdictReading: some View {
-        if let rec = recovery {
-            (Text("Recuperación ")
-                + Text("\(Int(rec.rounded()))%").foregroundColor(theme.dataRecovery).bold()
-                + Text(". \(readiness?.summary ?? "")"))
-                .font(StrandFont.body)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        } else {
-            Text(readiness?.summary ?? "")
-                .font(StrandFont.body)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
+    private var verdictWord: String { BucleFormat.verdictWord(readiness?.level) }
+
+    // MARK: Señales de hoy (drivers of the verdict, FER-292 v2)
+
+    /// The up-to-3 leading signals behind the verdict, each a glanceable chip: label · flag dot · the
+    /// engine's compact read-out (σ / °C / load ratio) · a short lead clause of its read. Hidden when
+    /// there are no signals (cold start / awaiting). The full list lives in the explainer sheet.
+    @ViewBuilder private var senalesSection: some View {
+        if let r = readiness, !r.signals.isEmpty {
+            VStack(alignment: .leading, spacing: 13) {
+                Text("Señales de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                HStack(alignment: .top, spacing: 0) {
+                    let lead = Array(r.signals.prefix(3))
+                    ForEach(Array(lead.enumerated()), id: \.offset) { i, s in
+                        if i > 0 {
+                            Rectangle().fill(theme.hairline).frame(width: 1)
+                                .padding(.vertical, 2).padding(.horizontal, 13)
+                        }
+                        signalCell(s)
+                    }
+                }
+            }
+            .padding(.top, 16)
+            .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
         }
     }
 
-    private var verdictWord: String { BucleFormat.verdictWord(readiness?.level) }
+    private func signalCell(_ s: ReadinessEngine.Signal) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(s.label).font(.system(size: 9.5, weight: .semibold)).tracking(0.7).textCase(.uppercase)
+                .foregroundStyle(theme.inkTertiary)
+                .lineLimit(1).minimumScaleFactor(0.8)
+            HStack(spacing: 5) {
+                Circle().fill(signalFlagColor(s.flag)).frame(width: 8, height: 8)
+                Text(s.value ?? "—").font(StrandFont.mono(13, weight: .semibold)).foregroundStyle(theme.ink)
+                    .lineLimit(1).minimumScaleFactor(0.7)
+            }
+            Text(BucleFormat.signalShortDetail(s.detail))
+                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func signalFlagColor(_ flag: ReadinessEngine.Flag) -> Color {
+        switch flag {
+        case .good:    return theme.dataRecovery
+        case .neutral: return theme.inkTertiary
+        case .watch:   return theme.warning
+        case .bad:     return theme.critical
+        }
+    }
+
+    // MARK: Trayectoria · 14 días (FER-292 v2)
+
+    /// The 14-night recovery trajectory: a paper sparkline with a faint area, plus a «↑ N% vs media»
+    /// delta of today vs the window mean. Hidden until there are at least 2 nights to draw.
+    @ViewBuilder private var trayectoriaSection: some View {
+        if trendSpark.count >= 2 {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Tu recuperación · 14 días").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Spacer()
+                    if let d = trajectoryDelta {
+                        Text(d.text).font(StrandFont.captionNumber)
+                            .foregroundStyle(d.positive ? theme.positiveText : theme.critical)
+                    }
+                }
+                Sparkline(values: trendSpark,
+                          gradient: Gradient(colors: [theme.dataRecovery, theme.dataRecovery]),
+                          lineWidth: 2, showsArea: true, showsHead: true, showsScrub: false)
+                    .frame(height: 54)
+            }
+        }
+    }
+
+    /// Today's recovery vs the 14-day mean, as a signed «↑/↓ N% vs media». nil when the mean is ~0.
+    private var trajectoryDelta: (text: String, positive: Bool)? {
+        guard let last = trendSpark.last, trendSpark.count >= 2 else { return nil }
+        let mean = trendSpark.reduce(0, +) / Double(trendSpark.count)
+        guard mean > 0.5 else { return nil }
+        let pct = Int(((last - mean) / mean * 100).rounded())
+        if pct == 0 { return ("· en su media", true) }
+        let arrow = pct > 0 ? "↑" : "↓"
+        return ("\(arrow) \(abs(pct))% vs media", pct > 0)
+    }
 
     // MARK: Tu meta (ancla del simulador, FER-311)
 
@@ -424,20 +508,41 @@ private struct BucleLanding: View {
 
     private func leverRow(_ insight: Insight) -> some View {
         Button { detail = InsightItem(insight: insight) } label: {
-            HStack(alignment: .center) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(BucleFormat.behaviorName(insight)).font(StrandFont.headline).foregroundStyle(theme.ink)
-                    Text(confidenceLabel(insight)).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(BucleFormat.behaviorName(insight)).font(StrandFont.headline).foregroundStyle(theme.ink)
+                        // The metric this lever moves is now visible (was just «exploratorio · n»). FER-292 v2.
+                        Text("\(insight.datum.metric) · \(insight.evidence.n) noches")
+                            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    }
+                    Spacer()
+                    effectBadge(insight)
+                    Image(systemName: "chevron.right").font(.system(size: 15))
+                        .foregroundStyle(theme.inkTertiary).padding(.leading, 10)
                 }
-                Spacer()
-                effectBadge(insight)
-                Image(systemName: "chevron.right").font(.system(size: 15))
-                    .foregroundStyle(theme.inkTertiary).padding(.leading, 10)
+                // With / without comparison — the means the engine measured, drawn as a dumbbell. The
+                // metric name above carries the unit, so the values stay bare numbers (no unit mismatch).
+                if let bd = insight.behaviorBreakdown {
+                    BehaviorDumbbell(
+                        meanWith: bd.meanWith, meanWithout: bd.meanWithout,
+                        withText: formatMean(bd.meanWith), withoutText: formatMean(bd.meanWithout),
+                        withIsBetter: BucleFormat.withIsBetter(metric: insight.datum.metric,
+                                                               meanWith: bd.meanWith, meanWithout: bd.meanWithout),
+                        hue: BucleFormat.metricColor(insight.datum.metric, theme), theme: theme)
+                }
             }
             .padding(.vertical, 13)
             .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+
+    /// A behaviour-breakdown mean as a bare figure: one decimal when it isn't a whole number, else an
+    /// integer. The unit lives in the lever's «<métrica> · n noches» subtitle, so no suffix here.
+    private func formatMean(_ v: Double) -> String {
+        v == v.rounded() ? String(Int(v.rounded())) : String(format: "%.1f", v)
     }
 
     // MARK: Prueba (experimentos N-of-1, FER-307)
@@ -639,25 +744,21 @@ private struct BucleLanding: View {
 
     private func findingRow(_ insight: Insight) -> some View {
         Button { detail = InsightItem(insight: insight) } label: {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 13) {
+                // A drawn mark per finding type (relación / tendencia / anomalía); other kinds show none.
+                BucleFormat.findingGlyph(insight, trendSpark: trendSpark, theme: theme)
+                VStack(alignment: .leading, spacing: 3) {
                     Text(BucleFormat.kindLabel(insight.kind)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     Text(insight.title).font(StrandFont.headline).foregroundStyle(theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text(insight.reading).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    if insight.kind == .trend {
-                        BucleFormat.trendSparkline(trendSpark,
-                                                   color: BucleFormat.metricColor(insight.datum.metric, theme))
-                            .padding(.top, 4)
-                    }
                 }
-                Spacer()
+                Spacer(minLength: 8)
                 Image(systemName: "chevron.right").font(.system(size: 15))
-                    .foregroundStyle(theme.inkTertiary).padding(.top, 2)
+                    .foregroundStyle(theme.inkTertiary)
             }
             .padding(.vertical, 13)
             .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -670,10 +771,20 @@ private struct BucleLanding: View {
             Button { showAnota = true } label: {
                 HStack(spacing: 13) {
                     Image(systemName: "square.and.pencil").font(.system(size: 20)).foregroundStyle(theme.inkSecondary)
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 7) {
                         Text(journalAnswered > 0 ? "\(journalAnswered) de \(journalTotal) anotados hoy" : "Marca qué pasó hoy")
                             .font(StrandFont.headline).foregroundStyle(theme.ink).monospacedDigit()
-                        Text("Alimenta tus palancas").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                        if journalAnswered > 0 {
+                            // Progress segments: answered in ink, the rest in the warm divider tone (FER-292 v2 §D).
+                            HStack(spacing: 5) {
+                                ForEach(0..<max(journalTotal, 1), id: \.self) { i in
+                                    Capsule().fill(i < journalAnswered ? theme.ink : theme.hairline)
+                                        .frame(width: 22, height: 5)
+                                }
+                            }
+                        } else {
+                            Text("Alimenta tus palancas").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                        }
                     }
                     Spacer()
                     Image(systemName: "chevron.right").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
@@ -781,18 +892,6 @@ private struct BucleLanding: View {
             if out.count == 2 { break }
         }
         return out
-    }
-
-    // MARK: Formatting helpers
-
-    private func confidenceLabel(_ insight: Insight) -> String {
-        let conf: String
-        switch insight.confidence {
-        case .candidate: conf = "candidato"
-        case .proven:    conf = "probado"
-        case .medium:    conf = "exploratorio"
-        }
-        return "\(conf) · \(insight.evidence.n) noches"
     }
 
     // MARK: Load
