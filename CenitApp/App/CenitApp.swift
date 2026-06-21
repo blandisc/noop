@@ -31,6 +31,10 @@ struct CenitApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                // FER-394: cap Dynamic Type at xxxLarge — reading text scales with the user's
+                // text-size setting, but we don't promise the 5 giant Accessibility sizes (they'd
+                // break the dense glanceable layouts). Sheets inherit this clamp.
+                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 .environmentObject(model)
                 .environmentObject(model.live)
                 .environmentObject(model.repo)

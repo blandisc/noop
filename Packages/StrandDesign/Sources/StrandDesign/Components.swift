@@ -119,7 +119,9 @@ public struct StatTile: View {
                 .padding(.top, 2)
             }
         }
-        .frame(height: NoopMetrics.tileHeight)
+        // FER-394: minHeight (not a fixed height) so the tile grows instead of clipping text at
+        // large Dynamic Type; at the default size the content fits, so the tile == tileHeight.
+        .frame(minHeight: NoopMetrics.tileHeight)
     }
 }
 

@@ -195,6 +195,7 @@ struct LiveView: View {
             HStack(alignment: .firstTextBaseline, spacing: 7) {
                 Text(displayHR.map(String.init) ?? "—")
                     .font(.system(size: 56, weight: .semibold).monospacedDigit())
+                    .lineLimit(1).minimumScaleFactor(0.6)   // FER-394: never overflow on 375pt
                     .foregroundStyle(displayHR == nil ? theme.inkTertiary : theme.dataHeart)
                     .contentTransition(.numericText())
                     .animation(.snappy, value: displayHR)
