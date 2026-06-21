@@ -90,7 +90,7 @@ public struct RecoveryZoneGauge: View {
 
     private var valueRing: some View {
         let d = diameter * (94.0 / 128.0)
-        let w = 9 * scale
+        let w = 6 * scale
         return ZStack {
             Circle().stroke(theme.hairline, lineWidth: w)
             if score != nil {
@@ -116,9 +116,9 @@ public struct RecoveryZoneGauge: View {
                 Text("—").instrumentoHero(38 * scale).foregroundStyle(theme.inkDim)
             }
             Text(label)
-                .font(.system(size: 9 * scale, weight: .medium))
+                .font(.system(size: 9 * scale, weight: .semibold))
                 .tracking(0.6)
-                .foregroundStyle(theme.inkTertiary)
+                .foregroundStyle(theme.inkSecondary)
         }
     }
 }

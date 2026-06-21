@@ -105,8 +105,6 @@ private struct BucleLanding: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
-                header
-
                 if genuineColdStart {
                     coldStartHero
                     preguntaleEntry
@@ -208,72 +206,73 @@ private struct BucleLanding: View {
         }
     }
 
-    // MARK: Header
+    // MARK: On-device chip
 
-    private var header: some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text(headerLabel).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Spacer()
-            Button { info = .onDevice } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "cpu").font(.system(size: 11, weight: .medium))
-                    Text("On-device").font(StrandFont.captionNumber)
-                    Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold))
-                }
-                .foregroundStyle(theme.inkTertiary)
-                .padding(.horizontal, 8).padding(.vertical, 3)
-                .overlay(Capsule().stroke(theme.hairlineStrong, lineWidth: 1))
+    /// The «On-device» affordance — opens the «qué significa on-device» explainer. Lives in the top
+    /// row of each Decisión state (the date header was retired in FER-436), so it's never lost.
+    private var onDeviceChip: some View {
+        Button { info = .onDevice } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "cpu").font(.system(size: 11, weight: .medium))
+                Text("On-device").font(StrandFont.captionNumber)
+                Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold))
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Qué significa on-device")
+            .foregroundStyle(theme.inkTertiary)
+            .padding(.horizontal, 8).padding(.vertical, 3)
+            .overlay(Capsule().stroke(theme.hairlineStrong, lineWidth: 1))
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Qué significa on-device")
     }
-
-    private var headerLabel: String { "Coach · \(Self.dateFormatter.string(from: Date()))" }
-
-    /// Allocated once (DateFormatter init is expensive) — the header date is es-MX «EEE d MMM».
-    private static let dateFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "es_MX")
-        f.dateFormat = "EEE d MMM"
-        return f
-    }()
 
     // MARK: Decisión de hoy (héroe)
 
     private var decisionSection: some View {
-        Button { showDecision = true } label: {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: 6) {
-                    Text("Decisión de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    Image(systemName: "info.circle").font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
-                }
-                HStack(alignment: .center, spacing: 18) {
-                    RecoveryZoneGauge(score: recovery, label: "RECUPERACIÓN", theme: theme)
-                    VStack(alignment: .leading, spacing: 9) {
-                        Text(verdictWord)
-                            .font(.system(size: 30, weight: .semibold))
-                            .foregroundStyle(theme.ink)
-                            .fixedSize(horizontal: false, vertical: true)
-                        // The recovery figure lives in the gauge now, so the reading drops the «Recuperación X%»
-                        // prefix and shows just the engine's one-line summary (the «why» is the Señales row +
-                        // the explainer sheet). FER-292 v2.
-                        if let summary = readiness?.summary, !summary.isEmpty {
-                            Text(summary)
-                                .font(StrandFont.subhead)
-                                .foregroundStyle(theme.inkSecondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .padding(.top, 14)
+        VStack(alignment: .leading, spacing: 0) {
+            // Top row: the overline + the On-device chip (the date header was retired, FER-436). The chip
+            // is its own button, so it stays OUTSIDE the hero button below (no nested tap targets).
+            HStack(spacing: 6) {
+                Text("Decisión de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Spacer()
+                onDeviceChip
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
+            Button { showDecision = true } label: {
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(alignment: .center, spacing: 18) {
+                        RecoveryZoneGauge(score: recovery, label: "RECUPERACIÓN", theme: theme)
+                        VStack(alignment: .leading, spacing: 9) {
+                            Text(verdictWord)
+                                .font(.system(size: 30, weight: .semibold))
+                                .foregroundStyle(theme.ink)
+                                .fixedSize(horizontal: false, vertical: true)
+                            // The recovery figure lives in the gauge now, so the reading drops the «Recuperación X%»
+                            // prefix and shows just the engine's one-line summary (the «why» is the Señales row +
+                            // the explainer sheet). FER-292 v2.
+                            if let summary = readiness?.summary, !summary.isEmpty {
+                                Text(summary)
+                                    .font(StrandFont.subhead)
+                                    .foregroundStyle(theme.inkSecondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .padding(.top, 14)
+                    // Visible affordance that the hero opens the «por qué / qué hacer hoy» explainer (FER-436).
+                    HStack(spacing: 4) {
+                        Text("Ver por qué").font(StrandFont.captionNumber)
+                        Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
+                    }
+                    .foregroundStyle(theme.inkSecondary)
+                    .padding(.top, 12)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("Toca para ver por qué y qué hacer hoy")
         }
-        .buttonStyle(.plain)
-        .accessibilityHint("Toca para ver por qué y qué hacer hoy")
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var verdictWord: String { BucleFormat.verdictWord(readiness?.level) }
@@ -346,7 +345,7 @@ private struct BucleLanding: View {
                 }
                 Sparkline(values: trendSpark,
                           gradient: Gradient(colors: [theme.dataRecovery, theme.dataRecovery]),
-                          lineWidth: 2, showsArea: true, showsHead: true, showsScrub: false)
+                          lineWidth: 2, showsArea: true, showsHead: true, showsScrub: true)
                     .frame(height: 54)
             }
         }
@@ -406,7 +405,11 @@ private struct BucleLanding: View {
 
     private var coldStartHero: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Decisión de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            HStack(spacing: 6) {
+                Text("Decisión de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Spacer()
+                onDeviceChip
+            }
             Text("Aún reuniendo señal")
                 .font(.system(size: 26, weight: .semibold))
                 .foregroundStyle(theme.ink)
@@ -436,7 +439,11 @@ private struct BucleLanding: View {
     /// correlaciones de abajo siguen visibles (vienen del historial, no de hoy). FER-340.
     private var awaitingDecisionHero: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Decisión de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            HStack(spacing: 6) {
+                Text("Decisión de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Spacer()
+                onDeviceChip
+            }
             Text("Esperando la lectura de hoy")
                 .font(.system(size: 26, weight: .semibold))
                 .foregroundStyle(theme.ink)
@@ -566,7 +573,7 @@ private struct BucleLanding: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Prueba").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             Text("Pon a prueba una idea").font(StrandFont.headline).foregroundStyle(theme.ink)
-            Text("Cuando el Bucle vea un hábito que va con tu recuperación, te propondrá probarlo una semana para confirmarlo en tu cuerpo. Empieza por anotar tus días.")
+            Text("Cuando Cénit encuentre un hábito ligado a tu recuperación, te propondrá probarlo una semana para confirmar su efecto en tu cuerpo. Empieza por anotar tus días.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             Button { showAnota = true } label: {
@@ -994,6 +1001,15 @@ private struct BucleLanding: View {
 
     private static let dayParse: DateFormatter = {
         let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; f.locale = Locale(identifier: "en_US_POSIX")
+        return f
+    }()
+
+    /// es-MX «EEE d MMM» (e.g. «vie 26 jun») for `dayLongLabel`. (Was shared with the retired date
+    /// header; now the experiment-end label is its only user. FER-436.)
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "es_MX")
+        f.dateFormat = "EEE d MMM"
         return f
     }()
 }
