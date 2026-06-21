@@ -3,6 +3,7 @@ import SwiftUI
 import StrandDesign
 import StrandTraining
 import StrandAnalytics
+import WhoopProtocol
 import WhoopStore
 
 // Plate weights read cleaner without a trailing «.0» (60, not 60.0) but keep a half-plate decimal (2.5).
@@ -108,6 +109,9 @@ final class StrengthSessionModel: ObservableObject {
     /// `summaryPhase` (FER-409). Computed once at finish in `AppModel`; the session stays alive until the
     /// user taps «Listo» so the summary has somewhere to live.
     @Published var summary: StrengthSummary?
+    /// Strap HR captured during the session (FER-399), in memory only — fed by `AppModel.ingestHR` on the
+    /// main actor. Drives avgHr/strain + the Keytel calorie estimate at finish; never persisted as a series.
+    var hrSamples: [HRSample] = []
 
     init(id: String = UUID().uuidString, routineId: String?, routineName: String,
          startTs: Int, runs: [ExerciseRun]) {

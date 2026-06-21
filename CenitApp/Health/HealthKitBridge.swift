@@ -3,6 +3,7 @@ import Foundation
 import HealthKit
 import StrandAnalytics
 import StrandImport
+import WhoopProtocol
 import WhoopStore
 
 /// Two-way Apple Health bridge for the iOS app.
@@ -383,7 +384,8 @@ final class HealthKitBridge: ObservableObject {
     /// duplicating it. The estimated active-energy sample inside `[start, end]` is what lets the iPhone's
     /// **Move ring** credit the session (no Apple Watch needed). Energy is a MET-based estimate
     /// (`Calories.estimateStrengthCalories`, Ainsworth 2011) — the session records no per-second HR.
-    func saveStrengthWorkoutIfEnabled(sessionId: String, start: Date, end: Date, profile: UserProfile) async {
+    func saveStrengthWorkoutIfEnabled(sessionId: String, start: Date, end: Date, profile: UserProfile,
+                                      hrSamples: [HRSample] = [], hrMax: Int? = nil) async {
         guard UserDefaults.standard.bool(forKey: Self.saveStrengthWorkoutsKey) else { return }
         guard HKHealthStore.isHealthDataAvailable(), end > start else { return }
         // Gate on the workout share grant directly (independent of the read connection): if the user
@@ -393,7 +395,10 @@ final class HealthKitBridge: ObservableObject {
             return
         }
 
-        let kcal = Calories.estimateStrengthCalories(durationSeconds: end.timeIntervalSince(start), profile: profile)
+        // Keytel when the session carried strap HR (FER-399), MET otherwise. Camino B: the HR only feeds
+        // the estimate — it is NOT written to Apple Health as heart-rate samples.
+        let kcal = Calories.estimateStrengthEnergy(hrSamples: hrSamples, durationSeconds: end.timeIntervalSince(start),
+                                                   profile: profile, hrMax: hrMax.map(Double.init))
         let externalUUID = "noop:strength:\(sessionId)"
         let config = HKWorkoutConfiguration()
         config.activityType = .traditionalStrengthTraining
