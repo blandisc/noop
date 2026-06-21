@@ -5,6 +5,7 @@ import StrandDesign
 import StrandImport
 import StrandAnalytics
 import WhoopStore
+import UIKit       // UIApplication.openSettingsURLString (open Settings when notifications are denied)
 
 /// Diet capture + daily tracker — the plan your nutritionist gave you, and how you follow it (FER-371/372).
 ///
@@ -45,6 +46,9 @@ struct DietCaptureView: View {
     @State private var todayOptions: [String: Int] = [:]   // mealId → chosen equivalent option (FER-401)
     @State private var adherence7d: [Double] = []
     @State private var heatDays: [RecoveryDay] = []   // last 90 days for the adherence heatmap (FER-410)
+    // Meal reminders (FER-412): opt-in local notifications at each meal's suggested time.
+    @State private var remindersOn = false
+    @State private var reminderAuthDenied = false
     @State private var todayKey = ""
     @State private var selectedDay = ""
     // Manual capture (FER-403): the form being typed.
@@ -275,6 +279,7 @@ struct DietCaptureView: View {
                 indications(plan)
             }
             adherenceCalendar
+            remindersRow
             QuietButton("Replace plan") { startCapture() }
         }
     }
@@ -362,6 +367,85 @@ struct DietCaptureView: View {
             let key = Repository.localDayKey(date)
             return RecoveryDay(date: date.addingTimeInterval(12 * 3600), score: byDay[key])
         }
+    }
+
+    /// Opt-in local meal reminders (FER-412). Off by default; on schedules one daily notification per
+    /// meal that declares a time. The switch tints with the data hue (the app accent); everything else
+    /// is ink. Disabled when the plan declares no times; shows an «Open Settings» path when denied.
+    @ViewBuilder
+    private var remindersRow: some View {
+        let slots = activeParsed.map { DietReminderScheduler.reminderSlots($0.meals) } ?? []
+        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            HStack(alignment: .top, spacing: NoopMetrics.gap) {
+                VStack(alignment: .leading, spacing: NoopMetrics.space1) {
+                    Text("Meal reminders").font(StrandFont.body).foregroundStyle(theme.ink)
+                    Text(reminderSubtitle(hasTimes: !slots.isEmpty, count: slots.count))
+                        .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: NoopMetrics.gap)
+                Toggle("", isOn: Binding(get: { remindersOn }, set: { setReminders($0) }))
+                    .labelsHidden()
+                    .tint(theme.dataRecovery)
+                    .disabled(slots.isEmpty)
+                    .accessibilityLabel("Meal reminders")
+            }
+            if remindersOn, !slots.isEmpty {
+                VStack(alignment: .leading, spacing: NoopMetrics.space1) {
+                    ForEach(Array(slots.enumerated()), id: \.offset) { _, slot in
+                        HStack {
+                            Text(verbatim: slot.title).font(StrandFont.footnote).foregroundStyle(theme.ink)
+                            Spacer()
+                            Text(verbatim: String(format: "%02d:%02d", slot.hour, slot.minute))
+                                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).monospacedDigit()
+                        }
+                    }
+                }
+            }
+            if reminderAuthDenied {
+                Button { openSystemSettings() } label: {
+                    Text("Open Settings").font(StrandFont.subhead).foregroundStyle(theme.dataRecovery)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private func reminderSubtitle(hasTimes: Bool, count: Int) -> LocalizedStringKey {
+        if !hasTimes { return "Your plan has no suggested times." }
+        if reminderAuthDenied { return "Notifications are turned off." }
+        if remindersOn { return "On · \(count) meals with a time." }
+        return "We'll remind you at each meal's time. All on your iPhone."
+    }
+
+    /// Reflect the saved opt-in + current authorization, and rebuild the schedule from the active plan.
+    private func syncReminderState() async {
+        let enabled = DietReminderScheduler.isEnabled
+        let status = await DietReminderScheduler.authorizationStatus()
+        remindersOn = enabled && status == .authorized
+        reminderAuthDenied = enabled && status == .denied
+        if remindersOn, let meals = activeParsed?.meals { await DietReminderScheduler.reschedule(meals) }
+    }
+
+    private func setReminders(_ on: Bool) {
+        if on {
+            Task {
+                let granted = await DietReminderScheduler.requestAuthorization()
+                DietReminderScheduler.isEnabled = granted
+                remindersOn = granted
+                reminderAuthDenied = !granted
+                if granted, let meals = activeParsed?.meals { await DietReminderScheduler.reschedule(meals) }
+            }
+        } else {
+            DietReminderScheduler.isEnabled = false
+            remindersOn = false
+            reminderAuthDenied = false
+            Task { await DietReminderScheduler.cancelAll() }
+        }
+    }
+
+    private func openSystemSettings() {
+        if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
     }
 
     /// Day navigation (FER-402): ‹ date › steps one day at a time; the forward arrow is disabled on
@@ -585,6 +669,7 @@ struct DietCaptureView: View {
         activePlan = await repo.activeDietPlan()
         activeParsed = activePlan.flatMap { try? importer.parse(text: $0.payloadJSON) }
         if activePlan != nil { await loadTrackerData() }
+        await syncReminderState()
         loaded = true
     }
 
@@ -735,6 +820,7 @@ struct DietCaptureView: View {
             activePlan = await repo.activeDietPlan()
             activeParsed = plan
             await loadTrackerData()
+            await DietReminderScheduler.reschedule(plan.meals)   // new plan → re-aim reminders (FER-412)
             pasteText = ""
             pendingPlan = nil
             parseError = nil
