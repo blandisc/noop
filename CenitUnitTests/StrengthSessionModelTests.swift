@@ -168,4 +168,83 @@ final class StrengthSessionModelTests: XCTestCase {
         let (_, sets) = s.buildForSave(deviceId: nil, endTs: 9000)
         XCTAssertTrue(sets.isEmpty, "a skipped exercise's sets don't persist")
     }
+
+    // MARK: Foco variants by exercise type (FER-351)
+
+    private func slot(_ exId: String, type: ExerciseType, sets: Int = 1, reps: Int? = nil) -> StrengthSessionModel.PlanSlot {
+        StrengthSessionModel.PlanSlot(re: re("re-\(exId)", exerciseId: exId, sets: sets, reps: reps),
+                                      exercise: ex(exId, exId.capitalized, type: type), lastSets: [])
+    }
+
+    func testWeightRepsPersistsOnlyWeightAndReps() {
+        let s = make([StrengthSessionModel.PlanSlot(
+            re: re("a", exerciseId: "bench", sets: 1, reps: 8, weight: 80),
+            exercise: ex("bench", "Bench"), lastSets: [])])
+        s.registerCurrentSet()
+        let set = s.buildForSave(deviceId: nil, endTs: 1).1.first
+        XCTAssertEqual(set?.weightKg, 80)
+        XCTAssertEqual(set?.reps, 8)
+        XCTAssertNil(set?.timeS)
+        XCTAssertNil(set?.distanceM)
+    }
+
+    func testBodyweightPersistsRepsAndOptionalLastre() {
+        let s = make([slot("pull", type: .bodyweight, reps: 8)])
+        XCTAssertEqual(s.currentSet?.reps, 8, "reps seed the bodyweight set")
+        s.bumpWeight(byKg: 10)                      // add lastre
+        s.registerCurrentSet()
+        let set = s.buildForSave(deviceId: nil, endTs: 1).1.first
+        XCTAssertEqual(set?.reps, 8)
+        XCTAssertEqual(set?.weightKg, 10, "the optional lastre persists")
+        XCTAssertNil(set?.timeS)
+    }
+
+    func testBodyweightWithoutLastrePersistsNoWeight() {
+        let s = make([slot("push", type: .bodyweight, reps: 12)])
+        s.registerCurrentSet()
+        let set = s.buildForSave(deviceId: nil, endTs: 1).1.first
+        XCTAssertEqual(set?.reps, 12)
+        XCTAssertNil(set?.weightKg, "bodyweight only → no weight stored")
+    }
+
+    func testTimeSetRegistersElapsedAndNoReps() {
+        let s = make([slot("plank", type: .time)])
+        XCTAssertEqual(s.currentSet?.reps, 0, "time sets carry no reps")
+        s.startSetTimer(now: Date(timeIntervalSince1970: 1000))
+        XCTAssertEqual(s.timerElapsed(now: Date(timeIntervalSince1970: 1042)), 42)
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 1042))   // register = stop & save
+        XCTAssertNil(s.timerStart, "the stopwatch is cleared after register")
+        let set = s.buildForSave(deviceId: nil, endTs: 1).1.first
+        XCTAssertEqual(set?.timeS, 42)
+        XCTAssertNil(set?.reps, "a time set persists no reps")
+        XCTAssertNil(set?.weightKg)
+    }
+
+    func testStopTimerAccumulates() {
+        let s = make([slot("plank", type: .time)])
+        s.startSetTimer(now: Date(timeIntervalSince1970: 0))
+        s.stopSetTimer(now: Date(timeIntervalSince1970: 20))
+        XCTAssertEqual(s.runs[0].sets[0].timeS, 20)
+        s.startSetTimer(now: Date(timeIntervalSince1970: 100))
+        s.stopSetTimer(now: Date(timeIntervalSince1970: 110))
+        XCTAssertEqual(s.runs[0].sets[0].timeS, 30, "a second run accumulates onto the prior elapsed")
+    }
+
+    func testDistanceSetPersistsDistanceAndTime() {
+        let s = make([slot("run", type: .distance)])
+        s.bumpDistance(byMeters: 2400)
+        s.startSetTimer(now: Date(timeIntervalSince1970: 0))
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 750))   // 12:30
+        let set = s.buildForSave(deviceId: nil, endTs: 1).1.first
+        XCTAssertEqual(set?.distanceM, 2400)
+        XCTAssertEqual(set?.timeS, 750)
+        XCTAssertNil(set?.reps, "a distance set persists no reps")
+    }
+
+    func testTimerResetsWhenSelectingAnotherSet() {
+        let s = make([slot("plank", type: .time, sets: 2)])
+        s.startSetTimer(now: Date(timeIntervalSince1970: 0))
+        s.select(exerciseIndex: 0, setIndex: 1)
+        XCTAssertNil(s.timerStart, "switching sets cancels a running stopwatch")
+    }
 }
