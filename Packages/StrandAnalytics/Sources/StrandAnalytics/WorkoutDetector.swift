@@ -373,4 +373,21 @@ public enum Calories {
             : hrSamples
         return estimateBoutCalories(samples, profile: profile, hrmax: hrmax, restingHR: restingHR).0
     }
+
+    // MARK: - Strength sessions (MET-based, no HR)
+
+    /// Estimate active energy (kcal) for a strength session from duration and body mass alone — a
+    /// guided strength session records no per-second HR, so the HR-based `estimateBoutCalories`
+    /// (Keytel) doesn't apply. MET method from the **Compendium of Physical Activities (Ainsworth
+    /// et al. 2011)**: resistance training ≈ 3.5 MET (8–15 reps, varied resistance) — the moderate
+    /// value, since a session doesn't measure effort. `kcal = MET × bodyMassKg × hours`. APPROXIMATE
+    /// — not laboratory calorimetry, not medical advice. Falls back to 70 kg when the profile carries
+    /// no weight (mirrors `estimateBoutCalories`); duration is clamped to [0, 6 h] so a bad end
+    /// timestamp can't produce a runaway number.
+    public static func estimateStrengthCalories(durationSeconds: Double, profile: UserProfile) -> Double {
+        let met = 3.5   // Compendium resistance training, 8–15 reps, varied resistance (Ainsworth 2011)
+        let seconds = min(max(durationSeconds, 0), 6 * 3600)
+        let weightKg = profile.weightKg > 0 ? profile.weightKg : 70.0
+        return met * weightKg * (seconds / 3600.0)
+    }
 }

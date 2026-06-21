@@ -386,13 +386,23 @@ final class AppModel: ObservableObject {
         strengthSession = nil
         strengthSheetPresented = false
         guard save, let session, session.doneCount > 0 else { return }
-        let (record, sets) = session.buildForSave(deviceId: deviceId,
-                                                  endTs: Int(Date().timeIntervalSince1970))
+        let endTs = Int(Date().timeIntervalSince1970)
+        let (record, sets) = session.buildForSave(deviceId: deviceId, endTs: endTs)
+        // Snapshot the profile on the main actor for the calorie estimate before hopping off it.
+        let userProfile = UserProfile(weightKg: profile.weightKg, heightCm: profile.heightCm,
+                                      age: Double(profile.age), sex: profile.sex)
         Task { [weak self] in
             guard let self else { return }
             if let store = await self.repo.storeHandle() {
                 try? await store.saveSession(record, sets: sets)
             }
+            // Opt-in mirror to Apple Health (FER-390): a no-op unless the user enabled it. Runs AFTER
+            // the local save (the source of truth) and never throws — Health is strictly best-effort.
+            await self.healthBridge?.saveStrengthWorkoutIfEnabled(
+                sessionId: record.id,
+                start: Date(timeIntervalSince1970: TimeInterval(record.startTs)),
+                end: Date(timeIntervalSince1970: TimeInterval(endTs)),
+                profile: userProfile)
         }
     }
 
