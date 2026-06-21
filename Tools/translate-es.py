@@ -18,6 +18,9 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
+    # FER-388 — Patrones de estrés por evento
+    '«%@» tends to coincide with higher stress.': '«%@» tiende a coincidir con tu estrés alto.',
+    '«%@» tends to coincide with lower stress.': '«%@» tiende a coincidir con tu estrés bajo.',
     # FER-378 — Patrones de estrés por momento del día
     'Your patterns': 'Tus patrones',
     'Information about your stress patterns': 'Información sobre tus patrones de estrés',

@@ -31866,6 +31866,38 @@
           }
         }
       }
+    },
+    "«%@» tends to coincide with higher stress.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«%@» tends to coincide with higher stress."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«%@» tiende a coincidir con tu estrés alto."
+          }
+        }
+      }
+    },
+    "«%@» tends to coincide with lower stress.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«%@» tends to coincide with lower stress."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«%@» tiende a coincidir con tu estrés bajo."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

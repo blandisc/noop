@@ -297,6 +297,7 @@ private struct CuerpoLanding: View {
             // Patterns load + the Coach handoff (FER-378): tap → close sheet, jump to the Coach tab.
             StressDetailScreen(theme: theme, model: item.model, dayMap: stressDayMap,
                                patternsLoader: { await loadStressPatterns() },
+                               eventPatternsLoader: { await loadEventStressPatterns() },
                                onExploreInCoach: { stressDetail = nil; tabRouter.select(.coach) })
         }
         .sheet(item: $skinTempDetail) { item in
@@ -629,6 +630,16 @@ private struct CuerpoLanding: View {
         let resting = resolveMeasured { $0.restingHr.map(Double.init) }?.value ?? StrainScorer.defaultRestingHR
         await repo.backfillStressSummaries(restingHR: resting, maxHR: Double(model.profile.hrMax))
         return StressTimeOfDayPatterns.detect(summariesByDay: await repo.stressDaySummaries())
+    }
+
+    /// Cross-day «by calendar-event» stress patterns (FER-388): the daily summaries are already
+    /// backfilled by `loadStressPatterns` (which runs first); here we just read them as the outcome and
+    /// cross with a single on-device EventKit read of recurring event titles. Nothing is persisted.
+    private func loadEventStressPatterns() async -> [StressEventPatterns.Pattern] {
+        guard let map = stressDayMap else { return [] }
+        let dayMeans = (await repo.stressDaySummaries()).compactMapValues { $0.dayMean }
+        guard !dayMeans.isEmpty else { return [] }
+        return StressEventPatterns.detect(eventDaysByType: map.eventDaysByTitle(), dayMeanByDay: dayMeans)
     }
 
     private var hrvStat: some View {
