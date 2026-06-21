@@ -77,12 +77,10 @@ final class NOOPScreenshotTests: XCTestCase {
         // English `tabItem` titles (the hidden native bar still exposes them to XCUI). En vivo is no
         // longer a tab — it opens as a cover from Today's "beat by beat", so it's not swept here.
         wait(1);  snap("today")
-        tap(tab: "Body"); wait(2); snap("trends")   // Cuerpo → TrendsView (interim)
+        tap(tab: "Body"); wait(2); snap("trends")   // Cuerpo (snapshot histórico «trends»)
 
-        // Coach hub → its three insight surfaces.
+        // Coach.
         captureHub(tab: "Coach", screens: [
-            ("Intelligence", "intelligence"),
-            ("Insights",     "insights"),
             ("Coach",        "coach"),
         ])
 
@@ -99,8 +97,6 @@ final class NOOPScreenshotTests: XCTestCase {
             ("Sleep",        "sleep"),
             ("Compare",      "compare"),
             ("Workouts",     "workouts"),
-            ("Health",       "health"),
-            ("Stress",       "stress"),
             ("Apple Health", "apple-health"),
             ("Data Sources", "data-sources"),
             ("Automations",  "automations"),
