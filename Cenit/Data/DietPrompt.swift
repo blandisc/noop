@@ -38,6 +38,9 @@ enum DietPrompt {
     - NO inventes calorías ni macros. Llena "objetivos_diarios" SOLO con números que el plan
       declare; si no, déjalo {}.
     - "hora_sugerida" solo si el plan la indica (24h "HH:MM"). Lineamientos generales van en "reglas".
+    - Ciclo: si comes lo MISMO todos los días, deja "ciclo":"diario" y NO agregues "dias". Si el plan
+      VARÍA por día de la semana, pon "ciclo":"semanal" y en cada comida agrega "dias" con los días en
+      que aplica, como números 1=lunes … 7=domingo (ej. "dias":[1,3,5] = lun/mié/vie).
 
     Aquí está mi plan:
     [pega tu dieta o adjunta la foto]
@@ -67,6 +70,9 @@ enum DietPrompt {
     - DO NOT invent calories or macros. Fill "objetivos_diarios" ONLY with numbers the plan
       states; otherwise leave it {}.
     - "hora_sugerida" only if the plan indicates it (24h "HH:MM"). General guidelines go in "reglas".
+    - Cycle: if you eat the SAME every day, keep "ciclo":"diario" and DON'T add "dias". If the plan
+      VARIES by day of the week, set "ciclo":"semanal" and add "dias" to each meal with the days it
+      applies, as numbers 1=Monday … 7=Sunday (e.g. "dias":[1,3,5] = Mon/Wed/Fri).
 
     Here is my plan:
     [paste your diet or attach the photo]

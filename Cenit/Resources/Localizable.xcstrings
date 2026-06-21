@@ -32238,6 +32238,91 @@
           }
         }
       }
+    },
+    "Rest day · no meals planned": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rest day · no meals planned"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Día libre · sin comidas hoy"
+          }
+        }
+      }
+    },
+    "Rest day — your plan has no meals today. Come back tomorrow or use ‹ ›.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rest day — your plan has no meals today. Come back tomorrow or use ‹ ›."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Día libre — tu plan no tiene comidas hoy. Vuelve mañana o usa ‹ ›."
+          }
+        }
+      }
+    },
+    "That plan's cycle isn't supported — it must be daily or weekly.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That plan's cycle isn't supported — it must be daily or weekly."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El ciclo de ese plan no es válido — debe ser diario o semanal."
+          }
+        }
+      }
+    },
+    "One of the meals has invalid days — use weekday numbers 1–7. Check the file and try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One of the meals has invalid days — use weekday numbers 1–7. Check the file and try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una comida tiene días inválidos — usa números de día 1–7. Revisa el archivo e inténtalo de nuevo."
+          }
+        }
+      }
+    },
+    "A weekly plan needs each meal's days. Check the file and try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A weekly plan needs each meal's days. Check the file and try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un plan semanal necesita los días de cada comida. Revisa el archivo e inténtalo de nuevo."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

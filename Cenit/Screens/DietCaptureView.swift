@@ -27,7 +27,10 @@ struct DietCaptureView: View {
     /// `noop.diet.v1` — a meal has a short name and ≥1 option (equivalent), each a list of foods.
     private struct ManualFood: Identifiable { let id = UUID(); var text = "" }
     private struct ManualOption: Identifiable { let id = UUID(); var foods: [ManualFood] = [ManualFood()] }
-    private struct ManualMeal: Identifiable { let id = UUID(); var name = ""; var options: [ManualOption] = [ManualOption()] }
+    private struct ManualMeal: Identifiable {
+        let id = UUID(); var name = ""; var options: [ManualOption] = [ManualOption()]
+        var days: Set<Int> = [1, 2, 3, 4, 5, 6, 7]   // ISO weekdays; all 7 = every day → diario (FER-431)
+    }
 
     @State private var phase: Phase = .landing
     @State private var loaded = false
@@ -202,12 +205,50 @@ struct DietCaptureView: View {
                 manualOption(option, isEquivalent: option.wrappedValue.id != meal.wrappedValue.options.first?.id)
             }
             addRow("Equivalent option") { meal.wrappedValue.options.append(ManualOption()) }
+            dayPicker(meal)
         }
         .padding(NoopMetrics.cardPadding)
         .overlay(
             RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
                 .strokeBorder(theme.hairline, lineWidth: 0.5)
         )
+    }
+
+    /// Weekday chips per meal (FER-431): all 7 selected = every day (diario); deselect any to make the
+    /// plan weekly. ISO 1=Mon … 7=Sun. At least one day stays selected.
+    private func dayPicker(_ meal: Binding<ManualMeal>) -> some View {
+        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+            Text("Days").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            HStack(spacing: NoopMetrics.space1) {
+                ForEach(1...7, id: \.self) { iso in
+                    let on = meal.wrappedValue.days.contains(iso)
+                    Button {
+                        if on { if meal.wrappedValue.days.count > 1 { meal.wrappedValue.days.remove(iso) } }
+                        else { meal.wrappedValue.days.insert(iso) }
+                    } label: {
+                        Text(verbatim: Self.weekdayInitial(iso))
+                            .font(StrandFont.caption)
+                            .foregroundStyle(on ? theme.paper : theme.inkSecondary)
+                            .frame(width: 30, height: 30)
+                            .background(on ? theme.ink : Color.clear, in: Circle())
+                            .overlay(Circle().stroke(on ? theme.ink : theme.hairlineStrong, lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text(verbatim: Self.weekdayName(iso)))
+                    .accessibilityAddTraits(on ? [.isSelected] : [])
+                }
+            }
+        }
+    }
+
+    /// Locale-aware one-letter weekday for an ISO day (1=Mon…7=Sun). Uses the OS symbols (Sunday-indexed).
+    private static func weekdayInitial(_ iso: Int) -> String {
+        let symbols = Calendar.current.veryShortWeekdaySymbols
+        return symbols[(DietWeekday.calendarWeekday(forISOWeekday: iso) - 1) % symbols.count]
+    }
+    private static func weekdayName(_ iso: Int) -> String {
+        let symbols = Calendar.current.weekdaySymbols
+        return symbols[(DietWeekday.calendarWeekday(forISOWeekday: iso) - 1) % symbols.count]
     }
 
     private func manualOption(_ option: Binding<ManualOption>, isEquivalent: Bool) -> some View {
@@ -267,21 +308,46 @@ struct DietCaptureView: View {
     // MARK: - Daily tracker (FER-372)
 
     private func tracker(_ row: DietPlanRow) -> some View {
-        let planned = activeParsed?.meals.count ?? 0
-        let marked = todayStatuses.count
-        let pct = marked == 0 ? nil
-            : DietAdherence.dayPercent(statuses: Array(todayStatuses.values), plannedMeals: planned)
+        // The meals planned for the VIEWED day (semanal filters by weekday; diario → all). The % counts
+        // only those, so stray marks from a day a meal no longer applies can't skew it (FER-431).
+        let dayMeals = mealsForDay(selectedDay)
+        let planned = dayMeals.count
+        let dayIds = Set(dayMeals.map(\.id))
+        let dayStatuses = todayStatuses.filter { dayIds.contains($0.key) }
+        let marked = dayStatuses.count
+        let pct = (marked == 0 || planned == 0) ? nil
+            : DietAdherence.dayPercent(statuses: Array(dayStatuses.values), plannedMeals: planned)
         return VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
             dayNav
-            adherenceHero(pct: pct, marked: marked, planned: planned)
-            if let plan = activeParsed {
-                mealTracker(plan)
-                indications(plan)
-            }
+            adherenceHero(pct: pct, marked: marked, planned: planned, restDay: planned == 0)
+            if planned > 0 { mealTracker(dayMeals) } else { restDayState }
+            if let plan = activeParsed { indications(plan) }
             adherenceCalendar
             remindersRow
             QuietButton("Replace plan") { startCapture() }
         }
+    }
+
+    /// The meals planned for a day key — filtered by its weekday for `semanal` plans (FER-431); a `diario`
+    /// plan returns all meals every day.
+    private func mealsForDay(_ dayKey: String) -> [DietMeal] {
+        guard let plan = activeParsed else { return [] }
+        guard let date = Self.dayKeyParser.date(from: dayKey) else { return plan.meals }
+        let iso = DietWeekday.isoWeekday(forCalendarWeekday: Calendar.current.component(.weekday, from: date))
+        return plan.meals(forISOWeekday: iso)
+    }
+
+    /// Shown when a `semanal` plan has no meals for the viewed day — an honest rest day; the % stays «—».
+    private var restDayState: some View {
+        VStack(alignment: .center, spacing: NoopMetrics.space2) {
+            Image(systemName: "moon.zzz").font(StrandFont.title1)
+                .foregroundStyle(theme.hairlineStrong).accessibilityHidden(true)
+            Text("Rest day — your plan has no meals today. Come back tomorrow or use ‹ ›.")
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, NoopMetrics.gap)
     }
 
     /// The nutritionist's plan-level guidance, shown only when the plan actually carries it (FER-411):
@@ -471,7 +537,7 @@ struct DietCaptureView: View {
 
     /// The day's adherence % — the one dominant numeral and the lone datum, so it carries the only
     /// saturated color. Until a meal is marked it shows «—» in ink (pending isn't a punitive 0%).
-    private func adherenceHero(pct: Int?, marked: Int, planned: Int) -> some View {
+    private func adherenceHero(pct: Int?, marked: Int, planned: Int, restDay: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
             VStack(alignment: .leading, spacing: NoopMetrics.space1) {
                 Text(selectedDay == todayKey ? "Diet · today" : "Diet").instrumentoOverline().foregroundStyle(theme.inkTertiary)
@@ -484,7 +550,9 @@ struct DietCaptureView: View {
                     }
                 }
                 Group {
-                    if pct != nil {
+                    if restDay {
+                        Text("Rest day · no meals planned")
+                    } else if pct != nil {
                         Text("adherence · \(marked) of \(planned) meals")
                     } else {
                         Text("Mark your meals · 0 of \(planned)")
@@ -503,13 +571,13 @@ struct DietCaptureView: View {
         }
     }
 
-    private func mealTracker(_ plan: DietPlan) -> some View {
+    private func mealTracker(_ meals: [DietMeal]) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Today's meals").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 .padding(.bottom, NoopMetrics.gap)
-            ForEach(Array(plan.meals.enumerated()), id: \.offset) { index, meal in
+            ForEach(Array(meals.enumerated()), id: \.offset) { index, meal in
                 mealTrackRow(meal)
-                if index < plan.meals.count - 1 {
+                if index < meals.count - 1 {
                     Rectangle().fill(theme.hairline).frame(height: 0.5)
                 }
             }
@@ -701,8 +769,8 @@ struct DietCaptureView: View {
     private func mark(_ mealId: String, _ status: DietMealStatus, option: Int? = nil) {
         todayStatuses[mealId] = status
         todayOptions[mealId] = option   // nil removes the key (sustitui/salte record no option)
-        let planned = activeParsed?.meals.count ?? 0
         let day = selectedDay
+        let planned = mealsForDay(day).count   // the day's planned meals (semanal varies by weekday, FER-431)
         Task {
             await repo.saveDietAdherence(day: day, mealId: mealId, status: status,
                                          plannedMeals: planned, optionIndex: option)
@@ -769,12 +837,15 @@ struct DietCaptureView: View {
                 return foods.isEmpty ? nil : DietOption(foods: foods)
             }
             guard !options.isEmpty else { return nil }
+            let days = meal.days.count == 7 ? nil : meal.days.sorted()   // all 7 → every day (FER-431)
             return DietMeal(id: UUID().uuidString, name: meal.name.trimmingCharacters(in: .whitespaces),
-                            suggestedTime: nil, options: options, notes: nil)
+                            suggestedTime: nil, options: options, notes: nil, days: days)
         }
         guard !meals.isEmpty else { return }
+        let cycle: DietPlanCycle = meals.contains { $0.days != nil } ? .semanal : .diario
         let language: DietPlanLanguage = (Locale.current.language.languageCode?.identifier == "es") ? .es : .en
-        let plan = DietPlan(language: language, name: manualPlanName.trimmingCharacters(in: .whitespaces), meals: meals)
+        let plan = DietPlan(language: language, name: manualPlanName.trimmingCharacters(in: .whitespaces),
+                            cycle: cycle, meals: meals)
         save(plan)
     }
 
@@ -839,7 +910,7 @@ struct DietCaptureView: View {
         case .unsupportedIdioma:
             return "The plan's language isn't supported — it must be Spanish or English."
         case .unsupportedCiclo:
-            return "Only daily plans are supported for now."
+            return "That plan's cycle isn't supported — it must be daily or weekly."
         case .noMeals:
             return "That plan has no meals. Check the file and try again."
         case .mealWithoutOptions:
@@ -848,6 +919,10 @@ struct DietCaptureView: View {
             return "One of the meals has an empty option. Check the file and try again."
         case .invalidDailyTargets:
             return "The daily targets must be numbers. Check the file and try again."
+        case .invalidDias:
+            return "One of the meals has invalid days — use weekday numbers 1–7. Check the file and try again."
+        case .semanalWithoutDias:
+            return "A weekly plan needs each meal's days. Check the file and try again."
         }
     }
 }
