@@ -34,6 +34,26 @@ final class BilingualCatalogTests: XCTestCase {
         XCTAssertEqual(custom.displayName(localized: false), "Mi ejercicio")
     }
 
+    func testSpanishCuesLoadAndFallBack() {
+        // F2 ships a PARTIAL cues overlay (common exercises); an entry with Spanish cues exposes them
+        // localized and keeps the English; one without falls back to English. Step counts match.
+        let squat = ExerciseCatalog.byID("Barbell_Squat")
+        XCTAssertNotNil(squat?.cuesES, "Barbell_Squat should have Spanish cues in the F2 batch")
+        XCTAssertEqual(squat?.displayCues(localized: true).count, squat?.cues.count, "step count must match English")
+        XCTAssertEqual(squat?.displayCues(localized: false), squat?.cues, "English mode shows English cues")
+        XCTAssertNotEqual(squat?.displayCues(localized: true), squat?.cues, "Spanish mode shows Spanish cues")
+
+        // An exercise outside the batch falls back to English cues (safe degradation).
+        let untranslated = ExerciseCatalog.all.first { $0.cuesES == nil && !$0.cues.isEmpty }
+        XCTAssertNotNil(untranslated, "the cues overlay is partial — some exercises have no Spanish cues yet")
+        XCTAssertEqual(untranslated?.displayCues(localized: true), untranslated?.cues, "no Spanish cues → English")
+
+        // A custom exercise (no overlay) shows whatever cues it was built with, in both modes.
+        let custom = Exercise(id: "z", name: "X", type: .weightReps, equipment: nil,
+                              primaryMuscles: [], secondaryMuscles: [], cues: ["paso uno"])
+        XCTAssertEqual(custom.displayCues(localized: true), ["paso uno"])
+    }
+
     func testMuscleVocabularyCoversEveryCatalogMuscle() {
         let used = Set(ExerciseCatalog.all.flatMap { $0.primaryMuscles + $0.secondaryMuscles })
         for muscle in used {
