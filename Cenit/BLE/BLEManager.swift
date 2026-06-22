@@ -121,6 +121,9 @@ public final class BLEManager: NSObject, ObservableObject {
     /// Newest record unix the strap reports having (from the GET_DATA_RANGE response); refreshed each
     /// offload. Compared against our frontier to tell "stuck" from "off-wrist/caught-up".
     private var strapNewestTs: Int?
+    /// FER-480: the Backfiller's `lastAckedTrim` snapshotted at `beginBackfill`, so `exitBackfilling` can
+    /// tell whether THIS session advanced the strap's trim cursor (the auto-continue anti-spin signal).
+    private var sessionStartTrim: UInt32?
     /// Fires if the strap goes silent mid-offload; re-armed on every frame during backfill.
     private var backfillTimeout: DispatchWorkItem?
     /// Absolute wall-clock cap on a single offload session, armed ONCE at `beginBackfill` and never
@@ -633,6 +636,7 @@ public final class BLEManager: NSObject, ObservableObject {
         // Capture the family at begin() (not init): selectedModel is reliably set by connect() before any
         // backfill starts, whereas bootstrapStore() can build the Backfiller before the family is known.
         backfiller.begin(family: selectedModel.deviceFamily)
+        sessionStartTrim = backfiller.lastAckedTrim   // FER-480: baseline to detect a trim advance this session
         backfilling = true
         state.backfilling = true
         state.syncChunksThisSession = 0
@@ -762,9 +766,12 @@ public final class BLEManager: NSObject, ObservableObject {
         backfillAbsoluteTimeout = nil
         backfillFrameQueue.removeAll()
         log("Backfill: session ended — reason=\(reason)")
-        // FER-287: capture this session's type-47 total BEFORE any re-fire below resets the receipt
-        // (beginBackfill clears it). This is the "how much backlog did we just drain?" signal.
-        let sessionBiometricFrames = state.syncReceipt.biometricFrames
+        // FER-480: capture this session's ground-truth signals BEFORE any re-fire below resets the receipt
+        // (beginBackfill clears it). `rowsThisSession` = biometric rows actually persisted (the #451
+        // fallback signal); `lastTrimAdvanced` = the strap_trim cursor moved vs the snapshot taken at
+        // beginBackfill (anti-spin).
+        let rowsThisSession = state.syncReceipt.rowsStored   // reuse the existing receipt total
+        let lastTrimAdvanced = (backfiller?.lastAckedTrim ?? 0) > (sessionStartTrim ?? 0)
         // Honest sync outcome for a cloud-free user (mirrors Android exitBackfilling, ed6a31d). The
         // reason→outcome policy is the pure `syncSessionOutcome` below so it's unit-testable without a
         // strap. A disconnect mid-sync bypasses this path entirely (didDisconnectPeripheral resets the
@@ -781,22 +788,18 @@ public final class BLEManager: NSObject, ObservableObject {
         case .silent:
             break
         }
-        checkStrapLiveness()         // safety-net: strap ahead of us AND our frontier frozen ⇒ stuck?
-        // FER-287: a CLEAN session that still delivered a large backlog batch ⇒ fire the next session NOW,
-        // skipping the rate-limiter, until the strap comes back small / caught-up (or the chain cap). This
-        // is the whole feature: a night drains hands-off instead of tap-tap-tap. Safe by construction —
-        // re-uses SEND_HISTORICAL_DATA (no new outbound bytes), leans on the durable strap_trim cursor
-        // (zero data loss), and self-terminates (see DrainContinuationPolicy). `backfilling` is already
-        // false here, so the requestSync gate passes and beginBackfill arms a fresh session (new watchdog
-        // + 300 s cap + receipt). It's synchronous, so `state.backfilling` flips false→true within this
-        // run-loop turn — the «Descargando la noche…» hero (FER-286) never flickers between chained sessions.
-        if outcome == .completed,
-           drainPolicy.shouldContinue(completedCleanly: true,
-                                      caughtUp: reason == "caught-up",
-                                      sessionBiometricFrames: sessionBiometricFrames) {
-            log("Backfill: drain-continue #\(drainPolicy.chainLength) — last session had \(sessionBiometricFrames) type-47 frames")
-            requestSync(.drain)
-        }
+        // FER-480: a CLEAN session ⇒ judge liveness AND the auto-continue gate together in ONE async step
+        // (both need the persisted frontier). `draining` bridges the async hop so the «Descargando la
+        // noche…» hero (FER-286) stays steady — set it true now (optimistic), cleared once the gate decides
+        // (if it chained, `backfilling` is already true again). Safe by construction: the gate re-uses
+        // SEND_HISTORICAL_DATA (no new outbound bytes), leans on the durable strap_trim cursor (zero data
+        // loss), and self-terminates (see DrainContinuationPolicy). `backfilling` is already false here, so
+        // the requestSync(.drain) gate passes and beginBackfill arms a fresh session.
+        if outcome == .completed { state.draining = true }
+        checkStrapLivenessAndMaybeContinue(cleanly: outcome == .completed,
+                                           caughtUp: reason == "caught-up",
+                                           rowsPersistedThisSession: rowsThisSession,
+                                           lastTrimAdvanced: lastTrimAdvanced)
     }
 
     /// What a finished offload session means to the user, by teardown reason — pure, so the policy is
@@ -831,11 +834,17 @@ public final class BLEManager: NSObject, ObservableObject {
         }
     }
 
-    /// After an offload, judge liveness: stuck = strap reports records newer than our frontier AND our
-    /// frontier (max persisted HR ts) hasn't advanced for the detector window. Off-wrist / caught up
-    /// (strap not ahead) is NOT stuck. On stuck: attempt recovery (defensive EXIT + SET_CLOCK) and raise
-    /// the surface. Best-effort; reads the frontier via the Collector (which owns the concrete store).
-    private func checkStrapLiveness() {
+    /// After an offload, in ONE async step (both consumers need the persisted frontier): (1) judge
+    /// liveness — stuck = strap reports records newer than our frontier AND our frontier (max persisted HR
+    /// ts) hasn't advanced for the detector window (off-wrist / caught-up is NOT stuck; on stuck, attempt
+    /// recovery via defensive EXIT + SET_CLOCK); and (2) the FER-480 auto-continue — re-fire the offload
+    /// immediately if ground truth says backlog remains. The frontier is read async via the Collector, so
+    /// the decision can't be synchronous; `state.draining` (set by the caller) bridges the hop so the hero
+    /// doesn't flicker. Best-effort.
+    private func checkStrapLivenessAndMaybeContinue(cleanly: Bool,
+                                                    caughtUp: Bool,
+                                                    rowsPersistedThisSession: Int,
+                                                    lastTrimAdvanced: Bool) {
         let strapNewest = strapNewestTs
         Task { @MainActor in
             let frontier = await collector?.latestHRSampleTs()
@@ -850,6 +859,20 @@ public final class BLEManager: NSObject, ObservableObject {
                 send(.exitHighFreqSync, payload: [0x00])
                 send(.setClock, payload: BLEManager.setClockPayload())
             }
+            // FER-480: auto-continue on ground truth — the strap's newest banked record still ahead of our
+            // persisted frontier, or (the #451 stale-range fallback) real rows persisted with the trim
+            // advanced. Bounded by maxChain; re-uses SEND_HISTORICAL_DATA, never touches strap_trim.
+            if cleanly,
+               drainPolicy.shouldContinue(completedCleanly: true,
+                                          caughtUp: caughtUp,
+                                          strapNewestTs: strapNewest,
+                                          ourFrontierTs: front,
+                                          rowsPersistedThisSession: rowsPersistedThisSession,
+                                          lastTrimAdvanced: lastTrimAdvanced) {
+                log("Backfill: drain-continue #\(drainPolicy.chainLength) — strapNewest=\(strapNewest.map(String.init) ?? "nil") frontier=\(front.map(String.init) ?? "nil") rows=\(rowsPersistedThisSession) trimAdvanced=\(lastTrimAdvanced)")
+                requestSync(.drain)
+            }
+            state.draining = false   // gate decided; if it chained, beginBackfill already set backfilling=true
         }
     }
 
@@ -1224,6 +1247,7 @@ extension BLEManager: CBCentralManagerDelegate {
         backfillStarted = false
         backfilling = false
         state.backfilling = false
+        state.draining = false   // FER-480: drop the auto-continue bridge latch if the link died mid-decision
         state.syncChunksThisSession = 0
         backfillTimeout?.cancel()
         backfillTimeout = nil
