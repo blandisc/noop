@@ -1462,7 +1462,7 @@ struct MetricDetailScreen: View {
                 markFrac: clampFrac((today - lo) / span),
                 loLabel: fmt(lo), hiLabel: fmt(hi),
                 centerLabel: "healthy zone ≥ 95%",
-                fillColor: theme.verdict.opacity(0.20),
+                fillColor: theme.verdict.opacity(0.26),
                 disclosureTitle: "Healthy zone", disclosureText: EX_SPO2_FLOOR)
         }
         guard let s = baselineState, s.nValid >= 1 else { return nil }
@@ -1475,7 +1475,7 @@ struct MetricDetailScreen: View {
             markFrac: clampFrac((today - axisLo) / span),
             loLabel: fmt(lo), hiLabel: fmt(hi),
             centerLabel: "your normal range · \(s.nValid) nights",
-            fillColor: metricHue.opacity(0.18),
+            fillColor: metricHue.opacity(0.26),
             disclosureTitle: "Your normal range", disclosureText: EX_RANGO)
     }
 
@@ -1514,15 +1514,21 @@ struct MetricDetailScreen: View {
                 }
             }
             .frame(height: 8)
-            HStack {
+            // The edge numbers never shrink/truncate (fixedSize); the long center label shrinks to fit and
+            // the spacers keep a minimum gap, so «36 · tu rango normal · 30 noches · 51» never overlaps on a
+            // narrow sheet. (Detalle de Vital fix — rótulos encimados)
+            HStack(spacing: 6) {
                 Text(b.loLabel).font(StrandFont.footnote).monospacedDigit().foregroundStyle(theme.inkTertiary)
-                Spacer()
-                HStack(spacing: 5) {
+                    .lineLimit(1).fixedSize()
+                Spacer(minLength: 6)
+                HStack(spacing: 4) {
                     Text(b.centerLabel).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                        .lineLimit(1).minimumScaleFactor(0.7)
                     Image(systemName: "info.circle").font(.system(size: 11)).foregroundStyle(theme.inkTertiary)
                 }
-                Spacer()
+                Spacer(minLength: 6)
                 Text(b.hiLabel).font(StrandFont.footnote).monospacedDigit().foregroundStyle(theme.inkTertiary)
+                    .lineLimit(1).fixedSize()
             }
         }
         .padding(4)
@@ -1571,8 +1577,23 @@ struct MetricDetailScreen: View {
             Text("Your story").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             if visibleBlocks.contains(.periodSelector) { periodSelector(window) }
             chartBlock(window)
+            if let dir = daysInRangeLine(window) {
+                Text(dir).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             statStripSection(window)
         }
+    }
+
+    /// «X of the last N days within your range» — how many of the windowed daily readings fell inside your
+    /// personal normal band. The «days in range» readout the owner missed, adapted to the vitals' personal
+    /// band (HRV / Resting HR / Respiration). SpO₂ has its own «Nights < 95%», so it's excluded. (Detalle de Vital)
+    private func daysInRangeLine(_ window: MetricWindow) -> LocalizedStringKey? {
+        guard isNarrative, !spec.clinicalBands, let band = normalRange else { return nil }
+        let vals = window.values
+        guard vals.count > 1 else { return nil }
+        let inRange = vals.reduce(0) { $0 + (band.contains($1) ? 1 : 0) }
+        return "\(inRange) of the last \(vals.count) days within your range"
     }
 
     @ViewBuilder private func statStripSection(_ window: MetricWindow) -> some View {
