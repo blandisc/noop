@@ -201,25 +201,27 @@ private struct EntrenarLanding: View {
 
     // MARK: - «Mis rutinas»
 
-    /// Routines with no folder («Sin carpeta»).
-    private var unfiledRoutines: [Routine] { routines.filter { $0.folderId == nil } }
-    private func routines(in folder: RoutineFolder) -> [Routine] { routines.filter { $0.folderId == folder.id } }
+    /// Routines bucketed by folder id (`nil` = «Sin carpeta»), grouped once per render.
+    private var routinesByFolder: [String?: [Routine]] { Dictionary(grouping: routines, by: \.folderId) }
 
     private var misRutinas: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        let byFolder = routinesByFolder
+        let unfiled = byFolder[nil] ?? []
+        return VStack(alignment: .leading, spacing: 6) {
             Text("My routines").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             VStack(alignment: .leading, spacing: 0) {
                 // A section per folder (FER-494), then the unfiled routines. With no folders this is
                 // just the flat list, as before — the «Sin carpeta» header only appears alongside folders.
                 ForEach(folders) { folder in
-                    folderHeader(folder)
-                    routineList(routines(in: folder))
+                    let rs = byFolder[folder.id] ?? []
+                    folderHeader(folder, count: rs.count)
+                    routineList(rs)
                 }
-                if !folders.isEmpty && !unfiledRoutines.isEmpty {
-                    Text("Sin carpeta").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                if !folders.isEmpty && !unfiled.isEmpty {
+                    Text("Unfiled").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                         .padding(.top, 14).padding(.bottom, 2)
                 }
-                routineList(unfiledRoutines)
+                routineList(unfiled)
 
                 divider
                 actionRow("plus", "New routine") { builderTarget = .new }
@@ -243,11 +245,11 @@ private struct EntrenarLanding: View {
 
     /// A folder section header: a folder glyph, its name + routine count, and a «⋯» menu to rename or
     /// delete it (deleting keeps its routines, they fall to «Sin carpeta»).
-    private func folderHeader(_ f: RoutineFolder) -> some View {
+    private func folderHeader(_ f: RoutineFolder, count: Int) -> some View {
         HStack(spacing: 9) {
             Image(systemName: "folder").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
             Text(f.name).font(StrandFont.body).foregroundStyle(theme.ink)
-            Text("· \(routines(in: f).count)").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            Text("· \(count)").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             Spacer(minLength: 0)
             Menu {
                 Button { startRename(f) } label: { Label("Rename folder", systemImage: "pencil") }
@@ -482,6 +484,14 @@ private struct EntrenarLanding: View {
         loaded = true
     }
 
+    /// Light reload for folder operations: routines + folders only. Exercise counts are unaffected by
+    /// renaming/moving/deleting a folder (the routine set is unchanged), so the N+1 count rescan is skipped.
+    private func refreshFoldersAndRoutines() async {
+        guard let store = await repo.storeHandle() else { return }
+        routines = (try? await store.routines()) ?? []
+        folders = (try? await store.routineFolders()) ?? []
+    }
+
     // MARK: - Folders (FER-494)
 
     private func startNewFolder(moving r: Routine?) {
@@ -501,7 +511,7 @@ private struct EntrenarLanding: View {
             let folder = RoutineFolder(name: name, sortOrder: folders.count)
             try? await store.saveFolder(folder)
             if let toMove { try? await store.setRoutineFolder(routineId: toMove.id, folderId: folder.id) }
-            await load()
+            await refreshFoldersAndRoutines()
         }
     }
 
@@ -518,7 +528,7 @@ private struct EntrenarLanding: View {
         Task {
             guard let store = await repo.storeHandle() else { return }
             try? await store.saveFolder(RoutineFolder(id: f.id, name: name, sortOrder: f.sortOrder))
-            await load()
+            await refreshFoldersAndRoutines()
         }
     }
 
@@ -527,7 +537,7 @@ private struct EntrenarLanding: View {
         Task {
             guard let store = await repo.storeHandle() else { return }
             try? await store.deleteFolder(id: f.id)
-            await load()
+            await refreshFoldersAndRoutines()
         }
     }
 
@@ -535,7 +545,7 @@ private struct EntrenarLanding: View {
         Task {
             guard let store = await repo.storeHandle() else { return }
             try? await store.setRoutineFolder(routineId: r.id, folderId: folderId)
-            await load()
+            await refreshFoldersAndRoutines()
         }
     }
 }
