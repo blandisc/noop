@@ -947,4 +947,126 @@ struct ExperimentDetailSheet: View {
     }
 }
 
+// MARK: - Diseña tu propio experimento (free builder, FER-468)
+//
+// Start an experiment on a habit you choose — not one Cénit detected. Pick a behavior from your journal
+// catalog, an outcome metric, and a window (7/14/21 days), then start it. Reuses
+// `repo.startExperiment`; the verdict + racha + check-in flow it joins is identical to a lever-born one.
+// The expected direction defaults to «improvement» (the builder is framed as adopting a good habit):
+// up for recovery/HRV/sleep, down for resting HR.
+
+struct DisenaExperimentoSheet: View {
+    let theme: InstrumentoTheme
+    /// (behavior, outcome, expectedSign, windowDays) → start. Async so the caller can persist + reload.
+    let onStart: (String, String, Int, Int) async -> Void
+
+    @EnvironmentObject var repo: Repository
+    @Environment(\.dismiss) private var dismiss
+    @StateObject private var catalog = JournalCatalogStore()
+
+    @State private var importedQuestions: [String] = []
+    @State private var behavior: String? = nil
+    @State private var outcome: String = InsightEngine.Outcome.recovery.label
+    @State private var windowDays: Int = 7
+
+    private var behaviors: [String] {
+        JournalCatalogStore.mergeCatalog(imported: importedQuestions, custom: catalog.customQuestions)
+    }
+    private var outcomes: [String] { InsightEngine.Outcome.allCases.map(\.label) }
+    /// «Improvement» direction: up for higher-is-better metrics, down for resting HR.
+    private var expectedSign: Int { outcome == "FC en reposo" ? -1 : 1 }
+    private var verdictDate: String {
+        let end = Calendar.current.date(byAdding: .day, value: windowDays, to: Date()) ?? Date()
+        return ExperimentDates.longES.string(from: end)
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Nuevo experimento").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text("Diseña tu propio experimento")
+                        .font(StrandFont.title2).foregroundStyle(theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("Elige un hábito que quieras adoptar y mídelo contra una métrica. Lo confirmamos comparando esos días con tu base.")
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                // Hábito
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("El hábito").instrumentoOverline().foregroundStyle(theme.inkTertiary).padding(.bottom, 2)
+                    if behaviors.isEmpty {
+                        Text("Aún no tienes hábitos para probar. Anota algunos días primero.")
+                            .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                            .padding(.vertical, 12)
+                    } else {
+                        ForEach(behaviors, id: \.self) { q in
+                            Button { behavior = q } label: {
+                                HStack {
+                                    Text(BucleFormat.behaviorLabel(q)).font(StrandFont.body).foregroundStyle(theme.ink)
+                                    Spacer()
+                                    Image(systemName: behavior == q ? "checkmark.circle.fill" : "circle")
+                                        .font(.system(size: 18))
+                                        .foregroundStyle(behavior == q ? theme.dataRecovery : theme.hairlineStrong)
+                                }
+                                .padding(.vertical, 11)
+                                .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+
+                // Objetivo
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("La métrica").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    SegmentedPillControl(outcomes, selection: $outcome, theme: theme) { $0 }
+                }
+
+                // Ventana
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("La ventana").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    SegmentedPillControl([7, 14, 21], selection: $windowDays, theme: theme) { "\($0) días" }
+                }
+
+                HStack {
+                    Text("Anota cada día si lo cumpliste").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    Spacer()
+                    Text("veredicto el \(verdictDate)").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                }
+                .padding(.top, 4)
+
+                Button {
+                    if let behavior { Task { await onStart(behavior, outcome, expectedSign, windowDays) } }
+                } label: {
+                    Text("Empezar").font(StrandFont.headline)
+                        .foregroundStyle(behavior == nil ? theme.inkTertiary : theme.paper)
+                        .frame(maxWidth: .infinity).padding(15)
+                        .background(behavior == nil ? theme.surface : theme.ink,
+                                    in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                            .stroke(theme.hairlineStrong, lineWidth: behavior == nil ? 1 : 0))
+                }
+                .buttonStyle(.plain).disabled(behavior == nil)
+
+                Button { dismiss() } label: {
+                    Text("Ahora no").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(NoopMetrics.screenPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(theme.paper.ignoresSafeArea())
+        .task {
+            let imported = await repo.importedJournalEntries()
+            let qs = NSOrderedSet(array: imported.map(\.question)).array as? [String] ?? []
+            await MainActor.run { importedQuestions = qs }
+        }
+    }
+}
+
 #endif
