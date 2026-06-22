@@ -1,5 +1,6 @@
 import XCTest
 import WhoopStore
+import StrandAnalytics
 @testable import Cenit
 
 /// Pins the FER-62 dashboard merge: Apple Health is the lowest-precedence base, on-device computed
@@ -114,5 +115,46 @@ final class RepositoryMergeTests: XCTestCase {
         XCTAssertEqual(r.displayDays.first?.avgHrv, 70)
         XCTAssertEqual(r.days.first?.avgHrv, 70)
         XCTAssertTrue(r.appleDays.contains("2026-06-09"))
+    }
+
+    // MARK: - FER-484 — the data-source mode filters which sources enter the merge
+
+    /// `combined` is the identity filter: the merge sees exactly the three arrays it sees today, so every
+    /// FER-62/149 case above is byte-for-byte unchanged through the mode path. Regression zero.
+    func testCombinedModeMatchesUnfilteredMerge() {
+        let imp = [dm("2026-06-10", hrv: 50)]
+        let cmp = [dm("2026-06-11", hrv: 60)]
+        let app = [dm("2026-06-12", hrv: 70)]
+        let f = DataSourcePolicy.filter(.combined, imported: imp, computed: cmp, apple: app)
+        let viaMode = Repository.mergeDaily(imported: f.imported, computed: f.computed, apple: f.apple)
+        let direct  = Repository.mergeDaily(imported: imp, computed: cmp, apple: app)
+        XCTAssertEqual(viaMode.days, direct.days)
+        XCTAssertEqual(viaMode.displayDays, direct.displayDays)
+        XCTAssertEqual(viaMode.appleDays, direct.appleDays)
+    }
+
+    /// `whoopOnly` drops Apple before the merge: an Apple-only day vanishes, no day is badged Apple, and
+    /// there's no Apple back-fill in `displayDays`.
+    func testWhoopOnlyModeExcludesAppleFromMerge() {
+        let f = DataSourcePolicy.filter(.whoopOnly,
+                                        imported: [dm("2026-06-10", hrv: 50)],
+                                        computed: [],
+                                        apple: [dm("2026-06-09", hrv: 70), dm("2026-06-10", hrv: 77)])
+        let r = Repository.mergeDaily(imported: f.imported, computed: f.computed, apple: f.apple)
+        XCTAssertEqual(r.days.map(\.day), ["2026-06-10"])   // the Apple-only day is gone
+        XCTAssertEqual(r.days[0].avgHrv, 50)                // strap value, untouched by Apple
+        XCTAssertTrue(r.appleDays.isEmpty)                  // nothing badged Apple
+        XCTAssertEqual(r.displayDays, r.days)               // no Apple back-fill
+    }
+
+    /// `appleHealthOnly` drops the strap before the merge: only Apple rows survive, every day badged Apple.
+    func testAppleHealthOnlyModeExcludesStrapFromMerge() {
+        let f = DataSourcePolicy.filter(.appleHealthOnly,
+                                        imported: [dm("2026-06-10", hrv: 50)],
+                                        computed: [dm("2026-06-11", hrv: 60)],
+                                        apple: [dm("2026-06-10", hrv: 77), dm("2026-06-11", hrv: 80)])
+        let r = Repository.mergeDaily(imported: f.imported, computed: f.computed, apple: f.apple)
+        XCTAssertEqual(r.days.map(\.avgHrv), [77, 80])              // Apple values, no strap
+        XCTAssertEqual(r.appleDays, ["2026-06-10", "2026-06-11"])  // all Apple-sourced
     }
 }

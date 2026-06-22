@@ -38,6 +38,9 @@ final class AppModel: ObservableObject {
     let behavior = BehaviorStore()
     /// The Bucle's goal (metric + optional date) — a single user preference, UserDefaults-backed (FER-311).
     let goal = GoalStore()
+    /// Which data sources feed the dashboard + baseline (combined / WHOOP-only / Apple-Health-only) —
+    /// a user preference; capture stays active in every mode (FER-484).
+    let sources = SourceModeStore()
     /// On-device WHOOP-style recovery/strain/sleep computation from raw strap streams.
     let intelligence: IntelligenceEngine
 
@@ -161,6 +164,7 @@ final class AppModel: ObservableObject {
         self.live = live
         self.ble = BLEManager(state: live, deviceId: "my-whoop")
         self.repo = Repository(deviceId: "my-whoop")
+        self.repo.dataSourceMode = sources.mode      // FER-484: honor the persisted mode from launch
         self.coach = AICoachEngine(repo: repo)
         self.intelligence = IntelligenceEngine(repo: repo, profile: profile, deviceId: "my-whoop",
                                                family: WhoopModel.persisted.deviceFamily)
@@ -310,6 +314,20 @@ final class AppModel: ObservableObject {
                                                             today: todayLocal, written: written)
         if !future.isEmpty {
             _ = try? await store.deleteDailyMetrics(deviceId: deviceId, days: future)
+        }
+    }
+
+    /// Switch the data-source mode (combined / WHOOP-only / Apple-Health-only), persist it, and re-read
+    /// the dashboard + baseline through the new filter. Non-destructive: every source stays stored and
+    /// capture keeps running; only what's READ changes, so switching back to `.combined` restores the
+    /// prior view with no re-import (FER-484). The UI selector (F2) will call this.
+    func setDataSourceMode(_ m: DataSourceMode) {
+        guard m != sources.mode else { return }
+        sources.mode = m
+        repo.dataSourceMode = m
+        Task { @MainActor in
+            await repo.refresh()
+            await intelligence.analyzeRecent(force: true)
         }
     }
 
