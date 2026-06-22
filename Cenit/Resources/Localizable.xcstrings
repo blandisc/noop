@@ -34091,6 +34091,57 @@
           }
         }
       }
+    },
+    "Moving average": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moving average"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Media móvil"
+          }
+        }
+      }
+    },
+    "Ranges": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ranges"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rangos"
+          }
+        }
+      }
+    },
+    "Where you fall against the typical ranges.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where you fall against the typical ranges."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dónde caes frente a los rangos típicos."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

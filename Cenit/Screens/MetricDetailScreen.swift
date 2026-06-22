@@ -58,6 +58,9 @@ struct MetricDetailScreen: View {
 
     enum Depth { case focus, full }
 
+    /// The «Tu historia» chart view for metrics with population ranges. (Detalle de Vital)
+    enum ChartMode: Hashable, CaseIterable { case movingAverage, ranges }
+
     /// Companion vitals for the night block.
     struct NightVitals: Equatable {
         var respiration: Double?
@@ -69,6 +72,11 @@ struct MetricDetailScreen: View {
     /// nil = none. Replaces the per-block ⓘ `InfoAccordion`s for the redesigned vitals — the whole datum is
     /// the tap target now, and tapping toggles a panel that reuses the SAME `explanation` copy. (Detalle de Vital)
     @State private var openDisclosure: String? = nil
+    /// «Tu historia» chart mode for metrics that carry labeled population ranges (Resting HR / Respiration /
+    /// Steps): your 7-day moving average + personal band, OR the classification ranges (athlete / excellent /
+    /// normal / elevated …) showing where you fall. HRV (personal only) and SpO₂ (already clinical) don't
+    /// toggle. The «what does this number mean» view the owner asked back for. (Detalle de Vital)
+    @State private var chartMode: ChartMode = .movingAverage
     @State private var series: [(day: String, value: Double)] = []
     @State private var nightVitals: NightVitals = NightVitals(respiration: nil, restingHR: nil)
     @State private var whatMovesItFindings: [WhatMovesItFinding] = []
@@ -459,9 +467,12 @@ struct MetricDetailScreen: View {
 
     @ViewBuilder private func chartBlock(_ window: MetricWindow) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            // The selector lives in its own (divider-separated) `periodSelector` block above, so the chart
-            // hides its own picker. Clinically-anchored metrics (SpO₂) plot RAW nightly values behind a
-            // fixed band so a single low night stays visible; the noisy vitals plot the 7-day MA. (FER-252)
+            // Metrics with population ranges (Resting HR / Respiration / Steps) offer a «media móvil ⇄
+            // rangos» toggle: your trend + personal band, or the classification ranges showing where you
+            // fall. The period picker lives in `periodSelector` above. (Detalle de Vital)
+            if hasRangesMode {
+                SegmentedPillControl(ChartMode.allCases, selection: $chartMode, theme: theme) { chartModeLabel($0) }
+            }
             MetricTrendChart(
                 range: $range,
                 window: window,
@@ -472,22 +483,23 @@ struct MetricDetailScreen: View {
                     gradient: chartGradient,
                     // No area fill when a band is drawn: the band + clean line read sharply; the area was
                     // a second teal wash that muddied the overlap. A shorter chart keeps it proportionate
-                    // to the period selector above. (Detalle de Vital — pulido)
-                    showsArea: narrativeChartBands.isEmpty,
-                    height: isNarrative ? 156 : 200,
-                    valueRange: { narrativeChartValueRange($0) },
+                    // to the period selector above. «Ranges» mode is a touch taller to fit the band labels. (Detalle de Vital)
+                    showsArea: effectiveChartBands.isEmpty,
+                    height: rangesModeActive ? 184 : (isNarrative ? 156 : 200),
+                    valueRange: { rangesModeActive ? (rangesValueRange ?? narrativeChartValueRange($0)) : narrativeChartValueRange($0) },
                     valueFormat: { "\(fmt($0)) \(unit)" },
-                    // SpO₂ shades its clinical healthy zone; the redesigned personal vitals shade your own
-                    // ±SD «normal range» behind the line; everything else stays band-less. (Detalle de Vital)
-                    bands: { _ in narrativeChartBands },
+                    // SpO₂ shades its clinical healthy zone; the personal vitals shade your ±SD «normal range»;
+                    // «Ranges» mode shades the active classification band, labels shown. (Detalle de Vital)
+                    bands: { _ in effectiveChartBands },
                     bandColor: { _ in spec.clinicalBands ? theme.verdict : metricHue },
-                    yAxisValues: clinicalYAxisValues,
+                    yAxisValues: rangesModeActive ? rangesYTicks : clinicalYAxisValues,
                     alertThreshold: spec.clinicalBands ? spec.lowThreshold : nil,
                     alertColor: theme.critical,
-                    // Mark today's point (the line's right edge) for the personal-band vitals; SpO₂ marks
-                    // its low nights via the alert threshold instead. Labels stay off the plot. (Detalle de Vital)
-                    marksLastPoint: isNarrative && !spec.clinicalBands,
-                    bandLabelsHidden: true,
+                    // Mark today's point for the personal-band vitals and in «Ranges» mode (shows where today
+                    // sits among the classifications); SpO₂ marks its low nights via the alert threshold. (Detalle de Vital)
+                    marksLastPoint: (isNarrative && !spec.clinicalBands) || rangesModeActive,
+                    // Labels off for the quiet personal/clinical band; ON in «Ranges» mode (athlete / normal / …).
+                    bandLabelsHidden: !rangesModeActive,
                     accessibilityLabel: chartAccessibilityLabel
                 )
             ) {
@@ -545,6 +557,48 @@ struct MetricDetailScreen: View {
         return [TrendBand(label: "", lower: band.lowerBound, upper: band.upperBound, isActive: true)]
     }
 
+    // MARK: - Chart mode: media móvil ⇄ rangos (Resting HR / Respiration / Steps) (Detalle de Vital)
+
+    /// Metrics that carry labeled population ranges the chart can toggle to. HRV has none (personal only);
+    /// SpO₂ already shows its clinical band, so it doesn't toggle.
+    private var hasRangesMode: Bool {
+        !spec.clinicalBands && spec.descriptor.key != "hrv"
+            && spec.info.bands.contains { $0.lower != nil || $0.upper != nil }
+    }
+
+    private var rangesModeActive: Bool { hasRangesMode && chartMode == .ranges }
+
+    /// The bands drawn on the chart: the labeled classification ranges in «Ranges» mode (active one shaded),
+    /// else the personal/clinical band.
+    private var effectiveChartBands: [TrendBand] {
+        if rangesModeActive {
+            return spec.info.bands.compactMap { b in
+                (b.lower != nil || b.upper != nil)
+                    ? TrendBand(label: b.label, lower: b.lower, upper: b.upper, isActive: b.isActive)
+                    : nil
+            }
+        }
+        return narrativeChartBands
+    }
+
+    /// In «Ranges» mode, span every classification threshold (with margin) so all bands read; the active one
+    /// shaded shows where you fall.
+    private var rangesValueRange: ClosedRange<Double>? {
+        let bounds = spec.info.bands.flatMap { [$0.lower, $0.upper].compactMap { $0 } }
+        guard let lo = bounds.min(), let hi = bounds.max(), hi > lo else { return nil }
+        let pad = (hi - lo) * 0.4
+        return (lo - pad)...(hi + pad)
+    }
+
+    private var rangesYTicks: [Double]? {
+        let t = Set(spec.info.bands.flatMap { [$0.lower, $0.upper].compactMap { $0 } })
+        return t.isEmpty ? nil : t.sorted()
+    }
+
+    private func chartModeLabel(_ m: ChartMode) -> String {
+        m == .movingAverage ? String(localized: "Moving average") : String(localized: "Ranges")
+    }
+
     /// Y-axis ticks at the band thresholds (e.g. SpO₂ 90/95/100) for the clinical chart; `nil` otherwise
     /// so the vitals keep automatic ticks. (FER-252)
     private var clinicalYAxisValues: [Double]? {
@@ -594,6 +648,7 @@ struct MetricDetailScreen: View {
     /// already says the range, and the interpolated form mis-agreed in Spanish ("últimos mes"). The smoothing
     /// is ALWAYS a 7-day moving average regardless of the selected range, so the caption says so plainly.
     private func chartCaption(_ effectiveRange: ExploreRange) -> LocalizedStringKey {
+        if rangesModeActive { return "Where you fall against the typical ranges." }
         if spec.sparseMeasured { return "Measured values." }
         if spec.clinicalBands { return "Nightly values · the shaded band is the healthy range." }
         // Name the shaded band so the horizontal lines on the chart read as «your normal range». (Detalle de Vital)
@@ -1577,7 +1632,8 @@ struct MetricDetailScreen: View {
             Text("Your story").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             if visibleBlocks.contains(.periodSelector) { periodSelector(window) }
             chartBlock(window)
-            if let dir = daysInRangeLine(window) {
+            // «Days within your range» is about the PERSONAL band, so it only shows in moving-average mode.
+            if chartMode == .movingAverage, let dir = daysInRangeLine(window) {
                 Text(dir).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }

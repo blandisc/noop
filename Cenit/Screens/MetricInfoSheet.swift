@@ -150,13 +150,13 @@ extension MetricInfo {
         let lpm = String(localized: "bpm")
         let bands: [Band] = [
             Band(label: "Athlete", range: "< 50 \(lpm)",
-                 isActive: value.map { $0 < 50 } ?? false),
+                 isActive: value.map { $0 < 50 } ?? false, lower: nil, upper: 50),
             Band(label: "Excellent", range: "50 – 60 \(lpm)",
-                 isActive: value.map { $0 >= 50 && $0 < 60 } ?? false),
+                 isActive: value.map { $0 >= 50 && $0 < 60 } ?? false, lower: 50, upper: 60),
             Band(label: "Normal", range: "60 – 80 \(lpm)",
-                 isActive: value.map { $0 >= 60 && $0 < 80 } ?? false),
+                 isActive: value.map { $0 >= 60 && $0 < 80 } ?? false, lower: 60, upper: 80),
             Band(label: "Elevated", range: "> 80 \(lpm)",
-                 isActive: value.map { $0 >= 80 } ?? false),
+                 isActive: value.map { $0 >= 80 } ?? false, lower: 80, upper: nil),
         ]
         return MetricInfo(
             id: "rhr",
@@ -178,13 +178,13 @@ extension MetricInfo {
     static func respiratory(_ value: Double?) -> MetricInfo {
         let bands: [Band] = [
             Band(label: "Low", range: "< 12 rpm",
-                 isActive: value.map { $0 < 12 } ?? false),
+                 isActive: value.map { $0 < 12 } ?? false, lower: nil, upper: 12),
             Band(label: "Typical", range: "12 – 18 rpm",
-                 isActive: value.map { $0 >= 12 && $0 <= 18 } ?? false),
+                 isActive: value.map { $0 >= 12 && $0 <= 18 } ?? false, lower: 12, upper: 18),
             Band(label: "Elevated", range: "18 – 20 rpm",
-                 isActive: value.map { $0 > 18 && $0 <= 20 } ?? false),
+                 isActive: value.map { $0 > 18 && $0 <= 20 } ?? false, lower: 18, upper: 20),
             Band(label: "High", range: "> 20 rpm",
-                 isActive: value.map { $0 > 20 } ?? false),
+                 isActive: value.map { $0 > 20 } ?? false, lower: 20, upper: nil),
         ]
         return MetricInfo(
             id: "resp_rate",
@@ -345,13 +345,13 @@ extension MetricInfo {
     static func steps(_ value: Int?) -> MetricInfo {
         let bands: [Band] = [
             Band(label: "Sedentary", range: "< 5 000",
-                 isActive: value.map { $0 < 5_000 } ?? false),
+                 isActive: value.map { $0 < 5_000 } ?? false, lower: nil, upper: 5_000),
             Band(label: "Light", range: "5 000 – 8 000",
-                 isActive: value.map { $0 >= 5_000 && $0 < 8_000 } ?? false),
+                 isActive: value.map { $0 >= 5_000 && $0 < 8_000 } ?? false, lower: 5_000, upper: 8_000),
             Band(label: "Active", range: "8 000 – 10 000",
-                 isActive: value.map { $0 >= 8_000 && $0 < 10_000 } ?? false),
+                 isActive: value.map { $0 >= 8_000 && $0 < 10_000 } ?? false, lower: 8_000, upper: 10_000),
             Band(label: "Very active", range: "> 10 000",
-                 isActive: value.map { $0 >= 10_000 } ?? false),
+                 isActive: value.map { $0 >= 10_000 } ?? false, lower: 10_000, upper: nil),
         ]
         return MetricInfo(
             id: "steps",
