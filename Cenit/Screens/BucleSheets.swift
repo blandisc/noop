@@ -803,10 +803,18 @@ struct BucleInfoSheet: View {
 /// Opens on tapping the «Decisión de hoy» hero (FER-312). Leads with the DECISION (the verdict + what
 /// to do today), then the why — the recovery datum, the engine's summary, and the signals behind it.
 /// Reads from the `ReadinessEngine.Readiness` the Bucle already computed; no recompute.
+/// Carries the «Decisión» content's measured natural height so its detent fits it exactly (FER-445).
+private struct DecisionSheetHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+
 struct DecisionExplainerSheet: View {
     let readiness: ReadinessEngine.Readiness
     let recovery: Double?
     let theme: InstrumentoTheme
+    /// Natural height of the content, so the sheet opens just as tall as it needs (FER-445).
+    @State private var contentHeight: CGFloat = 0
 
     var body: some View {
         ScrollView {
@@ -837,8 +845,15 @@ struct DecisionExplainerSheet: View {
             }
             .padding(NoopMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .background(GeometryReader { g in
+                Color.clear.preference(key: DecisionSheetHeightKey.self, value: g.size.height)
+            })
         }
         .background(theme.paper.ignoresSafeArea())
+        .onPreferenceChange(DecisionSheetHeightKey.self) { contentHeight = $0 }
+        // Open at the content's natural height (no full-screen for a short explainer); «.large» stays.
+        .presentationDetents(contentHeight > 0 ? [.height(contentHeight), .large] : [.large])
+        .presentationDragIndicator(.visible)
     }
 
     private func block(_ label: LocalizedStringKey, _ text: String) -> some View {

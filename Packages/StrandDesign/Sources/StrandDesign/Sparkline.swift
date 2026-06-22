@@ -153,13 +153,10 @@ public struct Sparkline: View {
             }
             .animation(StrandMotion.fade, value: hoverX)
             .contentShape(Rectangle())
-            .onContinuousHover(coordinateSpace: .local) { phase in
-                guard showsScrub else { return }
-                switch phase {
-                case .active(let location): hoverX = location.x
-                case .ended: hoverX = nil
-                }
-            }
+            // Finger-drag on iOS (+ pointer hover on macOS) — the SAME affordance TrendChart/DebtBars use.
+            // The old `onContinuousHover`-only path was hover-only, so on iPhone the scrub never fired and
+            // the chart read as «dead». (FER-445, fixing FER-436's incomplete `showsScrub`.)
+            .scrubGesture(enabled: showsScrub, hoverX: $hoverX)
         }
     }
 

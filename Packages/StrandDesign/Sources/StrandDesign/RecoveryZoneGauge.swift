@@ -51,12 +51,20 @@ public struct RecoveryZoneGauge: View {
     private let gap = 0.006
 
     public var body: some View {
-        ZStack {
-            zoneRing
-            valueRing
-            centerLabel
+        VStack(spacing: 9 * scale) {
+            ZStack {
+                zoneRing
+                valueRing
+                centerNumber
+            }
+            .frame(width: diameter, height: diameter)
+            // The label lives BELOW the dial now (FER-445): inside the ring it was cramped against the
+            // value arc and its end letters were unreadable; here it's a legible, free caption.
+            Text(label)
+                .font(.system(size: 10.5 * scale, weight: .semibold))
+                .tracking(1.0)
+                .foregroundStyle(theme.inkSecondary)
         }
-        .frame(width: diameter, height: diameter)
         .onAppear {
             if reduceMotion { drawn = true }
             else { withAnimation(StrandMotion.drawIn) { drawn = true } }
@@ -103,10 +111,10 @@ public struct RecoveryZoneGauge: View {
         .frame(width: d, height: d)
     }
 
-    // MARK: Centre read-out
+    // MARK: Centre read-out — just the hero numeral now (the label moved below the dial, FER-445)
 
-    private var centerLabel: some View {
-        VStack(spacing: 3 * scale) {
+    private var centerNumber: some View {
+        Group {
             if let s = score {
                 Text("\(Int(s.rounded()))")
                     .instrumentoHero(38 * scale)
@@ -115,10 +123,6 @@ public struct RecoveryZoneGauge: View {
             } else {
                 Text("—").instrumentoHero(38 * scale).foregroundStyle(theme.inkDim)
             }
-            Text(label)
-                .font(.system(size: 9 * scale, weight: .semibold))
-                .tracking(0.6)
-                .foregroundStyle(theme.inkSecondary)
         }
     }
 }
