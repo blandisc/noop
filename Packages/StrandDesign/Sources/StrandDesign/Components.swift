@@ -31,9 +31,9 @@ public enum NoopMetrics {
     /// Clean band reserved below the area fill (via the Y-scale's bottom padding) so the X-axis
     /// hour/date labels never sit behind the fill and get tinted. (FER-82)
     public static let chartXLabelBand: CGFloat = 24
-    /// Trailing inset on the X-scale so the rightmost label renders in full inside ChartCard's
-    /// `.clipped()` frame instead of being truncated. (FER-82)
-    public static let chartXTrailingInset: CGFloat = 26
+    /// Trailing inset on the X-scale so the rightmost date label renders in full instead of being
+    /// truncated («jun…»). Sized for a «d MMM» label centered on the last tick. (FER-82 / Detalle de Vital)
+    public static let chartXTrailingInset: CGFloat = 38
 }
 
 // MARK: - Range control (the ONE segmented pill control, used everywhere)

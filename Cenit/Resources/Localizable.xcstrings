@@ -34074,6 +34074,23 @@
           }
         }
       }
+    },
+    "%lld of the last %lld days within your range": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of the last %lld days within your range"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld de los últimos %lld días dentro de tu rango"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

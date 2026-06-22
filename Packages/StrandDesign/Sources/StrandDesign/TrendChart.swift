@@ -382,7 +382,7 @@ public struct TrendChart: View {
             let h = abs(pBot - pTop)
             if band.isActive {
                 Rectangle()
-                    .fill(bandColor.opacity(0.12))
+                    .fill(bandColor.opacity(0.16))
                     .frame(width: plot.width, height: h)
                     .offset(x: plot.minX, y: yTop)
                 Rectangle()

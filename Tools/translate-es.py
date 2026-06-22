@@ -45,6 +45,8 @@ ES: dict[str, str] = {
     "Healthy zone": "Zona sana",
     # Caption de la gráfica que nombra la banda (explica las líneas horizontales)
     "7-day moving average · the band is your normal range.": "Media móvil de 7 días · la franja es tu rango normal.",
+    # Indicador «días dentro de tu rango» (HRV/FC reposo/Respiración)
+    "%lld of the last %lld days within your range": "%lld de los últimos %lld días dentro de tu rango",
     # Overlines de sección
     "Your story": "Tu historia",
     "Your pattern": "Tu patrón",
