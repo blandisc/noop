@@ -29,12 +29,35 @@ public struct Routine: Codable, Sendable, Identifiable, Equatable {
     }
 }
 
-/// One exercise slot inside a routine: its target scheme, warm-up ramp, and rest rule.
+/// One planned set inside a `RoutineExercise` — the per-set prescription the user builds (FER-492).
+/// Mirrors `SetEntry`'s grain (the *performed* set) so the plan and the log line up: a relational row
+/// with identity (it reorders and deletes), not a value buried in an array. The guided session (FER-347)
+/// seeds its working sets from these. `kind` is always `.work` today — warm-ups stay as `warmupPercents`,
+/// expanded at runtime — but the field exists so a future warm-up materialization needs no migration.
+public struct RoutineSet: Codable, Sendable, Identifiable, Equatable {
+    public var id: String
+    public var position: Int
+    public var kind: SetKind
+    public var reps: Int?
+    public var weightKg: Double?
+
+    public init(id: String = UUID().uuidString, position: Int, kind: SetKind = .work,
+                reps: Int? = nil, weightKg: Double? = nil) {
+        self.id = id; self.position = position; self.kind = kind
+        self.reps = reps; self.weightKg = weightKg
+    }
+}
+
+/// One exercise slot inside a routine: its per-set scheme, warm-up ramp, and rest rule.
 public struct RoutineExercise: Codable, Sendable, Identifiable, Equatable {
     public var id: String
     public var routineId: String
     public var exerciseId: String
     public var position: Int
+    /// The per-set prescription — the source of truth for reps/weight since FER-492. Each work set
+    /// carries its own reps and weight (Hevy-style). `targetSets/targetReps/targetWeightKg` below are
+    /// kept as derived compatibility fields (WhoopStore mirrors the first work set + count into them).
+    public var sets: [RoutineSet]
     public var targetSets: Int
     public var targetReps: Int?
     public var targetWeightKg: Double?
@@ -53,12 +76,12 @@ public struct RoutineExercise: Codable, Sendable, Identifiable, Equatable {
                 position: Int, targetSets: Int, targetReps: Int? = nil,
                 targetWeightKg: Double? = nil, warmupPercents: [Double] = [],
                 restMode: RestMode = .heartRate, restSeconds: Int = 90,
-                supersetGroup: Int? = nil) {
+                supersetGroup: Int? = nil, sets: [RoutineSet] = []) {
         self.id = id; self.routineId = routineId; self.exerciseId = exerciseId
         self.position = position; self.targetSets = targetSets; self.targetReps = targetReps
         self.targetWeightKg = targetWeightKg; self.warmupPercents = warmupPercents
         self.restMode = restMode; self.restSeconds = restSeconds
-        self.supersetGroup = supersetGroup
+        self.supersetGroup = supersetGroup; self.sets = sets
     }
 }
 

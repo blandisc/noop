@@ -80,11 +80,29 @@ extension WhoopStore {
                     updatedTs = excluded.updatedTs, sortOrder = excluded.sortOrder
                 """, arguments: StatementArguments(rArgs))
 
+            // Replace this routine's exercises and their per-set rows in the same transaction. The
+            // routineSet delete is keyed off the routine's current routineExercise ids, so it must run
+            // before the routineExercise delete.
+            try db.execute(sql: """
+                DELETE FROM routineSet WHERE routineExerciseId IN
+                    (SELECT id FROM routineExercise WHERE routineId = ?)
+                """, arguments: [routine.id])
             try db.execute(sql: "DELETE FROM routineExercise WHERE routineId = ?", arguments: [routine.id])
             for re in exercises {
+                // `sets` is the source of truth; the legacy target* columns are derived from the work
+                // sets so any legacy reader stays coherent. If a caller handed us a slot with no sets
+                // (legacy in-memory / templates), fall back to the target* it carries.
+                let work = re.sets.filter { $0.kind == .work }
+                let planned: [RoutineSet] = re.sets.isEmpty
+                    ? (0..<max(re.targetSets, 1)).map {
+                        RoutineSet(position: $0, kind: .work, reps: re.targetReps, weightKg: re.targetWeightKg) }
+                    : re.sets
+                let derivedSets = re.sets.isEmpty ? max(re.targetSets, 1) : max(work.count, 1)
+                let derivedReps = re.sets.isEmpty ? re.targetReps : work.first?.reps
+                let derivedWeight = re.sets.isEmpty ? re.targetWeightKg : work.first?.weightKg
                 let args: [DatabaseValueConvertible?] = [
-                    re.id, re.routineId, re.exerciseId, re.position, re.targetSets, re.targetReps,
-                    re.targetWeightKg, encodeJSON(re.warmupPercents), re.restMode.rawValue, re.restSeconds,
+                    re.id, re.routineId, re.exerciseId, re.position, derivedSets, derivedReps,
+                    derivedWeight, encodeJSON(re.warmupPercents), re.restMode.rawValue, re.restSeconds,
                     re.supersetGroup
                 ]
                 try db.execute(sql: """
@@ -93,6 +111,15 @@ extension WhoopStore {
                          warmupPercents, restMode, restSeconds, supersetGroup)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, arguments: StatementArguments(args))
+                for (idx, s) in planned.enumerated() {
+                    let sArgs: [DatabaseValueConvertible?] = [
+                        s.id, re.id, idx, s.kind.rawValue, s.reps, s.weightKg
+                    ]
+                    try db.execute(sql: """
+                        INSERT INTO routineSet (id, routineExerciseId, position, kind, reps, weightKg)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                        """, arguments: StatementArguments(sArgs))
+                }
             }
         }
     }
@@ -108,23 +135,63 @@ extension WhoopStore {
 
     public func routineExercises(routineId: String) async throws -> [RoutineExercise] {
         try syncRead { db in
-            try Row.fetchAll(db, sql:
+            var result = try Row.fetchAll(db, sql:
                 "SELECT * FROM routineExercise WHERE routineId = ? ORDER BY position ASC",
-                arguments: [routineId]).map {
-                    RoutineExercise(id: $0["id"], routineId: $0["routineId"], exerciseId: $0["exerciseId"],
-                                    position: $0["position"], targetSets: $0["targetSets"],
-                                    targetReps: $0["targetReps"], targetWeightKg: $0["targetWeightKg"],
-                                    warmupPercents: decodeJSON($0["warmupPercents"], as: [Double].self, default: []),
-                                    restMode: RestMode(rawValue: $0["restMode"]) ?? .heartRate,
-                                    restSeconds: $0["restSeconds"], supersetGroup: $0["supersetGroup"])
-                }
+                arguments: [routineId]).map(Self.routineExercise)
+            let ids = result.map { $0.id }
+            guard !ids.isEmpty else { return result }
+            // One read for every slot's sets, not a query per slot.
+            let placeholders = databaseQuestionMarks(count: ids.count)
+            let setRows = try Row.fetchAll(db, sql:
+                "SELECT * FROM routineSet WHERE routineExerciseId IN (\(placeholders)) ORDER BY position ASC",
+                arguments: StatementArguments(ids))
+            var byRe: [String: [RoutineSet]] = [:]
+            for r in setRows {
+                let reId: String = r["routineExerciseId"]
+                byRe[reId, default: []].append(Self.routineSet(r))
+            }
+            for i in result.indices {
+                // Post-v17 every slot has rows; the synthesis from target* is a defensive fallback
+                // (e.g. a slot inserted by a path that skipped routineSet) so `sets` is never empty.
+                let s = byRe[result[i].id] ?? []
+                result[i].sets = s.isEmpty ? Self.synthesizedSets(result[i]) : s
+            }
+            return result
         }
     }
 
     public func deleteRoutine(id: String) async throws {
         try syncWrite { db in
+            try db.execute(sql: """
+                DELETE FROM routineSet WHERE routineExerciseId IN
+                    (SELECT id FROM routineExercise WHERE routineId = ?)
+                """, arguments: [id])
             try db.execute(sql: "DELETE FROM routineExercise WHERE routineId = ?", arguments: [id])
             try db.execute(sql: "DELETE FROM routine WHERE id = ?", arguments: [id])
+        }
+    }
+
+    private static func routineExercise(_ r: Row) -> RoutineExercise {
+        RoutineExercise(id: r["id"], routineId: r["routineId"], exerciseId: r["exerciseId"],
+                        position: r["position"], targetSets: r["targetSets"],
+                        targetReps: r["targetReps"], targetWeightKg: r["targetWeightKg"],
+                        warmupPercents: decodeJSON(r["warmupPercents"], as: [Double].self, default: []),
+                        restMode: RestMode(rawValue: r["restMode"]) ?? .heartRate,
+                        restSeconds: r["restSeconds"], supersetGroup: r["supersetGroup"])
+    }
+
+    private static func routineSet(_ r: Row) -> RoutineSet {
+        RoutineSet(id: r["id"], position: r["position"],
+                   kind: SetKind(rawValue: r["kind"]) ?? .work,
+                   reps: r["reps"], weightKg: r["weightKg"])
+    }
+
+    /// Defensive synthesis of per-set rows from the legacy target* columns, for any slot that has no
+    /// `routineSet` rows (all post-v17 routines do; this only fires for a slot written by a path that
+    /// skipped them). Keeps `RoutineExercise.sets` non-empty so the UI and session never see a gap.
+    private static func synthesizedSets(_ re: RoutineExercise) -> [RoutineSet] {
+        (0..<max(re.targetSets, 1)).map {
+            RoutineSet(position: $0, kind: .work, reps: re.targetReps, weightKg: re.targetWeightKg)
         }
     }
 

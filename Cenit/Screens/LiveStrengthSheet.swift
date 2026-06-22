@@ -340,12 +340,25 @@ final class StrengthSessionModel: ObservableObject {
             let last = slot.lastSets.first
             let lastWeight = last?.weightKg
             let lastReps = last?.reps
-            let count = max(1, slot.re.targetSets)
-            let weight = slot.re.targetWeightKg ?? lastWeight ?? 0
-            // Reps only seed the rep-based types; time/distance capture their datum live, so 0 here.
-            let reps = usesReps ? (slot.re.targetReps ?? lastReps ?? 8) : 0
-            let sets = (0..<count).map { _ in
-                WorkingSet(id: UUID().uuidString, weightKg: weight, reps: reps, done: false)
+            // Seed one working set per planned set (FER-492): each carries its own reps/weight, with
+            // «la última vez» as the fallback. A slot with no planned sets (legacy / template) falls
+            // back to the single target* repeated targetSets times.
+            let planned = slot.re.sets.filter { $0.kind == .work }
+            let sets: [WorkingSet]
+            if planned.isEmpty {
+                let count = max(1, slot.re.targetSets)
+                let weight = slot.re.targetWeightKg ?? lastWeight ?? 0
+                // Reps only seed the rep-based types; time/distance capture their datum live, so 0 here.
+                let reps = usesReps ? (slot.re.targetReps ?? lastReps ?? 8) : 0
+                sets = (0..<count).map { _ in
+                    WorkingSet(id: UUID().uuidString, weightKg: weight, reps: reps, done: false)
+                }
+            } else {
+                sets = planned.map { p in
+                    let weight = p.weightKg ?? lastWeight ?? 0
+                    let reps = usesReps ? (p.reps ?? lastReps ?? 8) : 0
+                    return WorkingSet(id: UUID().uuidString, weightKg: weight, reps: reps, done: false)
+                }
             }
             return ExerciseRun(id: slot.re.id, exerciseId: slot.re.exerciseId,
                                name: slot.exercise?.name ?? String(localized: "Exercise"),
