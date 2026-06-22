@@ -295,8 +295,8 @@ public struct TrendChart: View {
         .chartXAxis {
             // Explicit ticks evenly spread across the ACTUAL data span — not Charts' `.automatic`, which
             // snaps dates to calendar boundaries (e.g. weekly Sundays) and so bunched the only two ticks
-            // that fell inside a 14-day window into the right half, leaving the left blank. Three ticks
-            // at 0 / 50 / 100 % of the span always span the full width and read evenly. (FER-458)
+            // that fell inside a 14-day window into the right half, leaving the left blank. Five ticks
+            // at 0 / 25 / 50 / 75 / 100 % of the span always span the full width and read evenly. (FER-458)
             AxisMarks(values: xAxisTicks) { value in
                 AxisGridLine().foregroundStyle(gridLineColor.opacity(0.4))
                 AxisValueLabel(anchor: xLabelAnchor(value.index, count: value.count)) {
@@ -396,13 +396,14 @@ public struct TrendChart: View {
 
     // MARK: - X-axis ticks (FER-457 fix)
 
-    /// Three tick dates at 0 / 50 / 100 % of the data's actual time span. Anchored to the data — not the
-    /// calendar — so the labels always span the chart's full width and read evenly, whatever the range.
+    /// Five tick dates at 0 / 25 / 50 / 75 / 100 % of the data's actual time span. Anchored to the data —
+    /// not the calendar — so the labels always span the chart's full width and read evenly, whatever the
+    /// range. (FER-458: 3 ticks left a 14-day window looking bare; 5 give a denser, still-tidy axis.)
     private var xAxisTicks: [Date] {
         guard let first = points.first?.date, let last = points.last?.date else { return [] }
         let span = last.timeIntervalSince(first)
         guard span > 0 else { return [first] }
-        return [0.0, 0.5, 1.0].map { first.addingTimeInterval(span * $0) }
+        return [0.0, 0.25, 0.5, 0.75, 1.0].map { first.addingTimeInterval(span * $0) }
     }
 
     /// Keep the first label leading-aligned and the last trailing-aligned so neither clips at the plot
