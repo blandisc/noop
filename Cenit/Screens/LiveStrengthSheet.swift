@@ -671,7 +671,7 @@ struct LiveStrengthSheet: View {
         let active = ei == session.currentIndex && si == run.currentSet && !set.done && session.summary == nil
         Group {
             if reflow { reflowRow(ei: ei, si: si, run: run, set: set) }
-            else { gridRow(ei: ei, si: si, run: run, set: set, active: active) }
+            else { gridRow(ei: ei, si: si, run: run, set: set) }
         }
         .padding(.vertical, reflow ? 8 : 2)
         .padding(.horizontal, active ? 6 : 0)
@@ -687,9 +687,9 @@ struct LiveStrengthSheet: View {
     }
 
     private func gridRow(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun,
-                         set: StrengthSessionModel.WorkingSet, active: Bool) -> some View {
+                         set: StrengthSessionModel.WorkingSet) -> some View {
         HStack(spacing: 8) {
-            badge(ei: ei, si: si, number: si + 1, active: active, done: set.done)
+            badge(ei: ei, si: si, number: si + 1)
             previousCell(ei: ei, si: si, run: run)
                 .frame(maxWidth: .infinity, alignment: .leading)
             dataCells(ei: ei, si: si, run: run, set: set)
@@ -701,8 +701,7 @@ struct LiveStrengthSheet: View {
                            set: StrengthSessionModel.WorkingSet) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                badge(ei: ei, si: si, number: si + 1,
-                      active: ei == session.currentIndex && si == run.currentSet && !set.done, done: set.done)
+                badge(ei: ei, si: si, number: si + 1)
                 Spacer()
                 checkButton(ei: ei, si: si, set: set)
             }
@@ -711,15 +710,14 @@ struct LiveStrengthSheet: View {
         }
     }
 
-    /// The set-number badge — tap to open the optional Foco focused on this row. Amber when it's the active
-    /// set (color in the live datum), quiet otherwise.
-    private func badge(ei: Int, si: Int, number: Int, active: Bool, done: Bool) -> some View {
+    /// The set-number badge — tap to open the optional Foco focused on this row. Always in the effort hue
+    /// inside a ring, as the approved render (FER-499).
+    private func badge(ei: Int, si: Int, number: Int) -> some View {
         Button { openFoco(ei: ei, si: si) } label: {
             Text("\(number)").font(StrandFont.caption).monospacedDigit()
-                .foregroundStyle(active ? theme.dataStrain : theme.inkSecondary)
+                .foregroundStyle(theme.dataStrain)
                 .frame(width: 26, height: 26)
-                .background(active ? theme.surface : .clear, in: Circle())
-                .overlay(Circle().strokeBorder(active ? theme.dataStrain : Color.clear, lineWidth: 1.5))
+                .overlay(Circle().strokeBorder(theme.dataStrain, lineWidth: 1.5))
                 .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
         }
