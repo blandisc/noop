@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Detalle de Sueño: se quita la etiqueta «tu necesidad» de la gráfica de deuda semanal / Sleep detail: drop the "your need" label from the weekly debt chart.**
+  **ES** — En la gráfica de **Deuda de la semana**, la etiqueta «tu necesidad» se dibujaba pegada a la línea base y una noche de **superávit** (barra verde) crecía justo detrás del texto, asomando el verde; además confundía. Se quita la etiqueta: la línea base se queda como referencia (arriba dormiste de más, abajo te faltó) y el texto del bloque sigue explicando el sentido. Misma gráfica, mismos datos.
+  **EN** — In the **Weekly debt** chart, the "your need" label sat pinned to the baseline and a **surplus** night (green bar) grew right behind the text, leaking green; it also read as confusing. The label is removed: the baseline stays as the reference (above = slept over, below = fell short) and the block's caption still explains it. Same chart, same data.
+  ([Cenit/Screens/SleepDetailScreen.swift](Cenit/Screens/SleepDetailScreen.swift))
+
 - **Detalle (vista «Media móvil»): el eje Y muestra más valores / Detail ("Moving average" view): the Y axis shows more values.**
   **ES** — En la gráfica de «Media móvil» del detalle (Pasos, FC en reposo, Respiración, HRV, VO₂máx), el eje Y solo mostraba 3 marcas redondas (p. ej. 5k/10k/15k en Pasos) porque pedía pocas marcas automáticas. Ahora pide más, así que un rango amplio se lee a incrementos más finos (2.5k en Pasos). El rango ya era adaptativo a tus datos; lo que cambió es la densidad de marcas. Las hojas resumen compactas y las gráficas de «Rangos» (que ya traen sus umbrales) no cambian.
   **EN** — On the detail's "Moving average" chart (Steps, Resting HR, Respiration, HRV, VO₂max), the Y axis only showed 3 round ticks (e.g. 5k/10k/15k for Steps) because it requested few automatic ticks. It now requests more, so a wide range reads at finer increments (2.5k for Steps). The range was already adaptive to your data; what changed is tick density. The compact summary sheets and the "Ranges" charts (which carry their own thresholds) are unchanged.

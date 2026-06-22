@@ -681,7 +681,6 @@ struct SleepDetailScreen: View {
             ruleColor: theme.hairlineStrong,
             axisLabelColor: theme.inkTertiary,
             height: 96,
-            ruleLabel: String(localized: "your need"),
             weekdayLabel: Self.weekdayNarrow,
             valueFormat: { vsNeedMin in
                 vsNeedMin < 0 ? "−\(hoursMinutes(-vsNeedMin))" : "+\(hoursMinutes(vsNeedMin))"
