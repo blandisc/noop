@@ -569,7 +569,7 @@ struct MuscleMapScreen: View {
                 let primary = inv.weight >= Exercise.primaryWeight
                 let existing = hits[inv.muscle]?[ex.id]
                 if existing == nil || (primary && existing?.primary == false) {
-                    hits[inv.muscle, default: [:]][ex.id] = MuscleHit(exerciseId: ex.id, name: ex.name, primary: primary)
+                    hits[inv.muscle, default: [:]][ex.id] = MuscleHit(exerciseId: ex.id, name: StrengthDisplay.name(ex), primary: primary)
                 }
             }
         }

@@ -399,7 +399,7 @@ final class StrengthSessionModel: ObservableObject {
                 return WorkingSet(id: UUID().uuidString, weightKg: weight, reps: reps, done: false)
             }
             return ExerciseRun(id: slot.re.id, exerciseId: slot.re.exerciseId,
-                               name: slot.exercise?.name ?? String(localized: "Exercise"),
+                               name: slot.exercise.map(StrengthDisplay.name) ?? String(localized: "Exercise"),
                                type: type,
                                restSeconds: slot.re.restSeconds,
                                lastWeightKg: lastWeight, lastReps: lastReps,

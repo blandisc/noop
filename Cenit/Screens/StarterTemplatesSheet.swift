@@ -146,7 +146,7 @@ struct StarterTemplatesSheet: View {
 
     private func slotRow(_ slot: StarterTemplate.Slot) -> some View {
         let exercise = ExerciseCatalog.byID(slot.exerciseId)
-        let name = exercise.map { StrengthDisplay.titleCase($0.name) } ?? String(localized: "Exercise")
+        let name = exercise.map(StrengthDisplay.name) ?? String(localized: "Exercise")
         return HStack(spacing: 10) {
             Text(name).font(StrandFont.body).foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)

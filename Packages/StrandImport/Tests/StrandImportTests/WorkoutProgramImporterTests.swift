@@ -190,6 +190,20 @@ final class WorkoutProgramImporterTests: XCTestCase {
         XCTAssertNil(r.match("Press de banca con barra"))                       // different wording → no match
     }
 
+    func testReconcilerMatchesSpanishAndEnglishNames() {
+        // An exercise that carries both names (catalog entry, FER-501) matches a plan written in
+        // either language; an exercise with only an English name still matches English.
+        let bench = Exercise(id: "bench", name: "Barbell Bench Press", nameES: "Press de banca con barra",
+                             type: .weightReps, equipment: nil, primaryMuscles: [], secondaryMuscles: [], cues: [])
+        let squatEnOnly = ex("squat", "Squat")
+        let r = WorkoutExerciseReconciler(known: [bench, squatEnOnly])
+        XCTAssertEqual(r.match("Press de banca con barra")?.id, "bench")   // Spanish
+        XCTAssertEqual(r.match("PRESS DE BANCA CON BARRA")?.id, "bench")   // case-folded
+        XCTAssertEqual(r.match("Barbell Bench Press")?.id, "bench")        // English still works
+        XCTAssertEqual(r.match("squat")?.id, "squat")                      // English-only entry
+        XCTAssertNil(r.match("Sentadilla"))                               // no Spanish name → no match
+    }
+
     func testReconcilerListsUnmatchedNamesDedupedInOrder() throws {
         let program = try importer.parse(text: validES)   // 4 distinct names, none in this tiny catalog
         let known = [ex("ohp", "Press militar")]           // only one matches

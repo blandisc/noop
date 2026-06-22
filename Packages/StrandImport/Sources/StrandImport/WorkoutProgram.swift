@@ -242,13 +242,17 @@ public struct WorkoutProgramImporter {
 public struct WorkoutExerciseReconciler {
     private let byNormalizedName: [String: Exercise]
 
-    /// Build from the known exercises (catalog + custom). On a normalized-name collision the first
-    /// wins — deterministic, and the app passes the catalog sorted by name.
+    /// Build from the known exercises (catalog + custom). Indexes each exercise by BOTH its English
+    /// `name` and its Spanish `nameES` (when present, FER-501), so a plan written in either language
+    /// matches the catalog. On a normalized-name collision the first wins — deterministic, and the
+    /// app passes the catalog sorted by name.
     public init(known: [Exercise]) {
         var map: [String: Exercise] = [:]
         for ex in known {
-            let key = Self.normalize(ex.name)
-            if map[key] == nil { map[key] = ex }
+            for name in [ex.name, ex.nameES].compactMap({ $0 }) {
+                let key = Self.normalize(name)
+                if map[key] == nil { map[key] = ex }
+            }
         }
         byNormalizedName = map
     }

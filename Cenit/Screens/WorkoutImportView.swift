@@ -172,7 +172,7 @@ struct WorkoutImportView: View {
                     Image(systemName: "checkmark.circle.fill")
                         .font(StrandFont.subhead).foregroundStyle(theme.verdict)
                         .accessibilityHidden(true)
-                    Text("Matched · \(resolved.name)")
+                    Text("Matched · \(StrengthDisplay.name(resolved))")
                         .font(StrandFont.subhead).foregroundStyle(theme.verdict)
                     Spacer(minLength: NoopMetrics.space2)
                     Button { mappingTarget = MappingName(name: name) } label: {

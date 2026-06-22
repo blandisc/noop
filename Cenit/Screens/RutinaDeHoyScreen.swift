@@ -222,11 +222,11 @@ private struct PlanRow: Identifiable {
     /// Recent work sets (newest first) for the guided session's «la última vez» prefill (FER-347).
     var lastSets: [SetEntry] = []
     var id: String { re.id }
-    var name: String { exercise?.name ?? String(localized: "Exercise") }
-    /// Up to two primary muscles, capitalized for display (catalog stores them lowercased).
+    var name: String { exercise.map(StrengthDisplay.name) ?? String(localized: "Exercise") }
+    /// Up to two primary muscles in the device language (catalog stores them as English keys).
     var musclesText: String? {
         guard let m = exercise?.primaryMuscles, !m.isEmpty else { return nil }
-        return m.prefix(2).map { $0.capitalized }.joined(separator: " · ")
+        return m.prefix(2).map(StrengthDisplay.muscle).joined(separator: " · ")
     }
 }
 #endif

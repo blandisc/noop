@@ -1,0 +1,3494 @@
+[
+ {
+  "id": "3_4_Sit-Up",
+  "name": "Abdominal 3/4"
+ },
+ {
+  "id": "90_90_Hamstring",
+  "name": "Estiramiento isquiotibial 90/90"
+ },
+ {
+  "id": "Ab_Crunch_Machine",
+  "name": "Máquina de abdominales"
+ },
+ {
+  "id": "Ab_Roller",
+  "name": "Rueda abdominal"
+ },
+ {
+  "id": "Adductor",
+  "name": "Aductor"
+ },
+ {
+  "id": "Adductor_Groin",
+  "name": "Aductor / ingle"
+ },
+ {
+  "id": "Advanced_Kettlebell_Windmill",
+  "name": "Molino con pesa rusa avanzado"
+ },
+ {
+  "id": "Air_Bike",
+  "name": "Bicicleta de aire"
+ },
+ {
+  "id": "All_Fours_Quad_Stretch",
+  "name": "Estiramiento de cuádriceps en cuatro puntos"
+ },
+ {
+  "id": "Alternate_Hammer_Curl",
+  "name": "Curl martillo alternado"
+ },
+ {
+  "id": "Alternate_Heel_Touchers",
+  "name": "Toques de talón alternados"
+ },
+ {
+  "id": "Alternate_Incline_Dumbbell_Curl",
+  "name": "Curl inclinado con mancuerna alternado"
+ },
+ {
+  "id": "Alternate_Leg_Diagonal_Bound",
+  "name": "Salto diagonal a una pierna alternado"
+ },
+ {
+  "id": "Alternating_Cable_Shoulder_Press",
+  "name": "Press de hombros en polea alternado"
+ },
+ {
+  "id": "Alternating_Deltoid_Raise",
+  "name": "Elevación de deltoides alternada"
+ },
+ {
+  "id": "Alternating_Floor_Press",
+  "name": "Press en el piso alternado"
+ },
+ {
+  "id": "Alternating_Hang_Clean",
+  "name": "Cargada colgante alternada"
+ },
+ {
+  "id": "Alternating_Kettlebell_Press",
+  "name": "Press con pesa rusa alternado"
+ },
+ {
+  "id": "Alternating_Kettlebell_Row",
+  "name": "Remo con pesa rusa alternado"
+ },
+ {
+  "id": "Alternating_Renegade_Row",
+  "name": "Remo renegado alternado"
+ },
+ {
+  "id": "Ankle_Circles",
+  "name": "Círculos de tobillo"
+ },
+ {
+  "id": "Ankle_On_The_Knee",
+  "name": "Tobillo sobre la rodilla"
+ },
+ {
+  "id": "Anterior_Tibialis-SMR",
+  "name": "Tibial anterior (automasaje)"
+ },
+ {
+  "id": "Anti-Gravity_Press",
+  "name": "Press antigravedad"
+ },
+ {
+  "id": "Arm_Circles",
+  "name": "Círculos de brazos"
+ },
+ {
+  "id": "Arnold_Dumbbell_Press",
+  "name": "Press Arnold con mancuernas"
+ },
+ {
+  "id": "Around_The_Worlds",
+  "name": "Vueltas al mundo"
+ },
+ {
+  "id": "Atlas_Stone_Trainer",
+  "name": "Entrenador de piedras de Atlas"
+ },
+ {
+  "id": "Atlas_Stones",
+  "name": "Piedras de Atlas"
+ },
+ {
+  "id": "Axle_Deadlift",
+  "name": "Peso muerto con barra Axle"
+ },
+ {
+  "id": "Back_Flyes_-_With_Bands",
+  "name": "Aperturas para espalda con bandas"
+ },
+ {
+  "id": "Backward_Drag",
+  "name": "Arrastre hacia atrás"
+ },
+ {
+  "id": "Backward_Medicine_Ball_Throw",
+  "name": "Lanzamiento de balón medicinal hacia atrás"
+ },
+ {
+  "id": "Balance_Board",
+  "name": "Tabla de equilibrio"
+ },
+ {
+  "id": "Ball_Leg_Curl",
+  "name": "Curl femoral con balón"
+ },
+ {
+  "id": "Band_Assisted_Pull-Up",
+  "name": "Dominada asistida con banda"
+ },
+ {
+  "id": "Band_Good_Morning",
+  "name": "Buenos días con banda"
+ },
+ {
+  "id": "Band_Good_Morning_Pull_Through",
+  "name": "Buenos días con banda (jalón entre piernas)"
+ },
+ {
+  "id": "Band_Hip_Adductions",
+  "name": "Aducciones de cadera con banda"
+ },
+ {
+  "id": "Band_Pull_Apart",
+  "name": "Apertura con banda"
+ },
+ {
+  "id": "Band_Skull_Crusher",
+  "name": "Press francés con banda"
+ },
+ {
+  "id": "Barbell_Ab_Rollout",
+  "name": "Rueda abdominal con barra"
+ },
+ {
+  "id": "Barbell_Ab_Rollout_-_On_Knees",
+  "name": "Rueda abdominal con barra (de rodillas)"
+ },
+ {
+  "id": "Barbell_Bench_Press_-_Medium_Grip",
+  "name": "Press de banca con barra (agarre medio)"
+ },
+ {
+  "id": "Barbell_Curl",
+  "name": "Curl con barra"
+ },
+ {
+  "id": "Barbell_Curls_Lying_Against_An_Incline",
+  "name": "Curl con barra acostado en banco inclinado"
+ },
+ {
+  "id": "Barbell_Deadlift",
+  "name": "Peso muerto con barra"
+ },
+ {
+  "id": "Barbell_Full_Squat",
+  "name": "Sentadilla completa con barra"
+ },
+ {
+  "id": "Barbell_Glute_Bridge",
+  "name": "Puente de glúteos con barra"
+ },
+ {
+  "id": "Barbell_Guillotine_Bench_Press",
+  "name": "Press de banca guillotina con barra"
+ },
+ {
+  "id": "Barbell_Hack_Squat",
+  "name": "Sentadilla hack con barra"
+ },
+ {
+  "id": "Barbell_Hip_Thrust",
+  "name": "Empuje de cadera con barra"
+ },
+ {
+  "id": "Barbell_Incline_Bench_Press_-_Medium_Grip",
+  "name": "Press de banca inclinado con barra (agarre medio)"
+ },
+ {
+  "id": "Barbell_Incline_Shoulder_Raise",
+  "name": "Elevación de hombro inclinada con barra"
+ },
+ {
+  "id": "Barbell_Lunge",
+  "name": "Zancada con barra"
+ },
+ {
+  "id": "Barbell_Rear_Delt_Row",
+  "name": "Remo para deltoide posterior con barra"
+ },
+ {
+  "id": "Barbell_Rollout_from_Bench",
+  "name": "Rueda con barra desde banco"
+ },
+ {
+  "id": "Barbell_Seated_Calf_Raise",
+  "name": "Elevación de pantorrilla sentado con barra"
+ },
+ {
+  "id": "Barbell_Shoulder_Press",
+  "name": "Press de hombros con barra"
+ },
+ {
+  "id": "Barbell_Shrug",
+  "name": "Encogimiento de hombros con barra"
+ },
+ {
+  "id": "Barbell_Shrug_Behind_The_Back",
+  "name": "Encogimiento con barra por detrás"
+ },
+ {
+  "id": "Barbell_Side_Bend",
+  "name": "Flexión lateral con barra"
+ },
+ {
+  "id": "Barbell_Side_Split_Squat",
+  "name": "Sentadilla búlgara lateral con barra"
+ },
+ {
+  "id": "Barbell_Squat",
+  "name": "Sentadilla con barra"
+ },
+ {
+  "id": "Barbell_Squat_To_A_Bench",
+  "name": "Sentadilla a banco con barra"
+ },
+ {
+  "id": "Barbell_Step_Ups",
+  "name": "Subidas a banco con barra"
+ },
+ {
+  "id": "Barbell_Walking_Lunge",
+  "name": "Zancada caminando con barra"
+ },
+ {
+  "id": "Battling_Ropes",
+  "name": "Cuerdas de batalla"
+ },
+ {
+  "id": "Bear_Crawl_Sled_Drags",
+  "name": "Arrastre de trineo en gateo de oso"
+ },
+ {
+  "id": "Behind_Head_Chest_Stretch",
+  "name": "Estiramiento de pecho detrás de la cabeza"
+ },
+ {
+  "id": "Bench_Dips",
+  "name": "Fondos en banco"
+ },
+ {
+  "id": "Bench_Jump",
+  "name": "Salto al banco"
+ },
+ {
+  "id": "Bench_Press_-_Powerlifting",
+  "name": "Press de banca (powerlifting)"
+ },
+ {
+  "id": "Bench_Press_-_With_Bands",
+  "name": "Press de banca con bandas"
+ },
+ {
+  "id": "Bench_Press_with_Chains",
+  "name": "Press de banca con cadenas"
+ },
+ {
+  "id": "Bench_Sprint",
+  "name": "Sprint con banco"
+ },
+ {
+  "id": "Bent-Arm_Barbell_Pullover",
+  "name": "Pullover con barra, brazos flexionados"
+ },
+ {
+  "id": "Bent-Arm_Dumbbell_Pullover",
+  "name": "Pullover con mancuerna, brazos flexionados"
+ },
+ {
+  "id": "Bent-Knee_Hip_Raise",
+  "name": "Elevación de cadera con rodillas flexionadas"
+ },
+ {
+  "id": "Bent_Over_Barbell_Row",
+  "name": "Remo inclinado con barra"
+ },
+ {
+  "id": "Bent_Over_Dumbbell_Rear_Delt_Raise_With_Head_On_Bench",
+  "name": "Elevación de deltoide posterior con mancuernas inclinado, cabeza en banco"
+ },
+ {
+  "id": "Bent_Over_Low-Pulley_Side_Lateral",
+  "name": "Elevación lateral inclinado en polea baja"
+ },
+ {
+  "id": "Bent_Over_One-Arm_Long_Bar_Row",
+  "name": "Remo inclinado a un brazo con barra larga"
+ },
+ {
+  "id": "Bent_Over_Two-Arm_Long_Bar_Row",
+  "name": "Remo inclinado a dos brazos con barra larga"
+ },
+ {
+  "id": "Bent_Over_Two-Dumbbell_Row",
+  "name": "Remo inclinado con dos mancuernas"
+ },
+ {
+  "id": "Bent_Over_Two-Dumbbell_Row_With_Palms_In",
+  "name": "Remo inclinado con dos mancuernas, palmas hacia adentro"
+ },
+ {
+  "id": "Bent_Press",
+  "name": "Press lateral inclinado"
+ },
+ {
+  "id": "Bicycling",
+  "name": "Ciclismo"
+ },
+ {
+  "id": "Bicycling_Stationary",
+  "name": "Ciclismo estacionario"
+ },
+ {
+  "id": "Board_Press",
+  "name": "Press con tabla"
+ },
+ {
+  "id": "Body-Up",
+  "name": "Elevación de cuerpo"
+ },
+ {
+  "id": "Body_Tricep_Press",
+  "name": "Press de tríceps con peso corporal"
+ },
+ {
+  "id": "Bodyweight_Flyes",
+  "name": "Aperturas con peso corporal"
+ },
+ {
+  "id": "Bodyweight_Mid_Row",
+  "name": "Remo medio con peso corporal"
+ },
+ {
+  "id": "Bodyweight_Squat",
+  "name": "Sentadilla con peso corporal"
+ },
+ {
+  "id": "Bodyweight_Walking_Lunge",
+  "name": "Zancada caminando con peso corporal"
+ },
+ {
+  "id": "Bosu_Ball_Cable_Crunch_With_Side_Bends",
+  "name": "Abdominal en polea sobre Bosu con flexiones laterales"
+ },
+ {
+  "id": "Bottoms-Up_Clean_From_The_Hang_Position",
+  "name": "Cargada bottoms-up desde posición colgante"
+ },
+ {
+  "id": "Bottoms_Up",
+  "name": "Pesa rusa invertida (bottoms-up)"
+ },
+ {
+  "id": "Box_Jump_Multiple_Response",
+  "name": "Salto al cajón (repetido)"
+ },
+ {
+  "id": "Box_Skip",
+  "name": "Salto alterno al cajón"
+ },
+ {
+  "id": "Box_Squat",
+  "name": "Sentadilla a cajón"
+ },
+ {
+  "id": "Box_Squat_with_Bands",
+  "name": "Sentadilla a cajón con bandas"
+ },
+ {
+  "id": "Box_Squat_with_Chains",
+  "name": "Sentadilla a cajón con cadenas"
+ },
+ {
+  "id": "Brachialis-SMR",
+  "name": "Braquial (automasaje)"
+ },
+ {
+  "id": "Bradford_Rocky_Presses",
+  "name": "Press Bradford"
+ },
+ {
+  "id": "Butt-Ups",
+  "name": "Elevaciones de glúteo"
+ },
+ {
+  "id": "Butt_Lift_Bridge",
+  "name": "Puente de glúteos"
+ },
+ {
+  "id": "Butterfly",
+  "name": "Mariposa (pec deck)"
+ },
+ {
+  "id": "Cable_Chest_Press",
+  "name": "Press de pecho en polea"
+ },
+ {
+  "id": "Cable_Crossover",
+  "name": "Cruce de poleas"
+ },
+ {
+  "id": "Cable_Crunch",
+  "name": "Abdominal en polea"
+ },
+ {
+  "id": "Cable_Deadlifts",
+  "name": "Peso muerto en polea"
+ },
+ {
+  "id": "Cable_Hammer_Curls_-_Rope_Attachment",
+  "name": "Curl martillo en polea con cuerda"
+ },
+ {
+  "id": "Cable_Hip_Adduction",
+  "name": "Aducción de cadera en polea"
+ },
+ {
+  "id": "Cable_Incline_Pushdown",
+  "name": "Extensión inclinada en polea"
+ },
+ {
+  "id": "Cable_Incline_Triceps_Extension",
+  "name": "Extensión de tríceps inclinada en polea"
+ },
+ {
+  "id": "Cable_Internal_Rotation",
+  "name": "Rotación interna en polea"
+ },
+ {
+  "id": "Cable_Iron_Cross",
+  "name": "Cruz de hierro en polea"
+ },
+ {
+  "id": "Cable_Judo_Flip",
+  "name": "Giro de judo en polea"
+ },
+ {
+  "id": "Cable_Lying_Triceps_Extension",
+  "name": "Extensión de tríceps acostado en polea"
+ },
+ {
+  "id": "Cable_One_Arm_Tricep_Extension",
+  "name": "Extensión de tríceps a un brazo en polea"
+ },
+ {
+  "id": "Cable_Preacher_Curl",
+  "name": "Curl predicador en polea"
+ },
+ {
+  "id": "Cable_Rear_Delt_Fly",
+  "name": "Apertura para deltoide posterior en polea"
+ },
+ {
+  "id": "Cable_Reverse_Crunch",
+  "name": "Abdominal inverso en polea"
+ },
+ {
+  "id": "Cable_Rope_Overhead_Triceps_Extension",
+  "name": "Extensión de tríceps sobre la cabeza en polea con cuerda"
+ },
+ {
+  "id": "Cable_Rope_Rear-Delt_Rows",
+  "name": "Remo para deltoide posterior en polea con cuerda"
+ },
+ {
+  "id": "Cable_Russian_Twists",
+  "name": "Giros rusos en polea"
+ },
+ {
+  "id": "Cable_Seated_Crunch",
+  "name": "Abdominal sentado en polea"
+ },
+ {
+  "id": "Cable_Seated_Lateral_Raise",
+  "name": "Elevación lateral sentado en polea"
+ },
+ {
+  "id": "Cable_Shoulder_Press",
+  "name": "Press de hombros en polea"
+ },
+ {
+  "id": "Cable_Shrugs",
+  "name": "Encogimientos en polea"
+ },
+ {
+  "id": "Cable_Wrist_Curl",
+  "name": "Curl de muñeca en polea"
+ },
+ {
+  "id": "Calf-Machine_Shoulder_Shrug",
+  "name": "Encogimiento de hombros en máquina de pantorrilla"
+ },
+ {
+  "id": "Calf_Press",
+  "name": "Press de pantorrilla"
+ },
+ {
+  "id": "Calf_Press_On_The_Leg_Press_Machine",
+  "name": "Press de pantorrilla en prensa de pierna"
+ },
+ {
+  "id": "Calf_Raise_On_A_Dumbbell",
+  "name": "Elevación de pantorrilla sobre mancuerna"
+ },
+ {
+  "id": "Calf_Raises_-_With_Bands",
+  "name": "Elevación de pantorrilla con bandas"
+ },
+ {
+  "id": "Calf_Stretch_Elbows_Against_Wall",
+  "name": "Estiramiento de pantorrilla con codos en la pared"
+ },
+ {
+  "id": "Calf_Stretch_Hands_Against_Wall",
+  "name": "Estiramiento de pantorrilla con manos en la pared"
+ },
+ {
+  "id": "Calves-SMR",
+  "name": "Pantorrillas (automasaje)"
+ },
+ {
+  "id": "Car_Deadlift",
+  "name": "Peso muerto de auto"
+ },
+ {
+  "id": "Car_Drivers",
+  "name": "Giros de volante con disco"
+ },
+ {
+  "id": "Carioca_Quick_Step",
+  "name": "Paso rápido carioca"
+ },
+ {
+  "id": "Cat_Stretch",
+  "name": "Estiramiento del gato"
+ },
+ {
+  "id": "Catch_and_Overhead_Throw",
+  "name": "Recepción y lanzamiento sobre la cabeza"
+ },
+ {
+  "id": "Chain_Handle_Extension",
+  "name": "Extensión con mango y cadena"
+ },
+ {
+  "id": "Chain_Press",
+  "name": "Press con cadenas"
+ },
+ {
+  "id": "Chair_Leg_Extended_Stretch",
+  "name": "Estiramiento de pierna extendida en silla"
+ },
+ {
+  "id": "Chair_Lower_Back_Stretch",
+  "name": "Estiramiento de espalda baja en silla"
+ },
+ {
+  "id": "Chair_Squat",
+  "name": "Sentadilla en silla"
+ },
+ {
+  "id": "Chair_Upper_Body_Stretch",
+  "name": "Estiramiento del tren superior en silla"
+ },
+ {
+  "id": "Chest_And_Front_Of_Shoulder_Stretch",
+  "name": "Estiramiento de pecho y frente del hombro"
+ },
+ {
+  "id": "Chest_Push_from_3_point_stance",
+  "name": "Empuje de pecho desde postura de 3 puntos"
+ },
+ {
+  "id": "Chest_Push_multiple_response",
+  "name": "Empuje de pecho (repetido)"
+ },
+ {
+  "id": "Chest_Push_single_response",
+  "name": "Empuje de pecho (único)"
+ },
+ {
+  "id": "Chest_Push_with_Run_Release",
+  "name": "Empuje de pecho con salida en carrera"
+ },
+ {
+  "id": "Chest_Stretch_on_Stability_Ball",
+  "name": "Estiramiento de pecho en pelota de estabilidad"
+ },
+ {
+  "id": "Childs_Pose",
+  "name": "Postura del niño"
+ },
+ {
+  "id": "Chin-Up",
+  "name": "Dominada supina"
+ },
+ {
+  "id": "Chin_To_Chest_Stretch",
+  "name": "Estiramiento de mentón al pecho"
+ },
+ {
+  "id": "Circus_Bell",
+  "name": "Campana de circo"
+ },
+ {
+  "id": "Clean",
+  "name": "Cargada"
+ },
+ {
+  "id": "Clean_Deadlift",
+  "name": "Peso muerto de cargada"
+ },
+ {
+  "id": "Clean_Pull",
+  "name": "Jalón de cargada"
+ },
+ {
+  "id": "Clean_Shrug",
+  "name": "Encogimiento de cargada"
+ },
+ {
+  "id": "Clean_and_Jerk",
+  "name": "Cargada y envión"
+ },
+ {
+  "id": "Clean_and_Press",
+  "name": "Cargada y press"
+ },
+ {
+  "id": "Clean_from_Blocks",
+  "name": "Cargada desde bloques"
+ },
+ {
+  "id": "Clock_Push-Up",
+  "name": "Lagartija del reloj"
+ },
+ {
+  "id": "Close-Grip_Barbell_Bench_Press",
+  "name": "Press de banca con barra agarre cerrado"
+ },
+ {
+  "id": "Close-Grip_Dumbbell_Press",
+  "name": "Press con mancuernas agarre cerrado"
+ },
+ {
+  "id": "Close-Grip_EZ-Bar_Curl_with_Band",
+  "name": "Curl con barra Z agarre cerrado y banda"
+ },
+ {
+  "id": "Close-Grip_EZ-Bar_Press",
+  "name": "Press con barra Z agarre cerrado"
+ },
+ {
+  "id": "Close-Grip_EZ_Bar_Curl",
+  "name": "Curl con barra Z agarre cerrado"
+ },
+ {
+  "id": "Close-Grip_Front_Lat_Pulldown",
+  "name": "Jalón al pecho frontal agarre cerrado"
+ },
+ {
+  "id": "Close-Grip_Push-Up_off_of_a_Dumbbell",
+  "name": "Lagartija agarre cerrado sobre mancuerna"
+ },
+ {
+  "id": "Close-Grip_Standing_Barbell_Curl",
+  "name": "Curl de pie con barra agarre cerrado"
+ },
+ {
+  "id": "Cocoons",
+  "name": "Capullos (rodillas al pecho)"
+ },
+ {
+  "id": "Conans_Wheel",
+  "name": "Rueda de Conan"
+ },
+ {
+  "id": "Concentration_Curls",
+  "name": "Curl concentrado"
+ },
+ {
+  "id": "Cross-Body_Crunch",
+  "name": "Abdominal cruzado"
+ },
+ {
+  "id": "Cross_Body_Hammer_Curl",
+  "name": "Curl martillo cruzado"
+ },
+ {
+  "id": "Cross_Over_-_With_Bands",
+  "name": "Cruce con bandas"
+ },
+ {
+  "id": "Crossover_Reverse_Lunge",
+  "name": "Zancada inversa cruzada"
+ },
+ {
+  "id": "Crucifix",
+  "name": "Crucifijo (sostener discos)"
+ },
+ {
+  "id": "Crunch_-_Hands_Overhead",
+  "name": "Abdominal con manos arriba"
+ },
+ {
+  "id": "Crunch_-_Legs_On_Exercise_Ball",
+  "name": "Abdominal con piernas en pelota"
+ },
+ {
+  "id": "Crunches",
+  "name": "Abdominales"
+ },
+ {
+  "id": "Cuban_Press",
+  "name": "Press cubano"
+ },
+ {
+  "id": "Dancers_Stretch",
+  "name": "Estiramiento del bailarín"
+ },
+ {
+  "id": "Dead_Bug",
+  "name": "Bicho muerto"
+ },
+ {
+  "id": "Deadlift_with_Bands",
+  "name": "Peso muerto con bandas"
+ },
+ {
+  "id": "Deadlift_with_Chains",
+  "name": "Peso muerto con cadenas"
+ },
+ {
+  "id": "Decline_Barbell_Bench_Press",
+  "name": "Press de banca declinado con barra"
+ },
+ {
+  "id": "Decline_Close-Grip_Bench_To_Skull_Crusher",
+  "name": "Press de banca declinado agarre cerrado a press francés"
+ },
+ {
+  "id": "Decline_Crunch",
+  "name": "Abdominal declinado"
+ },
+ {
+  "id": "Decline_Dumbbell_Bench_Press",
+  "name": "Press de banca declinado con mancuernas"
+ },
+ {
+  "id": "Decline_Dumbbell_Flyes",
+  "name": "Aperturas declinadas con mancuernas"
+ },
+ {
+  "id": "Decline_Dumbbell_Triceps_Extension",
+  "name": "Extensión de tríceps declinada con mancuernas"
+ },
+ {
+  "id": "Decline_EZ_Bar_Triceps_Extension",
+  "name": "Extensión de tríceps declinada con barra Z"
+ },
+ {
+  "id": "Decline_Oblique_Crunch",
+  "name": "Abdominal oblicuo declinado"
+ },
+ {
+  "id": "Decline_Push-Up",
+  "name": "Lagartija declinada"
+ },
+ {
+  "id": "Decline_Reverse_Crunch",
+  "name": "Abdominal inverso declinado"
+ },
+ {
+  "id": "Decline_Smith_Press",
+  "name": "Press declinado en máquina Smith"
+ },
+ {
+  "id": "Deficit_Deadlift",
+  "name": "Peso muerto con déficit"
+ },
+ {
+  "id": "Depth_Jump_Leap",
+  "name": "Salto de profundidad"
+ },
+ {
+  "id": "Dip_Machine",
+  "name": "Máquina de fondos"
+ },
+ {
+  "id": "Dips_-_Chest_Version",
+  "name": "Fondos para pecho"
+ },
+ {
+  "id": "Dips_-_Triceps_Version",
+  "name": "Fondos para tríceps"
+ },
+ {
+  "id": "Donkey_Calf_Raises",
+  "name": "Elevación de pantorrilla a burro"
+ },
+ {
+  "id": "Double_Kettlebell_Alternating_Hang_Clean",
+  "name": "Cargada colgante alternada con dos pesas rusas"
+ },
+ {
+  "id": "Double_Kettlebell_Jerk",
+  "name": "Envión con dos pesas rusas"
+ },
+ {
+  "id": "Double_Kettlebell_Push_Press",
+  "name": "Push press con dos pesas rusas"
+ },
+ {
+  "id": "Double_Kettlebell_Snatch",
+  "name": "Arranque con dos pesas rusas"
+ },
+ {
+  "id": "Double_Kettlebell_Windmill",
+  "name": "Molino con dos pesas rusas"
+ },
+ {
+  "id": "Double_Leg_Butt_Kick",
+  "name": "Patada de glúteo a dos piernas"
+ },
+ {
+  "id": "Downward_Facing_Balance",
+  "name": "Equilibrio boca abajo"
+ },
+ {
+  "id": "Drag_Curl",
+  "name": "Curl de arrastre"
+ },
+ {
+  "id": "Drop_Push",
+  "name": "Empuje con caída"
+ },
+ {
+  "id": "Dumbbell_Alternate_Bicep_Curl",
+  "name": "Curl de bíceps alternado con mancuernas"
+ },
+ {
+  "id": "Dumbbell_Bench_Press",
+  "name": "Press de banca con mancuernas"
+ },
+ {
+  "id": "Dumbbell_Bench_Press_with_Neutral_Grip",
+  "name": "Press de banca con mancuernas agarre neutro"
+ },
+ {
+  "id": "Dumbbell_Bicep_Curl",
+  "name": "Curl de bíceps con mancuernas"
+ },
+ {
+  "id": "Dumbbell_Clean",
+  "name": "Cargada con mancuernas"
+ },
+ {
+  "id": "Dumbbell_Floor_Press",
+  "name": "Press en el piso con mancuernas"
+ },
+ {
+  "id": "Dumbbell_Flyes",
+  "name": "Aperturas con mancuernas"
+ },
+ {
+  "id": "Dumbbell_Incline_Row",
+  "name": "Remo inclinado con mancuernas"
+ },
+ {
+  "id": "Dumbbell_Incline_Shoulder_Raise",
+  "name": "Elevación de hombro inclinada con mancuernas"
+ },
+ {
+  "id": "Dumbbell_Lunges",
+  "name": "Zancadas con mancuernas"
+ },
+ {
+  "id": "Dumbbell_Lying_One-Arm_Rear_Lateral_Raise",
+  "name": "Elevación posterior a un brazo acostado con mancuerna"
+ },
+ {
+  "id": "Dumbbell_Lying_Pronation",
+  "name": "Pronación acostado con mancuerna"
+ },
+ {
+  "id": "Dumbbell_Lying_Rear_Lateral_Raise",
+  "name": "Elevación posterior acostado con mancuernas"
+ },
+ {
+  "id": "Dumbbell_Lying_Supination",
+  "name": "Supinación acostado con mancuerna"
+ },
+ {
+  "id": "Dumbbell_One-Arm_Shoulder_Press",
+  "name": "Press de hombro a un brazo con mancuerna"
+ },
+ {
+  "id": "Dumbbell_One-Arm_Triceps_Extension",
+  "name": "Extensión de tríceps a un brazo con mancuerna"
+ },
+ {
+  "id": "Dumbbell_One-Arm_Upright_Row",
+  "name": "Remo al mentón a un brazo con mancuerna"
+ },
+ {
+  "id": "Dumbbell_Prone_Incline_Curl",
+  "name": "Curl boca abajo en banco inclinado con mancuernas"
+ },
+ {
+  "id": "Dumbbell_Raise",
+  "name": "Elevación con mancuernas"
+ },
+ {
+  "id": "Dumbbell_Rear_Lunge",
+  "name": "Zancada hacia atrás con mancuernas"
+ },
+ {
+  "id": "Dumbbell_Scaption",
+  "name": "Elevación en el plano escapular con mancuernas"
+ },
+ {
+  "id": "Dumbbell_Seated_Box_Jump",
+  "name": "Salto al cajón sentado con mancuernas"
+ },
+ {
+  "id": "Dumbbell_Seated_One-Leg_Calf_Raise",
+  "name": "Elevación de pantorrilla a una pierna sentado con mancuerna"
+ },
+ {
+  "id": "Dumbbell_Shoulder_Press",
+  "name": "Press de hombros con mancuernas"
+ },
+ {
+  "id": "Dumbbell_Shrug",
+  "name": "Encogimiento de hombros con mancuernas"
+ },
+ {
+  "id": "Dumbbell_Side_Bend",
+  "name": "Flexión lateral con mancuerna"
+ },
+ {
+  "id": "Dumbbell_Squat",
+  "name": "Sentadilla con mancuernas"
+ },
+ {
+  "id": "Dumbbell_Squat_To_A_Bench",
+  "name": "Sentadilla a banco con mancuernas"
+ },
+ {
+  "id": "Dumbbell_Step_Ups",
+  "name": "Subidas a banco con mancuernas"
+ },
+ {
+  "id": "Dumbbell_Tricep_Extension_-Pronated_Grip",
+  "name": "Extensión de tríceps con mancuernas agarre pronado"
+ },
+ {
+  "id": "Dynamic_Back_Stretch",
+  "name": "Estiramiento dinámico de espalda"
+ },
+ {
+  "id": "Dynamic_Chest_Stretch",
+  "name": "Estiramiento dinámico de pecho"
+ },
+ {
+  "id": "EZ-Bar_Curl",
+  "name": "Curl con barra Z"
+ },
+ {
+  "id": "EZ-Bar_Skullcrusher",
+  "name": "Press francés con barra Z"
+ },
+ {
+  "id": "Elbow_Circles",
+  "name": "Círculos de codo"
+ },
+ {
+  "id": "Elbow_to_Knee",
+  "name": "Codo a la rodilla"
+ },
+ {
+  "id": "Elbows_Back",
+  "name": "Codos hacia atrás"
+ },
+ {
+  "id": "Elevated_Back_Lunge",
+  "name": "Zancada hacia atrás elevada"
+ },
+ {
+  "id": "Elevated_Cable_Rows",
+  "name": "Remo en polea elevado"
+ },
+ {
+  "id": "Elliptical_Trainer",
+  "name": "Elíptica"
+ },
+ {
+  "id": "Exercise_Ball_Crunch",
+  "name": "Abdominal en pelota"
+ },
+ {
+  "id": "Exercise_Ball_Pull-In",
+  "name": "Encogimiento de piernas con pelota"
+ },
+ {
+  "id": "Extended_Range_One-Arm_Kettlebell_Floor_Press",
+  "name": "Press en el piso a un brazo con pesa rusa, rango extendido"
+ },
+ {
+  "id": "External_Rotation",
+  "name": "Rotación externa"
+ },
+ {
+  "id": "External_Rotation_with_Band",
+  "name": "Rotación externa con banda"
+ },
+ {
+  "id": "External_Rotation_with_Cable",
+  "name": "Rotación externa en polea"
+ },
+ {
+  "id": "Face_Pull",
+  "name": "Jalón a la cara"
+ },
+ {
+  "id": "Farmers_Walk",
+  "name": "Caminata del granjero"
+ },
+ {
+  "id": "Fast_Skipping",
+  "name": "Salto de cuerda rápido"
+ },
+ {
+  "id": "Finger_Curls",
+  "name": "Curl de dedos"
+ },
+ {
+  "id": "Flat_Bench_Cable_Flyes",
+  "name": "Aperturas en polea en banco plano"
+ },
+ {
+  "id": "Flat_Bench_Leg_Pull-In",
+  "name": "Encogimiento de piernas en banco plano"
+ },
+ {
+  "id": "Flat_Bench_Lying_Leg_Raise",
+  "name": "Elevación de piernas acostado en banco plano"
+ },
+ {
+  "id": "Flexor_Incline_Dumbbell_Curls",
+  "name": "Curl de flexores inclinado con mancuernas"
+ },
+ {
+  "id": "Floor_Glute-Ham_Raise",
+  "name": "Elevación glúteo-femoral en el piso"
+ },
+ {
+  "id": "Floor_Press",
+  "name": "Press en el piso"
+ },
+ {
+  "id": "Floor_Press_with_Chains",
+  "name": "Press en el piso con cadenas"
+ },
+ {
+  "id": "Flutter_Kicks",
+  "name": "Patada de tijera"
+ },
+ {
+  "id": "Foot-SMR",
+  "name": "Pie (automasaje)"
+ },
+ {
+  "id": "Forward_Drag_with_Press",
+  "name": "Arrastre hacia adelante con press"
+ },
+ {
+  "id": "Frankenstein_Squat",
+  "name": "Sentadilla Frankenstein"
+ },
+ {
+  "id": "Freehand_Jump_Squat",
+  "name": "Sentadilla con salto sin peso"
+ },
+ {
+  "id": "Frog_Hops",
+  "name": "Saltos de rana"
+ },
+ {
+  "id": "Frog_Sit-Ups",
+  "name": "Abdominales de rana"
+ },
+ {
+  "id": "Front_Barbell_Squat",
+  "name": "Sentadilla frontal con barra"
+ },
+ {
+  "id": "Front_Barbell_Squat_To_A_Bench",
+  "name": "Sentadilla frontal a banco con barra"
+ },
+ {
+  "id": "Front_Box_Jump",
+  "name": "Salto frontal al cajón"
+ },
+ {
+  "id": "Front_Cable_Raise",
+  "name": "Elevación frontal en polea"
+ },
+ {
+  "id": "Front_Cone_Hops_or_hurdle_hops",
+  "name": "Saltos frontales sobre conos"
+ },
+ {
+  "id": "Front_Dumbbell_Raise",
+  "name": "Elevación frontal con mancuernas"
+ },
+ {
+  "id": "Front_Incline_Dumbbell_Raise",
+  "name": "Elevación frontal inclinada con mancuernas"
+ },
+ {
+  "id": "Front_Leg_Raises",
+  "name": "Elevación frontal de piernas"
+ },
+ {
+  "id": "Front_Plate_Raise",
+  "name": "Elevación frontal con disco"
+ },
+ {
+  "id": "Front_Raise_And_Pullover",
+  "name": "Elevación frontal y pullover"
+ },
+ {
+  "id": "Front_Squat_Clean_Grip",
+  "name": "Sentadilla frontal (agarre de cargada)"
+ },
+ {
+  "id": "Front_Squats_With_Two_Kettlebells",
+  "name": "Sentadilla frontal con dos pesas rusas"
+ },
+ {
+  "id": "Front_Two-Dumbbell_Raise",
+  "name": "Elevación frontal con dos mancuernas"
+ },
+ {
+  "id": "Full_Range-Of-Motion_Lat_Pulldown",
+  "name": "Jalón al pecho de rango completo"
+ },
+ {
+  "id": "Gironda_Sternum_Chins",
+  "name": "Dominadas al esternón de Gironda"
+ },
+ {
+  "id": "Glute_Ham_Raise",
+  "name": "Elevación glúteo-femoral"
+ },
+ {
+  "id": "Glute_Kickback",
+  "name": "Patada de glúteo"
+ },
+ {
+  "id": "Goblet_Squat",
+  "name": "Sentadilla goblet"
+ },
+ {
+  "id": "Good_Morning",
+  "name": "Buenos días"
+ },
+ {
+  "id": "Good_Morning_off_Pins",
+  "name": "Buenos días desde pines"
+ },
+ {
+  "id": "Gorilla_Chin_Crunch",
+  "name": "Dominada-abdominal de gorila"
+ },
+ {
+  "id": "Groin_and_Back_Stretch",
+  "name": "Estiramiento de ingle y espalda"
+ },
+ {
+  "id": "Groiners",
+  "name": "Estiramiento de ingle dinámico (groiners)"
+ },
+ {
+  "id": "Hack_Squat",
+  "name": "Sentadilla hack"
+ },
+ {
+  "id": "Hammer_Curls",
+  "name": "Curl martillo"
+ },
+ {
+  "id": "Hammer_Grip_Incline_DB_Bench_Press",
+  "name": "Press de banca inclinado con mancuernas agarre martillo"
+ },
+ {
+  "id": "Hamstring-SMR",
+  "name": "Isquiotibiales (automasaje)"
+ },
+ {
+  "id": "Hamstring_Stretch",
+  "name": "Estiramiento de isquiotibiales"
+ },
+ {
+  "id": "Handstand_Push-Ups",
+  "name": "Lagartijas en parada de manos"
+ },
+ {
+  "id": "Hang_Clean",
+  "name": "Cargada colgante"
+ },
+ {
+  "id": "Hang_Clean_-_Below_the_Knees",
+  "name": "Cargada colgante (por debajo de las rodillas)"
+ },
+ {
+  "id": "Hang_Snatch",
+  "name": "Arranque colgante"
+ },
+ {
+  "id": "Hang_Snatch_-_Below_Knees",
+  "name": "Arranque colgante (por debajo de las rodillas)"
+ },
+ {
+  "id": "Hanging_Bar_Good_Morning",
+  "name": "Buenos días con barra colgante"
+ },
+ {
+  "id": "Hanging_Leg_Raise",
+  "name": "Elevación de piernas colgado"
+ },
+ {
+  "id": "Hanging_Pike",
+  "name": "Elevación en V colgado (pike)"
+ },
+ {
+  "id": "Heaving_Snatch_Balance",
+  "name": "Equilibrio de arranque con impulso"
+ },
+ {
+  "id": "Heavy_Bag_Thrust",
+  "name": "Empuje de saco pesado"
+ },
+ {
+  "id": "High_Cable_Curls",
+  "name": "Curl en polea alta"
+ },
+ {
+  "id": "Hip_Circles_prone",
+  "name": "Círculos de cadera (boca abajo)"
+ },
+ {
+  "id": "Hip_Extension_with_Bands",
+  "name": "Extensión de cadera con bandas"
+ },
+ {
+  "id": "Hip_Flexion_with_Band",
+  "name": "Flexión de cadera con banda"
+ },
+ {
+  "id": "Hip_Lift_with_Band",
+  "name": "Elevación de cadera con banda"
+ },
+ {
+  "id": "Hug_A_Ball",
+  "name": "Abrazar la pelota"
+ },
+ {
+  "id": "Hug_Knees_To_Chest",
+  "name": "Abrazar rodillas al pecho"
+ },
+ {
+  "id": "Hurdle_Hops",
+  "name": "Saltos sobre vallas"
+ },
+ {
+  "id": "Hyperextensions_Back_Extensions",
+  "name": "Hiperextensiones (extensiones de espalda)"
+ },
+ {
+  "id": "Hyperextensions_With_No_Hyperextension_Bench",
+  "name": "Hiperextensiones sin banco"
+ },
+ {
+  "id": "IT_Band_and_Glute_Stretch",
+  "name": "Estiramiento de banda iliotibial y glúteo"
+ },
+ {
+  "id": "Iliotibial_Tract-SMR",
+  "name": "Banda iliotibial (automasaje)"
+ },
+ {
+  "id": "Inchworm",
+  "name": "Gusano (inchworm)"
+ },
+ {
+  "id": "Incline_Barbell_Triceps_Extension",
+  "name": "Extensión de tríceps inclinada con barra"
+ },
+ {
+  "id": "Incline_Bench_Pull",
+  "name": "Remo en banco inclinado"
+ },
+ {
+  "id": "Incline_Cable_Chest_Press",
+  "name": "Press de pecho inclinado en polea"
+ },
+ {
+  "id": "Incline_Cable_Flye",
+  "name": "Apertura inclinada en polea"
+ },
+ {
+  "id": "Incline_Dumbbell_Bench_With_Palms_Facing_In",
+  "name": "Press de banca inclinado con mancuernas, palmas hacia adentro"
+ },
+ {
+  "id": "Incline_Dumbbell_Curl",
+  "name": "Curl inclinado con mancuernas"
+ },
+ {
+  "id": "Incline_Dumbbell_Flyes",
+  "name": "Aperturas inclinadas con mancuernas"
+ },
+ {
+  "id": "Incline_Dumbbell_Flyes_-_With_A_Twist",
+  "name": "Aperturas inclinadas con mancuernas (con giro)"
+ },
+ {
+  "id": "Incline_Dumbbell_Press",
+  "name": "Press inclinado con mancuernas"
+ },
+ {
+  "id": "Incline_Hammer_Curls",
+  "name": "Curl martillo inclinado"
+ },
+ {
+  "id": "Incline_Inner_Biceps_Curl",
+  "name": "Curl de bíceps interno inclinado"
+ },
+ {
+  "id": "Incline_Push-Up",
+  "name": "Lagartija inclinada"
+ },
+ {
+  "id": "Incline_Push-Up_Close-Grip",
+  "name": "Lagartija inclinada agarre cerrado"
+ },
+ {
+  "id": "Incline_Push-Up_Depth_Jump",
+  "name": "Lagartija inclinada con salto de profundidad"
+ },
+ {
+  "id": "Incline_Push-Up_Medium",
+  "name": "Lagartija inclinada agarre medio"
+ },
+ {
+  "id": "Incline_Push-Up_Reverse_Grip",
+  "name": "Lagartija inclinada agarre inverso"
+ },
+ {
+  "id": "Incline_Push-Up_Wide",
+  "name": "Lagartija inclinada agarre abierto"
+ },
+ {
+  "id": "Intermediate_Groin_Stretch",
+  "name": "Estiramiento de ingle intermedio"
+ },
+ {
+  "id": "Intermediate_Hip_Flexor_and_Quad_Stretch",
+  "name": "Estiramiento intermedio de flexor de cadera y cuádriceps"
+ },
+ {
+  "id": "Internal_Rotation_with_Band",
+  "name": "Rotación interna con banda"
+ },
+ {
+  "id": "Inverted_Row",
+  "name": "Remo invertido"
+ },
+ {
+  "id": "Inverted_Row_with_Straps",
+  "name": "Remo invertido con correas"
+ },
+ {
+  "id": "Iron_Cross",
+  "name": "Cruz de hierro"
+ },
+ {
+  "id": "Iron_Crosses_stretch",
+  "name": "Cruz de hierro (estiramiento)"
+ },
+ {
+  "id": "Isometric_Chest_Squeezes",
+  "name": "Contracción isométrica de pecho"
+ },
+ {
+  "id": "Isometric_Neck_Exercise_-_Front_And_Back",
+  "name": "Ejercicio isométrico de cuello (frente y atrás)"
+ },
+ {
+  "id": "Isometric_Neck_Exercise_-_Sides",
+  "name": "Ejercicio isométrico de cuello (lados)"
+ },
+ {
+  "id": "Isometric_Wipers",
+  "name": "Limpiaparabrisas isométrico"
+ },
+ {
+  "id": "JM_Press",
+  "name": "Press JM"
+ },
+ {
+  "id": "Jackknife_Sit-Up",
+  "name": "Abdominal navaja"
+ },
+ {
+  "id": "Janda_Sit-Up",
+  "name": "Abdominal Janda"
+ },
+ {
+  "id": "Jefferson_Squats",
+  "name": "Sentadilla Jefferson"
+ },
+ {
+  "id": "Jerk_Balance",
+  "name": "Equilibrio de envión"
+ },
+ {
+  "id": "Jerk_Dip_Squat",
+  "name": "Sentadilla de impulso de envión"
+ },
+ {
+  "id": "Jogging_Treadmill",
+  "name": "Trote en caminadora"
+ },
+ {
+  "id": "Keg_Load",
+  "name": "Carga de barril"
+ },
+ {
+  "id": "Kettlebell_Arnold_Press",
+  "name": "Press Arnold con pesa rusa"
+ },
+ {
+  "id": "Kettlebell_Dead_Clean",
+  "name": "Cargada desde el piso con pesa rusa"
+ },
+ {
+  "id": "Kettlebell_Figure_8",
+  "name": "Ocho con pesa rusa"
+ },
+ {
+  "id": "Kettlebell_Hang_Clean",
+  "name": "Cargada colgante con pesa rusa"
+ },
+ {
+  "id": "Kettlebell_One-Legged_Deadlift",
+  "name": "Peso muerto a una pierna con pesa rusa"
+ },
+ {
+  "id": "Kettlebell_Pass_Between_The_Legs",
+  "name": "Pase entre las piernas con pesa rusa"
+ },
+ {
+  "id": "Kettlebell_Pirate_Ships",
+  "name": "Barcos pirata con pesa rusa"
+ },
+ {
+  "id": "Kettlebell_Pistol_Squat",
+  "name": "Sentadilla pistol con pesa rusa"
+ },
+ {
+  "id": "Kettlebell_Seated_Press",
+  "name": "Press sentado con pesa rusa"
+ },
+ {
+  "id": "Kettlebell_Seesaw_Press",
+  "name": "Press alterno con pesas rusas"
+ },
+ {
+  "id": "Kettlebell_Sumo_High_Pull",
+  "name": "Jalón alto sumo con pesa rusa"
+ },
+ {
+  "id": "Kettlebell_Thruster",
+  "name": "Thruster con pesa rusa"
+ },
+ {
+  "id": "Kettlebell_Turkish_Get-Up_Lunge_style",
+  "name": "Levantada turca con pesa rusa (estilo zancada)"
+ },
+ {
+  "id": "Kettlebell_Turkish_Get-Up_Squat_style",
+  "name": "Levantada turca con pesa rusa (estilo sentadilla)"
+ },
+ {
+  "id": "Kettlebell_Windmill",
+  "name": "Molino con pesa rusa"
+ },
+ {
+  "id": "Kipping_Muscle_Up",
+  "name": "Muscle up con kipping"
+ },
+ {
+  "id": "Knee_Across_The_Body",
+  "name": "Rodilla cruzada al cuerpo"
+ },
+ {
+  "id": "Knee_Circles",
+  "name": "Círculos de rodilla"
+ },
+ {
+  "id": "Knee_Hip_Raise_On_Parallel_Bars",
+  "name": "Elevación de rodillas/cadera en paralelas"
+ },
+ {
+  "id": "Knee_Tuck_Jump",
+  "name": "Salto con rodillas al pecho"
+ },
+ {
+  "id": "Kneeling_Arm_Drill",
+  "name": "Ejercicio de brazos de rodillas"
+ },
+ {
+  "id": "Kneeling_Cable_Crunch_With_Alternating_Oblique_Twists",
+  "name": "Abdominal en polea de rodillas con giros oblicuos alternados"
+ },
+ {
+  "id": "Kneeling_Cable_Triceps_Extension",
+  "name": "Extensión de tríceps en polea de rodillas"
+ },
+ {
+  "id": "Kneeling_Forearm_Stretch",
+  "name": "Estiramiento de antebrazo de rodillas"
+ },
+ {
+  "id": "Kneeling_High_Pulley_Row",
+  "name": "Remo en polea alta de rodillas"
+ },
+ {
+  "id": "Kneeling_Hip_Flexor",
+  "name": "Estiramiento de flexor de cadera de rodillas"
+ },
+ {
+  "id": "Kneeling_Jump_Squat",
+  "name": "Sentadilla con salto desde rodillas"
+ },
+ {
+  "id": "Kneeling_Single-Arm_High_Pulley_Row",
+  "name": "Remo a un brazo en polea alta de rodillas"
+ },
+ {
+  "id": "Kneeling_Squat",
+  "name": "Sentadilla de rodillas"
+ },
+ {
+  "id": "Landmine_180s",
+  "name": "Landmine 180°"
+ },
+ {
+  "id": "Landmine_Linear_Jammer",
+  "name": "Jammer lineal con landmine"
+ },
+ {
+  "id": "Lateral_Bound",
+  "name": "Salto lateral"
+ },
+ {
+  "id": "Lateral_Box_Jump",
+  "name": "Salto lateral al cajón"
+ },
+ {
+  "id": "Lateral_Cone_Hops",
+  "name": "Saltos laterales sobre conos"
+ },
+ {
+  "id": "Lateral_Raise_-_With_Bands",
+  "name": "Elevación lateral con bandas"
+ },
+ {
+  "id": "Latissimus_Dorsi-SMR",
+  "name": "Dorsal ancho (automasaje)"
+ },
+ {
+  "id": "Leg-Over_Floor_Press",
+  "name": "Press en el piso con pierna cruzada"
+ },
+ {
+  "id": "Leg-Up_Hamstring_Stretch",
+  "name": "Estiramiento de isquiotibiales con pierna arriba"
+ },
+ {
+  "id": "Leg_Extensions",
+  "name": "Extensiones de pierna"
+ },
+ {
+  "id": "Leg_Lift",
+  "name": "Elevación de pierna"
+ },
+ {
+  "id": "Leg_Press",
+  "name": "Prensa de pierna"
+ },
+ {
+  "id": "Leg_Pull-In",
+  "name": "Encogimiento de piernas"
+ },
+ {
+  "id": "Leverage_Chest_Press",
+  "name": "Press de pecho de palanca"
+ },
+ {
+  "id": "Leverage_Deadlift",
+  "name": "Peso muerto de palanca"
+ },
+ {
+  "id": "Leverage_Decline_Chest_Press",
+  "name": "Press de pecho declinado de palanca"
+ },
+ {
+  "id": "Leverage_High_Row",
+  "name": "Remo alto de palanca"
+ },
+ {
+  "id": "Leverage_Incline_Chest_Press",
+  "name": "Press de pecho inclinado de palanca"
+ },
+ {
+  "id": "Leverage_Iso_Row",
+  "name": "Remo iso de palanca"
+ },
+ {
+  "id": "Leverage_Shoulder_Press",
+  "name": "Press de hombros de palanca"
+ },
+ {
+  "id": "Leverage_Shrug",
+  "name": "Encogimiento de palanca"
+ },
+ {
+  "id": "Linear_3-Part_Start_Technique",
+  "name": "Técnica de salida lineal en 3 partes"
+ },
+ {
+  "id": "Linear_Acceleration_Wall_Drill",
+  "name": "Ejercicio de aceleración lineal en pared"
+ },
+ {
+  "id": "Linear_Depth_Jump",
+  "name": "Salto de profundidad lineal"
+ },
+ {
+  "id": "Log_Lift",
+  "name": "Levantamiento de tronco"
+ },
+ {
+  "id": "London_Bridges",
+  "name": "Puentes de Londres"
+ },
+ {
+  "id": "Looking_At_Ceiling",
+  "name": "Mirar al techo"
+ },
+ {
+  "id": "Low_Cable_Crossover",
+  "name": "Cruce de poleas bajo"
+ },
+ {
+  "id": "Low_Cable_Triceps_Extension",
+  "name": "Extensión de tríceps en polea baja"
+ },
+ {
+  "id": "Low_Pulley_Row_To_Neck",
+  "name": "Remo en polea baja al cuello"
+ },
+ {
+  "id": "Lower_Back-SMR",
+  "name": "Espalda baja (automasaje)"
+ },
+ {
+  "id": "Lower_Back_Curl",
+  "name": "Encogimiento de espalda baja"
+ },
+ {
+  "id": "Lunge_Pass_Through",
+  "name": "Zancada con pase"
+ },
+ {
+  "id": "Lunge_Sprint",
+  "name": "Sprint con zancada"
+ },
+ {
+  "id": "Lying_Bent_Leg_Groin",
+  "name": "Estiramiento de ingle acostado con pierna flexionada"
+ },
+ {
+  "id": "Lying_Cable_Curl",
+  "name": "Curl en polea acostado"
+ },
+ {
+  "id": "Lying_Cambered_Barbell_Row",
+  "name": "Remo acostado con barra curva"
+ },
+ {
+  "id": "Lying_Close-Grip_Bar_Curl_On_High_Pulley",
+  "name": "Curl con barra agarre cerrado acostado en polea alta"
+ },
+ {
+  "id": "Lying_Close-Grip_Barbell_Triceps_Extension_Behind_The_Head",
+  "name": "Extensión de tríceps con barra agarre cerrado acostado detrás de la cabeza"
+ },
+ {
+  "id": "Lying_Close-Grip_Barbell_Triceps_Press_To_Chin",
+  "name": "Press de tríceps con barra agarre cerrado acostado al mentón"
+ },
+ {
+  "id": "Lying_Crossover",
+  "name": "Cruce acostado (estiramiento)"
+ },
+ {
+  "id": "Lying_Dumbbell_Tricep_Extension",
+  "name": "Extensión de tríceps acostado con mancuernas"
+ },
+ {
+  "id": "Lying_Face_Down_Plate_Neck_Resistance",
+  "name": "Resistencia de cuello con disco boca abajo"
+ },
+ {
+  "id": "Lying_Face_Up_Plate_Neck_Resistance",
+  "name": "Resistencia de cuello con disco boca arriba"
+ },
+ {
+  "id": "Lying_Glute",
+  "name": "Estiramiento de glúteo acostado"
+ },
+ {
+  "id": "Lying_Hamstring",
+  "name": "Estiramiento de isquiotibial acostado"
+ },
+ {
+  "id": "Lying_High_Bench_Barbell_Curl",
+  "name": "Curl con barra acostado en banco alto"
+ },
+ {
+  "id": "Lying_Leg_Curls",
+  "name": "Curl femoral acostado"
+ },
+ {
+  "id": "Lying_Machine_Squat",
+  "name": "Sentadilla en máquina acostado"
+ },
+ {
+  "id": "Lying_One-Arm_Lateral_Raise",
+  "name": "Elevación lateral a un brazo acostado"
+ },
+ {
+  "id": "Lying_Prone_Quadriceps",
+  "name": "Estiramiento de cuádriceps boca abajo"
+ },
+ {
+  "id": "Lying_Rear_Delt_Raise",
+  "name": "Elevación de deltoide posterior acostado"
+ },
+ {
+  "id": "Lying_Supine_Dumbbell_Curl",
+  "name": "Curl con mancuernas acostado boca arriba"
+ },
+ {
+  "id": "Lying_T-Bar_Row",
+  "name": "Remo en T acostado"
+ },
+ {
+  "id": "Lying_Triceps_Press",
+  "name": "Press francés acostado"
+ },
+ {
+  "id": "Machine_Bench_Press",
+  "name": "Press de banca en máquina"
+ },
+ {
+  "id": "Machine_Bicep_Curl",
+  "name": "Curl de bíceps en máquina"
+ },
+ {
+  "id": "Machine_Preacher_Curls",
+  "name": "Curl predicador en máquina"
+ },
+ {
+  "id": "Machine_Shoulder_Military_Press",
+  "name": "Press militar de hombros en máquina"
+ },
+ {
+  "id": "Machine_Triceps_Extension",
+  "name": "Extensión de tríceps en máquina"
+ },
+ {
+  "id": "Medicine_Ball_Chest_Pass",
+  "name": "Pase de pecho con balón medicinal"
+ },
+ {
+  "id": "Medicine_Ball_Full_Twist",
+  "name": "Giro completo con balón medicinal"
+ },
+ {
+  "id": "Medicine_Ball_Scoop_Throw",
+  "name": "Lanzamiento de cuchara con balón medicinal"
+ },
+ {
+  "id": "Middle_Back_Shrug",
+  "name": "Encogimiento de espalda media"
+ },
+ {
+  "id": "Middle_Back_Stretch",
+  "name": "Estiramiento de espalda media"
+ },
+ {
+  "id": "Mixed_Grip_Chin",
+  "name": "Dominada con agarre mixto"
+ },
+ {
+  "id": "Monster_Walk",
+  "name": "Caminata del monstruo"
+ },
+ {
+  "id": "Mountain_Climbers",
+  "name": "Escaladores"
+ },
+ {
+  "id": "Moving_Claw_Series",
+  "name": "Serie de garra en movimiento"
+ },
+ {
+  "id": "Muscle_Snatch",
+  "name": "Arranque de fuerza (muscle snatch)"
+ },
+ {
+  "id": "Muscle_Up",
+  "name": "Muscle up"
+ },
+ {
+  "id": "Narrow_Stance_Hack_Squats",
+  "name": "Sentadilla hack con postura cerrada"
+ },
+ {
+  "id": "Narrow_Stance_Leg_Press",
+  "name": "Prensa de pierna con postura cerrada"
+ },
+ {
+  "id": "Narrow_Stance_Squats",
+  "name": "Sentadilla con postura cerrada"
+ },
+ {
+  "id": "Natural_Glute_Ham_Raise",
+  "name": "Elevación glúteo-femoral natural"
+ },
+ {
+  "id": "Neck-SMR",
+  "name": "Cuello (automasaje)"
+ },
+ {
+  "id": "Neck_Press",
+  "name": "Press al cuello"
+ },
+ {
+  "id": "Oblique_Crunches",
+  "name": "Abdominales oblicuos"
+ },
+ {
+  "id": "Oblique_Crunches_-_On_The_Floor",
+  "name": "Abdominales oblicuos en el piso"
+ },
+ {
+  "id": "Olympic_Squat",
+  "name": "Sentadilla olímpica"
+ },
+ {
+  "id": "On-Your-Back_Quad_Stretch",
+  "name": "Estiramiento de cuádriceps boca arriba"
+ },
+ {
+  "id": "On_Your_Side_Quad_Stretch",
+  "name": "Estiramiento de cuádriceps de lado"
+ },
+ {
+  "id": "One-Arm_Dumbbell_Row",
+  "name": "Remo a un brazo con mancuerna"
+ },
+ {
+  "id": "One-Arm_Flat_Bench_Dumbbell_Flye",
+  "name": "Apertura a un brazo en banco plano con mancuerna"
+ },
+ {
+  "id": "One-Arm_High-Pulley_Cable_Side_Bends",
+  "name": "Flexión lateral a un brazo en polea alta"
+ },
+ {
+  "id": "One-Arm_Incline_Lateral_Raise",
+  "name": "Elevación lateral inclinada a un brazo"
+ },
+ {
+  "id": "One-Arm_Kettlebell_Clean",
+  "name": "Cargada a un brazo con pesa rusa"
+ },
+ {
+  "id": "One-Arm_Kettlebell_Clean_and_Jerk",
+  "name": "Cargada y envión a un brazo con pesa rusa"
+ },
+ {
+  "id": "One-Arm_Kettlebell_Floor_Press",
+  "name": "Press en el piso a un brazo con pesa rusa"
+ },
+ {
+  "id": "One-Arm_Kettlebell_Jerk",
+  "name": "Envión a un brazo con pesa rusa"
+ },
+ {
+  "id": "One-Arm_Kettlebell_Military_Press_To_The_Side",
+  "name": "Press militar lateral a un brazo con pesa rusa"
+ },
+ {
+  "id": "One-Arm_Kettlebell_Para_Press",
+  "name": "Para press a un brazo con pesa rusa"
+ },
+ {
+  "id": "One-Arm_Kettlebell_Push_Press",
+  "name": "Push press a un brazo con pesa rusa"
+ },
+ {
+  "id": "One-Arm_Kettlebell_Row",
+  "name": "Remo a un brazo con pesa rusa"
+ },
+ {
+  "id": "One-Arm_Kettlebell_Snatch",
+  "name": "Arranque a un brazo con pesa rusa"
+ },
+ {
+  "id": "One-Arm_Kettlebell_Split_Jerk",
+  "name": "Envión en tijera a un brazo con pesa rusa"
+ },
+ {
+  "id": "One-Arm_Kettlebell_Split_Snatch",
+  "name": "Arranque en tijera a un brazo con pesa rusa"
+ },
+ {
+  "id": "One-Arm_Kettlebell_Swings",
+  "name": "Balanceo a un brazo con pesa rusa"
+ },
+ {
+  "id": "One-Arm_Long_Bar_Row",
+  "name": "Remo a un brazo con barra larga"
+ },
+ {
+  "id": "One-Arm_Medicine_Ball_Slam",
+  "name": "Azote a un brazo con balón medicinal"
+ },
+ {
+  "id": "One-Arm_Open_Palm_Kettlebell_Clean",
+  "name": "Cargada a un brazo con palma abierta con pesa rusa"
+ },
+ {
+  "id": "One-Arm_Overhead_Kettlebell_Squats",
+  "name": "Sentadilla con pesa rusa sobre la cabeza a un brazo"
+ },
+ {
+  "id": "One-Arm_Side_Deadlift",
+  "name": "Peso muerto lateral a un brazo"
+ },
+ {
+  "id": "One-Arm_Side_Laterals",
+  "name": "Elevación lateral a un brazo"
+ },
+ {
+  "id": "One-Legged_Cable_Kickback",
+  "name": "Patada de glúteo en polea a una pierna"
+ },
+ {
+  "id": "One_Arm_Against_Wall",
+  "name": "Estiramiento de un brazo contra la pared"
+ },
+ {
+  "id": "One_Arm_Chin-Up",
+  "name": "Dominada supina a un brazo"
+ },
+ {
+  "id": "One_Arm_Dumbbell_Bench_Press",
+  "name": "Press de banca a un brazo con mancuerna"
+ },
+ {
+  "id": "One_Arm_Dumbbell_Preacher_Curl",
+  "name": "Curl predicador a un brazo con mancuerna"
+ },
+ {
+  "id": "One_Arm_Floor_Press",
+  "name": "Press en el piso a un brazo"
+ },
+ {
+  "id": "One_Arm_Lat_Pulldown",
+  "name": "Jalón al pecho a un brazo"
+ },
+ {
+  "id": "One_Arm_Pronated_Dumbbell_Triceps_Extension",
+  "name": "Extensión de tríceps pronada a un brazo con mancuerna"
+ },
+ {
+  "id": "One_Arm_Supinated_Dumbbell_Triceps_Extension",
+  "name": "Extensión de tríceps supinada a un brazo con mancuerna"
+ },
+ {
+  "id": "One_Half_Locust",
+  "name": "Media langosta (estiramiento)"
+ },
+ {
+  "id": "One_Handed_Hang",
+  "name": "Colgado a una mano"
+ },
+ {
+  "id": "One_Knee_To_Chest",
+  "name": "Una rodilla al pecho"
+ },
+ {
+  "id": "One_Leg_Barbell_Squat",
+  "name": "Sentadilla a una pierna con barra"
+ },
+ {
+  "id": "Open_Palm_Kettlebell_Clean",
+  "name": "Cargada con palma abierta con pesa rusa"
+ },
+ {
+  "id": "Otis-Up",
+  "name": "Abdominal Otis-Up"
+ },
+ {
+  "id": "Overhead_Cable_Curl",
+  "name": "Curl en polea sobre la cabeza"
+ },
+ {
+  "id": "Overhead_Lat",
+  "name": "Estiramiento de dorsal sobre la cabeza"
+ },
+ {
+  "id": "Overhead_Slam",
+  "name": "Azote sobre la cabeza"
+ },
+ {
+  "id": "Overhead_Squat",
+  "name": "Sentadilla sobre la cabeza"
+ },
+ {
+  "id": "Overhead_Stretch",
+  "name": "Estiramiento sobre la cabeza"
+ },
+ {
+  "id": "Overhead_Triceps",
+  "name": "Estiramiento de tríceps sobre la cabeza"
+ },
+ {
+  "id": "Pallof_Press",
+  "name": "Press Pallof"
+ },
+ {
+  "id": "Pallof_Press_With_Rotation",
+  "name": "Press Pallof con rotación"
+ },
+ {
+  "id": "Palms-Down_Dumbbell_Wrist_Curl_Over_A_Bench",
+  "name": "Curl de muñeca con mancuernas palmas abajo sobre banco"
+ },
+ {
+  "id": "Palms-Down_Wrist_Curl_Over_A_Bench",
+  "name": "Curl de muñeca palmas abajo sobre banco"
+ },
+ {
+  "id": "Palms-Up_Barbell_Wrist_Curl_Over_A_Bench",
+  "name": "Curl de muñeca con barra palmas arriba sobre banco"
+ },
+ {
+  "id": "Palms-Up_Dumbbell_Wrist_Curl_Over_A_Bench",
+  "name": "Curl de muñeca con mancuernas palmas arriba sobre banco"
+ },
+ {
+  "id": "Parallel_Bar_Dip",
+  "name": "Fondos en paralelas"
+ },
+ {
+  "id": "Pelvic_Tilt_Into_Bridge",
+  "name": "Báscula pélvica a puente"
+ },
+ {
+  "id": "Peroneals-SMR",
+  "name": "Peroneos (automasaje)"
+ },
+ {
+  "id": "Peroneals_Stretch",
+  "name": "Estiramiento de peroneos"
+ },
+ {
+  "id": "Physioball_Hip_Bridge",
+  "name": "Puente de cadera en pelota"
+ },
+ {
+  "id": "Pin_Presses",
+  "name": "Press desde pines"
+ },
+ {
+  "id": "Piriformis-SMR",
+  "name": "Piramidal (automasaje)"
+ },
+ {
+  "id": "Plank",
+  "name": "Plancha"
+ },
+ {
+  "id": "Plate_Pinch",
+  "name": "Pinza de discos"
+ },
+ {
+  "id": "Plate_Twist",
+  "name": "Giro con disco"
+ },
+ {
+  "id": "Platform_Hamstring_Slides",
+  "name": "Deslizamientos de isquiotibiales en plataforma"
+ },
+ {
+  "id": "Plie_Dumbbell_Squat",
+  "name": "Sentadilla plié con mancuerna"
+ },
+ {
+  "id": "Plyo_Kettlebell_Pushups",
+  "name": "Lagartijas pliométricas con pesa rusa"
+ },
+ {
+  "id": "Plyo_Push-up",
+  "name": "Lagartija pliométrica"
+ },
+ {
+  "id": "Posterior_Tibialis_Stretch",
+  "name": "Estiramiento de tibial posterior"
+ },
+ {
+  "id": "Power_Clean",
+  "name": "Cargada de potencia"
+ },
+ {
+  "id": "Power_Clean_from_Blocks",
+  "name": "Cargada de potencia desde bloques"
+ },
+ {
+  "id": "Power_Jerk",
+  "name": "Envión de potencia"
+ },
+ {
+  "id": "Power_Partials",
+  "name": "Repeticiones parciales de potencia"
+ },
+ {
+  "id": "Power_Snatch",
+  "name": "Arranque de potencia"
+ },
+ {
+  "id": "Power_Snatch_from_Blocks",
+  "name": "Arranque de potencia desde bloques"
+ },
+ {
+  "id": "Power_Stairs",
+  "name": "Escaleras de potencia"
+ },
+ {
+  "id": "Preacher_Curl",
+  "name": "Curl predicador"
+ },
+ {
+  "id": "Preacher_Hammer_Dumbbell_Curl",
+  "name": "Curl martillo predicador con mancuernas"
+ },
+ {
+  "id": "Press_Sit-Up",
+  "name": "Abdominal con press"
+ },
+ {
+  "id": "Prone_Manual_Hamstring",
+  "name": "Curl femoral manual boca abajo"
+ },
+ {
+  "id": "Prowler_Sprint",
+  "name": "Sprint con trineo prowler"
+ },
+ {
+  "id": "Pull_Through",
+  "name": "Jalón entre piernas en polea"
+ },
+ {
+  "id": "Pullups",
+  "name": "Dominadas"
+ },
+ {
+  "id": "Push-Up_Wide",
+  "name": "Lagartija agarre abierto"
+ },
+ {
+  "id": "Push-Ups_-_Close_Triceps_Position",
+  "name": "Lagartijas agarre cerrado para tríceps"
+ },
+ {
+  "id": "Push-Ups_With_Feet_Elevated",
+  "name": "Lagartijas con pies elevados"
+ },
+ {
+  "id": "Push-Ups_With_Feet_On_An_Exercise_Ball",
+  "name": "Lagartijas con pies en pelota"
+ },
+ {
+  "id": "Push_Press",
+  "name": "Push press"
+ },
+ {
+  "id": "Push_Press_-_Behind_the_Neck",
+  "name": "Push press por detrás del cuello"
+ },
+ {
+  "id": "Push_Up_to_Side_Plank",
+  "name": "Lagartija a plancha lateral"
+ },
+ {
+  "id": "Pushups",
+  "name": "Lagartijas"
+ },
+ {
+  "id": "Pushups_Close_and_Wide_Hand_Positions",
+  "name": "Lagartijas (agarre cerrado y abierto)"
+ },
+ {
+  "id": "Pyramid",
+  "name": "Pirámide (estiramiento)"
+ },
+ {
+  "id": "Quad_Stretch",
+  "name": "Estiramiento de cuádriceps"
+ },
+ {
+  "id": "Quadriceps-SMR",
+  "name": "Cuádriceps (automasaje)"
+ },
+ {
+  "id": "Quick_Leap",
+  "name": "Salto rápido"
+ },
+ {
+  "id": "Rack_Delivery",
+  "name": "Llevada al rack"
+ },
+ {
+  "id": "Rack_Pull_with_Bands",
+  "name": "Rack pull con bandas"
+ },
+ {
+  "id": "Rack_Pulls",
+  "name": "Rack pulls (peso muerto desde rack)"
+ },
+ {
+  "id": "Rear_Leg_Raises",
+  "name": "Elevación de pierna hacia atrás"
+ },
+ {
+  "id": "Recumbent_Bike",
+  "name": "Bicicleta reclinada"
+ },
+ {
+  "id": "Return_Push_from_Stance",
+  "name": "Empuje de retorno desde postura"
+ },
+ {
+  "id": "Reverse_Band_Bench_Press",
+  "name": "Press de banca con bandas inversas"
+ },
+ {
+  "id": "Reverse_Band_Box_Squat",
+  "name": "Sentadilla a cajón con bandas inversas"
+ },
+ {
+  "id": "Reverse_Band_Deadlift",
+  "name": "Peso muerto con bandas inversas"
+ },
+ {
+  "id": "Reverse_Band_Power_Squat",
+  "name": "Sentadilla de potencia con bandas inversas"
+ },
+ {
+  "id": "Reverse_Band_Sumo_Deadlift",
+  "name": "Peso muerto sumo con bandas inversas"
+ },
+ {
+  "id": "Reverse_Barbell_Curl",
+  "name": "Curl inverso con barra"
+ },
+ {
+  "id": "Reverse_Barbell_Preacher_Curls",
+  "name": "Curl predicador inverso con barra"
+ },
+ {
+  "id": "Reverse_Cable_Curl",
+  "name": "Curl inverso en polea"
+ },
+ {
+  "id": "Reverse_Crunch",
+  "name": "Abdominal inverso"
+ },
+ {
+  "id": "Reverse_Flyes",
+  "name": "Aperturas inversas"
+ },
+ {
+  "id": "Reverse_Flyes_With_External_Rotation",
+  "name": "Aperturas inversas con rotación externa"
+ },
+ {
+  "id": "Reverse_Grip_Bent-Over_Rows",
+  "name": "Remo inclinado agarre inverso"
+ },
+ {
+  "id": "Reverse_Grip_Triceps_Pushdown",
+  "name": "Extensión de tríceps en polea agarre inverso"
+ },
+ {
+  "id": "Reverse_Hyperextension",
+  "name": "Hiperextensión inversa"
+ },
+ {
+  "id": "Reverse_Machine_Flyes",
+  "name": "Aperturas inversas en máquina"
+ },
+ {
+  "id": "Reverse_Plate_Curls",
+  "name": "Curl inverso con disco"
+ },
+ {
+  "id": "Reverse_Triceps_Bench_Press",
+  "name": "Press de banca para tríceps agarre inverso"
+ },
+ {
+  "id": "Rhomboids-SMR",
+  "name": "Romboides (automasaje)"
+ },
+ {
+  "id": "Rickshaw_Carry",
+  "name": "Acarreo de rickshaw"
+ },
+ {
+  "id": "Rickshaw_Deadlift",
+  "name": "Peso muerto de rickshaw"
+ },
+ {
+  "id": "Ring_Dips",
+  "name": "Fondos en anillos"
+ },
+ {
+  "id": "Rocket_Jump",
+  "name": "Salto cohete"
+ },
+ {
+  "id": "Rocking_Standing_Calf_Raise",
+  "name": "Elevación de pantorrilla de pie con balanceo"
+ },
+ {
+  "id": "Rocky_Pull-Ups_Pulldowns",
+  "name": "Dominadas/jalones Rocky"
+ },
+ {
+  "id": "Romanian_Deadlift",
+  "name": "Peso muerto rumano"
+ },
+ {
+  "id": "Romanian_Deadlift_from_Deficit",
+  "name": "Peso muerto rumano con déficit"
+ },
+ {
+  "id": "Rope_Climb",
+  "name": "Trepar la cuerda"
+ },
+ {
+  "id": "Rope_Crunch",
+  "name": "Abdominal en polea con cuerda"
+ },
+ {
+  "id": "Rope_Jumping",
+  "name": "Salto de cuerda"
+ },
+ {
+  "id": "Rope_Straight-Arm_Pulldown",
+  "name": "Jalón con brazos rectos en polea con cuerda"
+ },
+ {
+  "id": "Round_The_World_Shoulder_Stretch",
+  "name": "Estiramiento de hombros en círculo"
+ },
+ {
+  "id": "Rowing_Stationary",
+  "name": "Remo estacionario"
+ },
+ {
+  "id": "Runners_Stretch",
+  "name": "Estiramiento del corredor"
+ },
+ {
+  "id": "Running_Treadmill",
+  "name": "Carrera en caminadora"
+ },
+ {
+  "id": "Russian_Twist",
+  "name": "Giro ruso"
+ },
+ {
+  "id": "Sandbag_Load",
+  "name": "Carga de saco de arena"
+ },
+ {
+  "id": "Scapular_Pull-Up",
+  "name": "Dominada escapular"
+ },
+ {
+  "id": "Scissor_Kick",
+  "name": "Patada de tijera"
+ },
+ {
+  "id": "Scissors_Jump",
+  "name": "Salto de tijera"
+ },
+ {
+  "id": "Seated_Band_Hamstring_Curl",
+  "name": "Curl femoral sentado con banda"
+ },
+ {
+  "id": "Seated_Barbell_Military_Press",
+  "name": "Press militar sentado con barra"
+ },
+ {
+  "id": "Seated_Barbell_Twist",
+  "name": "Giro sentado con barra"
+ },
+ {
+  "id": "Seated_Bent-Over_One-Arm_Dumbbell_Triceps_Extension",
+  "name": "Extensión de tríceps a un brazo sentado inclinado con mancuerna"
+ },
+ {
+  "id": "Seated_Bent-Over_Rear_Delt_Raise",
+  "name": "Elevación de deltoide posterior sentado inclinado"
+ },
+ {
+  "id": "Seated_Bent-Over_Two-Arm_Dumbbell_Triceps_Extension",
+  "name": "Extensión de tríceps a dos brazos sentado inclinado con mancuernas"
+ },
+ {
+  "id": "Seated_Biceps",
+  "name": "Estiramiento de bíceps sentado"
+ },
+ {
+  "id": "Seated_Cable_Rows",
+  "name": "Remo sentado en polea"
+ },
+ {
+  "id": "Seated_Cable_Shoulder_Press",
+  "name": "Press de hombros sentado en polea"
+ },
+ {
+  "id": "Seated_Calf_Raise",
+  "name": "Elevación de pantorrilla sentado"
+ },
+ {
+  "id": "Seated_Calf_Stretch",
+  "name": "Estiramiento de pantorrilla sentado"
+ },
+ {
+  "id": "Seated_Close-Grip_Concentration_Barbell_Curl",
+  "name": "Curl concentrado sentado con barra agarre cerrado"
+ },
+ {
+  "id": "Seated_Dumbbell_Curl",
+  "name": "Curl sentado con mancuernas"
+ },
+ {
+  "id": "Seated_Dumbbell_Inner_Biceps_Curl",
+  "name": "Curl de bíceps interno sentado con mancuernas"
+ },
+ {
+  "id": "Seated_Dumbbell_Palms-Down_Wrist_Curl",
+  "name": "Curl de muñeca sentado palmas abajo con mancuernas"
+ },
+ {
+  "id": "Seated_Dumbbell_Palms-Up_Wrist_Curl",
+  "name": "Curl de muñeca sentado palmas arriba con mancuernas"
+ },
+ {
+  "id": "Seated_Dumbbell_Press",
+  "name": "Press sentado con mancuernas"
+ },
+ {
+  "id": "Seated_Flat_Bench_Leg_Pull-In",
+  "name": "Encogimiento de piernas sentado en banco plano"
+ },
+ {
+  "id": "Seated_Floor_Hamstring_Stretch",
+  "name": "Estiramiento de isquiotibiales sentado en el piso"
+ },
+ {
+  "id": "Seated_Front_Deltoid",
+  "name": "Estiramiento de deltoide frontal sentado"
+ },
+ {
+  "id": "Seated_Glute",
+  "name": "Estiramiento de glúteo sentado"
+ },
+ {
+  "id": "Seated_Good_Mornings",
+  "name": "Buenos días sentado"
+ },
+ {
+  "id": "Seated_Hamstring",
+  "name": "Estiramiento de isquiotibial sentado"
+ },
+ {
+  "id": "Seated_Hamstring_and_Calf_Stretch",
+  "name": "Estiramiento de isquiotibial y pantorrilla sentado"
+ },
+ {
+  "id": "Seated_Head_Harness_Neck_Resistance",
+  "name": "Resistencia de cuello sentado con arnés"
+ },
+ {
+  "id": "Seated_Leg_Curl",
+  "name": "Curl femoral sentado"
+ },
+ {
+  "id": "Seated_Leg_Tucks",
+  "name": "Encogimiento de piernas sentado"
+ },
+ {
+  "id": "Seated_One-Arm_Dumbbell_Palms-Down_Wrist_Curl",
+  "name": "Curl de muñeca a un brazo sentado palmas abajo con mancuerna"
+ },
+ {
+  "id": "Seated_One-Arm_Dumbbell_Palms-Up_Wrist_Curl",
+  "name": "Curl de muñeca a un brazo sentado palmas arriba con mancuerna"
+ },
+ {
+  "id": "Seated_One-arm_Cable_Pulley_Rows",
+  "name": "Remo a un brazo sentado en polea"
+ },
+ {
+  "id": "Seated_Overhead_Stretch",
+  "name": "Estiramiento sobre la cabeza sentado"
+ },
+ {
+  "id": "Seated_Palm-Up_Barbell_Wrist_Curl",
+  "name": "Curl de muñeca sentado palmas arriba con barra"
+ },
+ {
+  "id": "Seated_Palms-Down_Barbell_Wrist_Curl",
+  "name": "Curl de muñeca sentado palmas abajo con barra"
+ },
+ {
+  "id": "Seated_Side_Lateral_Raise",
+  "name": "Elevación lateral sentado"
+ },
+ {
+  "id": "Seated_Triceps_Press",
+  "name": "Press de tríceps sentado"
+ },
+ {
+  "id": "Seated_Two-Arm_Palms-Up_Low-Pulley_Wrist_Curl",
+  "name": "Curl de muñeca a dos brazos sentado palmas arriba en polea baja"
+ },
+ {
+  "id": "See-Saw_Press_Alternating_Side_Press",
+  "name": "Press alterno (sube y baja)"
+ },
+ {
+  "id": "Shotgun_Row",
+  "name": "Remo escopeta"
+ },
+ {
+  "id": "Shoulder_Circles",
+  "name": "Círculos de hombros"
+ },
+ {
+  "id": "Shoulder_Press_-_With_Bands",
+  "name": "Press de hombros con bandas"
+ },
+ {
+  "id": "Shoulder_Raise",
+  "name": "Elevación de hombros"
+ },
+ {
+  "id": "Shoulder_Stretch",
+  "name": "Estiramiento de hombros"
+ },
+ {
+  "id": "Side-Lying_Floor_Stretch",
+  "name": "Estiramiento de lado en el piso"
+ },
+ {
+  "id": "Side_Bridge",
+  "name": "Puente lateral"
+ },
+ {
+  "id": "Side_Hop-Sprint",
+  "name": "Salto lateral con sprint"
+ },
+ {
+  "id": "Side_Jackknife",
+  "name": "Navaja lateral"
+ },
+ {
+  "id": "Side_Lateral_Raise",
+  "name": "Elevación lateral"
+ },
+ {
+  "id": "Side_Laterals_to_Front_Raise",
+  "name": "Elevación lateral a elevación frontal"
+ },
+ {
+  "id": "Side_Leg_Raises",
+  "name": "Elevación lateral de pierna"
+ },
+ {
+  "id": "Side_Lying_Groin_Stretch",
+  "name": "Estiramiento de ingle de lado"
+ },
+ {
+  "id": "Side_Neck_Stretch",
+  "name": "Estiramiento lateral de cuello"
+ },
+ {
+  "id": "Side_Standing_Long_Jump",
+  "name": "Salto largo lateral de pie"
+ },
+ {
+  "id": "Side_To_Side_Chins",
+  "name": "Dominadas de lado a lado"
+ },
+ {
+  "id": "Side_Wrist_Pull",
+  "name": "Jalón lateral de muñeca"
+ },
+ {
+  "id": "Side_to_Side_Box_Shuffle",
+  "name": "Desplazamiento lateral sobre cajón"
+ },
+ {
+  "id": "Single-Arm_Cable_Crossover",
+  "name": "Cruce de poleas a un brazo"
+ },
+ {
+  "id": "Single-Arm_Linear_Jammer",
+  "name": "Jammer lineal a un brazo"
+ },
+ {
+  "id": "Single-Arm_Push-Up",
+  "name": "Lagartija a un brazo"
+ },
+ {
+  "id": "Single-Cone_Sprint_Drill",
+  "name": "Ejercicio de sprint con un cono"
+ },
+ {
+  "id": "Single-Leg_High_Box_Squat",
+  "name": "Sentadilla a cajón alto a una pierna"
+ },
+ {
+  "id": "Single-Leg_Hop_Progression",
+  "name": "Progresión de salto a una pierna"
+ },
+ {
+  "id": "Single-Leg_Lateral_Hop",
+  "name": "Salto lateral a una pierna"
+ },
+ {
+  "id": "Single-Leg_Leg_Extension",
+  "name": "Extensión de pierna a una pierna"
+ },
+ {
+  "id": "Single-Leg_Stride_Jump",
+  "name": "Salto de zancada a una pierna"
+ },
+ {
+  "id": "Single_Dumbbell_Raise",
+  "name": "Elevación con una mancuerna"
+ },
+ {
+  "id": "Single_Leg_Butt_Kick",
+  "name": "Patada de glúteo a una pierna"
+ },
+ {
+  "id": "Single_Leg_Glute_Bridge",
+  "name": "Puente de glúteos a una pierna"
+ },
+ {
+  "id": "Single_Leg_Push-off",
+  "name": "Impulso a una pierna"
+ },
+ {
+  "id": "Sit-Up",
+  "name": "Abdominal"
+ },
+ {
+  "id": "Sit_Squats",
+  "name": "Sentadilla a banco"
+ },
+ {
+  "id": "Skating",
+  "name": "Patinaje"
+ },
+ {
+  "id": "Sled_Drag_-_Harness",
+  "name": "Arrastre de trineo con arnés"
+ },
+ {
+  "id": "Sled_Overhead_Backward_Walk",
+  "name": "Caminata hacia atrás con trineo sobre la cabeza"
+ },
+ {
+  "id": "Sled_Overhead_Triceps_Extension",
+  "name": "Extensión de tríceps sobre la cabeza con trineo"
+ },
+ {
+  "id": "Sled_Push",
+  "name": "Empuje de trineo"
+ },
+ {
+  "id": "Sled_Reverse_Flye",
+  "name": "Apertura inversa con trineo"
+ },
+ {
+  "id": "Sled_Row",
+  "name": "Remo con trineo"
+ },
+ {
+  "id": "Sledgehammer_Swings",
+  "name": "Golpes de mazo"
+ },
+ {
+  "id": "Smith_Incline_Shoulder_Raise",
+  "name": "Elevación de hombro inclinada en máquina Smith"
+ },
+ {
+  "id": "Smith_Machine_Behind_the_Back_Shrug",
+  "name": "Encogimiento por detrás en máquina Smith"
+ },
+ {
+  "id": "Smith_Machine_Bench_Press",
+  "name": "Press de banca en máquina Smith"
+ },
+ {
+  "id": "Smith_Machine_Bent_Over_Row",
+  "name": "Remo inclinado en máquina Smith"
+ },
+ {
+  "id": "Smith_Machine_Calf_Raise",
+  "name": "Elevación de pantorrilla en máquina Smith"
+ },
+ {
+  "id": "Smith_Machine_Close-Grip_Bench_Press",
+  "name": "Press de banca agarre cerrado en máquina Smith"
+ },
+ {
+  "id": "Smith_Machine_Decline_Press",
+  "name": "Press declinado en máquina Smith"
+ },
+ {
+  "id": "Smith_Machine_Hang_Power_Clean",
+  "name": "Cargada de potencia colgante en máquina Smith"
+ },
+ {
+  "id": "Smith_Machine_Hip_Raise",
+  "name": "Elevación de cadera en máquina Smith"
+ },
+ {
+  "id": "Smith_Machine_Incline_Bench_Press",
+  "name": "Press de banca inclinado en máquina Smith"
+ },
+ {
+  "id": "Smith_Machine_Leg_Press",
+  "name": "Prensa de pierna en máquina Smith"
+ },
+ {
+  "id": "Smith_Machine_One-Arm_Upright_Row",
+  "name": "Remo al mentón a un brazo en máquina Smith"
+ },
+ {
+  "id": "Smith_Machine_Overhead_Shoulder_Press",
+  "name": "Press de hombros sobre la cabeza en máquina Smith"
+ },
+ {
+  "id": "Smith_Machine_Pistol_Squat",
+  "name": "Sentadilla pistol en máquina Smith"
+ },
+ {
+  "id": "Smith_Machine_Reverse_Calf_Raises",
+  "name": "Elevación de pantorrilla inversa en máquina Smith"
+ },
+ {
+  "id": "Smith_Machine_Squat",
+  "name": "Sentadilla en máquina Smith"
+ },
+ {
+  "id": "Smith_Machine_Stiff-Legged_Deadlift",
+  "name": "Peso muerto con piernas rígidas en máquina Smith"
+ },
+ {
+  "id": "Smith_Machine_Upright_Row",
+  "name": "Remo al mentón en máquina Smith"
+ },
+ {
+  "id": "Smith_Single-Leg_Split_Squat",
+  "name": "Sentadilla búlgara a una pierna en máquina Smith"
+ },
+ {
+  "id": "Snatch",
+  "name": "Arranque"
+ },
+ {
+  "id": "Snatch_Balance",
+  "name": "Equilibrio de arranque"
+ },
+ {
+  "id": "Snatch_Deadlift",
+  "name": "Peso muerto de arranque"
+ },
+ {
+  "id": "Snatch_Pull",
+  "name": "Jalón de arranque"
+ },
+ {
+  "id": "Snatch_Shrug",
+  "name": "Encogimiento de arranque"
+ },
+ {
+  "id": "Snatch_from_Blocks",
+  "name": "Arranque desde bloques"
+ },
+ {
+  "id": "Speed_Band_Overhead_Triceps",
+  "name": "Extensión de tríceps sobre la cabeza con banda de velocidad"
+ },
+ {
+  "id": "Speed_Box_Squat",
+  "name": "Sentadilla a cajón de velocidad"
+ },
+ {
+  "id": "Speed_Squats",
+  "name": "Sentadillas de velocidad"
+ },
+ {
+  "id": "Spell_Caster",
+  "name": "Spell caster (giro con mancuernas)"
+ },
+ {
+  "id": "Spider_Crawl",
+  "name": "Gateo de araña"
+ },
+ {
+  "id": "Spider_Curl",
+  "name": "Curl araña"
+ },
+ {
+  "id": "Spinal_Stretch",
+  "name": "Estiramiento de columna"
+ },
+ {
+  "id": "Split_Clean",
+  "name": "Cargada en tijera"
+ },
+ {
+  "id": "Split_Jerk",
+  "name": "Envión en tijera"
+ },
+ {
+  "id": "Split_Jump",
+  "name": "Salto en tijera"
+ },
+ {
+  "id": "Split_Snatch",
+  "name": "Arranque en tijera"
+ },
+ {
+  "id": "Split_Squat_with_Dumbbells",
+  "name": "Sentadilla búlgara con mancuernas"
+ },
+ {
+  "id": "Split_Squats",
+  "name": "Sentadilla búlgara"
+ },
+ {
+  "id": "Squat_Jerk",
+  "name": "Envión en sentadilla"
+ },
+ {
+  "id": "Squat_with_Bands",
+  "name": "Sentadilla con bandas"
+ },
+ {
+  "id": "Squat_with_Chains",
+  "name": "Sentadilla con cadenas"
+ },
+ {
+  "id": "Squat_with_Plate_Movers",
+  "name": "Sentadilla con discos deslizantes"
+ },
+ {
+  "id": "Squats_-_With_Bands",
+  "name": "Sentadillas con bandas"
+ },
+ {
+  "id": "Stairmaster",
+  "name": "Escaladora (Stairmaster)"
+ },
+ {
+  "id": "Standing_Alternating_Dumbbell_Press",
+  "name": "Press alternado de pie con mancuernas"
+ },
+ {
+  "id": "Standing_Barbell_Calf_Raise",
+  "name": "Elevación de pantorrilla de pie con barra"
+ },
+ {
+  "id": "Standing_Barbell_Press_Behind_Neck",
+  "name": "Press tras nuca de pie con barra"
+ },
+ {
+  "id": "Standing_Bent-Over_One-Arm_Dumbbell_Triceps_Extension",
+  "name": "Extensión de tríceps a un brazo de pie inclinado con mancuerna"
+ },
+ {
+  "id": "Standing_Bent-Over_Two-Arm_Dumbbell_Triceps_Extension",
+  "name": "Extensión de tríceps a dos brazos de pie inclinado con mancuernas"
+ },
+ {
+  "id": "Standing_Biceps_Cable_Curl",
+  "name": "Curl de bíceps de pie en polea"
+ },
+ {
+  "id": "Standing_Biceps_Stretch",
+  "name": "Estiramiento de bíceps de pie"
+ },
+ {
+  "id": "Standing_Bradford_Press",
+  "name": "Press Bradford de pie"
+ },
+ {
+  "id": "Standing_Cable_Chest_Press",
+  "name": "Press de pecho de pie en polea"
+ },
+ {
+  "id": "Standing_Cable_Lift",
+  "name": "Elevación de pie en polea"
+ },
+ {
+  "id": "Standing_Cable_Wood_Chop",
+  "name": "Leñador de pie en polea"
+ },
+ {
+  "id": "Standing_Calf_Raises",
+  "name": "Elevación de pantorrilla de pie"
+ },
+ {
+  "id": "Standing_Concentration_Curl",
+  "name": "Curl concentrado de pie"
+ },
+ {
+  "id": "Standing_Dumbbell_Calf_Raise",
+  "name": "Elevación de pantorrilla de pie con mancuerna"
+ },
+ {
+  "id": "Standing_Dumbbell_Press",
+  "name": "Press de pie con mancuernas"
+ },
+ {
+  "id": "Standing_Dumbbell_Reverse_Curl",
+  "name": "Curl inverso de pie con mancuernas"
+ },
+ {
+  "id": "Standing_Dumbbell_Straight-Arm_Front_Delt_Raise_Above_Head",
+  "name": "Elevación frontal de pie con brazo recto sobre la cabeza con mancuerna"
+ },
+ {
+  "id": "Standing_Dumbbell_Triceps_Extension",
+  "name": "Extensión de tríceps de pie con mancuernas"
+ },
+ {
+  "id": "Standing_Dumbbell_Upright_Row",
+  "name": "Remo al mentón de pie con mancuernas"
+ },
+ {
+  "id": "Standing_Elevated_Quad_Stretch",
+  "name": "Estiramiento de cuádriceps de pie con pie elevado"
+ },
+ {
+  "id": "Standing_Front_Barbell_Raise_Over_Head",
+  "name": "Elevación frontal de pie con barra sobre la cabeza"
+ },
+ {
+  "id": "Standing_Gastrocnemius_Calf_Stretch",
+  "name": "Estiramiento de pantorrilla (gastrocnemio) de pie"
+ },
+ {
+  "id": "Standing_Hamstring_and_Calf_Stretch",
+  "name": "Estiramiento de isquiotibial y pantorrilla de pie"
+ },
+ {
+  "id": "Standing_Hip_Circles",
+  "name": "Círculos de cadera de pie"
+ },
+ {
+  "id": "Standing_Hip_Flexors",
+  "name": "Estiramiento de flexores de cadera de pie"
+ },
+ {
+  "id": "Standing_Inner-Biceps_Curl",
+  "name": "Curl de bíceps interno de pie"
+ },
+ {
+  "id": "Standing_Lateral_Stretch",
+  "name": "Estiramiento lateral de pie"
+ },
+ {
+  "id": "Standing_Leg_Curl",
+  "name": "Curl femoral de pie"
+ },
+ {
+  "id": "Standing_Long_Jump",
+  "name": "Salto largo de pie"
+ },
+ {
+  "id": "Standing_Low-Pulley_Deltoid_Raise",
+  "name": "Elevación de deltoides de pie en polea baja"
+ },
+ {
+  "id": "Standing_Low-Pulley_One-Arm_Triceps_Extension",
+  "name": "Extensión de tríceps a un brazo de pie en polea baja"
+ },
+ {
+  "id": "Standing_Military_Press",
+  "name": "Press militar de pie"
+ },
+ {
+  "id": "Standing_Olympic_Plate_Hand_Squeeze",
+  "name": "Apretón de mano con disco olímpico de pie"
+ },
+ {
+  "id": "Standing_One-Arm_Cable_Curl",
+  "name": "Curl a un brazo de pie en polea"
+ },
+ {
+  "id": "Standing_One-Arm_Dumbbell_Curl_Over_Incline_Bench",
+  "name": "Curl a un brazo de pie con mancuerna sobre banco inclinado"
+ },
+ {
+  "id": "Standing_One-Arm_Dumbbell_Triceps_Extension",
+  "name": "Extensión de tríceps a un brazo de pie con mancuerna"
+ },
+ {
+  "id": "Standing_Overhead_Barbell_Triceps_Extension",
+  "name": "Extensión de tríceps sobre la cabeza de pie con barra"
+ },
+ {
+  "id": "Standing_Palm-In_One-Arm_Dumbbell_Press",
+  "name": "Press a un brazo de pie con mancuerna, palma hacia adentro"
+ },
+ {
+  "id": "Standing_Palms-In_Dumbbell_Press",
+  "name": "Press de pie con mancuernas, palmas hacia adentro"
+ },
+ {
+  "id": "Standing_Palms-Up_Barbell_Behind_The_Back_Wrist_Curl",
+  "name": "Curl de muñeca con barra por detrás palmas arriba de pie"
+ },
+ {
+  "id": "Standing_Pelvic_Tilt",
+  "name": "Báscula pélvica de pie"
+ },
+ {
+  "id": "Standing_Rope_Crunch",
+  "name": "Abdominal de pie en polea con cuerda"
+ },
+ {
+  "id": "Standing_Soleus_And_Achilles_Stretch",
+  "name": "Estiramiento de sóleo y aquíleo de pie"
+ },
+ {
+  "id": "Standing_Toe_Touches",
+  "name": "Tocar los pies de pie"
+ },
+ {
+  "id": "Standing_Towel_Triceps_Extension",
+  "name": "Extensión de tríceps de pie con toalla"
+ },
+ {
+  "id": "Standing_Two-Arm_Overhead_Throw",
+  "name": "Lanzamiento a dos brazos sobre la cabeza de pie"
+ },
+ {
+  "id": "Star_Jump",
+  "name": "Salto de estrella"
+ },
+ {
+  "id": "Step-up_with_Knee_Raise",
+  "name": "Subida a banco con elevación de rodilla"
+ },
+ {
+  "id": "Step_Mill",
+  "name": "Escaladora de escalones"
+ },
+ {
+  "id": "Stiff-Legged_Barbell_Deadlift",
+  "name": "Peso muerto con piernas rígidas con barra"
+ },
+ {
+  "id": "Stiff-Legged_Dumbbell_Deadlift",
+  "name": "Peso muerto con piernas rígidas con mancuernas"
+ },
+ {
+  "id": "Stiff_Leg_Barbell_Good_Morning",
+  "name": "Buenos días con piernas rígidas con barra"
+ },
+ {
+  "id": "Stomach_Vacuum",
+  "name": "Vacío abdominal"
+ },
+ {
+  "id": "Straight-Arm_Dumbbell_Pullover",
+  "name": "Pullover con mancuerna brazos rectos"
+ },
+ {
+  "id": "Straight-Arm_Pulldown",
+  "name": "Jalón con brazos rectos"
+ },
+ {
+  "id": "Straight_Bar_Bench_Mid_Rows",
+  "name": "Remo medio en banco con barra recta"
+ },
+ {
+  "id": "Straight_Raises_on_Incline_Bench",
+  "name": "Elevaciones rectas en banco inclinado"
+ },
+ {
+  "id": "Stride_Jump_Crossover",
+  "name": "Salto de zancada cruzado"
+ },
+ {
+  "id": "Sumo_Deadlift",
+  "name": "Peso muerto sumo"
+ },
+ {
+  "id": "Sumo_Deadlift_with_Bands",
+  "name": "Peso muerto sumo con bandas"
+ },
+ {
+  "id": "Sumo_Deadlift_with_Chains",
+  "name": "Peso muerto sumo con cadenas"
+ },
+ {
+  "id": "Superman",
+  "name": "Superman"
+ },
+ {
+  "id": "Supine_Chest_Throw",
+  "name": "Lanzamiento de pecho boca arriba"
+ },
+ {
+  "id": "Supine_One-Arm_Overhead_Throw",
+  "name": "Lanzamiento a un brazo sobre la cabeza boca arriba"
+ },
+ {
+  "id": "Supine_Two-Arm_Overhead_Throw",
+  "name": "Lanzamiento a dos brazos sobre la cabeza boca arriba"
+ },
+ {
+  "id": "Suspended_Fallout",
+  "name": "Caída suspendida (fallout)"
+ },
+ {
+  "id": "Suspended_Push-Up",
+  "name": "Lagartija suspendida"
+ },
+ {
+  "id": "Suspended_Reverse_Crunch",
+  "name": "Abdominal inverso suspendido"
+ },
+ {
+  "id": "Suspended_Row",
+  "name": "Remo suspendido"
+ },
+ {
+  "id": "Suspended_Split_Squat",
+  "name": "Sentadilla búlgara suspendida"
+ },
+ {
+  "id": "Svend_Press",
+  "name": "Press Svend"
+ },
+ {
+  "id": "T-Bar_Row_with_Handle",
+  "name": "Remo en T con mango"
+ },
+ {
+  "id": "Tate_Press",
+  "name": "Press Tate"
+ },
+ {
+  "id": "The_Straddle",
+  "name": "Estiramiento en straddle"
+ },
+ {
+  "id": "Thigh_Abductor",
+  "name": "Abductor de muslo (máquina)"
+ },
+ {
+  "id": "Thigh_Adductor",
+  "name": "Aductor de muslo (máquina)"
+ },
+ {
+  "id": "Tire_Flip",
+  "name": "Volteo de llanta"
+ },
+ {
+  "id": "Toe_Touchers",
+  "name": "Tocar los pies"
+ },
+ {
+  "id": "Torso_Rotation",
+  "name": "Rotación de torso"
+ },
+ {
+  "id": "Trail_Running_Walking",
+  "name": "Trail running / caminata"
+ },
+ {
+  "id": "Trap_Bar_Deadlift",
+  "name": "Peso muerto con barra hexagonal"
+ },
+ {
+  "id": "Tricep_Dumbbell_Kickback",
+  "name": "Patada de tríceps con mancuerna"
+ },
+ {
+  "id": "Tricep_Side_Stretch",
+  "name": "Estiramiento lateral de tríceps"
+ },
+ {
+  "id": "Triceps_Overhead_Extension_with_Rope",
+  "name": "Extensión de tríceps sobre la cabeza con cuerda"
+ },
+ {
+  "id": "Triceps_Pushdown",
+  "name": "Extensión de tríceps en polea"
+ },
+ {
+  "id": "Triceps_Pushdown_-_Rope_Attachment",
+  "name": "Extensión de tríceps en polea con cuerda"
+ },
+ {
+  "id": "Triceps_Pushdown_-_V-Bar_Attachment",
+  "name": "Extensión de tríceps en polea con barra V"
+ },
+ {
+  "id": "Triceps_Stretch",
+  "name": "Estiramiento de tríceps"
+ },
+ {
+  "id": "Tuck_Crunch",
+  "name": "Abdominal encogido"
+ },
+ {
+  "id": "Two-Arm_Dumbbell_Preacher_Curl",
+  "name": "Curl predicador a dos brazos con mancuernas"
+ },
+ {
+  "id": "Two-Arm_Kettlebell_Clean",
+  "name": "Cargada a dos brazos con pesas rusas"
+ },
+ {
+  "id": "Two-Arm_Kettlebell_Jerk",
+  "name": "Envión a dos brazos con pesas rusas"
+ },
+ {
+  "id": "Two-Arm_Kettlebell_Military_Press",
+  "name": "Press militar a dos brazos con pesas rusas"
+ },
+ {
+  "id": "Two-Arm_Kettlebell_Row",
+  "name": "Remo a dos brazos con pesas rusas"
+ },
+ {
+  "id": "Underhand_Cable_Pulldowns",
+  "name": "Jalón en polea agarre supino"
+ },
+ {
+  "id": "Upper_Back-Leg_Grab",
+  "name": "Agarre de pierna para espalda alta (estiramiento)"
+ },
+ {
+  "id": "Upper_Back_Stretch",
+  "name": "Estiramiento de espalda alta"
+ },
+ {
+  "id": "Upright_Barbell_Row",
+  "name": "Remo al mentón con barra"
+ },
+ {
+  "id": "Upright_Cable_Row",
+  "name": "Remo al mentón en polea"
+ },
+ {
+  "id": "Upright_Row_-_With_Bands",
+  "name": "Remo al mentón con bandas"
+ },
+ {
+  "id": "Upward_Stretch",
+  "name": "Estiramiento hacia arriba"
+ },
+ {
+  "id": "V-Bar_Pulldown",
+  "name": "Jalón con barra V"
+ },
+ {
+  "id": "V-Bar_Pullup",
+  "name": "Dominada con barra V"
+ },
+ {
+  "id": "Vertical_Swing",
+  "name": "Balanceo vertical"
+ },
+ {
+  "id": "Walking_Treadmill",
+  "name": "Caminata en caminadora"
+ },
+ {
+  "id": "Weighted_Ball_Hyperextension",
+  "name": "Hiperextensión con pelota y peso"
+ },
+ {
+  "id": "Weighted_Ball_Side_Bend",
+  "name": "Flexión lateral con pelota y peso"
+ },
+ {
+  "id": "Weighted_Bench_Dip",
+  "name": "Fondos en banco con peso"
+ },
+ {
+  "id": "Weighted_Crunches",
+  "name": "Abdominales con peso"
+ },
+ {
+  "id": "Weighted_Jump_Squat",
+  "name": "Sentadilla con salto y peso"
+ },
+ {
+  "id": "Weighted_Pull_Ups",
+  "name": "Dominadas con peso"
+ },
+ {
+  "id": "Weighted_Sissy_Squat",
+  "name": "Sentadilla sissy con peso"
+ },
+ {
+  "id": "Weighted_Sit-Ups_-_With_Bands",
+  "name": "Abdominales con peso y bandas"
+ },
+ {
+  "id": "Weighted_Squat",
+  "name": "Sentadilla con peso"
+ },
+ {
+  "id": "Wide-Grip_Barbell_Bench_Press",
+  "name": "Press de banca con barra agarre abierto"
+ },
+ {
+  "id": "Wide-Grip_Decline_Barbell_Bench_Press",
+  "name": "Press de banca declinado con barra agarre abierto"
+ },
+ {
+  "id": "Wide-Grip_Decline_Barbell_Pullover",
+  "name": "Pullover declinado con barra agarre abierto"
+ },
+ {
+  "id": "Wide-Grip_Lat_Pulldown",
+  "name": "Jalón al pecho agarre abierto"
+ },
+ {
+  "id": "Wide-Grip_Pulldown_Behind_The_Neck",
+  "name": "Jalón tras nuca agarre abierto"
+ },
+ {
+  "id": "Wide-Grip_Rear_Pull-Up",
+  "name": "Dominada tras nuca agarre abierto"
+ },
+ {
+  "id": "Wide-Grip_Standing_Barbell_Curl",
+  "name": "Curl de pie con barra agarre abierto"
+ },
+ {
+  "id": "Wide_Stance_Barbell_Squat",
+  "name": "Sentadilla con barra postura abierta"
+ },
+ {
+  "id": "Wide_Stance_Stiff_Legs",
+  "name": "Peso muerto piernas rígidas postura abierta"
+ },
+ {
+  "id": "Wind_Sprints",
+  "name": "Sprints de viento"
+ },
+ {
+  "id": "Windmills",
+  "name": "Molinos"
+ },
+ {
+  "id": "Worlds_Greatest_Stretch",
+  "name": "El mejor estiramiento del mundo"
+ },
+ {
+  "id": "Wrist_Circles",
+  "name": "Círculos de muñeca"
+ },
+ {
+  "id": "Wrist_Roller",
+  "name": "Enrollador de muñeca"
+ },
+ {
+  "id": "Wrist_Rotations_with_Straight_Bar",
+  "name": "Rotaciones de muñeca con barra recta"
+ },
+ {
+  "id": "Yoke_Walk",
+  "name": "Caminata con yugo"
+ },
+ {
+  "id": "Zercher_Squats",
+  "name": "Sentadilla Zercher"
+ },
+ {
+  "id": "Zottman_Curl",
+  "name": "Curl Zottman"
+ },
+ {
+  "id": "Zottman_Preacher_Curl",
+  "name": "Curl Zottman predicador"
+ }
+]
