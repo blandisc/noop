@@ -78,6 +78,13 @@ extension Repository {
         return (try? await store.workSetHistory(exerciseId: exerciseId)) ?? []
     }
 
+    /// Stored best-per-metric records for one exercise (maxWeight / maxReps / maxVolume) — the «Records
+    /// personales» list (FER-505). Derived on save; read-only here.
+    func personalRecords(exerciseId: String) async -> [PersonalRecord] {
+        guard let store = await storeHandle() else { return [] }
+        return (try? await store.personalRecords(exerciseId: exerciseId)) ?? []
+    }
+
     /// Every completed work set since `sinceTs` (epoch seconds) with its exercise id and session start
     /// time — the raw material the muscle-fatigue map (FER-350) expands over `Exercise.muscleInvolvement`.
     func recentWorkSets(sinceTs: Int) async -> [(exerciseId: String, startTs: Int)] {

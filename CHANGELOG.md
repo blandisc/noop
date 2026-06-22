@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Mira cómo evoluciona cada ejercicio, con tus records / See how each exercise is progressing, with your records.**
+  **ES** — El detalle de un ejercicio (desde la biblioteca) ahora tiene un bloque **«Progreso»** con un **selector**: **peso máximo**, **1RM estimado** o **volumen**, cada uno graficado a lo largo del tiempo (toca la línea para ver el valor de cada punto). Debajo, **«Records personales»** con tu **mayor peso**, **más reps** y **mejor volumen de serie**, con la fecha de cada uno. Un ejercicio que aún no has registrado sigue mostrando su mensaje honesto, sin gráficas ni records en cero.
+  **EN** — An exercise's detail (from the library) now has a **"Progress"** block with a **selector**: **max weight**, **estimated 1RM**, or **volume**, each charted over time (tap the line to read any point). Below it, **"Personal records"** with your **heaviest weight**, **most reps** and **best set volume**, each dated. An exercise you haven't logged yet still shows its honest message — no empty charts or zeroed records.
+  ([Cenit/Screens/ExerciseDetailScreen.swift](Cenit/Screens/ExerciseDetailScreen.swift))
+
 - **En «Hoy», las métricas se acomodan al centro y ocupan toda la pantalla / On "Today", the metrics grid now centers and fills the screen.**
   **ES** — La rejilla de métricas de **«Hoy»** (Esfuerzo, Sueño, HRV, FC, FC en reposo, Oxígeno, Pasos, Estrés) ya no queda pegada arriba con un hueco grande abajo: el aire sobrante se reparte por igual arriba y abajo, así que la rejilla baja al centro y la pantalla se ocupa completa. El dial sigue fijo arriba y los puntitos del pager cerca del dock; en pantallas chicas el espacio colapsa al gap compacto de siempre.
   **EN** — The **"Today"** metrics grid (Strain, Sleep, HRV, Heart Rate, Resting HR, Blood Oxygen, Steps, Stress) is no longer pinned to the top with a big gap below: leftover vertical space is split evenly above and below, so the grid drops to the center and fills the screen. The dial stays pinned at the top and the pager dots near the dock; on small screens the space collapses to the usual compact gap.

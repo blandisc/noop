@@ -39165,6 +39165,134 @@
           }
         }
       }
+    },
+    "Est. 1RM": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Est. 1RM"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1RM est."
+          }
+        }
+      }
+    },
+    "Progress": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Progress"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Progreso"
+          }
+        }
+      }
+    },
+    "Progress metric": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Progress metric"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Métrica de progreso"
+          }
+        }
+      }
+    },
+    "Personal records": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personal records"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Records personales"
+          }
+        }
+      }
+    },
+    "Best set volume": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Best set volume"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mejor volumen (serie)"
+          }
+        }
+      }
+    },
+    "The heaviest set you logged, by day.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The heaviest set you logged, by day."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El set más pesado que registraste, por día."
+          }
+        }
+      }
+    },
+    "Weight × reps per day.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weight × reps per day."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volumen (peso × reps) por día."
+          }
+        }
+      }
+    },
+    "From your best set with the Epley (1985) formula. A progress signal, not a target to load.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From your best set with the Epley (1985) formula. A progress signal, not a target to load."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De tu mejor serie con la fórmula de Epley (1985). Una señal de progreso, no un objetivo para cargar."
+          }
+        }
+      }
     }
   },
   "version": "1.1"
