@@ -43,6 +43,15 @@ ES: dict[str, str] = {
     "your normal range · %lld nights": "tu rango normal · %lld noches",
     "healthy zone ≥ 95%": "zona sana ≥ 95%",
     "Healthy zone": "Zona sana",
+    # Selector media móvil ⇄ rangos + caption del modo rangos + etiquetas de banda
+    "Moving average": "Media móvil",
+    "Ranges": "Rangos",
+    "Where you fall against the typical ranges.": "Dónde caes frente a los rangos típicos.",
+    "Athlete": "Atleta",
+    "Excellent": "Excelente",
+    "Typical": "Típica",
+    "Sedentary": "Sedentario",
+    "Very active": "Muy activo",
     # Caption de la gráfica que nombra la banda (explica las líneas horizontales)
     "7-day moving average · the band is your normal range.": "Media móvil de 7 días · la franja es tu rango normal.",
     # Indicador «días dentro de tu rango» (HRV/FC reposo/Respiración)
