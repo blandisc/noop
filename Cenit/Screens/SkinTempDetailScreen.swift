@@ -151,7 +151,7 @@ struct SkinTempDetailScreen: View {
             let mark = CGFloat(min(max((today - axisLo) / span, 0.02), 0.98))
             VStack(alignment: .leading, spacing: 0) {
                 Button { withAnimation(.easeInOut(duration: 0.25)) { toggle("band") } } label: {
-                    inlineBandBar(bandLo: bandLo, bandHi: bandHi, zero: zero, mark: mark, sd: sd)
+                    inlineBandBar(bandLo: bandLo, bandHi: bandHi, zero: zero, mark: mark, sd: sd, today: today)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Your nightly baseline"))
@@ -165,35 +165,50 @@ struct SkinTempDetailScreen: View {
         }
     }
 
-    private func inlineBandBar(bandLo: CGFloat, bandHi: CGFloat, zero: CGFloat, mark: CGFloat, sd: Double) -> some View {
+    private func inlineBandBar(bandLo: CGFloat, bandHi: CGFloat, zero: CGFloat, mark: CGFloat, sd: Double, today: Double) -> some View {
         let open = openDisclosure == "band"
-        return VStack(spacing: 5) {
+        let outside = today < -sd || today > sd
+        return VStack(spacing: 6) {
+            // The ±SD edge numbers sit under the band's ACTUAL edges (not the bar's ends, which left them
+            // floating away from the band), and last night's deviation is rotulated above the mark — amber
+            // when it ran past the typical swing. `.position` anchors each by fraction, clamped off the edge.
+            // (Detalle de Vital — rótulos desalineados, mismo fix que la barra de los vitales)
             GeometryReader { geo in
                 let w = geo.size.width
-                ZStack(alignment: .leading) {
-                    Capsule().fill(theme.hairline)
-                    Capsule().fill(theme.dataStrain.opacity(0.16))
-                        .frame(width: max(0, w * (bandHi - bandLo)))
-                        .offset(x: w * bandLo)
-                    Rectangle().fill(theme.hairlineStrong).frame(width: 1, height: 14)
-                        .offset(x: w * zero - 0.5)
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 2, style: .continuous).fill(theme.paper).frame(width: 7, height: 16)
-                        RoundedRectangle(cornerRadius: 1.5, style: .continuous).fill(theme.ink).frame(width: 3, height: 14)
+                let clampX: (CGFloat) -> CGFloat = { x in min(max(x, 14), w - 14) }
+                ZStack(alignment: .topLeading) {
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(theme.hairline)
+                        Capsule().fill(theme.dataStrain.opacity(0.16))
+                            .frame(width: max(0, w * (bandHi - bandLo)))
+                            .offset(x: w * bandLo)
+                        Rectangle().fill(theme.hairlineStrong).frame(width: 1, height: 14)
+                            .offset(x: w * zero - 0.5)
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 2, style: .continuous).fill(theme.paper).frame(width: 7, height: 16)
+                            RoundedRectangle(cornerRadius: 1.5, style: .continuous).fill(theme.ink).frame(width: 3, height: 14)
+                        }
+                        .offset(x: w * mark - 3.5)
                     }
-                    .offset(x: w * mark - 3.5)
+                    .frame(width: w, height: 8)
+                    .position(x: w / 2, y: 23)
+
+                    Text(fmt(today)).font(StrandFont.footnote).monospacedDigit()
+                        .foregroundStyle(outside ? theme.warning : theme.ink).fixedSize()
+                        .position(x: clampX(w * mark), y: 8)
+
+                    Text(fmt(-sd)).font(StrandFont.footnote).monospacedDigit()
+                        .foregroundStyle(theme.inkTertiary).fixedSize()
+                        .position(x: clampX(w * bandLo), y: 38)
+                    Text(fmt(sd)).font(StrandFont.footnote).monospacedDigit()
+                        .foregroundStyle(theme.inkTertiary).fixedSize()
+                        .position(x: clampX(w * bandHi), y: 38)
                 }
             }
-            .frame(height: 8)
-            HStack {
-                Text(fmt(-sd)).font(StrandFont.footnote).monospacedDigit().foregroundStyle(theme.inkTertiary)
-                Spacer()
-                HStack(spacing: 5) {
-                    Text("typical swing · 0 = your baseline").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                    Image(systemName: "info.circle").font(.system(size: 11)).foregroundStyle(theme.inkTertiary)
-                }
-                Spacer()
-                Text(fmt(sd)).font(StrandFont.footnote).monospacedDigit().foregroundStyle(theme.inkTertiary)
+            .frame(height: 46)
+            HStack(spacing: 5) {
+                Text("typical swing · 0 = your baseline").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                Image(systemName: "info.circle").font(.system(size: 11)).foregroundStyle(theme.inkTertiary)
             }
         }
         .padding(4)
