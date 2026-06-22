@@ -109,6 +109,11 @@ public struct TrendChart: View {
     /// is a quiet «your normal range» context behind the line and is named in the caption / inline bar, not
     /// on the plot. (Detalle de Vital · narrativa)
     public var bandLabelsHidden: Bool
+    /// When true AND the chart carries no right-side band labels, the trailing inset collapses to a thin
+    /// breath (just enough that the last point doesn't clip) instead of the default gutter — so the curve
+    /// fills to the right edge. The HRV «Últimos 14 días» card opts in; other band-less charts keep the
+    /// default inset. (FER-460)
+    public var tightTrailing: Bool
 
     public init(
         points: [TrendPoint],
@@ -129,7 +134,8 @@ public struct TrendChart: View {
         referenceLine: Double? = nil,
         referenceLineColor: Color = .clear,
         markedPoint: TrendPoint? = nil,
-        bandLabelsHidden: Bool = false
+        bandLabelsHidden: Bool = false,
+        tightTrailing: Bool = false
     ) {
         self.points = points.sorted { $0.date < $1.date }
         self.gradient = gradient
@@ -150,6 +156,15 @@ public struct TrendChart: View {
         self.referenceLineColor = referenceLineColor
         self.markedPoint = markedPoint
         self.bandLabelsHidden = bandLabelsHidden
+        self.tightTrailing = tightTrailing
+    }
+
+    /// Right inset on the X-scale. Labelled bands need a wide gutter so the band text clears the line;
+    /// otherwise the curve gets a thin breath when `tightTrailing` lets it reach the edge (HRV), or the
+    /// default inset that leaves room for the last X-axis label. (FER-244 · FER-460)
+    private var trailingInset: CGFloat {
+        if !(bands.isEmpty || bandLabelsHidden) { return 64 }
+        return tightTrailing ? 8 : NoopMetrics.chartXTrailingInset
     }
 
     /// The x-position the cursor is hovering, in chart-local coordinates.
@@ -274,14 +289,23 @@ public struct TrendChart: View {
         // Reserve a clean band below the fill for the X-axis labels (startPadding on the Y-scale's
         // bottom), and inset the X-scale's trailing edge so the last label isn't clipped. (FER-82)
         .chartYScale(domain: valueRange, range: .plotDimension(startPadding: NoopMetrics.chartXLabelBand, endPadding: 0))
-        // With LABELLED bands, reserve a wider right gutter so the band labels sit clear of the line; when
-        // band labels are hidden (the vital-detail context band) keep the normal trailing inset. (FER-244)
-        .chartXScale(range: .plotDimension(startPadding: 0, endPadding: (bands.isEmpty || bandLabelsHidden) ? NoopMetrics.chartXTrailingInset : 64))
+        // Trailing inset: a wide gutter for labelled bands, the default inset for band-less charts, or a
+        // thin breath when the caller opts into `tightTrailing` so the curve reaches the edge. (FER-244 · FER-460)
+        .chartXScale(range: .plotDimension(startPadding: 0, endPadding: trailingInset))
         .chartXAxis {
-            AxisMarks(values: .automatic(desiredCount: 3)) { _ in
+            // Explicit ticks evenly spread across the ACTUAL data span — not Charts' `.automatic`, which
+            // snaps dates to calendar boundaries (e.g. weekly Sundays) and so bunched the only two ticks
+            // that fell inside a 14-day window into the right half, leaving the left blank. Three ticks
+            // at 0 / 50 / 100 % of the span always span the full width and read evenly. (FER-458)
+            AxisMarks(values: xAxisTicks) { value in
                 AxisGridLine().foregroundStyle(gridLineColor.opacity(0.4))
-                AxisValueLabel().foregroundStyle(axisLabelColor)
-                    .font(StrandFont.footnote)
+                AxisValueLabel(anchor: xLabelAnchor(value.index, count: value.count)) {
+                    if let d = value.as(Date.self) {
+                        Text(xAxisLabel(d))
+                    }
+                }
+                .foregroundStyle(axisLabelColor)
+                .font(StrandFont.footnote)
             }
         }
         .chartYAxis {
@@ -369,6 +393,43 @@ public struct TrendChart: View {
         guard !points.isEmpty else { return valueRange.lowerBound }
         return points.map(\.value).reduce(0, +) / Double(points.count)
     }
+
+    // MARK: - X-axis ticks (FER-457 fix)
+
+    /// Three tick dates at 0 / 50 / 100 % of the data's actual time span. Anchored to the data — not the
+    /// calendar — so the labels always span the chart's full width and read evenly, whatever the range.
+    private var xAxisTicks: [Date] {
+        guard let first = points.first?.date, let last = points.last?.date else { return [] }
+        let span = last.timeIntervalSince(first)
+        guard span > 0 else { return [first] }
+        return [0.0, 0.5, 1.0].map { first.addingTimeInterval(span * $0) }
+    }
+
+    /// Keep the first label leading-aligned and the last trailing-aligned so neither clips at the plot
+    /// edge (the centre one stays centred); the gridline still sits exactly on the tick.
+    private func xLabelAnchor(_ index: Int, count: Int) -> UnitPoint {
+        if index == 0 { return .topLeading }
+        if index == count - 1 { return .topTrailing }
+        return .top
+    }
+
+    /// Label text for an x tick, formatted by how wide the window is: intraday → hour, up to a few months
+    /// → day + month, longer → month + year. (`Date.FormatStyle` would localise ordering, but a cached
+    /// formatter keeps it cheap across the three ticks.)
+    private func xAxisLabel(_ date: Date) -> String {
+        let span = (points.last?.date.timeIntervalSince(points.first?.date ?? date)) ?? 0
+        let f = TrendChart.axisFormatter
+        if span <= 36 * 3600 {
+            f.setLocalizedDateFormatFromTemplate("ha")
+        } else if span <= 300 * 86_400 {
+            f.setLocalizedDateFormatFromTemplate("dMMM")
+        } else {
+            f.setLocalizedDateFormatFromTemplate("MMMyy")
+        }
+        return f.string(from: date)
+    }
+
+    private static let axisFormatter = DateFormatter()
 
     /// Draws one classification band behind the line: the active band gets a soft fill + coloured edge
     /// lines (the "bracket"); every band wide enough gets a right-aligned label (active in the band hue,

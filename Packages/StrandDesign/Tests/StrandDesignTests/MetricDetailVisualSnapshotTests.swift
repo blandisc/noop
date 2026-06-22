@@ -87,6 +87,40 @@ final class MetricDetailVisualSnapshotTests: XCTestCase {
         try write(view, to: "/tmp/fer219-chart-long.png")
     }
 
+    /// FER-460 — a 14-day band-less chart at phone-card width, rendered with the default trailing inset
+    /// (top, the old empty right gap) vs `tightTrailing` (bottom, HRV: curve reaches the edge). Confirms
+    /// the curve fills right AND the last date label stays inside. PNG: /tmp/fer460-tighttrailing.png
+    @MainActor func test_tightTrailing() throws {
+        let hue = theme.dataHrv
+        let points = sampleTrend(days: 14, base: 45, swing: 13)
+        let values = points.map(\.value)
+        let lo = values.min() ?? 0, hi = values.max() ?? 1
+        let pad = (hi - lo) * 0.15
+        func chart(_ tight: Bool, _ caption: String) -> some View {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(caption).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                TrendChart(
+                    points: points,
+                    gradient: Gradient(colors: [hue.opacity(0.5), hue]),
+                    valueRange: (lo - pad)...(hi + pad),
+                    showsArea: true, height: 150, showsScrub: false,
+                    valueFormat: { "\(Int($0.rounded())) ms" },
+                    axisLabelColor: theme.inkTertiary,
+                    gridLineColor: theme.hairline,
+                    tightTrailing: tight
+                )
+            }
+        }
+        let view = VStack(alignment: .leading, spacing: 18) {
+            chart(false, "Antes · inset por defecto (hueco a la derecha)")
+            chart(true,  "Después · tightTrailing (HRV pega al borde)")
+        }
+        .padding(16)
+        .frame(width: 360, height: 420)
+        .background(theme.paper)
+        try write(view, to: "/tmp/fer460-tighttrailing.png")
+    }
+
     // MARK: harness
 
     @MainActor private func write<V: View>(_ content: V, to path: String) throws {
