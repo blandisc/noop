@@ -28,10 +28,13 @@ struct EntrenarView: View {
     var openBreathe: () -> Void
     var openIntervals: () -> Void
     var openDiet: () -> Void
+    /// Push «Mis entrenamientos» (the completed-session history, FER-504).
+    var openHistory: () -> Void
 
     var body: some View {
         EntrenarLanding(openRoutine: openRoutine, openLibrary: openLibrary,
-                        openBreathe: openBreathe, openIntervals: openIntervals, openDiet: openDiet)
+                        openBreathe: openBreathe, openIntervals: openIntervals, openDiet: openDiet,
+                        openHistory: openHistory)
             .instrumentoTheme(.base)
     }
 }
@@ -47,6 +50,7 @@ private struct EntrenarLanding: View {
     var openBreathe: () -> Void
     var openIntervals: () -> Void
     var openDiet: () -> Void
+    var openHistory: () -> Void
 
     @State private var loaded = false
     @State private var routines: [Routine] = []
@@ -409,6 +413,8 @@ private struct EntrenarLanding: View {
                     divider
                 }
                 LiveWorkoutHubRow()
+                divider
+                toolRow("My workouts", "clock.arrow.circlepath", action: openHistory)
                 divider
                 toolRow("Exercise library", "book", action: openLibrary)
                 divider
