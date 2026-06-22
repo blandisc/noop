@@ -18,26 +18,11 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
-    # FER-459 — «N días/noches» por banda en la lista de rangos + la frase de resumen del rango.
-    # La frase se arma por fragmentos (Text concatenado, con el nombre de la banda teñido), así que cada
-    # conector lleva sus espacios/puntuación. «%lld days» ya existe en el catálogo.
+    # FER-459/469 — «N días/noches» por banda en la lista de rangos. Las líneas
+    # «%lld of the last %lld days/nights in this range» y «%lld days» ya existen en el catálogo.
     "%lld day": "%lld día",
     "%lld night": "%lld noche",
     "%lld nights": "%lld noches",
-    "In the last %lld days": "En los últimos %lld días",
-    "In the last %lld nights": "En las últimas %lld noches",
-    " you've been mostly in ": " has estado sobre todo en ",
-    " you've been almost always in ": " has estado casi siempre en ",
-    " you've stayed in ": " te has mantenido siempre en ",
-    " you've moved between ": " has alternado entre ",
-    " and ": " y ",
-    " you haven't stayed in one range.": " no te has quedado en un solo rango.",
-    "; today you dropped to ": "; hoy bajaste a ",
-    "; today you rose to ": "; hoy subiste a ",
-    ", and you're still there today.": ", y hoy sigues ahí.",
-    "; last night it dropped to ": "; anoche bajó a ",
-    "; last night it rose to ": "; anoche subió a ",
-    ", and last night too.": ", y anoche también.",
     # Detalle de Vital — rediseño narrativo (Hoy → Tu historia → (Tu patrón) → Método)
     # Hero overlines («{métrica} · hoy»)
     "HRV · today": "HRV · hoy",

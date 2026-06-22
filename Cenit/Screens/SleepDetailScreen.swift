@@ -475,14 +475,6 @@ struct SleepDetailScreen: View {
                             .foregroundStyle(theme.inkSecondary)
                     }
                     .font(StrandFont.subhead)
-                    // The «where you've been across the ranges» summary, shared verbatim with the
-                    // summary sheet's ranges list (nightly → "noches/anoche"). (FER-459)
-                    if let sentence = bandSummarySentence(pts, bands: bt.bands) {
-                        sentence
-                            .font(StrandFont.subhead)
-                            .foregroundStyle(theme.inkSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
                     TrendChart(
                         points: pts,
                         gradient: Gradient(colors: [theme.dataSleep.opacity(0.5), theme.dataSleep]),
@@ -866,16 +858,6 @@ struct SleepDetailScreen: View {
         var total: Int
     }
 
-    /// The one-line «where you've been across the duration ranges» summary for the detail, classifying the
-    /// nightly hours-asleep series. Same wording as the summary sheet (shared `BandSummaryCopy`); `bands`
-    /// carry the active (latest-night) flag, so today's band comes from there. Sleep reads "noches/anoche".
-    /// (FER-459)
-    private func bandSummarySentence(_ pts: [TrendPoint], bands: [TrendBand]) -> Text? {
-        let todayIndex = bands.firstIndex(where: { $0.isActive })
-        guard let s = TrendBands.summarize(values: pts.map(\.value), bands: bands, todayIndex: todayIndex)
-        else { return nil }
-        return BandSummaryCopy.sentence(s, labels: bands.map(\.label), nightly: true, hue: theme.dataSleep)
-    }
 
     private func bandedDuration(_ pts: [TrendPoint]) -> BandedDuration? {
         let values = pts.map(\.value)

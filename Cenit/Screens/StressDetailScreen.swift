@@ -241,14 +241,6 @@ struct StressDetailScreen: View {
                 ) {
                     emptyWell(text: "Not enough days in this range to draw a trend.")
                 }
-                // The «where you've been across the bands» summary, shared verbatim with the summary
-                // sheet's ranges list. (FER-459)
-                if let sentence = bandSummarySentence(window, today: model.score) {
-                    sentence
-                        .font(StrandFont.subhead)
-                        .foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
                 if window.values.count > 1 {
                     TrendStatSummary(
                         average: fmt(stat.mean),
@@ -262,18 +254,6 @@ struct StressDetailScreen: View {
                 }
             }
         }
-    }
-
-    /// The one-line «where you've been across the Low/Moderate/High bands» summary for the detail,
-    /// classifying the windowed daily stress index. Same wording as the summary sheet (shared
-    /// `BandSummaryCopy`); `today` is today's index, mapped to its band. Stress reads "días/hoy". (FER-459)
-    private func bandSummarySentence(_ window: MetricWindow, today: Double) -> Text? {
-        let bands = stressBands(activeValue: today)
-        let todayIndex = TrendBands.index(containing: today, in: bands)
-        guard let s = TrendBands.summarize(values: window.values, bands: bands, todayIndex: todayIndex)
-        else { return nil }
-        return BandSummaryCopy.sentence(s, labels: bands.map(\.label), nightly: false,
-                                        hue: band(forValue: today).dataColor(theme))
     }
 
     /// The three fixed stress zones as `TrendBand`s, with the one holding `activeValue` shaded as the bracket.
