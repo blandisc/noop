@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Entrenar: desliza una rutina para eliminarla, con opción de deshacer / Train: swipe a routine to delete it, with undo.**
+  **ES** — En **Entrenar → Mis rutinas** ya puedes **deslizar una rutina hacia la izquierda** para que aparezca el botón rojo **«Eliminar»** y borrarla de una vez —sin tener que mantener presionado y buscar el menú—. Si te equivocas, aparece un aviso breve con **«Deshacer»** que la restaura **con todos sus ejercicios** intactos. La sección conserva su look de papel cálido; el menú de mantener presionado sigue funcionando igual.
+  **EN** — In **Train → My routines** you can now **swipe a routine left** to reveal a red **"Delete"** button and remove it in one go —no more long-pressing to find the menu—. Change your mind? A brief **"Undo"** toast restores it **with all its exercises** intact. The section keeps its warm-paper look; the long-press menu still works as before.
+  ([Cenit/Screens/EntrenarView.swift](Cenit/Screens/EntrenarView.swift))
+
 - **Hojas de métrica: la fecha del detalle ya coincide con la del resumen, y el Sueño muestra de dónde viene / Metric sheets: the detail date now matches the summary, and Sleep shows its source.**
   **ES** — En el **detalle** de una métrica (HRV, FC en reposo…) el último punto aparecía fechado **un día antes** que en la tarjeta de resumen (p. ej. «21 jun» en vez de «22 jun» en husos al oeste de UTC, como CDMX) — un desajuste de zona horaria entre las dos gráficas. Ahora ambas fechan el mismo punto igual. Además, cuando el dato de **Sueño** viene de **Apple Salud** (porque la banda no grabó esa noche), la tarjeta ahora lo indica con el corazón, igual que el mosaico de Hoy — antes solo el mosaico lo señalaba.
   **EN** — In a metric's **detail** view (HRV, resting HR…) the last point was dated **one day earlier** than in the summary card (e.g. "21 jun" instead of "22 jun" west of UTC, like Mexico City) — a time-zone slip between the two charts. Both now date the same point identically. Also, when a **Sleep** value comes from **Apple Health** (because the strap didn't record that night), the card now shows it with the heart glyph, matching the Today tile — previously only the tile did.
