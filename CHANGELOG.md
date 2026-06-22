@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Constructor de rutinas: las filas ya no se pegan a los bordes / Routine builder: rows no longer touch the screen edges.**
+  **ES** — En **Entrenar → crear/editar rutina**, una vez que la rutina tenía ejercicios, la lista (el nombre, cada ejercicio con su menú «⋯» y «Add exercise») se pegaba al borde izquierdo y derecho de la pantalla, sin margen — se veía «cortada». Ahora lleva el mismo margen lateral que el resto de la app y que su propio estado vacío.
+  **EN** — In **Train → create/edit routine**, once the routine had exercises the list (the name, each exercise with its «⋯» menu, and «Add exercise») sat flush against the left and right screen edges with no margin — it looked clipped. It now uses the same side margin as the rest of the app and as its own empty state.
+  ([Cenit/Screens/RoutineBuilderScreen.swift](Cenit/Screens/RoutineBuilderScreen.swift))
+
 - **Hojas de métrica: la fecha del detalle ya coincide con la del resumen, y el Sueño muestra de dónde viene / Metric sheets: the detail date now matches the summary, and Sleep shows its source.**
   **ES** — En el **detalle** de una métrica (HRV, FC en reposo…) el último punto aparecía fechado **un día antes** que en la tarjeta de resumen (p. ej. «21 jun» en vez de «22 jun» en husos al oeste de UTC, como CDMX) — un desajuste de zona horaria entre las dos gráficas. Ahora ambas fechan el mismo punto igual. Además, cuando el dato de **Sueño** viene de **Apple Salud** (porque la banda no grabó esa noche), la tarjeta ahora lo indica con el corazón, igual que el mosaico de Hoy — antes solo el mosaico lo señalaba.
   **EN** — In a metric's **detail** view (HRV, resting HR…) the last point was dated **one day earlier** than in the summary card (e.g. "21 jun" instead of "22 jun" west of UTC, like Mexico City) — a time-zone slip between the two charts. Both now date the same point identically. Also, when a **Sleep** value comes from **Apple Health** (because the strap didn't record that night), the card now shows it with the heart glyph, matching the Today tile — previously only the tile did.

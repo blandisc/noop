@@ -106,7 +106,7 @@ struct RoutineBuilderScreen: View {
 
     private var listBody: some View {
         List {
-            Section { nameField.listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0)) }
+            Section { nameField.listRowInsets(EdgeInsets(top: 8, leading: NoopMetrics.screenPadding, bottom: 8, trailing: NoopMetrics.screenPadding)) }
                 .listRowBackground(Color.clear).listRowSeparator(.hidden)
 
             Section {
@@ -114,7 +114,7 @@ struct RoutineBuilderScreen: View {
                     exerciseRow(idx)
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
-                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowInsets(EdgeInsets(top: 0, leading: NoopMetrics.screenPadding, bottom: 0, trailing: NoopMetrics.screenPadding))
                 }
                 .onMove(perform: move)
                 .onDelete(perform: deleteRows)
@@ -128,7 +128,7 @@ struct RoutineBuilderScreen: View {
                         }.buttonStyle(.plain)
                     }
                 }
-                .listRowInsets(EdgeInsets(top: 14, leading: 0, bottom: 8, trailing: 0))
+                .listRowInsets(EdgeInsets(top: 14, leading: NoopMetrics.screenPadding, bottom: 8, trailing: NoopMetrics.screenPadding))
             }
             .listRowBackground(Color.clear).listRowSeparator(.hidden)
         }
