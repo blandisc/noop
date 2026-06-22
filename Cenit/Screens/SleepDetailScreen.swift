@@ -35,8 +35,10 @@ struct SleepDetailScreen: View {
 
     /// The metric whose info card is open (tap a Tonight's-metrics tile). (FER-227)
     @State private var metricInfo: MetricInfo?
-    /// Whether the combined "Sleep stages" explainer card is open (the ⓘ by "Last night"). (FER-227)
+    /// Whether the combined "Sleep stages" explainer card is open (opened from «See the method»). (FER-227)
     @State private var showStages = false
+    /// Whether the hero's in-place "what we measure" note is open (the ⓘ by the «Sleep» overline).
+    @State private var heroInfoOpen = false
     /// Level-3 disclosure: duration trend + weekly debt + the night sub-metrics live under «See your
     /// history», collapsed on open. The only new state the re-sequencing adds. (Detalles escalonados)
     @State private var historyExpanded = false
@@ -48,15 +50,15 @@ struct SleepDetailScreen: View {
             // (FER-227)
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                 if let night = model.night {
-                    // Level 1 · the answer: hero + the hypnogram + a one-line regularity read.
+                    // Level 1 · the answer: the hero's double datum (hours + regularity) + the hypnogram.
                     hero(night)
                     lastNightBlock(night)
-                    regularityBlock
-                    // Level 2 · «Your patterns»: how well + stages-vs-typical + debt, fused to plain lines.
+                    // Level 2 · «Your patterns»: how well + stages + debt, fused to plain lines.
                     patternsBlock(night)
                     // Level 3 · «See your history»: duration trend + weekly debt + the night sub-metrics.
                     historySection(night)
                     methodDisclosure
+                    sourceFooter
                 } else {
                     emptyState
                 }
@@ -78,34 +80,188 @@ struct SleepDetailScreen: View {
         }
     }
 
-    // MARK: - 1. Hero — horas dormidas anoche
+    // MARK: - 1. Hero — doble dato (horas + regularidad) + frase-veredicto
+    //
+    // The headline is now TWO numerals — hours asleep and schedule regularity — split by a vertical
+    // hairline, because the mid-sleep point predicts health better than total hours (the regularity
+    // co-datum, lifted out of its old mid-page surface). Under it, a plain-language verdict built from
+    // sufficiency + regularity, then a context line. A single ⓘ toggles an in-place "what we measure"
+    // note (the only ⓘ on the sheet now). No new math: hours, performance % and regularity are the model's.
 
     @ViewBuilder
     private func hero(_ night: SleepDetailModel.Night) -> some View {
-        let s = night.stages
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Sleep").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(hoursOnly(s.asleep)).instrumentoHero(44).foregroundStyle(theme.dataSleep)
-                Text("h asleep").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Sleep").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Spacer(minLength: 8)
+                Button {
+                    withAnimation(StrandMotion.interactive) { heroInfoOpen.toggle() }
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 17))
+                        .foregroundStyle(theme.inkTertiary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("What we measure"))
             }
-            Text(heroContext(night))
-                .font(StrandFont.subhead)
+            heroDoubleDatum(night)
+            Text(heroVerdict(night))
+                .font(StrandFont.headline)
+                .foregroundStyle(theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(heroContextLine())
+                .font(StrandFont.caption)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
+            if model.excludedNapCount > 0 {
+                heroNapNotice
+            }
+            if heroInfoOpen {
+                heroInfoNote
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// "0:48 – 7:12 · 92% efficiency" for a strap night; "from Apple Health" when there's no real clock.
-    private func heroContext(_ night: SleepDetailModel.Night) -> LocalizedStringKey {
-        if model.isAppleHealth {
-            return "\(night.dateLabel) · from Apple Health"
+    /// The two headline numerals — hours asleep and regularity /100 — split by a vertical hairline. The
+    /// regularity side honestly shows "—" + a calibration meter until the engine has enough nights.
+    @ViewBuilder
+    private func heroDoubleDatum(_ night: SleepDetailModel.Night) -> some View {
+        HStack(alignment: .top, spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(hoursOnly(night.stages.asleep)).instrumentoHero(40).foregroundStyle(theme.dataSleep)
+                Text("hours").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Rectangle().fill(theme.hairline).frame(width: 1, height: 52)
+            regularityCoDatum
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        if let eff = efficiencyPct(night) {
-            return "\(night.onsetText) – \(night.wakeText) · \(Int(eff.rounded()))% efficiency"
+    }
+
+    /// The regularity co-datum: the score over /100 once the engine has enough nights, otherwise an
+    /// honest calibration — "—", a meter (N of `minNights`), and "N nights to go". No fake number.
+    @ViewBuilder
+    private var regularityCoDatum: some View {
+        if let r = model.regularity {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline, spacing: 3) {
+                    Text("\(r.score)").instrumentoHero(40).foregroundStyle(theme.dataSleep)
+                    Text(verbatim: "/100").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                }
+                Text("regularity").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            }
+        } else {
+            let done = max(0, min(model.regularityNights, SleepRegularity.minNights))
+            let missing = max(0, SleepRegularity.minNights - model.regularityNights)
+            VStack(alignment: .leading, spacing: 7) {
+                Text(verbatim: "—").instrumentoHero(30).foregroundStyle(theme.inkTertiary)
+                Text("regularity").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                calibrationMeter(done: done, total: SleepRegularity.minNights)
+                Text("Settling in · \(missing) nights to go")
+                    .font(StrandFont.footnote)
+                    .foregroundStyle(theme.warning)
+            }
         }
-        return "\(night.onsetText) – \(night.wakeText)"
+    }
+
+    /// A row of `total` segments, the first `done` filled (verdict hue), the rest hairline — the honest
+    /// "N of minNights" progress shown while regularity is still settling.
+    private func calibrationMeter(done: Int, total: Int) -> some View {
+        HStack(spacing: 5) {
+            ForEach(0..<total, id: \.self) { i in
+                Capsule(style: .continuous)
+                    .fill(i < done ? theme.verdict : theme.hairline)
+                    .frame(height: 5)
+            }
+        }
+        .accessibilityElement()
+        .accessibilityLabel(Text("\(done) of \(total) nights"))
+    }
+
+    /// A plain-language verdict built from sufficiency (% of need) + regularity — "Enough and right on
+    /// schedule — 95% of your need, very regular timing." While calibrating it narrows to what we know:
+    /// "Enough — 95% of your need."
+    private func heroVerdict(_ night: SleepDetailModel.Night) -> String {
+        let perf = model.performancePct.map { Int(min(100, $0).rounded()) }
+        let suff = sufficiencyWord(perf)
+        if let r = model.regularity, let p = perf {
+            return String(localized: "\(suff) and \(scheduleWord(r.score)) — \(p)% of your need, \(regularityWordText(r.score)) timing.")
+        }
+        if let r = model.regularity {
+            return String(localized: "\(scheduleWord(r.score)) — \(regularityWordText(r.score)) timing.")
+        }
+        if let p = perf {
+            return String(localized: "\(suff) — \(p)% of your need.")
+        }
+        return String(localized: "Last night, logged.")
+    }
+
+    /// The line under the verdict: the mid-sleep-regularity context (+ weekend shift) when we have a
+    /// score, or — while calibrating — what we're still learning.
+    private func heroContextLine() -> String {
+        guard let r = model.regularity else {
+            let missing = max(0, SleepRegularity.minNights - model.regularityNights)
+            return String(localized: "I'm still learning your schedule: \(missing) more nights and I'll know how regular your mid-sleep point is — the figure that predicts your health better than hours.")
+        }
+        var s = (r.score >= 80)
+            ? String(localized: "Your mid-sleep point is among your steadiest — it predicts your health better than total hours.")
+            : String(localized: "Your mid-sleep point still shifts night to night — it predicts your health better than total hours.")
+        if let shift = r.weekendShiftMinutes, shift >= 1 {
+            s += " " + String(localized: "Weekend +\(hoursMinutes(shift)) later.")
+        }
+        return s
+    }
+
+    /// The FER-310 nap disclosure, preserved from the old regularity block: a quiet line noting the
+    /// naps the regularity window dropped (it only counts your main night).
+    private var heroNapNotice: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Image(systemName: "zzz")
+                .font(StrandFont.footnote)
+                .foregroundStyle(theme.inkTertiary)
+            Text(napNotice)
+                .font(StrandFont.footnote)
+                .foregroundStyle(theme.inkTertiary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// The in-place note the hero ⓘ toggles — what the screen measures, in one quiet paragraph.
+    private var heroInfoNote: some View {
+        Text("Sleep is measured in hours asleep and in how regular your mid-sleep point is (the midpoint between falling asleep and waking). Stages are estimated from movement and heart rate, so they're approximate. \"Need\" is a 7–9 h target, not a measurement of you.")
+            .font(StrandFont.caption)
+            .foregroundStyle(theme.inkSecondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(NoopMetrics.cardPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+    }
+
+    /// The sufficiency clause of the verdict, from performance %. nil performance → a neutral "Logged".
+    private func sufficiencyWord(_ perf: Int?) -> String {
+        guard let p = perf else { return String(localized: "Logged") }
+        if p >= 90 { return String(localized: "Enough") }
+        if p >= 75 { return String(localized: "Almost enough") }
+        return String(localized: "Short on sleep")
+    }
+
+    /// The "on schedule" head adjective of the verdict, from the regularity score.
+    private func scheduleWord(_ score: Int) -> String {
+        switch score {
+        case 80...:   return String(localized: "right on schedule")
+        case 55..<80: return String(localized: "fairly on schedule")
+        default:      return String(localized: "on a shifting schedule")
+        }
+    }
+
+    /// The "very regular / regular / variable" tail word of the verdict, from the regularity score.
+    private func regularityWordText(_ score: Int) -> String {
+        switch score {
+        case 80...:   return String(localized: "very regular")
+        case 55..<80: return String(localized: "regular")
+        default:      return String(localized: "variable")
+        }
     }
 
     // MARK: - 2. Anoche — hipnograma + etapas en %
@@ -113,9 +269,9 @@ struct SleepDetailScreen: View {
     @ViewBuilder
     private func lastNightBlock(_ night: SleepDetailModel.Night) -> some View {
         let s = night.stages
-        // The ⓘ opens the combined "what the stages mean" card — it absorbs the old always-visible
-        // "Approximate stages / Proportions, not minutes…" caption, decluttering the screen. (FER-227)
-        block(title: "Last night", info: { showStages = true }) {
+        // The hypnogram is now the clean protagonist of «Last night» (the headline double datum moved up
+        // to the hero). Its lanes are labelled down the left edge; onset/wake anchor the trace below it.
+        block(title: "Last night") {
             VStack(alignment: .leading, spacing: 14) {
                 if model.intervals.count >= 2 {
                     Hypnogram(intervals: model.intervals,
@@ -123,6 +279,16 @@ struct SleepDetailScreen: View {
                               showsStageAxis: true,
                               showsScrub: true,   // finger-drag scrub → stage + clock range + duration (FER-234)
                               nightStart: night.onsetDate)
+                    // Anchor the trace: onset on the left, wake on the right, under the plotted timeline
+                    // (the leading inset matches the hypnogram's stage-axis column). (#7)
+                    HStack {
+                        Text(night.onsetText).font(StrandFont.captionNumber).foregroundStyle(theme.inkTertiary)
+                        Spacer()
+                        Text(night.wakeText).font(StrandFont.captionNumber).foregroundStyle(theme.inkTertiary)
+                    }
+                    .padding(.leading, 56)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel(Text("Asleep \(night.onsetText), awake \(night.wakeText)"))
                 } else {
                     // Apple Health / no per-epoch timeline → proportional stacked bar.
                     stageBar(s)
@@ -131,8 +297,12 @@ struct SleepDetailScreen: View {
                         Text("Apple Health").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                     }
                 }
-                // Stage breakdown in PERCENT (not exact minutes — wrist staging is ~2/3 accurate).
+                // Stage breakdown in PERCENT (not exact minutes — wrist staging is ~2/3 accurate), each
+                // with its delta in points vs your typical inline (#4).
                 stagePercents(s)
+                Text("% of the night · Δ vs your typical")
+                    .font(StrandFont.footnote)
+                    .foregroundStyle(theme.inkTertiary)
             }
         }
     }
@@ -162,22 +332,25 @@ struct SleepDetailScreen: View {
             .frame(width: max(0, CGFloat(minutes / total) * width))
     }
 
-    /// REM / Deep / Light / Awake as a row of "color dot · LABEL · NN%" — percentages, never minutes.
+    /// REM / Deep / Light / Awake as a row of "color dot · LABEL · NN% Δ" — percentages, never minutes,
+    /// each with the delta in points vs your typical inline (Awake has no typical, so no delta).
     @ViewBuilder
     private func stagePercents(_ s: SleepDetailModel.Stages) -> some View {
         HStack(alignment: .top, spacing: 0) {
-            stagePercentCell(.rem, "REM", s.rem, s.total)
+            stagePercentCell(.rem, "REM", s.rem, s.total, typicalPct: model.typicalRemPct)
             Spacer(minLength: 0)
-            stagePercentCell(.deep, "Deep", s.deep, s.total)
+            stagePercentCell(.deep, "Deep", s.deep, s.total, typicalPct: model.typicalDeepPct)
             Spacer(minLength: 0)
-            stagePercentCell(.light, "Light", s.light, s.total)
+            stagePercentCell(.light, "Light", s.light, s.total, typicalPct: model.typicalLightPct)
             Spacer(minLength: 0)
-            stagePercentCell(.awake, "Awake", s.awake, s.total)
+            stagePercentCell(.awake, "Awake", s.awake, s.total, typicalPct: nil)
         }
     }
 
     @ViewBuilder
-    private func stagePercentCell(_ stage: SleepStage, _ label: LocalizedStringKey, _ minutes: Double, _ total: Double) -> some View {
+    private func stagePercentCell(_ stage: SleepStage, _ label: LocalizedStringKey, _ minutes: Double, _ total: Double, typicalPct: Double?) -> some View {
+        let p = pct(minutes, total)
+        let delta = stageDelta(pctOfTotal: p, typicalPct: typicalPct)
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 5) {
                 RoundedRectangle(cornerRadius: 2, style: .continuous)
@@ -185,77 +358,43 @@ struct SleepDetailScreen: View {
                     .frame(width: 8, height: 8)
                 Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
             }
-            Text("\(pct(minutes, total))%")
-                .font(StrandFont.bodyNumber)
-                .foregroundStyle(theme.ink)
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    // MARK: - 3. Regularidad del horario (destacado, en surface)
-
-    @ViewBuilder
-    private var regularityBlock: some View {
-        block(title: "Schedule regularity") {
-            VStack(alignment: .leading, spacing: 8) {
-                if let r = model.regularity {
-                    HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text("\(r.score)").font(StrandFont.number(30)).foregroundStyle(theme.dataSleep)
-                        Text("/100").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
-                        Spacer(minLength: 8)
-                        Text(regularityWord(r.score))
-                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    }
-                    Text("How alike your mid-sleep point is night to night — it predicts your health better than total hours.")
-                        .font(StrandFont.caption)
-                        .foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    if let shift = r.weekendShiftMinutes, shift >= 1 {
-                        Divider().overlay(theme.hairline)
-                        HStack(alignment: .firstTextBaseline) {
-                            Text("Weekend shift").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                            Spacer()
-                            Text(weekendShiftText(shift))
-                                .font(StrandFont.captionNumber)
-                                .foregroundStyle(theme.inkSecondary)
-                        }
-                    }
-                    if r.preliminary {
-                        Text("Still settling")
-                            .font(StrandFont.footnote)
-                            .foregroundStyle(theme.warning)
-                    }
-                    if model.excludedNapCount > 0 {
-                        Divider().overlay(theme.hairline)
-                        HStack(alignment: .firstTextBaseline, spacing: 6) {
-                            Image(systemName: "zzz")
-                                .font(StrandFont.footnote)
-                                .foregroundStyle(theme.inkTertiary)
-                            Text(napNotice)
-                                .font(StrandFont.footnote)
-                                .foregroundStyle(theme.inkTertiary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
-                } else {
-                    // < minNights timing nights: honest calibration, no fake number.
-                    let missing = max(0, SleepRegularity.minNights - model.regularityNights)
-                    Text("Settling in · \(missing) nights to go")
-                        .font(StrandFont.bodyNumber)
-                        .foregroundStyle(theme.inkSecondary)
-                    Text("How alike your mid-sleep point is night to night — it predicts your health better than total hours.")
-                        .font(StrandFont.caption)
-                        .foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text("\(p)%")
+                    .font(StrandFont.bodyNumber)
+                    .foregroundStyle(theme.ink)
+                if let delta {
+                    Text(delta.text)
+                        .font(StrandFont.captionNumber)
+                        .foregroundStyle(delta.positive ? theme.verdict : theme.inkTertiary)
                 }
             }
-            .padding(NoopMetrics.cardPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(stagePercentAccessibility(label, pct: p, delta: delta))
     }
 
-    // MARK: - 4. Anoche vs lo típico (por etapa, en %)
+    /// The delta in points between last night's stage share (% of the night) and your typical. Uses the
+    /// same mixed basis the vs-typical bars already draw — last %-of-night minus typical %-of-asleep —
+    /// so the screen stays internally consistent (and matches the design). "+3" / "−2" / "~0"; a gain
+    /// reads in the verdict hue, flat/below stays quiet. nil when there's no personal typical yet.
+    private func stageDelta(pctOfTotal: Int, typicalPct: Double?) -> (text: String, positive: Bool)? {
+        guard let typicalPct else { return nil }
+        let d = Int((Double(pctOfTotal) - typicalPct).rounded())
+        if d == 0 { return ("~0", false) }
+        return d > 0 ? ("+\(d)", true) : ("−\(abs(d))", false)
+    }
+
+    /// VoiceOver for a stage cell: "{stage}, {pct}% of the night" plus a "{n} points above/below typical"
+    /// clause when there's a delta.
+    private func stagePercentAccessibility(_ label: LocalizedStringKey, pct: Int, delta: (text: String, positive: Bool)?) -> Text {
+        let head = Text("\(Text(label)), \(pct)% of the night")
+        guard let delta, delta.text != "~0" else { return head }
+        return delta.positive
+            ? head + Text(", \(delta.text) points above typical")
+            : head + Text(", \(delta.text) points below typical")
+    }
+
+    // MARK: - 4. Anoche vs lo típico (por etapa, en %) — en «See your history»
 
     @ViewBuilder
     private func stagesVsTypicalBlock(_ night: SleepDetailModel.Night) -> some View {
@@ -342,7 +481,7 @@ struct SleepDetailScreen: View {
     private func patternsBlock(_ night: SleepDetailModel.Night) -> some View {
         block(title: "Your patterns") {
             VStack(alignment: .leading, spacing: 12) {
-                patternLine(label: "How well", value: howWellText(night), note: nil)
+                patternLine(label: "How well", value: howWellText(), note: nil)
                 if let stages = stagesVsTypicalText(night) {
                     patternLine(label: "Stages", value: stages, note: nil)
                 }
@@ -356,16 +495,11 @@ struct SleepDetailScreen: View {
         }
     }
 
-    /// "95% of your need · 90% efficient" — performance and efficiency fused to one plain line.
-    private func howWellText(_ night: SleepDetailModel.Night) -> String {
-        var parts: [String] = []
-        if let p = model.performancePct {
-            parts.append(String(localized: "\(Int(min(100, p).rounded()))% of your need"))
-        }
-        if let e = efficiencyPct(night) {
-            parts.append(String(localized: "\(Int(e.rounded()))% efficient"))
-        }
-        return parts.isEmpty ? "—" : parts.joined(separator: " · ")
+    /// "95% of your need" — performance leads «How well» with the share of your need you slept.
+    /// Efficiency is no longer fused here; it lives once, as a sub-metric tile in «See your history» (#3).
+    private func howWellText() -> String {
+        guard let p = model.performancePct else { return "—" }
+        return String(localized: "\(Int(min(100, p).rounded()))% of your need")
     }
 
     /// A one-phrase read of last night's stage mix vs your typical — "Deep & REM where you usually are"
@@ -698,6 +832,16 @@ struct SleepDetailScreen: View {
                     .font(StrandFont.caption)
                     .foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
+                // The full per-stage explainer (kept available, FER-227) opens here from the method.
+                Button { showStages = true } label: {
+                    HStack(spacing: 6) {
+                        Text("Sleep stages in detail")
+                        Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold))
+                    }
+                    .font(StrandFont.subhead)
+                    .foregroundStyle(theme.dataSleep)
+                }
+                .buttonStyle(.plain)
             }
             .padding(.top, 8)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -709,6 +853,21 @@ struct SleepDetailScreen: View {
         .tint(theme.inkTertiary)
         .padding(NoopMetrics.cardPadding)
         .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+    }
+
+    // MARK: - 8. Footer — fuente del dato (la fuente migró aquí desde el contexto del héroe)
+
+    private var sourceFooter: some View {
+        HStack(spacing: 6) {
+            Image(systemName: model.isAppleHealth ? "heart.fill" : "antenna.radiowaves.left.and.right")
+                .font(.system(size: 10))
+                .foregroundStyle(theme.inkTertiary)
+            Text(model.isAppleHealth ? "From Apple Health" : "From your band, on your device")
+                .font(StrandFont.footnote)
+                .foregroundStyle(theme.inkTertiary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
     }
 
     // MARK: - Empty state (ported from the old sleep screen)
@@ -803,23 +962,10 @@ struct SleepDetailScreen: View {
         return "\(m) min"
     }
 
-    private func regularityWord(_ score: Int) -> LocalizedStringKey {
-        switch score {
-        case 80...:  return "very regular"
-        case 55..<80: return "regular"
-        default:     return "variable"
-        }
-    }
-
     /// A minutes count as a compact duration: "1h 20m" past the hour, "45 min" under it.
     private func hoursMinutes(_ minutes: Double) -> String {
         let m = Int(minutes.rounded())
         return m >= 60 ? "\(m / 60)h \(m % 60)m" : "\(m) min"
-    }
-
-    /// "+1h 20m later" / "+45 min later" — the weekend's mid-sleep lag vs weekdays.
-    private func weekendShiftText(_ minutes: Double) -> LocalizedStringKey {
-        "+\(hoursMinutes(minutes)) later"
     }
 
     private var performanceCaption: LocalizedStringKey {
