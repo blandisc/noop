@@ -914,7 +914,10 @@ struct MetricInfoSheet: View {
                         valueFormat: trendValueFormat,
                         dateFormat: Self.trendDayString,
                         axisLabelColor: theme.inkTertiary,
-                        gridLineColor: theme.hairline
+                        gridLineColor: theme.hairline,
+                        // HRV has no right-side range labels, so let its curve reach the edge instead of
+                        // reserving the band-label gutter. (FER-460)
+                        tightTrailing: info.id == "hrv"
                     )
                     .accessibilityElement()
                     .accessibilityLabel(Text("14-day trend"))
