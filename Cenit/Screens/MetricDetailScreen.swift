@@ -846,7 +846,8 @@ struct MetricDetailScreen: View {
                     gridLineColor: theme.hairline,
                     referenceLine: restingHR,
                     referenceLineColor: theme.inkTertiary.opacity(0.7),
-                    markedPoint: peakPoint
+                    markedPoint: peakPoint,
+                    tightTrailing: true
                 )
                 .accessibilityElement()
                 .accessibilityLabel(Text("Today's heart rate, 5-minute averages"))
@@ -2056,7 +2057,8 @@ struct MetricDetailScreen: View {
                     gridLineColor: theme.hairline,
                     referenceLine: restingHR,
                     referenceLineColor: theme.inkTertiary.opacity(0.7),
-                    markedPoint: peakPoint
+                    markedPoint: peakPoint,
+                    tightTrailing: true
                 )
                 .accessibilityElement()
                 .accessibilityLabel(Text("Today's heart rate, 5-minute averages"))
