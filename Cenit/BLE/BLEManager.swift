@@ -798,24 +798,32 @@ public final class BLEManager: NSObject, ObservableObject {
         // reason→outcome policy is the pure `syncSessionOutcome` below so it's unit-testable without a
         // strap. A disconnect mid-sync bypasses this path entirely (didDisconnectPeripheral resets the
         // flags directly) — that's `.silent`, not a sync failure, and the next connect re-offloads.
-        // FER-93: judge the strap's RTC from this session's signals (no GET_CLOCK needed). A
-        // narrating-not-saving offload (zero type-47 + CONSOLE_LOGS, or an implausible stored-history range)
-        // means the clock is lost and the band isn't recording.
-        let rtcVerdict = RtcHealthPolicy.assess(RtcHealthPolicy.Signals(
-            biometricFrames: state.syncReceipt.biometricFrames,
-            consoleLogFrames: state.syncReceipt.consoleLogFrames,
-            consoleLogReportsRtcInvalid: false,
-            dataRangeWindowPlausible: state.strapHistoryNewest != nil,
-            recentPowerLoss: false))
-        state.rtcLikelyLost = rtcVerdict.rtcLikelyLost
-        // Schedule a clock re-assertion for the NEXT session if the clock is lost (throttled per connect; a
-        // healthy saving session clears the budget). The SET_CLOCK itself fires at beginBackfill, never
-        // mid-offload — re-issuing it mid-stream stops the 4.0 from serving type-47.
-        if clockReassertPolicy.shouldReassert(rtcVerdict) {
-            pendingClockReassert = true
-            log("RTC parece perdido — se re-enviará SET_CLOCK al iniciar la próxima descarga (FER-93)")
+        // FER-93: judge the strap's RTC from this session's signals (no GET_CLOCK needed) — WHOOP 4.0 ONLY.
+        // The 5/MG clock path differs and is out of scope; gating here also stops a healthy 5/MG from
+        // false-positiving as "clock lost" (/qa D1). We rely on the narrating-not-saving shape (zero type-47
+        // + CONSOLE_LOGS) — the signal the real lost-clock case reproduces — NOT on a missing GET_DATA_RANGE
+        // window: `strapHistoryNewest == nil` also happens on a healthy caught-up band whose range read came
+        // back noisy (FER-150), so we pass plausible=true to avoid that false positive. Textual-log /
+        // power-loss signals stay off for now (v1).
+        var rtcLikelyLost = false
+        if selectedModel.deviceFamily == .whoop4 {
+            let rtcVerdict = RtcHealthPolicy.assess(RtcHealthPolicy.Signals(
+                biometricFrames: state.syncReceipt.biometricFrames,
+                consoleLogFrames: state.syncReceipt.consoleLogFrames,
+                consoleLogReportsRtcInvalid: false,
+                dataRangeWindowPlausible: true,
+                recentPowerLoss: false))
+            rtcLikelyLost = rtcVerdict.rtcLikelyLost
+            // Schedule a clock re-assertion for the NEXT session if the clock is lost (throttled per connect;
+            // a healthy saving session clears the budget). The SET_CLOCK itself fires at beginBackfill, never
+            // mid-offload — re-issuing it mid-stream stops the 4.0 from serving type-47.
+            if clockReassertPolicy.shouldReassert(rtcVerdict) {
+                pendingClockReassert = true
+                log("RTC parece perdido — se re-enviará SET_CLOCK al iniciar la próxima descarga (FER-93)")
+            }
         }
-        let outcome = BLEManager.syncSessionOutcome(reason: reason, rtcLikelyLost: rtcVerdict.rtcLikelyLost)
+        state.rtcLikelyLost = rtcLikelyLost
+        let outcome = BLEManager.syncSessionOutcome(reason: reason, rtcLikelyLost: rtcLikelyLost)
         switch outcome {
         case .completed:
             state.lastSyncedAt = Date().timeIntervalSince1970
