@@ -567,9 +567,11 @@ struct TodayView: View {
                 if showsSyncHint { syncHint }
             }
             .animation(reduceMotion ? nil : StrandMotion.fade, value: showsSyncHint)
-            // Inset superior `gap` (FER-202): el héroe queda alto pero respira; márgenes h/inferior estándar.
+            // Inset superior `gap` (FER-202): el héroe queda alto pero respira.
             .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            // Margen inferior compacto (FER-475): los page dots (último elemento) quedan pegados al dock,
+            // no flotando con 24pt de aire. La rejilla de métricas mantiene su aire propio (cards + gap).
+            .padding(.bottom, NoopMetrics.space2)
             .padding(.top, NoopMetrics.space2)
             // Llena al menos el alto visible para que los `Spacer` tengan sobrante que repartir; si el
             // contenido lo excede (p. ej. calibrando en pantalla chica), crece y hace scroll igual.
