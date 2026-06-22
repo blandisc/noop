@@ -78,6 +78,11 @@ public final class LiveState: ObservableObject {
     /// (frames, zero decoded rows — the silent-loss case, #30/#77). Zeroed when a fresh offload begins.
     @Published public var syncReceipt = SyncReceipt()
 
+    /// FER-93: the last offload judged the strap's RTC likely lost (narrating CONSOLE_LOGS / no biometry /
+    /// implausible stored-history range) — it isn't saving to flash. Drives the honest "clock lost, re-setting
+    /// it" sync diagnostic; cleared the moment type-47 flows again. Set in `exitBackfilling` from `RtcHealthPolicy`.
+    @Published public var rtcLikelyLost = false
+
     /// True once a historical offload has run to completion (HISTORY_COMPLETE) THIS session — so the
     /// sync diagnostic only shows its receipt + verdict after a real sync, not a stale `lastSyncedAt`
     /// restored from a prior launch. Reset when a fresh offload begins (FER-83).
@@ -94,6 +99,9 @@ public final class LiveState: ObservableObject {
         /// the lost-clock case — the band sends CONSOLE_LOGS (type-50) because it stored nothing — and
         /// must NOT be confused with biometry that arrives but won't decode (FER-152).
         public var biometricFrames = 0
+        /// type-50 CONSOLE_LOGS frames received this session — the band "narrating, not saving" shape when
+        /// paired with zero biometry. Feeds `RtcHealthPolicy` to detect a lost RTC without GET_CLOCK (FER-93).
+        public var consoleLogFrames = 0
         /// Total decoded rows across all six sensor streams this session (proof they decoded).
         public var rowsDecoded = 0
         public init() {}

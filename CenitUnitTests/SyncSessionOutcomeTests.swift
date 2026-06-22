@@ -65,6 +65,28 @@ final class SyncSessionOutcomeTests: XCTestCase {
                           BLEManager.syncSessionOutcome(reason: "session-cap"))
     }
 
+    // MARK: - RTC-lost gate (FER-93)
+
+    /// FER-93: a "clean" close (HISTORY_COMPLETE / caught-up) over an RTC-lost band — narrating-not-saving,
+    /// zero real biometry — must NOT be stamped as a successful sync, even though the reason is a completion.
+    /// Otherwise the UI shows a green "synced" over a night the strap never recorded.
+    func testRtcLostOverridesCleanCompletionToInterrupted() {
+        for reason in ["HISTORY_COMPLETE", "caught-up"] {
+            guard case .interrupted(let message) = BLEManager.syncSessionOutcome(reason: reason, rtcLikelyLost: true) else {
+                return XCTFail("an RTC-lost band must not complete \(reason) as a successful sync")
+            }
+            XCTAssertFalse(message.isEmpty)
+        }
+    }
+
+    /// The gate is opt-in: without the flag (default `rtcLikelyLost: false`) the policy is byte-for-byte what
+    /// it was, so a healthy band's existing reasons can't regress.
+    func testRtcHealthyKeepsExistingOutcomes() {
+        XCTAssertEqual(BLEManager.syncSessionOutcome(reason: "HISTORY_COMPLETE", rtcLikelyLost: false), .completed)
+        XCTAssertEqual(BLEManager.syncSessionOutcome(reason: "caught-up", rtcLikelyLost: false), .completed)
+        XCTAssertNotEqual(BLEManager.syncSessionOutcome(reason: "session-cap", rtcLikelyLost: false), .completed)
+    }
+
     // MARK: - timer invariant
 
     /// The absolute cap must outlast the idle watchdog (so a healthy offload making real progress isn't

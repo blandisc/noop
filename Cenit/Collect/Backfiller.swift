@@ -45,6 +45,10 @@ final class Backfiller {
         /// lost-clock case — the band narrates CONSOLE_LOGS (type-50) instead of serving history
         /// because it stored nothing — distinct from biometry that arrives but won't decode (FER-152).
         var biometricFrames = 0
+        /// type-50 CONSOLE_LOGS frames in this chunk. Feeds `RtcHealthPolicy` (zero biometry + logs > 0 =
+        /// the RTC-lost "narrating, not saving" shape) so BLEManager can detect a lost clock and re-assert
+        /// it without GET_CLOCK. (FER-93)
+        var consoleLogFrames = 0
         var rowsDecoded = 0
     }
 
@@ -179,6 +183,7 @@ final class Backfiller {
         // type-47 frame count for the caught-up detector (0 for an empty END). Fed only AFTER the
         // safe-trim commit + ack below, so the triggering chunk is already durable (FER-201).
         var biometricFramesThisEnd = 0
+        var consoleLogFramesThisEnd = 0
         if !frames.isEmpty {
             // type-47 HISTORICAL_DATA carries its OWN real-unix timestamp — extractHistoricalStreams
             // ignores the clock offset for it — so the historical offload does NOT need GET_CLOCK.
@@ -195,6 +200,7 @@ final class Backfiller {
             let bio = parsed.filter { $0.typeName == "HISTORICAL_DATA" }.count
             biometricFramesThisEnd = bio
             let logs = parsed.filter { $0.typeName == "CONSOLE_LOGS" }.count
+            consoleLogFramesThisEnd = logs
             log?("Offload: \(frames.count) frames — \(bio) biometría (type-47), \(logs) console logs (type-50), \(parsed.count - bio - logs) otros")
             // Diagnostic (#30): a historical record whose firmware version we don't have a field map for
             // bails out of decode entirely — no HR, no R-R, no GRAVITY — so sleep (which is gravity/
@@ -232,7 +238,7 @@ final class Backfiller {
             onReceipt?(ChunkReceipt(
                 hr: stored.hr, rr: stored.rr, spo2: stored.spo2, skinTemp: stored.skinTemp,
                 resp: stored.resp, gravity: stored.gravity,
-                framesReceived: frames.count, biometricFrames: bio, rowsDecoded: rowsDecoded))
+                framesReceived: frames.count, biometricFrames: bio, consoleLogFrames: logs, rowsDecoded: rowsDecoded))
 
             // RAW: only persisted when the research toggle is ON. Default OFF → decoded-only; the
             // chunk is still durably committed (decoded) so the trim is safe to advance + ack.
@@ -259,7 +265,11 @@ final class Backfiller {
         // so without this the session always wedges to the 300 s cap ("Sync ran long and was paused").
         // Evaluated AFTER the commit + ack above, so the triggering chunk is durable; the durable
         // strap_trim cursor + periodic re-sync make an early call self-healing (never loses data).
-        if isBackfilling, caughtUpDetector.observe(biometricFrames: biometricFramesThisEnd) {
+        // FER-93: a narrating-not-saving END (zero type-47 + CONSOLE_LOGS = the RTC-lost band talking, not
+        // the live drip) must not let the offload complete "green". Pass it so the detector resets its run
+        // instead of counting it as a small caught-up chunk.
+        let narratingThisEnd = biometricFramesThisEnd == 0 && consoleLogFramesThisEnd > 0
+        if isBackfilling, caughtUpDetector.observe(biometricFrames: biometricFramesThisEnd, narratingNotSaving: narratingThisEnd) {
             isBackfilling = false
             didCatchUp = true
             chunkOpen = false

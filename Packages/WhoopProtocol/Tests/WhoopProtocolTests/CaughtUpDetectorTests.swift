@@ -82,4 +82,32 @@ final class CaughtUpDetectorTests: XCTestCase {
         XCTAssertFalse(d.isCaughtUp)
         XCTAssertFalse(d.observe(biometricFrames: 0)) // counter cleared → needs the full run again
     }
+
+    /// FER-93: a narrating-not-saving END (RTC-lost band: zero biometry + CONSOLE_LOGS) must NEVER count
+    /// toward caught-up — a sync over an un-clocked band must not complete "green" while it isn't saving.
+    func testNarratingNotSavingNeverCompletes() {
+        var d = CaughtUpDetector(smallChunkMax: 8, run: 3)
+        for _ in 0..<200 { XCTAssertFalse(d.observe(biometricFrames: 0, narratingNotSaving: true)) }
+        XCTAssertFalse(d.isCaughtUp)
+    }
+
+    /// A narrating END mid-run resets the small-chunk count, so the run restarts from scratch.
+    func testNarratingResetsTheRun() {
+        var d = CaughtUpDetector(smallChunkMax: 8, run: 3)
+        XCTAssertFalse(d.observe(biometricFrames: 3))                           // small 1
+        XCTAssertFalse(d.observe(biometricFrames: 3))                           // small 2
+        XCTAssertFalse(d.observe(biometricFrames: 0, narratingNotSaving: true)) // narrating → reset
+        XCTAssertFalse(d.observe(biometricFrames: 3))                           // small 1 again
+        XCTAssertFalse(d.observe(biometricFrames: 3))                           // small 2
+        XCTAssertTrue(d.observe(biometricFrames: 3))                            // small 3 → caught up
+    }
+
+    /// A genuine small-but-SAVING tail (biometry > 0, not narrating) still completes — narrating is the
+    /// only new exclusion; a small saving chunk is the real live drip.
+    func testSmallSavingTailStillCompletes() {
+        var d = CaughtUpDetector(smallChunkMax: 8, run: 3)
+        XCTAssertFalse(d.observe(biometricFrames: 4, narratingNotSaving: false))
+        XCTAssertFalse(d.observe(biometricFrames: 2, narratingNotSaving: false))
+        XCTAssertTrue(d.observe(biometricFrames: 1, narratingNotSaving: false))
+    }
 }
