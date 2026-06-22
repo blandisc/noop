@@ -247,4 +247,85 @@ final class StrengthSessionModelTests: XCTestCase {
         s.select(exerciseIndex: 0, setIndex: 1)
         XCTAssertNil(s.timerStart, "switching sets cancels a running stopwatch")
     }
+
+    // MARK: Inline-table edits (the Hevy-style logging surface, FER-497)
+
+    private func twoExercises() -> StrengthSessionModel {
+        make([slot("bench", type: .weightReps, sets: 2),
+              slot("row", type: .weightReps, sets: 2)])
+    }
+
+    func testToggleDoneIsAToggleAndStartsNoRest() {
+        let s = twoExercises()
+        XCTAssertFalse(s.runs[0].sets[0].done)
+        s.toggleDone(exercise: 0, set: 0, now: Date(timeIntervalSince1970: 5))
+        XCTAssertTrue(s.runs[0].sets[0].done, "the ✓ marks the set done")
+        XCTAssertEqual(s.runs[0].sets[0].doneTs, 5, "stamps when it was done")
+        XCTAssertNil(s.restEndsAt, "the inline ✓ never starts a rest (that's the Foco's job)")
+        XCTAssertEqual(s.phase, .capturing)
+        s.toggleDone(exercise: 0, set: 0)
+        XCTAssertFalse(s.runs[0].sets[0].done, "tapping again un-marks it")
+        XCTAssertNil(s.runs[0].sets[0].doneTs, "and clears the timestamp")
+    }
+
+    func testInlineEditsAnyRowOfAnyExercise() {
+        let s = twoExercises()
+        s.setWeight(exercise: 1, set: 1, kg: 72.5)
+        s.setReps(exercise: 1, set: 1, reps: 9)
+        XCTAssertEqual(s.runs[1].sets[1].weightKg, 72.5)
+        XCTAssertEqual(s.runs[1].sets[1].reps, 9)
+        XCTAssertEqual(s.currentIndex, 0, "editing a cell does not move focus by itself")
+    }
+
+    func testInlineEditsClampAtZero() {
+        let s = twoExercises()
+        s.setWeight(exercise: 0, set: 0, kg: -5)
+        s.setReps(exercise: 0, set: 0, reps: -3)
+        XCTAssertEqual(s.runs[0].sets[0].weightKg, 0)
+        XCTAssertEqual(s.runs[0].sets[0].reps, 0)
+    }
+
+    func testAddSetForSpecificExerciseCopiesLastLoad() {
+        let s = twoExercises()
+        s.setWeight(exercise: 1, set: 1, kg: 60)
+        s.setReps(exercise: 1, set: 1, reps: 12)
+        s.addSet(exercise: 1)
+        XCTAssertEqual(s.runs[1].sets.count, 3, "appends to the right exercise")
+        XCTAssertEqual(s.runs[1].sets.last?.weightKg, 60, "copies the last row's load")
+        XCTAssertEqual(s.runs[1].sets.last?.reps, 12)
+        XCTAssertFalse(s.runs[1].sets.last?.done ?? true, "the new set starts pending")
+        XCTAssertEqual(s.runs[0].sets.count, 2, "other exercises are untouched")
+    }
+
+    func testRemoveSetReclampsCurrent() {
+        let s = make([slot("bench", type: .weightReps, sets: 3)])
+        s.select(exerciseIndex: 0, setIndex: 2)
+        s.removeSet(exercise: 0, set: 2)
+        XCTAssertEqual(s.runs[0].sets.count, 2)
+        XCTAssertEqual(s.runs[0].currentSet, 1, "currentSet reclamps inside the new bounds")
+    }
+
+    func testPrefillPreviousCopiesLastTimeIntoARow() {
+        let slot = StrengthSessionModel.PlanSlot(
+            re: re("a", exerciseId: "bench", sets: 2),
+            exercise: ex("bench", "Bench"),
+            lastSets: [lastSet("bench", weight: 85, reps: 5)])
+        let s = make([slot])
+        s.setWeight(exercise: 0, set: 1, kg: 0)
+        s.setReps(exercise: 0, set: 1, reps: 0)
+        s.prefillPrevious(exercise: 0, set: 1)
+        XCTAssertEqual(s.runs[0].sets[1].weightKg, 85, "tap-PREVIOUS copies last time's weight")
+        XCTAssertEqual(s.runs[0].sets[1].reps, 5, "and reps")
+    }
+
+    func testLastTimeAndDistanceFlowIntoTheRun() {
+        let prev = SetEntry(id: "p", sessionId: "s", exerciseId: "run", position: 0, kind: .work,
+                            timeS: 750, distanceM: 2400, done: true, ts: 1000)
+        let slot = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "run", sets: 1),
+                                                 exercise: ex("run", "Run", type: .distance),
+                                                 lastSets: [prev])
+        let s = make([slot])
+        XCTAssertEqual(s.runs[0].lastTimeS, 750, "last time's seconds are kept for the PREVIOUS cell")
+        XCTAssertEqual(s.runs[0].lastDistanceM, 2400)
+    }
 }

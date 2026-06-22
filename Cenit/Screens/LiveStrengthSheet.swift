@@ -673,7 +673,7 @@ struct LiveStrengthSheet: View {
             if reflow { reflowRow(ei: ei, si: si, run: run, set: set) }
             else { gridRow(ei: ei, si: si, run: run, set: set, active: active) }
         }
-        .padding(.vertical, 10)
+        .padding(.vertical, reflow ? 8 : 2)
         .padding(.horizontal, active ? 6 : 0)
         .background(active ? theme.surface : .clear,
                     in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
@@ -792,11 +792,12 @@ struct LiveStrengthSheet: View {
             .font(StrandFont.number(16, weight: .regular)).monospacedDigit()
             .foregroundStyle(done ? theme.inkSecondary : theme.ink)
             .focused($focusedCell, equals: ref)
-            .frame(width: width ?? (reflow ? 64 : cellWidth(type)))
-            .padding(.bottom, 1)
+            .frame(width: width ?? (reflow ? 64 : cellWidth(type)), height: 44)
+            .contentShape(Rectangle())
             .overlay(alignment: .bottom) {
                 Rectangle().fill(focusedCell == ref ? theme.ink : theme.hairlineStrong)
                     .frame(height: focusedCell == ref ? 2 : 1)
+                    .padding(.bottom, 6)
             }
             .accessibilityLabel(Text(cellLabel(ref)))
     }
