@@ -753,7 +753,7 @@ struct RecoveryDetailScreen: View {
             .padding(.top, 8)
             .frame(maxWidth: .infinity, alignment: .leading)
         } label: {
-            Text("See the method")
+            Text("How it's calculated")
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.ink)
         }

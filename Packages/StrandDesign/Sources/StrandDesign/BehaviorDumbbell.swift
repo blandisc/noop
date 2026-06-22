@@ -87,7 +87,7 @@ public struct BehaviorDumbbell: View {
         VStack(alignment: align, spacing: 1) {
             Text(tag).font(.system(size: 9.5, weight: .medium)).tracking(0.6)
                 .foregroundStyle(theme.inkTertiary)
-            Text(text).font(StrandFont.mono(11, weight: colored ? .semibold : .regular))
+            Text(text).font(StrandFont.number(11, weight: colored ? .semibold : .regular))
                 .foregroundStyle(colored ? hue : theme.inkTertiary)
         }
     }
