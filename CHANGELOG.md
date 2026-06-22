@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La gráfica de frecuencia cardiaca «Tu día» ya no deja un hueco a la derecha / The "Your day" heart-rate chart no longer leaves a gap on the right.**
+  **ES** — En la hoja de Frecuencia cardiaca, la gráfica intradía «Tu día» quedaba con un margen derecho más ancho que el resto del contenido, así que la curva no llegaba al borde y se veía descuadrada. Se ajustó el margen para que la gráfica use el ancho completo, alineada con la pantalla. Aplica tanto al resumen como al detalle.
+  **EN** — On the Heart rate sheet, the "Your day" intraday chart had a wider right margin than the rest of the content, so the curve didn't reach the edge and looked misaligned. The margin was tightened so the chart uses the full width, flush with the screen. Applies to both the summary and detail views.
+  ([Cenit/Screens/MetricDetailScreen.swift](Cenit/Screens/MetricDetailScreen.swift))
 - **Patrones: ahora puedes diseñar tu propio experimento / Patterns: you can now design your own experiment (FER-468).**
   **ES** — Antes solo podías poner a prueba una palanca que Cénit ya había detectado. Ahora, en «Patrones», hay **«Diseña tu propio experimento»**: eliges **el hábito** (de tu lista de hábitos), **la métrica** que quieres mover (recuperación, HRV, sueño o FC en reposo) y **la ventana** (7, 14 o 21 días), y lo arrancas. Corre exactamente igual que uno nacido de un hallazgo —con su racha, su arco, el check-in del día y su veredicto al cerrar—. Aparece cuando no tienes ningún experimento en curso (uno a la vez).
   **EN** — Before, you could only test a lever Cénit had already detected. Now, in "Patrones", there's **"Design your own experiment"**: you pick **the habit** (from your habit list), **the metric** you want to move (recovery, HRV, sleep or resting HR) and **the window** (7, 14 or 21 days), and start it. It runs exactly like one born from a finding —with its streak, arc, daily check-in and verdict at the end. It shows up when you don't have an experiment running (one at a time).
