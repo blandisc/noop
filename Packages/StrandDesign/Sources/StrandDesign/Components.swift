@@ -1,9 +1,11 @@
 import SwiftUI
 
-// MARK: - The locked component system
+// MARK: - Shared design-system primitives
 //
-// Every screen composes ONLY these. Fixed dimensions + one spacing scale guarantee
-// the uniform, instrument-grade look from the reference. Do not invent ad-hoc cards.
+// What survives the «Instrumento diurno» migration: the spacing/measure token scale
+// (`NoopMetrics`), the one segmented pill control, and the source badge. The legacy card
+// primitives (`NoopCard` / `StatTile` / `SectionHeader` / `ChartCard` / `ChartFooter`) were
+// removed once the dark screens that used them went away (FER-444, tail of FER-413/FER-427).
 
 public enum NoopMetrics {
     public static let cardRadius: CGFloat = 16
@@ -32,158 +34,6 @@ public enum NoopMetrics {
     /// Trailing inset on the X-scale so the rightmost label renders in full inside ChartCard's
     /// `.clipped()` frame instead of being truncated. (FER-82)
     public static let chartXTrailingInset: CGFloat = 26
-}
-
-// MARK: - Surface
-
-/// The one card surface. All cards use this — same radius, border, fill.
-public struct NoopCard<Content: View>: View {
-    private let padding: CGFloat
-    @ViewBuilder private let content: () -> Content
-    @State private var hover = false
-    public init(padding: CGFloat = NoopMetrics.cardPadding, @ViewBuilder content: @escaping () -> Content) {
-        self.padding = padding; self.content = content
-    }
-    public var body: some View {
-        content()
-            .padding(padding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(InstrumentoTheme.base.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                .strokeBorder(hover ? InstrumentoTheme.base.hairlineStrong : InstrumentoTheme.base.hairline, lineWidth: 1))
-            .shadow(color: .black.opacity(hover ? 0.25 : 0), radius: 10, y: 4)
-            .onHover { hover = $0 }
-            .animation(.easeOut(duration: 0.16), value: hover)
-    }
-}
-
-// MARK: - Section header
-
-public struct SectionHeader: View {
-    let overline: LocalizedStringKey?; let title: LocalizedStringKey; let trailing: String?
-    public init(_ title: LocalizedStringKey, overline: LocalizedStringKey? = nil, trailing: String? = nil) {
-        self.title = title; self.overline = overline; self.trailing = trailing
-    }
-    public var body: some View {
-        HStack(alignment: .firstTextBaseline) {
-            VStack(alignment: .leading, spacing: 2) {
-                if let overline { Text(overline).strandOverline() }
-                Text(title).font(StrandFont.title2).foregroundStyle(InstrumentoTheme.base.ink)
-            }
-            Spacer()
-            if let trailing {
-                Text(trailing).font(StrandFont.footnote).foregroundStyle(InstrumentoTheme.base.inkSecondary)
-            }
-        }
-    }
-}
-
-// MARK: - Metric tile (UNIFORM fixed height)
-
-public struct StatTile: View {
-    let label: LocalizedStringKey, value: String
-    var caption: String? = nil
-    var accent: Color = InstrumentoTheme.base.ink
-    var delta: String? = nil
-    var deltaColor: Color = InstrumentoTheme.base.inkTertiary
-    var sparkline: [Double]? = nil
-    var sparkColor: Color = StrandPalette.accent
-
-    public init(label: LocalizedStringKey, value: String, caption: String? = nil,
-                accent: Color = InstrumentoTheme.base.ink, delta: String? = nil,
-                deltaColor: Color = InstrumentoTheme.base.inkTertiary,
-                sparkline: [Double]? = nil, sparkColor: Color = StrandPalette.accent) {
-        self.label = label; self.value = value; self.caption = caption; self.accent = accent
-        self.delta = delta; self.deltaColor = deltaColor; self.sparkline = sparkline; self.sparkColor = sparkColor
-    }
-
-    public var body: some View {
-        NoopCard(padding: 14) {
-            VStack(alignment: .leading, spacing: 0) {
-                // Cap at two lines and let a long name shrink rather than overflow the fixed
-                // tile height — a run-on label (e.g. a workout sport) used to push the value
-                // out of the 104pt frame and collide with it. (FER-76)
-                Text(label).strandOverline()
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.8)
-                Spacer(minLength: 4)
-                Text(value).font(StrandFont.number(26)).foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.6)
-                if let sparkline, sparkline.count > 1 {
-                    Sparkline(values: sparkline).frame(height: 22).padding(.top, 4)
-                }
-                HStack(spacing: 6) {
-                    if let caption { Text(caption).font(StrandFont.footnote).foregroundStyle(InstrumentoTheme.base.inkTertiary).lineLimit(1) }
-                    Spacer(minLength: 0)
-                    if let delta { Text(delta).font(StrandFont.captionNumber).foregroundStyle(deltaColor) }
-                }
-                .padding(.top, 2)
-            }
-        }
-        // FER-394: minHeight (not a fixed height) so the tile grows instead of clipping text at
-        // large Dynamic Type; at the default size the content fits, so the tile == tileHeight.
-        .frame(minHeight: NoopMetrics.tileHeight)
-    }
-}
-
-// MARK: - Chart card (UNIFORM: header + fixed chart body + footer)
-
-public struct ChartCard<ChartBody: View, Footer: View>: View {
-    let title: LocalizedStringKey
-    var subtitle: String? = nil
-    var trailing: String? = nil
-    /// Optional source badge shown in the header (e.g. "Apple Health"). (FER-62)
-    var badge: SourceBadge? = nil
-    var height: CGFloat = NoopMetrics.chartHeight
-    @ViewBuilder let chart: () -> ChartBody
-    @ViewBuilder let footer: () -> Footer
-
-    public init(title: LocalizedStringKey, subtitle: String? = nil, trailing: String? = nil,
-                badge: SourceBadge? = nil,
-                height: CGFloat = NoopMetrics.chartHeight,
-                @ViewBuilder chart: @escaping () -> ChartBody,
-                @ViewBuilder footer: @escaping () -> Footer = { EmptyView() }) {
-        self.title = title; self.subtitle = subtitle; self.trailing = trailing; self.badge = badge
-        self.height = height; self.chart = chart; self.footer = footer
-    }
-
-    public var body: some View {
-        NoopCard {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .firstTextBaseline) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(title).strandOverline()
-                        if let subtitle { Text(subtitle).font(StrandFont.footnote).foregroundStyle(InstrumentoTheme.base.inkTertiary) }
-                    }
-                    Spacer()
-                    if let badge { badge }
-                    if let trailing { Text(trailing).font(StrandFont.bodyNumber).foregroundStyle(InstrumentoTheme.base.ink) }
-                }
-                chart().frame(height: height).clipped()  // contain any mark overshoot to the plot frame so it never bleeds onto the footer
-                let f = footer()
-                if !(f is EmptyView) {
-                    Divider().overlay(InstrumentoTheme.base.hairline)
-                    f
-                }
-            }
-        }
-    }
-}
-
-/// A footer row of small "label / value" stats for ChartCard.
-public struct ChartFooter: View {
-    let items: [(LocalizedStringKey, String)]
-    public init(_ items: [(LocalizedStringKey, String)]) { self.items = items }
-    public var body: some View {
-        HStack(spacing: 0) {
-            ForEach(Array(items.enumerated()), id: \.offset) { _, it in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(it.0).textCase(.uppercase).font(StrandFont.footnote).foregroundStyle(InstrumentoTheme.base.inkTertiary)
-                    Text(it.1).font(StrandFont.captionNumber).foregroundStyle(InstrumentoTheme.base.inkSecondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        }
-    }
 }
 
 // MARK: - Range control (the ONE segmented pill control, used everywhere)
