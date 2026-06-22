@@ -19,6 +19,10 @@ struct ImportedSleepFigures: Equatable {
 @MainActor
 final class Repository: ObservableObject {
     let deviceId: String
+    /// The data-source mode (FER-484): which sources feed the dashboard + baseline. Set by `AppModel`
+    /// from `SourceModeStore`. `combined` (the default) reads every source exactly as before; capture is
+    /// untouched — this only filters reads.
+    var dataSourceMode: DataSourceMode = .combined
     /// Source id for on-device computed scores (recovery/strain/sleep derived from the raw strap
     /// streams by IntelligenceEngine). Merged UNDER the imported `deviceId` rows at read time, so a
     /// real WHOOP import always wins and the strap-only user still gets a populated dashboard.
@@ -163,20 +167,24 @@ final class Repository: ObservableObject {
         let nowTs = Int(now.timeIntervalSince1970)
         let lo = nowTs - nDays * 86_400, hi = nowTs + 86_400
 
-        let imported = (try? await store.dailyMetrics(deviceId: deviceId, from: fromDay, to: toDay)) ?? []
-        let computed = (try? await store.dailyMetrics(deviceId: computedDeviceId, from: fromDay, to: toDay)) ?? []
+        let importedRaw = (try? await store.dailyMetrics(deviceId: deviceId, from: fromDay, to: toDay)) ?? []
+        let computedRaw = (try? await store.dailyMetrics(deviceId: computedDeviceId, from: fromDay, to: toDay)) ?? []
         // FER-62: Apple Health daily rows — the lowest-precedence fallback layer for the dashboard,
         // so a strap-uncovered user still sees HRV / resting HR / sleep-stage trends.
-        let apple = (try? await store.dailyMetrics(deviceId: "apple-health", from: fromDay, to: toDay)) ?? []
-        let impSleep = (try? await store.sleepSessions(deviceId: deviceId, from: lo, to: hi, limit: 4000)) ?? []
-        let compSleep = (try? await store.sleepSessions(deviceId: computedDeviceId, from: lo, to: hi, limit: 4000)) ?? []
+        let appleRaw = (try? await store.dailyMetrics(deviceId: "apple-health", from: fromDay, to: toDay)) ?? []
+        // FER-484: the mode filters which sources enter the merge/baseline. `combined` is the identity
+        // (regression zero); `whoopOnly` drops Apple; `appleHealthOnly` drops the strap. The strap sleep
+        // + verbatim figures below are strap-sourced, so they're gated on `usesWhoop` the same way.
+        let (imported, computed, apple) = DataSourcePolicy.filter(dataSourceMode, imported: importedRaw, computed: computedRaw, apple: appleRaw)
+        let impSleep = dataSourceMode.usesWhoop ? ((try? await store.sleepSessions(deviceId: deviceId, from: lo, to: hi, limit: 4000)) ?? []) : []
+        let compSleep = dataSourceMode.usesWhoop ? ((try? await store.sleepSessions(deviceId: computedDeviceId, from: lo, to: hi, limit: 4000)) ?? []) : []
 
         // Export-verbatim sleep figures (long-format metricSeries rows from WhoopImporter).
         // The Detalle de Sueño prefers these per day over its APPROXIMATE recomputations.
-        let perf = (try? await store.metricSeries(deviceId: deviceId, key: "sleep_performance", from: fromDay, to: toDay)) ?? []
-        let cons = (try? await store.metricSeries(deviceId: deviceId, key: "sleep_consistency", from: fromDay, to: toDay)) ?? []
-        let need = (try? await store.metricSeries(deviceId: deviceId, key: "sleep_need_min", from: fromDay, to: toDay)) ?? []
-        let debt = (try? await store.metricSeries(deviceId: deviceId, key: "sleep_debt_min", from: fromDay, to: toDay)) ?? []
+        let perf = dataSourceMode.usesWhoop ? ((try? await store.metricSeries(deviceId: deviceId, key: "sleep_performance", from: fromDay, to: toDay)) ?? []) : []
+        let cons = dataSourceMode.usesWhoop ? ((try? await store.metricSeries(deviceId: deviceId, key: "sleep_consistency", from: fromDay, to: toDay)) ?? []) : []
+        let need = dataSourceMode.usesWhoop ? ((try? await store.metricSeries(deviceId: deviceId, key: "sleep_need_min", from: fromDay, to: toDay)) ?? []) : []
+        let debt = dataSourceMode.usesWhoop ? ((try? await store.metricSeries(deviceId: deviceId, key: "sleep_debt_min", from: fromDay, to: toDay)) ?? []) : []
         var fig: [String: ImportedSleepFigures] = [:]
         for p in perf { fig[p.day, default: ImportedSleepFigures()].performancePct = p.value }
         for p in cons { fig[p.day, default: ImportedSleepFigures()].consistencyPct = p.value }
@@ -249,6 +257,7 @@ final class Repository: ObservableObject {
     // MARK: - Detail passthroughs
 
     func dailyMetrics(fromDay: String, toDay: String) async -> [DailyMetric] {
+        guard dataSourceMode.usesWhoop else { return [] }   // FER-484: appleHealthOnly excludes the strap
         guard let store = await ensureStore() else { return [] }
         return (try? await store.dailyMetrics(deviceId: deviceId, from: fromDay, to: toDay)) ?? []
     }
@@ -281,8 +290,9 @@ final class Repository: ObservableObject {
     /// collision), oldest first.
     func sleepSessions(from: Int, to: Int, limit: Int = 100) async -> [CachedSleepSession] {
         guard let store = await ensureStore() else { return [] }
-        let imported = (try? await store.sleepSessions(deviceId: deviceId, from: from, to: to, limit: limit)) ?? []
-        let computed = (try? await store.sleepSessions(deviceId: computedDeviceId, from: from, to: to, limit: limit)) ?? []
+        // FER-484: in appleHealthOnly the strap is excluded from reads (Apple sleep sessions arrive in F3).
+        let imported = dataSourceMode.usesWhoop ? ((try? await store.sleepSessions(deviceId: deviceId, from: from, to: to, limit: limit)) ?? []) : []
+        let computed = dataSourceMode.usesWhoop ? ((try? await store.sleepSessions(deviceId: computedDeviceId, from: from, to: to, limit: limit)) ?? []) : []
         var byStart: [Int: CachedSleepSession] = [:]
         for s in computed { byStart[s.startTs] = s }
         for s in imported { byStart[s.startTs] = s }   // imported (real export) wins on the same start
@@ -650,6 +660,9 @@ final class Repository: ObservableObject {
         guard let store = await ensureStore() else { return [] }
         let now = Int(Date().timeIntervalSince1970)
         let lo = now - days * 86_400, hi = now + 86_400
+        // FER-484 scope: this list is shared by the dashboard (must respect the data-source mode) AND the
+        // diagnostic screens (Datos y fuentes / Apple Health coverage, which must show what's STORED). The
+        // per-screen filtering — dashboard honors the mode, diagnostics ignore it — is wired in F2 (FER-485).
         var rows = (try? await store.workouts(deviceId: deviceId, from: lo, to: hi, limit: 5000)) ?? []
         rows += (try? await store.workouts(deviceId: "apple-health", from: lo, to: hi, limit: 5000)) ?? []
         rows += (try? await store.workouts(deviceId: computedDeviceId, from: lo, to: hi, limit: 5000)) ?? []
@@ -758,6 +771,9 @@ final class Repository: ObservableObject {
     }
 
     /// Apple Health daily aggregates (steps/energy/vo2/hr).
+    /// FER-484 scope: shared by the dashboard (TodayView/CuerpoView, must respect the mode) and the Apple
+    /// Health diagnostic screen (shows what's stored, ignores the mode). The per-screen mode filtering is
+    /// wired in F2 (FER-485), not here — so the diagnostic coverage stays honest.
     func appleDailyRows(days: Int = 4000) async -> [AppleDaily] {
         guard let store = await ensureStore() else { return [] }
         let (from, to) = Self.dayWindow(days: days)
@@ -770,6 +786,9 @@ final class Repository: ObservableObject {
     /// didn't decode HRV/sleep) hides the value Apple Health does have; Today's Key Metrics falls back
     /// to these to fill that gap without disturbing the dashboard merge or the recovery baseline. (FER-98)
     func appleDailyMetricRows(days: Int = 4000) async -> [DailyMetric] {
+        // FER-484: dashboard-only read (TodayView/CuerpoView Key-Metrics fall-back) — no diagnostic caller,
+        // so it honors the mode directly: whoopOnly surfaces no Apple HRV/sleep into the dashboard.
+        guard dataSourceMode.usesAppleHealth else { return [] }
         guard let store = await ensureStore() else { return [] }
         let (from, to) = Self.dayWindow(days: days)
         return (try? await store.dailyMetrics(deviceId: "apple-health", from: from, to: to)) ?? []

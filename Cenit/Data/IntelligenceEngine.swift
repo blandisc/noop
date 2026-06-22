@@ -76,6 +76,11 @@ final class IntelligenceEngine: ObservableObject {
         // mid-run) can't mutate this array out from under the ~21-await pass — every night is scored
         // against the SAME baseline the run started with, so the scores can't drift. (FER-177 / #78)
         let hist = repo.days
+        // FER-484: snapshot the mode alongside the other inputs. In appleHealthOnly the strap is excluded
+        // from reads, so there are no strap nights to score — skip the pass (Apple-sourced recovery is F4).
+        // Capture is untouched. In whoopOnly the pass runs but the Apple prior below is gated off.
+        let mode = repo.dataSourceMode
+        guard mode.usesWhoop else { if !results.isEmpty { results = [] }; return [] }
 
         // ── Idempotent skip: if neither the raw HR frontier nor the imported history changed since the
         // last successful run, re-reading 21 days would recompute identical scores — skip the balloon.
@@ -206,9 +211,11 @@ final class IntelligenceEngine: ObservableObject {
         // finishes correcting as real strap nights arrive. Strap (imported + on-device) ALWAYS wins.
         // (efficiency/skin-temp are NOT seeded: Apple writes efficiency = nil and carries no skin temp,
         // so those terms keep their honest population-center cold-start.)
-        let appleRows = (try? await store.dailyMetrics(deviceId: "apple-health",
+        // FER-484: the Apple prior only seeds the baseline when Apple Health is in use; whoopOnly gates it
+        // off so no Apple HRV (SDNN) reaches the RMSSD baseline.
+        let appleRows = mode.usesAppleHealth ? ((try? await store.dailyMetrics(deviceId: "apple-health",
                                                        from: AnalyticsEngine.dayString(now - 90 * 86_400, tzOffsetSeconds: tzOffset),
-                                                       to: AnalyticsEngine.dayString(now, tzOffsetSeconds: tzOffset))) ?? []
+                                                       to: AnalyticsEngine.dayString(now, tzOffsetSeconds: tzOffset))) ?? []) : []
         let priorDays = Self.applePriorDays(appleRows, maxNights: Self.applePriorMaxNights)
         var appleHrvByDay: [String: Double?] = [:]
         var appleRhrByDay: [String: Double?] = [:]
@@ -254,8 +261,10 @@ final class IntelligenceEngine: ObservableObject {
         let windowStart = now - maxDays * 86_400 - 30 * 3_600
         var realWorkouts = (try? await store.workouts(deviceId: deviceId, from: windowStart,
                                                        to: now, limit: 100_000)) ?? []
-        realWorkouts += (try? await store.workouts(deviceId: "apple-health", from: windowStart,
-                                                    to: now, limit: 100_000)) ?? []
+        if mode.usesAppleHealth {
+            realWorkouts += (try? await store.workouts(deviceId: "apple-health", from: windowStart,
+                                                        to: now, limit: 100_000)) ?? []
+        }
 
         // ── Pass 2: re-score ONLY recovery against the now-seeded baseline (cheap, baseline-dependent);
         // every other field was computed once in pass 1. Recovery stays nil until the HRV baseline is

@@ -54,6 +54,63 @@ final class StrengthStoreTests: XCTestCase {
         XCTAssertTrue(exLeft.isEmpty)
     }
 
+    /// FER-492: heterogeneous per-set reps/weight round-trip in order, and the legacy target* columns
+    /// are derived from the work sets (count + first work set) so old readers stay coherent.
+    func testRoutineSetsRoundTripHeterogeneous() async throws {
+        let store = try await WhoopStore.inMemory()
+        let r = Routine(id: "rt1", name: "Pierna A", createdTs: 0, updatedTs: 0)
+        let sets = [
+            RoutineSet(position: 0, kind: .work, reps: 8, weightKg: 60),
+            RoutineSet(position: 1, kind: .work, reps: 6, weightKg: 70),
+            RoutineSet(position: 2, kind: .work, reps: 4, weightKg: 80),
+        ]
+        let re = RoutineExercise(id: "re1", routineId: "rt1", exerciseId: "squat", position: 0,
+                                 targetSets: 1, targetReps: nil, targetWeightKg: nil, sets: sets)
+        try await store.saveRoutine(r, exercises: [re])
+
+        let back = try await store.routineExercises(routineId: "rt1")
+        XCTAssertEqual(back.count, 1)
+        XCTAssertEqual(back.first?.sets.map(\.reps), [8, 6, 4])
+        XCTAssertEqual(back.first?.sets.map(\.weightKg), [60, 70, 80])
+        XCTAssertEqual(back.first?.sets.map(\.position), [0, 1, 2])
+        // Derived compatibility columns reflect the work sets (count + first work set).
+        XCTAssertEqual(back.first?.targetSets, 3)
+        XCTAssertEqual(back.first?.targetReps, 8)
+        XCTAssertEqual(back.first?.targetWeightKg, 60)
+    }
+
+    /// Re-saving with fewer sets deletes the removed set rows — no orphaned `routineSet` rows survive.
+    func testRoutineSetReplaceDeletesOrphans() async throws {
+        let store = try await WhoopStore.inMemory()
+        let r = Routine(id: "rt1", name: "Pierna A", createdTs: 0, updatedTs: 0)
+        let three = (0..<3).map { RoutineSet(position: $0, kind: .work, reps: 8, weightKg: 50) }
+        let re3 = RoutineExercise(id: "re1", routineId: "rt1", exerciseId: "squat", position: 0,
+                                  targetSets: 3, sets: three)
+        try await store.saveRoutine(r, exercises: [re3])
+        let initial = try await store.routineExercises(routineId: "rt1").first?.sets.count
+        XCTAssertEqual(initial, 3)
+
+        var re2 = re3
+        re2.sets = Array(three.prefix(2))
+        try await store.saveRoutine(r, exercises: [re2])
+        let back = try await store.routineExercises(routineId: "rt1")
+        XCTAssertEqual(back.first?.sets.count, 2, "removed set must not leave an orphan row")
+        XCTAssertEqual(back.first?.targetSets, 2)
+    }
+
+    /// A legacy in-memory slot with no `sets` (e.g. a starter template) still persists and reads back
+    /// with sets synthesized 1:1 from its target* — `sets` is never empty.
+    func testRoutineWithoutSetsSynthesizesFromTargets() async throws {
+        let store = try await WhoopStore.inMemory()
+        let r = Routine(id: "rt1", name: "Plantilla", createdTs: 0, updatedTs: 0)
+        let re = RoutineExercise(id: "re1", routineId: "rt1", exerciseId: "bench", position: 0,
+                                 targetSets: 4, targetReps: 10, targetWeightKg: 40)   // sets defaults to []
+        try await store.saveRoutine(r, exercises: [re])
+        let back = try await store.routineExercises(routineId: "rt1").first
+        XCTAssertEqual(back?.sets.count, 4)
+        XCTAssertTrue(back?.sets.allSatisfy { $0.reps == 10 && $0.weightKg == 40 } ?? false)
+    }
+
     func testSessionSetsAndPR() async throws {
         let store = try await WhoopStore.inMemory()
         let session = StrengthSession(id: "s1", routineId: "rt1", startTs: 1000)

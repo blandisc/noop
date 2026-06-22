@@ -103,6 +103,9 @@ enum UnitFormatter {
     /// kg → pounds.
     static func kgToPounds(_ kg: Double) -> Double { kg * poundsPerKilogram }
 
+    /// pounds → kg.
+    static func poundsToKg(_ lb: Double) -> Double { lb / poundsPerKilogram }
+
     /// Format a mass given in KILOGRAMS with one decimal + unit. Metric: "74.5 kg". Imperial: "164.2 lb".
     static func massFromKilograms(_ kg: Double, system: UnitSystem) -> String {
         switch system {

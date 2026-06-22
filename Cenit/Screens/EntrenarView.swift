@@ -55,6 +55,12 @@ private struct EntrenarLanding: View {
     @State private var builderTarget: BuilderTarget? = nil
     /// Drives the «start from a template» sheet (FER-386).
     @State private var showTemplates = false
+    /// Drives the «import an LLM-generated plan» sheet (FER-496).
+    @State private var showImport = false
+    /// Which routine row is currently swiped open — only one at a time. FER-491.
+    @State private var swipedRoutineId: String? = nil
+    /// A just-deleted routine + its exercises, kept in memory so «Undo» can restore it. FER-491.
+    @State private var pendingUndo: DeletedRoutine? = nil
 
     /// Today's recovery (0–100), nil until a score exists. Drives whether the band shows.
     private var recovery: Double? { repo.today?.recovery }
@@ -83,6 +89,12 @@ private struct EntrenarLanding: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
+        // «Undo» toast after a swipe-delete (FER-491): floats above the hub, auto-dismisses in ~4s.
+        .overlay(alignment: .bottom) {
+            if let d = pendingUndo { undoBanner(d) }
+        }
+        // Confirm the delete with a haptic; stay silent on the undo (id → nil).
+        .sensoryFeedback(trigger: pendingUndo?.id) { _, new in new != nil ? .warning : nil }
         .sheet(item: $builderTarget) { target in
             RoutineBuilderScreen(routine: target.routine) { await load() }
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
@@ -90,6 +102,12 @@ private struct EntrenarLanding: View {
         // «Start from a template» (FER-386): a `.sheet` like the builder, reloading the hub on add.
         .sheet(isPresented: $showTemplates) {
             StarterTemplatesSheet { await load() }
+                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        }
+        // «Import plan» (FER-496): bring in an LLM-generated program. A `.sheet` like the builder,
+        // reloading the hub when it creates routines.
+        .sheet(isPresented: $showImport) {
+            WorkoutImportView { await load() }
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
         // The guided strength session (FER-347). Hosted here at the hub root so it survives pushing
@@ -197,25 +215,78 @@ private struct EntrenarLanding: View {
     }
 
     private func routineRow(_ r: Routine) -> some View {
-        Button { openRoutine(r.id) } label: {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(r.name).font(StrandFont.body).foregroundStyle(theme.ink)
-                    Text(exerciseCountText(exerciseCounts[r.id] ?? 0))
-                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+        SwipeToDeleteRow(
+            isOpen: Binding(get: { swipedRoutineId == r.id },
+                            set: { swipedRoutineId = $0 ? r.id : nil }),
+            onDelete: { delete(r) }
+        ) {
+            Button { openRoutine(r.id) } label: {
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(r.name).font(StrandFont.body).foregroundStyle(theme.ink)
+                        Text(exerciseCountText(exerciseCounts[r.id] ?? 0))
+                            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    }
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                 }
-                Spacer(minLength: 8)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                .frame(minHeight: 48).contentShape(Rectangle())
             }
-            .frame(minHeight: 48).contentShape(Rectangle())
+            .buttonStyle(.plain)
+            .contextMenu {
+                Button { builderTarget = .edit(r) } label: { Label("Edit routine", systemImage: "slider.horizontal.3") }
+                Button(role: .destructive) { delete(r) } label: { Label("Delete routine", systemImage: "trash") }
+            }
         }
-        .buttonStyle(.plain)
-        .contextMenu {
-            Button { builderTarget = .edit(r) } label: { Label("Edit routine", systemImage: "slider.horizontal.3") }
-            Button(role: .destructive) {
-                Task { try? await repo.deleteRoutine(id: r.id); await load() }
-            } label: { Label("Delete routine", systemImage: "trash") }
+    }
+
+    // MARK: - Delete / undo (FER-491)
+
+    /// One just-deleted routine kept in memory so the «Undo» toast can restore it intact.
+    private struct DeletedRoutine: Identifiable {
+        let id = UUID()
+        let routine: Routine
+        let exercises: [RoutineExercise]
+    }
+
+    /// Read the routine's exercises (so an undo can restore them), delete it, reload, then show «Undo».
+    private func delete(_ r: Routine) {
+        swipedRoutineId = nil
+        Task {
+            let exercises = await repo.routineExercises(routineId: r.id)
+            try? await repo.deleteRoutine(id: r.id)
+            await load()
+            withAnimation { pendingUndo = DeletedRoutine(routine: r, exercises: exercises) }
+        }
+    }
+
+    private func undoDelete(_ d: DeletedRoutine) {
+        Task {
+            try? await repo.saveRoutine(d.routine, exercises: d.exercises)
+            await load()
+            withAnimation { pendingUndo = nil }
+        }
+    }
+
+    /// The dark «Routine deleted · Undo» toast (Apple Mail pattern). Auto-dismisses after ~4s.
+    private func undoBanner(_ d: DeletedRoutine) -> some View {
+        HStack(spacing: 12) {
+            Text("Routine deleted").font(StrandFont.subhead).foregroundStyle(theme.surface)
+            Spacer(minLength: 8)
+            Button { undoDelete(d) } label: {
+                Text("Undo").font(StrandFont.headline).foregroundStyle(theme.surface)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 18).padding(.vertical, 14)
+        .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+        .padding(.horizontal, NoopMetrics.screenPadding)
+        .padding(.bottom, 8)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+        .task(id: d.id) {
+            try? await Task.sleep(nanoseconds: 4_000_000_000)
+            withAnimation { if pendingUndo?.id == d.id { pendingUndo = nil } }
         }
     }
 
@@ -267,6 +338,8 @@ private struct EntrenarLanding: View {
                 LiveWorkoutHubRow()
                 divider
                 toolRow("Exercise library", "book", action: openLibrary)
+                divider
+                toolRow("Import plan", "square.and.arrow.down", action: { showImport = true })
                 divider
                 toolRow("Breathe", "wind", action: openBreathe)
                 divider
@@ -429,6 +502,71 @@ struct TrainingSoonSheet: View {
         .padding(NoopMetrics.screenPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(theme.paper.ignoresSafeArea())
+    }
+}
+
+// MARK: - Swipe-to-delete row (FER-491)
+
+/// A row that slides left under a horizontal drag to reveal a destructive «Delete» button, while
+/// keeping the «Instrumento» look (the row sits on warm paper — no `List` chrome). A full-swipe past a
+/// threshold deletes directly; a half-swipe parks the button open; opening another row (or deleting)
+/// closes it via the `isOpen` binding. The wrapped content keeps its own tap + context menu — the drag
+/// only engages once the finger moves horizontally, so a tap or long-press still reaches the content.
+private struct SwipeToDeleteRow<Content: View>: View {
+    @Environment(\.instrumentoTheme) private var theme
+    @Binding var isOpen: Bool
+    let onDelete: () -> Void
+    @ViewBuilder var content: Content
+
+    @State private var offset: CGFloat = 0
+
+    private let revealWidth: CGFloat = 96
+    private let fullSwipeThreshold: CGFloat = 200
+
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            Button(action: onDelete) {
+                Image(systemName: "trash")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(theme.surface)
+                    .frame(width: revealWidth)
+                    .frame(maxHeight: .infinity)
+                    .background(theme.critical)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("Delete routine"))
+
+            content
+                .background(theme.paper)
+                .offset(x: offset)
+                .highPriorityGesture(drag)
+        }
+        .clipped()
+        .onChange(of: isOpen) { _, open in
+            if !open { withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) { offset = 0 } }
+        }
+    }
+
+    private var drag: some Gesture {
+        DragGesture(minimumDistance: 18)
+            .onChanged { v in
+                guard abs(v.translation.width) > abs(v.translation.height) else { return }
+                let base: CGFloat = isOpen ? -revealWidth : 0
+                offset = min(0, base + v.translation.width)
+            }
+            .onEnded { v in
+                let dx = v.translation.width
+                if !isOpen && -v.predictedEndTranslation.width > fullSwipeThreshold {
+                    onDelete()
+                    return
+                }
+                let open = isOpen ? !(dx > revealWidth * 0.5) : (-dx > revealWidth * 0.5)
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+                    offset = open ? -revealWidth : 0
+                }
+                isOpen = open
+            }
     }
 }
 #endif
