@@ -686,13 +686,16 @@ final class AppModel: ObservableObject {
     /// here), so steady-state — and the marginal-radio fallback (#80) it honors — is untouched.
     private var realtimeConsumers: Set<String> = []
 
-    /// A consumer (`"live"`, `"strength"`) wants live HR. Arms the realtime stream on the FIRST consumer
-    /// and blanks the stale smoothing window (#46) so the hero shows "—" until a fresh sample lands.
-    /// Idempotent per consumer (re-acquiring the same one is a no-op).
+    /// A consumer (`"live"`, `"strength"`) wants live HR. ALWAYS (re)arms the realtime stream and blanks
+    /// the stale smoothing window (#46) — not just on the first consumer (FER-498). This matters because
+    /// the consumer set can desync from the actual stream: SwiftUI's `onDisappear` for Live isn't reliable
+    /// (tabs/sheets), so `"live"` can linger; meanwhile the stream may already be OFF (a disconnect, an
+    /// offload that stopped the R10/R11 flood, or a marginal-radio fallback). If we armed only `wasIdle`,
+    /// a strength session opened in that state would never re-arm — leaving a FROZEN `bpm` and zero capture
+    /// (the receipt then reads "no heart rate"). Re-arming every time is safe and idempotent — it's exactly
+    /// what Live already did on each `onAppear`/connection change. The ref-count governs only the STOP.
     func acquireRealtimeHR(_ consumer: String) {
-        let wasIdle = realtimeConsumers.isEmpty
         realtimeConsumers.insert(consumer)
-        guard wasIdle else { return }
         resetSmoothing()
         ble.startRealtime()
     }
