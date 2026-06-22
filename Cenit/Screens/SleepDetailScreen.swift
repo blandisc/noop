@@ -7,7 +7,7 @@ import Foundation
 
 // MARK: - SleepDetailScreen — el «Detalle de Sueño» en lenguaje «Instrumento» (FER-212)
 //
-// Hermana de `MetricDetailScreen` (FER-185): REUSA su lenguaje visual (el scaffold `block(title:)`, el
+// Hermana de `MetricDetailScreen` (FER-185): REUSA su lenguaje visual (el scaffold `DetailBlock`, el
 // patrón `hero`, `theme: InstrumentoTheme` explícito, `SheetPaperBackground`, `ScrollView`→`VStack`,
 // `methodDisclosure`) pero con su propio modelo rico. REEMPLAZA la vieja pantalla de sueño oscura (ya
 // retirada) y es un SUPERSET de ella + un bloque NUEVO de regularidad del horario.
@@ -115,7 +115,7 @@ struct SleepDetailScreen: View {
         let s = night.stages
         // The ⓘ opens the combined "what the stages mean" card — it absorbs the old always-visible
         // "Approximate stages / Proportions, not minutes…" caption, decluttering the screen. (FER-227)
-        block(title: "Last night", info: { showStages = true }) {
+        DetailBlock("Last night", theme: theme, info: { showStages = true }, infoAccessibilityLabel: "What the stages mean") {
             VStack(alignment: .leading, spacing: 14) {
                 if model.intervals.count >= 2 {
                     Hypnogram(intervals: model.intervals,
@@ -196,7 +196,7 @@ struct SleepDetailScreen: View {
 
     @ViewBuilder
     private var regularityBlock: some View {
-        block(title: "Schedule regularity") {
+        DetailBlock("Schedule regularity", theme: theme) {
             VStack(alignment: .leading, spacing: 8) {
                 if let r = model.regularity {
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
@@ -260,7 +260,7 @@ struct SleepDetailScreen: View {
     @ViewBuilder
     private func stagesVsTypicalBlock(_ night: SleepDetailModel.Night) -> some View {
         let s = night.stages
-        block(title: "Last night vs your typical") {
+        DetailBlock("Last night vs your typical", theme: theme) {
             VStack(alignment: .leading, spacing: 14) {
                 stageVsTypicalRow("Deep", lastMin: s.deep, total: s.total,
                                   typicalPct: model.typicalDeepPct, color: StrandPalette.sleepDeep)
@@ -340,7 +340,7 @@ struct SleepDetailScreen: View {
 
     @ViewBuilder
     private func patternsBlock(_ night: SleepDetailModel.Night) -> some View {
-        block(title: "Your patterns") {
+        DetailBlock("Your patterns", theme: theme) {
             VStack(alignment: .leading, spacing: 12) {
                 patternLine(label: "How well", value: howWellText(night), note: nil)
                 if let stages = stagesVsTypicalText(night) {
@@ -463,7 +463,7 @@ struct SleepDetailScreen: View {
     @ViewBuilder
     private var durationTrendBlock: some View {
         let pts = model.trendPoints
-        block(title: "Duration trend") {
+        DetailBlock("Duration trend", theme: theme) {
             VStack(alignment: .leading, spacing: 10) {
                 if pts.count >= 2, let bt = bandedDuration(pts) {
                     // Active-band header: which band the latest nights sit in, and how many of the
@@ -512,7 +512,7 @@ struct SleepDetailScreen: View {
     @ViewBuilder
     private var weeklyDebtBlock: some View {
         if let debt = model.weeklyDebtMinutes, debt >= 15, model.weeklyDebtNights.count >= 2 {
-            block(title: "Weekly debt") {
+            DetailBlock("Weekly debt", theme: theme) {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
                         Text(hoursMinutes(debt))
@@ -588,7 +588,7 @@ struct SleepDetailScreen: View {
 
     @ViewBuilder
     private func nightMetricsBlock(_ night: SleepDetailModel.Night) -> some View {
-        block(title: "Tonight's metrics") {
+        DetailBlock("Tonight's metrics", theme: theme) {
             LazyVGrid(columns: [GridItem(.flexible(), spacing: NoopMetrics.gap), GridItem(.flexible(), spacing: NoopMetrics.gap)],
                       alignment: .leading, spacing: NoopMetrics.gap) {
                 // Performance: asleep / need, capped at 100%, with the shortfall in real hours.
@@ -728,34 +728,7 @@ struct SleepDetailScreen: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    // MARK: - Shared block scaffold + wells (mirrors MetricDetailScreen)
-
-    /// A titled block on the paper: a quiet overline + content (no card-in-card; surface used sparingly).
-    /// When `info` is set, the overline gets a trailing ⓘ button (iOS-native "more info") — used by
-    /// "Last night" to open the stages explainer. (FER-227)
-    @ViewBuilder
-    private func block<Content: View>(title: LocalizedStringKey, info: (() -> Void)? = nil,
-                                      @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if let info {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(title).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    Spacer(minLength: 8)
-                    Button(action: info) {
-                        Image(systemName: "info.circle")
-                            .font(.system(size: 17))
-                            .foregroundStyle(theme.inkTertiary)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(Text("What the stages mean"))
-                }
-            } else {
-                Text(title).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            }
-            content()
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
+    // MARK: - Wells (mirror MetricDetailScreen)
 
     private func emptyWell(text: LocalizedStringKey) -> some View {
         VStack(spacing: 10) {
