@@ -594,6 +594,7 @@ final class AppModel: ObservableObject {
 
         return StrengthSummary(routineName: session.routineName, durationS: durationS,
                                volumeKg: volumeKg, setCount: work.count, strain: record.strain,
+                               avgHr: record.avgHr,
                                costBand: SessionRecoveryCost.cost(sessionStrain: record.strain)?.band,
                                costTomorrowPct: costTomorrowPct,
                                prs: prs, muscles: Array(muscles.prefix(6)), isFirstTime: prior.allSatisfy { $0.value.isEmpty })

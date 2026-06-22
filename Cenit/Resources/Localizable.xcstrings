@@ -18725,6 +18725,23 @@
         }
       }
     },
+    "Heart rate recorded; too short for an effort score.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heart rate recorded; too short for an effort score."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pulso registrado; sesión muy corta para un puntaje de esfuerzo."
+          }
+        }
+      }
+    },
     "No heart rate this session.": {
       "extractionState": "manual",
       "localizations": {
