@@ -53,7 +53,7 @@ private struct PatronesLanding: View {
 
     // N-of-1 experiment state (FER-307). One at a time: either a running experiment, or the most-recent
     // finished verdict the user hasn't dismissed, or neither.
-    @State private var running: ExperimentVM? = nil
+    @State private var running: ExperimentProgress? = nil
     @State private var finished: ExperimentRow? = nil
     /// The completed experiment the user has acknowledged — so its verdict card stops showing. Local,
     /// per-device; the «probado» promotion in «Lo que funciona» is the durable record either way.
@@ -306,52 +306,150 @@ private struct PatronesLanding: View {
         }
     }
 
-    // MARK: En prueba (running experiment / verdict, FER-307)
+    // MARK: En prueba · tu racha (running experiment / verdict, FER-307 + FER-462)
     //
-    // The cycle's «Prueba» beat. Phase 1 keeps the working running/verdict module (reskinned). The
-    // streak «arco», the marked daily check-in and the pushed detail screen land in Phase 2.
+    // The cycle's «Prueba» beat. A running journal experiment shows its racha — the consecutive nights
+    // kept (the «arco») + your best run — and the marked daily check-in that keeps it alive. Diet (no
+    // Sí/No log) falls back to the plain progress module. The verdict module is unchanged.
 
     @ViewBuilder private var enPruebaSection: some View {
-        if let vm = running {
-            experimentRunningSection(vm)
+        if let p = running {
+            if p.supportsStreak {
+                experimentStreakSection(p)
+            } else {
+                experimentProgressSection(p)
+            }
         } else if let fin = finished {
             experimentVerdictSection(fin)
         }
     }
 
-    private func experimentRunningSection(_ vm: ExperimentVM) -> some View {
+    /// The racha module: streak number + «arco» + best run + the marked daily check-in.
+    private func experimentStreakSection(_ p: ExperimentProgress) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("En prueba · tu racha").instrumentoOverline().foregroundStyle(theme.dataRecovery)
+                Spacer()
+                HStack(spacing: 4) {
+                    Image(systemName: "flame").font(.system(size: 11, weight: .medium))
+                    Text("Mejor: \(p.streakBest)").font(StrandFont.captionNumber)
+                }
+                .foregroundStyle(theme.inkTertiary)
+            }
+            .padding(.top, 18)
+            .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5).padding(.top, -2) }
+
+            Text(BucleFormat.behaviorName(insightStub(p.row)))
+                .font(StrandFont.title2).foregroundStyle(theme.ink).padding(.top, 11)
+
+            HStack(alignment: .firstTextBaseline, spacing: 7) {
+                Text("\(p.streakCurrent)").font(StrandFont.number(34)).foregroundStyle(theme.ink)
+                Text(p.streakCurrent == 1 ? "noche seguida" : "noches seguidas")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            }
+            .padding(.top, 8)
+
+            StreakArc(filled: p.streakCurrent, total: p.row.windowDays, theme: theme)
+                .padding(.top, 12)
+
+            (Text("Cumpliste ")
+                + Text("\(p.adherent) de \(p.elapsedDay)").foregroundColor(theme.ink).bold()
+                + Text(" días."))
+                .font(StrandFont.body).foregroundStyle(theme.inkSecondary).monospacedDigit().padding(.top, 14)
+
+            if p.pendingCheckIn {
+                checkInBox(p).padding(.top, 14)
+            }
+
+            Text("Veredicto el \(p.verdictDate)")
+                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).padding(.top, 14)
+
+            cancelButton(p.row).padding(.top, 16)
+        }
+    }
+
+    /// The marked daily check-in: today is within the window and unlogged, so a tap writes the answer
+    /// to the journal (extending or breaking the racha) and the box disappears on the next load.
+    private func checkInBox(_ p: ExperimentProgress) -> some View {
+        let question = p.row.behavior.isEmpty ? "¿Lo cumpliste hoy?" : p.row.behavior
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 6) {
+                Circle().fill(theme.dataRecovery).frame(width: 8, height: 8)
+                Text("Pendiente hoy · Día \(p.elapsedDay)").instrumentoOverline().foregroundStyle(theme.dataRecovery)
+            }
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(question).font(StrandFont.headline).foregroundStyle(theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 8)
+                checkInToggle("Sí", answeredYes: true, behavior: p.row.behavior)
+                checkInToggle("No", answeredYes: false, behavior: p.row.behavior)
+            }
+            .padding(.top, 11)
+            Text("Márcalo para no romper la racha.")
+                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).padding(.top, 8)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .stroke(theme.dataRecovery, lineWidth: 1.5))
+    }
+
+    private func checkInToggle(_ label: String, answeredYes: Bool, behavior: String) -> some View {
+        Button {
+            Task {
+                await repo.saveJournalAnswer(day: Repository.localDayKey(Date()),
+                                             question: behavior, answeredYes: answeredYes)
+                await load()
+            }
+        } label: {
+            Text(label).font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
+                .frame(minWidth: 30)
+                .padding(.horizontal, 15).padding(.vertical, 7)
+                .overlay(Capsule().stroke(theme.hairlineStrong, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(label), \(behavior)")
+    }
+
+    /// The plain progress module (diet, which has no Sí/No check-in): day N of M + adherence count.
+    private func experimentProgressSection(_ p: ExperimentProgress) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("En prueba").instrumentoOverline().foregroundStyle(theme.dataRecovery)
                 .padding(.top, 18)
                 .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5).padding(.top, -2) }
-            Text(BucleFormat.behaviorName(insightStub(vm.row)))
+            Text(BucleFormat.behaviorName(insightStub(p.row)))
                 .font(StrandFont.title2).foregroundStyle(theme.ink).padding(.top, 11)
-            Text("a prueba sobre tu \(vm.row.outcome)")
+            Text("a prueba sobre tu \(p.row.outcome)")
                 .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).padding(.top, 3)
 
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("Día \(vm.elapsedDay)").font(.system(size: 30, weight: .semibold)).monospacedDigit()
+                Text("Día \(p.elapsedDay)").font(.system(size: 30, weight: .semibold)).monospacedDigit()
                     .lineLimit(1).minimumScaleFactor(0.6)
                     .foregroundStyle(theme.ink)
-                Text("de \(vm.row.windowDays)").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                Text("de \(p.row.windowDays)").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
             }
             .padding(.top, 16)
 
-            ProgressView(value: Double(vm.elapsedDay), total: Double(vm.row.windowDays))
+            ProgressView(value: Double(p.elapsedDay), total: Double(p.row.windowDays))
                 .tint(theme.dataRecovery).padding(.top, 12)
 
             (Text("Cumpliste ")
-                + Text("\(vm.adherent) de \(vm.elapsedDay)").foregroundColor(theme.ink).bold()
+                + Text("\(p.adherent) de \(p.elapsedDay)").foregroundColor(theme.ink).bold()
                 + Text(" días."))
                 .font(StrandFont.body).foregroundStyle(theme.inkSecondary).monospacedDigit().padding(.top, 16)
-            Text("Veredicto el \(vm.verdictDate)")
+            Text("Veredicto el \(p.verdictDate)")
                 .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).padding(.top, 6)
 
-            Button { Task { await repo.cancelExperiment(vm.row); await load() } } label: {
-                Text("Cancelar experimento").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-            }
-            .buttonStyle(.plain).padding(.top, 18)
+            cancelButton(p.row).padding(.top, 18)
         }
+    }
+
+    private func cancelButton(_ row: ExperimentRow) -> some View {
+        Button { Task { await repo.cancelExperiment(row); await load() } } label: {
+            Text("Cancelar experimento").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+        }
+        .buttonStyle(.plain)
     }
 
     private func experimentVerdictSection(_ exp: ExperimentRow) -> some View {
@@ -769,8 +867,8 @@ private struct PatronesLanding: View {
         // Experiment state: a running one (with live progress + adherence), else the latest finished
         // verdict the user hasn't dismissed.
         let active = await repo.activeExperiment()
-        var runVM: ExperimentVM? = nil
-        if let active { runVM = await runningVM(active, today: todayKey) }
+        var runVM: ExperimentProgress? = nil
+        if let active { runVM = await experimentProgress(active, today: todayKey) }
         let allExp = await repo.allExperiments()
         let latestFinished = active == nil
             ? allExp.first { $0.status == .completed && $0.id != dismissedExperimentId }
@@ -788,18 +886,51 @@ private struct PatronesLanding: View {
         }
     }
 
-    /// Build the running-experiment view model: day N of M, adherent-day count so far, verdict date.
-    private func runningVM(_ row: ExperimentRow, today: String) async -> ExperimentVM? {
+    /// Build the running-experiment progress model: day N of M, adherent-day count, the consecutive/best
+    /// streak (FER-462), and whether today's check-in is still pending. Journal behaviors get the racha;
+    /// diet (no Sí/No log) gets the plain progress (`supportsStreak == false`).
+    private func experimentProgress(_ row: ExperimentRow, today: String) async -> ExperimentProgress {
         let elapsed = max(1, min(row.windowDays, Self.dayspan(from: row.startDay, to: today) + 1))
-        let adherent = await repo.nativeAdherence(behavior: row.behavior, from: row.startDay, to: today)
+        let adherentSet = await repo.adherentDays(behavior: row.behavior, from: row.startDay, to: today)
         let verdictDate = Repository.experimentEndDay(row).flatMap(Self.dayLongLabel) ?? "—"
-        return ExperimentVM(row: row, elapsedDay: elapsed, adherent: adherent, verdictDate: verdictDate)
+
+        let isDiet = row.behavior == JournalCatalogStore.dietBehaviorKey
+        var current = 0, best = 0, pending = false
+        if !isDiet {
+            let answeredToday = (await repo.nativeJournalAnswers(day: today))[row.behavior] != nil
+            // Eligible = the window's calendar days up to today; drop a still-pending today so an unmarked
+            // today reads as «not broken yet», not as a miss.
+            var eligible = Self.dayKeys(from: row.startDay, to: today)
+            if !answeredToday { eligible.removeAll { $0 == today } }
+            let s = StreakMath.streaks(eligibleDays: eligible, adherent: adherentSet)
+            current = s.current
+            best = s.best
+            let withinWindow = Repository.experimentEndDay(row).map { today < $0 } ?? true
+            pending = withinWindow && !answeredToday
+        }
+        return ExperimentProgress(row: row, elapsedDay: elapsed, adherent: adherentSet.count,
+                                  verdictDate: verdictDate, streakCurrent: current, streakBest: best,
+                                  pendingCheckIn: pending, supportsStreak: !isDiet)
     }
 
     /// Whole days from `a` to `b` ("yyyy-MM-dd"), 0 when same day, clamped at 0.
     private static func dayspan(from a: String, to b: String) -> Int {
         guard let da = dayParse.date(from: a), let db = dayParse.date(from: b) else { return 0 }
         return max(0, Calendar.current.dateComponents([.day], from: da, to: db).day ?? 0)
+    }
+
+    /// Ascending calendar day-keys from `a` to `b` inclusive ("yyyy-MM-dd"); empty if `a` > `b` or parse fails.
+    private static func dayKeys(from a: String, to b: String) -> [String] {
+        guard let da = dayParse.date(from: a), let db = dayParse.date(from: b), da <= db else { return [] }
+        let cal = Calendar.current
+        var out: [String] = []
+        var d = da
+        while d <= db {
+            out.append(dayParse.string(from: d))
+            guard let next = cal.date(byAdding: .day, value: 1, to: d) else { break }
+            d = next
+        }
+        return out
     }
 
     /// "vie 26 jun" for a day key.
@@ -821,12 +952,19 @@ private struct PatronesLanding: View {
     }()
 }
 
-/// Running-experiment display model (computed once per refresh).
-private struct ExperimentVM {
+/// Running-experiment display model (computed once per refresh) — progress + the racha (FER-462).
+private struct ExperimentProgress {
     let row: ExperimentRow
     let elapsedDay: Int
     let adherent: Int
     let verdictDate: String
+    /// Consecutive nights kept (trailing run) and best run so far — derived from the journal history.
+    let streakCurrent: Int
+    let streakBest: Int
+    /// Today is within the window and not yet recorded → show the marked daily check-in.
+    let pendingCheckIn: Bool
+    /// The racha / «arco» / check-in apply (journal behaviors). Diet falls back to plain progress.
+    let supportsStreak: Bool
 }
 
 // MARK: - Insight sheet item

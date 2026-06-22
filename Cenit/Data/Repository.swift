@@ -491,18 +491,24 @@ final class Repository: ObservableObject {
         return row
     }
 
-    /// Count of distinct days in [from, to] the behavior was adhered to — the adherence a running
-    /// experiment shows ("cumpliste 3 de 4 días"). Diet (FER-385) counts days with adherence ≥ threshold
-    /// from the `diet-adherence` series; every other behavior counts «yes» days from the native journal.
-    func nativeAdherence(behavior: String, from: String, to: String) async -> Int {
+    /// The distinct days in [from, to] the behavior was adhered to — the SET behind the streak/«arco»
+    /// (FER-462). Diet (FER-385) counts days with adherence ≥ threshold from the `diet-adherence` series;
+    /// every other behavior counts «yes» days from the native journal.
+    func adherentDays(behavior: String, from: String, to: String) async -> Set<String> {
         if behavior == JournalCatalogStore.dietBehaviorKey {
             let byDay = await dietAdherenceByDay(from: from, to: to)
-            return DietAdherence.adherentDays(percentByDay: byDay).count
+            return DietAdherence.adherentDays(percentByDay: byDay)
         }
-        guard let store = await ensureStore() else { return 0 }
+        guard let store = await ensureStore() else { return [] }
         let entries = (try? await store.journalEntries(deviceId: Self.journalDeviceId,
                                                        from: from, to: to)) ?? []
-        return Set(entries.filter { $0.question == behavior && $0.answeredYes }.map(\.day)).count
+        return Set(entries.filter { $0.question == behavior && $0.answeredYes }.map(\.day))
+    }
+
+    /// Count of distinct days in [from, to] the behavior was adhered to — the adherence a running
+    /// experiment shows ("cumpliste 3 de 4 días").
+    func nativeAdherence(behavior: String, from: String, to: String) async -> Int {
+        await adherentDays(behavior: behavior, from: from, to: to).count
     }
 
     // MARK: - Diet plan (FER-371)
