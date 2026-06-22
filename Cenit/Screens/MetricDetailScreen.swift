@@ -584,12 +584,15 @@ struct MetricDetailScreen: View {
     }
 
     /// In «Ranges» mode, span every classification threshold (with margin) so all bands read; the active one
-    /// shaded shows where you fall.
+    /// shaded shows where you fall. The TOP margin is wider than the bottom: the chart's Y-scale has no top
+    /// inset, so with an even margin the highest band + the data peak hugged the plot's top edge — and with
+    /// the «Media móvil ⇄ Rangos» selector sitting just above, they read as overlapping it. The extra top
+    /// headroom pushes them down so they clear the selector. (Detalle de Vital)
     private var rangesValueRange: ClosedRange<Double>? {
         let bounds = spec.info.bands.flatMap { [$0.lower, $0.upper].compactMap { $0 } }
         guard let lo = bounds.min(), let hi = bounds.max(), hi > lo else { return nil }
-        let pad = (hi - lo) * 0.4
-        return (lo - pad)...(hi + pad)
+        let span = hi - lo
+        return (lo - span * 0.4)...(hi + span * 0.6)
     }
 
     private var rangesYTicks: [Double]? {

@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Detalle (vista «Rangos»): el pico de la gráfica ya no se encima con el selector de arriba / Detail ("Ranges" view): the chart's peak no longer overlaps the selector above.**
+  **ES** — En la hoja de detalle de una métrica con rangos (Pasos, FC en reposo, Respiración), al cambiar a «Rangos» la gráfica subía hasta pegarse al selector «Media móvil ⇄ Rangos» —el pico de la línea y el carril más alto quedaban encimados con él—. Se le dio más aire arriba al eje en esa vista para que despeguen del selector.
+  **EN** — On a banded metric's detail sheet (Steps, Resting HR, Respiration), switching to "Ranges" let the chart rise right up against the "Moving average ⇄ Ranges" selector — the line's peak and the top band crowded into it. The axis now gets extra headroom at the top in that view so they clear the selector.
+  ([Cenit/Screens/MetricDetailScreen.swift](Cenit/Screens/MetricDetailScreen.swift))
 - **Tendencias: header de wordmark y héroe de Recuperación con su media / Trends: wordmark header and Recovery hero with its mean.**
   **ES** — La pestaña «Cuerpo» pasa a llamarse **«Tendencias»** y estrena un header de wordmark (glifo de curva-con-nodos + «Tendencias» con la fecha en mono a la derecha, igual que «Patrones»), también en su ícono del tab. El héroe de Recuperación añade una **línea de media de 14 días punteada** dentro del sparkline y un delta **«+N vs tu media»** debajo, para leer el día contra tu propio promedio.
   **EN** — The "Body" tab is now **"Tendencias"** with a wordmark header (curve-with-nodes glyph + "Tendencias" and the date in mono on the right, matching "Patrones"), including its tab icon. The Recovery hero adds a **dashed 14-day mean line** inside the sparkline and a **"+N vs tu media"** delta beneath it, to read today against your own average.
