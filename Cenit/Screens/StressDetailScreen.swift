@@ -48,8 +48,6 @@ struct StressDetailScreen: View {
     /// Loads the cross-day «by calendar-event» patterns (one on-device EventKit read, nothing persisted).
     /// Runs after `patternsLoader` so the daily summaries it reads are already backfilled. (FER-388)
     var eventPatternsLoader: (() async -> [StressEventPatterns.Pattern])? = nil
-    /// Tapped on «Explore it in the Coach» — the caller switches to the Coach tab. (FER-378)
-    var onExploreInCoach: (() -> Void)? = nil
 
     /// The trend block's period window (W/M/3M/6M/1Y/ALL). Defaults to a month.
     @State private var range: ExploreRange = .month
@@ -135,21 +133,29 @@ struct StressDetailScreen: View {
             accessibilityLabel: "Information about stress",
             theme: theme
         ) {
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 14) {
                 // When the reading isn't today's (fell back to yesterday at the midnight boundary), date
                 // it so it's never passed off as today's. (FER-397)
                 if !model.anchorIsToday {
                     heroDateChip(model.anchorDayKey)
                 }
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(fmt(model.score))
-                        .instrumentoHero(46)
+                // The band WORD leads — you understand «Moderate» before «1.8/3». The 0–3 value backs it
+                // up, quiet, to the right. The saturated hue lives in the word (it's the datum). (Pase v2 #2)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(bandWord(model.band))
+                        .font(.system(size: 30, weight: .semibold))
                         .foregroundStyle(bandColor(model.band))
-                    Text("/ 3").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
+                    Spacer(minLength: 8)
+                    HStack(alignment: .firstTextBaseline, spacing: 2) {
+                        Text(fmt(model.score)).font(StrandFont.bodyNumber)
+                        Text("/ 3").font(StrandFont.caption)
+                    }
+                    .foregroundStyle(theme.inkTertiary)
                 }
-                Text(bandWord(model.band))
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(bandColor(model.band))
+                .accessibilityElement(children: .combine)
+                // Anchor the abstract 0–3 in something felt: a Calm·Base·Activated scale with a marker at
+                // today's value — the same «vs your base» idea as the other three sheets. (Pase v2 #1)
+                bandScale(model.score)
                 Text(model.explanation)
                     .font(StrandFont.subhead)
                     .foregroundStyle(theme.inkSecondary)
@@ -196,14 +202,65 @@ struct StressDetailScreen: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// The band color: low → verdict (green), medium → warning (amber), high → critical (red). The hero
-    /// numeral is the datum, so it's the one element that carries saturated hue. (DESIGN.md: color in the datum)
+    /// The band color: low → verdict (green), medium → warning (amber), high → critical (red). The band
+    /// word is the datum, so it's the element that carries saturated hue. (DESIGN.md: color in the datum)
+    ///
+    /// SEMANTIC TRAFFIC-LIGHT, ON PURPOSE (Pase v2 #5): stress is EVALUATIVE — less is better — so it
+    /// reads green→amber→red, unlike the other detail sheets, which tint by their METRIC's own hue
+    /// (HRV teal, heart rose). Don't "fix" this to a single hue when you see the sheets side by side:
+    /// the semaphore is what tells the user calm is good and activated is not.
     private func bandColor(_ band: StressBand) -> Color {
         band.dataColor(theme)
     }
 
     /// Sentence-case band word for the hero / legend — delegates to the single source on `StressBand`.
     private func bandWord(_ band: StressBand) -> LocalizedStringKey { band.displayWord }
+
+    // MARK: - Mini-escala Calma·Base·Activado (Pase v2 #1)
+    //
+    // A three-third semaphore gradient (calm→base→activated) with a marker at today's 0–3 value, so the
+    // abstract index sits on something the user can feel. No new math — the marker is `score / 3` across
+    // the track, the gradient is the same band colors the hero word already uses.
+
+    private func bandScale(_ score: Double) -> some View {
+        let frac = CGFloat(max(0, min(3, score)) / 3)
+        let gradient = LinearGradient(
+            stops: [
+                .init(color: theme.verdict,  location: 0),
+                .init(color: theme.verdict,  location: 1.0 / 3),
+                .init(color: theme.warning,  location: 1.0 / 3),
+                .init(color: theme.warning,  location: 2.0 / 3),
+                .init(color: theme.critical, location: 2.0 / 3),
+                .init(color: theme.critical, location: 1),
+            ],
+            startPoint: .leading, endPoint: .trailing
+        )
+        return VStack(alignment: .leading, spacing: 7) {
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(gradient).opacity(0.85).frame(height: 8)
+                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                        .fill(theme.ink)
+                        .frame(width: 3, height: 16)
+                        .overlay(RoundedRectangle(cornerRadius: 2, style: .continuous)
+                            .strokeBorder(theme.surface, lineWidth: 2))
+                        .offset(x: geo.size.width * frac - 1.5)
+                }
+                .frame(height: 16)
+            }
+            .frame(height: 16)
+            HStack(spacing: 0) {
+                Text("Calm").foregroundStyle(theme.verdict)
+                Spacer(minLength: 6)
+                Text("Your base").foregroundStyle(theme.inkTertiary)
+                Spacer(minLength: 6)
+                Text("Activated").foregroundStyle(theme.critical)
+            }
+            .font(.system(size: 10, weight: .semibold))
+            .textCase(.uppercase)
+        }
+        .accessibilityHidden(true)
+    }
 
     // MARK: - 2. Selector de periodo + Tendencia (línea diaria 0–3 sobre las bandas)
 
@@ -279,12 +336,8 @@ struct StressDetailScreen: View {
     // from the model.
 
     private func patternsBlock(_ model: StressModel) -> some View {
-        InfoAccordion(
-            title: "Your patterns",
-            explanation: "How much of the last month sat in the Low band (calm time — higher is better), and how steady your daily stress is week to week (its coefficient of variation, CV — low = steady). The Low / Moderate / High bands (0–1 / 1–2 / 2–3) are the same for everyone because the index is already adjusted to your own baseline; they're drawn as the trend's legend below. (Plews 2013)",
-            accessibilityLabel: "Information about your stress patterns",
-            theme: theme
-        ) {
+        // No ⓘ here (Pase v2 #4): the calm-time / steadiness (CV) jargon moved to «See the method».
+        DetailBlock("Your patterns", theme: theme) {
             VStack(alignment: .leading, spacing: 12) {
                 patternLine(label: "Calm time",
                             value: model.calmTimeValue,
@@ -297,7 +350,8 @@ struct StressDetailScreen: View {
                 }
                 // Cross-day observational lines, their natural home under «Your patterns»: the moment
                 // of day (FER-378) and the recurring calendar event (FER-388). Non-causal; shown only
-                // when the stats clear the bar. One Coach handoff covers both.
+                // when the stats clear the bar. Read-only — the «Explore it in the Coach» handoff was
+                // removed (Pase v2 #7): the insight stays a reading, not an entry point to a query.
                 if patterns.first != nil || eventPatterns.first != nil {
                     Rectangle().fill(theme.hairline).frame(height: 1).padding(.vertical, 2)
                     if let p = patterns.first {
@@ -309,16 +363,6 @@ struct StressDetailScreen: View {
                         eventPatternSentence(e)
                             .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                             .fixedSize(horizontal: false, vertical: true)
-                    }
-                    if let onExploreInCoach {
-                        Button(action: onExploreInCoach) {
-                            HStack(spacing: 6) {
-                                Text("Explore it in the Coach")
-                                Image(systemName: "arrow.right").font(StrandFont.footnote)
-                            }
-                            .font(StrandFont.subhead).foregroundStyle(theme.verdict)
-                        }
-                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -426,12 +470,9 @@ struct StressDetailScreen: View {
     // MARK: - Qué lo mueve — RHR / HRV de hoy vs tu base
 
     private func whatMovesItBlock(_ model: StressModel) -> some View {
-        InfoAccordion(
-            title: "What moves it",
-            explanation: "Stress rises when your resting heart rate runs higher than usual OR your HRV drops below usual — both are classic signs your nervous system is activated. We measure each against your own 30-day baseline. RMSSD for HRV (Task Force, 1996).",
-            accessibilityLabel: "Information about what moves stress",
-            theme: theme
-        ) {
+        // No ⓘ here (Pase v2 #4): the jargon (z-score, RMSSD) lives once under «See the method» at the
+        // foot; only the hero keeps an info button.
+        DetailBlock("What moves it", theme: theme) {
             HStack(alignment: .top, spacing: NoopMetrics.gap) {
                 markerCard(
                     label: "Resting HR",
@@ -500,6 +541,10 @@ struct StressDetailScreen: View {
                 Text(model.usingStored
                      ? "Today's value is your recorded daily stress score (0–3). The trend, bands and markers are derived the same way."
                      : "We compare today's resting heart rate and HRV with your own 30-day baseline. A higher-than-usual resting HR and a lower-than-usual HRV both push the score up — classic signs the body is activated. The combined shift becomes a z-score sum, squashed onto 0–3 by a logistic curve: 0 calm, 1.5 at your baseline, 3 highly activated.")
+                    .font(StrandFont.subhead)
+                    .foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("«Calm time» is the share of the last month that sat in the Low band; «steadiness» is how much your daily index varies week to week (its coefficient of variation — lower is steadier). The Low / Moderate / High bands (0–1 / 1–2 / 2–3) are the same for everyone because the index is already adjusted to your own baseline. (Plews 2013)")
                     .font(StrandFont.subhead)
                     .foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)

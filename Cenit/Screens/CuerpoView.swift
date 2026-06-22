@@ -295,13 +295,12 @@ private struct CuerpoLanding: View {
             // through `.sheet`), NO nested NavigationStack (FER-171). (FER-241; unificado con Hoy en FER-452
             // vía el factory compartido `StressDayMapPresenter`.)
             // The «mapa del día» driver (EventKit + intraday curve) is built fresh on tap. (FER-377)
-            // Patterns load + the Coach handoff (FER-378): tap → close sheet, jump to the Coach tab.
+            // The cross-day pattern line (FER-378) is read-only — the Coach handoff was removed (Pase v2 #7).
             StressDetailScreen(theme: theme, model: item.model, dayMap: stressDayMap,
                                patternsLoader: { await StressDayMapPresenter.timeOfDayPatterns(
                                    repo: repo, maxHR: model.profile.hrMax, restingHR: stressRestingHR) },
                                eventPatternsLoader: { await StressDayMapPresenter.eventPatterns(
-                                   repo: repo, map: stressDayMap) },
-                               onExploreInCoach: { stressDetail = nil; tabRouter.select(.coach) })
+                                   repo: repo, map: stressDayMap) })
         }
         .sheet(item: $skinTempDetail) { item in
             // Light «Instrumento» Detalle de Temperatura de la piel — theme passed explicitly (it doesn't
