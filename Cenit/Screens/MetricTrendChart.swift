@@ -130,6 +130,17 @@ struct MetricTrendChart<Empty: View>: View {
         var yAxisValues: [Double]? = nil
         var alertThreshold: Double? = nil
         var alertColor: Color = .clear
+        /// When true, the LAST plotted point (the right edge of the line = today / the most recent night)
+        /// is emphasised with a larger filled dot — «el punto es hoy» in the redesigned vital detail. The
+        /// caller can't pass an exact `TrendPoint` because the line is decimated internally, so the
+        /// component marks `points.last` for it. (Detalle de Vital · narrativa)
+        var marksLastPoint: Bool = false
+        /// Draw bands without their in-plot label (and without the wide right gutter): the band reads as a
+        /// quiet «your normal range» context behind the line, named in the caption / inline bar instead.
+        var bandLabelsHidden: Bool = false
+        /// A dashed horizontal reference line (e.g. skin-temp's «0 = your baseline»). `nil` = none.
+        var referenceLine: Double? = nil
+        var referenceLineColor: Color = .clear
         var accessibilityLabel: LocalizedStringKey
     }
 
@@ -171,7 +182,11 @@ struct MetricTrendChart<Empty: View>: View {
             bandColor: style.bandColor(lastPlotted),
             yAxisValues: style.yAxisValues,
             alertThreshold: style.alertThreshold,
-            alertColor: style.alertColor
+            alertColor: style.alertColor,
+            referenceLine: style.referenceLine,
+            referenceLineColor: style.referenceLineColor,
+            markedPoint: style.marksLastPoint ? points.last : nil,
+            bandLabelsHidden: style.bandLabelsHidden
         )
         .accessibilityElement()
         .accessibilityLabel(Text(style.accessibilityLabel))

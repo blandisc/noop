@@ -104,6 +104,11 @@ public struct TrendChart: View {
     public var referenceLineColor: Color
     /// A single point to emphasise with a larger filled dot (e.g. the day's peak HR). `nil` = none. (FER-253)
     public var markedPoint: TrendPoint?
+    /// When true, bands are drawn (shaded fill + edge lines) WITHOUT their right-aligned text label, and
+    /// the wide right gutter that label needs is dropped. For the redesigned vital detail, where the band
+    /// is a quiet «your normal range» context behind the line and is named in the caption / inline bar, not
+    /// on the plot. (Detalle de Vital · narrativa)
+    public var bandLabelsHidden: Bool
 
     public init(
         points: [TrendPoint],
@@ -123,7 +128,8 @@ public struct TrendChart: View {
         alertColor: Color = .clear,
         referenceLine: Double? = nil,
         referenceLineColor: Color = .clear,
-        markedPoint: TrendPoint? = nil
+        markedPoint: TrendPoint? = nil,
+        bandLabelsHidden: Bool = false
     ) {
         self.points = points.sorted { $0.date < $1.date }
         self.gradient = gradient
@@ -143,6 +149,7 @@ public struct TrendChart: View {
         self.referenceLine = referenceLine
         self.referenceLineColor = referenceLineColor
         self.markedPoint = markedPoint
+        self.bandLabelsHidden = bandLabelsHidden
     }
 
     /// The x-position the cursor is hovering, in chart-local coordinates.
@@ -267,8 +274,9 @@ public struct TrendChart: View {
         // Reserve a clean band below the fill for the X-axis labels (startPadding on the Y-scale's
         // bottom), and inset the X-scale's trailing edge so the last label isn't clipped. (FER-82)
         .chartYScale(domain: valueRange, range: .plotDimension(startPadding: NoopMetrics.chartXLabelBand, endPadding: 0))
-        // With bands, reserve a wider right gutter so the band labels sit clear of the line. (FER-244)
-        .chartXScale(range: .plotDimension(startPadding: 0, endPadding: bands.isEmpty ? NoopMetrics.chartXTrailingInset : 64))
+        // With LABELLED bands, reserve a wider right gutter so the band labels sit clear of the line; when
+        // band labels are hidden (the vital-detail context band) keep the normal trailing inset. (FER-244)
+        .chartXScale(range: .plotDimension(startPadding: 0, endPadding: (bands.isEmpty || bandLabelsHidden) ? NoopMetrics.chartXTrailingInset : 64))
         .chartXAxis {
             AxisMarks(values: .automatic(desiredCount: 3)) { _ in
                 AxisGridLine().foregroundStyle(gridLineColor.opacity(0.4))
@@ -390,7 +398,7 @@ public struct TrendChart: View {
             // thin to clear the height test (e.g. sleep's 1-hour "Adequate" 6–7 h band) — otherwise the
             // one band you most need named is the one that goes unlabelled. The active label is also
             // weightier so "which band am I in" reads at a glance. (FER-249)
-            if h >= 16 || band.isActive {
+            if !bandLabelsHidden, h >= 16 || band.isActive {
                 Text(band.label)
                     .font(StrandFont.footnote)
                     .fontWeight(band.isActive ? .semibold : .regular)
