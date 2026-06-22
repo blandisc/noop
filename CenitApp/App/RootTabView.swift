@@ -62,11 +62,12 @@ struct RootTabView: View {
             lazyTab(.today, "Today", "circle.hexagongrid.fill") { TodayView() }
             lazyTab(.body,  "Body",  "chart.xyaxis.line") { CuerpoView() }
 
-            // Coach — «el Bucle» (FER-292): one «Instrumento diurno» screen fed by the InsightEngine
-            // (FER-290), replacing the old 3-row hub (Intelligence · Insights · Coach). It's a LIGHT
-            // tab now (warm paper), so it joins Hoy/Cuerpo in `isLightTab`. The external LLM chat is
-            // preserved — «Pregúntale a tus datos» opens `CoachView` as a sheet from inside BucleView.
-            lazyTab(.coach, "Coach", "sparkles") { BucleView() }
+            // Patrones — the redesigned Coach tab (was «el Bucle», FER-292): one «Instrumento diurno»
+            // screen fed by the InsightEngine (FER-290). The screen now exists to surface findings your
+            // data reveals on its own and put them to the test with experiments — the verdict/recovery,
+            // señales, trayectoria, meta and «Pregúntale» chat were retired from here (the verdict lives
+            // on «Hoy»). It's a LIGHT tab (warm paper), so it joins Hoy/Cuerpo in `isLightTab`.
+            lazyTab(.coach, "Patrones", "sparkles") { BucleView() }
 
             // Entrenar — the redesigned light «Instrumento» hub (FER-343 + FER-346): the «Hoy» card +
             // recovery band, «Mis rutinas» (build / edit), the exercise library, and the Respira /
@@ -262,7 +263,7 @@ struct RootTabView: View {
         [
             .init(.today,    "Today",   .dial),
             .init(.body,     "Body",    .system("chart.xyaxis.line")),
-            .init(.coach,    "Coach",   .system("sparkles")),
+            .init(.coach,    "Patrones", .linkedCircles),
             .init(.train,    "Train",   .system("figure.strengthtraining.functional")),
             .init(.settings, "Ajustes", .system("gearshape")),
         ]
