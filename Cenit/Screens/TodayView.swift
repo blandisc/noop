@@ -757,7 +757,7 @@ struct TodayView: View {
         HStack(alignment: .center, spacing: NoopMetrics.space2) {
             utilityRow
             Spacer(minLength: NoopMetrics.space2)
-            SyncInline(backfilling: live.backfilling, chunks: live.syncChunksThisSession,
+            SyncInline(backfilling: live.backfilling || live.draining, chunks: live.syncChunksThisSession,
                        lastSyncedAt: live.lastSyncedAt)
             if let pct = live.batteryPct {
                 // Separador hairline entre sync y batería (handoff «Hoy · Estados»): una regla vertical
@@ -825,7 +825,7 @@ struct TodayView: View {
         // FER-286: mientras la banda drena el historial de la noche y aún no hay recovery, el Hero dice la
         // verdad —«Descargando la noche…»— en vez de «Falta la lectura de hoy»: el dato viene en camino,
         // no falta. Reusa la misma señal que ya hace girar el dial (FER-221), sin agregar otra.
-        if live.backfilling || pullSyncing { return .downloading }
+        if isSyncing { return .downloading }
         if hasImportedBaseline { return .importedBaseline }
         let strapSeen = live.lastSyncedAt != nil || liveBpm != nil
         if strapSeen && ownNights < Baselines.minNightsSeed { return .calibrating(nights: ownNights) }
@@ -876,7 +876,7 @@ struct TodayView: View {
                 // disparar el sync por el gesto (`pullSyncing`) el dial gira de inmediato, sin esperar a
                 // que arranque el offload. `syncing` manda sobre `armProgress` cuando ambos coinciden.
                 DiurnalDial(now: Date(), solar: solarWindow, sleep: sleepWindow,
-                            diameter: 180, syncing: live.backfilling || pullSyncing,
+                            diameter: 180, syncing: isSyncing,
                             armProgress: pullProgress)
                 heroNumeral(state)
             }
@@ -1193,8 +1193,12 @@ struct TodayView: View {
     /// sincroniza la banda. Se desvanece al iniciar el gesto (`pullProgress > 0`), revelando el arco del
     /// dial. (Antes —FER-270/FER-274— solo aparecía con strap y se apagaba para siempre al primer pull;
     /// eso la volvía indescubrible para quien ya había jalado una vez.)
+    /// El instrumento está sincronizando: offload en curso, su puente async (FER-480 `draining`) o el
+    /// pull-to-sync manual. Fuente única para las señales del héroe (estado, dial, numeral, pista).
+    private var isSyncing: Bool { live.backfilling || live.draining || pullSyncing }
+
     private var showsSyncHint: Bool {
-        pullProgress == 0 && !(live.backfilling || pullSyncing)
+        pullProgress == 0 && !isSyncing
     }
 
     /// La pista del pull-to-refresh (FER-293): un `chevron.down` que rebota suave y, mientras el usuario
@@ -1233,7 +1237,7 @@ struct TodayView: View {
 
     /// El color del numeral del héroe — tinta normal, atenuado a tertiary mientras sincroniza
     /// (FER-221): «recalculando», en sintonía con el dial girando. Vuelve a tinta al terminar.
-    private var heroNumeralInk: Color { (live.backfilling || pullSyncing) ? theme.inkTertiary : theme.ink }
+    private var heroNumeralInk: Color { isSyncing ? theme.inkTertiary : theme.ink }
 
     /// El numeral dominante — lo único que “grita” el estado. Veredicto → recuperación SIEMPRE en TINTA:
     /// el color por nivel lo lleva la PALABRA del veredicto, no el número, así nunca se contradicen

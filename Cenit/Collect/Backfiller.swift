@@ -71,6 +71,13 @@ final class Backfiller {
     /// sync as success; this only distinguishes the honest log/diagnostic. Reset each `begin`.
     private(set) var didCatchUp = false
 
+    /// The `strap_trim` cursor of the LAST chunk this Backfiller durably acked (persisted + confirmed to
+    /// the strap). A cross-session high-water mark — **NOT** reset in `begin()` — so BLEManager can snapshot
+    /// it at session start and compare at session end to ask "did the offload actually advance the strap's
+    /// trim this session?" (the anti-spin signal `DrainContinuationPolicy` needs, FER-480). nil until the
+    /// first ack.
+    private(set) var lastAckedTrim: UInt32?
+
     /// Decides when the offload has drained its backlog (a sustained run of small HISTORY_END chunks =
     /// only the live drip) so the session can complete as success even when the firmware never sends
     /// HISTORY_COMPLETE (FER-201). Pure; reset per session.
@@ -245,6 +252,7 @@ final class Backfiller {
         do { try await store.setCursor("strap_trim", Int(trim)) } catch { return }
 
         ackTrim(trim, endData)
+        lastAckedTrim = trim   // FER-480: record the advanced cursor for the auto-continue anti-spin gate
 
         // Caught-up completion (FER-201): once a sustained run of small ENDs proves the backlog is
         // drained, end the session as SUCCESS. Some WHOOP 4.0 firmware never sends HISTORY_COMPLETE,

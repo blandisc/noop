@@ -130,6 +130,12 @@ public final class LiveState: ObservableObject {
     /// True while a historical offload session is running, so screens can say "Syncing strap
     /// history…" instead of presenting half-loaded data as final (#77).
     @Published public var backfilling = false
+    /// True in the brief window between one offload session closing and the auto-continue gate (FER-480)
+    /// deciding — async, because it awaits the persisted frontier — whether to chain another. Screens OR
+    /// this with `backfilling` so the «Descargando la noche…» hero stays steady across chained sessions
+    /// instead of flickering off for the async hop. Set when a clean session ends; cleared once the gate
+    /// has decided (if it chained, `backfilling` is already true again).
+    @Published public var draining = false
     /// Chunks acked during the current offload session — an honest progress signal (total pending is
     /// unknowable from the protocol, so a count, never a percent).
     @Published public var syncChunksThisSession: Int = 0

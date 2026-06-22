@@ -273,19 +273,24 @@ the periodic **type-47 historical offload is the primary metric source**, not th
    `BLEManager.afterBackfillIngest` tears down with `reason: "caught-up"` → `.completed` (stamps
    `lastSyncedAt`, green receipt). Completing on the heuristic is self-healing: the durable `strap_trim`
    cursor + periodic re-sync drain any remainder next tick, so safe-trim still loses nothing.
-5. **Auto-continue until drained (FER-287).** One session hands over only a few-hundred-frame batch, so
-   a night's ~19,400-frame backlog (1 Hz × hours, phone disconnected) would otherwise need *dozens* of
-   manual "Sync" taps — only `.manual` skips the rate-limiter. When a session closes **cleanly**
-   (`HISTORY_COMPLETE` or caught-up) and still delivered a **large** batch (session type-47 total >
-   `largeSessionFrames`), `BLEManager.exitBackfilling` immediately re-fires another session via the
-   `.drain` trigger — skipping the limiter — and repeats until a session comes back **small** (backlog
-   drained) or caught-up. `DrainContinuationPolicy` (`WhoopProtocol`, sibling of `CaughtUpDetector`) is
-   the pure decision plus a hard `maxChain` cap that guarantees termination; a non-clean close (idle
-   timeout / session cap) **never** chains, so an unhealthy link falls back to the rate-limited path.
-   Each chained session re-arms its own watchdog + 300 s cap, so the backstops are unchanged, and the
-   re-fire is synchronous so `state.backfilling` never flickers between links (the «Descargando la
-   noche…» hero stays steady). `.drain` re-uses `SEND_HISTORICAL_DATA` (no new outbound bytes) and never
-   touches `strap_trim`, so it changes only *when* the next session fires, never data integrity.
+5. **Auto-continue until drained (FER-287, ground-truth gate FER-480).** One session hands over only a
+   few-hundred-frame batch, so a night's ~19,400-frame backlog (1 Hz × hours, phone disconnected) would
+   otherwise need *dozens* of manual "Sync" taps — only `.manual` skips the rate-limiter. When a session
+   closes **cleanly** (`HISTORY_COMPLETE` or caught-up) and **ground truth says backlog remains** — the
+   strap's `GET_DATA_RANGE` newest banked record is still ahead of our persisted frontier (max HR ts) by
+   more than `behindGapSeconds`, **or** the session persisted real sensor rows (the #451 stale-epoch
+   fallback) — **and** the `strap_trim` cursor advanced this session (anti-spin), `BLEManager` immediately
+   re-fires another session via the `.drain` trigger — skipping the limiter — and repeats until the strap
+   is **caught up** (not ahead, or `CaughtUpDetector`) or the `maxChain` cap. `DrainContinuationPolicy`
+   (`WhoopProtocol`, sibling of `CaughtUpDetector`) is the pure decision — FER-480 replaced its original
+   frame-count heuristic with this ground-truth signal, retiring the unanchored `largeSessionFrames`
+   guess; a non-clean close (idle timeout / session cap) **never** chains, so an unhealthy link falls
+   back to the rate-limited path. The frontier is read async (via the Collector) after the session, so the
+   decision runs in the post-session `Task`; a `state.draining` latch bridges that hop so the «Descargando
+   la noche…» hero (FER-286) stays steady between chained sessions. Each chained session re-arms its own
+   watchdog + 300 s cap, so the backstops are unchanged. `.drain` re-uses `SEND_HISTORICAL_DATA` (no new
+   outbound bytes) and never touches `strap_trim`, so it changes only *when* the next session fires, never
+   data integrity.
 
 Type-47 records carry their **own real-unix timestamps**, so the historical path does *not* depend on
 `GET_CLOCK`; if the clock correlation hasn't landed yet, `Backfiller` falls back to an identity
