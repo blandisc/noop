@@ -336,20 +336,32 @@ private struct CuerpoLanding: View {
     // MARK: - Title + date
 
     /// «Body» + today's date — the landing's temporal frame (the date is new to the card model).
+    /// Wordmark header (matching «Patrones»): the curve-with-nodes glyph + «Tendencias» on the left,
+    /// today's date in mono on the right. Replaces the old stacked «Body» + subhead-date block.
     private var titleBlock: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text("Body").font(StrandFont.title1).foregroundStyle(theme.ink)
-            Text(Self.dateText(Date()))
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+        HStack(alignment: .center) {
+            HStack(spacing: 9) {
+                TendenciasGlyph(color: theme.ink).frame(width: 22, height: 22)
+                Text("Tendencias")
+                    .font(.system(size: 21, weight: .semibold)).tracking(-0.3)
+                    .foregroundStyle(theme.ink)
+            }
+            Spacer()
+            Text(Self.dateLabel)
+                .font(StrandFont.mono(11)).foregroundStyle(theme.inkTertiary)
+                .textCase(.uppercase)
         }
-        .padding(.bottom, 2)
+        .padding(.bottom, 6)
         .accessibilityElement(children: .combine)
+        .accessibilityLabel("Tendencias")
     }
 
-    /// e.g. «Thursday, Jun 20», localized to the user's calendar/locale.
-    private static func dateText(_ date: Date) -> String {
-        date.formatted(.dateTime.weekday(.wide).month(.abbreviated).day())
-    }
+    /// Today as «JUE 12 JUN» (es-MX, uppercased by the header) — same treatment as «Patrones».
+    private static var dateLabel: String { dateHeader.string(from: Date()) }
+
+    private static let dateHeader: DateFormatter = {
+        let f = DateFormatter(); f.locale = Locale(identifier: "es_MX"); f.dateFormat = "EEE d MMM"; return f
+    }()
 
     // MARK: - Domain card scaffolding (Instrumento rule 3: one surface, no card-in-card)
 
@@ -555,13 +567,21 @@ private struct CuerpoLanding: View {
     /// or nothing — decorative, so it's hidden from VoiceOver (the numeral + subtitle carry meaning).
     @ViewBuilder
     private func recoveryHeroAccessory(score: Int?, calibrating: Int?, spark: [Double]?, color: Color) -> some View {
-        if let spark, score != nil {
-            VStack(alignment: .trailing, spacing: 8) {
+        if let spark, let score, spark.count > 1 {
+            let mean = spark.reduce(0, +) / Double(spark.count)
+            let delta = score - Int(mean.rounded())
+            VStack(alignment: .trailing, spacing: 7) {
                 Sparkline(values: spark,
                           gradient: Gradient(colors: [color.opacity(0.55), color]),
+                          meanLine: mean, meanLineColor: theme.hairlineStrong,
                           lineWidth: 2.4, showsArea: true, showsHead: false, showsScrub: false)
                     .frame(width: 104, height: 46)
-                Text("14-day").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                // The trend's own baseline, read as a signed delta vs the 14-day mean (datum hue).
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(delta >= 0 ? "+\(delta)" : "\(delta)")
+                        .font(StrandFont.mono(13, weight: .semibold)).foregroundStyle(color)
+                    Text("vs tu media").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                }
             }
             .accessibilityHidden(true)
         } else if let calibrating {

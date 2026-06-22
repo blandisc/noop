@@ -21,6 +21,8 @@ enum InstrumentTabIcon {
     case dial
     /// The two-linked-circles `PatronesGlyph` (the «Patrones» mark).
     case linkedCircles
+    /// The curve-with-nodes `TendenciasGlyph` (the «Tendencias» mark).
+    case curveNodes
 }
 
 /// The custom bottom bar. Mounted via `.safeAreaInset(edge: .bottom)` on the
@@ -111,6 +113,8 @@ struct InstrumentTabBar<Tag: Hashable>: View {
             DialTabGlyph(size: 23, color: ink)
         case .linkedCircles:
             PatronesGlyph(color: ink, lineWidth: 1.9).frame(width: 22, height: 22)
+        case .curveNodes:
+            TendenciasGlyph(color: ink, lineWidth: 1.8).frame(width: 23, height: 23)
         }
     }
 }

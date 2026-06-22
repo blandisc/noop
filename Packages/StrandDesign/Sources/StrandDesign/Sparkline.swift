@@ -19,6 +19,11 @@ public struct Sparkline: View {
     /// Color of the reference band — a quiet ink tone, NOT a metric color. Callers pass
     /// the theme's `hairlineStrong` (or `ink` at low opacity) for «Instrumento diurno».
     public var bandColor: Color
+    /// Optional horizontal mean/average line drawn as a dashed rule across the chart, so the line's
+    /// trend reads against its own baseline. A quiet ink tone, never a data hue (FER-155).
+    public var meanLine: Double?
+    /// Color of the dashed mean line — pass the theme's dotted-mean tone (`hairlineStrong`).
+    public var meanLineColor: Color
     public var lineWidth: CGFloat
     public var showsArea: Bool
     public var showsHead: Bool
@@ -36,6 +41,8 @@ public struct Sparkline: View {
         range: ClosedRange<Double>? = nil,
         referenceBand: ClosedRange<Double>? = nil,
         bandColor: Color = InstrumentoTheme.base.hairlineStrong,
+        meanLine: Double? = nil,
+        meanLineColor: Color = InstrumentoTheme.base.hairlineStrong,
         lineWidth: CGFloat = 2,
         showsArea: Bool = true,
         showsHead: Bool = true,
@@ -48,6 +55,8 @@ public struct Sparkline: View {
         self.range = range
         self.referenceBand = referenceBand
         self.bandColor = bandColor
+        self.meanLine = meanLine
+        self.meanLineColor = meanLineColor
         self.lineWidth = lineWidth
         self.showsArea = showsArea
         self.showsHead = showsHead
@@ -96,6 +105,16 @@ public struct Sparkline: View {
                         .fill(bandColor.opacity(0.18))
                         .frame(height: Swift.max(1, yBot - yTop))
                         .position(x: geo.size.width / 2, y: (yTop + yBot) / 2)
+                }
+                // Dashed mean/average rule, on the same axis as the line, so the trend reads against
+                // its own baseline. Ink tone, never a data hue.
+                if let m = meanLine, pts.count > 1 {
+                    let y = yFor(m, height: geo.size.height)
+                    Path { p in
+                        p.move(to: CGPoint(x: 0, y: y))
+                        p.addLine(to: CGPoint(x: geo.size.width, y: y))
+                    }
+                    .stroke(meanLineColor, style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
                 }
                 if showsArea, pts.count > 1 {
                     areaPath(pts, in: geo.size)

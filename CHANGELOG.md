@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Tendencias: header de wordmark y héroe de Recuperación con su media / Trends: wordmark header and Recovery hero with its mean.**
+  **ES** — La pestaña «Cuerpo» pasa a llamarse **«Tendencias»** y estrena un header de wordmark (glifo de curva-con-nodos + «Tendencias» con la fecha en mono a la derecha, igual que «Patrones»), también en su ícono del tab. El héroe de Recuperación añade una **línea de media de 14 días punteada** dentro del sparkline y un delta **«+N vs tu media»** debajo, para leer el día contra tu propio promedio.
+  **EN** — The "Body" tab is now **"Tendencias"** with a wordmark header (curve-with-nodes glyph + "Tendencias" and the date in mono on the right, matching "Patrones"), including its tab icon. The Recovery hero adds a **dashed 14-day mean line** inside the sparkline and a **"+N vs tu media"** delta beneath it, to read today against your own average.
+  ([Cenit/Screens/CuerpoView.swift](Cenit/Screens/CuerpoView.swift), [CenitApp/App/RootTabView.swift](CenitApp/App/RootTabView.swift), [Packages/StrandDesign/Sources/StrandDesign/TendenciasGlyph.swift](Packages/StrandDesign/Sources/StrandDesign/TendenciasGlyph.swift), [Packages/StrandDesign/Sources/StrandDesign/Sparkline.swift](Packages/StrandDesign/Sources/StrandDesign/Sparkline.swift))
+
 - **Pasos: el rango resaltado vuelve a coincidir con la gráfica / Steps: the highlighted range matches the chart again (FER-471).**
   **ES** — En el detalle de Pasos (modo «Rangos») y en el resumen, la banda resaltada y la línea «X de los últimos N días en este rango» a veces mostraban un rango **distinto** al que sombrea la gráfica y al de tu número de hoy (p. ej. resaltaba «Ligero» cuando hoy ibas en «Sedentario»). Ahora coinciden: resaltan **la banda de hoy**; los conteos por banda siguen sumando solo días completos.
   **EN** — In the Steps detail ("Ranges" mode) and the summary, the highlighted band and the "X of the last N days in this range" line sometimes showed a **different** range than the chart's shaded band and today's number (e.g. it highlighted "Light" when today you were "Sedentary"). They match now: they highlight **today's band**; the per-band counts still add up completed days only.

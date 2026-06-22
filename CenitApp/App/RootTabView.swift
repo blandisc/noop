@@ -60,7 +60,7 @@ struct RootTabView: View {
     var body: some View {
         TabView(selection: $selection) {
             lazyTab(.today, "Today", "circle.hexagongrid.fill") { TodayView() }
-            lazyTab(.body,  "Body",  "chart.xyaxis.line") { CuerpoView() }
+            lazyTab(.body,  "Tendencias", "chart.xyaxis.line") { CuerpoView() }
 
             // Patrones — the redesigned Coach tab (was «el Bucle», FER-292): one «Instrumento diurno»
             // screen fed by the InsightEngine (FER-290). The screen now exists to surface findings your
@@ -262,7 +262,7 @@ struct RootTabView: View {
     private var barItems: [InstrumentTabBar<Tab>.Item] {
         [
             .init(.today,    "Today",   .dial),
-            .init(.body,     "Body",    .system("chart.xyaxis.line")),
+            .init(.body,     "Tendencias", .curveNodes),
             .init(.coach,    "Patrones", .linkedCircles),
             .init(.train,    "Train",   .system("figure.strengthtraining.functional")),
             .init(.settings, "Ajustes", .system("gearshape")),
