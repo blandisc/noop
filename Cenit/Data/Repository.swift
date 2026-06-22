@@ -46,6 +46,7 @@ final class Repository: ObservableObject {
         /// these so a partial-connection day shows Apple's HRV instead of a gap; `days` stays strap-only.
         var displayDays: [DailyMetric] = []
         var sleeps: [CachedSleepSession] = []
+        var appleSleeps: [CachedSleepSession] = []   // FER-486: Apple Health sleep sessions with a real stage timeline (band-uncovered nights), for the Detalle de Sueño hypnogram
         var importedSleep: [String: ImportedSleepFigures] = [:]
         /// Days whose surfaced daily row came from Apple Health (no strap coverage), so Trends/Sleep
         /// can badge the source without `DailyMetric` carrying a source column. (FER-62)
@@ -72,6 +73,9 @@ final class Repository: ObservableObject {
     var displayDays: [DailyMetric] { dashboard.displayDays }
     /// Cached sleep sessions, oldest→newest.
     var sleeps: [CachedSleepSession] { dashboard.sleeps }
+    /// Apple Health sleep sessions carrying a real per-epoch stage timeline (FER-486), for nights the
+    /// band didn't cover — the Detalle de Sueño draws a full hypnogram from these.
+    var appleSleeps: [CachedSleepSession] { dashboard.appleSleeps }
     /// Imported (export-verbatim) sleep figures by day. Empty until a WHOOP import lands.
     var importedSleep: [String: ImportedSleepFigures] { dashboard.importedSleep }
     var loaded: Bool { dashboard.loaded }
@@ -195,6 +199,11 @@ final class Repository: ObservableObject {
         let compSleepRaw = (try? await store.sleepSessions(deviceId: computedDeviceId, from: lo, to: hi, limit: 4000)) ?? []
         let impSleep = dataSourceMode.usesWhoop ? impSleepRaw : []
         let compSleep = dataSourceMode.usesWhoop ? compSleepRaw : []
+        // FER-486: Apple Health sleep sessions (real per-epoch stage timeline), gated on the mode. The band
+        // wins per night, so the appleSleeps surfaced to the Detalle drop any overlapping a strap session.
+        let appleSleepRaw = dataSourceMode.usesAppleHealth ? ((try? await store.sleepSessions(deviceId: "apple-health", from: lo, to: hi, limit: 4000)) ?? []) : []
+        let strapSleeps = Self.mergeSleep(imported: impSleep, computed: compSleep)
+        let appleSleeps = Self.appleSleepsNotCoveredByStrap(apple: appleSleepRaw, strap: strapSleeps)
 
         // Export-verbatim sleep figures (long-format metricSeries rows from WhoopImporter).
         // The Detalle de Sueño prefers these per day over its APPROXIMATE recomputations.
@@ -218,7 +227,8 @@ final class Repository: ObservableObject {
         self.dashboard = DashboardData(
             days: merged.days,
             displayDays: merged.displayDays,
-            sleeps: Self.mergeSleep(imported: impSleep, computed: compSleep),
+            sleeps: strapSleeps,
+            appleSleeps: appleSleeps,
             importedSleep: fig,
             appleHealthDays: merged.appleDays,
             storedStrapDays: storedStrap,
@@ -340,6 +350,14 @@ final class Repository: ObservableObject {
         }
         let merged = strap + apple.filter { !overlapsStrap($0) }
         return merged.sorted { $0.startTs < $1.startTs }
+    }
+
+    /// Apple Health sleep sessions to surface in the Detalle when the band didn't cover that night — the
+    /// band wins per night, so an Apple session overlapping ANY strap session's span is dropped (FER-486).
+    /// (Strap and Apple have different startTs for the same sleep, so this is interval-overlap, not startTs.)
+    static func appleSleepsNotCoveredByStrap(apple: [CachedSleepSession], strap: [CachedSleepSession]) -> [CachedSleepSession] {
+        apple.filter { a in !strap.contains { $0.startTs <= a.endTs && $0.endTs >= a.startTs } }
+             .sorted { $0.startTs < $1.startTs }
     }
 
     // MARK: - Metric explorer reads (generic substrate)

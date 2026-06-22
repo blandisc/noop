@@ -1208,6 +1208,7 @@ struct SleepDetailModel {
     /// view, once per data change. `appleHealthDays` flags which day rows are Apple-sourced (no clock).
     static func build(days: [DailyMetric],
                       sleeps: [CachedSleepSession],
+                      appleSleeps: [CachedSleepSession] = [],
                       importedSleep: [String: ImportedSleepFigures],
                       appleHealthDays: Set<String>,
                       loaded: Bool,
@@ -1220,9 +1221,22 @@ struct SleepDetailModel {
         // Respiration for the strap night comes from the latest daily metric (the session doesn't
         // carry it), so the Respiration tile shows anoche's value instead of "—". (FER-234)
         let strap = latestStrapNight(sleeps, respRate: days.last?.respRateBpm)
-        let night: Night? = strap ?? appleHealthNight(days: days, appleHealthDays: appleHealthDays)
-        let isApple = (strap == nil) && (night != nil)
+        // FER-486: an Apple Health session with a real per-epoch stage timeline (watchOS 9+) draws the SAME
+        // hypnogram as a strap night. `appleSleeps` only holds nights the band didn't cover (band wins
+        // upstream), so pick the most recent night across both — Apple wins only when it's newer / strap is nil.
+        let appleNight = latestAppleSessionNight(appleSleeps)
+        let useAppleSession: Bool = {
+            guard let a = appleNight else { return false }
+            guard let s = strap else { return true }
+            return a.startTs > s.startTs
+        }()
+        let night: Night? = useAppleSession ? appleNight
+                          : (strap ?? appleHealthNight(days: days, appleHealthDays: appleHealthDays))
+        let isApple = useAppleSession || (strap == nil && night != nil)
         let intervals: [SleepInterval] = {
+            if useAppleSession, let a = appleSleeps.last {
+                return decodeSegments(a.stagesJSON, sessionStart: a.startTs)?.intervals ?? []
+            }
             guard !isApple, let s = sleeps.last else { return [] }
             return decodeSegments(s.stagesJSON, sessionStart: s.startTs)?.intervals ?? []
         }()
@@ -1385,6 +1399,17 @@ struct SleepDetailModel {
         let startTs = Int((Repository.parseDayKey(d.day) ?? Date()).timeIntervalSince1970) + 12 * 3600
         return Night(startTs: startTs, endTs: startTs, efficiency: d.efficiency,
                      respRate: d.respRateBpm, stages: stages)
+    }
+
+    /// The most recent Apple Health session carrying a REAL stage timeline (FER-486) — drawn as a full
+    /// hypnogram, unlike `appleHealthNight` (daily totals → proportional bar). Apple's sleepAnalysis has
+    /// no per-session respiration/efficiency, so those tiles fall back to the daily metric / "—".
+    private static func latestAppleSessionNight(_ appleSleeps: [CachedSleepSession]) -> Night? {
+        guard let s = appleSleeps.last, s.endTs > s.startTs,
+              let seg = decodeSegments(s.stagesJSON, sessionStart: s.startTs), seg.stages.total > 0
+        else { return nil }
+        return Night(startTs: s.startTs, endTs: s.endTs, efficiency: s.efficiency,
+                     respRate: nil, stages: seg.stages)
     }
 
     /// Trailing 14 nights of total sleep, in HOURS — the same window the Today sleep sheet charts, so

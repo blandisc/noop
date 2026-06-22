@@ -603,6 +603,7 @@ private struct CuerpoLanding: View {
             sleepDetail = SleepDetailItem(model: SleepDetailModel.build(
                 days: repo.days,
                 sleeps: repo.sleeps,
+                appleSleeps: repo.appleSleeps,
                 importedSleep: repo.importedSleep,
                 appleHealthDays: repo.appleHealthDays,
                 loaded: repo.loaded,
