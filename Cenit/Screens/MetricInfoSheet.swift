@@ -880,7 +880,8 @@ struct MetricInfoSheet: View {
                     valueFormat: { "\(Int($0.rounded())) \(String(localized: "bpm"))" },
                     dateFormat: { Self.hrClock.string(from: $0) },
                     axisLabelColor: theme.inkTertiary,
-                    gridLineColor: theme.hairline
+                    gridLineColor: theme.hairline,
+                    tightTrailing: true
                 )
                 hrFooter(v)
             }
