@@ -217,6 +217,24 @@ struct TodayView: View {
         return l
     }
 
+    /// La explicación honesta para la hoja «¿Por qué?» (la «i») cuando NO hay lectura de hoy (FER-475):
+    /// QUÉ falta según el estado real, en vez del genérico «¿Por qué preparación?» con el chip gris. `nil`
+    /// con veredicto → la hoja muestra el porqué normal.
+    private var whyEmptyExplanation: LocalizedStringKey? {
+        let state = heroState
+        guard state != .verdict else { return nil }
+        switch state {
+        case .calibrating:
+            return "Tu base aún se afina: con un par de noches más de sueño sincronizado con la banda, tu veredicto del día empieza a aparecer aquí."
+        case .downloading:
+            return "Estamos descargando tu noche. En cuanto termine el sync, calculamos tu veredicto del día y aparece aquí."
+        default:   // waiting / importedBaseline
+            return strapSeen
+                ? "Tu lectura del día sale de cómo dormiste. Aún no hay datos de esta noche — cuando duermas con tu banda y sincronices en la mañana, tu veredicto aparece aquí."
+                : "Conecta tu banda o Apple Salud y, con tu sueño de la noche, tu veredicto del día empieza a leerse aquí."
+        }
+    }
+
     /// Recovery cold-start: recovery is nil until the HRV baseline crosses the seed gate
     /// (Baselines.minNightsSeed valid nights). While calibrating, this is the count of nights
     /// banked so far — it drives an honest "Calibrating — N of 4 nights" on the recovery ring,
@@ -292,7 +310,9 @@ struct TodayView: View {
                 metricSheet(for: info)
             }
             .sheet(isPresented: $showWhyVerdict) {
-                WhyVerdictSheet(readiness: readiness, theme: theme, sleepMinutes: repo.today?.totalSleepMin)
+                WhyVerdictSheet(readiness: readiness, theme: theme,
+                                sleepMinutes: repo.today?.totalSleepMin,
+                                emptyStateExplanation: whyEmptyExplanation)
             }
             // Rich «Instrumento» Detalle, drilled into from a summary sheet's "Ver más" — the SAME screens
             // Cuerpo presents, theme passed explicitly (it doesn't propagate through `.sheet`), NO nested
