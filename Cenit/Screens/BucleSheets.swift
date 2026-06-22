@@ -488,6 +488,12 @@ enum BucleFormat {
     /// key) is never changed (FER-312).
     static func shortLabel(_ question: String) -> String { JournalCatalogStore.esLabel(for: question) }
 
+    /// The es-MX display label for a stored behavior key (an experiment row's `behavior` is the journal
+    /// question). Same mapping `behaviorName` uses for a lever, without needing an `Insight` stub.
+    static func behaviorLabel(_ raw: String) -> String {
+        raw.isEmpty ? "" : JournalCatalogStore.esLabel(for: raw)
+    }
+
     static func isGood(_ insight: Insight) -> Bool {
         let higherBetter = insight.datum.metric != "FC en reposo"
         let up = insight.datum.value > 0
@@ -744,6 +750,200 @@ struct BucleInfoSheet: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .presentationDetents([.medium])
+    }
+}
+
+// MARK: - Experiment detail (FER-462 / 2b)
+//
+// The full view of a running experiment: day N of M, the racha + «arco», the «recuperación durante el
+// experimento» effect line vs your «media antes», the marked daily check-in, and cancel. Loads its own
+// data (so it stays fresh after a check-in) via the shared `Repository.experimentProgress/effect`.
+
+struct ExperimentDetailSheet: View {
+    let row: ExperimentRow
+    let theme: InstrumentoTheme
+    let onChanged: () -> Void
+
+    @EnvironmentObject var repo: Repository
+    @Environment(\.dismiss) private var dismiss
+    @State private var progress: ExperimentProgress?
+    @State private var effect: ExperimentEffect?
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+                header
+                if let p = progress {
+                    dayProgress(p)
+                    racha(p)
+                }
+                effectBlock
+                if let p = progress, p.pendingCheckIn { checkIn }
+                meta
+                cancel
+            }
+            .padding(NoopMetrics.screenPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(theme.paper.ignoresSafeArea())
+        .presentationDragIndicator(.visible)
+        .task { await reload() }
+    }
+
+    // MARK: Sections
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("En prueba").instrumentoOverline().foregroundStyle(theme.dataRecovery)
+            Text(BucleFormat.behaviorLabel(row.behavior))
+                .font(.system(size: 28, weight: .semibold)).foregroundStyle(theme.ink)
+                .fixedSize(horizontal: false, vertical: true).padding(.top, 8)
+            Text("a prueba sobre tu \(row.outcome)")
+                .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary).padding(.top, 4)
+        }
+    }
+
+    private func dayProgress(_ p: ExperimentProgress) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("Día \(p.elapsedDay)").font(.system(size: 40, weight: .semibold)).monospacedDigit()
+                    .lineLimit(1).minimumScaleFactor(0.6).foregroundStyle(theme.ink)
+                Text("de \(row.windowDays)").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+            }
+            ProgressView(value: Double(p.elapsedDay), total: Double(row.windowDays))
+                .tint(theme.dataRecovery).padding(.top, 12)
+        }
+    }
+
+    @ViewBuilder private func racha(_ p: ExperimentProgress) -> some View {
+        if p.supportsStreak {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Tu racha").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Spacer()
+                    HStack(spacing: 4) {
+                        Image(systemName: "flame").font(.system(size: 11, weight: .medium))
+                        Text("Mejor: \(p.streakBest)").font(StrandFont.captionNumber)
+                    }
+                    .foregroundStyle(theme.inkTertiary)
+                }
+                HStack(alignment: .firstTextBaseline, spacing: 7) {
+                    Text("\(p.streakCurrent)").font(StrandFont.number(30)).foregroundStyle(theme.ink)
+                    Text("noches seguidas · cumpliste \(p.adherent) de \(p.elapsedDay)")
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.top, 9)
+                StreakArc(filled: p.streakCurrent, total: row.windowDays, theme: theme, height: 22)
+                    .padding(.top, 12)
+            }
+        }
+    }
+
+    @ViewBuilder private var effectBlock: some View {
+        if let e = effect, e.values.count >= 2 {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Tu \(outcomePhrase) durante el experimento")
+                    .instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                ExperimentEffectChart(values: e.values, baseline: e.beforeMean,
+                                      accent: BucleFormat.metricColor(row.outcome, theme), theme: theme)
+                    .padding(.top, 12)
+                HStack {
+                    Text("— — media antes").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    Spacer()
+                    if let d = e.delta {
+                        HStack(spacing: 4) {
+                            Text(BucleFormat.signedDelta(d, unit: e.unit))
+                                .font(StrandFont.mono(15, weight: .semibold))
+                                .foregroundStyle(deltaIsGood(d) ? theme.positiveText : theme.critical)
+                            Text("vs antes").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                        }
+                    }
+                }
+                .padding(.top, 8)
+            }
+        }
+    }
+
+    private var checkIn: some View {
+        let question = row.behavior.isEmpty ? "¿Lo cumpliste hoy?" : row.behavior
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 6) {
+                Circle().fill(theme.dataRecovery).frame(width: 8, height: 8)
+                Text("Pendiente hoy").instrumentoOverline().foregroundStyle(theme.dataRecovery)
+            }
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(question).font(StrandFont.headline).foregroundStyle(theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 8)
+                checkInToggle("Sí", answeredYes: true)
+                checkInToggle("No", answeredYes: false)
+            }
+            .padding(.top, 11)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(theme.dataRecovery, lineWidth: 1.5))
+    }
+
+    private func checkInToggle(_ label: String, answeredYes: Bool) -> some View {
+        Button {
+            Task {
+                await repo.saveJournalAnswer(day: Repository.localDayKey(Date()),
+                                             question: row.behavior, answeredYes: answeredYes)
+                await reload()
+                onChanged()
+            }
+        } label: {
+            Text(label).font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
+                .frame(minWidth: 30)
+                .padding(.horizontal, 15).padding(.vertical, 7)
+                .overlay(Capsule().stroke(theme.hairlineStrong, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(label), \(row.behavior)")
+    }
+
+    private var meta: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "calendar").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
+            Text("Veredicto el ").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                + Text(progress?.verdictDate ?? "—").font(StrandFont.subhead).foregroundStyle(theme.ink).bold()
+        }
+    }
+
+    private var cancel: some View {
+        Button {
+            Task { await repo.cancelExperiment(row); onChanged(); dismiss() }
+        } label: {
+            Text("Cancelar experimento").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: Data
+
+    private func reload() async {
+        let today = Repository.localDayKey(Date())
+        let p = await repo.experimentProgress(row, today: today)
+        let e = await repo.experimentEffect(row, today: today)
+        await MainActor.run { progress = p; effect = e }
+    }
+
+    /// es-MX phrase for the outcome in «Tu <…> durante el experimento».
+    private var outcomePhrase: String {
+        switch row.outcome {
+        case "Recuperación": return "recuperación"
+        case "Sueño":        return "sueño"
+        default:             return row.outcome   // HRV / FC en reposo stay as-is
+        }
+    }
+
+    /// Whether a delta is an improvement, respecting the metric's direction (only resting HR is lower-better).
+    private func deltaIsGood(_ d: Double) -> Bool {
+        row.outcome == "FC en reposo" ? d <= 0 : d >= 0
     }
 }
 
