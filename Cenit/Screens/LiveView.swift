@@ -134,7 +134,7 @@ struct LiveView: View {
         .onPreferenceChange(SheetContentHeightKey.self) { sheetHeight = $0 }
         .presentationDetents([.height(sheetHeight > 0 ? sheetHeight : 640)])
         .onAppear { refreshLiveSession() }
-        .onDisappear { model.stopRealtimeHR(); reconnectTimeout?.cancel() }
+        .onDisappear { model.releaseRealtimeHR("live"); reconnectTimeout?.cancel() }
         .onChange(of: live.bonded) { refreshLiveSession() }
         .onChange(of: live.connected) { wasConnected, nowConnected in
             refreshLiveSession()
@@ -635,7 +635,7 @@ struct LiveView: View {
 
     private func refreshLiveSession() {
         guard activeConnection else { return }
-        model.startRealtimeHR()
+        model.acquireRealtimeHR("live")
         model.getBattery()
     }
 

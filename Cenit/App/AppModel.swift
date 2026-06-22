@@ -464,6 +464,9 @@ final class AppModel: ObservableObject {
         strengthSession = StrengthSessionModel.make(routineId: routineId, routineName: routineName,
                                                     slots: slots, startTs: Int(Date().timeIntervalSince1970))
         strengthSheetPresented = true
+        // Arm the realtime HR stream for the duration of the session (FER-498) — without this, on a
+        // WHOOP 4.0 the session sees no HR unless Live was opened first, and the receipt reads "no HR".
+        acquireRealtimeHR("strength")
     }
 
     /// Re-show the sheet for the in-progress session (the hub's «Resume»).
@@ -479,6 +482,7 @@ final class AppModel: ObservableObject {
         guard save, session.doneCount > 0 else {        // nothing logged → discard + close
             strengthSession = nil
             strengthSheetPresented = false
+            releaseRealtimeHR("strength")
             return
         }
         let built = session.buildForSave(deviceId: deviceId, endTs: endTs)
@@ -517,6 +521,7 @@ final class AppModel: ObservableObject {
     func closeStrengthSummary() {
         strengthSession = nil
         strengthSheetPresented = false
+        releaseRealtimeHR("strength")   // last consumer leaves → stream stops (unless Live still holds it)
     }
 
     /// Prior best-per-metric PRs per exercise, BEFORE this session's save — the baseline new records beat.
@@ -621,8 +626,8 @@ final class AppModel: ObservableObject {
 
     /// Drop the smoothing window and blank the hero number so a resume / re-attach shows "—"
     /// until a genuinely fresh sample arrives, instead of republishing the stale pre-gap median.
-    /// Called on Live-tab entry / manual Start HR (see `startRealtimeHR`), NOT on the 30s keep-alive
-    /// re-arm — so steady-state smoothing is untouched. Fixes #46 (HR jumped to a stale ~100 on
+    /// Called when the first realtime consumer arms the stream (see `acquireRealtimeHR`), NOT on the
+    /// 30s keep-alive re-arm — so steady-state smoothing is untouched. Fixes #46 (HR jumped to a stale ~100 on
     /// reopen, then "slowly came back down" as fresh low samples refilled the window).
     func resetSmoothing() {
         hrWindow.removeAll()
@@ -673,16 +678,30 @@ final class AppModel: ObservableObject {
     /// (lets a user with both a WHOOP 4 and a 5/MG switch between them).
     func prepareStrapSwitch() { ble.prepareForModelSwitch() }
 
-    /// Enable the realtime stream + mark it wanted so the keep-alive re-arms it (can't lapse).
-    /// Blanks the stale smoothing window first (#46): on Live-tab entry / resume we don't want the
-    /// pre-gap median republished, so the hero shows "—" until a fresh sample lands. The keep-alive
-    /// re-arm goes through `ble.startRealtime()` directly, NOT here, so steady-state is untouched.
-    func startRealtimeHR() {
+    /// Live-HR consumers that want the heavy R10/R11 realtime stream (the Live tab, a guided strength
+    /// session). The stream is armed while ANY consumer wants it and stopped only when the LAST one
+    /// leaves — so leaving Live mid-session doesn't kill the session's HR, and ending a session doesn't
+    /// kill Live's (FER-498). The keep-alive re-arm goes through `ble.startRealtime()` directly (NOT
+    /// here), so steady-state — and the marginal-radio fallback (#80) it honors — is untouched.
+    private var realtimeConsumers: Set<String> = []
+
+    /// A consumer (`"live"`, `"strength"`) wants live HR. Arms the realtime stream on the FIRST consumer
+    /// and blanks the stale smoothing window (#46) so the hero shows "—" until a fresh sample lands.
+    /// Idempotent per consumer (re-acquiring the same one is a no-op).
+    func acquireRealtimeHR(_ consumer: String) {
+        let wasIdle = realtimeConsumers.isEmpty
+        realtimeConsumers.insert(consumer)
+        guard wasIdle else { return }
         resetSmoothing()
         ble.startRealtime()
     }
-    /// Stop the realtime stream (the lightweight 0x2A37 HR keeps recording regardless).
-    func stopRealtimeHR() { ble.stopRealtime() }
+
+    /// A consumer is done with live HR. Stops the realtime stream once the LAST consumer leaves (the
+    /// lightweight 0x2A37 HR keeps recording regardless). Idempotent per consumer.
+    func releaseRealtimeHR(_ consumer: String) {
+        guard realtimeConsumers.remove(consumer) != nil, realtimeConsumers.isEmpty else { return }
+        ble.stopRealtime()
+    }
     /// Ask the strap for a fresh battery reading.
     func getBattery() { ble.refreshBattery() }
 
