@@ -13,7 +13,10 @@ let package = Package(
     targets: [
         .target(
             name: "StrandTraining",
-            resources: [.process("Resources/exercises.json")]
+            resources: [
+                .process("Resources/exercises.json"),
+                .process("Resources/exercises.es.json"),   // Spanish overlay (FER-501)
+            ]
         ),
         .testTarget(
             name: "StrandTrainingTests",

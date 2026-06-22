@@ -97,13 +97,14 @@ struct ExerciseLibraryScreen: View {
 
     private var filterChips: some View {
         HStack(spacing: 8) {
-            filterMenu(title: String(localized: "Muscle"), selection: $muscle, options: muscleOptions)
-            filterMenu(title: String(localized: "Equipment"), selection: $equipment, options: equipmentOptions)
+            filterMenu(title: String(localized: "Muscle"), selection: $muscle, options: muscleOptions, label: StrengthDisplay.muscle)
+            filterMenu(title: String(localized: "Equipment"), selection: $equipment, options: equipmentOptions, label: StrengthDisplay.equipment)
             Spacer(minLength: 0)
         }
     }
 
-    private func filterMenu(title: String, selection: Binding<String?>, options: [String]) -> some View {
+    private func filterMenu(title: String, selection: Binding<String?>, options: [String],
+                            label: @escaping (String) -> String) -> some View {
         let active = selection.wrappedValue
         return Menu {
             Button { selection.wrappedValue = nil } label: {
@@ -111,12 +112,12 @@ struct ExerciseLibraryScreen: View {
             }
             ForEach(options, id: \.self) { opt in
                 Button { selection.wrappedValue = opt } label: {
-                    Label(StrengthDisplay.titleCase(opt), systemImage: active == opt ? "checkmark" : "")
+                    Label(label(opt), systemImage: active == opt ? "checkmark" : "")
                 }
             }
         } label: {
             HStack(spacing: 5) {
-                Text(active.map(StrengthDisplay.titleCase) ?? title)
+                Text(active.map(label) ?? title)
                     .font(StrandFont.subhead)
                     .foregroundStyle(active == nil ? theme.ink : theme.paper)
                 Image(systemName: "chevron.down").font(.system(size: 11, weight: .semibold))
@@ -152,7 +153,7 @@ struct ExerciseLibraryScreen: View {
         } label: {
             HStack(spacing: 13) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(ex.name).font(StrandFont.body).foregroundStyle(theme.ink)
+                    Text(StrengthDisplay.name(ex)).font(StrandFont.body).foregroundStyle(theme.ink)
                         .multilineTextAlignment(.leading)
                     Text(StrengthDisplay.subtitle(ex)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
@@ -213,7 +214,8 @@ struct ExerciseLibraryScreen: View {
 
     private var filtered: [Exercise] {
         exercises.filter { ex in
-            (search.isEmpty || ex.name.localizedCaseInsensitiveContains(search))
+            (search.isEmpty || ex.name.localizedCaseInsensitiveContains(search)
+                || (ex.nameES?.localizedCaseInsensitiveContains(search) ?? false))   // search both languages (FER-501)
             && (muscle == nil || ex.primaryMuscles.contains(muscle!) || ex.secondaryMuscles.contains(muscle!))
             && (equipment == nil || ex.equipment == equipment)
         }
@@ -254,9 +256,9 @@ private struct CreateExerciseSheet: View {
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
-                    pickerRow("Primary muscle", selection: $muscle, options: muscles, placeholder: String(localized: "Pick a muscle"))
+                    pickerRow("Primary muscle", selection: $muscle, options: muscles, placeholder: String(localized: "Pick a muscle"), label: StrengthDisplay.muscle)
                     Divider().overlay(theme.hairline)
-                    pickerRow("Equipment", selection: $equip, options: equipment, placeholder: String(localized: "Pick equipment"))
+                    pickerRow("Equipment", selection: $equip, options: equipment, placeholder: String(localized: "Pick equipment"), label: StrengthDisplay.equipment)
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
@@ -279,18 +281,19 @@ private struct CreateExerciseSheet: View {
         .background(theme.paper.ignoresSafeArea())
     }
 
-    private func pickerRow(_ title: LocalizedStringKey, selection: Binding<String>, options: [String], placeholder: String) -> some View {
+    private func pickerRow(_ title: LocalizedStringKey, selection: Binding<String>, options: [String], placeholder: String,
+                           label: @escaping (String) -> String) -> some View {
         HStack(spacing: 12) {
             Text(title).font(StrandFont.body).foregroundStyle(theme.ink).frame(maxWidth: .infinity, alignment: .leading)
             Menu {
                 ForEach(options, id: \.self) { opt in
                     Button { selection.wrappedValue = opt } label: {
-                        Label(StrengthDisplay.titleCase(opt), systemImage: selection.wrappedValue == opt ? "checkmark" : "")
+                        Label(label(opt), systemImage: selection.wrappedValue == opt ? "checkmark" : "")
                     }
                 }
             } label: {
                 HStack(spacing: 5) {
-                    Text(selection.wrappedValue.isEmpty ? placeholder : StrengthDisplay.titleCase(selection.wrappedValue))
+                    Text(selection.wrappedValue.isEmpty ? placeholder : label(selection.wrappedValue))
                         .font(StrandFont.body).foregroundStyle(selection.wrappedValue.isEmpty ? theme.inkTertiary : theme.inkSecondary)
                     Image(systemName: "chevron.down").font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
                 }

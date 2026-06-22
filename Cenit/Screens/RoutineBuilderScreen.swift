@@ -162,7 +162,7 @@ struct RoutineBuilderScreen: View {
                 }
                 Button { editingIndex = idx } label: {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(item.exercise.name).font(StrandFont.body).foregroundStyle(theme.ink)
+                        Text(StrengthDisplay.name(item.exercise)).font(StrandFont.body).foregroundStyle(theme.ink)
                         Text(summary(item)).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
@@ -326,7 +326,7 @@ private struct RoutineExerciseEditor: View {
                 Section {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(StrengthDisplay.subtitle(item.exercise)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                        Text(item.exercise.name).font(StrandFont.title1).foregroundStyle(theme.ink)
+                        Text(StrengthDisplay.name(item.exercise)).font(StrandFont.title1).foregroundStyle(theme.ink)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     .rowChrome(top: 20, bottom: 0)

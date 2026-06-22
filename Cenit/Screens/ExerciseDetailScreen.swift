@@ -51,7 +51,7 @@ struct ExerciseDetailScreen: View {
         VStack(alignment: .leading, spacing: 3) {
             (Text(StrengthDisplay.subtitle(exercise) + " · ") + Text(StrengthDisplay.typeLabel(exercise.type)))
                 .instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text(exercise.name)
+            Text(StrengthDisplay.name(exercise))
                 .font(StrandFont.title1).foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -84,7 +84,7 @@ struct ExerciseDetailScreen: View {
 
     private func muscleBar(_ muscle: String, primary: Bool) -> some View {
         HStack(spacing: 12) {
-            Text(StrengthDisplay.titleCase(muscle))
+            Text(StrengthDisplay.muscle(muscle))
                 .font(StrandFont.subhead)
                 .foregroundStyle(primary ? theme.ink : theme.inkSecondary)
                 .frame(width: 116, alignment: .leading)
@@ -98,7 +98,7 @@ struct ExerciseDetailScreen: View {
             .frame(height: 7)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(StrengthDisplay.titleCase(muscle)), \(primary ? "primary" : "assisting")")
+        .accessibilityLabel("\(StrengthDisplay.muscle(muscle)), \(primary ? "primary" : "assisting")")
     }
 
     // MARK: - How to (offline text cues from the bundled catalog · FER-387)

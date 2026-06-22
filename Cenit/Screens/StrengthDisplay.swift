@@ -11,6 +11,10 @@ import StrandTraining
 
 enum StrengthDisplay {
 
+    /// Whether to show the Spanish catalog labels — driven by the device language (FER-501). The
+    /// catalog is content (not string-catalog chrome), so the screens localize it through here.
+    static var localized: Bool { Locale.current.language.languageCode?.identifier == "es" }
+
     /// Title-case a lowercase catalog token: "anterior deltoid" → "Anterior Deltoid".
     static func titleCase(_ s: String) -> String {
         s.split(separator: " ")
@@ -18,11 +22,26 @@ enum StrengthDisplay {
             .joined(separator: " ")
     }
 
+    /// An exercise's display name in the device language: Spanish when a translation exists, else
+    /// the English catalog name. Custom exercises (no `nameES`) always show what the user typed. (FER-501)
+    static func name(_ e: Exercise) -> String { e.displayName(localized: localized) }
+
+    /// A muscle key's display label: the Spanish term on a Spanish device, else the title-cased English
+    /// key. The KEY itself is never changed — filters and the muscle-fatigue map still join on it. (FER-501)
+    static func muscle(_ key: String) -> String {
+        (localized ? MuscleVocabulary.es[key] : nil) ?? titleCase(key)
+    }
+
+    /// An equipment key's display label, same rule as `muscle`. (FER-501)
+    static func equipment(_ key: String) -> String {
+        (localized ? EquipmentVocabulary.es[key] : nil) ?? titleCase(key)
+    }
+
     /// A one-line subtitle for an exercise row: "Chest · Barbell" (equipment omitted when absent).
     static func subtitle(_ e: Exercise) -> String {
-        let muscle = e.primaryMuscles.first.map(titleCase) ?? ""
-        guard let eq = e.equipment, !eq.isEmpty else { return muscle }
-        return muscle.isEmpty ? titleCase(eq) : "\(muscle) · \(titleCase(eq))"
+        let m = e.primaryMuscles.first.map(muscle) ?? ""
+        guard let eq = e.equipment, !eq.isEmpty else { return m }
+        return m.isEmpty ? equipment(eq) : "\(m) · \(equipment(eq))"
     }
 
     // MARK: - Record type
