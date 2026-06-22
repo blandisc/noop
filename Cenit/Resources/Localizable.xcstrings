@@ -34142,6 +34142,295 @@
           }
         }
       }
+    },
+    "%lld day": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld day"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld día"
+          }
+        }
+      }
+    },
+    "%lld night": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld night"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld noche"
+          }
+        }
+      }
+    },
+    "%lld nights": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld nights"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld noches"
+          }
+        }
+      }
+    },
+    "In the last %lld days": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In the last %lld days"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En los últimos %lld días"
+          }
+        }
+      }
+    },
+    "In the last %lld nights": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In the last %lld nights"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En las últimas %lld noches"
+          }
+        }
+      }
+    },
+    " you've been mostly in ": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " you've been mostly in "
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " has estado sobre todo en "
+          }
+        }
+      }
+    },
+    " you've been almost always in ": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " you've been almost always in "
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " has estado casi siempre en "
+          }
+        }
+      }
+    },
+    " you've stayed in ": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " you've stayed in "
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " te has mantenido siempre en "
+          }
+        }
+      }
+    },
+    " you've moved between ": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " you've moved between "
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " has alternado entre "
+          }
+        }
+      }
+    },
+    " and ": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " and "
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " y "
+          }
+        }
+      }
+    },
+    " you haven't stayed in one range.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " you haven't stayed in one range."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " no te has quedado en un solo rango."
+          }
+        }
+      }
+    },
+    "; today you dropped to ": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "; today you dropped to "
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "; hoy bajaste a "
+          }
+        }
+      }
+    },
+    "; today you rose to ": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "; today you rose to "
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "; hoy subiste a "
+          }
+        }
+      }
+    },
+    ", and you're still there today.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", and you're still there today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", y hoy sigues ahí."
+          }
+        }
+      }
+    },
+    "; last night it dropped to ": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "; last night it dropped to "
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "; anoche bajó a "
+          }
+        }
+      }
+    },
+    "; last night it rose to ": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "; last night it rose to "
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "; anoche subió a "
+          }
+        }
+      }
+    },
+    ", and last night too.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", and last night too."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", y anoche también."
+          }
+        }
+      }
     }
   },
   "version": "1.1"
