@@ -8,11 +8,12 @@ let package = Package(
     dependencies: [
         .package(path: "../WhoopProtocol"),
         .package(path: "../WhoopStore"),
+        .package(path: "../StrandTraining"),
         .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.0"),
     ],
     targets: [
         .target(name: "StrandImport", dependencies: [
-            "WhoopProtocol", "WhoopStore",
+            "WhoopProtocol", "WhoopStore", "StrandTraining",
             .product(name: "ZIPFoundation", package: "ZIPFoundation"),
         ]),
         .testTarget(name: "StrandImportTests", dependencies: ["StrandImport", "WhoopStore"], resources: [

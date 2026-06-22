@@ -55,6 +55,8 @@ private struct EntrenarLanding: View {
     @State private var builderTarget: BuilderTarget? = nil
     /// Drives the «start from a template» sheet (FER-386).
     @State private var showTemplates = false
+    /// Drives the «import an LLM-generated plan» sheet (FER-496).
+    @State private var showImport = false
     /// Which routine row is currently swiped open — only one at a time. FER-491.
     @State private var swipedRoutineId: String? = nil
     /// A just-deleted routine + its exercises, kept in memory so «Undo» can restore it. FER-491.
@@ -100,6 +102,12 @@ private struct EntrenarLanding: View {
         // «Start from a template» (FER-386): a `.sheet` like the builder, reloading the hub on add.
         .sheet(isPresented: $showTemplates) {
             StarterTemplatesSheet { await load() }
+                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        }
+        // «Import plan» (FER-496): bring in an LLM-generated program. A `.sheet` like the builder,
+        // reloading the hub when it creates routines.
+        .sheet(isPresented: $showImport) {
+            WorkoutImportView { await load() }
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
         // The guided strength session (FER-347). Hosted here at the hub root so it survives pushing
@@ -330,6 +338,8 @@ private struct EntrenarLanding: View {
                 LiveWorkoutHubRow()
                 divider
                 toolRow("Exercise library", "book", action: openLibrary)
+                divider
+                toolRow("Import plan", "square.and.arrow.down", action: { showImport = true })
                 divider
                 toolRow("Breathe", "wind", action: openBreathe)
                 divider

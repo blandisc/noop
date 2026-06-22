@@ -1836,6 +1836,31 @@ ES: dict[str, str] = {
     "Isolated low nights are usually noise (altitude, a cold, sensor fit). A sustained run is worth a look with a finger pulse oximeter.": "Las noches bajas aisladas suelen ser ruido (altitud, un resfriado, cómo quedó el sensor). Una racha sostenida amerita revisarla con un oxímetro de dedo.",
     "Each night your strap averages the oxygen saturation read at your wrist while you sleep. A healthy adult typically sits at 95–100%; readings below 90% are considered low (hypoxemia). Isolated low nights are usually noise — altitude, a cold, or how the sensor sat. A sustained run of low nights is what's worth a look with a finger pulse oximeter.": "Cada noche tu banda promedia la saturación de oxígeno medida en tu muñeca mientras duermes. Un adulto sano suele estar en 95–100%; lecturas por debajo de 90% se consideran bajas (hipoxemia). Las noches bajas aisladas suelen ser ruido — altitud, un resfriado, o cómo quedó el sensor. Una racha sostenida de noches bajas es lo que amerita revisarse con un oxímetro de dedo.",
     "Wrist optical sensors are less accurate than medical pulse oximeters — read this as a trend, not a clinical measurement. NOOP is not a medical device.": "Los sensores ópticos de muñeca son menos precisos que un oxímetro médico — léelo como tendencia, no como una medición clínica. NOOP no es un dispositivo médico.",
+    # FER-496 — Importar un programa de entrenamiento generado por un LLM (pantalla
+    # WorkoutImportView + fila «Import plan» del hub). Cadenas compartidas con Dieta
+    # (Copy prompt, Copied, Upload .json file, Continue, Paste your plan, «Bring back
+    # the file…», Done, Change, los errores notJSON/idioma) ya están traducidas y se omiten.
+    "Import plan": "Importar plan",
+    "Bring your plan from your AI": "Trae tu plan desde tu IA",
+    "Copy the prompt and paste it into your trusted AI, along with your plan (text, photo or PDF).": "Copia el prompt y pégalo en tu IA de confianza, junto con tu plan (texto, foto o PDF).",
+    "Your routines are created on your iPhone. NOOP never connects — you run the AI step yourself.": "Tus rutinas se crean en tu iPhone. NOOP nunca se conecta — el paso de la IA lo haces tú.",
+    "%lld exercises to set up": "%lld ejercicios por ubicar",
+    "These aren't in your library. Match each one to an exercise you have, or create it.": "Estos no están en tu biblioteca. Empareja cada uno con un ejercicio que tengas, o créalo.",
+    "Matched · %@": "Emparejado · %@",
+    "Create new": "Crear nuevo",
+    "Resolve %lld more to continue": "Resuelve %lld más para continuar",
+    "Your program": "Tu programa",
+    "%lld routines · %lld exercises": "%lld rutinas · %lld ejercicios",
+    "Create %lld routines": "Crear %lld rutinas",
+    "Created %lld routines": "Creaste %lld rutinas",
+    "They're in «My routines», ready to train.": "Están en «Mis rutinas», listas para entrenar.",
+    "bodyweight": "peso corporal",
+    "That file isn't a NOOP workout plan. Make sure you used the prompt above.": "Ese archivo no es un plan de entrenamiento de NOOP. Asegúrate de haber usado el prompt de arriba.",
+    "The plan's unit isn't supported — it must be kg or lb.": "La unidad del plan no es compatible — debe ser kg o lb.",
+    "One of the exercises has an unsupported type. Check the file and try again.": "Uno de los ejercicios tiene un tipo no compatible. Revisa el archivo e intenta de nuevo.",
+    "That plan has no routines. Check the file and try again.": "Ese plan no tiene rutinas. Revisa el archivo e intenta de nuevo.",
+    "One of the routines has no exercises. Check the file and try again.": "Una de las rutinas no tiene ejercicios. Revisa el archivo e intenta de nuevo.",
+    "One of the exercises has no name. Check the file and try again.": "Uno de los ejercicios no tiene nombre. Revisa el archivo e intenta de nuevo.",
 }
 
 

@@ -1,7 +1,9 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "": {},
+    "": {
+      "localizations": {}
+    },
     " No clear relationship — they move largely independently.": {
       "localizations": {
         "en": {
@@ -2453,7 +2455,9 @@
         }
       }
     },
-    "--": {},
+    "--": {
+      "localizations": {}
+    },
     "/ %lld": {
       "localizations": {
         "en": {
@@ -15563,7 +15567,9 @@
         }
       }
     },
-    "Load": {},
+    "Load": {
+      "localizations": {}
+    },
     "Loaded": {
       "localizations": {
         "en": {
@@ -37607,6 +37613,363 @@
           "stringUnit": {
             "state": "translated",
             "value": "pendiente"
+          }
+        }
+      }
+    },
+    "Import plan": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import plan"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importar plan"
+          }
+        }
+      }
+    },
+    "Bring your plan from your AI": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bring your plan from your AI"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trae tu plan desde tu IA"
+          }
+        }
+      }
+    },
+    "Copy the prompt and paste it into your trusted AI, along with your plan (text, photo or PDF).": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy the prompt and paste it into your trusted AI, along with your plan (text, photo or PDF)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copia el prompt y pégalo en tu IA de confianza, junto con tu plan (texto, foto o PDF)."
+          }
+        }
+      }
+    },
+    "Your routines are created on your iPhone. NOOP never connects — you run the AI step yourself.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your routines are created on your iPhone. NOOP never connects — you run the AI step yourself."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus rutinas se crean en tu iPhone. NOOP nunca se conecta — el paso de la IA lo haces tú."
+          }
+        }
+      }
+    },
+    "%lld exercises to set up": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld exercises to set up"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld ejercicios por ubicar"
+          }
+        }
+      }
+    },
+    "These aren't in your library. Match each one to an exercise you have, or create it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These aren't in your library. Match each one to an exercise you have, or create it."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estos no están en tu biblioteca. Empareja cada uno con un ejercicio que tengas, o créalo."
+          }
+        }
+      }
+    },
+    "Matched · %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Matched · %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Emparejado · %@"
+          }
+        }
+      }
+    },
+    "Create new": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create new"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crear nuevo"
+          }
+        }
+      }
+    },
+    "Resolve %lld more to continue": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resolve %lld more to continue"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resuelve %lld más para continuar"
+          }
+        }
+      }
+    },
+    "Your program": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your program"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu programa"
+          }
+        }
+      }
+    },
+    "%lld routines · %lld exercises": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld routines · %lld exercises"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld rutinas · %lld ejercicios"
+          }
+        }
+      }
+    },
+    "Create %lld routines": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create %lld routines"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crear %lld rutinas"
+          }
+        }
+      }
+    },
+    "Created %lld routines": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Created %lld routines"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Creaste %lld rutinas"
+          }
+        }
+      }
+    },
+    "They're in «My routines», ready to train.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "They're in «My routines», ready to train."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Están en «Mis rutinas», listas para entrenar."
+          }
+        }
+      }
+    },
+    "bodyweight": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bodyweight"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "peso corporal"
+          }
+        }
+      }
+    },
+    "That file isn't a NOOP workout plan. Make sure you used the prompt above.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That file isn't a NOOP workout plan. Make sure you used the prompt above."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ese archivo no es un plan de entrenamiento de NOOP. Asegúrate de haber usado el prompt de arriba."
+          }
+        }
+      }
+    },
+    "The plan's unit isn't supported — it must be kg or lb.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The plan's unit isn't supported — it must be kg or lb."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La unidad del plan no es compatible — debe ser kg o lb."
+          }
+        }
+      }
+    },
+    "One of the exercises has an unsupported type. Check the file and try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One of the exercises has an unsupported type. Check the file and try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uno de los ejercicios tiene un tipo no compatible. Revisa el archivo e intenta de nuevo."
+          }
+        }
+      }
+    },
+    "That plan has no routines. Check the file and try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That plan has no routines. Check the file and try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ese plan no tiene rutinas. Revisa el archivo e intenta de nuevo."
+          }
+        }
+      }
+    },
+    "One of the routines has no exercises. Check the file and try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One of the routines has no exercises. Check the file and try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una de las rutinas no tiene ejercicios. Revisa el archivo e intenta de nuevo."
+          }
+        }
+      }
+    },
+    "One of the exercises has no name. Check the file and try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One of the exercises has no name. Check the file and try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uno de los ejercicios no tiene nombre. Revisa el archivo e intenta de nuevo."
           }
         }
       }
