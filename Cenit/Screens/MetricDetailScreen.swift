@@ -486,7 +486,7 @@ struct MetricDetailScreen: View {
                 theme: theme,
                 showsSelector: false,
                 style: .init(
-                    smoothing: plotsRawValues ? nil : 7,
+                    smoothing: chartPlotsRaw ? nil : 7,
                     gradient: chartGradient,
                     // No area fill when a band is drawn: the band + clean line read sharply; the area was
                     // a second teal wash that muddied the overlap. A shorter chart keeps it proportionate
@@ -646,8 +646,19 @@ struct MetricDetailScreen: View {
     /// than the 7-day moving average the noisy nightly vitals smooth. (FER-252 / FER-257)
     private var plotsRawValues: Bool { spec.clinicalBands || spec.sparseMeasured }
 
+    /// Whether THIS render plots raw daily points instead of the 7-day MA. Adds «Ranges» mode to
+    /// `plotsRawValues`: that mode classifies each DAY against the population bands (the shaded band +
+    /// the «X of N days in …» count both read the raw value), so the line must be raw too — otherwise the
+    /// smoothed endpoint lands in a different band than the one highlighted from today's reading. Steps are
+    /// excluded (`currentDayIncomplete`): their «today» is a running partial total and their raw range can
+    /// overflow the band-pinned Y axis, so they keep the smoothed line. (Detalle de Vital — punto vs. rango)
+    private var chartPlotsRaw: Bool {
+        plotsRawValues || (rangesModeActive && !spec.currentDayIncomplete)
+    }
+
     private var chartAccessibilityLabel: LocalizedStringKey {
         if spec.sparseMeasured { return "Measured readings" }
+        if chartPlotsRaw && !spec.clinicalBands { return "Daily readings" }
         return spec.clinicalBands ? "Nightly readings" : "7-day moving average"
     }
 

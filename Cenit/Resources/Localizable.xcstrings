@@ -53,6 +53,17 @@
         }
       }
     },
+    "Daily readings": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lecturas diarias"
+          }
+        }
+      }
+    },
     "Short night — low confidence": {
       "extractionState": "manual",
       "localizations": {
