@@ -24,7 +24,12 @@ import Foundation
 //            daily series over-extrapolate; we damp and cap the one-day move)
 //   debt   = a gentle, bounded drag from accumulated sleep debt — "si descansas igual" means you
 //            won't repay it tomorrow, so a standing debt keeps pulling recovery down
-//   estimate = clamp(level + step − debt, 0…100)
+//   strain = an optional, bounded drag from an acute session you did TODAY whose cost has NOT yet
+//            landed in the recovery series (the series reflects last night). A hard session delays
+//            parasympathetic reactivation, so tomorrow's recovery sits a little below the trend
+//            alone. Off (0) unless the caller passes a session strain — the post-session "cost"
+//            block (FER-442) does; the Recovery-detail trend (FER-277) does not.
+//   estimate = clamp(level + step − debt − strain, 0…100)
 //   range    = estimate ± (`bandK`·σ, floored at `bandFloorHalf`), clamped to 0…100, where σ is the
 //              recent recovery dispersion. The band is deliberately wide: it is the honesty.
 //
@@ -45,6 +50,11 @@ import Foundation
 //     not long-horizon; cited accordingly.)
 //   • The sleep-debt drag is a PRODUCT HEURISTIC, not a peer-reviewed coefficient — a gentle,
 //     bounded nudge that encodes "a standing debt you won't repay tonight keeps recovery down".
+//   • The acute session-strain drag's DIRECTION is grounded — higher exercise load delays
+//     post-exercise parasympathetic (HRV) reactivation, so next-morning recovery sits lower:
+//     Stanley, Peake & Buckley, "Cardiac Parasympathetic Reactivation Following Exercise:
+//     Implications for Training Prescription", *Sports Medicine* 43(12):1259–1277, 2013. Its
+//     MAGNITUDE (the points of drag) is a product-calibration knob, not a validated coefficient.
 //
 // The constants below (window sizes, damping, caps, band width, debt scale) are product-calibration
 // knobs, not validated quantities — tuned for an honest, humble readout, not WHOOP parity.
@@ -76,6 +86,15 @@ public enum RecoveryForecast {
     static let debtFloorMin = 30.0
     static let debtFullMin = 420.0
     static let maxDebtDrag = 8.0
+
+    // Acute session-strain drag (bounded, gentle): no drag below `strainDragFloor`, ramping linearly
+    // to `maxStrainDrag` points at `strainDragFull`. A single resistance session sits well below the
+    // 0–21 daily ceiling, so the ramp spans a realistic session range. Capped at `maxStrainDrag` to
+    // stay inside the engine's ±8 one-day envelope (no single term dominates a one-day projection).
+    // Calibration knobs, not validated quantities — tunable on-device without touching the logic.
+    static let strainDragFloor = 4.0
+    static let strainDragFull = 16.0
+    static let maxStrainDrag = 8.0
 
     // MARK: - Output
 
@@ -117,8 +136,13 @@ public enum RecoveryForecast {
     ///     out-of-range values (outside 0…100) are dropped; only the trailing `window` are inspected.
     ///   - sleepDebtMin: accumulated sleep debt in minutes (≥ 0), if known. A standing debt applies a
     ///     small bounded downward drag; `nil` or ≤ `debtFloorMin` applies none.
+    ///   - sessionStrain: the 0–21 strain of a session done TODAY (not yet reflected in `recovery`),
+    ///     if any. Applies a small bounded downward drag — a hard session pulls tomorrow below the
+    ///     trend. `nil` or ≤ `strainDragFloor` applies none. It does NOT relax the honest gate below.
     /// - Returns: an `estimate` + confidence range, or `nil` when fewer than `minDays` valid days exist.
-    public static func compute(recovery: [Double?], sleepDebtMin: Double? = nil) -> Result? {
+    public static func compute(recovery: [Double?],
+                               sleepDebtMin: Double? = nil,
+                               sessionStrain: Double? = nil) -> Result? {
         // Trailing window, then keep valid (non-nil, in-range) points with their day index so the
         // slope reflects real spacing even when some days are missing.
         let recent = Array(recovery.suffix(window))
@@ -138,10 +162,11 @@ public enum RecoveryForecast {
         let rawSlope = olsSlope(points)
         let step = min(maxDailyStep, max(-maxDailyStep, rawSlope * slopeDamping))
 
-        // Sleep-debt drag (bounded, gentle).
+        // Downward drags (bounded, gentle): a standing sleep debt + any acute session done today.
         let drag = debtDrag(sleepDebtMin)
+        let acute = strainDrag(sessionStrain)
 
-        let estimate = clampScore(level + step - drag)
+        let estimate = clampScore(level + step - drag - acute)
 
         // Range from recent dispersion, floored so it never looks falsely precise.
         let half = max(bandFloorHalf, bandK * sampleSD(ys))
@@ -185,6 +210,13 @@ public enum RecoveryForecast {
         guard let d = sleepDebtMin, d > debtFloorMin else { return 0 }
         let frac = min(1.0, (d - debtFloorMin) / (debtFullMin - debtFloorMin))
         return maxDebtDrag * frac
+    }
+
+    /// Bounded, gentle drag (recovery points) from an acute session done today (0–21 strain).
+    static func strainDrag(_ sessionStrain: Double?) -> Double {
+        guard let s = sessionStrain, s > strainDragFloor else { return 0 }
+        let frac = min(1.0, (s - strainDragFloor) / (strainDragFull - strainDragFloor))
+        return maxStrainDrag * frac
     }
 
     private static func clampScore(_ v: Double) -> Double { max(0, min(100, v)) }

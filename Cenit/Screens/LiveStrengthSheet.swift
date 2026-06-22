@@ -42,6 +42,9 @@ struct StrengthSummary: Equatable {
     var setCount: Int
     var strain: Double?
     var costBand: SessionRecoveryCost.Band?
+    /// Tomorrow's projected recovery (0–100, rounded) given today's session cost — `nil` when there
+    /// isn't ~2 weeks of recovery base (then the projection line is hidden). (FER-442)
+    var costTomorrowPct: Int?
     var prs: [PR]
     var muscles: [String]
     var isFirstTime: Bool
@@ -878,7 +881,7 @@ struct LiveStrengthSheet: View {
 
             if let band = s.costBand {
                 Divider().overlay(theme.hairline)
-                summaryCost(band)
+                summaryCost(band, tomorrowPct: s.costTomorrowPct)
             }
 
             if !s.muscles.isEmpty {
@@ -953,12 +956,20 @@ struct LiveStrengthSheet: View {
         }
     }
 
-    private func summaryCost(_ band: SessionRecoveryCost.Band) -> some View {
+    private func summaryCost(_ band: SessionRecoveryCost.Band, tomorrowPct: Int?) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Recovery cost").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             Text(Self.bandLabel(band)).font(StrandFont.title2).foregroundStyle(bandColor(band))
             Text(Self.bandDetail(band)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
+            // Tomorrow's projection given today's cost (FER-442): the prose in ink, the datum in
+            // recovery green. Hidden when there isn't ~2 weeks of base (the engine returns nil).
+            if let pct = tomorrowPct {
+                (Text("Tomorrow, if you rest well, you should be around ").foregroundColor(theme.inkSecondary)
+                    + Text("~\(pct)%").foregroundColor(theme.dataRecovery).fontWeight(.semibold))
+                    .font(StrandFont.caption)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             Text("Estimate · you decide").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
         }
         .accessibilityElement(children: .combine)
