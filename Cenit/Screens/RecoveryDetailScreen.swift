@@ -8,7 +8,7 @@ import Foundation
 // MARK: - RecoveryDetailScreen — el «Detalle de Recuperación» en «Instrumento» (FER-225)
 //
 // Hermana de `MetricDetailScreen` (FER-185), igual que `SleepDetailScreen` (FER-212): REUSA su lenguaje
-// visual (el scaffold `block(title:)`, el hero, `InfoAccordion`, `theme: InstrumentoTheme` explícito,
+// visual (el scaffold `DetailBlock`, el hero, `InfoAccordion`, `theme: InstrumentoTheme` explícito,
 // `SheetPaperBackground`, `ScrollView`→`VStack`, `methodDisclosure`, los wells) pero con su propio modelo.
 // NO extiende `MetricDetailScreen`/`MetricDetailSpec` (esos son para vitales de serie ESCALAR única —
 // HRV/FC/Respiración); la recuperación es un SCORE COMPUESTO con bloques propios (desglose por driver,
@@ -98,19 +98,6 @@ struct RecoveryDetailScreen: View {
     /// A subtle 1px rule between blocks (token-only). Mirrors MetricDetailScreen's `blockDivider`.
     private var blockDivider: some View {
         Rectangle().fill(theme.hairline).frame(height: 1)
-    }
-
-    /// A plain block scaffold: the «Instrumento» overline title + the block's content, WITHOUT an ⓘ.
-    /// After FER-476 only the hero keeps an `InfoAccordion`; every other block uses this and the jargon
-    /// lives once in «See the method». Mirrors `InfoAccordion`'s title row, minus the info button.
-    @ViewBuilder
-    private func block<Content: View>(_ title: LocalizedStringKey,
-                                      @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            content()
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: - 1. Hero — el score en color de banda (+ dirección fundida: mini-sparkline 14 d + flecha)
@@ -251,7 +238,7 @@ struct RecoveryDetailScreen: View {
     private var whatExplainsItBlock: some View {
         let axis = axisDrivers
         let other = otherDrivers
-        return block("What explains your recovery") {
+        return DetailBlock("What explains your recovery", theme: theme) {
             VStack(alignment: .leading, spacing: 16) {
                 if let lead = axis.first {
                     titular(lead)
@@ -421,7 +408,7 @@ struct RecoveryDetailScreen: View {
     /// stays on the number); with none it shows the "still calibrating" state in the same slot. The ⓘ
     /// carries the method + citation; the framing line below keeps the always-visible humility.
     private var forecastBlock: some View {
-        block("Tomorrow, if you rest the same") {
+        DetailBlock("Tomorrow, if you rest the same", theme: theme) {
             if let f = model.forecast {
                 forecastReadout(f)
             } else {
@@ -512,7 +499,7 @@ struct RecoveryDetailScreen: View {
     }
 
     private var patternsBlock: some View {
-        block("Your patterns") {
+        DetailBlock("Your patterns", theme: theme) {
             VStack(alignment: .leading, spacing: 12) {
                 if let r = normalRange {
                     patternLine(label: "Usually",
@@ -568,7 +555,7 @@ struct RecoveryDetailScreen: View {
         // Compare the selected window against the equally-long window before it, not always the calendar
         // month. `.all` has no previous period, so no chip. (FER-264)
         let comparison = window.range.periodComparison(of: model.series)
-        return block("Trend") {
+        return DetailBlock("Trend", theme: theme) {
             VStack(alignment: .leading, spacing: 10) {
                 MetricTrendChart(
                     range: $range,
@@ -655,7 +642,7 @@ struct RecoveryDetailScreen: View {
     // MARK: - Calendario · 90 días (YearHeatStrip re-tintado, a todo el ancho) — en «See your history»
 
     private var calendarBlock: some View {
-        block("Calendar · 90 days") {
+        DetailBlock("Calendar · 90 days", theme: theme) {
             VStack(alignment: .leading, spacing: 10) {
                 heatGrid
                 heatReadout

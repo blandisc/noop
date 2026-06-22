@@ -748,7 +748,7 @@ struct MetricDetailScreen: View {
     /// today's value falls in marked "· today". Unlike `normalRangeBlock` (a personal rolling ±SD),
     /// this is the same clinical reference for everyone — what matters for SpO₂ is the population floor.
     @ViewBuilder private var fixedBandsBlock: some View {
-        block(title: "Reference range") {
+        DetailBlock("Reference range", theme: theme) {
             VStack(spacing: 0) {
                 ForEach(Array(spec.info.bands.enumerated()), id: \.offset) { i, band in
                     bandRow(band)
@@ -803,7 +803,7 @@ struct MetricDetailScreen: View {
         if let threshold = spec.lowThreshold {
             let recent = MetricWindowMath.slice(parsedSeries, for: .month)
             let low = recent.reduce(0) { $0 + ($1.value < threshold ? 1 : 0) }
-            block(title: "Nights below \(fmt(threshold))\(unit)") {
+            DetailBlock("Nights below \(fmt(threshold))\(unit)", theme: theme) {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
                         Text("\(low)")
@@ -966,7 +966,7 @@ struct MetricDetailScreen: View {
     private func hrZonesBlock(_ mins: [Double]) -> some View {
         let elevated = Int((mins[3] + mins[4] + mins[5]).rounded())
         let total = Swift.max(mins.reduce(0, +), 1)
-        return block(title: "Time in zones · today") {
+        return DetailBlock("Time in zones · today", theme: theme) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text("\(elevated)").instrumentoHero(30).foregroundStyle(metricHue)
@@ -1096,7 +1096,7 @@ struct MetricDetailScreen: View {
 
     @ViewBuilder private var nightVitalsBlock: some View {
         if nightVitals.respiration != nil || nightVitals.restingHR != nil {
-            block(title: "Last night's vitals") {
+            DetailBlock("Last night's vitals", theme: theme) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(nightVitalsLine)
                         .font(StrandFont.bodyNumber)
@@ -1258,7 +1258,7 @@ struct MetricDetailScreen: View {
         if let first = window.values.first, let last = window.values.last {
             let delta = Int((last - first).rounded())
             let color = delta > 0 ? theme.dataRecovery : (delta < 0 ? theme.warning : theme.ink)
-            block(title: "Change") {
+            DetailBlock("Change", theme: theme) {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
                         Text(delta > 0 ? "+\(delta)" : "\(delta)")
@@ -1294,7 +1294,7 @@ struct MetricDetailScreen: View {
             MetricInfo.Band(label: "Good", range: "\(gd) – \(ex)", isActive: active == .good),
             MetricInfo.Band(label: "Excellent", range: "> \(ex)", isActive: active == .excellent),
         ]
-        return block(title: "Your level for your age") {
+        return DetailBlock("Your level for your age", theme: theme) {
             VStack(spacing: 0) {
                 ForEach(Array(bands.enumerated()), id: \.offset) { i, band in
                     bandRow(band, badge: "· you")
@@ -1309,7 +1309,7 @@ struct MetricDetailScreen: View {
     /// age". Different basis from the Nes «Edad física», so the copy says so to avoid confusion.
     private func vo2maxEquivalentAgeBlock(value v: Double, profile: VO2maxProfile) -> some View {
         let eq = VO2maxReference.equivalentAge(value: v, sex: profile.sex)
-        return block(title: "Cardiorespiratory age") {
+        return DetailBlock("Cardiorespiratory age", theme: theme) {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text("\(eq)").instrumentoHero(30).foregroundStyle(metricHue)
@@ -1325,7 +1325,7 @@ struct MetricDetailScreen: View {
 
     /// Why the number is worth caring about — VO₂max's all-cause-mortality association, with citations.
     private var vo2maxWhyBlock: some View {
-        block(title: "Why it matters") {
+        DetailBlock("Why it matters", theme: theme) {
             VStack(alignment: .leading, spacing: 6) {
                 Text("A higher VO₂max is associated with a lower risk of all-cause mortality. It's one of the best-evidenced predictors of long-term health.")
                     .font(StrandFont.subhead)
@@ -2109,17 +2109,7 @@ struct MetricDetailScreen: View {
     private var EX_QUEMUEVE: LocalizedStringKey { "We line up this vital against your own sleep and the prior day's strain, night by night across your history, and read which way it leans (Pearson correlation). We only show a direction once there are enough paired nights (about six weeks) and the link is strong enough to be unlikely to be chance — never the number, and never as a cause. (Plews 2013)" }
     private var EX_SPO2_FLOOR: LocalizedStringKey { "95% is the typical floor for a healthy adult — the same reference for everyone, not your personal baseline. Below 90% is considered low (hypoxemia). The wrist sensor is less precise than a medical oximeter, so read it as a trend." }
 
-    // MARK: - Shared block scaffold + wells
-
-    /// A titled block on the paper: a quiet overline + content (no card-in-card; surface used sparingly).
-    @ViewBuilder
-    private func block<Content: View>(title: LocalizedStringKey, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            content()
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
+    // MARK: - Wells
 
     private func loadingWell(height: CGFloat) -> some View {
         RoundedRectangle(cornerRadius: 12, style: .continuous)
