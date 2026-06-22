@@ -29,12 +29,15 @@ public struct Exercise: Codable, Sendable, Identifiable, Equatable, Hashable {
     public let secondaryMuscles: [String]
     /// Step-by-step "how to" cues (offline; the bundled instructions). FER-351 adds media.
     public let cues: [String]
+    /// Spanish "how to" cues, for bundled catalog entries (FER-503). `nil` for user-created exercises
+    /// (no overlay). Same step structure as `cues` when present. Optional so older rows decode unchanged.
+    public let cuesES: [String]?
 
     public init(id: String, name: String, nameES: String? = nil, type: ExerciseType, equipment: String?,
-                primaryMuscles: [String], secondaryMuscles: [String], cues: [String]) {
+                primaryMuscles: [String], secondaryMuscles: [String], cues: [String], cuesES: [String]? = nil) {
         self.id = id; self.name = name; self.nameES = nameES; self.type = type; self.equipment = equipment
         self.primaryMuscles = primaryMuscles; self.secondaryMuscles = secondaryMuscles
-        self.cues = cues
+        self.cues = cues; self.cuesES = cuesES
     }
 
     /// The name to show: Spanish when asked for the localized form and a translation exists,
@@ -42,6 +45,12 @@ public struct Exercise: Codable, Sendable, Identifiable, Equatable, Hashable {
     /// from the device language, so this package stays UI-agnostic. (FER-501)
     public func displayName(localized: Bool) -> String {
         (localized ? nameES : nil) ?? name
+    }
+
+    /// The "how to" cues to show: the Spanish steps when asked for the localized form and a translation
+    /// exists, otherwise the English ones. Pure — caller decides `localized`. (FER-503)
+    public func displayCues(localized: Bool) -> [String] {
+        (localized ? cuesES : nil) ?? cues
     }
 }
 
@@ -83,29 +92,28 @@ public enum ExerciseCatalog {
               let data = try? Data(contentsOf: url),
               let list = try? JSONDecoder().decode([Exercise].self, from: data)
         else { return [] }
-        let es = loadSpanishOverlay()           // id → Spanish name (FER-501)
+        let es = loadSpanishOverlay()           // id → Spanish name + cues (FER-501/FER-503)
         guard !es.isEmpty else { return list }
         return list.map { ex in
-            guard let nameES = es[ex.id] else { return ex }
-            return Exercise(id: ex.id, name: ex.name, nameES: nameES, type: ex.type,
+            guard let entry = es[ex.id] else { return ex }
+            return Exercise(id: ex.id, name: ex.name, nameES: entry.name, type: ex.type,
                             equipment: ex.equipment, primaryMuscles: ex.primaryMuscles,
-                            secondaryMuscles: ex.secondaryMuscles, cues: ex.cues)
+                            secondaryMuscles: ex.secondaryMuscles, cues: ex.cues, cuesES: entry.cues)
         }
     }
 
-    /// One Spanish-overlay entry, keyed by the catalog id. Tolerant of extra fields so F2 (FER-503)
-    /// can grow it with `cues` without changing this loader. (FER-501)
-    private struct SpanishEntry: Decodable { let id: String; let name: String? }
+    /// One Spanish-overlay entry, keyed by the catalog id: the Spanish name (FER-501) and, optionally,
+    /// the Spanish cues (FER-503). Tolerant of extra fields for forward-compat.
+    private struct SpanishEntry: Decodable { let id: String; let name: String?; let cues: [String]? }
 
-    /// Load the bundled `exercises.es.json` overlay → id→Spanish-name. A separate file (not inline in
-    /// `exercises.json`) so the English catalog stays a clean mirror of the upstream dataset and the
-    /// Spanish diff is reviewable on its own. Missing/empty → no Spanish (every name falls back to English).
-    private static func loadSpanishOverlay() -> [String: String] {
+    /// Load the bundled `exercises.es.json` overlay → id → (Spanish name, Spanish cues). A separate file
+    /// (not inline in `exercises.json`) so the English catalog stays a clean mirror of the upstream
+    /// dataset and the Spanish diff is reviewable on its own. Missing/empty → falls back to English.
+    private static func loadSpanishOverlay() -> [String: SpanishEntry] {
         guard let url = Bundle.module.url(forResource: "exercises.es", withExtension: "json"),
               let data = try? Data(contentsOf: url),
               let list = try? JSONDecoder().decode([SpanishEntry].self, from: data)
         else { return [:] }
-        return Dictionary(list.compactMap { e in e.name.map { (e.id, $0) } },
-                          uniquingKeysWith: { first, _ in first })
+        return Dictionary(list.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
     }
 }

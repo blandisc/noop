@@ -23,6 +23,10 @@ settings:
     # Standard archs (arm64 on iOS device / simulator).
     ARCHS: "$(ARCHS_STANDARD)"
   configs:
+    Debug:
+      # Debug builds only the host's active arch — halves simulator/test compile work
+      # (no second slice). Neutral for device builds, which are arm64-only anyway.
+      ONLY_ACTIVE_ARCH: YES
     Release:
       # Release/archive builds every valid arch, not just the host's active one.
       ONLY_ACTIVE_ARCH: NO

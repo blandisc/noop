@@ -18,18 +18,35 @@ struct ExerciseDetailScreen: View {
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var system: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
 
-    /// Work sets across sessions (oldest→newest), the raw material for best-mark / last-time / 1RM.
+    /// Work sets across sessions (oldest→newest), the raw material for the progress chart + PRs.
     @State private var history: [(startTs: Int, weightKg: Double, reps: Int)] = []
+    /// Stored best-per-metric records for this exercise (FER-504/505). Read-only; derived on save.
+    @State private var prs: [PersonalRecord] = []
+    /// Which series the progress chart shows (FER-505).
+    @State private var metric: ProgressMetric = .weight
     @State private var loaded = false
+
+    /// The metric the progress chart plots over time.
+    private enum ProgressMetric: String, CaseIterable, Identifiable {
+        case weight, oneRM, volume
+        var id: String { rawValue }
+        var label: LocalizedStringKey {
+            switch self {
+            case .weight: return "Max weight"
+            case .oneRM:  return "Est. 1RM"
+            case .volume: return "Volume"
+            }
+        }
+    }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                 header
                 musclesSection
-                if !exercise.cues.isEmpty { howToSection }
+                if !exercise.displayCues(localized: StrengthDisplay.localized).isEmpty { howToSection }
                 if loaded {
-                    if history.isEmpty { emptyHistory } else { historySection }
+                    if history.isEmpty { emptyHistory } else { progressSection; recordsSection }
                 }
                 youtubeRow
             }
@@ -40,7 +57,9 @@ struct ExerciseDetailScreen: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .task(id: exercise.id) {
-            history = await repo.exerciseHistory(exerciseId: exercise.id)
+            async let h = repo.exerciseHistory(exerciseId: exercise.id)
+            async let p = repo.personalRecords(exerciseId: exercise.id)
+            (history, prs) = await (h, p)
             loaded = true
         }
     }
@@ -108,7 +127,7 @@ struct ExerciseDetailScreen: View {
             Divider().overlay(theme.hairline)
             Text("How to").instrumentoOverline().foregroundStyle(theme.inkTertiary).padding(.top, 18)
             VStack(alignment: .leading, spacing: 10) {
-                ForEach(Array(exercise.cues.enumerated()), id: \.offset) { index, cue in
+                ForEach(Array(exercise.displayCues(localized: StrengthDisplay.localized).enumerated()), id: \.offset) { index, cue in
                     HStack(alignment: .firstTextBaseline, spacing: 10) {
                         Text(verbatim: "\(index + 1)")
                             .font(StrandFont.captionNumber).foregroundStyle(theme.inkTertiary)
@@ -159,68 +178,134 @@ struct ExerciseDetailScreen: View {
         .accessibilityHint("Opens YouTube outside the app")
     }
 
-    // MARK: - History (best mark / last time / estimated 1RM)
+    // MARK: - Progress (a metric-switchable trend: max weight / estimated 1RM / volume · FER-505)
 
-    private var historySection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Divider().overlay(theme.hairline)
-            HStack(alignment: .top, spacing: 24) {
-                if let best = bestSet { heroStat("Best mark", best.weightKg, "× \(best.reps) reps · \(relative(best.startTs))") }
-                if let last = history.last { heroStat("Last time", last.weightKg, "× \(last.reps) reps · \(relative(last.startTs))") }
+    private var progressSection: some View {
+        let values = series(metric)
+        return VStack(alignment: .leading, spacing: 10) {
+            Divider().overlay(theme.hairline).padding(.bottom, 8)
+            Text("Progress").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+
+            Picker("Progress metric", selection: $metric) {
+                ForEach(ProgressMetric.allCases) { m in Text(m.label).tag(m) }
             }
-            .padding(.top, 18)
+            .pickerStyle(.segmented)
 
-            oneRepMaxSection.padding(.top, 6)
+            HStack(alignment: .firstTextBaseline) {
+                Text(metric.label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Spacer(minLength: 8)
+                if let latest = values.last {
+                    Text(latestText(latest))
+                        .font(StrandFont.number(22, weight: .semibold)).foregroundStyle(theme.ink)
+                        .monospacedDigit()
+                }
+            }
+            .padding(.top, 2)
+
+            if values.count >= 2 {
+                Sparkline(values: values,
+                          gradient: Gradient(colors: [theme.dataStrain.opacity(0.55), theme.dataStrain]),
+                          bandColor: theme.hairlineStrong,
+                          showsScrub: true,
+                          valueFormat: { latestText($0) })
+                    .frame(height: 64)
+                    .accessibilityLabel(Text(metric.label) + Text(verbatim: " trend"))
+            }
+            Text(metricNote)
+                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
-    private func heroStat(_ label: LocalizedStringKey, _ kg: Double, _ caption: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(StrengthDisplay.weightNumber(kg, system: system))
-                    .instrumentoHero(38).foregroundStyle(theme.ink)
-                Text(StrengthDisplay.weightUnit(system))
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
-            }
-            Text(caption).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+    /// Formats the headline + tooltip value for the selected metric (weights in the user's unit; volume
+    /// grouped with thousands, reusing the history screen's formatter).
+    private func latestText(_ v: Double) -> String {
+        switch metric {
+        case .weight, .oneRM: return StrengthDisplay.weight(v, system: system)
+        case .volume:         return StrengthHistoryFormat.volume(v, system: system)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
+
+    private var metricNote: LocalizedStringKey {
+        switch metric {
+        case .weight: return "The heaviest set you logged, by day."
+        case .oneRM:  return "From your best set with the Epley (1985) formula. A progress signal, not a target to load."
+        case .volume: return "Weight × reps per day."
+        }
+    }
+
+    /// The selected metric as a per-day series, oldest→newest. Max-weight takes the day's heaviest set;
+    /// volume sums weight×reps over the day; 1RM reuses the cited `OneRepMax.dailySparkline`.
+    private func series(_ metric: ProgressMetric) -> [Double] {
+        switch metric {
+        case .oneRM:
+            return OneRepMax.dailySparkline(history.map {
+                (day: dayKey($0.startTs), weightKg: $0.weightKg, reps: $0.reps)
+            }).map(\.estimatedKg)
+        case .weight:
+            return byDay { Swift.max($0, $1.weightKg) }
+        case .volume:
+            return byDay { $0 + $1.weightKg * Double($1.reps) }
+        }
+    }
+
+    private func byDay(_ combine: (Double, (startTs: Int, weightKg: Double, reps: Int)) -> Double) -> [Double] {
+        var acc: [String: Double] = [:]
+        for s in history { acc[dayKey(s.startTs)] = combine(acc[dayKey(s.startTs)] ?? 0, s) }
+        return acc.sorted { $0.key < $1.key }.map(\.value)
+    }
+
+    private func dayKey(_ ts: Int) -> String {
+        Repository.localDayKey(Date(timeIntervalSince1970: TimeInterval(ts)))
+    }
+
+    // MARK: - Personal records (best-per-metric, stored on save · FER-505)
 
     @ViewBuilder
-    private var oneRepMaxSection: some View {
-        let spark = OneRepMax.dailySparkline(history.map {
-            (day: Repository.localDayKey(Date(timeIntervalSince1970: TimeInterval($0.startTs))),
-             weightKg: $0.weightKg, reps: $0.reps)
-        })
-        if let latest = spark.last {
+    private var recordsSection: some View {
+        let rows = recordRows
+        if !rows.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
-                Divider().overlay(theme.hairline).padding(.top, 18)
-                HStack(alignment: .firstTextBaseline) {
-                    Text("Estimated 1RM").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    Spacer(minLength: 8)
-                    HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text(StrengthDisplay.weightNumber(latest.estimatedKg, system: system))
-                            .font(StrandFont.number(22, weight: .semibold)).foregroundStyle(theme.ink)
-                        Text(StrengthDisplay.weightUnit(system))
-                            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                Divider().overlay(theme.hairline).padding(.vertical, 8)
+                Text("Personal records").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                ForEach(rows, id: \.id) { row in
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(row.label).font(StrandFont.subhead).foregroundStyle(theme.ink)
+                            if let detail = row.detail {
+                                Text(detail).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                            }
+                        }
+                        Spacer(minLength: 8)
+                        Text(row.value).font(StrandFont.number(17, weight: .semibold))
+                            .foregroundStyle(theme.ink).monospacedDigit()
                     }
+                    .padding(.vertical, 5)
+                    .accessibilityElement(children: .combine)
                 }
-                if spark.count >= 2 {
-                    Sparkline(values: spark.map(\.estimatedKg),
-                              gradient: Gradient(colors: [theme.dataStrain.opacity(0.55), theme.dataStrain]),
-                              bandColor: theme.hairlineStrong,
-                              showsScrub: true,
-                              valueFormat: { StrengthDisplay.weight($0, system: system) })
-                        .frame(height: 64)
-                        .accessibilityLabel("Estimated 1RM trend")
-                }
-                Text("From your best set with the Epley (1985) formula. A progress signal, not a target to load.")
-                    .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    private struct RecordRow { let id: String; let label: LocalizedStringKey; let detail: String?; let value: String }
+
+    /// The stored PRs (maxWeight / maxReps / maxVolume) as display rows, in that fixed order.
+    private var recordRows: [RecordRow] {
+        let byMetric = Dictionary(prs.map { ($0.metric, $0) }, uniquingKeysWith: { a, _ in a })
+        var rows: [RecordRow] = []
+        if let pr = byMetric[.maxWeight], let kg = pr.valueKg {
+            rows.append(RecordRow(id: "weight", label: "Max weight", detail: relative(pr.ts),
+                                  value: StrengthDisplay.weight(kg, system: system)))
+        }
+        if let pr = byMetric[.maxReps], let reps = pr.reps {
+            rows.append(RecordRow(id: "reps", label: "Most reps", detail: relative(pr.ts), value: "\(reps)"))
+        }
+        if let pr = byMetric[.maxVolume], let kg = pr.valueKg, let reps = pr.reps {
+            rows.append(RecordRow(id: "volume", label: "Best set volume",
+                                  detail: "\(StrengthDisplay.weight(kg, system: system)) × \(reps) · \(relative(pr.ts))",
+                                  value: StrengthHistoryFormat.volume(kg * Double(reps), system: system)))
+        }
+        return rows
     }
 
     // MARK: - Honest empty
@@ -243,10 +328,6 @@ struct ExerciseDetailScreen: View {
     }
 
     // MARK: - Derived + formatting
-
-    private var bestSet: (weightKg: Double, reps: Int, startTs: Int)? {
-        history.max { $0.weightKg < $1.weightKg }
-    }
 
     private static let relativeFormatter: RelativeDateTimeFormatter = {
         let f = RelativeDateTimeFormatter(); f.unitsStyle = .short; return f

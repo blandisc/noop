@@ -404,23 +404,6 @@
         }
       }
     },
-    "%@ bpm · %@": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ bpm · %@"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ lpm · %@"
-          }
-        }
-      }
-    },
     "%@ costs you Recovery": {
       "localizations": {
         "en": {
@@ -3415,7 +3398,7 @@
       }
     },
     "A few more nights of data and your readiness read will sharpen.": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -5836,7 +5819,7 @@
       }
     },
     "Balanced": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -8581,7 +8564,7 @@
       }
     },
     "Control Center": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -9079,23 +9062,6 @@
         }
       }
     },
-    "Cénit Recovery": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cénit Recovery"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Recuperación Cénit"
-          }
-        }
-      }
-    },
     "Cénit computes your recovery, your findings and your levers here, on your iPhone — no cloud, no account, no server.\n\nThe only thing that goes to the internet is «Ask your data», and only if you connect your own AI key.": {
       "extractionState": "manual",
       "localizations": {
@@ -9255,7 +9221,7 @@
       }
     },
     "DEPLETED": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -11768,23 +11734,6 @@
         }
       }
     },
-    "Find it in the sidebar under Data Sources.": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Find it in the sidebar under Data Sources."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Encuéntralo en la barra lateral, en Fuentes de datos."
-          }
-        }
-      }
-    },
     "Find my strap": {
       "extractionState": "manual",
       "localizations": {
@@ -12402,23 +12351,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Comenzar"
-          }
-        }
-      }
-    },
-    "Get the latest release": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Get the latest release"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Obtener la última versión"
           }
         }
       }
@@ -14460,23 +14392,6 @@
         }
       }
     },
-    "Importing overwrites everything currently on this Mac. Your old data is kept in a side file just in case. Cénit needs a relaunch for an import to take effect.": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Importing overwrites everything currently on this Mac. Your old data is kept in a side file just in case. Cénit needs a relaunch for an import to take effect."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Importar sobrescribe todo lo que hay en esta Mac. Tus datos anteriores se guardan en un archivo aparte, por si acaso. Cénit necesita reiniciarse para que la importación surta efecto."
-          }
-        }
-      }
-    },
     "Importing overwrites everything currently on this Mac. Your old data is kept in a side file just in case. NOOP needs a relaunch for an import to take effect.": {
       "extractionState": "manual",
       "localizations": {
@@ -14578,7 +14493,7 @@
       }
     },
     "In range": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -15106,23 +15021,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hallazgos"
-          }
-        }
-      }
-    },
-    "Insights read your journal and outcomes. Import your WHOOP export, which includes your journal, in Data Sources to unlock them.": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Insights read your journal and outcomes. Import your WHOOP export, which includes your journal, in Data Sources to unlock them."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Los hallazgos leen tu diario y tus resultados. Importa tu exportación de WHOOP, que incluye tu diario, en Fuentes de datos para desbloquearlos."
           }
         }
       }
@@ -16278,23 +16176,6 @@
         }
       }
     },
-    "Light-sleep window": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Light-sleep window"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ventana de sueño ligero"
-          }
-        }
-      }
-    },
     "Live": {
       "localizations": {
         "en": {
@@ -16889,7 +16770,7 @@
       }
     },
     "MODERATE": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -19322,23 +19203,6 @@
         }
       }
     },
-    "No workouts yet. They come from your WHOOP and Apple Health history. Import in Data Sources to bring them in.": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No workouts yet. They come from your WHOOP and Apple Health history. Import in Data Sources to bring them in."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aún no hay entrenamientos. Vienen de tu historial de WHOOP y Apple Health. Importa en Fuentes de datos para traerlos."
-          }
-        }
-      }
-    },
     "Non-binary": {
       "localizations": {
         "en": {
@@ -19852,7 +19716,7 @@
       }
     },
     "Nothing's flagging. Train to feel — your body's holding steady.": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -20376,7 +20240,7 @@
       }
     },
     "One of your signals is flagging. You can train, but keep it controlled and bank the recovery.": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -20600,23 +20464,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Abre Fuentes de datos para darle ventaja a tu base"
-          }
-        }
-      }
-    },
-    "Opens the GitHub releases page in your browser. Cénit itself makes no network connections — the macOS sandbox has no network entitlement.": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Opens the GitHub releases page in your browser. Cénit itself makes no network connections — the macOS sandbox has no network entitlement."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abre la página de versiones de GitHub en tu navegador. Cénit en sí no hace conexiones de red — el sandbox de macOS no tiene permiso de red."
           }
         }
       }
@@ -20876,7 +20723,7 @@
       }
     },
     "Out of range": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -21010,7 +20857,7 @@
       }
     },
     "PEAK": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -21037,7 +20884,7 @@
       }
     },
     "PRIMED": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -22745,23 +22592,6 @@
         }
       }
     },
-    "Recovery %@%%": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Recovery %@%%"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Recuperación %@%%"
-          }
-        }
-      }
-    },
     "Recovery %lld · high. A good day to add load.": {
       "extractionState": "manual",
       "localizations": {
@@ -23036,23 +22866,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Recuperación, promedio móvil de 7 días"
-          }
-        }
-      }
-    },
-    "Recovery, live heart rate, and strap battery at a glance.": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Recovery, live heart rate, and strap battery at a glance."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Recuperación, frecuencia cardiaca en vivo y batería de la banda de un vistazo."
           }
         }
       }
@@ -24258,7 +24071,7 @@
       }
     },
     "Run down": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -24559,7 +24372,7 @@
       }
     },
     "Scan": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -25194,7 +25007,7 @@
       }
     },
     "Several signals are down at once. Treat today as recovery — easy movement, real sleep tonight.": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -25631,23 +25444,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Saltar %@"
-          }
-        }
-      }
-    },
-    "Skip for now": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Skip for now"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Omitir por ahora"
           }
         }
       }
@@ -26933,7 +26729,7 @@
       }
     },
     "Strained": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -27043,23 +26839,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Banda no conectada"
-          }
-        }
-      }
-    },
-    "Strap offline": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Strap offline"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Banda desconectada"
           }
         }
       }
@@ -29580,7 +29359,7 @@
       }
     },
     "Training load": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -29614,7 +29393,7 @@
       }
     },
     "Training variety": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -30672,23 +30451,6 @@
         }
       }
     },
-    "Wake up to this many minutes early if the Mac stays awake & connected and a light phase is detected.": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wake up to this many minutes early if the Mac stays awake & connected and a light phase is detected."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Despierta hasta estos minutos antes si la Mac sigue despierta y conectada y se detecta una fase de sueño ligero."
-          }
-        }
-      }
-    },
     "Want to try something?": {
       "extractionState": "manual",
       "localizations": {
@@ -31131,7 +30893,7 @@
       }
     },
     "Wear the strap for a few nights and your readiness read will appear here.": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -33880,7 +33642,7 @@
       }
     },
     "Your signals are aligned and your load is supported. A harder session is well backed today.": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -34458,7 +34220,7 @@
       }
     },
     "a touch below baseline": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -34541,7 +34303,7 @@
       }
     },
     "above your baseline — well recovered": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -34739,7 +34501,7 @@
       }
     },
     "at or below baseline": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -34901,23 +34663,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "bpm promedio"
-          }
-        }
-      }
-    },
-    "building fast (acute:chronic %@) — watch fatigue": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "building fast (acute:chronic %@) — watch fatigue"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "subiendo rápido (aguda:crónica %@) — cuida la fatiga"
           }
         }
       }
@@ -35101,7 +34846,7 @@
       }
     },
     "elevated — overtraining or illness can do this": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -35411,25 +35156,8 @@
         }
       }
     },
-    "in the sweet spot (acute:chronic %@)": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "in the sweet spot (acute:chronic %@)"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "en el punto ideal (aguda:crónica %@)"
-          }
-        }
-      }
-    },
     "in your normal range": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -35817,7 +35545,7 @@
       }
     },
     "low — similar strain every day raises strain/illness risk": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -36795,23 +36523,6 @@
         }
       }
     },
-    "ramping down (acute:chronic %@) — room to build": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ramping down (acute:chronic %@) — room to build"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "bajando (aguda:crónica %@) — hay margen para subir"
-          }
-        }
-      }
-    },
     "reading": {
       "localizations": {
         "en": {
@@ -37116,7 +36827,7 @@
       }
     },
     "running a little high": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -37420,7 +37131,7 @@
       }
     },
     "slightly raised vs baseline": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -37465,23 +37176,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "sólido"
-          }
-        }
-      }
-    },
-    "spiking (acute:chronic %@) — higher injury risk": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "spiking (acute:chronic %@) — higher injury risk"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "disparada (aguda:crónica %@) — mayor riesgo de lesión"
           }
         }
       }
@@ -37554,7 +37248,7 @@
       }
     },
     "suppressed — a sign of autonomic fatigue": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -37858,7 +37552,7 @@
       }
     },
     "up vs baseline — sometimes an early sign of getting sick": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -39162,6 +38856,134 @@
           "stringUnit": {
             "state": "translated",
             "value": "Por ahora, sin tu banda el recovery y el detalle del sueño llegan estimados o más adelante. Los números del día sí se leen de Apple Salud."
+          }
+        }
+      }
+    },
+    "Est. 1RM": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Est. 1RM"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1RM est."
+          }
+        }
+      }
+    },
+    "Progress": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Progress"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Progreso"
+          }
+        }
+      }
+    },
+    "Progress metric": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Progress metric"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Métrica de progreso"
+          }
+        }
+      }
+    },
+    "Personal records": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personal records"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Records personales"
+          }
+        }
+      }
+    },
+    "Best set volume": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Best set volume"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mejor volumen (serie)"
+          }
+        }
+      }
+    },
+    "The heaviest set you logged, by day.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The heaviest set you logged, by day."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El set más pesado que registraste, por día."
+          }
+        }
+      }
+    },
+    "Weight × reps per day.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weight × reps per day."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volumen (peso × reps) por día."
+          }
+        }
+      }
+    },
+    "From your best set with the Epley (1985) formula. A progress signal, not a target to load.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From your best set with the Epley (1985) formula. A progress signal, not a target to load."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De tu mejor serie con la fórmula de Epley (1985). Una señal de progreso, no un objetivo para cargar."
           }
         }
       }
