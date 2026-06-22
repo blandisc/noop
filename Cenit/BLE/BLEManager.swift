@@ -122,6 +122,12 @@ public final class BLEManager: NSObject, ObservableObject {
     /// Safety-net detector: strap reports newer data than us AND our frontier frozen 10 min ⇒ flag for
     /// reboot. behindGapSeconds avoids false positives when off-wrist / caught up. Insurance only.
     private var stuckDetector = StuckStrapDetector(stuckAfterSeconds: 600, behindGapSeconds: 300)
+    /// FER-93: throttles how often NOOP re-asserts SET_CLOCK on an RTC-lost WHOOP 4.0 (which never answers
+    /// GET_CLOCK, so success can only be read from type-47 flowing again). Reset per connect; the decision is
+    /// made in `exitBackfilling` and carried by `pendingClockReassert` to the next `beginBackfill` — the only
+    /// safe place to re-send the clock (mid-offload would stop the strap streaming type-47).
+    private var clockReassertPolicy = ClockReassertPolicy()
+    private var pendingClockReassert = false
     /// Newest record unix the strap reports having (from the GET_DATA_RANGE response); refreshed each
     /// offload. Compared against our frontier to tell "stuck" from "off-wrist/caught-up".
     private var strapNewestTs: Int?
@@ -455,6 +461,9 @@ public final class BLEManager: NSObject, ObservableObject {
         whoop5SessionStarted = false
         clockRequested = false
         getClockResponded = false
+        clockReassertPolicy.reset()   // FER-93: fresh per-connect re-assertion budget
+        pendingClockReassert = false
+        state.rtcLikelyLost = false
     }
 
     /// Switch which strap we'll connect to next: drop the current strap and clear the **sticky** bond
@@ -647,6 +656,15 @@ public final class BLEManager: NSObject, ObservableObject {
         state.syncReceipt = LiveState.SyncReceipt()   // fresh "received this sync" tally (FER-83)
         state.syncCompletedThisSession = false
         historicalAckLogCounter = 0
+        // FER-93: if the last offload judged the RTC lost, re-assert the clock + data-stream config BEFORE
+        // the offload kick — the only safe spot (mid-stream would stop type-47). Same bytes the connect
+        // handshake sends; throttled per connect by ClockReassertPolicy so a never-latching band can't loop.
+        if pendingClockReassert {
+            pendingClockReassert = false
+            send(.setClock, payload: BLEManager.setClockPayload())
+            sendSetConfigBurst()
+            log("RTC re-asertado: SET_CLOCK + SET_CONFIG antes de la descarga (FER-93)")
+        }
         // Payload MUST be [0x00], NOT empty: verified on-device that this strap serves type-47 only with
         // [0x00] (empty → 0 frames on a clean stable link with ~2k records pending); the Mac ground-truth
         // offload (re/sync_openwhoop.py, re/diagnose_biometrics.py) uses [0x00] too. Plain offload — the
@@ -780,7 +798,24 @@ public final class BLEManager: NSObject, ObservableObject {
         // reason→outcome policy is the pure `syncSessionOutcome` below so it's unit-testable without a
         // strap. A disconnect mid-sync bypasses this path entirely (didDisconnectPeripheral resets the
         // flags directly) — that's `.silent`, not a sync failure, and the next connect re-offloads.
-        let outcome = BLEManager.syncSessionOutcome(reason: reason)
+        // FER-93: judge the strap's RTC from this session's signals (no GET_CLOCK needed). A
+        // narrating-not-saving offload (zero type-47 + CONSOLE_LOGS, or an implausible stored-history range)
+        // means the clock is lost and the band isn't recording.
+        let rtcVerdict = RtcHealthPolicy.assess(RtcHealthPolicy.Signals(
+            biometricFrames: state.syncReceipt.biometricFrames,
+            consoleLogFrames: state.syncReceipt.consoleLogFrames,
+            consoleLogReportsRtcInvalid: false,
+            dataRangeWindowPlausible: state.strapHistoryNewest != nil,
+            recentPowerLoss: false))
+        state.rtcLikelyLost = rtcVerdict.rtcLikelyLost
+        // Schedule a clock re-assertion for the NEXT session if the clock is lost (throttled per connect; a
+        // healthy saving session clears the budget). The SET_CLOCK itself fires at beginBackfill, never
+        // mid-offload — re-issuing it mid-stream stops the 4.0 from serving type-47.
+        if clockReassertPolicy.shouldReassert(rtcVerdict) {
+            pendingClockReassert = true
+            log("RTC parece perdido — se re-enviará SET_CLOCK al iniciar la próxima descarga (FER-93)")
+        }
+        let outcome = BLEManager.syncSessionOutcome(reason: reason, rtcLikelyLost: rtcVerdict.rtcLikelyLost)
         switch outcome {
         case .completed:
             state.lastSyncedAt = Date().timeIntervalSince1970
@@ -828,7 +863,13 @@ public final class BLEManager: NSObject, ObservableObject {
     /// is the FER-201 follow-up: the CaughtUpDetector judged the backlog drained on that same firmware,
     /// so it completes as success (the cap is then only a backstop for sessions making no progress).
     /// `nonisolated`: a pure mapping over `reason` with no actor state, callable (and testable) anywhere.
-    nonisolated static func syncSessionOutcome(reason: String) -> SyncSessionOutcome {
+    nonisolated static func syncSessionOutcome(reason: String, rtcLikelyLost: Bool = false) -> SyncSessionOutcome {
+        // FER-93: even a "clean" close (HISTORY_COMPLETE / caught-up) must NOT stamp a successful sync when
+        // the band is narrating-not-saving (RTC lost) — it offloaded zero real biometry. Surface it honestly
+        // so the next session re-asserts the clock instead of the UI showing "synced" over a lost night.
+        if rtcLikelyLost {
+            return .interrupted(message: "The strap lost its clock and isn't saving — Cénit is re-setting it. It'll retry on the next sync.")
+        }
         switch reason {
         case "HISTORY_COMPLETE", "caught-up":
             return .completed
@@ -1008,6 +1049,7 @@ public final class BLEManager: NSObject, ObservableObject {
         state.syncReceipt.gravity += r.gravity
         state.syncReceipt.framesReceived += r.framesReceived
         state.syncReceipt.biometricFrames += r.biometricFrames
+        state.syncReceipt.consoleLogFrames += r.consoleLogFrames
         state.syncReceipt.rowsDecoded += r.rowsDecoded
     }
 

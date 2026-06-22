@@ -45,8 +45,16 @@ public struct CaughtUpDetector: Equatable, Sendable {
     /// Feed one `HISTORY_END`'s biometric (type-47) frame count. Returns `true` the first time the
     /// offload is judged caught-up, and stays `true` thereafter (idempotent). Call AFTER the chunk's
     /// safe-trim commit + ack so the triggering END is already durable.
-    public mutating func observe(biometricFrames: Int) -> Bool {
+    public mutating func observe(biometricFrames: Int, narratingNotSaving: Bool = false) -> Bool {
         if done { return true }
+        // A `narratingNotSaving` END — zero biometry but CONSOLE_LOGS present — is the RTC-lost band talking
+        // to itself ("not saving data to flash"), NOT the live drip of a drained backlog. Counting it toward
+        // caught-up would falsely complete the sync as SUCCESS while the strap isn't recording. Reset the run
+        // instead, so caught-up only fires on a genuine small-but-SAVING tail. (FER-93)
+        if narratingNotSaving {
+            consecutiveSmall = 0
+            return false
+        }
         if biometricFrames <= smallChunkMax {
             consecutiveSmall += 1
         } else {
