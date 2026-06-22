@@ -93,11 +93,30 @@ final class RestReadinessTests: XCTestCase {
     }
 
     func testMissingBaselineForcesNoSignal() {
-        // No trustworthy resting baseline → the rule won't invent a target.
+        // No trustworthy resting baseline AND no explicit target → the rule won't invent a target.
         let r = RestReadinessRule.evaluate(currentHR: 90, worn: true, restingHR: nil, elapsedS: 60)
         XCTAssertNil(r.bpmToReady)
         XCTAssertNil(r.targetReadyHR)
         XCTAssertEqual(r.state, .noSignal)
         XCTAssertFalse(r.ready)
+    }
+
+    // FER-506: an explicit target (peakDrop/fixedBpm) is honored even with no resting baseline —
+    // those modes don't depend on the nightly RHR.
+    func testExplicitTargetWithoutBaselineIsHonored() {
+        let r = RestReadinessRule.evaluate(currentHR: 130, worn: true, restingHR: nil,
+                                           elapsedS: 60, targetHR: 110)
+        XCTAssertEqual(r.bpmToReady, 20)
+        XCTAssertEqual(r.targetReadyHR, 110)
+        XCTAssertEqual(r.state, .resting)
+        XCTAssertFalse(r.ready)
+    }
+
+    func testRecoveredWithExplicitTargetNoBaseline() {
+        let r = RestReadinessRule.evaluate(currentHR: 108, worn: true, restingHR: nil,
+                                           elapsedS: 60, targetHR: 110)
+        XCTAssertEqual(r.bpmToReady, 0)
+        XCTAssertTrue(r.ready)            // at/under target and the floor (20s) elapsed
+        XCTAssertEqual(r.reason, .hrRecovered)
     }
 }

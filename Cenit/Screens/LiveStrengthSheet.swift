@@ -88,6 +88,10 @@ final class StrengthSessionModel: ObservableObject {
         let name: String
         let type: ExerciseType
         let restSeconds: Int
+        /// How the rest is timed (FER-348/495): fixed countdown, or by heart-rate recovery to a target.
+        let restMode: RestMode
+        let hrRestReference: HRRestReference
+        let hrRestValue: Double
         /// Last time's top work set, for the «la última vez» reference + the suggested bump. nil = first time.
         let lastWeightKg: Double?
         let lastReps: Int?
@@ -111,6 +115,14 @@ final class StrengthSessionModel: ObservableObject {
     @Published var phase: Phase = .capturing
     /// When the fixed rest countdown ends; nil when not resting. Durable so the timer survives a tab switch.
     @Published var restEndsAt: Date?
+    /// When the current rest started — the anchor for `elapsedS` in the HR readiness rule (FER-506). Set
+    /// alongside `restEndsAt`; not moved by ±15 so the floor counts from the real start.
+    @Published var restStartedAt: Date?
+    /// The HR «ready» target (bpm) for this rest, computed once on entry (FER-495/506). nil = use FER-348's
+    /// resting+margin default (when `currentRestMode == .heartRate`).
+    @Published var currentRestTarget: Int?
+    /// Which number dominates this rest: a fixed countdown, or the HR «N bpm to ready» HUD.
+    @Published var currentRestMode: RestMode = .fixed
     /// When the current set's stopwatch started; nil when not running. For `time`/`distance` Foco. Durable
     /// (an absolute Date), so the running clock survives closing the sheet or switching tabs.
     @Published var timerStart: Date?
@@ -200,15 +212,37 @@ final class StrengthSessionModel: ObservableObject {
 
     /// Register the current set (mark done) and start the fixed rest. Then advance to the next pending set.
     /// A running stopwatch is captured first, so «register» on a time/distance set logs its elapsed time.
-    func registerCurrentSet(now: Date = Date()) {
+    /// `restingHR`/`maxHR` come from the sheet (the user's nightly baseline + profile HR-max) so the rest
+    /// target can be resolved without the model importing CoreBluetooth/HealthKit (FER-506).
+    func registerCurrentSet(now: Date = Date(), restingHR: Double? = nil, maxHR: Double? = nil) {
         guard runs.indices.contains(currentIndex) else { return }
         if timerStart != nil { stopSetTimer(now: now) }
         let i = runs[currentIndex].currentSet
         guard runs[currentIndex].sets.indices.contains(i) else { return }
+        let doneTs = Int(now.timeIntervalSince1970)
         runs[currentIndex].sets[i].done = true
-        runs[currentIndex].sets[i].doneTs = Int(now.timeIntervalSince1970)
+        runs[currentIndex].sets[i].doneTs = doneTs
+        computeRestTarget(run: runs[currentIndex], doneTs: doneTs, restingHR: restingHR, maxHR: maxHR)
         startRest(seconds: runs[currentIndex].restSeconds, now: now)
         advanceToNextPending()
+    }
+
+    /// Resolve the HR rest target once on entry (FER-495/506). The set peak is the max strap sample in the
+    /// ~90 s up to `doneTs` (the just-finished set's effort). `restingMargin`/no-target with a baseline →
+    /// HR mode using FER-348's default; no honest target and no baseline → degrade to the fixed timer.
+    private func computeRestTarget(run: ExerciseRun, doneTs: Int, restingHR: Double?, maxHR: Double?) {
+        guard run.restMode == .heartRate else { currentRestMode = .fixed; currentRestTarget = nil; return }
+        let peak = hrSamples.filter { $0.ts >= doneTs - 90 && $0.ts <= doneTs }.map(\.bpm).max()
+        let target = RestTarget.resolve(reference: run.hrRestReference.restTargetReference,
+                                        value: run.hrRestValue, peakHR: peak,
+                                        restingHR: restingHR, maxHR: maxHR)
+        if target != nil {
+            currentRestMode = .heartRate; currentRestTarget = target
+        } else if restingHR != nil {
+            currentRestMode = .heartRate; currentRestTarget = nil   // FER-348 resting+margin default
+        } else {
+            currentRestMode = .fixed; currentRestTarget = nil       // no honest HR target → fixed timer
+        }
     }
 
     /// Append a fresh set to the current exercise (copying the last row's load), and focus it.
@@ -288,7 +322,7 @@ final class StrengthSessionModel: ObservableObject {
         currentIndex = index
         runs[index].currentSet = runs[index].sets.firstIndex { !$0.done } ?? 0
         phase = .capturing
-        restEndsAt = nil
+        clearRest()
         timerStart = nil
     }
 
@@ -296,7 +330,7 @@ final class StrengthSessionModel: ObservableObject {
     func skipExercise(_ index: Int) {
         guard runs.indices.contains(index) else { return }
         runs[index].skipped = true
-        if index == currentIndex { phase = .capturing; restEndsAt = nil; timerStart = nil; advanceToNextPending(fromStart: true) }
+        if index == currentIndex { phase = .capturing; clearRest(); timerStart = nil; advanceToNextPending(fromStart: true) }
     }
 
     /// Move an exercise one slot earlier in the plan (reorder), keeping the current exercise focused.
@@ -310,15 +344,22 @@ final class StrengthSessionModel: ObservableObject {
     // MARK: Rest (fixed — FER-348 adds the HR-driven variant)
 
     func startRest(seconds: Int, now: Date = Date()) {
-        guard seconds > 0 else { phase = .capturing; restEndsAt = nil; return }
+        guard seconds > 0 else { phase = .capturing; clearRest(); return }
         restEndsAt = now.addingTimeInterval(TimeInterval(seconds))
+        restStartedAt = now
         phase = .resting
     }
     func extendRest(byseconds delta: Int, now: Date = Date()) {
         guard let end = restEndsAt else { return }
-        restEndsAt = max(now, end.addingTimeInterval(TimeInterval(delta)))
+        restEndsAt = max(now, end.addingTimeInterval(TimeInterval(delta)))   // moves the ceiling, not the floor
     }
-    func skipRest() { phase = .capturing; restEndsAt = nil }
+    func skipRest() { phase = .capturing; clearRest() }
+
+    /// Clear all rest state (the fixed countdown + the HR target), so a stale HR target never bleeds into
+    /// the next rest or a non-resting phase.
+    private func clearRest() {
+        restEndsAt = nil; restStartedAt = nil; currentRestTarget = nil; currentRestMode = .fixed
+    }
 
     /// Move focus to the next not-done set: rest of the current exercise, then later non-skipped exercises.
     private func advanceToNextPending(fromStart: Bool = false) {
@@ -405,6 +446,9 @@ final class StrengthSessionModel: ObservableObject {
                                name: slot.exercise.map(StrengthDisplay.name) ?? String(localized: "Exercise"),
                                type: type,
                                restSeconds: slot.re.restSeconds,
+                               restMode: slot.re.restMode,
+                               hrRestReference: slot.re.hrRestReference,
+                               hrRestValue: slot.re.hrRestValue,
                                lastWeightKg: lastWeight, lastReps: lastReps,
                                lastTimeS: last?.timeS.map { Int($0) }, lastDistanceM: last?.distanceM,
                                sets: sets, currentSet: 0, skipped: false)
@@ -442,6 +486,12 @@ struct LiveStrengthSheet: View {
 
     /// Identifies an editable inline cell: a weight or reps field at (exerciseIndex, setIndex).
     enum CellRef: Hashable { case weight(Int, Int), reps(Int, Int) }
+
+    /// The user's resting-HR baseline for the HR rest target (FER-506): the most recent trustworthy nightly
+    /// RHR. nil → the rest falls back to the fixed timer (peakDrop/fixedBpm still work via an explicit target).
+    private var restingBaseline: Double? { model.repo.days.compactMap(\.restingHr).last.map(Double.init) }
+    /// Profile HR-max (Tanaka if no override) — the Karvonen ceiling.
+    private var profileMaxHR: Double { Double(model.profile.hrMax) }
 
     private var units: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
     private var imperial: Bool { units == .imperial }
@@ -1090,7 +1140,7 @@ struct LiveStrengthSheet: View {
     }
 
     private var registerButton: some View {
-        Button { withAnimation(.snappy) { session.registerCurrentSet() } } label: {
+        Button { withAnimation(.snappy) { session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR) } } label: {
             Label("Register set", systemImage: "checkmark")
                 .font(StrandFont.headline).foregroundStyle(theme.paper)
                 .frame(maxWidth: .infinity).padding(.vertical, 15)
@@ -1154,7 +1204,7 @@ struct LiveStrengthSheet: View {
         } else {
             timeReadout(elapsed: session.currentSet?.timeS ?? 0, run: run)
         }
-        Button { withAnimation(.snappy) { running ? session.registerCurrentSet() : session.startSetTimer() } } label: {
+        Button { withAnimation(.snappy) { running ? session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR) : session.startSetTimer() } } label: {
             Label(running ? "Stop and save" : "Start", systemImage: running ? "stop.fill" : "play.fill")
                 .font(StrandFont.headline).foregroundStyle(theme.paper)
                 .frame(maxWidth: .infinity).padding(.vertical, 15)
@@ -1205,7 +1255,7 @@ struct LiveStrengthSheet: View {
         }
         hrZoneRow
         let captured = dist > 0 || (session.currentSet?.timeS ?? 0) > 0 || running
-        Button { withAnimation(.snappy) { session.registerCurrentSet() } } label: {
+        Button { withAnimation(.snappy) { session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR) } } label: {
             Label("Register set", systemImage: "checkmark")
                 .font(StrandFont.headline).foregroundStyle(theme.paper)
                 .frame(maxWidth: .infinity).padding(.vertical, 15)
@@ -1545,18 +1595,23 @@ struct LiveStrengthSheet: View {
         VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
             Text("Rest").instrumentoOverline().foregroundStyle(theme.inkTertiary)
 
-            if let end = session.restEndsAt {
-                TimelineView(.periodic(from: end, by: 1)) { ctx in
-                    let remaining = max(0, Int(end.timeIntervalSince(ctx.date).rounded(.up)))
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(Self.clock(remaining)).instrumentoHero(64)
-                            .monospacedDigit().foregroundStyle(remaining == 0 ? theme.dataRecovery : theme.ink)
-                        Text(nextUpText).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            // By-HR rest (FER-348/495/506): the dominant number is «N bpm to ready → Ready», computed live
+            // from the strap. Losing the signal mid-rest falls to the honest fixed clock — no invented HR.
+            if session.currentRestMode == .heartRate, let started = session.restStartedAt {
+                TimelineView(.periodic(from: started, by: 1)) { ctx in
+                    let v = RestReadinessRule.evaluate(
+                        currentHR: model.bpm, worn: model.live.worn, restingHR: restingBaseline,
+                        elapsedS: max(0, Int(ctx.date.timeIntervalSince(started))),
+                        targetHR: session.currentRestTarget)
+                    Group {
+                        if v.state == .noSignal { fixedRestHero(end: session.restEndsAt, now: ctx.date, hrFallback: true) }
+                        else { hrRestHero(v) }
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel(Text(remaining == 0 ? "Rest done. \(nextUpText)"
-                                             : "Resting, \(remaining) seconds left. \(nextUpText)"))
+                    .sensoryFeedback(.success, trigger: v.ready && model.live.bonded)
+                }
+            } else if let end = session.restEndsAt {
+                TimelineView(.periodic(from: end, by: 1)) { ctx in
+                    fixedRestHero(end: end, now: ctx.date, hrFallback: false)
                 }
             }
 
@@ -1574,6 +1629,47 @@ struct LiveStrengthSheet: View {
 
             planNavigator
         }
+    }
+
+    /// The HR rest HUD (variant C2): «N bpm to ready» in the heart hue while resting, «Ready» in the
+    /// recovery hue once your pulse settles. The bpm number is the only colored datum.
+    private func hrRestHero(_ v: RestReadiness) -> some View {
+        let hue = v.ready ? theme.dataRecovery : theme.dataHeart
+        return VStack(alignment: .leading, spacing: 8) {
+            if v.ready {
+                Text("Ready").instrumentoHero(56).foregroundStyle(theme.dataRecovery)
+                Text("\(String(localized: "Your pulse recovered")) · \(nextUpText)")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            } else {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("\(v.bpmToReady ?? 0)").instrumentoHero(64).monospacedDigit().foregroundStyle(theme.dataHeart)
+                    Text("bpm").font(StrandFont.headline).foregroundStyle(theme.inkSecondary)
+                }
+                Text("\(String(localized: "to ready")) · \(nextUpText)")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            }
+            ECGWave(color: hue, animate: true, bpm: model.bpm).frame(height: 26)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(v.ready ? "Ready. \(nextUpText)"
+                                 : "\(v.bpmToReady ?? 0) beats per minute to ready. \(nextUpText)"))
+    }
+
+    /// The fixed countdown hero — the normal `.fixed` rest, and the honest fallback when an HR rest loses
+    /// the strap mid-set (`hrFallback`: appends the «connect your strap» hint, never invents a number).
+    private func fixedRestHero(end: Date?, now: Date, hrFallback: Bool) -> some View {
+        let remaining = end.map { max(0, Int($0.timeIntervalSince(now).rounded(.up))) } ?? 0
+        let sub = hrFallback ? "\(nextUpText) · \(String(localized: "connect your strap for HR rest"))" : nextUpText
+        return VStack(alignment: .leading, spacing: 4) {
+            Text(Self.clock(remaining)).instrumentoHero(64)
+                .monospacedDigit().foregroundStyle(remaining == 0 ? theme.dataRecovery : theme.ink)
+            Text(sub).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(remaining == 0 ? "Rest done. \(nextUpText)"
+                                 : "Resting, \(remaining) seconds left. \(nextUpText)"))
     }
 
     private var planNavigator: some View {
@@ -1742,6 +1838,21 @@ private struct ChipFlow: Layout {
             v.place(at: CGPoint(x: bounds.minX + x, y: bounds.minY + y), proposal: ProposedViewSize(sz))
             x += sz.width + spacing
             rowH = max(rowH, sz.height)
+        }
+    }
+}
+
+// MARK: - HR rest reference mapping (FER-506)
+
+/// Maps the persisted domain enum (StrandTraining) onto the rest-math vocabulary (StrandAnalytics), so the
+/// math package stays decoupled from the data model. 1-to-1.
+extension HRRestReference {
+    var restTargetReference: RestTarget.Reference {
+        switch self {
+        case .restingMargin:   return .restingMargin
+        case .peakDrop:        return .peakDrop
+        case .karvonenReserve: return .karvonenReserve
+        case .fixedBpm:        return .fixedBpm
         }
     }
 }

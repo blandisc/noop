@@ -404,6 +404,23 @@
         }
       }
     },
+    "%@ bpm · %@": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ bpm · %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ lpm · %@"
+          }
+        }
+      }
+    },
     "%@ costs you Recovery": {
       "localizations": {
         "en": {
@@ -1422,6 +1439,22 @@
         }
       }
     },
+    "%lld h %lld min": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld h %lld min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld h %2$lld min"
+          }
+        }
+      }
+    },
     "%lld h ago": {
       "localizations": {
         "en": {
@@ -1434,6 +1467,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "hace %lld h"
+          }
+        }
+      }
+    },
+    "%lld m": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld m"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld m"
           }
         }
       }
@@ -1986,6 +2035,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld rutinas · %lld ejercicios"
+          }
+        }
+      }
+    },
+    "%lld s": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld s"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld s"
           }
         }
       }
@@ -4906,6 +4971,16 @@
         }
       }
     },
+    "Apple Health as the base, your band on top when you wear it. The most complete reading.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Salud de base y tu banda encima cuando la traes. La lectura más completa."
+          }
+        }
+      }
+    },
     "Apple Health connected": {
       "extractionState": "manual",
       "localizations": {
@@ -4936,6 +5011,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Apple Salud conectado."
+          }
+        }
+      }
+    },
+    "Apple Health is disconnected. In this mode Cénit can't read new data.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Salud está desconectado. En este modo Cénit no podrá leer datos nuevos."
+          }
+        }
+      }
+    },
+    "Apple Health is disconnected; right now Combined only uses your band. Connect it to add its data.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Salud está desconectado; ahora mismo Combinado solo usa tu banda. Conéctalo para sumar sus datos."
+          }
+        }
+      }
+    },
+    "Apple Health isn't available on this device.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Salud no está disponible en este dispositivo."
           }
         }
       }
@@ -5852,6 +5957,16 @@
         }
       }
     },
+    "Band only": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo la banda"
+          }
+        }
+      }
+    },
     "Based on a short night — confidence low.": {
       "extractionState": "manual",
       "localizations": {
@@ -6114,6 +6229,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mejor serie"
+          }
+        }
+      }
+    },
+    "Best set volume": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Best set volume"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mejor volumen (serie)"
           }
         }
       }
@@ -7840,6 +7971,16 @@
         }
       }
     },
+    "Combined": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Combinado"
+          }
+        }
+      }
+    },
     "Combined resting-HR / HRV z-score through a logistic curve. HRV via RMSSD (Task Force, 1996). An estimate, not a diagnosis.": {
       "extractionState": "manual",
       "localizations": {
@@ -9058,6 +9199,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cénit %@"
+          }
+        }
+      }
+    },
+    "Cénit Recovery": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cénit Recovery"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuperación Cénit"
           }
         }
       }
@@ -11139,6 +11297,22 @@
         }
       }
     },
+    "Est. 1RM": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Est. 1RM"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1RM est."
+          }
+        }
+      }
+    },
     "Estimate": {
       "extractionState": "manual",
       "localizations": {
@@ -11734,6 +11908,23 @@
         }
       }
     },
+    "Find it in the sidebar under Data Sources.": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Find it in the sidebar under Data Sources."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Encuéntralo en la barra lateral, en Fuentes de datos."
+          }
+        }
+      }
+    },
     "Find my strap": {
       "extractionState": "manual",
       "localizations": {
@@ -12034,6 +12225,16 @@
         }
       }
     },
+    "For now, without your band the recovery and sleep detail come estimated or later. The day's numbers do read from Apple Health.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por ahora, sin tu banda el recovery y el detalle del sueño llegan estimados o más adelante. Los números del día sí se leen de Apple Salud."
+          }
+        }
+      }
+    },
     "Forearms": {
       "localizations": {
         "en": {
@@ -12229,6 +12430,22 @@
         }
       }
     },
+    "From your best set with the Epley (1985) formula. A progress signal, not a target to load.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From your best set with the Epley (1985) formula. A progress signal, not a target to load."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De tu mejor serie con la fórmula de Epley (1985). Una señal de progreso, no un objetivo para cargar."
+          }
+        }
+      }
+    },
     "Front": {
       "localizations": {
         "en": {
@@ -12351,6 +12568,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Comenzar"
+          }
+        }
+      }
+    },
+    "Get the latest release": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Get the latest release"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obtener la última versión"
           }
         }
       }
@@ -13884,6 +14118,16 @@
         }
       }
     },
+    "How your data is read": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cómo se leen tus datos"
+          }
+        }
+      }
+    },
     "How your metrics relate": {
       "extractionState": "manual",
       "localizations": {
@@ -14388,6 +14632,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Importar sobrescribe todo lo que hay actualmente en Cénit. Tus datos anteriores se guardan en un archivo aparte por si acaso. Cénit necesita reiniciarse para que una importación surta efecto. Exportar CSV genera un zip en formato WHOOP de tus días, noches, entrenamientos y diario que se vuelve a importar en Cénit — las filas calculadas en el dispositivo se marcan como APROXIMADAS en su columna Origen; el respaldo completo sigue siendo la vía de restauración sin pérdidas."
+          }
+        }
+      }
+    },
+    "Importing overwrites everything currently on this Mac. Your old data is kept in a side file just in case. Cénit needs a relaunch for an import to take effect.": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importing overwrites everything currently on this Mac. Your old data is kept in a side file just in case. Cénit needs a relaunch for an import to take effect."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importar sobrescribe todo lo que hay en esta Mac. Tus datos anteriores se guardan en un archivo aparte, por si acaso. Cénit necesita reiniciarse para que la importación surta efecto."
           }
         }
       }
@@ -15021,6 +15282,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hallazgos"
+          }
+        }
+      }
+    },
+    "Insights read your journal and outcomes. Import your WHOOP export, which includes your journal, in Data Sources to unlock them.": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Insights read your journal and outcomes. Import your WHOOP export, which includes your journal, in Data Sources to unlock them."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los hallazgos leen tu diario y tus resultados. Importa tu exportación de WHOOP, que incluye tu diario, en Fuentes de datos para desbloquearlos."
           }
         }
       }
@@ -16172,6 +16450,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Carga ligera hoy — te queda mucho en el tanque."
+          }
+        }
+      }
+    },
+    "Light-sleep window": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Light-sleep window"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ventana de sueño ligero"
           }
         }
       }
@@ -17957,6 +18252,22 @@
         }
       }
     },
+    "My workouts": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My workouts"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mis entrenamientos"
+          }
+        }
+      }
+    },
     "NO DATA": {
       "localizations": {
         "en": {
@@ -18579,6 +18890,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Aún no hay respaldo."
+          }
+        }
+      }
+    },
+    "No band data yet. Connect it in Live or import your history to see anything in this mode.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hay datos de tu banda todavía. Conéctala en Live o importa tu historial para ver algo en este modo."
           }
         }
       }
@@ -19216,6 +19537,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Aún no hay entrenamientos. Vienen de tu historial de WHOOP y Apple Health. Impórtalos en Fuentes de datos — o agrega uno que mediste en otro lado."
+          }
+        }
+      }
+    },
+    "No workouts yet. They come from your WHOOP and Apple Health history. Import in Data Sources to bring them in.": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No workouts yet. They come from your WHOOP and Apple Health history. Import in Data Sources to bring them in."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no hay entrenamientos. Vienen de tu historial de WHOOP y Apple Health. Importa en Fuentes de datos para traerlos."
           }
         }
       }
@@ -20307,6 +20645,16 @@
         }
       }
     },
+    "Only Apple Health": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo Apple Salud"
+          }
+        }
+      }
+    },
     "Only Today and Yesterday can be edited. Older days stay fixed.": {
       "extractionState": "manual",
       "localizations": {
@@ -20348,6 +20696,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Solo una lectura en este rango — aún no alcanza para trazar una línea."
+          }
+        }
+      }
+    },
+    "Only what Apple Health records, without your band.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo lo que registra Apple Salud, sin tu banda."
+          }
+        }
+      }
+    },
+    "Only what your band measures. Nights without the band won't have a reading.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo lo que mide tu banda. Las noches sin banda no tendrán lectura."
           }
         }
       }
@@ -20481,6 +20849,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Abre Fuentes de datos para darle ventaja a tu base"
+          }
+        }
+      }
+    },
+    "Opens the GitHub releases page in your browser. Cénit itself makes no network connections — the macOS sandbox has no network entitlement.": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the GitHub releases page in your browser. Cénit itself makes no network connections — the macOS sandbox has no network entitlement."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre la página de versiones de GitHub en tu navegador. Cénit en sí no hace conexiones de red — el sandbox de macOS no tiene permiso de red."
           }
         }
       }
@@ -20934,6 +21319,16 @@
         }
       }
     },
+    "Pair in Live": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parear en Live"
+          }
+        }
+      }
+    },
     "Paired · idle": {
       "localizations": {
         "en": {
@@ -21257,6 +21652,22 @@
         }
       }
     },
+    "Personal records": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personal records"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Records personales"
+          }
+        }
+      }
+    },
     "Physical age": {
       "extractionState": "manual",
       "localizations": {
@@ -21563,6 +21974,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Perfil"
+          }
+        }
+      }
+    },
+    "Progress": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Progress"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Progreso"
+          }
+        }
+      }
+    },
+    "Progress metric": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Progress metric"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Métrica de progreso"
           }
         }
       }
@@ -22388,6 +22831,16 @@
         }
       }
     },
+    "Recommended": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recomendado"
+          }
+        }
+      }
+    },
     "Recompute": {
       "localizations": {
         "en": {
@@ -22605,6 +23058,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Recuperación"
+          }
+        }
+      }
+    },
+    "Recovery %@%%": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovery %@%%"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuperación %@%%"
           }
         }
       }
@@ -22883,6 +23353,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Recuperación, promedio móvil de 7 días"
+          }
+        }
+      }
+    },
+    "Recovery, live heart rate, and strap battery at a glance.": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovery, live heart rate, and strap battery at a glance."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuperación, frecuencia cardiaca en vivo y batería de la banda de un vistazo."
           }
         }
       }
@@ -25465,6 +25952,23 @@
         }
       }
     },
+    "Skip for now": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip for now"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Omitir por ahora"
+          }
+        }
+      }
+    },
     "Skip rest": {
       "localizations": {
         "en": {
@@ -26860,6 +27364,23 @@
         }
       }
     },
+    "Strap offline": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strap offline"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Banda desconectada"
+          }
+        }
+      }
+    },
     "Strap sync": {
       "localizations": {
         "en": {
@@ -26888,6 +27409,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tiempo de entrenamiento de fuerza"
+          }
+        }
+      }
+    },
+    "Strength workout": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strength workout"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entrenamiento de fuerza"
           }
         }
       }
@@ -27241,6 +27778,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sustituí"
+          }
+        }
+      }
+    },
+    "Switching modes only changes what you see. Cénit keeps storing everything from both sources; nothing is ever deleted.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cambiar de modo solo cambia lo que ves. Cénit sigue guardando todo de ambas fuentes; nunca se borra nada."
           }
         }
       }
@@ -28021,6 +28568,22 @@
         }
       }
     },
+    "The heaviest set you logged, by day.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The heaviest set you logged, by day."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El set más pesado que registraste, por día."
+          }
+        }
+      }
+    },
     "The line includes today, still in progress; the figures below use completed days only.": {
       "extractionState": "manual",
       "localizations": {
@@ -28451,6 +29014,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "La desviación estándar de tus desviaciones nocturnas — cuánto se mueve la temperatura de tu piel alrededor de tu base de noche a noche, en °C. Un número chico significa una termorregulación estable; uno más grande, más vaivén de noche a noche. (Mostramos la dispersión en °C y no en porcentaje porque el promedio queda cerca de cero, donde un porcentaje no significaría nada.)"
+          }
+        }
+      }
+    },
+    "The strength sessions you've finished.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The strength sessions you've finished."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las sesiones de fuerza que has terminado."
           }
         }
       }
@@ -30468,6 +31047,23 @@
         }
       }
     },
+    "Wake up to this many minutes early if the Mac stays awake & connected and a light phase is detected.": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wake up to this many minutes early if the Mac stays awake & connected and a light phase is detected."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Despierta hasta estos minutos antes si la Mac sigue despierta y conectada y se detecta una fase de sueño ligero."
+          }
+        }
+      }
+    },
     "Want to try something?": {
       "extractionState": "manual",
       "localizations": {
@@ -31054,6 +31650,22 @@
         }
       }
     },
+    "Weight × reps per day.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weight × reps per day."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volumen (peso × reps) por día."
+          }
+        }
+      }
+    },
     "Weight, %lld pounds": {
       "localizations": {
         "es": {
@@ -31556,6 +32168,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cuando suben juntas, tu cuerpo está bajo carga."
+          }
+        }
+      }
+    },
+    "When you finish a strength session, it shows up here with its breakdown, volume and effort.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When you finish a strength session, it shows up here with its breakdown, volume and effort."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuando termines una sesión de fuerza, aparecerá aquí con su desglose, volumen y esfuerzo."
           }
         }
       }
@@ -33494,6 +34122,22 @@
         }
       }
     },
+    "Your pulse recovered": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your pulse recovered"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu pulso se recuperó"
+          }
+        }
+      }
+    },
     "Your pulse when your body is calm. Lower usually means better fitness; a rise above your normal can be fatigue.": {
       "extractionState": "manual",
       "localizations": {
@@ -34684,6 +35328,23 @@
         }
       }
     },
+    "building fast (acute:chronic %@) — watch fatigue": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "building fast (acute:chronic %@) — watch fatigue"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "subiendo rápido (aguda:crónica %@) — cuida la fatiga"
+          }
+        }
+      }
+    },
     "carry-over": {
       "extractionState": "manual",
       "localizations": {
@@ -34764,6 +35425,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "conecta Apple Salud"
+          }
+        }
+      }
+    },
+    "connect your strap for HR rest": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "connect your strap for HR rest"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "conecta tu banda para descanso por FC"
           }
         }
       }
@@ -35169,6 +35846,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "iPhone 15 Pro o más nuevo (chip A17 Pro+), iOS 26 o posterior, y Apple Intelligence activado en Ajustes."
+          }
+        }
+      }
+    },
+    "in the sweet spot (acute:chronic %@)": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "in the sweet spot (acute:chronic %@)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "en el punto ideal (aguda:crónica %@)"
           }
         }
       }
@@ -36540,6 +37234,23 @@
         }
       }
     },
+    "ramping down (acute:chronic %@) — room to build": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ramping down (acute:chronic %@) — room to build"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bajando (aguda:crónica %@) — hay margen para subir"
+          }
+        }
+      }
+    },
     "reading": {
       "localizations": {
         "en": {
@@ -37197,6 +37908,23 @@
         }
       }
     },
+    "spiking (acute:chronic %@) — higher injury risk": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "spiking (acute:chronic %@) — higher injury risk"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "disparada (aguda:crónica %@) — mayor riesgo de lesión"
+          }
+        }
+      }
+    },
     "steady": {
       "extractionState": "manual",
       "localizations": {
@@ -37436,6 +38164,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "a"
+          }
+        }
+      }
+    },
+    "to ready": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "to ready"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "para estar listo"
           }
         }
       }
@@ -38611,396 +39355,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "✓"
-          }
-        }
-      }
-    },
-    "My workouts": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "My workouts"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mis entrenamientos"
-          }
-        }
-      }
-    },
-    "The strength sessions you've finished.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The strength sessions you've finished."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Las sesiones de fuerza que has terminado."
-          }
-        }
-      }
-    },
-    "When you finish a strength session, it shows up here with its breakdown, volume and effort.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "When you finish a strength session, it shows up here with its breakdown, volume and effort."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cuando termines una sesión de fuerza, aparecerá aquí con su desglose, volumen y esfuerzo."
-          }
-        }
-      }
-    },
-    "Strength workout": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Strength workout"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Entrenamiento de fuerza"
-          }
-        }
-      }
-    },
-    "%lld h %lld min": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld h %lld min"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld h %2$lld min"
-          }
-        }
-      }
-    },
-    "%lld s": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld s"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld s"
-          }
-        }
-      }
-    },
-    "%lld m": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld m"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld m"
-          }
-        }
-      }
-    },
-    "How your data is read": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cómo se leen tus datos"
-          }
-        }
-      }
-    },
-    "Combined": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Combinado"
-          }
-        }
-      }
-    },
-    "Recommended": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Recomendado"
-          }
-        }
-      }
-    },
-    "Band only": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Solo la banda"
-          }
-        }
-      }
-    },
-    "Only Apple Health": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Solo Apple Salud"
-          }
-        }
-      }
-    },
-    "Apple Health as the base, your band on top when you wear it. The most complete reading.": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Apple Salud de base y tu banda encima cuando la traes. La lectura más completa."
-          }
-        }
-      }
-    },
-    "Only what your band measures. Nights without the band won't have a reading.": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Solo lo que mide tu banda. Las noches sin banda no tendrán lectura."
-          }
-        }
-      }
-    },
-    "Only what Apple Health records, without your band.": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Solo lo que registra Apple Salud, sin tu banda."
-          }
-        }
-      }
-    },
-    "Switching modes only changes what you see. Cénit keeps storing everything from both sources; nothing is ever deleted.": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cambiar de modo solo cambia lo que ves. Cénit sigue guardando todo de ambas fuentes; nunca se borra nada."
-          }
-        }
-      }
-    },
-    "Apple Health is disconnected; right now Combined only uses your band. Connect it to add its data.": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Apple Salud está desconectado; ahora mismo Combinado solo usa tu banda. Conéctalo para sumar sus datos."
-          }
-        }
-      }
-    },
-    "No band data yet. Connect it in Live or import your history to see anything in this mode.": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No hay datos de tu banda todavía. Conéctala en Live o importa tu historial para ver algo en este modo."
-          }
-        }
-      }
-    },
-    "Pair in Live": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Parear en Live"
-          }
-        }
-      }
-    },
-    "Apple Health isn't available on this device.": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Apple Salud no está disponible en este dispositivo."
-          }
-        }
-      }
-    },
-    "Apple Health is disconnected. In this mode Cénit can't read new data.": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Apple Salud está desconectado. En este modo Cénit no podrá leer datos nuevos."
-          }
-        }
-      }
-    },
-    "For now, without your band the recovery and sleep detail come estimated or later. The day's numbers do read from Apple Health.": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Por ahora, sin tu banda el recovery y el detalle del sueño llegan estimados o más adelante. Los números del día sí se leen de Apple Salud."
-          }
-        }
-      }
-    },
-    "Est. 1RM": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Est. 1RM"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "1RM est."
-          }
-        }
-      }
-    },
-    "Progress": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Progress"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Progreso"
-          }
-        }
-      }
-    },
-    "Progress metric": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Progress metric"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Métrica de progreso"
-          }
-        }
-      }
-    },
-    "Personal records": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Personal records"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Records personales"
-          }
-        }
-      }
-    },
-    "Best set volume": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Best set volume"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mejor volumen (serie)"
-          }
-        }
-      }
-    },
-    "The heaviest set you logged, by day.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The heaviest set you logged, by day."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "El set más pesado que registraste, por día."
-          }
-        }
-      }
-    },
-    "Weight × reps per day.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Weight × reps per day."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Volumen (peso × reps) por día."
-          }
-        }
-      }
-    },
-    "From your best set with the Epley (1985) formula. A progress signal, not a target to load.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "From your best set with the Epley (1985) formula. A progress signal, not a target to load."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "De tu mejor serie con la fórmula de Epley (1985). Una señal de progreso, no un objetivo para cargar."
           }
         }
       }
