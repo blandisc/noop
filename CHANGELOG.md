@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Tendencias: header de wordmark y héroe de Recuperación con su media / Trends: wordmark header and Recovery hero with its mean.**
+  **ES** — La pestaña «Cuerpo» pasa a llamarse **«Tendencias»** y estrena un header de wordmark (glifo de curva-con-nodos + «Tendencias» con la fecha en mono a la derecha, igual que «Patrones»), también en su ícono del tab. El héroe de Recuperación añade una **línea de media de 14 días punteada** dentro del sparkline y un delta **«+N vs tu media»** debajo, para leer el día contra tu propio promedio.
+  **EN** — The "Body" tab is now **"Tendencias"** with a wordmark header (curve-with-nodes glyph + "Tendencias" and the date in mono on the right, matching "Patrones"), including its tab icon. The Recovery hero adds a **dashed 14-day mean line** inside the sparkline and a **"+N vs tu media"** delta beneath it, to read today against your own average.
+  ([Cenit/Screens/CuerpoView.swift](Cenit/Screens/CuerpoView.swift), [CenitApp/App/RootTabView.swift](CenitApp/App/RootTabView.swift), [Packages/StrandDesign/Sources/StrandDesign/TendenciasGlyph.swift](Packages/StrandDesign/Sources/StrandDesign/TendenciasGlyph.swift), [Packages/StrandDesign/Sources/StrandDesign/Sparkline.swift](Packages/StrandDesign/Sources/StrandDesign/Sparkline.swift))
+
 - **La frase de rango sube junto al título «Últimos 14 días» / The range line moves up next to the "Last 14 days" title (FER-473).**
   **ES** — En las hojas de resumen, la línea «{Banda} · X de los últimos N días en este rango» ahora va **pegada bajo el título «Últimos 14 días»**, antes de la gráfica, en vez de quedar suelta debajo de ella. Da más contexto al periodo y deja respirar un poco la gráfica. La tabla de rangos con sus conteos no cambia.
   **EN** — On the summary sheets, the "{Band} · X of the last N days in this range" line now sits **right under the "Last 14 days" title**, before the chart, instead of floating below it. It frames the period better and lets the chart breathe. The ranges table with its counts is unchanged.
