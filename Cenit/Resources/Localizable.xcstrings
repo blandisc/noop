@@ -34238,6 +34238,1359 @@
           }
         }
       }
+    },
+    " of %@. A week confirms it in your body.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " de %@. Una semana lo confirma en tu cuerpo."
+          }
+        }
+      }
+    },
+    "%@ improves your sleep.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ mejora tu sueño."
+          }
+        }
+      }
+    },
+    "%@ lowers your %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ baja tu %@."
+          }
+        }
+      }
+    },
+    "%@ lowers your HRV.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ baja tu HRV."
+          }
+        }
+      }
+    },
+    "%@ lowers your recovery.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ baja tu recuperación."
+          }
+        }
+      }
+    },
+    "%@ lowers your resting HR.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ baja tu FC en reposo."
+          }
+        }
+      }
+    },
+    "%@ raises your %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ sube tu %@."
+          }
+        }
+      }
+    },
+    "%@ raises your HRV.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ sube tu HRV."
+          }
+        }
+      }
+    },
+    "%@ raises your recovery.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ sube tu recuperación."
+          }
+        }
+      }
+    },
+    "%@ raises your resting HR.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ sube tu FC en reposo."
+          }
+        }
+      }
+    },
+    "%@ worsens your sleep.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ empeora tu sueño."
+          }
+        }
+      }
+    },
+    "%@ · seen in %lld days": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · visto en %lld días"
+          }
+        }
+      }
+    },
+    "%lld more nights with the band for your first patterns: what recovers you, what drains you, and what's worth testing.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Faltan %lld noches con la banda para tus primeros patrones: qué te recupera, qué te desgasta y qué vale la pena probar."
+          }
+        }
+      }
+    },
+    "%lld nights measured": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld noches medidas"
+          }
+        }
+      }
+    },
+    "%lld of %lld logged today": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld de %lld anotados hoy"
+          }
+        }
+      }
+    },
+    "1 more night with the band for your first patterns: what recovers you, what drains you, and what's worth testing.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Falta 1 noche con la banda para tus primeros patrones: qué te recupera, qué te desgasta y qué vale la pena probar."
+          }
+        }
+      }
+    },
+    "A read of your data": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lectura de tus datos"
+          }
+        }
+      }
+    },
+    "A sport's cost": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Costo de un deporte"
+          }
+        }
+      }
+    },
+    "An N-of-1 experiment confirmed this effect for you.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un experimento N-of-1 confirmó este efecto en ti."
+          }
+        }
+      }
+    },
+    "An observed value from your history, not a claim of cause.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un dato observado de tu historial, no una afirmación de causa."
+          }
+        }
+      }
+    },
+    "Anomaly · last night": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anomalía · anoche"
+          }
+        }
+      }
+    },
+    "Behavior": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comportamiento"
+          }
+        }
+      }
+    },
+    "Best: %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mejor: %lld"
+          }
+        }
+      }
+    },
+    "Cancel experiment": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancelar experimento"
+          }
+        }
+      }
+    },
+    "Candidate — no experiment yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Candidato — aún sin experimento"
+          }
+        }
+      }
+    },
+    "Cénit computes your recovery, your findings and your levers here, on your iPhone — no cloud, no account, no server.\n\nThe only thing that goes to the internet is «Ask your data», and only if you connect your own AI key.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cénit calcula tu recuperación, tus hallazgos y tus palancas aquí, en tu iPhone — sin nube, sin cuenta, sin servidor.\n\nLo único que sale a internet es «Pregúntale a tus datos», y solo si conectas tu propia clave de IA."
+          }
+        }
+      }
+    },
+    "Day %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Día %lld"
+          }
+        }
+      }
+    },
+    "Design your own experiment": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diseña tu propio experimento"
+          }
+        }
+      }
+    },
+    "Did you keep it today?": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Lo cumpliste hoy?"
+          }
+        }
+      }
+    },
+    "Everything on your phone": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todo en tu teléfono"
+          }
+        }
+      }
+    },
+    "Experiments to test a change": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Experimentos para probar un cambio"
+          }
+        }
+      }
+    },
+    "Explore by metric": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explora por métrica"
+          }
+        }
+      }
+    },
+    "Findings": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hallazgos"
+          }
+        }
+      }
+    },
+    "Findings your data reveals on its own": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hallazgos que tu data revela sola"
+          }
+        }
+      }
+    },
+    "Fitness age": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edad fitness"
+          }
+        }
+      }
+    },
+    "For %lld days": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Durante %lld días"
+          }
+        }
+      }
+    },
+    "Forecast": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pronóstico"
+          }
+        }
+      }
+    },
+    "Get ahead": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adelántate"
+          }
+        }
+      }
+    },
+    "Habit effects": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Efectos de tus hábitos"
+          }
+        }
+      }
+    },
+    "Here you explore your whole history: pick a metric (recovery, HRV, sleep, resting HR) and see how each habit you log moves it, on average.\n\nIt's the deep version of «What works for you». Associations, not cause.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aquí exploras todo tu historial: elige una métrica (recuperación, HRV, sueño, FC en reposo) y mira cómo cada hábito que anotas la mueve, en promedio.\n\nEs la versión a fondo de «Lo que funciona en ti». Asociaciones, no causa."
+          }
+        }
+      }
+    },
+    "How each habit moves a metric, across your whole history. Associations, not cause.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cómo cada hábito mueve una métrica, en todo tu historial. Asociaciones, no causa."
+          }
+        }
+      }
+    },
+    "How each habit moves you, across your whole history": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cómo cada hábito te mueve, en todo tu historial"
+          }
+        }
+      }
+    },
+    "How this section works": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cómo funciona esta sección"
+          }
+        }
+      }
+    },
+    "How your metrics relate": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cómo se relacionan tus métricas"
+          }
+        }
+      }
+    },
+    "I'm still reviewing your nights. Log your days so I find what moves you sooner.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sigo revisando tus noches. Anota tus días para que encuentre antes lo que te mueve."
+          }
+        }
+      }
+    },
+    "If the effect holds, it becomes proven.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si el efecto se sostiene, queda probada."
+          }
+        }
+      }
+    },
+    "In your data, “%@” goes with ": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En tus datos, “%@” va con "
+          }
+        }
+      }
+    },
+    "It didn't hold up this time.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se sostuvo esta vez."
+          }
+        }
+      }
+    },
+    "It held up.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se sostuvo."
+          }
+        }
+      }
+    },
+    "It's a strong association in your data, but not proof of cause. An experiment can promote it to «proven».": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Es una asociación fuerte en tus datos, pero no prueba causa. Un experimento puede ascenderla a «probada»."
+          }
+        }
+      }
+    },
+    "Kept **%lld of %lld** days.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cumpliste **%lld de %lld** días."
+          }
+        }
+      }
+    },
+    "Log each day whether you kept it": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anota cada día si lo cumpliste"
+          }
+        }
+      }
+    },
+    "Log each day whether you kept it, in “Log your day”.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anota cada día si lo cumpliste, en “Anota tu día”."
+          }
+        }
+      }
+    },
+    "Log the rest of your day": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anota el resto de tu día"
+          }
+        }
+      }
+    },
+    "Log your day": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anota tu día"
+          }
+        }
+      }
+    },
+    "Mark it so you don't break the streak.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Márcalo para no romper la racha."
+          }
+        }
+      }
+    },
+    "Mark what happened today": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marca qué pasó hoy"
+          }
+        }
+      }
+    },
+    "Medium relationship": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relación media"
+          }
+        }
+      }
+    },
+    "New experiment": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nuevo experimento"
+          }
+        }
+      }
+    },
+    "New · we noticed it without you logging": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nuevo · lo notamos sin que anotaras"
+          }
+        }
+      }
+    },
+    "No clear pattern in your body yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no hay un patrón claro en tu cuerpo."
+          }
+        }
+      }
+    },
+    "Not enough signal.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin señal suficiente."
+          }
+        }
+      }
+    },
+    "On trial": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En prueba"
+          }
+        }
+      }
+    },
+    "On trial · your streak": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En prueba · tu racha"
+          }
+        }
+      }
+    },
+    "Only Today and Yesterday can be edited. Older days stay fixed.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo Hoy y Ayer se pueden editar. Los días viejos quedan fijos."
+          }
+        }
+      }
+    },
+    "Patrones": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Patrones"
+          }
+        }
+      }
+    },
+    "Pending today": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pendiente hoy"
+          }
+        }
+      }
+    },
+    "Pending today · Day %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pendiente hoy · Día %lld"
+          }
+        }
+      }
+    },
+    "Pick a habit and measure it for a week": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elige un hábito y mídelo una semana"
+          }
+        }
+      }
+    },
+    "Pick a habit you want to adopt and measure it against a metric. We confirm it by comparing those days with your baseline.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elige un hábito que quieras adoptar y mídelo contra una métrica. Lo confirmamos comparando esos días con tu base."
+          }
+        }
+      }
+    },
+    "Proven by your experiment": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Probado por tu experimento"
+          }
+        }
+      }
+    },
+    "Read-only": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo lectura"
+          }
+        }
+      }
+    },
+    "Relationship between metrics": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relación entre métricas"
+          }
+        }
+      }
+    },
+    "Sample": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muestra"
+          }
+        }
+      }
+    },
+    "See all": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver todo"
+          }
+        }
+      }
+    },
+    "See detail": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver detalle"
+          }
+        }
+      }
+    },
+    "See why": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver por qué"
+          }
+        }
+      }
+    },
+    "Significance": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Significancia"
+          }
+        }
+      }
+    },
+    "Start by logging your day": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empieza por anotar tu día"
+          }
+        }
+      }
+    },
+    "Still gathering signal": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún reuniendo señal"
+          }
+        }
+      }
+    },
+    "Still watching": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sigo observando"
+          }
+        }
+      }
+    },
+    "Strong relationship": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relación fuerte"
+          }
+        }
+      }
+    },
+    "Test “%@”": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Probar “%@”"
+          }
+        }
+      }
+    },
+    "The habit": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El hábito"
+          }
+        }
+      }
+    },
+    "The metric": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La métrica"
+          }
+        }
+      }
+    },
+    "The more I know about your habits, the more patterns I find": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entre más sé de tus hábitos, más patrones encuentro"
+          }
+        }
+      }
+    },
+    "The sooner you log, the sooner I find patterns": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entre antes anotes, antes encuentro patrones"
+          }
+        }
+      }
+    },
+    "The window": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La ventana"
+          }
+        }
+      }
+    },
+    "Try 1 week": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Probar 1 semana"
+          }
+        }
+      }
+    },
+    "Try this idea for a week": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Probar esta idea una semana"
+          }
+        }
+      }
+    },
+    "Verdict on ": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Veredicto el "
+          }
+        }
+      }
+    },
+    "Verdict on %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Veredicto el %@"
+          }
+        }
+      }
+    },
+    "Want to try something?": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Quieres probar algo?"
+          }
+        }
+      }
+    },
+    "We compare your days with and without each habit you log. If the difference is real in your numbers, it shows up here as a lever.\n\nThey're candidates until an experiment proves them. Everything is computed on your phone.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comparamos tus días con y sin cada hábito que anotas. Si la diferencia es real en tus números, aparece aquí como una palanca.\n\nSon candidatos hasta que un experimento los pruebe. Todo se calcula en tu teléfono."
+          }
+        }
+      }
+    },
+    "What works for you": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lo que funciona en ti"
+          }
+        }
+      }
+    },
+    "What works for you, already proven": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lo que funciona en ti, ya probado"
+          }
+        }
+      }
+    },
+    "What you don't mark counts as “No”.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lo que no marques se asume “No”."
+          }
+        }
+      }
+    },
+    "What you'll see here": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lo que verás aquí"
+          }
+        }
+      }
+    },
+    "When it closes, we compare those days with your baseline.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Al cerrar, comparamos esos días con tu base."
+          }
+        }
+      }
+    },
+    "With the habit": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Con el hábito"
+          }
+        }
+      }
+    },
+    "Without the habit": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin el hábito"
+          }
+        }
+      }
+    },
+    "You don't have habits to test yet. Log a few days first.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no tienes hábitos para probar. Anota algunos días primero."
+          }
+        }
+      }
+    },
+    "You kept %lld of %lld days: not enough days to judge. Try another week, logging daily.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cumpliste %lld de %lld días: faltaron días para juzgar. Inténtalo otra semana anotando a diario."
+          }
+        }
+      }
+    },
+    "Your %@ during the experiment": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu %@ durante el experimento"
+          }
+        }
+      }
+    },
+    "Your body will start teaching you things soon.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pronto tu cuerpo empezará a enseñarte cosas."
+          }
+        }
+      }
+    },
+    "Your experiment": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu experimento"
+          }
+        }
+      }
+    },
+    "Your phone reviews your nights and flags three things: what's out of the ordinary (an anomaly), what's trending (up or down), and which metrics move together.\n\nAll from your own data.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu teléfono revisa tus noches y te avisa de tres cosas: lo que se sale de lo normal (una anomalía), lo que viene en tendencia (subiendo o bajando), y qué métricas se mueven juntas.\n\nTodo a partir de tus propios datos."
+          }
+        }
+      }
+    },
+    "Your record": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu expediente"
+          }
+        }
+      }
+    },
+    "Your streak": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu racha"
+          }
+        }
+      }
+    },
+    "Your strongest lever": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu palanca más fuerte"
+          }
+        }
+      }
+    },
+    "exploratory": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "exploratorio"
+          }
+        }
+      }
+    },
+    "night in a row": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "noche seguida"
+          }
+        }
+      }
+    },
+    "nights in a row": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "noches seguidas"
+          }
+        }
+      }
+    },
+    "nights in a row · kept %lld of %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "noches seguidas · cumpliste %lld de %lld"
+          }
+        }
+      }
+    },
+    "on trial against your %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "a prueba sobre tu %@"
+          }
+        }
+      }
+    },
+    "recovery": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "recuperación"
+          }
+        }
+      }
+    },
+    "significant": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "significativo"
+          }
+        }
+      }
+    },
+    "sleep": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sueño"
+          }
+        }
+      }
+    },
+    "verdict on %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "veredicto el %@"
+          }
+        }
+      }
+    },
+    "vs before": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "vs antes"
+          }
+        }
+      }
+    },
+    "— — average before": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "— — media antes"
+          }
+        }
+      }
+    },
+    "“%@” didn't move your %@ this week. A week is weak evidence — you can try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” no movió tu %@ en esta semana. Una semana es poca evidencia — puedes volver a intentarlo."
+          }
+        }
+      }
+    },
+    "“%@” raised your %@ this week. We marked it as proven in What works for you.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” subió tu %@ en la semana. La marcamos como probada en Lo que funciona en ti."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

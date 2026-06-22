@@ -180,11 +180,11 @@ private struct PatronesLanding: View {
         .accessibilityLabel("Patrones")
     }
 
-    /// Today as «JUE 12 JUN» (es-MX, uppercased by the header).
+    /// Today as «JUE 12 JUN» — follows the app language (es → «JUE», en → «THU»). FER-472.
     private static var dateLabel: String { dateHeader.string(from: Date()) }
 
     private static let dateHeader: DateFormatter = {
-        let f = DateFormatter(); f.locale = Locale(identifier: "es_MX"); f.dateFormat = "EEE d MMM"; return f
+        let f = DateFormatter(); f.locale = .current; f.dateFormat = "EEE d MMM"; return f
     }()
 
     // MARK: Hallazgo hero (never empty — plan C, over the existing engine)
@@ -223,7 +223,7 @@ private struct PatronesLanding: View {
             HStack(spacing: 7) {
                 Image(systemName: "arrow.up").font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(theme.inkTertiary)
-                Text("Tu palanca más fuerte").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("Your strongest lever").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             }
             Text(heroLeverHeadline(insight))
                 .font(.system(size: 27, weight: .semibold)).tracking(-0.4)
@@ -231,7 +231,7 @@ private struct PatronesLanding: View {
                 .foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 13)
-            heroDatumRow(insight, context: "\(insight.evidence.n) noches medidas")
+            heroDatumRow(insight, context: String(localized: "\(insight.evidence.n) nights measured"))
                 .padding(.top, 15)
             heroActions(insight, canProbar: running == nil && insight.confidence != .proven)
                 .padding(.top, 18)
@@ -244,7 +244,7 @@ private struct PatronesLanding: View {
             if isNew {
                 HStack(spacing: 7) {
                     Image(systemName: "sparkles").font(.system(size: 12, weight: .semibold))
-                    Text("Nuevo · lo notamos sin que anotaras").instrumentoOverline()
+                    Text("New · we noticed it without you logging").instrumentoOverline()
                 }
                 .foregroundStyle(theme.dataRecovery)
             } else {
@@ -256,7 +256,7 @@ private struct PatronesLanding: View {
                 .foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 13)
-            heroDatumRow(insight, context: "\(insight.datum.metric) · visto en \(insight.evidence.n) días")
+            heroDatumRow(insight, context: String(localized: "\(insight.datum.metric) · seen in \(insight.evidence.n) days"))
                 .padding(.top, 15)
             heroActions(insight, canProbar: false)
                 .padding(.top, 18)
@@ -290,7 +290,7 @@ private struct PatronesLanding: View {
                 Button { startLever = InsightItem(insight: insight) } label: {
                     HStack(spacing: 7) {
                         Image(systemName: "flask").font(.system(size: 14, weight: .semibold))
-                        Text("Probar 1 semana").font(StrandFont.headline)
+                        Text("Try 1 week").font(StrandFont.headline)
                     }
                     .foregroundStyle(theme.paper)
                     .padding(.horizontal, 20).padding(.vertical, 11)
@@ -302,7 +302,7 @@ private struct PatronesLanding: View {
             }
             Button { detail = InsightItem(insight: insight) } label: {
                 HStack(spacing: 4) {
-                    Text("Ver por qué").font(StrandFont.subhead)
+                    Text("See why").font(StrandFont.subhead)
                     Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold))
                 }
                 .foregroundStyle(theme.inkSecondary)
@@ -315,33 +315,36 @@ private struct PatronesLanding: View {
     /// quiet observing state that routes to the journal (which creates the candidates).
     private var observingHero: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Sigo observando").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text("Aún no hay un patrón claro en tu cuerpo.")
+            Text("Still watching").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("No clear pattern in your body yet.")
                 .font(.system(size: 26, weight: .semibold)).tracking(-0.3)
                 .foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 12)
-            Text("Sigo revisando tus noches. Anota tus días para que encuentre antes lo que te mueve.")
+            Text("I'm still reviewing your nights. Log your days so I find what moves you sooner.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 14)
         }
     }
 
-    /// A natural-language headline for the strongest lever: «<hábito> sube/baja <métrica>.»
+    /// A natural-language headline for the strongest lever: «<habit> raises/lowers <metric>.» The habit
+    /// name is data (its localized label); the sentence template is localized per direction × metric so
+    /// the metric word reads naturally in each language. FER-472.
     private func heroLeverHeadline(_ insight: Insight) -> String {
         let name = BucleFormat.behaviorName(insight)
-        let verb = insight.datum.value >= 0 ? "sube" : "baja"
-        return "\(name) \(verb) \(Self.metricPhrase(insight.datum.metric))."
-    }
-
-    private static func metricPhrase(_ metric: String) -> String {
-        switch metric {
-        case "Recuperación": return "tu recuperación"
-        case "HRV":          return "tu HRV"
-        case "Sueño":        return "tu sueño"
-        case "FC en reposo": return "tu FC en reposo"
-        default:             return "tu \(metric)"
+        let up = insight.datum.value >= 0
+        switch insight.datum.metric {
+        case "Recuperación": return up ? String(localized: "\(name) raises your recovery.")
+                                       : String(localized: "\(name) lowers your recovery.")
+        case "HRV":          return up ? String(localized: "\(name) raises your HRV.")
+                                       : String(localized: "\(name) lowers your HRV.")
+        case "Sueño":        return up ? String(localized: "\(name) improves your sleep.")
+                                       : String(localized: "\(name) worsens your sleep.")
+        case "FC en reposo": return up ? String(localized: "\(name) raises your resting HR.")
+                                       : String(localized: "\(name) lowers your resting HR.")
+        default:             return up ? String(localized: "\(name) raises your \(insight.datum.metric).")
+                                       : String(localized: "\(name) lowers your \(insight.datum.metric).")
         }
     }
 
@@ -367,11 +370,11 @@ private struct PatronesLanding: View {
     private func experimentStreakSection(_ p: ExperimentProgress) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
-                Text("En prueba · tu racha").instrumentoOverline().foregroundStyle(theme.dataRecovery)
+                Text("On trial · your streak").instrumentoOverline().foregroundStyle(theme.dataRecovery)
                 Spacer()
                 HStack(spacing: 4) {
                     Image(systemName: "flame").font(.system(size: 11, weight: .medium))
-                    Text("Mejor: \(p.streakBest)").font(StrandFont.captionNumber)
+                    Text("Best: \(p.streakBest)").font(StrandFont.captionNumber)
                 }
                 .foregroundStyle(theme.inkTertiary)
             }
@@ -384,11 +387,12 @@ private struct PatronesLanding: View {
                         .font(StrandFont.title2).foregroundStyle(theme.ink).padding(.top, 11)
                     HStack(alignment: .firstTextBaseline, spacing: 7) {
                         Text("\(p.streakCurrent)").font(StrandFont.number(34)).foregroundStyle(theme.ink)
-                        Text(p.streakCurrent == 1 ? "noche seguida" : "noches seguidas")
+                        Text(p.streakCurrent == 1 ? String(localized: "night in a row")
+                                                  : String(localized: "nights in a row"))
                             .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                         Spacer(minLength: 8)
                         HStack(spacing: 3) {
-                            Text("Ver detalle").font(StrandFont.footnote)
+                            Text("See detail").font(StrandFont.footnote)
                             Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold))
                         }
                         .foregroundStyle(theme.inkTertiary)
@@ -401,16 +405,14 @@ private struct PatronesLanding: View {
             }
             .buttonStyle(.plain)
 
-            (Text("Cumpliste ")
-                + Text("\(p.adherent) de \(p.elapsedDay)").foregroundColor(theme.ink).bold()
-                + Text(" días."))
+            Text("Kept **\(p.adherent) of \(p.elapsedDay)** days.")
                 .font(StrandFont.body).foregroundStyle(theme.inkSecondary).monospacedDigit().padding(.top, 14)
 
             if p.pendingCheckIn {
                 checkInBox(p).padding(.top, 14)
             }
 
-            Text("Veredicto el \(p.verdictDate)")
+            Text("Verdict on \(p.verdictDate)")
                 .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).padding(.top, 14)
 
             cancelButton(p.row).padding(.top, 16)
@@ -420,21 +422,23 @@ private struct PatronesLanding: View {
     /// The marked daily check-in: today is within the window and unlogged, so a tap writes the answer
     /// to the journal (extending or breaking the racha) and the box disappears on the next load.
     private func checkInBox(_ p: ExperimentProgress) -> some View {
-        let question = p.row.behavior.isEmpty ? "¿Lo cumpliste hoy?" : p.row.behavior
+        // The journal QUESTION is data; show its localized short label, never the raw English key (FER-472).
+        let question = p.row.behavior.isEmpty ? String(localized: "Did you keep it today?")
+                                              : BucleFormat.behaviorLabel(p.row.behavior)
         return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 6) {
                 Circle().fill(theme.dataRecovery).frame(width: 8, height: 8)
-                Text("Pendiente hoy · Día \(p.elapsedDay)").instrumentoOverline().foregroundStyle(theme.dataRecovery)
+                Text("Pending today · Day \(p.elapsedDay)").instrumentoOverline().foregroundStyle(theme.dataRecovery)
             }
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text(question).font(StrandFont.headline).foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 8)
-                checkInToggle("Sí", answeredYes: true, behavior: p.row.behavior)
+                checkInToggle("Yes", answeredYes: true, behavior: p.row.behavior)
                 checkInToggle("No", answeredYes: false, behavior: p.row.behavior)
             }
             .padding(.top, 11)
-            Text("Márcalo para no romper la racha.")
+            Text("Mark it so you don't break the streak.")
                 .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).padding(.top, 8)
         }
         .padding(14)
@@ -444,7 +448,7 @@ private struct PatronesLanding: View {
             .stroke(theme.dataRecovery, lineWidth: 1.5))
     }
 
-    private func checkInToggle(_ label: String, answeredYes: Bool, behavior: String) -> some View {
+    private func checkInToggle(_ label: LocalizedStringKey, answeredYes: Bool, behavior: String) -> some View {
         Button {
             Task {
                 await repo.saveJournalAnswer(day: Repository.localDayKey(Date()),
@@ -458,36 +462,34 @@ private struct PatronesLanding: View {
                 .overlay(Capsule().stroke(theme.hairlineStrong, lineWidth: 1))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(label), \(behavior)")
+        .accessibilityLabel(label)
     }
 
     /// The plain progress module (diet, which has no Sí/No check-in): day N of M + adherence count.
     private func experimentProgressSection(_ p: ExperimentProgress) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("En prueba").instrumentoOverline().foregroundStyle(theme.dataRecovery)
+            Text("On trial").instrumentoOverline().foregroundStyle(theme.dataRecovery)
                 .padding(.top, 18)
                 .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5).padding(.top, -2) }
             Text(BucleFormat.behaviorLabel(p.row.behavior))
                 .font(StrandFont.title2).foregroundStyle(theme.ink).padding(.top, 11)
-            Text("a prueba sobre tu \(p.row.outcome)")
+            Text("on trial against your \(p.row.outcome)")
                 .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).padding(.top, 3)
 
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("Día \(p.elapsedDay)").font(.system(size: 30, weight: .semibold)).monospacedDigit()
+                Text("Day \(p.elapsedDay)").font(.system(size: 30, weight: .semibold)).monospacedDigit()
                     .lineLimit(1).minimumScaleFactor(0.6)
                     .foregroundStyle(theme.ink)
-                Text("de \(p.row.windowDays)").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                Text("of \(p.row.windowDays)").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
             }
             .padding(.top, 16)
 
             ProgressView(value: Double(p.elapsedDay), total: Double(p.row.windowDays))
                 .tint(theme.dataRecovery).padding(.top, 12)
 
-            (Text("Cumpliste ")
-                + Text("\(p.adherent) de \(p.elapsedDay)").foregroundColor(theme.ink).bold()
-                + Text(" días."))
+            Text("Kept **\(p.adherent) of \(p.elapsedDay)** days.")
                 .font(StrandFont.body).foregroundStyle(theme.inkSecondary).monospacedDigit().padding(.top, 16)
-            Text("Veredicto el \(p.verdictDate)")
+            Text("Verdict on \(p.verdictDate)")
                 .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).padding(.top, 6)
 
             cancelButton(p.row).padding(.top, 18)
@@ -496,7 +498,7 @@ private struct PatronesLanding: View {
 
     private func cancelButton(_ row: ExperimentRow) -> some View {
         Button { Task { await repo.cancelExperiment(row); await load() } } label: {
-            Text("Cancelar experimento").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            Text("Cancel experiment").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
         }
         .buttonStyle(.plain)
     }
@@ -504,7 +506,7 @@ private struct PatronesLanding: View {
     private func experimentVerdictSection(_ exp: ExperimentRow) -> some View {
         let v = Verdict(rawValue: exp.result ?? "") ?? .insufficient
         return VStack(alignment: .leading, spacing: 0) {
-            Text("Tu experimento").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("Your experiment").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 .padding(.top, 18)
                 .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5).padding(.top, -2) }
             Text(BucleFormat.verdictHeadline(v))
@@ -534,7 +536,7 @@ private struct PatronesLanding: View {
                 finished = nil
             } label: {
                 HStack(spacing: 5) {
-                    Text("Listo").font(StrandFont.headline).foregroundStyle(theme.ink)
+                    Text("Done").font(StrandFont.headline).foregroundStyle(theme.ink)
                     Image(systemName: "checkmark").font(.system(size: 14)).foregroundStyle(theme.ink)
                 }
             }
@@ -546,13 +548,13 @@ private struct PatronesLanding: View {
 
     private var anotaSection: some View {
         VStack(alignment: .leading, spacing: 11) {
-            Text(running != nil ? "Anota el resto de tu día" : "Anota tu día")
+            Text(running != nil ? String(localized: "Log the rest of your day") : String(localized: "Log your day"))
                 .instrumentoOverline().foregroundStyle(theme.ink)
             Button { showAnota = true } label: {
                 HStack(spacing: 13) {
                     Image(systemName: "square.and.pencil").font(.system(size: 20)).foregroundStyle(theme.inkSecondary)
                     VStack(alignment: .leading, spacing: 7) {
-                        Text(journalAnswered > 0 ? "\(journalAnswered) de \(journalTotal) anotados hoy" : "Marca qué pasó hoy")
+                        Text(journalAnswered > 0 ? String(localized: "\(journalAnswered) of \(journalTotal) logged today") : String(localized: "Mark what happened today"))
                             .font(StrandFont.headline).foregroundStyle(theme.ink).monospacedDigit()
                         if journalAnswered > 0 {
                             HStack(spacing: 5) {
@@ -562,7 +564,7 @@ private struct PatronesLanding: View {
                                 }
                             }
                         } else {
-                            Text("Entre más sé de tus hábitos, más patrones encuentro")
+                            Text("The more I know about your habits, the more patterns I find")
                                 .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
@@ -585,8 +587,8 @@ private struct PatronesLanding: View {
         let levers = curatedLevers
         if !levers.isEmpty {
             VStack(alignment: .leading, spacing: 0) {
-                sectionLabel("Lo que funciona en ti",
-                             trailing: behaviorInsights.count > levers.count ? "Ver todo" : nil,
+                sectionLabel("What works for you",
+                             trailing: behaviorInsights.count > levers.count ? String(localized: "See all") : nil,
                              info: .loQueFunciona) { showEfectos = true }
                 ForEach(Array(levers.enumerated()), id: \.offset) { _, insight in
                     leverRow(insight)
@@ -604,7 +606,7 @@ private struct PatronesLanding: View {
                     .frame(width: 22)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(BucleFormat.behaviorName(insight)).font(StrandFont.body).foregroundStyle(theme.ink)
-                    Text("\(insight.evidence.n) noches medidas")
+                    Text("\(insight.evidence.n) nights measured")
                         .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                 }
                 Spacer(minLength: 8)
@@ -625,7 +627,7 @@ private struct PatronesLanding: View {
         let rels = correlationInsights
         if !rels.isEmpty {
             VStack(alignment: .leading, spacing: 0) {
-                Text("Cómo se relacionan tus métricas").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("How your metrics relate").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     .padding(.bottom, 2)
                 ForEach(Array(rels.enumerated()), id: \.offset) { _, insight in
                     relationRow(insight)
@@ -642,7 +644,7 @@ private struct PatronesLanding: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(insight.title).font(StrandFont.body).foregroundStyle(theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text(strong ? "Relación fuerte" : "Relación media")
+                    Text(strong ? String(localized: "Strong relationship") : String(localized: "Medium relationship"))
                         .font(StrandFont.footnote)
                         .foregroundStyle(strong ? theme.positiveText : theme.inkTertiary)
                 }
@@ -663,13 +665,13 @@ private struct PatronesLanding: View {
     @ViewBuilder private var disenaSection: some View {
         if running == nil {
             VStack(alignment: .leading, spacing: 11) {
-                Text("¿Quieres probar algo?").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("Want to try something?").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Button { showDisena = true } label: {
                     HStack(spacing: 13) {
                         Image(systemName: "flask").font(.system(size: 20)).foregroundStyle(theme.inkSecondary)
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("Diseña tu propio experimento").font(StrandFont.headline).foregroundStyle(theme.ink)
-                            Text("Elige un hábito y mídelo una semana")
+                            Text("Design your own experiment").font(StrandFont.headline).foregroundStyle(theme.ink)
+                            Text("Pick a habit and measure it for a week")
                                 .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
@@ -692,20 +694,20 @@ private struct PatronesLanding: View {
         if !behaviorInsights.isEmpty {
             VStack(alignment: .leading, spacing: 11) {
                 HStack(spacing: 6) {
-                    Text("Tu expediente").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text("Your record").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     Button { info = .efectos } label: {
                         Image(systemName: "info.circle").font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Cómo funciona esta sección")
+                    .accessibilityLabel("How this section works")
                 }
                 Button { showEfectos = true } label: {
                     VStack(alignment: .leading, spacing: 14) {
                         HStack(spacing: 13) {
                             Image(systemName: "chart.bar").font(.system(size: 20)).foregroundStyle(theme.inkSecondary)
                             VStack(alignment: .leading, spacing: 3) {
-                                Text("Explora por métrica").font(StrandFont.headline).foregroundStyle(theme.ink)
-                                Text("Cómo cada hábito te mueve, en todo tu historial")
+                                Text("Explore by metric").font(StrandFont.headline).foregroundStyle(theme.ink)
+                                Text("How each habit moves you, across your whole history")
                                     .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
@@ -741,19 +743,19 @@ private struct PatronesLanding: View {
 
     private var coldStartHero: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Aún reuniendo señal").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text("Pronto tu cuerpo empezará a enseñarte cosas.")
+            Text("Still gathering signal").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("Your body will start teaching you things soon.")
                 .font(.system(size: 26, weight: .semibold)).tracking(-0.3)
                 .lineSpacing(2)
                 .foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 12)
-            Text("\(min(usableNights, Self.calibrationTarget)) de \(Self.calibrationTarget) noches")
+            Text("\(min(usableNights, Self.calibrationTarget)) of \(Self.calibrationTarget) nights")
                 .font(StrandFont.captionNumber).foregroundStyle(theme.ink).padding(.top, 18)
             calibrationBar.padding(.top, 10)
             Text(nightsRemaining == 1
-                 ? "Falta 1 noche con la banda para tus primeros patrones: qué te recupera, qué te desgasta y qué vale la pena probar."
-                 : "Faltan \(nightsRemaining) noches con la banda para tus primeros patrones: qué te recupera, qué te desgasta y qué vale la pena probar.")
+                 ? String(localized: "1 more night with the band for your first patterns: what recovers you, what drains you, and what's worth testing.")
+                 : String(localized: "\(nightsRemaining) more nights with the band for your first patterns: what recovers you, what drains you, and what's worth testing."))
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 16)
@@ -770,20 +772,20 @@ private struct PatronesLanding: View {
             }
         }
         .frame(height: 6)
-        .accessibilityLabel("\(usableNights) de \(Self.calibrationTarget) noches")
+        .accessibilityLabel("\(usableNights) of \(Self.calibrationTarget) nights")
     }
 
     private var coldStartAnota: some View {
         VStack(alignment: .leading, spacing: 11) {
-            Text("Adelántate").instrumentoOverline().foregroundStyle(theme.ink)
+            Text("Get ahead").instrumentoOverline().foregroundStyle(theme.ink)
                 .padding(.top, 18)
                 .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5).padding(.top, -2) }
             Button { showAnota = true } label: {
                 HStack(spacing: 13) {
                     Image(systemName: "square.and.pencil").font(.system(size: 20)).foregroundStyle(theme.inkSecondary)
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("Empieza por anotar tu día").font(StrandFont.headline).foregroundStyle(theme.ink)
-                        Text("Entre antes anotes, antes encuentro patrones")
+                        Text("Start by logging your day").font(StrandFont.headline).foregroundStyle(theme.ink)
+                        Text("The sooner you log, the sooner I find patterns")
                             .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -803,15 +805,15 @@ private struct PatronesLanding: View {
     /// (gray) so it reads as a promise, not data.
     private var loQueVerasSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Lo que verás aquí").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("What you'll see here").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 .padding(.bottom, 2)
-            comingRow("sparkles", "Hallazgos que tu data revela sola")
-            comingRow("arrow.up", "Lo que funciona en ti, ya probado")
-            comingRow("flask", "Experimentos para probar un cambio")
+            comingRow("sparkles", "Findings your data reveals on its own")
+            comingRow("arrow.up", "What works for you, already proven")
+            comingRow("flask", "Experiments to test a change")
         }
     }
 
-    private func comingRow(_ symbol: String, _ text: String) -> some View {
+    private func comingRow(_ symbol: String, _ text: LocalizedStringKey) -> some View {
         HStack(spacing: 13) {
             Image(systemName: symbol).font(.system(size: 18)).foregroundStyle(theme.hairlineStrong)
                 .frame(width: 22)
@@ -835,7 +837,7 @@ private struct PatronesLanding: View {
                     Image(systemName: "info.circle").font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Cómo funciona esta sección")
+                .accessibilityLabel("How this section works")
             }
             Spacer()
             if let trailing {
@@ -1054,7 +1056,7 @@ enum ExperimentDates {
         return out
     }
 
-    /// es-MX «vie 26 jun» for a day key.
+    /// «vie 26 jun» / «Fri Jun 26» for a day key — follows the app language (FER-472).
     static func longLabelES(_ key: String) -> String? {
         parse.date(from: key).map { longES.string(from: $0) }
     }
@@ -1065,7 +1067,7 @@ enum ExperimentDates {
     }()
 
     static let longES: DateFormatter = {
-        let f = DateFormatter(); f.locale = Locale(identifier: "es_MX"); f.dateFormat = "EEE d MMM"
+        let f = DateFormatter(); f.locale = .current; f.dateFormat = "EEE d MMM"
         return f
     }()
 }
