@@ -172,7 +172,7 @@ private struct PatronesLanding: View {
             }
             Spacer()
             Text(Self.dateLabel)
-                .font(StrandFont.mono(11)).foregroundStyle(theme.inkTertiary)
+                .font(StrandFont.number(11, weight: .regular)).foregroundStyle(theme.inkTertiary)
                 .textCase(.uppercase)
         }
         .padding(.bottom, 6)
@@ -273,7 +273,7 @@ private struct PatronesLanding: View {
             HStack(spacing: 4) {
                 Image(systemName: arrow).font(.system(size: 13, weight: .heavy))
                 Text(BucleFormat.signedDelta(value, unit: insight.datum.unit))
-                    .font(StrandFont.mono(21, weight: .semibold))
+                    .font(StrandFont.number(21, weight: .semibold))
             }
             .foregroundStyle(good ? theme.positiveText : theme.critical)
             Text(context)
@@ -611,7 +611,7 @@ private struct PatronesLanding: View {
                 }
                 Spacer(minLength: 8)
                 Text(BucleFormat.signedDelta(insight.datum.value, unit: insight.datum.unit))
-                    .font(StrandFont.mono(16, weight: .semibold))
+                    .font(StrandFont.number(16, weight: .semibold))
                     .foregroundStyle(good ? theme.positiveText : theme.critical)
             }
             .padding(.vertical, 14)

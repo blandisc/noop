@@ -23284,19 +23284,19 @@
         }
       }
     },
-    "See the method": {
+    "How it's calculated": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "See the method"
+            "value": "How it's calculated"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ver el método"
+            "value": "Cómo se calcula"
           }
         }
       }

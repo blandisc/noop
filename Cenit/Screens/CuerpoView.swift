@@ -347,7 +347,7 @@ private struct CuerpoLanding: View {
             }
             Spacer()
             Text(Self.dateLabel)
-                .font(StrandFont.mono(11)).foregroundStyle(theme.inkTertiary)
+                .font(StrandFont.number(11, weight: .regular)).foregroundStyle(theme.inkTertiary)
                 .textCase(.uppercase)
         }
         .padding(.bottom, 6)
@@ -578,7 +578,7 @@ private struct CuerpoLanding: View {
                 // The trend's own baseline, read as a signed delta vs the 14-day mean (datum hue).
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(delta >= 0 ? "+\(delta)" : "\(delta)")
-                        .font(StrandFont.mono(13, weight: .semibold)).foregroundStyle(color)
+                        .font(StrandFont.number(13, weight: .semibold)).foregroundStyle(color)
                     Text("vs tu media").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                 }
             }

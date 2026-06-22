@@ -830,7 +830,7 @@ struct ExperimentDetailSheet: View {
                     if let d = e.delta {
                         HStack(spacing: 4) {
                             Text(BucleFormat.signedDelta(d, unit: e.unit))
-                                .font(StrandFont.mono(15, weight: .semibold))
+                                .font(StrandFont.number(15, weight: .semibold))
                                 .foregroundStyle(deltaIsGood(d) ? theme.positiveText : theme.critical)
                             Text("vs before").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                         }
