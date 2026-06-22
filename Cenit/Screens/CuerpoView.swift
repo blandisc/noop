@@ -292,12 +292,15 @@ private struct CuerpoLanding: View {
         }
         .sheet(item: $stressDetail) { item in
             // Light «Instrumento» Detalle de Estrés — theme passed explicitly (it doesn't propagate
-            // through `.sheet`), NO nested NavigationStack (FER-171). SOLO Cuerpo. (FER-241)
+            // through `.sheet`), NO nested NavigationStack (FER-171). (FER-241; unificado con Hoy en FER-452
+            // vía el factory compartido `StressDayMapPresenter`.)
             // The «mapa del día» driver (EventKit + intraday curve) is built fresh on tap. (FER-377)
             // Patterns load + the Coach handoff (FER-378): tap → close sheet, jump to the Coach tab.
             StressDetailScreen(theme: theme, model: item.model, dayMap: stressDayMap,
-                               patternsLoader: { await loadStressPatterns() },
-                               eventPatternsLoader: { await loadEventStressPatterns() },
+                               patternsLoader: { await StressDayMapPresenter.timeOfDayPatterns(
+                                   repo: repo, maxHR: model.profile.hrMax, restingHR: stressRestingHR) },
+                               eventPatternsLoader: { await StressDayMapPresenter.eventPatterns(
+                                   repo: repo, map: stressDayMap) },
                                onExploreInCoach: { stressDetail = nil; tabRouter.select(.coach) })
         }
         .sheet(item: $skinTempDetail) { item in
@@ -605,41 +608,16 @@ private struct CuerpoLanding: View {
         return statColumn("Stress", value: s.map { String(format: "%.1f", $0) },
                           unit: s == nil ? nil : "/ 3",
                           color: s.map(stressDataColor) ?? theme.inkTertiary) {
-            stressDayMap = makeCalendarDayMap()
+            stressDayMap = StressDayMapPresenter.make(
+                repo: repo, maxHR: model.profile.hrMax, restingHR: stressRestingHR)
             stressDetail = StressDetailItem(model: stressModel)
         }
     }
 
-    /// Build the «mapa del día» driver from the in-scope repo + profile, capturing only the closures it
-    /// needs (RR per window, sleep spans to exclude) so the model stays store-free. (FER-377)
-    private func makeCalendarDayMap() -> CalendarDayMap {
-        let resting = resolveMeasured { $0.restingHr.map(Double.init) }?.value ?? StrainScorer.defaultRestingHR
-        return CalendarDayMap(
-            restingHR: resting,
-            maxHR: Double(model.profile.hrMax),
-            rrLoader: { from, to in await repo.rrIntervals(from: from, to: to) },
-            sleepLoader: { from, to in
-                (await repo.sleepSessions(from: from, to: to))
-                    .compactMap { $0.startTs <= $0.endTs ? $0.startTs...$0.endTs : nil }
-            })
-    }
-
-    /// Cross-day «moment of day» stress patterns (FER-378): ensure the recent daily summaries are
-    /// persisted (idempotent backfill), then detect. Runs off the main actor via the repo's async reads.
-    private func loadStressPatterns() async -> [StressTimeOfDayPatterns.Pattern] {
-        let resting = resolveMeasured { $0.restingHr.map(Double.init) }?.value ?? StrainScorer.defaultRestingHR
-        await repo.backfillStressSummaries(restingHR: resting, maxHR: Double(model.profile.hrMax))
-        return StressTimeOfDayPatterns.detect(summariesByDay: await repo.stressDaySummaries())
-    }
-
-    /// Cross-day «by calendar-event» stress patterns (FER-388): the daily summaries are already
-    /// backfilled by `loadStressPatterns` (which runs first); here we just read them as the outcome and
-    /// cross with a single on-device EventKit read of recurring event titles. Nothing is persisted.
-    private func loadEventStressPatterns() async -> [StressEventPatterns.Pattern] {
-        guard let map = stressDayMap else { return [] }
-        let dayMeans = (await repo.stressDaySummaries()).compactMapValues { $0.dayMean }
-        guard !dayMeans.isEmpty else { return [] }
-        return StressEventPatterns.detect(eventDaysByType: map.eventDaysByTitle(), dayMeanByDay: dayMeans)
+    /// Today's resting HR for the «mapa del día» (resolved, with the engine's default as the floor) —
+    /// the one input the shared `StressDayMapPresenter` can't derive itself.
+    private var stressRestingHR: Double {
+        resolveMeasured { $0.restingHr.map(Double.init) }?.value ?? StrainScorer.defaultRestingHR
     }
 
     private var hrvStat: some View {

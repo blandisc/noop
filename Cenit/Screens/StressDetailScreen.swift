@@ -15,9 +15,10 @@ import Foundation
 // con BANDAS UNIVERSALES y bloques propios (qué lo mueve = RHR/HRV, tiempo en calma, placeholder de
 // calendario). Reemplaza, para el estrés, la vieja `MetricInfoSheet` ligera que abría Cuerpo.
 //
-// Se presenta SOLO desde Cuerpo vía `.sheet(item:)` (el tile de Estrés en Hoy NO cambia — sigue simplificado)
-// con el tema vivo pasado EXPLÍCITO (no propaga por `.sheet`, FER-162) y SIN `NavigationStack` anidado (un
-// stack anidado cruzando el path de la tab crasheaba SwiftUI, FER-171).
+// Se presenta desde Cuerpo Y desde Hoy vía `.sheet(item:)` (FER-452 unificó el detalle: el «ver más» de
+// Estrés en Hoy abre esta MISMA pantalla completa, con el «mapa del día» cableado por el factory compartido
+// `StressDayMapPresenter`), con el tema vivo pasado EXPLÍCITO (no propaga por `.sheet`, FER-162) y SIN
+// `NavigationStack` anidado (un stack anidado cruzando el path de la tab crasheaba SwiftUI, FER-171).
 //
 // Consume `StressModel` (de `StressView.swift`) TAL CUAL — no crea matemática nueva: el score/banda 0–3, la
 // explicación, los marcadores RHR/HRV vs base, la serie completa y el «tiempo en calma» ya los deriva el

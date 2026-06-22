@@ -226,3 +226,39 @@ final class CalendarDayMap: ObservableObject {
         }
     }
 }
+
+// MARK: - Shared «mapa del día» wiring (FER-452)
+
+/// Factory for the Detalle de Estrés «mapa del día» so **Hoy and Cuerpo present the IDENTICAL rich detail**
+/// — the consistency is structural (one factory both call), not copy-paste that can drift. Mirrors the
+/// repo's `*DetailModel.build` pattern. The view supplies `repo`, the profile `maxHR`, and the resting HR it
+/// already resolved (`resolveMeasured`, with `StrainScorer.defaultRestingHR` as the floor).
+@MainActor
+enum StressDayMapPresenter {
+    /// The EventKit + intraday-stress driver, built fresh when the Detalle de Estrés opens. (FER-377)
+    static func make(repo: Repository, maxHR: Int, restingHR: Double) -> CalendarDayMap {
+        CalendarDayMap(
+            restingHR: restingHR,
+            maxHR: Double(maxHR),
+            rrLoader: { from, to in await repo.rrIntervals(from: from, to: to) },
+            sleepLoader: { from, to in
+                (await repo.sleepSessions(from: from, to: to))
+                    .compactMap { $0.startTs <= $0.endTs ? $0.startTs...$0.endTs : nil }
+            })
+    }
+
+    /// Cross-day «moment of day» stress patterns (FER-378): idempotent backfill, then detect.
+    static func timeOfDayPatterns(repo: Repository, maxHR: Int, restingHR: Double) async -> [StressTimeOfDayPatterns.Pattern] {
+        await repo.backfillStressSummaries(restingHR: restingHR, maxHR: Double(maxHR))
+        return StressTimeOfDayPatterns.detect(summariesByDay: await repo.stressDaySummaries())
+    }
+
+    /// Cross-day «by calendar-event» stress patterns (FER-388): reads the summaries `timeOfDayPatterns`
+    /// already backfilled and crosses them with one on-device EventKit read. Nothing is persisted.
+    static func eventPatterns(repo: Repository, map: CalendarDayMap?) async -> [StressEventPatterns.Pattern] {
+        guard let map else { return [] }
+        let dayMeans = (await repo.stressDaySummaries()).compactMapValues { $0.dayMean }
+        guard !dayMeans.isEmpty else { return [] }
+        return StressEventPatterns.detect(eventDaysByType: map.eventDaysByTitle(), dayMeanByDay: dayMeans)
+    }
+}
