@@ -19,6 +19,8 @@ enum InstrumentTabIcon {
     case system(String)
     /// The 24-hour `DialTabGlyph` (the «Hoy» mark).
     case dial
+    /// The two-linked-circles `PatronesGlyph` (the «Patrones» mark).
+    case linkedCircles
 }
 
 /// The custom bottom bar. Mounted via `.safeAreaInset(edge: .bottom)` on the
@@ -107,6 +109,8 @@ struct InstrumentTabBar<Tag: Hashable>: View {
                 .foregroundStyle(ink)
         case .dial:
             DialTabGlyph(size: 23, color: ink)
+        case .linkedCircles:
+            PatronesGlyph(color: ink, lineWidth: 1.9).frame(width: 22, height: 22)
         }
     }
 }
