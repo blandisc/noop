@@ -66,9 +66,11 @@ public struct SegmentedPillControl<T: Hashable>: View {
         .overlay(Capsule(style: .continuous).strokeBorder(trackStroke, lineWidth: 1))
     }
 
-    /// One segment. Instrumento: the active «thumb» HUGS the label (content-width, centered in the
-    /// equal-width tap segment) so a short label like «M» gets a tight pill instead of an over-wide one;
-    /// the full segment stays the tap target. A touch shorter than the 44pt min (a wide secondary control).
+    /// One segment. Instrumento: the active «thumb» HUGS the label to the WIDTH (content-width, centered in
+    /// the equal-width tap segment) but FILLS the track's HEIGHT — the capsule wraps a fixed-height frame, so
+    /// it no longer floats small inside a taller groove (the bug: the fill hugged the text + vertical padding,
+    /// ~30pt, inside a 38pt segment + 4pt track padding ≈ 46pt riel). Now the thumb is 34pt tall, inset 4pt
+    /// from the track edge like an iOS segmented control. The full segment stays the tap target.
     /// Legacy (theme == nil) keeps the exact dark-palette look — UNCHANGED. (FER-439 / Detalle de Vital fix)
     @ViewBuilder private func segment(_ item: T, _ sel: Bool) -> some View {
         if let theme {
@@ -77,14 +79,15 @@ public struct SegmentedPillControl<T: Hashable>: View {
                 .fontWeight(sel ? .semibold : .regular)
                 .lineLimit(1).minimumScaleFactor(0.85)
                 .foregroundStyle(sel ? theme.ink : theme.inkSecondary)
-                .padding(.vertical, 6).padding(.horizontal, 14)
+                .padding(.horizontal, 14)
+                .frame(height: 34)
                 .background {
                     if sel {
                         Capsule(style: .continuous).fill(theme.surface)
                             .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
                     }
                 }
-                .frame(maxWidth: .infinity, minHeight: 38)
+                .frame(maxWidth: .infinity)
                 .contentShape(Rectangle())
         } else {
             Text(label(item))

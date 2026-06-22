@@ -1493,8 +1493,12 @@ struct MetricDetailScreen: View {
         var bandLoFrac: CGFloat
         var bandHiFrac: CGFloat
         var markFrac: CGFloat
+        var markLabel: String      // today's value, rotulated above the thumb
+        var markOutside: Bool      // today is beyond the band → tint the value `warning`
         var loLabel: String
         var hiLabel: String
+        var loLabelFrac: CGFloat   // x of the lo label: the band's left edge (personal) or the axis end (SpO₂)
+        var hiLabelFrac: CGFloat   // x of the hi label: the band's right edge (personal) or the axis end (SpO₂)
         var centerLabel: LocalizedStringKey
         var fillColor: Color
         var disclosureTitle: LocalizedStringKey
@@ -1515,7 +1519,9 @@ struct MetricDetailScreen: View {
             return InlineBand(
                 bandLoFrac: CGFloat((floor - lo) / span), bandHiFrac: 1,
                 markFrac: clampFrac((today - lo) / span),
+                markLabel: fmt(today), markOutside: today < floor,
                 loLabel: fmt(lo), hiLabel: fmt(hi),
+                loLabelFrac: 0, hiLabelFrac: 1,   // SpO₂ labels are the domain ends (the bar's edges)
                 centerLabel: "healthy zone ≥ 95%",
                 fillColor: theme.verdict.opacity(0.26),
                 disclosureTitle: "Healthy zone", disclosureText: EX_SPO2_FLOOR)
@@ -1525,10 +1531,13 @@ struct MetricDetailScreen: View {
         let lo = band.lowerBound, hi = band.upperBound, spanB = hi - lo
         guard spanB > 0 else { return nil }
         let axisLo = lo - spanB * 0.45, axisHi = hi + spanB * 0.45, span = axisHi - axisLo
+        let bandLoFrac = CGFloat((lo - axisLo) / span), bandHiFrac = CGFloat((hi - axisLo) / span)
         return InlineBand(
-            bandLoFrac: CGFloat((lo - axisLo) / span), bandHiFrac: CGFloat((hi - axisLo) / span),
+            bandLoFrac: bandLoFrac, bandHiFrac: bandHiFrac,
             markFrac: clampFrac((today - axisLo) / span),
+            markLabel: fmt(today), markOutside: today < lo || today > hi,
             loLabel: fmt(lo), hiLabel: fmt(hi),
+            loLabelFrac: bandLoFrac, hiLabelFrac: bandHiFrac,   // labels sit under the band's actual edges
             centerLabel: "your normal range · \(s.nValid) nights",
             fillColor: metricHue.opacity(0.26),
             disclosureTitle: "Your normal range", disclosureText: EX_RANGO)
@@ -1551,39 +1560,51 @@ struct MetricDetailScreen: View {
 
     private func inlineBandBar(_ b: InlineBand) -> some View {
         let open = openDisclosure == "band"
-        return VStack(spacing: 5) {
+        return VStack(spacing: 6) {
+            // The bar, today's value above the thumb, and the edge numbers under their ACTUAL positions
+            // (the band's edges for a personal range, the axis ends for SpO₂) — anchored by fraction with
+            // `.position`, so a number never floats away from the mark it labels. `.position` is clamped a
+            // hair off each edge so a label at frac≈0 or ≈1 isn't half-cut. (Detalle de Vital fix — rótulos
+            // desalineados: el 36/51 colgaban de los extremos de la barra, no de la banda.)
             GeometryReader { geo in
                 let w = geo.size.width
-                ZStack(alignment: .leading) {
-                    Capsule().fill(theme.hairline)
-                    Capsule().fill(b.fillColor)
-                        .frame(width: max(0, w * (b.bandHiFrac - b.bandLoFrac)))
-                        .offset(x: w * b.bandLoFrac)
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 2, style: .continuous).fill(theme.paper)
-                            .frame(width: 7, height: 16)
-                        RoundedRectangle(cornerRadius: 1.5, style: .continuous).fill(theme.ink)
-                            .frame(width: 3, height: 14)
+                let clampX: (CGFloat) -> CGFloat = { x in min(max(x, 14), w - 14) }
+                ZStack(alignment: .topLeading) {
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(theme.hairline)
+                        Capsule().fill(b.fillColor)
+                            .frame(width: max(0, w * (b.bandHiFrac - b.bandLoFrac)))
+                            .offset(x: w * b.bandLoFrac)
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 2, style: .continuous).fill(theme.paper)
+                                .frame(width: 7, height: 16)
+                            RoundedRectangle(cornerRadius: 1.5, style: .continuous).fill(theme.ink)
+                                .frame(width: 3, height: 14)
+                        }
+                        .offset(x: w * b.markFrac - 3.5)
                     }
-                    .offset(x: w * b.markFrac - 3.5)
+                    .frame(width: w, height: 8)
+                    .position(x: w / 2, y: 23)
+
+                    Text(b.markLabel).font(StrandFont.footnote).monospacedDigit()
+                        .foregroundStyle(b.markOutside ? theme.warning : theme.ink)
+                        .fixedSize()
+                        .position(x: clampX(w * b.markFrac), y: 8)
+
+                    Text(b.loLabel).font(StrandFont.footnote).monospacedDigit()
+                        .foregroundStyle(theme.inkTertiary).fixedSize()
+                        .position(x: clampX(w * b.loLabelFrac), y: 38)
+                    Text(b.hiLabel).font(StrandFont.footnote).monospacedDigit()
+                        .foregroundStyle(theme.inkTertiary).fixedSize()
+                        .position(x: clampX(w * b.hiLabelFrac), y: 38)
                 }
             }
-            .frame(height: 8)
-            // The edge numbers never shrink/truncate (fixedSize); the long center label shrinks to fit and
-            // the spacers keep a minimum gap, so «36 · tu rango normal · 30 noches · 51» never overlaps on a
-            // narrow sheet. (Detalle de Vital fix — rótulos encimados)
-            HStack(spacing: 6) {
-                Text(b.loLabel).font(StrandFont.footnote).monospacedDigit().foregroundStyle(theme.inkTertiary)
-                    .lineLimit(1).fixedSize()
-                Spacer(minLength: 6)
-                HStack(spacing: 4) {
-                    Text(b.centerLabel).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                        .lineLimit(1).minimumScaleFactor(0.7)
-                    Image(systemName: "info.circle").font(.system(size: 11)).foregroundStyle(theme.inkTertiary)
-                }
-                Spacer(minLength: 6)
-                Text(b.hiLabel).font(StrandFont.footnote).monospacedDigit().foregroundStyle(theme.inkTertiary)
-                    .lineLimit(1).fixedSize()
+            .frame(height: 46)
+            // The center caption sits in normal flow below, centered and free to shrink on a narrow sheet.
+            HStack(spacing: 4) {
+                Text(b.centerLabel).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    .lineLimit(1).minimumScaleFactor(0.7)
+                Image(systemName: "info.circle").font(.system(size: 11)).foregroundStyle(theme.inkTertiary)
             }
         }
         .padding(4)
