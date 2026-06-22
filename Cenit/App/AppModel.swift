@@ -493,7 +493,9 @@ final class AppModel: ObservableObject {
         // live workout) and persist them — this lights up the summary's Effort hero + recovery-cost block.
         let hrSamples = session.hrSamples
         if hrSamples.count >= 2 {
-            record.avgHr = Int((hrSamples.map { Double($0.bpm) }.reduce(0, +) / Double(hrSamples.count)).rounded())
+            let hrSum: Double = hrSamples.reduce(0.0) { $0 + Double($1.bpm) }
+            let hrMean: Double = hrSum / Double(hrSamples.count)
+            record.avgHr = Int(hrMean.rounded())
             record.strain = StrainScorer.strain(hrSamples, maxHR: Double(profile.hrMax), sex: profile.sex)
         }
         let hrMax = profile.hrMax

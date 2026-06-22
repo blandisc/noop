@@ -599,7 +599,7 @@ final class HealthKitBridge: ObservableObject {
                                   predicate: predicate,
                                   limit: HKObjectQueryNoLimit,
                                   sortDescriptors: nil) { _, samples, _ in
-                let rows = (samples as? [HKWorkout] ?? []).map { w in
+                let rows: [WorkoutRow] = (samples as? [HKWorkout] ?? []).map { (w: HKWorkout) -> WorkoutRow in
                     WorkoutRow(
                         startTs: Int(w.startDate.timeIntervalSince1970),
                         endTs:   Int(w.endDate.timeIntervalSince1970),

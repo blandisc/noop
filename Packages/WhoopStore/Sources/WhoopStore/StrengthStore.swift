@@ -410,8 +410,9 @@ extension WhoopStore {
             case .maxReps:
                 isBetter = (pr.reps ?? 0) > (existing.reps ?? 0)
             case .maxVolume:
-                isBetter = (pr.valueKg ?? 0) * Double(pr.reps ?? 0)
-                         > (existing.valueKg ?? 0) * Double(existing.reps ?? 0)
+                let newVolume: Double = (pr.valueKg ?? 0) * Double(pr.reps ?? 0)
+                let oldVolume: Double = (existing.valueKg ?? 0) * Double(existing.reps ?? 0)
+                isBetter = newVolume > oldVolume
             }
             guard isBetter else { return }
         }
