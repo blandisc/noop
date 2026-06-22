@@ -32663,6 +32663,23 @@
           }
         }
       }
+    },
+    "Tomorrow, if you rest well, you should be around ": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tomorrow, if you rest well, you should be around "
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mañana, si descansas bien, deberías rondar "
+          }
+        }
+      }
     }
   },
   "version": "1.1"

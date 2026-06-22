@@ -97,6 +97,42 @@ final class RecoveryForecastTests: XCTestCase {
         XCTAssertEqual(RecoveryForecast.debtDrag(nil), 0)
     }
 
+    // MARK: - Acute session-strain drag (FER-442)
+
+    func testSessionStrainLowersEstimate() {
+        let series = Array(repeating: 65.0 as Double?, count: RecoveryForecast.window)
+        guard let base = RecoveryForecast.compute(recovery: series),
+              let withStrain = RecoveryForecast.compute(recovery: series, sessionStrain: 16) else {
+            return XCTFail()
+        }
+        XCTAssertLessThan(withStrain.estimate, base.estimate, "a hard session today should drag tomorrow down")
+    }
+
+    func testSessionStrainBelowFloorHasNoEffect() {
+        let series = Array(repeating: 65.0 as Double?, count: RecoveryForecast.window)
+        guard let base = RecoveryForecast.compute(recovery: series),
+              let light = RecoveryForecast.compute(recovery: series, sessionStrain: 3) else {
+            return XCTFail()
+        }
+        XCTAssertEqual(light.estimate, base.estimate, accuracy: 0.001, "strain under the floor applies no drag")
+    }
+
+    func testStrainDragIsCappedAndMonotone() {
+        // nil / at-or-below the floor → no drag; absurd strain → capped at maxStrainDrag.
+        XCTAssertEqual(RecoveryForecast.strainDrag(nil), 0)
+        XCTAssertEqual(RecoveryForecast.strainDrag(RecoveryForecast.strainDragFloor), 0, accuracy: 0.001)
+        XCTAssertEqual(RecoveryForecast.strainDrag(1000), RecoveryForecast.maxStrainDrag, accuracy: 0.001)
+        // Monotone non-decreasing across the ramp.
+        XCTAssertGreaterThan(RecoveryForecast.strainDrag(14), RecoveryForecast.strainDrag(8))
+        XCTAssertGreaterThan(RecoveryForecast.strainDrag(8), RecoveryForecast.strainDrag(5))
+    }
+
+    func testSessionStrainDoesNotBypassGate() {
+        // Too little base to forecast: a session strain must NOT conjure a number.
+        let series = Array(repeating: 70.0 as Double?, count: RecoveryForecast.minDays - 1)
+        XCTAssertNil(RecoveryForecast.compute(recovery: series, sessionStrain: 18))
+    }
+
     // MARK: - Robustness
 
     func testOutOfRangeAndMissingValuesIgnored() {
