@@ -60,7 +60,9 @@ struct InstrumentTabBar<Tag: Hashable>: View {
         HStack(alignment: .top, spacing: 0) {
             ForEach(items, id: \.tag) { item in tab(item) }
         }
-        .padding(.top, 8)
+        // Padding superior compacto (FER-488): 4pt en vez de 8 para que los iconos suban y el dock de page
+        // dots de «Hoy» quede aún más cerca de la barra. Aplica en las 5 pestañas (cosmético, reversible).
+        .padding(.top, 4)
         .frame(maxWidth: .infinity)
         // The surface (and its top hairline) extend through the home-indicator area;
         // the buttons sit above it in the safe region.
