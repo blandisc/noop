@@ -61,17 +61,17 @@ public struct SegmentedPillControl<T: Hashable>: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(theme == nil ? 3 : 4)
+        .padding(3)
         .background(trackFill, in: Capsule(style: .continuous))
         .overlay(Capsule(style: .continuous).strokeBorder(trackStroke, lineWidth: 1))
     }
 
     /// One segment. Instrumento: the active «thumb» HUGS the label to the WIDTH (content-width, centered in
     /// the equal-width tap segment) but FILLS the track's HEIGHT — the capsule wraps a fixed-height frame, so
-    /// it no longer floats small inside a taller groove (the bug: the fill hugged the text + vertical padding,
-    /// ~30pt, inside a 38pt segment + 4pt track padding ≈ 46pt riel). Now the thumb is 34pt tall, inset 4pt
-    /// from the track edge like an iOS segmented control. The full segment stays the tap target.
-    /// Legacy (theme == nil) keeps the exact dark-palette look — UNCHANGED. (FER-439 / Detalle de Vital fix)
+    /// it no longer floats small inside a taller groove. The thumb is 28pt tall, inset 3pt from the track
+    /// edge like a slim iOS segmented control — a quiet secondary control, deliberately tighter than the
+    /// 44pt min (the full segment width stays the tap target). Legacy (theme == nil) keeps the exact
+    /// dark-palette look — UNCHANGED. (FER-439 / Detalle de Vital fix)
     @ViewBuilder private func segment(_ item: T, _ sel: Bool) -> some View {
         if let theme {
             Text(label(item))
@@ -79,8 +79,8 @@ public struct SegmentedPillControl<T: Hashable>: View {
                 .fontWeight(sel ? .semibold : .regular)
                 .lineLimit(1).minimumScaleFactor(0.85)
                 .foregroundStyle(sel ? theme.ink : theme.inkSecondary)
-                .padding(.horizontal, 14)
-                .frame(height: 34)
+                .padding(.horizontal, 12)
+                .frame(height: 28)
                 .background {
                     if sel {
                         Capsule(style: .continuous).fill(theme.surface)

@@ -34142,6 +34142,40 @@
           }
         }
       }
+    },
+    "%lld of the last %lld days in": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of the last %lld days in"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld de los últimos %lld días en"
+          }
+        }
+      }
+    },
+    "What each range means": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What each range means"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qué significa cada rango"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

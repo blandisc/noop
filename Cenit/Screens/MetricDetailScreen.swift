@@ -1653,10 +1653,28 @@ struct MetricDetailScreen: View {
             Text("Your story").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             if visibleBlocks.contains(.periodSelector) { periodSelector(window) }
             chartBlock(window)
-            // «Days within your range» is about the PERSONAL band, so it only shows in moving-average mode.
+            // «Days in range»: in moving-average mode it's your PERSONAL band; in ranges mode it's the
+            // population classification band you fall in today, and that line carries the ⓘ that expands
+            // every band's cutoffs (athlete / excellent / normal / …). (Detalle de Vital — cortes de rango)
             if chartMode == .movingAverage, let dir = daysInRangeLine(window) {
                 Text(dir).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
+            } else if rangesModeActive, let line = daysInClassBandText(window) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Button { withAnimation(.easeInOut(duration: 0.25)) { toggle("rangos") } } label: {
+                        HStack(spacing: 6) {
+                            line.font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .multilineTextAlignment(.leading)
+                            Image(systemName: "info.circle").font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
+                            Spacer(minLength: 0)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text("What each range means"))
+                    if openDisclosure == "rangos" { rangesDisclosure }
+                }
             }
             statStripSection(window)
         }
@@ -1671,6 +1689,45 @@ struct MetricDetailScreen: View {
         guard vals.count > 1 else { return nil }
         let inRange = vals.reduce(0) { $0 + (band.contains($1) ? 1 : 0) }
         return "\(inRange) of the last \(vals.count) days within your range"
+    }
+
+    /// «Ranges» mode's counterpart to `daysInRangeLine`: how many windowed days fell in the population
+    /// classification band you're in TODAY (athlete / excellent / normal / …), with that band named in its
+    /// own hue. Returns a `Text` (not a key) so the band name can be tinted inside the sentence. The ⓘ next
+    /// to it opens `rangesDisclosure` with every band's cutoffs. (Detalle de Vital — cortes de rango)
+    private func daysInClassBandText(_ window: MetricWindow) -> Text? {
+        guard rangesModeActive, let active = spec.info.bands.first(where: { $0.isActive }) else { return nil }
+        let vals = window.values
+        guard vals.count > 1 else { return nil }
+        let inBand = vals.reduce(0) { acc, v in
+            let okLo = active.lower.map { v >= $0 } ?? true
+            let okHi = active.upper.map { v < $0 } ?? true
+            return acc + (okLo && okHi ? 1 : 0)
+        }
+        return Text("\(inBand) of the last \(vals.count) days in")
+            + Text(verbatim: " ") + Text(active.label).foregroundColor(metricHue)
+    }
+
+    /// The cutoff table behind the «Ranges» ⓘ: each classification band's label + numeric range, with the
+    /// one you're in today tinted in the metric's hue. Data comes straight from `MetricInfo.bands`. (Detalle
+    /// de Vital — cortes de rango)
+    private var rangesDisclosure: some View {
+        let rows = spec.info.bands.filter { $0.lower != nil || $0.upper != nil }
+        return disclosurePanel {
+            Text("What each range means").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            VStack(spacing: 7) {
+                ForEach(Array(rows.enumerated()), id: \.offset) { _, b in
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(b.label).font(StrandFont.caption)
+                            .fontWeight(b.isActive ? .semibold : .regular)
+                            .foregroundStyle(b.isActive ? metricHue : theme.inkSecondary)
+                        Spacer(minLength: 8)
+                        Text(b.range).font(StrandFont.caption).monospacedDigit()
+                            .foregroundStyle(b.isActive ? metricHue : theme.inkSecondary)
+                    }
+                }
+            }
+        }
     }
 
     @ViewBuilder private func statStripSection(_ window: MetricWindow) -> some View {
