@@ -700,12 +700,12 @@ struct TodayView: View {
                     .frame(width: 1, height: 11)
                     .accessibilityHidden(true)
                 HStack(spacing: 4) {
-                    // Acento verde en el glifo de la batería (handoff): la fuente de energía del strap
-                    // lleva el verde del veredicto (`verdict`); el «%» se queda en tinta terciaria. Es la
-                    // misma licencia consciente sobre «color solo en el dato» que los glifos de los tiles.
+                    // Acento POR NIVEL en el glifo de la batería: sana → verde del veredicto; ≤20% →
+                    // ámbar (`warning`); ≤10% → rojo (`critical`) — ver `batteryColor`. El «%» se queda en
+                    // tinta terciaria: el color vive solo en el dato (glifo), como en los tiles.
                     Image(systemName: batteryIcon(pct: pct, charging: live.charging == true))
                         .font(StrandFont.overline)
-                        .foregroundStyle(theme.verdict)
+                        .foregroundStyle(batteryColor(pct))
                     Text("\(Int(pct.rounded()))%")
                         .font(StrandFont.overline)
                         .tracking(StrandFont.overlineTracking)
@@ -731,6 +731,18 @@ struct TodayView: View {
         default:      level = "battery.25"
         }
         return charging ? "\(level).bolt" : level
+    }
+
+    /// Color del glifo de batería por nivel de carga: sana → verde del veredicto; ≤20% → ámbar
+    /// (`warning`); ≤10% → rojo (`critical`). El «%» se mantiene en tinta; el color vive solo en el
+    /// glifo (regla «color solo en el dato»). El glifo SF ya cambia su relleno por nivel, así que el
+    /// color refuerza —no sustituye— esa señal (sigue siendo legible para daltónicos vía el relleno).
+    private func batteryColor(_ pct: Double) -> Color {
+        switch pct {
+        case ...10: return theme.critical   // ≤10 % — crítica
+        case ...20: return theme.warning    // ≤20 % — baja
+        default:    return theme.verdict    // sana
+        }
     }
 
     // MARK: - Héroe unificado «Instrumento diurno» (FER-160)
@@ -1223,6 +1235,15 @@ struct TodayView: View {
         @Environment(\.instrumentoTheme) private var theme
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+        /// Tiempo relativo COMPACTO: «hace 3 min», «hace 1 h», «hace 2 d» en vez de la forma larga
+        /// («hace 3 minutos»). `unitsStyle = .abbreviated`; instancia única reutilizada — configurar el
+        /// formateador en cada render es caro.
+        private static let relativeFormatter: RelativeDateTimeFormatter = {
+            let f = RelativeDateTimeFormatter()
+            f.unitsStyle = .abbreviated
+            return f
+        }()
+
         var body: some View {
             HStack(spacing: NoopMetrics.space1) {
                 glyph
@@ -1264,7 +1285,7 @@ struct TodayView: View {
                 TimelineView(.periodic(from: .now, by: 60)) { context in
                     // Acota a pasado (≤ −1 s) para que nunca diga «dentro de…» cuando la sync es ≈ ahora.
                     let delta = Swift.min(at - context.date.timeIntervalSince1970, -1)
-                    Text(RelativeDateTimeFormatter().localizedString(fromTimeInterval: delta))
+                    Text(Self.relativeFormatter.localizedString(fromTimeInterval: delta))
                 }
             } else {
                 Text("Last sync — never")
