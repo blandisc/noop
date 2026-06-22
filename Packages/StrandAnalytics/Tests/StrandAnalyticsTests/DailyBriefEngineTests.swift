@@ -102,4 +102,25 @@ final class DailyBriefEngineTests: XCTestCase {
         XCTAssertEqual(DailyBriefEngine.sleepBullet(390).flag, .neutral) // 6 h 30 → intermedia
         XCTAssertEqual(DailyBriefEngine.sleepBullet(460).flag, .good)   // 7 h 40 → completa
     }
+
+    // MARK: piso de 2 — degenerado devuelve nil (FER-470 / QA D1)
+
+    /// Con veredicto pero solo la recuperación (sin sueño, sin base, sin señales del cuerpo) el brief no
+    /// da para ≥2 viñetas → `make` devuelve nil y la página 1 cae al copy honesto. No produce un brief
+    /// de una sola línea. (monotony se excluye, así que aquí el pool queda en solo recovery.)
+    func testDegenerateBelowTwoReturnsNil() {
+        let r = readiness(.balanced, signals: [sig("monotony", .watch)])
+        XCTAssertNil(DailyBriefEngine.make(readiness: r, recovery: 70,
+                                           recoveryBaseline: nil, sleepMinutes: nil))
+    }
+
+    /// Sin base aún (historial ralo) la recuperación SÍ es candidata (descrita por zona del dial), así que
+    /// recuperación + una señal del cuerpo da 2 viñetas — el brief se muestra.
+    func testRecoveryWithoutBaselineStillCounts() {
+        let r = readiness(.balanced, signals: [sig("hrv", .good)])
+        let b = DailyBriefEngine.make(readiness: r, recovery: 72,
+                                      recoveryBaseline: nil, sleepMinutes: nil)!
+        XCTAssertEqual(b.bullets.count, 2)
+        XCTAssertEqual(Set(b.bullets.map(\.kind)), [.recovery, .hrv])
+    }
 }

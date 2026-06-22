@@ -70,6 +70,11 @@ public enum DailyBriefEngine {
         guard readiness.level != .insufficient else { return nil }
         let bullets = selectBullets(readiness: readiness, recovery: recovery,
                                     recoveryBaseline: recoveryBaseline, sleepMinutes: sleepMinutes)
+        // Piso de 2 (FER-470): si el día no da para ≥2 viñetas (sin sueño, sin señales del cuerpo, solo
+        // la recuperación), NO mostramos un brief de una sola línea — devolvemos nil y la página 1 cae al
+        // copy honesto del veredicto. Así el brief siempre trae 2–3 viñetas. Caso escaso (mañana temprano
+        // con historial de recuperación aún ralo y veredicto ACWR-driven).
+        guard bullets.count >= 2 else { return nil }
         return DailyBrief(level: readiness.level,
                           titular: titular(readiness.level),
                           why: why(level: readiness.level, recovery: recovery,
@@ -102,8 +107,11 @@ public enum DailyBriefEngine {
         }
 
         var pool: [Candidate] = []
-        if let rec = recovery, let base = recoveryBaseline {
-            pool.append(recoveryCandidate(recovery: rec, baseline: base))
+        // La recuperación es candidata SIEMPRE que haya recovery (en estado-veredicto siempre lo hay):
+        // con base se compara «vs tu base»; sin base aún, se describe por zona del dial. Esto evita que
+        // el brief degenere a 0 viñetas cuando no hay sueño ni señales del cuerpo.
+        if let rec = recovery {
+            pool.append(recoveryCandidate(recovery: rec, baseline: recoveryBaseline))
         }
         for s in readiness.signals {
             guard let kind = bulletKind(forSignalKey: s.key) else { continue }   // monotony, etc. fuera
@@ -172,13 +180,15 @@ public enum DailyBriefEngine {
         }
     }
 
-    /// La viñeta de recuperación vs tu base: flag por banda + comparación con la media reciente.
-    static func recoveryCandidate(recovery: Double, baseline: Double) -> Candidate {
-        let delta = recovery - baseline
+    /// La viñeta de recuperación: flag por banda + comparación con la media reciente (si la hay). Con
+    /// `baseline` compara «vs tu base»; sin base aún, describe por zona del dial (verde/media/roja) — honesto
+    /// sin comparar contra algo que no tiene.
+    static func recoveryCandidate(recovery: Double, baseline: Double?) -> Candidate {
+        let delta = baseline.map { recovery - $0 }
         let flag: ReadinessEngine.Flag
-        if recovery >= RecoveryScorer.bandYellowMax || delta >= 5 { flag = .good }
+        if recovery >= RecoveryScorer.bandYellowMax || (delta ?? 0) >= 5 { flag = .good }
         else if recovery < RecoveryScorer.bandRedMax { flag = .bad }
-        else if delta <= -5 { flag = .watch }
+        else if (delta ?? 0) <= -5 { flag = .watch }
         else { flag = .neutral }
 
         let lead: String
@@ -189,9 +199,15 @@ public enum DailyBriefEngine {
         case .neutral: lead = "Recuperación estable"
         }
         let sub: String
-        if delta >= 5 { sub = "por encima de tu base" }
-        else if delta <= -5 { sub = "por debajo de tu base" }
-        else { sub = "en tu base" }
+        if let d = delta {
+            if d >= 5 { sub = "por encima de tu base" }
+            else if d <= -5 { sub = "por debajo de tu base" }
+            else { sub = "en tu base" }
+        } else {
+            if recovery >= RecoveryScorer.bandYellowMax { sub = "en zona verde" }
+            else if recovery < RecoveryScorer.bandRedMax { sub = "en zona roja" }
+            else { sub = "en zona media" }
+        }
         return Candidate(kind: .recovery, flag: flag, lead: lead, sub: sub)
     }
 
