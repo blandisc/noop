@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Sesión de fuerza: un botón grande «Terminar» al acabar, y la pantalla ya en español / Strength session: a big "Finish" button when you're done, and the screen now in Spanish.**
+  **ES** — Al registrar tu última serie, la sesión de entrenamiento ya no te deja atrapado en el cronómetro de descanso con un único botón chiquito en la esquina: ahora muestra de inmediato un estado **«Todo listo»** con un **botón grande «Terminar»** abajo para guardar el entreno (sigue pidiéndote confirmación antes de cerrar). Debajo se queda la lista **«Cambiar ejercicio»**, así que puedes volver a cualquier ejercicio para editarlo o agregarle series sin perder la salida. Además, toda la pantalla de la sesión activa quedó en español.
+  **EN** — When you log your last set, the workout no longer traps you in the rest timer with just a tiny corner button: it now shows an **"All done"** state right away with a **big "Finish" button** to save the workout (it still asks for confirmation before closing). The **"Change exercise"** list stays below it, so you can jump back to any exercise to edit it or add sets without losing your way out. The whole active-session screen is now in Spanish too.
+  ([Cenit/Screens/LiveStrengthSheet.swift](Cenit/Screens/LiveStrengthSheet.swift))
+
 - **Entrenar: desliza una rutina para eliminarla, con opción de deshacer / Train: swipe a routine to delete it, with undo.**
   **ES** — En **Entrenar → Mis rutinas** ya puedes **deslizar una rutina hacia la izquierda** para que aparezca el botón rojo **«Eliminar»** y borrarla de una vez —sin tener que mantener presionado y buscar el menú—. Si te equivocas, aparece un aviso breve con **«Deshacer»** que la restaura **con todos sus ejercicios** intactos. La sección conserva su look de papel cálido; el menú de mantener presionado sigue funcionando igual.
   **EN** — In **Train → My routines** you can now **swipe a routine left** to reveal a red **"Delete"** button and remove it in one go —no more long-pressing to find the menu—. Change your mind? A brief **"Undo"** toast restores it **with all its exercises** intact. The section keeps its warm-paper look; the long-press menu still works as before.
