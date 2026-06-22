@@ -549,16 +549,20 @@ struct TodayView: View {
                     HealthAlertBanner()
                     dialHeader
                 }
-                // Gap FIJO dial→pager (FER-475): el contenido se queda pegado arriba; el sobrante vertical se
-                // va todo abajo (Spacer único más abajo), empujando los page dots junto al dock en vez de
-                // dejarlos flotando a media pantalla con espacio desperdiciado.
-                Spacer().frame(height: NoopMetrics.space1)
+                // Gap FLEXIBLE dial→pager: el sobrante vertical se reparte por igual ARRIBA y abajo del
+                // pager (este `Spacer` + el de abajo), así la rejilla de métricas baja a ocupar la pantalla
+                // en vez de quedar pegada al dial con todo el aire desperdiciado al fondo. El dial sigue
+                // fijo arriba y los page dots fijos cerca del dock; solo el bloque del pager flota al
+                // centro. El mínimo conserva el gap compacto de antes para que en pantalla chica (contenido
+                // que llena o excede) no se separe de más y el scroll siga igual.
+                Spacer(minLength: NoopMetrics.sectionGapCompact)
                 // Pager horizontal de 2 páginas (FER-465): ① el veredicto del día en palabras · ② «Métricas
                 // de hoy» tal cual. Ancho de página = ancho de contenido (proxy − screenPadding lateral) para
                 // que el snap pagine de a una. Ejes ortogonales al scroll vertical → el swipe horizontal y el
                 // pull-to-refresh no se pelean.
                 todayPager(width: max(0, proxy.size.width - NoopMetrics.screenPadding * 2))
-                // El sobrante vertical vive AQUÍ: manda los page dots al fondo, cerca del dock (FER-475).
+                // La otra mitad del sobrante vive AQUÍ: mantiene los page dots al fondo, cerca del dock,
+                // mientras el `Spacer` de arriba baja la rejilla al centro.
                 Spacer(minLength: NoopMetrics.space2)
                 todayPageDots
             }
