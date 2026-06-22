@@ -495,6 +495,10 @@ struct MetricDetailScreen: View {
                     bands: { _ in effectiveChartBands(window) },
                     bandColor: { _ in spec.clinicalBands ? theme.verdict : metricHue },
                     yAxisValues: rangesModeActive ? rangesYTicks : clinicalYAxisValues,
+                    // «Media móvil» auto-ticks: ask for more so a wide range (e.g. steps 0–15k) reads at finer
+                    // increments instead of just 5k/10k/15k. Ignored when ticks are explicit («Rangos» bands,
+                    // SpO₂'s clinical thresholds), and the compact summary/strain cards keep the default 4. (Detalle)
+                    yTickCount: 6,
                     alertThreshold: spec.clinicalBands ? spec.lowThreshold : nil,
                     alertColor: theme.critical,
                     // Mark today's point for the personal-band vitals and in «Ranges» mode (shows where today
