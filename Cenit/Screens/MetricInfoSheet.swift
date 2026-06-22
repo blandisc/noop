@@ -621,12 +621,7 @@ struct MetricInfoSheet: View {
                     weightsBlock(weights, note: info.weightsNote, dimmed: info.calibration != nil)
                 }
                 if !info.bands.isEmpty {
-                    if let sentence = bandSummarySentence {
-                        sentence
-                            .font(StrandFont.subhead)
-                            .foregroundStyle(theme.inkSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+                    rangeReadoutLine
                     bandsTable
                 }
                 if let method = info.method { methodDisclosure(method) }
@@ -819,11 +814,35 @@ struct MetricInfoSheet: View {
         return TrendBands.summarize(values: values, bands: bands, todayIndex: todayIndex)
     }
 
-    private var bandSummarySentence: Text? {
-        guard let s = bandSummary else { return nil }
-        return BandSummaryCopy.sentence(s, labels: info.bands.map(\.label),
-                                        nightly: BandSummaryCopy.isNightly(metricID: info.id),
-                                        hue: metricHue)
+    /// The standardized «{band} · X of the last N days/nights in this range» readout shown above the ranges
+    /// table on every summary sheet — the active band (the band the latest reading falls in; Steps uses the
+    /// latest completed day, FER-264) plus how many of the window share it. One wording everywhere, matching
+    /// the trend's old per-metric line. Nocturnal metrics (sleep, SpO₂) read "nights". (FER-469)
+    private var rangeReadout: (label: LocalizedStringKey, count: Int, total: Int)? {
+        guard !info.bands.isEmpty, !trendData.isEmpty else { return nil }
+        let toHours = info.id == "sleep"
+        let isSteps = info.id == "steps"
+        let sorted = trendData.sorted { $0.date < $1.date }
+        let source = (isSteps && sorted.count > 1) ? Array(sorted.dropLast()) : sorted
+        let values = source.map { toHours ? $0.value / 60 : $0.value }
+        let bands = info.bands.map { TrendBand(label: $0.label, lower: $0.lower, upper: $0.upper) }
+        guard let active = TrendBands.activeBand(values: values, bands: bands) else { return nil }
+        return (info.bands[active.index].label, active.count, values.count)
+    }
+
+    @ViewBuilder private var rangeReadoutLine: some View {
+        if let r = rangeReadout {
+            let nightly = BandSummaryCopy.isNightly(metricID: info.id)
+            HStack(spacing: 6) {
+                Text(r.label).foregroundStyle(metricHue)
+                Text(verbatim: "·").foregroundStyle(theme.inkTertiary)
+                Text(nightly ? "\(r.count) of the last \(r.total) nights in this range"
+                             : "\(r.count) of the last \(r.total) days in this range")
+                    .foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .font(StrandFont.subhead)
+        }
     }
 
     // MARK: - Heart-rate 24h chart (FER-137)
@@ -919,15 +938,8 @@ struct MetricInfoSheet: View {
                 .foregroundStyle(theme.ink)
             if trendData.count > 1 {
                 if let bt = bandedTrend {
-                    // Active-band readout: which classification today's value sits in + how many of the
-                    // recent days share it. (FER-244)
-                    HStack(spacing: 6) {
-                        Text(bt.activeLabel).foregroundStyle(bt.color)
-                        Text(verbatim: "·").foregroundStyle(theme.inkTertiary)
-                        Text("\(bt.count) of the last \(bt.total) days in this range")
-                            .foregroundStyle(theme.inkSecondary)
-                    }
-                    .font(StrandFont.subhead)
+                    // The «{band} · X of N days in this range» readout now lives once, above the ranges
+                    // table (`rangeReadoutLine`), standardized across every metric. (FER-469)
                     TrendChart(
                         points: bt.points,
                         gradient: chartGradient,

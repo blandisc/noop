@@ -195,13 +195,8 @@ struct MetricDetailScreen: View {
         if visibleBlocks.contains(.seriesChartBand) {
             blockDivider
             chartBlock(window)
-            // The «where you've been across the ranges» summary for Steps (legacy layout). (FER-459)
-            if let sentence = bandSummarySentence(window) {
-                sentence
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            // In «Ranges» mode, the fixed per-band counts table for Steps (legacy layout). (FER-469)
+            if rangesModeActive { rangesFixedBlock(window) }
         }
         if visibleBlocks.contains(.normalRange), spec.descriptor.key != "hrv" {
             blockDivider
@@ -1671,36 +1666,14 @@ struct MetricDetailScreen: View {
             Text("Your story").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             if visibleBlocks.contains(.periodSelector) { periodSelector(window) }
             chartBlock(window)
-            // The one-line «where you've been across the ranges» summary, shared verbatim with the
-            // summary sheet's ranges list. (FER-459)
-            if let sentence = bandSummarySentence(window) {
-                sentence
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            // «Days in range»: in moving-average mode it's your PERSONAL band; in ranges mode it's the
-            // population classification band you fall in today, and that line carries the ⓘ that expands
-            // every band's cutoffs (athlete / excellent / normal / …). (Detalle de Vital — cortes de rango)
+            // «Days in range»: moving-average mode shows your PERSONAL band; ranges mode shows the fixed
+            // population table with the standardized «{band} · X of N days in this range» line + per-band
+            // counts (same as the summary sheet). (FER-469)
             if chartMode == .movingAverage, let dir = daysInRangeLine(window) {
                 Text(dir).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
-            } else if rangesModeActive, let line = daysInClassBandText(window) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Button { withAnimation(.easeInOut(duration: 0.25)) { toggle("rangos") } } label: {
-                        HStack(spacing: 6) {
-                            line.font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .multilineTextAlignment(.leading)
-                            Image(systemName: "info.circle").font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
-                            Spacer(minLength: 0)
-                        }
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(Text("What each range means"))
-                    if openDisclosure == "rangos" { rangesDisclosure }
-                }
+            } else if rangesModeActive {
+                rangesFixedBlock(window)
             }
             statStripSection(window)
         }
@@ -1717,67 +1690,74 @@ struct MetricDetailScreen: View {
         return "\(inRange) of the last \(vals.count) days within your range"
     }
 
-    // MARK: - Band trend summary sentence (FER-459)
+    // MARK: - Ranges-mode fixed table (FER-469)
 
-    /// Metrics that carry labeled population ranges → they get the «where you've been» summary sentence
-    /// (Resting HR / Respiration / SpO₂ / Steps). HRV has no fixed bands; Heart Rate is intraday.
-    private var hasBandSentence: Bool {
-        !isIntraday && spec.descriptor.key != "hrv"
-            && spec.info.bands.contains { $0.lower != nil || $0.upper != nil }
-    }
-
-    /// The one-line summary sentence for the detail, classifying the windowed completed days against the
-    /// metric's population bands. Identical wording to the summary sheet (shared `BandSummaryCopy`). Steps'
-    /// in-progress day is excluded (FER-264), so it carries no "today" clause. (FER-459)
-    private func bandSummarySentence(_ window: MetricWindow) -> Text? {
-        guard hasBandSentence else { return nil }
+    /// Per-band counts for the «Ranges» table: each band with how many of the windowed (completed) days
+    /// fell in it, plus the active band (the band the latest reading falls in; Steps uses the latest
+    /// completed day, FER-264). `nil` when the metric has no labeled bands or there's no data.
+    private func rangesData(_ window: MetricWindow)
+        -> (rows: [(band: MetricInfo.Band, count: Int)], activeIndex: Int, total: Int)? {
         let banded = spec.info.bands.filter { $0.lower != nil || $0.upper != nil }
-        let bands = banded.map { TrendBand(label: $0.label, lower: $0.lower, upper: $0.upper) }
-        let todayIndex = dropsIncompleteToday ? nil : banded.firstIndex(where: { $0.isActive })
-        guard let s = TrendBands.summarize(values: trendStatRows(window).map(\.value),
-                                           bands: bands, todayIndex: todayIndex) else { return nil }
-        return BandSummaryCopy.sentence(s, labels: banded.map(\.label),
-                                        nightly: BandSummaryCopy.isNightly(metricID: spec.descriptor.key),
-                                        hue: metricHue)
+        guard !banded.isEmpty else { return nil }
+        let tbands = banded.map { TrendBand(label: $0.label, lower: $0.lower, upper: $0.upper) }
+        let values = trendStatRows(window).map(\.value)
+        guard !values.isEmpty, let active = TrendBands.activeBand(values: values, bands: tbands) else { return nil }
+        var counts = Array(repeating: 0, count: banded.count)
+        for v in values { if let i = TrendBands.index(containing: v, in: tbands) { counts[i] += 1 } }
+        return (Array(zip(banded, counts)), active.index, values.count)
     }
 
-    /// «Ranges» mode's counterpart to `daysInRangeLine`: how many windowed days fell in the population
-    /// classification band you're in TODAY (athlete / excellent / normal / …), with that band named in its
-    /// own hue. Returns a `Text` (not a key) so the band name can be tinted inside the sentence. The ⓘ next
-    /// to it opens `rangesDisclosure` with every band's cutoffs. (Detalle de Vital — cortes de rango)
-    private func daysInClassBandText(_ window: MetricWindow) -> Text? {
-        guard rangesModeActive, let active = spec.info.bands.first(where: { $0.isActive }) else { return nil }
-        let vals = window.values
-        guard vals.count > 1 else { return nil }
-        let inBand = vals.reduce(0) { acc, v in
-            let okLo = active.lower.map { v >= $0 } ?? true
-            let okHi = active.upper.map { v < $0 } ?? true
-            return acc + (okLo && okHi ? 1 : 0)
-        }
-        return Text("\(inBand) of the last \(vals.count) days in")
-            + Text(verbatim: " ") + Text(active.label).foregroundColor(metricHue)
-    }
-
-    /// The cutoff table behind the «Ranges» ⓘ: each classification band's label + numeric range, with the
-    /// one you're in today tinted in the metric's hue. Data comes straight from `MetricInfo.bands`. (Detalle
-    /// de Vital — cortes de rango)
-    private var rangesDisclosure: some View {
-        let rows = spec.info.bands.filter { $0.lower != nil || $0.upper != nil }
-        return disclosurePanel {
-            Text("What each range means").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            VStack(spacing: 7) {
-                ForEach(Array(rows.enumerated()), id: \.offset) { _, b in
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text(b.label).font(StrandFont.caption)
-                            .fontWeight(b.isActive ? .semibold : .regular)
-                            .foregroundStyle(b.isActive ? metricHue : theme.inkSecondary)
-                        Spacer(minLength: 8)
-                        Text(b.range).font(StrandFont.caption).monospacedDigit()
-                            .foregroundStyle(b.isActive ? metricHue : theme.inkSecondary)
+    /// «Ranges» mode: the standardized «{band} · X of the last N days/nights in this range» line + a FIXED
+    /// per-band counts table (the same table the summary sheet shows), always visible while the selector is
+    /// on Ranges — no ⓘ to expand. Replaces the old cutoffs disclosure. (FER-469)
+    @ViewBuilder private func rangesFixedBlock(_ window: MetricWindow) -> some View {
+        if let d = rangesData(window) {
+            let nightly = BandSummaryCopy.isNightly(metricID: spec.descriptor.key)
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 6) {
+                    Text(d.rows[d.activeIndex].band.label).foregroundStyle(metricHue)
+                    Text(verbatim: "·").foregroundStyle(theme.inkTertiary)
+                    Text(nightly ? "\(d.rows[d.activeIndex].count) of the last \(d.total) nights in this range"
+                                 : "\(d.rows[d.activeIndex].count) of the last \(d.total) days in this range")
+                        .foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .font(StrandFont.subhead)
+                VStack(spacing: 0) {
+                    ForEach(Array(d.rows.enumerated()), id: \.offset) { i, row in
+                        detailBandRow(row.band, count: row.count, nightly: nightly, active: i == d.activeIndex)
+                        if i < d.rows.count - 1 { Divider().overlay(theme.hairline).padding(.leading, 36) }
                     }
                 }
+                .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
         }
+    }
+
+    /// One row of the «Ranges» fixed table: dot · label · numeric range · «N days/nights» count, the active
+    /// band tinted + shaded. Mirrors the summary sheet's `bandRow`. (FER-469)
+    private func detailBandRow(_ band: MetricInfo.Band, count: Int, nightly: Bool, active: Bool) -> some View {
+        HStack(spacing: 10) {
+            Circle()
+                .fill(active ? metricHue : theme.inkTertiary.opacity(0.45))
+                .frame(width: 8, height: 8)
+                .padding(.leading, 14)
+            Text(band.label)
+                .font(StrandFont.subhead)
+                .foregroundStyle(active ? theme.ink : theme.inkSecondary)
+            Spacer()
+            Text(band.range)
+                .font(StrandFont.captionNumber)
+                .foregroundStyle(active ? metricHue : theme.inkTertiary)
+            Text(BandSummaryCopy.countLabel(count, nightly: nightly))
+                .font(StrandFont.captionNumber)
+                .foregroundStyle(active ? metricHue : theme.inkTertiary.opacity(0.85))
+                .frame(minWidth: 56, alignment: .trailing)
+        }
+        .padding(.trailing, 14)
+        .padding(.vertical, 11)
+        .frame(maxWidth: .infinity)
+        .background(active ? metricHue.opacity(0.12) : Color.clear)
     }
 
     @ViewBuilder private func statStripSection(_ window: MetricWindow) -> some View {
