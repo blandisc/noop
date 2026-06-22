@@ -470,6 +470,11 @@ struct MetricDetailScreen: View {
                 style: .init(
                     smoothing: plotsRawValues ? nil : 7,
                     gradient: chartGradient,
+                    // No area fill when a band is drawn: the band + clean line read sharply; the area was
+                    // a second teal wash that muddied the overlap. A shorter chart keeps it proportionate
+                    // to the period selector above. (Detalle de Vital — pulido)
+                    showsArea: narrativeChartBands.isEmpty,
+                    height: isNarrative ? 156 : 200,
                     valueRange: { narrativeChartValueRange($0) },
                     valueFormat: { "\(fmt($0)) \(unit)" },
                     // SpO₂ shades its clinical healthy zone; the redesigned personal vitals shade your own
@@ -565,7 +570,7 @@ struct MetricDetailScreen: View {
         if let domain = spec.chartDomain { return domain }
         if isNarrative, !spec.clinicalBands, let band = normalRange {
             let span = band.upperBound - band.lowerBound
-            let pad = Swift.max(span * 0.85, 1)
+            let pad = Swift.max(span * 0.6, 1)
             let lo = Swift.min(band.lowerBound - pad, smoothed.min() ?? band.lowerBound)
             let hi = Swift.max(band.upperBound + pad, smoothed.max() ?? band.upperBound)
             return lo...hi
@@ -591,6 +596,8 @@ struct MetricDetailScreen: View {
     private func chartCaption(_ effectiveRange: ExploreRange) -> LocalizedStringKey {
         if spec.sparseMeasured { return "Measured values." }
         if spec.clinicalBands { return "Nightly values · the shaded band is the healthy range." }
+        // Name the shaded band so the horizontal lines on the chart read as «your normal range». (Detalle de Vital)
+        if isNarrative, normalRange != nil { return "7-day moving average · the band is your normal range." }
         return "7-day moving average."
     }
 
@@ -1328,7 +1335,7 @@ struct MetricDetailScreen: View {
 
     private var narrativeHero: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(narrativeHeroOverline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(narrativeHeroOverline).instrumentoOverline().foregroundStyle(metricHue)
             if isIntraday {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(heroTodayValue.map { fmt($0) } ?? "—")
@@ -1475,7 +1482,7 @@ struct MetricDetailScreen: View {
     @ViewBuilder private var inlineBandSection: some View {
         if let b = inlineBandData {
             VStack(alignment: .leading, spacing: 0) {
-                Button { withAnimation(StrandMotion.gentle) { toggle("band") } } label: {
+                Button { withAnimation(.easeInOut(duration: 0.25)) { toggle("band") } } label: {
                     inlineBandBar(b)
                 }
                 .buttonStyle(.plain)
@@ -1678,7 +1685,7 @@ struct MetricDetailScreen: View {
         let isOpen = openDisclosure == "stat:\(cell.slot)"
         let tappable = cell.disclosure != nil
         return Button {
-            withAnimation(StrandMotion.gentle) { toggle("stat:\(cell.slot)") }
+            withAnimation(.easeInOut(duration: 0.25)) { toggle("stat:\(cell.slot)") }
         } label: {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 4) {
@@ -1773,7 +1780,7 @@ struct MetricDetailScreen: View {
 
     private var quemueveView: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Button { withAnimation(StrandMotion.gentle) { toggle("quemueve") } } label: {
+            Button { withAnimation(.easeInOut(duration: 0.25)) { toggle("quemueve") } } label: {
                 HStack(spacing: 7) {
                     Text("What moves it").font(StrandFont.subhead).fontWeight(.semibold).foregroundStyle(theme.ink)
                     InlineFlagChip("trend, not cause", color: theme.inkTertiary)

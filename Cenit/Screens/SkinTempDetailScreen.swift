@@ -88,7 +88,7 @@ struct SkinTempDetailScreen: View {
     private var hero: some View {
         let v = model.today
         return VStack(alignment: .leading, spacing: 10) {
-            Text("Skin temperature · last night").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("Skin temperature · last night").instrumentoOverline().foregroundStyle(theme.dataStrain)
             HStack(alignment: .top) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(v.map { fmt($0) } ?? "—")
@@ -150,7 +150,7 @@ struct SkinTempDetailScreen: View {
             let zero = CGFloat((0 - axisLo) / span)
             let mark = CGFloat(min(max((today - axisLo) / span, 0.02), 0.98))
             VStack(alignment: .leading, spacing: 0) {
-                Button { withAnimation(StrandMotion.gentle) { toggle("band") } } label: {
+                Button { withAnimation(.easeInOut(duration: 0.25)) { toggle("band") } } label: {
                     inlineBandBar(bandLo: bandLo, bandHi: bandHi, zero: zero, mark: mark, sd: sd)
                 }
                 .buttonStyle(.plain)
@@ -239,6 +239,7 @@ struct SkinTempDetailScreen: View {
                 style: .init(
                     gradient: Gradient(colors: [theme.inkSecondary.opacity(0.5), theme.inkSecondary]),
                     showsArea: false,
+                    height: 156,
                     valueRange: { chartRange($0, typical: typical) },
                     valueFormat: { "\(fmt($0)) °C" },
                     bands: { _ in
@@ -292,7 +293,7 @@ struct SkinTempDetailScreen: View {
         let isOpen = openDisclosure == "stat:\(slot)"
         let tappable = disclosure != nil
         return Button {
-            withAnimation(StrandMotion.gentle) { toggle("stat:\(slot)") }
+            withAnimation(.easeInOut(duration: 0.25)) { toggle("stat:\(slot)") }
         } label: {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 4) {

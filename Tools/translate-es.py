@@ -43,6 +43,8 @@ ES: dict[str, str] = {
     "your normal range · %lld nights": "tu rango normal · %lld noches",
     "healthy zone ≥ 95%": "zona sana ≥ 95%",
     "Healthy zone": "Zona sana",
+    # Caption de la gráfica que nombra la banda (explica las líneas horizontales)
+    "7-day moving average · the band is your normal range.": "Media móvil de 7 días · la franja es tu rango normal.",
     # Overlines de sección
     "Your story": "Tu historia",
     "Your pattern": "Tu patrón",
