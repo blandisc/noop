@@ -9270,6 +9270,22 @@
         }
       }
     },
+    "Delete routine": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete routine"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminar rutina"
+          }
+        }
+      }
+    },
     "Depleted": {
       "localizations": {
         "en": {
@@ -22658,6 +22674,22 @@
         }
       }
     },
+    "Routine deleted": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Routine deleted"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rutina eliminada"
+          }
+        }
+      }
+    },
     "Routines": {
       "localizations": {
         "en": {
@@ -28003,6 +28035,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Típica"
+          }
+        }
+      }
+    },
+    "Undo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undo"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deshacer"
           }
         }
       }

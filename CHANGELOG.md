@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Entrenar: desliza una rutina para eliminarla, con opción de deshacer / Train: swipe a routine to delete it, with undo.**
+  **ES** — En **Entrenar → Mis rutinas** ya puedes **deslizar una rutina hacia la izquierda** para que aparezca el botón rojo **«Eliminar»** y borrarla de una vez —sin tener que mantener presionado y buscar el menú—. Si te equivocas, aparece un aviso breve con **«Deshacer»** que la restaura **con todos sus ejercicios** intactos. La sección conserva su look de papel cálido; el menú de mantener presionado sigue funcionando igual.
+  **EN** — In **Train → My routines** you can now **swipe a routine left** to reveal a red **"Delete"** button and remove it in one go —no more long-pressing to find the menu—. Change your mind? A brief **"Undo"** toast restores it **with all its exercises** intact. The section keeps its warm-paper look; the long-press menu still works as before.
+  ([Cenit/Screens/EntrenarView.swift](Cenit/Screens/EntrenarView.swift))
+
 - **Constructor de rutinas: las filas ya no se pegan a los bordes / Routine builder: rows no longer touch the screen edges.**
   **ES** — En **Entrenar → crear/editar rutina**, una vez que la rutina tenía ejercicios, la lista (el nombre, cada ejercicio con su menú «⋯» y «Add exercise») se pegaba al borde izquierdo y derecho de la pantalla, sin margen — se veía «cortada». Ahora lleva el mismo margen lateral que el resto de la app y que su propio estado vacío.
   **EN** — In **Train → create/edit routine**, once the routine had exercises the list (the name, each exercise with its «⋯» menu, and «Add exercise») sat flush against the left and right screen edges with no margin — it looked clipped. It now uses the same side margin as the rest of the app and as its own empty state.
