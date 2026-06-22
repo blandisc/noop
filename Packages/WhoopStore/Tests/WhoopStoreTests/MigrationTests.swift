@@ -41,7 +41,7 @@ final class MigrationTests: XCTestCase {
             let cols = try await store.columnNamesForTest(table: table)
             XCTAssertTrue(cols.contains("synced"), "\(table) missing synced column")
         }
-        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 18)
+        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 19)
     }
 
     /// v15 (FER-346) adds a nullable `supersetGroup` to `routineExercise` via ALTER ADD COLUMN, and
@@ -232,6 +232,35 @@ final class MigrationTests: XCTestCase {
             let row = try Row.fetchOne(db, sql: "SELECT folderId FROM routine WHERE id='r1'")
             XCTAssertNotNil(row, "the v17 routine must survive the upgrade")
             XCTAssertNil(row?["folderId"] as String?, "an old routine's folderId is NULL")
+        }
+    }
+
+    /// v19 (FER-495) adds `hrRestReference`/`hrRestValue` to `routineExercise`; append-only, and an
+    /// existing heartRate row gets the FER-348 defaults (`restingMargin` / 0) — zero behavior change.
+    func testV19AddsHRRestColumnsWithFER348Defaults() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = WhoopStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v18")
+
+        try await dbQueue.write { db in
+            try db.execute(sql: """
+                INSERT INTO routineExercise
+                    (id, routineId, exerciseId, position, targetSets, warmupPercents, restMode, restSeconds)
+                VALUES ('re1','r1','ex1',0,3,'[]','heartRate',90)
+                """)
+        }
+
+        try migrator.migrate(dbQueue)   // → v19
+
+        try await dbQueue.read { db in
+            let cols = try db.columns(in: "routineExercise").map(\.name)
+            XCTAssertTrue(cols.contains("hrRestReference"))
+            XCTAssertTrue(cols.contains("hrRestValue"))
+            let row = try Row.fetchOne(db, sql:
+                "SELECT hrRestReference, hrRestValue FROM routineExercise WHERE id='re1'")
+            XCTAssertNotNil(row, "the v18 row must survive the upgrade")
+            XCTAssertEqual(row?["hrRestReference"] as String?, "restingMargin", "old rows default to FER-348")
+            XCTAssertEqual(row?["hrRestValue"] as Double?, 0)
         }
     }
 

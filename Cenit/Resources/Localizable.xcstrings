@@ -131,6 +131,38 @@
         }
       }
     },
+    "% of peak": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "% of peak"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "% del pico"
+          }
+        }
+      }
+    },
+    "% of reserve": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "% of reserve"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "% de reserva"
+          }
+        }
+      }
+    },
     "% of the night · Δ vs your typical": {
       "extractionState": "manual",
       "localizations": {
@@ -3399,6 +3431,22 @@
         }
       }
     },
+    "A fixed countdown between sets.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A fixed countdown between sets."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un temporizador fijo entre series."
+          }
+        }
+      }
+    },
     "A gentle buzz when your HRV drops while your heart rate is calm — a cue to take a paced breath. Rate-limited to once every 15 minutes; off by default.": {
       "extractionState": "manual",
       "localizations": {
@@ -5319,6 +5367,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Auto · %lld lpm (Tanaka)"
+          }
+        }
+      }
+    },
+    "Automatic": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automático"
           }
         }
       }
@@ -10404,6 +10468,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sueños y memoria. Consolida lo que aprendiste y procesa las emociones."
+          }
+        }
+      }
+    },
+    "Drop to": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drop to"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bajar a"
           }
         }
       }
@@ -22198,6 +22278,38 @@
         }
       }
     },
+    "Ready at the chosen % of your heart-rate reserve (Karvonen). Uses your max and resting HR; falls back to the timer if either is missing.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ready at the chosen % of your heart-rate reserve (Karvonen). Uses your max and resting HR; falls back to the timer if either is missing."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Listo al bajar al % elegido de tu FC de reserva (Karvonen). Usa tu FC máx y de reposo; si falta alguna, cae al temporizador."
+          }
+        }
+      }
+    },
+    "Ready below": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ready below"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Listo bajo"
+          }
+        }
+      }
+    },
     "Ready for ": {
       "localizations": {
         "en": {
@@ -22260,6 +22372,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "Listo para entrenar"
+          }
+        }
+      }
+    },
+    "Ready when your pulse drops below the chosen rate.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ready when your pulse drops below the chosen rate."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Listo cuando tu pulso baja del valor elegido."
+          }
+        }
+      }
+    },
+    "Ready when your pulse drops the chosen % from the set's peak. No max or resting HR needed.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ready when your pulse drops the chosen % from the set's peak. No max or resting HR needed."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Listo cuando tu pulso cae el % elegido desde el pico de la serie. No necesita tu FC máx ni de reposo."
+          }
+        }
+      }
+    },
+    "Ready when your pulse returns near your resting rate — your strap reads it.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ready when your pulse returns near your resting rate — your strap reads it."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Listo cuando tu pulso vuelve cerca de tu reposo — tu banda lo lee."
           }
         }
       }
@@ -22893,6 +23053,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Recuperación, frecuencia cardiaca en vivo y batería de la banda de un vistazo."
+          }
+        }
+      }
+    },
+    "Reference": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reference"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Referencia"
           }
         }
       }
@@ -27516,6 +27692,22 @@
         }
       }
     },
+    "Target drop": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Target drop"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Caída objetivo"
+          }
+        }
+      }
+    },
     "Temperature": {
       "localizations": {
         "es": {
@@ -28759,6 +28951,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Esto se apoya en la ingeniería inversa de la comunidad. Mil gracias:"
+          }
+        }
+      }
+    },
+    "Threshold (bpm)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Threshold (bpm)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Umbral (lpm)"
           }
         }
       }

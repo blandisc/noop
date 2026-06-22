@@ -101,13 +101,13 @@ extension WhoopStore {
                 let args: [DatabaseValueConvertible?] = [
                     re.id, re.routineId, re.exerciseId, re.position, derivedSets, derivedReps,
                     derivedWeight, encodeJSON(re.warmupPercents), re.restMode.rawValue, re.restSeconds,
-                    re.supersetGroup
+                    re.supersetGroup, re.hrRestReference.rawValue, re.hrRestValue
                 ]
                 try db.execute(sql: """
                     INSERT INTO routineExercise
                         (id, routineId, exerciseId, position, targetSets, targetReps, targetWeightKg,
-                         warmupPercents, restMode, restSeconds, supersetGroup)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                         warmupPercents, restMode, restSeconds, supersetGroup, hrRestReference, hrRestValue)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, arguments: StatementArguments(args))
                 for (idx, s) in planned.enumerated() {
                     let sArgs: [DatabaseValueConvertible?] = [
@@ -215,7 +215,9 @@ extension WhoopStore {
                         targetReps: r["targetReps"], targetWeightKg: r["targetWeightKg"],
                         warmupPercents: decodeJSON(r["warmupPercents"], as: [Double].self, default: []),
                         restMode: RestMode(rawValue: r["restMode"]) ?? .heartRate,
-                        restSeconds: r["restSeconds"], supersetGroup: r["supersetGroup"])
+                        restSeconds: r["restSeconds"], supersetGroup: r["supersetGroup"],
+                        hrRestReference: HRRestReference(rawValue: r["hrRestReference"]) ?? .restingMargin,
+                        hrRestValue: r["hrRestValue"])
     }
 
     private static func routineSet(_ r: Row) -> RoutineSet {

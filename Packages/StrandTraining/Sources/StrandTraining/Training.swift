@@ -12,6 +12,18 @@ public enum RestMode: String, Codable, Sendable {
     case fixed       // «tiempo fijo»
 }
 
+/// How the per-exercise HR rest target (the "ready" bpm) is computed when `restMode == .heartRate`.
+/// (FER-495) `.restingMargin` is the FER-348 default — target = round(restingHR) + 20; the migration
+/// writes it for every existing heartRate row, so old routines keep FER-348 behavior exactly.
+/// `hrRestValue` (on `RoutineExercise`) is interpreted per case: a fraction 0…1 for `.peakDrop` /
+/// `.karvonenReserve`, bpm for `.fixedBpm`, unused for `.restingMargin`.
+public enum HRRestReference: String, Codable, Sendable {
+    case restingMargin    // FER-348 default: restingHR + fixed margin
+    case peakDrop         // target = peakHR · (1 − value)
+    case karvonenReserve  // target = restingHR + value·(maxHR − restingHR)  (Karvonen 1957)
+    case fixedBpm         // target = value (bpm)
+}
+
 /// A user-created folder grouping routines in «Mis rutinas» (FER-494). Flat — no nesting; a routine
 /// carries an optional `folderId` referencing one of these. Deleting a folder NULLs its routines'
 /// `folderId` (they fall to «Sin carpeta») — it never deletes routines.
@@ -80,6 +92,12 @@ public struct RoutineExercise: Codable, Sendable, Identifiable, Equatable {
     public var warmupPercents: [Double]
     public var restMode: RestMode
     public var restSeconds: Int
+    /// How the HR rest target is computed when `restMode == .heartRate` (FER-495). `.restingMargin`
+    /// (default) = FER-348's resting+margin; the other cases use `hrRestValue`.
+    public var hrRestReference: HRRestReference
+    /// Value for `hrRestReference`: a fraction 0…1 (peakDrop/karvonenReserve), bpm (fixedBpm), unused
+    /// for restingMargin. Default 0.
+    public var hrRestValue: Double
     /// Superset grouping (FER-346): `nil` = a standalone exercise; the same `Int` within a routine =
     /// one superset, performed in `position` order with rest taken only after the group's last
     /// exercise. The label is opaque (the builder assigns "next free" per routine, not the user) —
@@ -91,12 +109,14 @@ public struct RoutineExercise: Codable, Sendable, Identifiable, Equatable {
                 position: Int, targetSets: Int, targetReps: Int? = nil,
                 targetWeightKg: Double? = nil, warmupPercents: [Double] = [],
                 restMode: RestMode = .heartRate, restSeconds: Int = 90,
-                supersetGroup: Int? = nil, sets: [RoutineSet] = []) {
+                supersetGroup: Int? = nil, sets: [RoutineSet] = [],
+                hrRestReference: HRRestReference = .restingMargin, hrRestValue: Double = 0) {
         self.id = id; self.routineId = routineId; self.exerciseId = exerciseId
         self.position = position; self.targetSets = targetSets; self.targetReps = targetReps
         self.targetWeightKg = targetWeightKg; self.warmupPercents = warmupPercents
         self.restMode = restMode; self.restSeconds = restSeconds
         self.supersetGroup = supersetGroup; self.sets = sets
+        self.hrRestReference = hrRestReference; self.hrRestValue = hrRestValue
     }
 
     /// The per-set plan to act on: the authored `sets` when present, else a 1:1 expansion of the legacy
