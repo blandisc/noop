@@ -278,10 +278,19 @@ public struct TrendChart: View {
         // band labels are hidden (the vital-detail context band) keep the normal trailing inset. (FER-244)
         .chartXScale(range: .plotDimension(startPadding: 0, endPadding: (bands.isEmpty || bandLabelsHidden) ? NoopMetrics.chartXTrailingInset : 64))
         .chartXAxis {
-            AxisMarks(values: .automatic(desiredCount: 3)) { _ in
+            // Explicit ticks evenly spread across the ACTUAL data span — not Charts' `.automatic`, which
+            // snaps dates to calendar boundaries (e.g. weekly Sundays) and so bunched the only two ticks
+            // that fell inside a 14-day window into the right half, leaving the left blank. Three ticks
+            // at 0 / 50 / 100 % of the span always span the full width and read evenly. (FER-458)
+            AxisMarks(values: xAxisTicks) { value in
                 AxisGridLine().foregroundStyle(gridLineColor.opacity(0.4))
-                AxisValueLabel().foregroundStyle(axisLabelColor)
-                    .font(StrandFont.footnote)
+                AxisValueLabel(anchor: xLabelAnchor(value.index, count: value.count)) {
+                    if let d = value.as(Date.self) {
+                        Text(xAxisLabel(d))
+                    }
+                }
+                .foregroundStyle(axisLabelColor)
+                .font(StrandFont.footnote)
             }
         }
         .chartYAxis {
@@ -369,6 +378,43 @@ public struct TrendChart: View {
         guard !points.isEmpty else { return valueRange.lowerBound }
         return points.map(\.value).reduce(0, +) / Double(points.count)
     }
+
+    // MARK: - X-axis ticks (FER-457 fix)
+
+    /// Three tick dates at 0 / 50 / 100 % of the data's actual time span. Anchored to the data — not the
+    /// calendar — so the labels always span the chart's full width and read evenly, whatever the range.
+    private var xAxisTicks: [Date] {
+        guard let first = points.first?.date, let last = points.last?.date else { return [] }
+        let span = last.timeIntervalSince(first)
+        guard span > 0 else { return [first] }
+        return [0.0, 0.5, 1.0].map { first.addingTimeInterval(span * $0) }
+    }
+
+    /// Keep the first label leading-aligned and the last trailing-aligned so neither clips at the plot
+    /// edge (the centre one stays centred); the gridline still sits exactly on the tick.
+    private func xLabelAnchor(_ index: Int, count: Int) -> UnitPoint {
+        if index == 0 { return .topLeading }
+        if index == count - 1 { return .topTrailing }
+        return .top
+    }
+
+    /// Label text for an x tick, formatted by how wide the window is: intraday → hour, up to a few months
+    /// → day + month, longer → month + year. (`Date.FormatStyle` would localise ordering, but a cached
+    /// formatter keeps it cheap across the three ticks.)
+    private func xAxisLabel(_ date: Date) -> String {
+        let span = (points.last?.date.timeIntervalSince(points.first?.date ?? date)) ?? 0
+        let f = TrendChart.axisFormatter
+        if span <= 36 * 3600 {
+            f.setLocalizedDateFormatFromTemplate("ha")
+        } else if span <= 300 * 86_400 {
+            f.setLocalizedDateFormatFromTemplate("dMMM")
+        } else {
+            f.setLocalizedDateFormatFromTemplate("MMMyy")
+        }
+        return f.string(from: date)
+    }
+
+    private static let axisFormatter = DateFormatter()
 
     /// Draws one classification band behind the line: the active band gets a soft fill + coloured edge
     /// lines (the "bracket"); every band wide enough gets a right-aligned label (active in the band hue,
