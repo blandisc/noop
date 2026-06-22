@@ -701,11 +701,12 @@ struct TodayView: View {
                     .accessibilityHidden(true)
                 HStack(spacing: 4) {
                     // Acento POR NIVEL en el glifo de la batería: sana → verde del veredicto; ≤20% →
-                    // ámbar (`warning`); ≤10% → rojo (`critical`) — ver `batteryColor`. El «%» se queda en
-                    // tinta terciaria: el color vive solo en el dato (glifo), como en los tiles.
+                    // ámbar (`warning`); ≤10% → rojo (`critical`) — regla compartida `theme.batteryColor`.
+                    // El «%» se queda en tinta terciaria: el color vive solo en el dato (glifo), como en
+                    // los tiles.
                     Image(systemName: batteryIcon(pct: pct, charging: live.charging == true))
                         .font(StrandFont.overline)
-                        .foregroundStyle(batteryColor(pct))
+                        .foregroundStyle(theme.batteryColor(forLevel: pct))
                     Text("\(Int(pct.rounded()))%")
                         .font(StrandFont.overline)
                         .tracking(StrandFont.overlineTracking)
@@ -720,28 +721,18 @@ struct TodayView: View {
         .accessibilityAction(named: Text("Sincronizar")) { triggerPullSync() }
     }
 
-    /// SF Symbol name for a battery-level icon at the given percentage, with an
-    /// optional charging bolt (uses the `.bolt` suffix variants from SF Symbols 3+).
+    /// SF Symbol del nivel de batería. Al CARGAR devuelve `battery.100.bolt` — el ÚNICO glifo
+    /// batería-con-rayo que SF Symbols realmente trae. Las variantes parciales (`battery.75/.50/.25.bolt`)
+    /// NO existen, y `Image(systemName:)` no dibuja NADA con un nombre desconocido → por eso el ícono
+    /// desaparecía al cargar por debajo de 75%. El rayo comunica «cargando»; el nivel exacto lo lleva el
+    /// «%» de al lado.
     private func batteryIcon(pct: Double, charging: Bool) -> String {
-        let level: String
+        if charging { return "battery.100.bolt" }
         switch pct {
-        case 75...: level = "battery.100"
-        case 50..<75: level = "battery.75"
-        case 25..<50: level = "battery.50"
-        default:      level = "battery.25"
-        }
-        return charging ? "\(level).bolt" : level
-    }
-
-    /// Color del glifo de batería por nivel de carga: sana → verde del veredicto; ≤20% → ámbar
-    /// (`warning`); ≤10% → rojo (`critical`). El «%» se mantiene en tinta; el color vive solo en el
-    /// glifo (regla «color solo en el dato»). El glifo SF ya cambia su relleno por nivel, así que el
-    /// color refuerza —no sustituye— esa señal (sigue siendo legible para daltónicos vía el relleno).
-    private func batteryColor(_ pct: Double) -> Color {
-        switch pct {
-        case ...10: return theme.critical   // ≤10 % — crítica
-        case ...20: return theme.warning    // ≤20 % — baja
-        default:    return theme.verdict    // sana
+        case 75...:   return "battery.100"
+        case 50..<75: return "battery.75"
+        case 25..<50: return "battery.50"
+        default:      return "battery.25"
         }
     }
 
