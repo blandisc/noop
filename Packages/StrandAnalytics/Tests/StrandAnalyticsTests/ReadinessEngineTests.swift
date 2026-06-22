@@ -123,6 +123,36 @@ final class ReadinessEngineTests: XCTestCase {
         XCTAssertEqual(skin?.value?.contains("°C"), true)
     }
 
+    // MARK: - Numeric z for axis positioning (FER-476)
+
+    func testNumericZMatchesDisplayedSigmaForZScoredSignals() {
+        // HRV above baseline, resting HR below — both z-scored, so both expose a raw signed z.
+        let r = ReadinessEngine.evaluate(days: baseline(todayHrv: 72, todayRhr: 46, todayStrain: 10))
+
+        // The numeric `z` agrees in sign and magnitude with the displayed «+N.Nσ» string (raw direction).
+        let hrv = r.signals.first { $0.key == "hrv" }
+        XCTAssertNotNil(hrv?.z, "HRV (z-scored) should carry a numeric z")
+        XCTAssertGreaterThan(hrv?.z ?? 0, 0, "HRV above baseline → positive z")
+        XCTAssertEqual(hrv?.z ?? 0, Double(hrv?.value?.dropLast().replacingOccurrences(of: "+", with: "") ?? "0") ?? 0,
+                       accuracy: 0.05, "Numeric z must match the displayed σ string")
+
+        let rhr = r.signals.first { $0.key == "rhr" }
+        XCTAssertNotNil(rhr?.z)
+        XCTAssertLessThan(rhr?.z ?? 0, 0, "Resting HR below baseline → negative z (raw direction)")
+    }
+
+    func testNumericZIsNilForSkinTempAndLoad() {
+        // Skin temperature is °C (asymmetric), and load is a ratio — neither carries a σ z.
+        var days = baseline(todayHrv: 60, todayRhr: 52, todayStrain: 10)
+        days[days.count - 1] = DailyMetric(day: "2024-03-29", totalSleepMin: nil, efficiency: nil,
+            deepMin: nil, remMin: nil, lightMin: nil, disturbances: nil, restingHr: 52,
+            avgHrv: 60, recovery: nil, strain: 10, exerciseCount: nil,
+            spo2Pct: nil, skinTempDevC: 1.0, respRateBpm: nil)
+        let r = ReadinessEngine.evaluate(days: days)
+        XCTAssertNil(r.signals.first { $0.key == "skinTemp" }?.z, "Skin temperature carries no σ z")
+        XCTAssertNil(r.signals.first { $0.key == "acwr" }?.z, "Training load carries no σ z")
+    }
+
     // MARK: - Confidence (short-night) flag
 
     /// Replace the last day of a baseline with one carrying `sleepMin` of sleep (everything else neutral).
