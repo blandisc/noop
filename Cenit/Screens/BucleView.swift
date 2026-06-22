@@ -323,6 +323,12 @@ private struct BucleLanding: View {
                 Circle().fill(signalFlagColor(s.flag)).frame(width: 8, height: 8)
                 Text(s.value ?? "—").font(StrandFont.mono(13, weight: .semibold)).foregroundStyle(theme.ink)
                     .lineLimit(1).minimumScaleFactor(0.7)
+                // Visible «tap me» cue on the explainable signals (HRV / FC en reposo). FER-445.
+                if Self.isExplainable(s) {
+                    Spacer(minLength: 4)
+                    Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(theme.inkTertiary)
+                }
             }
             Text(BucleFormat.signalShortDetail(s.detail))
                 .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
@@ -361,7 +367,17 @@ private struct BucleLanding: View {
                 }
                 Sparkline(values: trendSpark,
                           gradient: Gradient(colors: [theme.dataRecovery, theme.dataRecovery]),
-                          lineWidth: 2, showsArea: true, showsHead: true, showsScrub: true)
+                          lineWidth: 2, showsArea: true, showsHead: true, showsScrub: true,
+                          // Scrub read-out: the recovery value + which day it was, so dragging reads
+                          // «Hace 5 días · 71», not «muestra 9». The newest point is today. (FER-445)
+                          valueFormat: { "\(Int($0.rounded()))" },
+                          indexLabel: { idx in
+                              switch trendSpark.count - 1 - idx {
+                              case 0: return "Hoy"
+                              case 1: return "Ayer"
+                              case let d: return "Hace \(d) días"
+                              }
+                          })
                     .frame(height: 54)
             }
         }
