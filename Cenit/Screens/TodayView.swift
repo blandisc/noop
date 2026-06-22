@@ -888,8 +888,8 @@ struct TodayView: View {
     }
 
     /// El Daily Brief renderizado: titular en TINTA (el color vive en el dato, no en la palabra) que
-    /// abre el porqué (`WhyVerdictSheet`, como antes la palabra del veredicto), el porqué, y las viñetas.
-    /// Las viñetas van SIN chevron en F3 — su detalle por viñeta es F4.
+    /// abre el porqué (`WhyVerdictSheet`, como antes la palabra del veredicto), el porqué, las viñetas
+    /// tocables (FER-475) y el bloque atenuado «Más tarde hoy».
     private func dailyBriefView(_ brief: DailyBrief) -> some View {
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
             Button { showWhyVerdict = true } label: {
@@ -917,30 +917,78 @@ struct TodayView: View {
                 }
             }
             .padding(.top, NoopMetrics.space1)
+
+            laterTodaySection
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// Una viñeta del Daily Brief: glifo SF tintado por el flag (misma fuente de color que la palabra del
-    /// veredicto, vía `flagColor`) + lead semibold + sub con la cifra. Separador hairline entre viñetas.
-    private func briefBulletRow(_ b: DailyBrief.Bullet, showTopHairline: Bool) -> some View {
-        HStack(spacing: NoopMetrics.gap) {
-            Image(systemName: briefGlyph(b.kind))
-                .font(.system(size: 18))
-                .foregroundStyle(flagColor(b.flag))
-                .frame(width: 22)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(b.lead).font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
-                Text(b.sub).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
+    /// El bloque «Más tarde hoy» (FER-475): un adelanto ATENUADO de lo que vendrá (tu comida, tu
+    /// entrenamiento del día). Son placeholders —no datos reales— con etiqueta «PRONTO», borde punteado
+    /// y `opacity .5`, no tocables. Separado del brief por una regla hairline arriba.
+    private var laterTodaySection: some View {
+        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            Rectangle().fill(theme.hairline).frame(height: 0.5)
+            Text("Más tarde hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            VStack(spacing: NoopMetrics.space2) {
+                teaserCard(time: "13:00", title: "Tu comida de hoy")
+                teaserCard(time: "18:30", title: "Tu entrenamiento de hoy")
             }
-            Spacer(minLength: 0)
+            .opacity(0.5)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)   // adelanto no accionable: fuera del recorrido de VoiceOver
         }
-        .padding(.vertical, NoopMetrics.space2)
+        .padding(.top, NoopMetrics.space2)
+    }
+
+    /// Una tarjeta-teaser de «Más tarde hoy»: etiqueta de hora + título + «PRONTO», con borde PUNTEADO
+    /// (la señal visual de «aún no disponible»). Sin datos reales — es un adelanto de diseño.
+    private func teaserCard(time: String, title: LocalizedStringKey) -> some View {
+        HStack(spacing: NoopMetrics.gap) {
+            Text(time)
+                .font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
+                .padding(.horizontal, NoopMetrics.space2).padding(.vertical, NoopMetrics.space1)
+                .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous)
+                    .strokeBorder(theme.hairline, lineWidth: 0.5))
+            Text(title).font(StrandFont.subhead).foregroundStyle(theme.ink)
+            Spacer(minLength: 0)
+            Text("Pronto").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+        }
+        .padding(.horizontal, NoopMetrics.cardPadding).padding(.vertical, NoopMetrics.gap)
+        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+            .strokeBorder(theme.hairlineStrong, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
+    }
+
+    /// Una viñeta del Daily Brief: glifo SF tintado por el flag (misma fuente de color que la palabra del
+    /// veredicto, vía `flagColor`) + lead semibold + sub con la cifra + chevron. Toda la fila es tocable
+    /// (FER-475): abre `WhyVerdictSheet` —«tus señales de hoy» en σ— el detalle compartido de cualquier
+    /// viñeta (el handoff usa una hoja con cuerpo común). Separador hairline entre viñetas.
+    private func briefBulletRow(_ b: DailyBrief.Bullet, showTopHairline: Bool) -> some View {
+        Button { showWhyVerdict = true } label: {
+            HStack(spacing: NoopMetrics.gap) {
+                Image(systemName: briefGlyph(b.kind))
+                    .font(.system(size: 18))
+                    .foregroundStyle(flagColor(b.flag))
+                    .frame(width: 22)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(b.lead).font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
+                    Text(b.sub).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(theme.inkTertiary)
+            }
+            .padding(.vertical, NoopMetrics.space2)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
         .overlay(alignment: .top) {
             if showTopHairline { Rectangle().fill(theme.hairline).frame(height: 0.5) }
         }
         .accessibilityElement(children: .combine)
+        .accessibilityHint(Text("Abre el detalle de tus señales de hoy"))
     }
 
     /// SF Symbol por tema de viñeta (la presentación vive en la app, no en el motor puro).
