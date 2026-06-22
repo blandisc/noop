@@ -375,7 +375,10 @@ struct TodayView: View {
             case "steps": return true
             case "hrv":   return resolveMeasured { $0.avgHrv }?.fromApple == true
             case "rhr":   return resolveMeasured { $0.restingHr.map(Double.init) }?.fromApple == true
-            case "sleep": return resolveMeasured { $0.totalSleepMin }?.fromApple == true
+            // Sueño es day-scoped (todayOnly, FER-341): la tarjeta muestra SÓLO el valor de hoy, así que el
+            // badge de fuente debe resolverse igual. Sin todayOnly caía al strap de AYER (no-Apple) y el
+            // corazón desaparecía dentro de la tarjeta aunque el número mostrado SÍ venía de Apple Salud.
+            case "sleep": return resolveMeasured(todayOnly: true) { $0.totalSleepMin }?.fromApple == true
             case "spo2":  return resolveMeasured { $0.spo2Pct }?.fromApple == true
             default:      return false
             }
