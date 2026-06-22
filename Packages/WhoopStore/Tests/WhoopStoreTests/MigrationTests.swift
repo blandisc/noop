@@ -41,7 +41,7 @@ final class MigrationTests: XCTestCase {
             let cols = try await store.columnNamesForTest(table: table)
             XCTAssertTrue(cols.contains("synced"), "\(table) missing synced column")
         }
-        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 17)
+        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 18)
     }
 
     /// v15 (FER-346) adds a nullable `supersetGroup` to `routineExercise` via ALTER ADD COLUMN, and
@@ -196,6 +196,42 @@ final class MigrationTests: XCTestCase {
         let cols = try await store.columnNamesForTest(table: "routineSet")
         for expected in ["id", "routineExerciseId", "position", "kind", "reps", "weightKg"] {
             XCTAssertTrue(cols.contains(expected), "routineSet missing column \(expected)")
+        }
+    }
+
+    /// v18 (FER-494) creates `routineFolder` and adds a nullable `folderId` to `routine`.
+    func testV18CreatesRoutineFolderAndFolderIdColumn() async throws {
+        let store = try await WhoopStore.inMemory()
+        let tables = try await store.tableNames()
+        XCTAssertTrue(tables.contains("routineFolder"), "v18 must create routineFolder")
+        let folderCols = try await store.columnNamesForTest(table: "routineFolder")
+        for expected in ["id", "name", "sortOrder"] {
+            XCTAssertTrue(folderCols.contains(expected), "routineFolder missing column \(expected)")
+        }
+        let routineCols = try await store.columnNamesForTest(table: "routine")
+        XCTAssertTrue(routineCols.contains("folderId"), "v18 must add routine.folderId")
+    }
+
+    /// v18 is append-only: a DB that only reached v17 upgrades without losing routines, and the old
+    /// rows get folderId NULL (they fall to «Sin carpeta»). Drives the migrator directly.
+    func testV18PreservesRoutinesAndDefaultsFolderIdNull() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = WhoopStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v17")
+
+        try await dbQueue.write { db in
+            try db.execute(sql: """
+                INSERT INTO routine (id, name, tag, createdTs, updatedTs, sortOrder)
+                VALUES ('r1','Old',NULL,0,0,0)
+                """)
+        }
+
+        try migrator.migrate(dbQueue)   // → v18
+
+        try await dbQueue.read { db in
+            let row = try Row.fetchOne(db, sql: "SELECT folderId FROM routine WHERE id='r1'")
+            XCTAssertNotNil(row, "the v17 routine must survive the upgrade")
+            XCTAssertNil(row?["folderId"] as String?, "an old routine's folderId is NULL")
         }
     }
 

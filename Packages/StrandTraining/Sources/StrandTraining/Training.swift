@@ -12,19 +12,34 @@ public enum RestMode: String, Codable, Sendable {
     case fixed       // «tiempo fijo»
 }
 
-/// A reusable routine: a name, an optional tag, and an ordered list of exercises
+/// A user-created folder grouping routines in «Mis rutinas» (FER-494). Flat — no nesting; a routine
+/// carries an optional `folderId` referencing one of these. Deleting a folder NULLs its routines'
+/// `folderId` (they fall to «Sin carpeta») — it never deletes routines.
+public struct RoutineFolder: Codable, Sendable, Identifiable, Equatable {
+    public var id: String
+    public var name: String
+    public var sortOrder: Int
+
+    public init(id: String = UUID().uuidString, name: String, sortOrder: Int = 0) {
+        self.id = id; self.name = name; self.sortOrder = sortOrder
+    }
+}
+
+/// A reusable routine: a name, an optional tag, an optional folder, and an ordered list of exercises
 /// (stored as `RoutineExercise` rows referencing this routine's id).
 public struct Routine: Codable, Sendable, Identifiable, Equatable {
     public var id: String
     public var name: String
     public var tag: String?
+    /// The folder this routine lives in (FER-494); `nil` = «Sin carpeta».
+    public var folderId: String?
     public var createdTs: Int
     public var updatedTs: Int
     public var sortOrder: Int
 
     public init(id: String = UUID().uuidString, name: String, tag: String? = nil,
-                createdTs: Int, updatedTs: Int, sortOrder: Int = 0) {
-        self.id = id; self.name = name; self.tag = tag
+                folderId: String? = nil, createdTs: Int, updatedTs: Int, sortOrder: Int = 0) {
+        self.id = id; self.name = name; self.tag = tag; self.folderId = folderId
         self.createdTs = createdTs; self.updatedTs = updatedTs; self.sortOrder = sortOrder
     }
 }

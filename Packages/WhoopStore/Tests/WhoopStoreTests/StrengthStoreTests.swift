@@ -21,6 +21,67 @@ final class StrengthStoreTests: XCTestCase {
         XCTAssertTrue(tables.contains("experiment"))
     }
 
+    // MARK: - Folders (FER-494)
+
+    /// Create + rename a folder round-trips via the public API (rename is an upsert on the same id).
+    func testFolderRoundTrip() async throws {
+        let store = try await WhoopStore.inMemory()
+        try await store.saveFolder(RoutineFolder(id: "f1", name: "Empuje", sortOrder: 0))
+        var got = try await store.routineFolders()
+        XCTAssertEqual(got.map(\.name), ["Empuje"])
+        try await store.saveFolder(RoutineFolder(id: "f1", name: "Push", sortOrder: 0))   // rename
+        got = try await store.routineFolders()
+        XCTAssertEqual(got.count, 1)
+        XCTAssertEqual(got.first?.name, "Push")
+    }
+
+    /// Moving a routine into/out of a folder is a pinpoint update — it persists and leaves the
+    /// routine's exercises untouched.
+    func testSetRoutineFolderMovesAndClears() async throws {
+        let store = try await WhoopStore.inMemory()
+        let r = Routine(id: "rt1", name: "Pierna A", createdTs: 0, updatedTs: 0)
+        let ex = [RoutineExercise(id: "re1", routineId: "rt1", exerciseId: "squat", position: 0, targetSets: 3)]
+        try await store.saveRoutine(r, exercises: ex)
+        try await store.saveFolder(RoutineFolder(id: "f1", name: "Pierna", sortOrder: 0))
+
+        try await store.setRoutineFolder(routineId: "rt1", folderId: "f1")
+        var back = try await store.routines()
+        XCTAssertEqual(back.first?.folderId, "f1")
+        let exCount = try await store.routineExercises(routineId: "rt1").count
+        XCTAssertEqual(exCount, 1, "moving must not touch the routine's exercises")
+
+        try await store.setRoutineFolder(routineId: "rt1", folderId: nil)
+        back = try await store.routines()
+        XCTAssertNil(back.first?.folderId)
+    }
+
+    /// **Invariant:** deleting a folder keeps its routines — they fall to «Sin carpeta» (folderId NULL).
+    func testDeleteFolderKeepsRoutinesAsUnfiled() async throws {
+        let store = try await WhoopStore.inMemory()
+        try await store.saveFolder(RoutineFolder(id: "f1", name: "Empuje", sortOrder: 0))
+        for i in 0..<2 {
+            let r = Routine(id: "rt\(i)", name: "R\(i)", folderId: "f1", createdTs: 0, updatedTs: 0)
+            try await store.saveRoutine(r, exercises: [])
+        }
+        try await store.deleteFolder(id: "f1")
+
+        let folders = try await store.routineFolders()
+        XCTAssertTrue(folders.isEmpty, "folder is gone")
+        let routines = try await store.routines()
+        XCTAssertEqual(routines.count, 2, "routines must survive the folder deletion")
+        XCTAssertTrue(routines.allSatisfy { $0.folderId == nil }, "they fall to «Sin carpeta»")
+    }
+
+    /// `saveRoutine` persists `folderId` (so editing a foldered routine keeps it in its folder).
+    func testSaveRoutinePersistsFolderId() async throws {
+        let store = try await WhoopStore.inMemory()
+        try await store.saveFolder(RoutineFolder(id: "f1", name: "Empuje", sortOrder: 0))
+        let r = Routine(id: "rt1", name: "Banca", folderId: "f1", createdTs: 0, updatedTs: 0)
+        try await store.saveRoutine(r, exercises: [])
+        let back = try await store.routines()
+        XCTAssertEqual(back.first?.folderId, "f1")
+    }
+
     func testRoutineRoundTrip() async throws {
         let store = try await WhoopStore.inMemory()
         let r = Routine(id: "rt1", name: "Día de empuje", tag: "Empuje", createdTs: 100, updatedTs: 100)

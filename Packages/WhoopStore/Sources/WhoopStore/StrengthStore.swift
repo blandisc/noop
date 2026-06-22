@@ -70,13 +70,14 @@ extension WhoopStore {
     public func saveRoutine(_ routine: Routine, exercises: [RoutineExercise]) async throws {
         try syncWrite { db in
             let rArgs: [DatabaseValueConvertible?] = [
-                routine.id, routine.name, routine.tag, routine.createdTs, routine.updatedTs, routine.sortOrder
+                routine.id, routine.name, routine.tag, routine.folderId,
+                routine.createdTs, routine.updatedTs, routine.sortOrder
             ]
             try db.execute(sql: """
-                INSERT INTO routine (id, name, tag, createdTs, updatedTs, sortOrder)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO routine (id, name, tag, folderId, createdTs, updatedTs, sortOrder)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
-                    name = excluded.name, tag = excluded.tag,
+                    name = excluded.name, tag = excluded.tag, folderId = excluded.folderId,
                     updatedTs = excluded.updatedTs, sortOrder = excluded.sortOrder
                 """, arguments: StatementArguments(rArgs))
 
@@ -124,9 +125,49 @@ extension WhoopStore {
     public func routines() async throws -> [Routine] {
         try syncRead { db in
             try Row.fetchAll(db, sql: "SELECT * FROM routine ORDER BY sortOrder ASC, updatedTs DESC").map {
-                Routine(id: $0["id"], name: $0["name"], tag: $0["tag"],
+                Routine(id: $0["id"], name: $0["name"], tag: $0["tag"], folderId: $0["folderId"],
                         createdTs: $0["createdTs"], updatedTs: $0["updatedTs"], sortOrder: $0["sortOrder"])
             }
+        }
+    }
+
+    // MARK: - Routine folders (FER-494)
+
+    public func routineFolders() async throws -> [RoutineFolder] {
+        try syncRead { db in
+            try Row.fetchAll(db, sql: "SELECT * FROM routineFolder ORDER BY sortOrder ASC, name ASC").map {
+                RoutineFolder(id: $0["id"], name: $0["name"], sortOrder: $0["sortOrder"])
+            }
+        }
+    }
+
+    /// Upsert a folder — covers both create and rename.
+    public func saveFolder(_ f: RoutineFolder) async throws {
+        try syncWrite { db in
+            let args: [DatabaseValueConvertible?] = [f.id, f.name, f.sortOrder]
+            try db.execute(sql: """
+                INSERT INTO routineFolder (id, name, sortOrder)
+                VALUES (?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET name = excluded.name, sortOrder = excluded.sortOrder
+                """, arguments: StatementArguments(args))
+        }
+    }
+
+    /// Delete a folder WITHOUT deleting its routines: they fall back to «Sin carpeta» (folderId NULL).
+    /// The UPDATE runs before the DELETE inside one transaction.
+    public func deleteFolder(id: String) async throws {
+        try syncWrite { db in
+            try db.execute(sql: "UPDATE routine SET folderId = NULL WHERE folderId = ?", arguments: [id])
+            try db.execute(sql: "DELETE FROM routineFolder WHERE id = ?", arguments: [id])
+        }
+    }
+
+    /// Move one routine into a folder (or out, with `folderId == nil`). A pinpoint UPDATE — it does not
+    /// touch the routine's exercises/sets, unlike `saveRoutine` which rewrites them.
+    public func setRoutineFolder(routineId: String, folderId: String?) async throws {
+        try syncWrite { db in
+            try db.execute(sql: "UPDATE routine SET folderId = ? WHERE id = ?",
+                           arguments: [folderId, routineId])
         }
     }
 
@@ -227,6 +268,29 @@ extension WhoopStore {
         try syncRead { db in
             try Row.fetchAll(db, sql: "SELECT * FROM setEntry WHERE sessionId = ? ORDER BY position ASC",
                              arguments: [sessionId]).map(Self.setEntry)
+        }
+    }
+
+    /// Per-session work volume (Σ weight×reps) and completed-work-set count for the «Mis entrenamientos»
+    /// list (FER-504) — one GROUP BY, not a read per session. Only done work sets with both weight and
+    /// reps contribute to volume; the count is every done work set (a bodyweight set still counts).
+    public func sessionVolumes() async throws -> [String: (volumeKg: Double, setCount: Int)] {
+        try syncRead { db in
+            var out: [String: (volumeKg: Double, setCount: Int)] = [:]
+            let rows = try Row.fetchAll(db, sql: """
+                SELECT sessionId AS sid,
+                       COALESCE(SUM(CASE WHEN weightKg IS NOT NULL AND reps IS NOT NULL
+                                         THEN weightKg * reps ELSE 0 END), 0) AS vol,
+                       COUNT(*) AS cnt
+                FROM setEntry
+                WHERE kind = 'work' AND done = 1
+                GROUP BY sessionId
+                """)
+            for r in rows {
+                let sid: String = r["sid"]
+                out[sid] = (volumeKg: r["vol"], setCount: r["cnt"])
+            }
+            return out
         }
     }
 

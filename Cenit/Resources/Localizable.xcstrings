@@ -8820,6 +8820,22 @@
         }
       }
     },
+    "Create": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crear"
+          }
+        }
+      }
+    },
     "Create %lld routines": {
       "extractionState": "manual",
       "localizations": {
@@ -9693,6 +9709,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Eliminar"
+          }
+        }
+      }
+    },
+    "Delete folder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete folder"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminar carpeta"
           }
         }
       }
@@ -11908,6 +11940,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Foco"
+          }
+        }
+      }
+    },
+    "Folder name": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Folder name"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nombre de la carpeta"
           }
         }
       }
@@ -17850,6 +17898,22 @@
         }
       }
     },
+    "Move to…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move to…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mover a…"
+          }
+        }
+      }
+    },
     "Movement": {
       "localizations": {
         "en": {
@@ -18157,6 +18221,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nuevo experimento"
+          }
+        }
+      }
+    },
+    "New folder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New folder"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nueva carpeta"
+          }
+        }
+      }
+    },
+    "New folder…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New folder…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nueva carpeta…"
           }
         }
       }
@@ -22973,6 +23069,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Quitar alimento"
+          }
+        }
+      }
+    },
+    "Remove from folder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove from folder"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quitar de la carpeta"
+          }
+        }
+      }
+    },
+    "Rename folder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename folder"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renombrar carpeta"
           }
         }
       }
@@ -29523,6 +29651,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Deshacer"
+          }
+        }
+      }
+    },
+    "Unfiled": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unfiled"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin carpeta"
           }
         }
       }
@@ -38548,6 +38692,268 @@
           "stringUnit": {
             "state": "translated",
             "value": "✓"
+          }
+        }
+      }
+    },
+    "My workouts": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My workouts"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mis entrenamientos"
+          }
+        }
+      }
+    },
+    "The strength sessions you've finished.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The strength sessions you've finished."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las sesiones de fuerza que has terminado."
+          }
+        }
+      }
+    },
+    "When you finish a strength session, it shows up here with its breakdown, volume and effort.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When you finish a strength session, it shows up here with its breakdown, volume and effort."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuando termines una sesión de fuerza, aparecerá aquí con su desglose, volumen y esfuerzo."
+          }
+        }
+      }
+    },
+    "Strength workout": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strength workout"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entrenamiento de fuerza"
+          }
+        }
+      }
+    },
+    "%lld h %lld min": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld h %lld min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld h %2$lld min"
+          }
+        }
+      }
+    },
+    "%lld s": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld s"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld s"
+          }
+        }
+      }
+    },
+    "%lld m": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld m"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld m"
+          }
+        }
+      }
+    },
+    "How your data is read": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cómo se leen tus datos"
+          }
+        }
+      }
+    },
+    "Combined": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Combinado"
+          }
+        }
+      }
+    },
+    "Recommended": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recomendado"
+          }
+        }
+      }
+    },
+    "Band only": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo la banda"
+          }
+        }
+      }
+    },
+    "Only Apple Health": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo Apple Salud"
+          }
+        }
+      }
+    },
+    "Apple Health as the base, your band on top when you wear it. The most complete reading.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Salud de base y tu banda encima cuando la traes. La lectura más completa."
+          }
+        }
+      }
+    },
+    "Only what your band measures. Nights without the band won't have a reading.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo lo que mide tu banda. Las noches sin banda no tendrán lectura."
+          }
+        }
+      }
+    },
+    "Only what Apple Health records, without your band.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo lo que registra Apple Salud, sin tu banda."
+          }
+        }
+      }
+    },
+    "Switching modes only changes what you see. Cénit keeps storing everything from both sources; nothing is ever deleted.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cambiar de modo solo cambia lo que ves. Cénit sigue guardando todo de ambas fuentes; nunca se borra nada."
+          }
+        }
+      }
+    },
+    "Apple Health is disconnected; right now Combined only uses your band. Connect it to add its data.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Salud está desconectado; ahora mismo Combinado solo usa tu banda. Conéctalo para sumar sus datos."
+          }
+        }
+      }
+    },
+    "No band data yet. Connect it in Live or import your history to see anything in this mode.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hay datos de tu banda todavía. Conéctala en Live o importa tu historial para ver algo en este modo."
+          }
+        }
+      }
+    },
+    "Pair in Live": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parear en Live"
+          }
+        }
+      }
+    },
+    "Apple Health isn't available on this device.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Salud no está disponible en este dispositivo."
+          }
+        }
+      }
+    },
+    "Apple Health is disconnected. In this mode Cénit can't read new data.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Salud está desconectado. En este modo Cénit no podrá leer datos nuevos."
+          }
+        }
+      }
+    },
+    "For now, without your band the recovery and sleep detail come estimated or later. The day's numbers do read from Apple Health.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por ahora, sin tu banda el recovery y el detalle del sueño llegan estimados o más adelante. Los números del día sí se leen de Apple Salud."
           }
         }
       }

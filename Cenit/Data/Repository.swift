@@ -50,6 +50,15 @@ final class Repository: ObservableObject {
         /// Days whose surfaced daily row came from Apple Health (no strap coverage), so Trends/Sleep
         /// can badge the source without `DailyMetric` carrying a source column. (FER-62)
         var appleHealthDays: Set<String> = []
+        /// Days with a stored row per source, UNFILTERED by the data-source mode (FER-485): the diagnostic
+        /// coverage reads these so it shows what's stored even in `whoopOnly`/`appleHealthOnly` — the proof
+        /// of the «nothing is deleted» invariant. `storedAppleOnlyDays` excludes strap days, mirroring the
+        /// merge precedence, so these are the always-Combined coverage counts.
+        var storedStrapDays: Set<String> = []
+        var storedAppleOnlyDays: Set<String> = []
+        /// Count of stored strap sleep sessions, UNFILTERED by the mode (FER-485) — the import block's
+        /// «… sleeps stored» line reads this so it stays honest in «Solo Apple Salud».
+        var storedSleepsCount: Int = 0
         var loaded = false
         var seq = 0
     }
@@ -72,6 +81,11 @@ final class Repository: ObservableObject {
     var refreshSeq: Int { dashboard.seq }
     /// Days surfaced from Apple Health (strap-uncovered) — Trends/Sleep badge these as "Apple Health". (FER-62)
     var appleHealthDays: Set<String> { dashboard.appleHealthDays }
+    /// Stored per-source day coverage, UNFILTERED by the mode — the diagnostic coverage on «Datos y
+    /// fuentes» reads these so it stays honest in every mode (FER-485).
+    var storedStrapDays: Set<String> { dashboard.storedStrapDays }
+    var storedAppleOnlyDays: Set<String> { dashboard.storedAppleOnlyDays }
+    var storedSleepsCount: Int { dashboard.storedSleepsCount }
 
     init(deviceId: String) { self.deviceId = deviceId }
 
@@ -176,8 +190,11 @@ final class Repository: ObservableObject {
         // (regression zero); `whoopOnly` drops Apple; `appleHealthOnly` drops the strap. The strap sleep
         // + verbatim figures below are strap-sourced, so they're gated on `usesWhoop` the same way.
         let (imported, computed, apple) = DataSourcePolicy.filter(dataSourceMode, imported: importedRaw, computed: computedRaw, apple: appleRaw)
-        let impSleep = dataSourceMode.usesWhoop ? ((try? await store.sleepSessions(deviceId: deviceId, from: lo, to: hi, limit: 4000)) ?? []) : []
-        let compSleep = dataSourceMode.usesWhoop ? ((try? await store.sleepSessions(deviceId: computedDeviceId, from: lo, to: hi, limit: 4000)) ?? []) : []
+        // FER-485: read strap sleeps UNFILTERED for the diagnostic stored-count, then gate for the dashboard.
+        let impSleepRaw = (try? await store.sleepSessions(deviceId: deviceId, from: lo, to: hi, limit: 4000)) ?? []
+        let compSleepRaw = (try? await store.sleepSessions(deviceId: computedDeviceId, from: lo, to: hi, limit: 4000)) ?? []
+        let impSleep = dataSourceMode.usesWhoop ? impSleepRaw : []
+        let compSleep = dataSourceMode.usesWhoop ? compSleepRaw : []
 
         // Export-verbatim sleep figures (long-format metricSeries rows from WhoopImporter).
         // The Detalle de Sueño prefers these per day over its APPROXIMATE recomputations.
@@ -193,12 +210,20 @@ final class Repository: ObservableObject {
 
         // One assignment → one objectWillChange for the whole refresh (was four).
         let merged = Self.mergeDaily(imported: imported, computed: computed, apple: apple)
+        // FER-485: stored per-source coverage from the UNFILTERED raws (the always-Combined truth), so the
+        // diagnostic coverage shows what's stored even when the mode hides a source from the dashboard.
+        let storedStrap = Set(importedRaw.map(\.day)).union(computedRaw.map(\.day))
+        let storedAppleOnly = Set(appleRaw.map(\.day)).subtracting(storedStrap)
+        let storedSleeps = Self.mergeSleep(imported: impSleepRaw, computed: compSleepRaw).count
         self.dashboard = DashboardData(
             days: merged.days,
             displayDays: merged.displayDays,
             sleeps: Self.mergeSleep(imported: impSleep, computed: compSleep),
             importedSleep: fig,
             appleHealthDays: merged.appleDays,
+            storedStrapDays: storedStrap,
+            storedAppleOnlyDays: storedAppleOnly,
+            storedSleepsCount: storedSleeps,
             loaded: true,
             seq: dashboard.seq + 1
         )
@@ -656,16 +681,23 @@ final class Repository: ObservableObject {
     /// are filtered HERE so every consumer (Workouts screen, Today, Coach context) agrees: the engine
     /// re-derives the detected rows each run, so a plain delete would resurrect them; the dismissed
     /// span list is the durable "not a workout" record.
-    func workoutRows(days: Int = 4000) async -> [WorkoutRow] {
+    /// `respectingMode`: dashboard callers (Today/Cuerpo/Workouts/Coach) leave it `true` so the list
+    /// honors the data-source mode; the diagnostic screens (Datos y fuentes / Apple Health coverage) pass
+    /// `false` to show everything STORED regardless of mode (FER-485).
+    func workoutRows(days: Int = 4000, respectingMode: Bool = true) async -> [WorkoutRow] {
         guard let store = await ensureStore() else { return [] }
         let now = Int(Date().timeIntervalSince1970)
         let lo = now - days * 86_400, hi = now + 86_400
-        // FER-484 scope: this list is shared by the dashboard (must respect the data-source mode) AND the
-        // diagnostic screens (Datos y fuentes / Apple Health coverage, which must show what's STORED). The
-        // per-screen filtering — dashboard honors the mode, diagnostics ignore it — is wired in F2 (FER-485).
-        var rows = (try? await store.workouts(deviceId: deviceId, from: lo, to: hi, limit: 5000)) ?? []
-        rows += (try? await store.workouts(deviceId: "apple-health", from: lo, to: hi, limit: 5000)) ?? []
-        rows += (try? await store.workouts(deviceId: computedDeviceId, from: lo, to: hi, limit: 5000)) ?? []
+        let useWhoop = !respectingMode || dataSourceMode.usesWhoop
+        let useApple = !respectingMode || dataSourceMode.usesAppleHealth
+        var rows: [WorkoutRow] = []
+        if useWhoop {
+            rows += (try? await store.workouts(deviceId: deviceId, from: lo, to: hi, limit: 5000)) ?? []
+            rows += (try? await store.workouts(deviceId: computedDeviceId, from: lo, to: hi, limit: 5000)) ?? []
+        }
+        if useApple {
+            rows += (try? await store.workouts(deviceId: "apple-health", from: lo, to: hi, limit: 5000)) ?? []
+        }
         let spans = WorkoutSource.parseDismissedSpans(dismissedDetectedSpans)
         return rows.filter { !WorkoutSource.isDismissed($0, spans: spans) }
             .sorted { $0.startTs > $1.startTs }
@@ -771,10 +803,10 @@ final class Repository: ObservableObject {
     }
 
     /// Apple Health daily aggregates (steps/energy/vo2/hr).
-    /// FER-484 scope: shared by the dashboard (TodayView/CuerpoView, must respect the mode) and the Apple
-    /// Health diagnostic screen (shows what's stored, ignores the mode). The per-screen mode filtering is
-    /// wired in F2 (FER-485), not here — so the diagnostic coverage stays honest.
-    func appleDailyRows(days: Int = 4000) async -> [AppleDaily] {
+    /// `respectingMode`: dashboard callers (Today/Cuerpo) leave it `true` so Apple is hidden in `whoopOnly`;
+    /// the Apple Health diagnostic screen passes `false` to show what's STORED regardless of mode (FER-485).
+    func appleDailyRows(days: Int = 4000, respectingMode: Bool = true) async -> [AppleDaily] {
+        if respectingMode && !dataSourceMode.usesAppleHealth { return [] }
         guard let store = await ensureStore() else { return [] }
         let (from, to) = Self.dayWindow(days: days)
         return (try? await store.appleDaily(deviceId: "apple-health", from: from, to: to)) ?? []
