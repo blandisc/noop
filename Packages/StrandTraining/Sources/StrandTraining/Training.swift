@@ -83,6 +83,17 @@ public struct RoutineExercise: Codable, Sendable, Identifiable, Equatable {
         self.restMode = restMode; self.restSeconds = restSeconds
         self.supersetGroup = supersetGroup; self.sets = sets
     }
+
+    /// The per-set plan to act on: the authored `sets` when present, else a 1:1 expansion of the legacy
+    /// target* columns (one work set per `targetSets`, carrying `targetReps`/`targetWeightKg`). Never
+    /// empty — the single source for the "sets ↔ target*" fallback shared by persistence, the builder
+    /// and the guided session, so the rule lives in one place.
+    public var plannedSets: [RoutineSet] {
+        sets.isEmpty
+            ? (0..<max(targetSets, 1)).map {
+                RoutineSet(position: $0, kind: .work, reps: targetReps, weightKg: targetWeightKg) }
+            : sets
+    }
 }
 
 /// A performed strength session. Optionally linked to a routine and to the strap

@@ -90,16 +90,13 @@ extension WhoopStore {
             try db.execute(sql: "DELETE FROM routineExercise WHERE routineId = ?", arguments: [routine.id])
             for re in exercises {
                 // `sets` is the source of truth; the legacy target* columns are derived from the work
-                // sets so any legacy reader stays coherent. If a caller handed us a slot with no sets
-                // (legacy in-memory / templates), fall back to the target* it carries.
-                let work = re.sets.filter { $0.kind == .work }
-                let planned: [RoutineSet] = re.sets.isEmpty
-                    ? (0..<max(re.targetSets, 1)).map {
-                        RoutineSet(position: $0, kind: .work, reps: re.targetReps, weightKg: re.targetWeightKg) }
-                    : re.sets
-                let derivedSets = re.sets.isEmpty ? max(re.targetSets, 1) : max(work.count, 1)
-                let derivedReps = re.sets.isEmpty ? re.targetReps : work.first?.reps
-                let derivedWeight = re.sets.isEmpty ? re.targetWeightKg : work.first?.weightKg
+                // sets so any legacy reader stays coherent. `plannedSets` normalizes the slot (real sets,
+                // or a 1:1 expansion of target* for a legacy/template slot with none).
+                let planned = re.plannedSets
+                let work = planned.filter { $0.kind == .work }
+                let derivedSets = max(work.count, 1)
+                let derivedReps = work.first?.reps
+                let derivedWeight = work.first?.weightKg
                 let args: [DatabaseValueConvertible?] = [
                     re.id, re.routineId, re.exerciseId, re.position, derivedSets, derivedReps,
                     derivedWeight, encodeJSON(re.warmupPercents), re.restMode.rawValue, re.restSeconds,
@@ -151,10 +148,10 @@ extension WhoopStore {
                 byRe[reId, default: []].append(Self.routineSet(r))
             }
             for i in result.indices {
-                // Post-v17 every slot has rows; the synthesis from target* is a defensive fallback
-                // (e.g. a slot inserted by a path that skipped routineSet) so `sets` is never empty.
+                // Post-v17 every slot has rows; for a slot with none (a path that skipped routineSet)
+                // `plannedSets` synthesizes from target* so `sets` is never empty.
                 let s = byRe[result[i].id] ?? []
-                result[i].sets = s.isEmpty ? Self.synthesizedSets(result[i]) : s
+                result[i].sets = s.isEmpty ? result[i].plannedSets : s
             }
             return result
         }
@@ -184,15 +181,6 @@ extension WhoopStore {
         RoutineSet(id: r["id"], position: r["position"],
                    kind: SetKind(rawValue: r["kind"]) ?? .work,
                    reps: r["reps"], weightKg: r["weightKg"])
-    }
-
-    /// Defensive synthesis of per-set rows from the legacy target* columns, for any slot that has no
-    /// `routineSet` rows (all post-v17 routines do; this only fires for a slot written by a path that
-    /// skipped them). Keeps `RoutineExercise.sets` non-empty so the UI and session never see a gap.
-    private static func synthesizedSets(_ re: RoutineExercise) -> [RoutineSet] {
-        (0..<max(re.targetSets, 1)).map {
-            RoutineSet(position: $0, kind: .work, reps: re.targetReps, weightKg: re.targetWeightKg)
-        }
     }
 
     // MARK: - Sessions + sets (+ PR derivation, transactional)

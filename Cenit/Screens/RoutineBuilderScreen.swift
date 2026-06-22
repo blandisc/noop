@@ -196,13 +196,13 @@ struct RoutineBuilderScreen: View {
         // Reps and weight collapse to a single value when uniform, else show first→last (the user's
         // intended progression across the sets, e.g. "8–4 reps · 60–80 kg").
         let reps = work.compactMap { $0.reps }
-        if let r = rangeText(reps.map { "\($0)" }, allValues: reps) {
+        if let r = rangeText(reps, { "\($0)" }) {
             parts.append("\(r) reps")
         } else if let r = re.targetReps {
             parts.append("\(r) rep\(r == 1 ? "" : "s")")
         }
         let weights = work.compactMap { $0.weightKg }.filter { $0 > 0 }
-        if let r = rangeText(weights.map { StrengthDisplay.weightNumber($0, system: system) }, allValues: weights) {
+        if let r = rangeText(weights, { StrengthDisplay.weightNumber($0, system: system) }) {
             parts.append("\(r) \(StrengthDisplay.weightUnit(system))")
         } else if let w = re.targetWeightKg, w > 0 {
             parts.append(StrengthDisplay.weight(w, system: system))
@@ -210,11 +210,10 @@ struct RoutineBuilderScreen: View {
         return parts.joined(separator: " · ")
     }
 
-    /// "60" when all values are equal, "60–80" (first→last) when they differ, nil when empty.
-    private func rangeText<T: Equatable>(_ display: [String], allValues: [T]) -> String? {
-        guard let first = display.first, let last = display.last else { return nil }
-        let uniform = allValues.allSatisfy { $0 == allValues.first }
-        return uniform ? first : "\(first)–\(last)"
+    /// Formatted "60" when all values are equal, "60–80" (first→last) when they differ, nil when empty.
+    private func rangeText<T: Equatable>(_ values: [T], _ fmt: (T) -> String) -> String? {
+        guard let first = values.first, let last = values.last else { return nil }
+        return values.allSatisfy { $0 == first } ? fmt(first) : "\(fmt(first))–\(fmt(last))"
     }
 
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
@@ -450,7 +449,7 @@ private struct RoutineExerciseEditor: View {
             set: { raw in
                 let norm = raw.replacingOccurrences(of: ",", with: ".")
                 guard let v = Double(norm), v > 0 else { set.wrappedValue.weightKg = nil; return }
-                set.wrappedValue.weightKg = system == .imperial ? v / UnitFormatter.poundsPerKilogram : v
+                set.wrappedValue.weightKg = system == .imperial ? UnitFormatter.poundsToKg(v) : v
             })
     }
 
