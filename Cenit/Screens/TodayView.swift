@@ -1416,10 +1416,12 @@ struct TodayView: View {
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
             // El pulso vivo se mudó a la línea del veredicto (FER-282); el rótulo de sección «Métricas de
             // hoy» —overline en tinta + regla hairline al ras— vuelve como ancla de lectura sobre la
-            // rejilla (handoff «Hoy · Estados»). Rejilla fija 2×8 (2 columnas, 8 tiles → 4 renglones),
-            // separación `NoopMetrics.gap`.
+            // rejilla (handoff «Hoy · Estados»). Rejilla fija 2×8 (2 columnas, 8 tiles → 4 renglones).
+            // Separación `space2` (8) en vez de `gap` (12): junto con el alto de tile a 68 recupera el
+            // alto que la barra «afinando» suma en calibración, para que Hoy quepa sin scroll sin achicar
+            // el dial grande de 180 (la decisión del dueño en FER-205). 3 gaps verticales → −12pt.
             metricsSectionLabel
-            LazyVGrid(columns: tileGrid, alignment: .leading, spacing: NoopMetrics.gap) {
+            LazyVGrid(columns: tileGrid, alignment: .leading, spacing: NoopMetrics.space2) {
                 // Esfuerzo del día — carga del día, sin valencia (Δ en tinta neutra).
                 metricTile(TodayMetricTile(
                     label: "Day Strain",
@@ -1707,10 +1709,12 @@ struct TodayView: View {
                 footer
             }
             .padding(.horizontal, NoopMetrics.gap).padding(.vertical, NoopMetrics.space2)
-            // Alto base 76 (FER-265): compacto, la sección no se desborda en el tamaño por defecto.
-            // FER-394: piso, no tope — el tile crece en vez de cortar texto con Dynamic Type grande;
-            // en el tamaño por defecto el contenido cabe en 76, así que se ve idéntico.
-            .frame(maxWidth: .infinity, minHeight: 76, alignment: .topLeading)
+            // Alto base 68: compacto, la sección no se desborda en el tamaño por defecto. Bajó de 76
+            // (FER-265) para recuperar ~32pt en la rejilla (4 filas) y que Hoy quepa sin scroll durante
+            // la calibración, sin tocar el dial grande de 180. El contenido del tile (overline + valor 23
+            // + pie de una línea + padding vertical 8/8) cabe holgado en 68 a tamaño por defecto.
+            // FER-394: piso, no tope — el tile crece en vez de cortar texto con Dynamic Type grande.
+            .frame(maxWidth: .infinity, minHeight: 68, alignment: .topLeading)
             // Tarjeta blanca con elevación sutil (handoff «Hoy · Estados»): radio 17 + una sombra cálida
             // tenue (`ink` al 5 %, y:1) sobre el papel — la sombra va en la SILUETA del tile (la forma del
             // fondo), no en el contenido, así no proyecta el texto. El relleno sigue siendo el `surface`
