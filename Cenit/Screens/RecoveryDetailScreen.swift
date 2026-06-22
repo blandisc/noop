@@ -8,7 +8,7 @@ import Foundation
 // MARK: - RecoveryDetailScreen — el «Detalle de Recuperación» en «Instrumento» (FER-225)
 //
 // Hermana de `MetricDetailScreen` (FER-185), igual que `SleepDetailScreen` (FER-212): REUSA su lenguaje
-// visual (el scaffold `block(title:)`, el hero, `InfoAccordion`, `theme: InstrumentoTheme` explícito,
+// visual (el scaffold `DetailBlock`, el hero, `InfoAccordion`, `theme: InstrumentoTheme` explícito,
 // `SheetPaperBackground`, `ScrollView`→`VStack`, `methodDisclosure`, los wells) pero con su propio modelo.
 // NO extiende `MetricDetailScreen`/`MetricDetailSpec` (esos son para vitales de serie ESCALAR única —
 // HRV/FC/Respiración); la recuperación es un SCORE COMPUESTO con bloques propios (desglose por driver,
@@ -100,7 +100,7 @@ struct RecoveryDetailScreen: View {
         Rectangle().fill(theme.hairline).frame(height: 1)
     }
 
-    // MARK: - 1. Hero — el score en color de banda
+    // MARK: - 1. Hero — el score en color de banda (+ dirección fundida: mini-sparkline 14 d + flecha)
 
     private var hero: some View {
         InfoAccordion(
@@ -109,20 +109,83 @@ struct RecoveryDetailScreen: View {
             accessibilityLabel: "Information about recovery",
             theme: theme
         ) {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(model.score.map { "\($0)" } ?? "—")
-                        .instrumentoHero(46)
-                        .foregroundStyle(model.score == nil ? theme.inkTertiary : bandColor)
-                    if model.score != nil {
-                        Text("/ 100").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
+            let spark = heroSpark
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text(model.score.map { "\($0)" } ?? "—")
+                            .instrumentoHero(46)
+                            .foregroundStyle(model.score == nil ? theme.inkTertiary : bandColor)
+                        if model.score != nil {
+                            Text("/ 100").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
+                        }
+                    }
+                    Spacer(minLength: 12)
+                    if model.score != nil, spark.count >= 2 {
+                        heroDirectionTrend(spark: spark)
                     }
                 }
+                // The reading is the answer, lifted above the «/100» — headline weight, ink. (FER-476 #7)
                 Text(heroReading)
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(theme.inkSecondary)
+                    .font(StrandFont.headline)
+                    .foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
             }
+        }
+    }
+
+    /// The fused direction: a 14-day mini-sparkline of recovery + a tendency arrow and «14 d» label. The
+    /// direction prefers the forecast's (the chip that used to live in «Tomorrow»); with no forecast yet it
+    /// reads the sign of the recent slope. Color stays on the data (recovery green); the arrow is ink. (FER-476 #4)
+    private func heroDirectionTrend(spark: [Double]) -> some View {
+        VStack(alignment: .trailing, spacing: 3) {
+            Sparkline(
+                values: spark,
+                gradient: Gradient(colors: [theme.dataRecovery.opacity(0.55), theme.dataRecovery]),
+                lineWidth: 1.6,
+                showsArea: false,
+                showsHead: false,
+                showsScrub: false
+            )
+            .frame(width: 74, height: 24)
+            .accessibilityHidden(true)
+            if let d = heroDirection(spark) {
+                HStack(spacing: 3) {
+                    Image(systemName: heroDirectionSymbol(d))
+                        .font(.system(size: 10, weight: .semibold))
+                        .accessibilityHidden(true)
+                    Text("14 d").font(StrandFont.footnote)
+                }
+                .foregroundStyle(theme.inkTertiary)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text("Recovery trend, last 14 days"))
+    }
+
+    /// The last 14 days of recovery values (oldest → newest), for the hero mini-sparkline.
+    private var heroSpark: [Double] { Array(model.series.suffix(14).map(\.value)) }
+
+    /// The hero's tendency: the forecast's direction when there is one (continuity with the old chip),
+    /// otherwise the sign of the 14-day slope (first-half vs second-half mean). nil when there's too little.
+    private func heroDirection(_ spark: [Double]) -> RecoveryForecast.Direction? {
+        if let d = model.forecast?.direction { return d }
+        let v = spark
+        guard v.count >= 4 else { return nil }
+        let half = v.count / 2
+        let early = v.prefix(half)
+        let late = v.suffix(half)
+        let delta = (late.reduce(0, +) / Double(late.count)) - (early.reduce(0, +) / Double(early.count))
+        if delta > 1.5 { return .rising }
+        if delta < -1.5 { return .falling }
+        return .steady
+    }
+
+    private func heroDirectionSymbol(_ d: RecoveryForecast.Direction) -> String {
+        switch d {
+        case .rising:  return "arrow.up.right"
+        case .steady:  return "arrow.right"
+        case .falling: return "arrow.down.right"
         }
     }
 
@@ -154,44 +217,152 @@ struct RecoveryDetailScreen: View {
 
     // MARK: - 2. Qué lo explica — estado por driver vs tu base + su peso
 
+    // The block answers «why this number today?» in one glance: a plain-language headline built from the
+    // dominant driver, then a divergent «vs your base» axis for the z-scored signals (ordered by |z|), and
+    // a quiet state-only sub-row for the signals with no σ (sleep, skin temp). The jargon moved to «See the
+    // method» — this block has no ⓘ. (FER-476 #1, #2, #3, #5)
+
+    /// The z-scored drivers (HRV / resting-HR / respiration when it fired), ordered by |z| descending — the
+    /// first row answers «what moved this the most».
+    private var axisDrivers: [RecoveryDetailModel.DriverState] {
+        model.drivers
+            .filter { $0.z != nil }
+            .sorted { abs($0.z ?? 0) > abs($1.z ?? 0) }
+    }
+
+    /// The drivers with no σ to position on the axis (sleep, skin temperature) — shown as state-only rows.
+    private var otherDrivers: [RecoveryDetailModel.DriverState] {
+        model.drivers.filter { $0.z == nil }
+    }
+
     private var whatExplainsItBlock: some View {
-        InfoAccordion(
-            title: "What explains your recovery",
-            explanation: "HRV carries the most weight — it's the best window onto your autonomic nervous system. What matters is the average of your recent nights, not a single day. If a signal is missing on a given night, its weight is shared among the others. (Plews 2013; Buchheit 2014)",
-            accessibilityLabel: "Information about what explains your recovery",
-            theme: theme
-        ) {
-            VStack(alignment: .leading, spacing: 12) {
-                ForEach(model.drivers) { driverRow($0) }
+        let axis = axisDrivers
+        let other = otherDrivers
+        return DetailBlock("What explains your recovery", theme: theme) {
+            VStack(alignment: .leading, spacing: 16) {
+                if let lead = axis.first {
+                    titular(lead)
+                        .font(StrandFont.body)
+                        .foregroundStyle(theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if !axis.isEmpty {
+                    VStack(alignment: .leading, spacing: 14) {
+                        ForEach(axis) { axisDriverRow($0) }
+                    }
+                    axisLegend
+                }
+                if !other.isEmpty {
+                    if !axis.isEmpty { blockDivider }
+                    VStack(alignment: .leading, spacing: 12) {
+                        ForEach(other) { stateDriverRow($0) }
+                    }
+                }
             }
         }
     }
 
-    /// One driver: its label + state word (in the flag color) + weight on the title line, and a thin track
-    /// whose fill length is the weight (relative to HRV's 60%) tinted by the same flag — so a glance reads
-    /// both "how it's doing" (color + word) and "how much it weighs" (bar length).
-    private func driverRow(_ d: RecoveryDetailModel.DriverState) -> some View {
+    /// The plain-language headline from the dominant driver: «Your HRV, well above your base, is what's
+    /// lifting your recovery most today.» — the metric in its hue, the rest in ink. Built from fragments so
+    /// it localizes cleanly while still coloring the metric name. (FER-476 #3)
+    private func titular(_ d: RecoveryDetailModel.DriverState) -> Text {
+        let z = d.z ?? 0
+        let above = z >= 0
+        let strong = abs(z) >= 1.0
+        let position: LocalizedStringKey = strong
+            ? (above ? ", well above your base, " : ", well below your base, ")
+            : (above ? ", above your base, "       : ", below your base, ")
+        let valence: LocalizedStringKey
+        switch d.flag {
+        case .good:           valence = "is what's lifting your recovery most today."
+        case .neutral:        valence = "is what's moving your recovery most today."
+        case .watch, .bad:    valence = "is what's weighing on your recovery most today."
+        }
+        return Text("Your ")
+            + Text(d.label).foregroundColor(flagColor(d.flag)).fontWeight(.semibold)
+            + Text(position)
+            + Text(valence)
+    }
+
+    /// One axis driver: label · `±Nσ` (hue by flag) · `· P%` (weight, quiet), and a divergent bar centered
+    /// on your base — the sign sends it left/right, |z| sets its length, the flag sets its color. (FER-476 #2)
+    private func axisDriverRow(_ d: RecoveryDetailModel.DriverState) -> some View {
         let color = flagColor(d.flag)
-        return VStack(alignment: .leading, spacing: 5) {
+        let z = d.z ?? 0
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(d.label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Spacer(minLength: 8)
+                Text(verbatim: String(format: "%+.1fσ", z))
+                    .font(StrandFont.captionNumber)
+                    .foregroundStyle(d.flag == .neutral ? theme.inkSecondary : color)
+                Text(verbatim: "· \(d.weightPct)%")
+                    .font(StrandFont.captionNumber)
+                    .foregroundStyle(theme.inkTertiary)
+            }
+            divergentBar(z: z, color: d.flag == .neutral ? theme.inkSecondary : color)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// The «vs your base» bar: a center base tick, with a capsule extending right (above base) or left
+    /// (below), its length proportional to |z| clamped at ~2.5σ. Shares the family thickness (6px). (FER-476 #2, #6)
+    private func divergentBar(z: Double, color: Color) -> some View {
+        GeometryReader { geo in
+            let half = geo.size.width / 2
+            let maxSigma: CGFloat = 2.5
+            let mag = Swift.max(4, Swift.min(abs(CGFloat(z)) / maxSigma, 1.0) * half)
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(color)
+                    .frame(width: mag, height: 6)
+                    .offset(x: z >= 0 ? half : half - mag)
+                Rectangle()
+                    .fill(theme.hairlineStrong)
+                    .frame(width: 1, height: 9)
+                    .offset(x: half - 0.5)
+            }
+            .frame(maxHeight: .infinity, alignment: .center)
+        }
+        .frame(height: 9)
+    }
+
+    /// The axis legend: «menos · tu base · más», so the centered bars read at a glance.
+    private var axisLegend: some View {
+        HStack {
+            Text("less").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            Spacer()
+            Text("your base").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            Spacer()
+            Text("more").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+        }
+        .accessibilityHidden(true)
+    }
+
+    /// A driver with no σ (sleep, skin temp): its state word (in the flag color) + weight, and a state bar
+    /// whose length is the weight — NOT a position on the axis. Honest about what we can and can't z-score. (FER-476 #2)
+    private func stateDriverRow(_ d: RecoveryDetailModel.DriverState) -> some View {
+        let color = flagColor(d.flag)
+        return VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(d.label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Spacer(minLength: 8)
                 Text(Self.driverWord(key: d.key, flag: d.flag))
                     .font(StrandFont.captionNumber)
-                    .foregroundStyle(color)
-                Text(verbatim: "\(d.weightPct)%")
+                    .foregroundStyle(d.flag == .neutral ? theme.inkSecondary : color)
+                Text(verbatim: "· \(d.weightPct)%")
                     .font(StrandFont.captionNumber)
                     .foregroundStyle(theme.inkTertiary)
             }
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(theme.hairline).frame(height: 5)
-                    Capsule().fill(d.flag == .neutral ? theme.inkTertiary.opacity(0.5) : color)
-                        .frame(width: max(5, geo.size.width * CGFloat(d.weightPct) / 60), height: 5)
+                    Capsule().fill(theme.hairline).frame(height: 6)
+                    Capsule().fill(d.flag == .neutral ? theme.inkTertiary.opacity(0.5) : color.opacity(0.85))
+                        .frame(width: max(6, geo.size.width * CGFloat(d.weightPct) / 60), height: 6)
                 }
                 .frame(maxHeight: .infinity, alignment: .center)
             }
-            .frame(height: 5)
+            .frame(height: 6)
         }
         .accessibilityElement(children: .combine)
     }
@@ -237,12 +408,7 @@ struct RecoveryDetailScreen: View {
     /// stays on the number); with none it shows the "still calibrating" state in the same slot. The ⓘ
     /// carries the method + citation; the framing line below keeps the always-visible humility.
     private var forecastBlock: some View {
-        InfoAccordion(
-            title: "Tomorrow, if you rest the same",
-            explanation: "A simple projection from your recent recovery trend (a moving average plus a damped recent slope), nudged down a little by any standing sleep debt. It's a trend, not a guarantee — what you do today matters most — and it needs about two weeks of history before it'll show. (De Sabbata & Simonini, J Healthcare Informatics Research, 2025)",
-            accessibilityLabel: "Information about tomorrow's forecast",
-            theme: theme
-        ) {
+        DetailBlock("Tomorrow, if you rest the same", theme: theme) {
             if let f = model.forecast {
                 forecastReadout(f)
             } else {
@@ -263,8 +429,6 @@ struct RecoveryDetailScreen: View {
                 Text("~").font(StrandFont.unit).foregroundStyle(theme.inkSecondary)
                     .accessibilityHidden(true)
                 Text("\(est)").instrumentoHero(34).foregroundStyle(theme.dataRecovery)
-                Spacer(minLength: 8)
-                directionChip(f.direction)
             }
             // Likely range: a quiet track with the estimate's band drawn across it (token-only, like driverRow).
             VStack(alignment: .leading, spacing: 5) {
@@ -311,28 +475,6 @@ struct RecoveryDetailScreen: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// Direction as a quiet ink chip (arrow + word). The hue stays on the datum, never on chrome, so the
-    /// chip carries no saturated fill — it sits on the raised surface in secondary ink.
-    private func directionChip(_ d: RecoveryForecast.Direction) -> some View {
-        let symbol: String
-        let word: LocalizedStringKey
-        switch d {
-        case .rising:  symbol = "arrow.up.right";   word = "rising"
-        case .steady:  symbol = "arrow.right";      word = "steady"
-        case .falling: symbol = "arrow.down.right"; word = "falling"
-        }
-        return HStack(spacing: 4) {
-            Image(systemName: symbol).accessibilityHidden(true)
-            Text(word)
-        }
-        .font(StrandFont.captionNumber)
-        .foregroundStyle(theme.inkSecondary)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 5)
-        .background(theme.surface, in: Capsule())
-        .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
-    }
-
     // MARK: - Level 2 · «Your patterns» — normal range + consistency + load, fused to plain lines
     //
     // The re-sequencing (Detalles escalonados) collapses three former blocks — «Your normal range»,
@@ -357,12 +499,7 @@ struct RecoveryDetailScreen: View {
     }
 
     private var patternsBlock: some View {
-        InfoAccordion(
-            title: "Your patterns",
-            explanation: "Where your recovery usually lands (the average of your recent days ± a band of your own variation, σ), how steady it is week to week (its coefficient of variation, CV), and how your training load is trending (the acute:chronic workload ratio, ACWR — context for recovery, never an injury claim). (Buchheit 2014; Plews 2013; Impellizzeri 2020)",
-            accessibilityLabel: "Information about your recovery patterns",
-            theme: theme
-        ) {
+        DetailBlock("Your patterns", theme: theme) {
             VStack(alignment: .leading, spacing: 12) {
                 if let r = normalRange {
                     patternLine(label: "Usually",
@@ -418,12 +555,7 @@ struct RecoveryDetailScreen: View {
         // Compare the selected window against the equally-long window before it, not always the calendar
         // month. `.all` has no previous period, so no chip. (FER-264)
         let comparison = window.range.periodComparison(of: model.series)
-        return InfoAccordion(
-            title: "Trend",
-            explanation: "The line is your 7-day moving average over the period you pick. The percentage compares this period's average with the previous period of the same length. The average and range come from the range you selected.",
-            accessibilityLabel: "Information about the trend",
-            theme: theme
-        ) {
+        return DetailBlock("Trend", theme: theme) {
             VStack(alignment: .leading, spacing: 10) {
                 MetricTrendChart(
                     range: $range,
@@ -510,12 +642,7 @@ struct RecoveryDetailScreen: View {
     // MARK: - Calendario · 90 días (YearHeatStrip re-tintado, a todo el ancho) — en «See your history»
 
     private var calendarBlock: some View {
-        InfoAccordion(
-            title: "Calendar · 90 days",
-            explanation: "Each square is a day, tinted by your recovery — red when low, amber in the middle, green when high. Empty squares are days with no reading. It's the at-a-glance shape of your last three months. (Buchheit 2014)",
-            accessibilityLabel: "Information about the 90-day calendar",
-            theme: theme
-        ) {
+        DetailBlock("Calendar · 90 days", theme: theme) {
             VStack(alignment: .leading, spacing: 10) {
                 heatGrid
                 heatReadout
@@ -610,11 +737,15 @@ struct RecoveryDetailScreen: View {
         DisclosureGroup(isExpanded: $methodExpanded) {
             VStack(alignment: .leading, spacing: 10) {
                 Divider().overlay(theme.hairline)
-                Text("Each signal becomes a score of how far above or below your personal average it sits (a z-score). They're combined with the weights above and mapped onto a 0–100 scale through a logistic curve, calibrated so a typical day lands near 58. It's an estimate, not a diagnosis.")
+                Text("Each signal becomes a score of how far above or below your personal average it sits (a z-score, in σ). They're combined with the weights shown and mapped onto a 0–100 scale through a logistic curve, calibrated so a typical day lands near 58. It's an estimate, not a diagnosis.")
                     .font(StrandFont.subhead)
                     .foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
-                Text("A composite of z-scores through a logistic curve. HRV via RMSSD (Task Force, 1996).")
+                Text("The «vs your base» bars show each signal's deviation in σ (above your base = right). HRV, resting heart rate and respiration are z-scored that way; sleep and skin temperature carry no σ, so they show their state, not a position. Your normal range is your recent average ± one σ. Steadiness is the coefficient of variation (CV). Training load is the acute:chronic workload ratio (ACWR) — context for recovery, never an injury claim.")
+                    .font(StrandFont.subhead)
+                    .foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("A composite of z-scores through a logistic curve. HRV via RMSSD (Task Force, 1996; Plews 2013; Buchheit 2014; Impellizzeri 2020).")
                     .font(StrandFont.caption)
                     .foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -772,6 +903,11 @@ struct RecoveryDetailModel {
         let label: LocalizedStringKey
         let weightPct: Int
         let flag: ReadinessEngine.Flag
+        /// The driver's deviation from baseline as a raw signed σ (above base = `+`), mirrored from
+        /// `ReadinessEngine.Signal.z`. Non-nil only for the z-scored signals (HRV / resting-HR /
+        /// respiratory rate) — those go on the «vs your base» axis, ordered by |z|. nil for sleep (no
+        /// readiness signal) and skin temperature (°C, asymmetric), which sit in a state-only sub-row. (FER-476)
+        let z: Double?
     }
 
     /// Recent training load, as honest context (never an injury claim — Impellizzeri 2020).
@@ -868,7 +1004,11 @@ struct RecoveryDetailModel {
     /// `RecoveryScorer`, never hardcoded.
     static func deriveDrivers(readiness: ReadinessEngine.Readiness, today: DailyMetric?) -> [DriverState] {
         var byKey: [String: ReadinessEngine.Flag] = [:]
-        for s in readiness.signals { byKey[s.key] = s.flag }
+        var byKeyZ: [String: Double] = [:]
+        for s in readiness.signals {
+            byKey[s.key] = s.flag
+            if let z = s.z { byKeyZ[s.key] = z }
+        }
 
         let sleepFlag: ReadinessEngine.Flag = {
             guard let raw = today?.efficiency else { return .neutral }
@@ -880,11 +1020,11 @@ struct RecoveryDetailModel {
 
         func pct(_ w: Double) -> Int { Int((w * 100).rounded()) }
         return [
-            DriverState(key: "hrv",      label: "HRV",               weightPct: pct(RecoveryScorer.wHRV),   flag: byKey["hrv"] ?? .neutral),
-            DriverState(key: "rhr",      label: "Resting HR",        weightPct: pct(RecoveryScorer.wRHR),   flag: byKey["rhr"] ?? .neutral),
-            DriverState(key: "sleep",    label: "Sleep",             weightPct: pct(RecoveryScorer.wSleep), flag: sleepFlag),
-            DriverState(key: "skinTemp", label: "Skin temperature",  weightPct: pct(RecoveryScorer.wTemp),  flag: byKey["skinTemp"] ?? .neutral),
-            DriverState(key: "respRate", label: "Respiration",       weightPct: pct(RecoveryScorer.wResp),  flag: byKey["respRate"] ?? .neutral),
+            DriverState(key: "hrv",      label: "HRV",               weightPct: pct(RecoveryScorer.wHRV),   flag: byKey["hrv"] ?? .neutral,      z: byKeyZ["hrv"]),
+            DriverState(key: "rhr",      label: "Resting HR",        weightPct: pct(RecoveryScorer.wRHR),   flag: byKey["rhr"] ?? .neutral,      z: byKeyZ["rhr"]),
+            DriverState(key: "sleep",    label: "Sleep",             weightPct: pct(RecoveryScorer.wSleep), flag: sleepFlag,                     z: nil),
+            DriverState(key: "skinTemp", label: "Skin temperature",  weightPct: pct(RecoveryScorer.wTemp),  flag: byKey["skinTemp"] ?? .neutral, z: nil),  // °C, asymmetric — never z-scored, so it sits in the state-only sub-row
+            DriverState(key: "respRate", label: "Respiration",       weightPct: pct(RecoveryScorer.wResp),  flag: byKey["respRate"] ?? .neutral, z: byKeyZ["respRate"]),
         ]
     }
 
@@ -936,11 +1076,11 @@ private func sampleModel(score: Int?, calibration: Int?) -> RecoveryDetailModel 
         calibration: calibration,
         nightsNeeded: 4,
         drivers: [
-            .init(key: "hrv", label: "HRV", weightPct: 60, flag: .good),
-            .init(key: "rhr", label: "Resting HR", weightPct: 20, flag: .neutral),
-            .init(key: "sleep", label: "Sleep", weightPct: 15, flag: .good),
-            .init(key: "skinTemp", label: "Skin temperature", weightPct: 10, flag: .neutral),
-            .init(key: "respRate", label: "Respiration", weightPct: 5, flag: .neutral),
+            .init(key: "hrv", label: "HRV", weightPct: 60, flag: .good, z: 1.4),
+            .init(key: "rhr", label: "Resting HR", weightPct: 20, flag: .good, z: 0.6),
+            .init(key: "sleep", label: "Sleep", weightPct: 15, flag: .good, z: nil),
+            .init(key: "skinTemp", label: "Skin temperature", weightPct: 10, flag: .neutral, z: nil),
+            .init(key: "respRate", label: "Respiration", weightPct: 5, flag: .neutral, z: -0.3),
         ],
         series: series,
         heat: calibration != nil ? [] : heat,

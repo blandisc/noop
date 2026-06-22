@@ -2368,6 +2368,40 @@
         }
       }
     },
+    ", above your base, ": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", above your base, "
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", por encima de tu base, "
+          }
+        }
+      }
+    },
+    ", below your base, ": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", below your base, "
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", por debajo de tu base, "
+          }
+        }
+      }
+    },
     ", typical %lld%%": {
       "extractionState": "manual",
       "localizations": {
@@ -2381,6 +2415,40 @@
           "stringUnit": {
             "state": "translated",
             "value": ", típico %lld%%"
+          }
+        }
+      }
+    },
+    ", well above your base, ": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", well above your base, "
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", muy por encima de tu base, "
+          }
+        }
+      }
+    },
+    ", well below your base, ": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", well below your base, "
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", muy por debajo de tu base, "
           }
         }
       }
@@ -3104,6 +3172,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Un compuesto de z-scores con una curva logística. HRV vía RMSSD (Task Force, 1996)."
+          }
+        }
+      }
+    },
+    "A composite of z-scores through a logistic curve. HRV via RMSSD (Task Force, 1996; Plews 2013; Buchheit 2014; Impellizzeri 2020).": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A composite of z-scores through a logistic curve. HRV via RMSSD (Task Force, 1996; Plews 2013; Buchheit 2014; Impellizzeri 2020)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un compuesto de z-scores a través de una curva logística. VFC vía RMSSD (Task Force, 1996; Plews 2013; Buchheit 2014; Impellizzeri 2020)."
           }
         }
       }
@@ -10076,6 +10161,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cada señal se vuelve una puntuación de qué tan por encima o por debajo de tu promedio personal está (un z-score). Se combinan con los pesos de arriba y se mapean a una escala de 0–100 con una curva logística, calibrada para que un día típico caiga cerca de 58. Es una estimación, no un diagnóstico."
+          }
+        }
+      }
+    },
+    "Each signal becomes a score of how far above or below your personal average it sits (a z-score, in σ). They're combined with the weights shown and mapped onto a 0–100 scale through a logistic curve, calibrated so a typical day lands near 58. It's an estimate, not a diagnosis.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Each signal becomes a score of how far above or below your personal average it sits (a z-score, in σ). They're combined with the weights shown and mapped onto a 0–100 scale through a logistic curve, calibrated so a typical day lands near 58. It's an estimate, not a diagnosis."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada señal se convierte en una medida de qué tan por encima o por debajo de tu promedio personal está (un z-score, en σ). Se combinan con los pesos mostrados y se llevan a una escala de 0 a 100 con una curva logística, calibrada para que un día típico caiga cerca de 58. Es una estimación, no un diagnóstico."
           }
         }
       }
@@ -21568,6 +21670,23 @@
         }
       }
     },
+    "Recovery trend, last 14 days": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovery trend, last 14 days"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tendencia de recuperación, últimos 14 días"
+          }
+        }
+      }
+    },
     "Recovery weighs your HRV against your personal baseline (~60%), resting heart rate (~20%), sleep performance (~15%) and respiration (~5%). Day strain is a 0–21 cardiovascular load from time in heart-rate zones. Sleep is staged from movement and heart rate. Everything is computed here from the strap's raw data — it works for any day Cénit collected raw streams.": {
       "localizations": {
         "en": {
@@ -26787,6 +26906,23 @@
         }
       }
     },
+    "The «vs your base» bars show each signal's deviation in σ (above your base = right). HRV, resting heart rate and respiration are z-scored that way; sleep and skin temperature carry no σ, so they show their state, not a position. Your normal range is your recent average ± one σ. Steadiness is the coefficient of variation (CV). Training load is the acute:chronic workload ratio (ACWR) — context for recovery, never an injury claim.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The «vs your base» bars show each signal's deviation in σ (above your base = right). HRV, resting heart rate and respiration are z-scored that way; sleep and skin temperature carry no σ, so they show their state, not a position. Your normal range is your recent average ± one σ. Steadiness is the coefficient of variation (CV). Training load is the acute:chronic workload ratio (ACWR) — context for recovery, never an injury claim."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las barras «vs tu base» muestran la desviación de cada señal en σ (por encima de tu base = derecha). La VFC, la frecuencia cardiaca en reposo y la respiración se miden así (z-score); el sueño y la temperatura de la piel no tienen σ, así que muestran su estado, no una posición. Tu rango normal es tu promedio reciente ± una σ. La estabilidad es el coeficiente de variación (CV). La carga de entrenamiento es la razón aguda:crónica (ACWR) — contexto para la recuperación, nunca una afirmación de lesión."
+          }
+        }
+      }
+    },
     "There are no calendars on this iPhone yet.": {
       "localizations": {
         "en": {
@@ -30543,6 +30679,23 @@
         }
       }
     },
+    "Your ": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your "
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu "
+          }
+        }
+      }
+    },
     "Your %@ during the experiment": {
       "extractionState": "manual",
       "localizations": {
@@ -33211,6 +33364,57 @@
         }
       }
     },
+    "is what's lifting your recovery most today.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "is what's lifting your recovery most today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "es lo que más sube tu recuperación hoy."
+          }
+        }
+      }
+    },
+    "is what's moving your recovery most today.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "is what's moving your recovery most today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "es lo que más mueve tu recuperación hoy."
+          }
+        }
+      }
+    },
+    "is what's weighing on your recovery most today.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "is what's weighing on your recovery most today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "es lo que más pesa en tu recuperación hoy."
+          }
+        }
+      }
+    },
     "just now": {
       "localizations": {
         "en": {
@@ -33395,6 +33599,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "lb"
+          }
+        }
+      }
+    },
+    "less": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "less"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "menos"
           }
         }
       }
@@ -33694,6 +33915,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "mes"
+          }
+        }
+      }
+    },
+    "more": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "more"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "más"
           }
         }
       }
@@ -35764,6 +36002,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "tu HRV"
+          }
+        }
+      }
+    },
+    "your base": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "your base"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tu base"
           }
         }
       }

@@ -97,9 +97,15 @@ public enum ReadinessEngine {
         /// so it needs no catalog string. nil when there's nothing meaningful to quantify. Additive — the
         /// flag/level synthesis never reads it, so verdicts are unchanged.
         public let value: String?
-        public init(key: String, label: String, detail: String, flag: Flag, value: String? = nil) {
+        /// The same deviation as `value`, but as a raw signed number in σ (above baseline = `+`), for
+        /// surfaces that need to POSITION it on an axis (the recovery «vs your base» bar), not just print
+        /// it. Only the z-scored body signals (HRV / resting-HR / respiratory rate) carry it; nil for
+        /// skin-temperature (°C, an asymmetric one-sided flag) and training load (a ratio, not a σ).
+        /// Additive — the flag/level synthesis never reads it, so verdicts are unchanged. (FER-476)
+        public let z: Double?
+        public init(key: String, label: String, detail: String, flag: Flag, value: String? = nil, z: Double? = nil) {
             self.key = key; self.label = label; self.detail = detail; self.flag = flag
-            self.value = value
+            self.value = value; self.z = z
         }
     }
 
@@ -209,11 +215,11 @@ public enum ReadinessEngine {
                 if z >= 1.5 {
                     signals.append(Signal(key: "respRate", label: String(localized: "Respiratory rate", bundle: .main),
                         detail: String(localized: "up vs baseline — sometimes an early sign of getting sick", bundle: .main),
-                        flag: .bad, value: String(format: "%+.1fσ", z)))
+                        flag: .bad, value: String(format: "%+.1fσ", z), z: z))
                 } else if z >= 1.0 {
                     signals.append(Signal(key: "respRate", label: String(localized: "Respiratory rate", bundle: .main),
                         detail: String(localized: "slightly raised vs baseline", bundle: .main),
-                        flag: .watch, value: String(format: "%+.1fσ", z)))
+                        flag: .watch, value: String(format: "%+.1fσ", z), z: z))
                 }
             }
         }
@@ -317,7 +323,7 @@ public enum ReadinessEngine {
         // high resting-HR reads `+1.2σ` (raw direction) with a `.watch`/`.bad` dot, while a high HRV reads
         // `+1.4σ` with `.good`: the number is direction, the dot is valence.
         let valueText = String(format: "%+.1fσ", dev.z)
-        return Signal(key: key, label: label, detail: text, flag: flag, value: valueText)
+        return Signal(key: key, label: label, detail: text, flag: flag, value: valueText, z: dev.z)
     }
 
     /// The one place the acute:chronic thresholds live. `acwrSignal` and `Readiness.loadBand`
