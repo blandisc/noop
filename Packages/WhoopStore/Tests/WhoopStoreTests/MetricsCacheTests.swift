@@ -50,7 +50,23 @@ final class MetricsCacheTests: XCTestCase {
             CachedSleepSession(startTs: 500, endTs: 600, efficiency: nil, restingHr: nil, avgHrv: nil, stagesJSON: nil),
         ], deviceId: "devA")
         let rows = try await store.sleepSessions(deviceId: "devA", from: 400, to: 1000, limit: 100)
+        // [100,200] ends before the window → no overlap, dropped. [500,600] is inside → kept.
         XCTAssertEqual(rows.map { $0.startTs }, [500])
+    }
+
+    /// FER-448 — a session that STARTED before the window but RUNS INTO it (a night begun before local
+    /// midnight) must be returned: the query is by overlap, not by start. Filtering on `startTs >= from`
+    /// dropped it, leaving the post-midnight sleep un-excluded from the intraday stress curve.
+    func testSleepSessionOverlapsWindowEvenIfStartedBefore() async throws {
+        let store = try await WhoopStore.inMemory()
+        try await store.upsertSleepSessions([
+            CachedSleepSession(startTs: 100, endTs: 700, efficiency: nil, restingHr: nil, avgHrv: nil, stagesJSON: nil), // crosses `from`
+            CachedSleepSession(startTs: 300, endTs: 380, efficiency: nil, restingHr: nil, avgHrv: nil, stagesJSON: nil), // ends before `from`
+            CachedSleepSession(startTs: 900, endTs: 1200, efficiency: nil, restingHr: nil, avgHrv: nil, stagesJSON: nil), // starts after `to`
+        ], deviceId: "devA")
+        let rows = try await store.sleepSessions(deviceId: "devA", from: 400, to: 800, limit: 100)
+        // Only the boundary-crossing session overlaps [400, 800]; the pre-window and post-window ones don't.
+        XCTAssertEqual(rows.map { $0.startTs }, [100])
     }
 
     // MARK: - daily metrics
