@@ -569,7 +569,7 @@ struct DataSourcesView: View {
             case .nothingNew:
                 return ("circle", "The band has nothing new.", theme.inkSecondary)
             case .notStoringClock:
-                return ("clock.badge.exclamationmark.fill", "The band isn’t storing data (clock). Run it through the WHOOP app to resume.", theme.warning)
+                return ("clock.badge.exclamationmark.fill", "The band lost its clock and isn’t saving. Cénit is re-setting it — keep it connected. If it doesn’t recover, run it through the WHOOP app.", theme.warning)
             case .arrivesButNoDecode:
                 return ("exclamationmark.triangle.fill", "Data arrives but doesn’t decode — please report.", theme.warning)
             case .receivingAndStoring:

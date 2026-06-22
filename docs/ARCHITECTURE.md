@@ -76,7 +76,7 @@ Cenit/                         App-layer (BLE/Collect/Data/Screens/System) compi
 │   ├── Collector.swift         buffers live frames → decoded-first persistence
 │   ├── Backfiller.swift        historical-offload state machine (safe-trim)
 │   ├── ClockCorrelation.swift  device-epoch ↔ wall-clock correlation (pure)
-│   ├── ClockPolicy.swift       when to (re)issue SET_CLOCK
+│   ├── ClockPolicy.swift       when to (re)issue SET_CLOCK by drift (needs GET_CLOCK — moot on the 4.0)
 │   ├── StorePaths.swift        on-disk SQLite location (App Support/OpenWhoop)
 │   ├── PrunePolicy.swift       raw-outbox retention (24h / 50MB)
 │   └── RawCaptureWindow.swift  bounded on-demand raw-capture window
@@ -271,8 +271,21 @@ the periodic **type-47 historical offload is the primary metric source**, not th
    small `HISTORY_END` chunks (the offload has shrunk to the live ~1 Hz drip). `Backfiller` feeds it the
    per-END type-47 count **after** the safe-trim ack, flips `isBackfilling`/`didCatchUp`, and
    `BLEManager.afterBackfillIngest` tears down with `reason: "caught-up"` → `.completed` (stamps
-   `lastSyncedAt`, green receipt). Completing on the heuristic is self-healing: the durable `strap_trim`
-   cursor + periodic re-sync drain any remainder next tick, so safe-trim still loses nothing.
+   `lastSyncedAt`, green receipt). Completing on the heuristic is self-healing for *recorded* data: the
+   durable `strap_trim` cursor + periodic re-sync drain any remainder next tick, so safe-trim loses nothing
+   the band actually banked.
+
+   **RTC-lost guard (FER-93).** A power-reset WHOOP 4.0 loses its volatile RTC and stops persisting biometry
+   to flash, narrating `CONSOLE_LOGS` (type-50) with zero type-47 instead — so there's a real on-band gap no
+   re-sync can fill (that night was never recorded; the safety net is the Apple-Health backfill, FER-153).
+   `RtcHealthPolicy` (`WhoopProtocol`, sibling of `CaughtUpDetector`) judges this from the session's frame
+   tallies (no `GET_CLOCK`, which this firmware never answers). When it reads "lost", `BLEManager`: (a) does
+   **not** stamp a successful sync even on a clean `caught-up`/`HISTORY_COMPLETE` close — a
+   narrating-not-saving END is excluded from `CaughtUpDetector`, so the offload can't complete "green"; and
+   (b) re-asserts `SET_CLOCK` + the `SET_CONFIG` data-stream burst at the **start** of the next session
+   (never mid-offload, which would stop the strap streaming), throttled per connect by `ClockReassertPolicy`
+   (`WhoopProtocol`) so a never-latching band can't loop. Success is read the only way this firmware allows:
+   type-47 flowing again.
 5. **Auto-continue until drained (FER-287, ground-truth gate FER-480).** One session hands over only a
    few-hundred-frame batch, so a night's ~19,400-frame backlog (1 Hz × hours, phone disconnected) would
    otherwise need *dozens* of manual "Sync" taps — only `.manual` skips the rate-limiter. When a session
