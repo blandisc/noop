@@ -583,6 +583,9 @@ struct LiveStrengthSheet: View {
             }
             counterCell("Volume", massText(sessionVolumeKg))
             counterCell("Sets", "\(session.doneCount)")
+            // Live HR from the strap, shown for EVERY exercise (not just cardio) so you can see the
+            // session is actually reading your pulse — "—" until a fresh sample lands (FER-498).
+            counterCell("HR", model.bpm.map { "\($0)" } ?? "—")
         }
         return Group {
             if reflow {

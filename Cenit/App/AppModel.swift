@@ -467,6 +467,7 @@ final class AppModel: ObservableObject {
         // Arm the realtime HR stream for the duration of the session (FER-498) — without this, on a
         // WHOOP 4.0 the session sees no HR unless Live was opened first, and the receipt reads "no HR".
         acquireRealtimeHR("strength")
+        buzz(loops: 1)   // confirm the session started, same single buzz as the manual live workout (FER-498)
     }
 
     /// Re-show the sheet for the in-progress session (the hub's «Resume»).
