@@ -17,6 +17,11 @@ struct WhyVerdictSheet: View {
     /// Last night's sleep minutes (today's row), for the short-night caveat block — passed explicitly
     /// because `Readiness` doesn't carry it (FER-285). nil → the block says «menos de 6 h» without a figure.
     var sleepMinutes: Double? = nil
+    /// Cuando NO hay lectura de hoy (estado `insufficient` / espera), una explicación honesta de POR QUÉ
+    /// aún no hay veredicto (falta el sueño de la noche / el sync). `nil` → la hoja muestra el porqué del
+    /// veredicto normal. La pasa `TodayView` según el estado, para no decir «¿Por qué preparación?» con un
+    /// «día gris» que confunde cuando en realidad lo que falta es la lectura del día. (FER-475)
+    var emptyStateExplanation: LocalizedStringKey? = nil
 
     /// Measured natural height of the content, so the sheet opens exactly as tall as it needs to be —
     /// all of the explanation is visible without dragging the sheet up. Capped at `.large`.
@@ -25,19 +30,27 @@ struct WhyVerdictSheet: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                Text("Why \(readiness.headline.lowercased())?")
-                    .font(StrandFont.title2)
-                    .foregroundStyle(theme.ink)
-                colorChip
-                if let bridge = readiness.bridge {
-                    Text(bridge)
-                        .font(StrandFont.subhead)
-                        .foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                if let exp = emptyStateExplanation, readiness.level == .insufficient {
+                    // Sin lectura de hoy (FER-475): explica POR QUÉ aún no hay veredicto, en vez del
+                    // genérico «¿Por qué preparación?» con el chip gris. La leyenda se queda para que el
+                    // usuario igual entienda los niveles que verá cuando sí haya lectura.
+                    noReadingBlock(exp)
+                    legendSection
+                } else {
+                    Text("Why \(readiness.headline.lowercased())?")
+                        .font(StrandFont.title2)
+                        .foregroundStyle(theme.ink)
+                    colorChip
+                    if let bridge = readiness.bridge {
+                        Text(bridge)
+                            .font(StrandFont.subhead)
+                            .foregroundStyle(theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    if readiness.confidenceLow { shortNightBlock }   // FER-285
+                    if !readiness.signals.isEmpty { signalsSection }
+                    legendSection
                 }
-                if readiness.confidenceLow { shortNightBlock }   // FER-285
-                if !readiness.signals.isEmpty { signalsSection }
-                legendSection
             }
             .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -50,6 +63,20 @@ struct WhyVerdictSheet: View {
         .presentationDetents(contentHeight > 0 ? [.height(contentHeight), .large] : [.large])
         .presentationDragIndicator(.visible)
         .modifier(WhySheetBackground(paper: theme.paper))
+    }
+
+    /// El bloque de «aún no hay lectura de hoy» (FER-475): título honesto + la explicación de por qué
+    /// falta (la pasa `TodayView` según el estado: te falta dormir/sincronizar, o calibrar más noches).
+    private func noReadingBlock(_ explanation: LocalizedStringKey) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Aún no hay lectura de hoy")
+                .font(StrandFont.title2)
+                .foregroundStyle(theme.ink)
+            Text(explanation)
+                .font(StrandFont.subhead)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     /// "Today your day is amber — Strained" — makes the color the explicit subject (the user's

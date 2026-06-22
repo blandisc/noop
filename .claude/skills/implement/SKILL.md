@@ -74,15 +74,12 @@ disparador pesado, súbelo a pesado.
 3. **In Progress.** Mueve el issue a `In Progress` y comenta que empezaste.
 4. **Rama limpia.** Aplica la estrategia de ramas de arriba (fetch, rama del issue
    desde `origin/iOS`, sin pisar).
-5. **Diseña la UI (Spec + preview HTML) — solo si toca pantalla.** Si el issue toca
-   una pantalla y no trae ya un spec de UI aprobado, corre la **pasada de UI antes
-   de codear**: invoca la skill `/ui` (o el subagente `ui`). Produce el mapeo a
-   tokens de `StrandDesign` y un **preview HTML por estado** con `show_widget`
-   (fiel a `StrandPalette`) — es lo que el usuario de verdad revisa, no un PNG.
-   **Muéstrale el preview y espera su OK** (gate: ver lo visual antes de construir).
-   Iteras sobre el preview, no sobre el iPhone. El spec aprobado es lo que codificas
-   en el siguiente paso. Para bug / analytics / import / performance / i18n / chore,
-   **sáltate este paso**.
+5. **Diseña la UI — solo si toca pantalla.** Si el issue toca una pantalla y no
+   trae ya un spec de UI aprobado, invoca `/ui` (o el subagente `ui`) antes de
+   codear. El gate de aprobación (preview HTML + OK del usuario) lo maneja `/ui`
+   internamente — no lo repitas aquí. El spec aprobado que devuelva es lo que
+   codificas en el siguiente paso. Para bug / analytics / import / performance /
+   i18n / chore, **sáltate este paso**.
 6. **Implementa el cambio mínimo** que cumpla el requerimiento (y el spec de UI
    aprobado, si lo hubo). "Fuera de alcance" es ley; un solo concern; lee el
    código que señalan las pistas técnicas antes de editar; no inventes símbolos.
@@ -125,19 +122,46 @@ disparador pesado, súbelo a pesado.
    para el usuario; ver "La bitácora de producto" abajo) → push → PR hacia `iOS`
    (`Closes FER-NN`, criterios verificados en "How it was tested") →
    **squash-merge a `iOS`** → **borra la rama** (`--delete-branch`).
-10. **Actualiza el checkout de build.** Tras el merge, sincroniza el checkout
-   canónico (`~/code/noop`, de donde sale el build del iPhone) para que el próximo
-   build NO sea viejo: `git -C ~/code/noop fetch origin` y luego
-   `git -C ~/code/noop merge --ff-only origin/iOS`. Usa `--ff-only`: preserva
-   cualquier trabajo sin commitear que haya ahí y NUNCA lo pisa. Si falla (el
-   checkout tiene cambios que chocan o divergió), NO fuerces: avísale al usuario en
-   lenguaje claro que actualice su checkout antes de compilar.
-11. **Cierra y limpia.** Mueve el issue a `Done` con un comentario y el link del PR.
-    Deja el worktree limpio (de vuelta en `iOS` actualizado, sin ramas colgando).
-12. **Reporta en lenguaje claro** (el usuario NO es técnico): qué cambió en la app,
-    qué criterios quedaron verificados, y que ya está en `iOS` **y en su checkout
-    principal**. El único paso manual que le queda: abrir Xcode y compilar/instalar
-    en su iPhone.
+10. **Limpieza final.** Sincroniza el checkout de build: `git -C ~/code/noop fetch origin`
+    y `git -C ~/code/noop merge --ff-only origin/iOS` (si no puede fast-forward, avísale
+    al usuario en vez de forzar). Mueve el issue a `Done` con el link del PR. Reporta en
+    lenguaje claro: qué cambió en la app, qué criterios quedaron verificados, y que el
+    único paso manual restante es compilar/instalar en Xcode.
+11. **Poda DerivedData y worktrees muertos (disco).** Cada worktree compilado en Xcode
+    deja una carpeta DerivedData de ~1 GB (`Cenit-<hash>`, una por ruta de proyecto); se
+    acumulan rápido (visto: 54 GB / 56 carpetas, y vuelve a inflarse cada pocas semanas).
+    Dos cosas a limpiar, en este orden:
+
+    **a) El DerivedData de ESTA sesión — tu propia basura, SIEMPRE púrgalo.** Al cerrar,
+    el harness borra la *carpeta del worktree* pero **NO su DerivedData** (vive aparte en
+    `~/Library/Developer/Xcode/DerivedData/Cenit-<hash>`, indexado por ruta) → queda
+    huérfano para siempre. Tu rama ya está mergeada, así que ese DerivedData es basura.
+    Púrgalo por `WorkspacePath` (el hash del nombre es opaco, no lo adivines). Es seguro
+    aquí porque al final del flujo Xcode ya no compila esta ruta:
+    ```bash
+    SELF="$PWD"   # el worktree de ESTA sesión
+    for d in ~/Library/Developer/Xcode/DerivedData/*/; do
+      wsp=$(/usr/libexec/PlistBuddy -c 'Print :WorkspacePath' "${d}info.plist" 2>/dev/null) || continue
+      case "$wsp" in "$SELF"/*) rm -rf "$d" && echo "purgado DerivedData propio: $d";; esac
+    done
+    ```
+
+    **b) Worktrees fósiles ya mergeados.** Tras sincronizar, poda los worktrees cuya rama
+    ya está en `origin/iOS` —**menos el de esta sesión** (no puedes borrar el worktree
+    donde corres)— y los fósiles `Strand-*` del rename, que son basura 100% segura:
+    ```bash
+    SELF="$PWD"   # captura ANTES del cd, para nunca borrarlo
+    rm -rf ~/Library/Developer/Xcode/DerivedData/Strand-*   # fósiles pre-rename Cénit, ya no existen
+    cd ~/code/noop && git worktree list --porcelain | awk '/^worktree /{wt=$2} /^branch /{print wt" "$2}' | while read wt ref; do
+      br="${ref##refs/heads/}"; [ "$br" = "iOS" ] && continue
+      [ "$wt" = "$SELF" ] && continue   # nunca el worktree actual
+      git merge-base --is-ancestor "$br" origin/iOS 2>/dev/null && git worktree remove "$wt" 2>/dev/null && echo "podado: $br"
+    done; git worktree prune
+    ```
+    `git worktree remove` se niega solo si el worktree tiene cambios sin commitear → los
+    conserva sin riesgo. NO toques los simuladores (`CoreSimulator/Devices`): el usuario
+    prueba otros modelos de iPhone. Detalle y receta completa en la nota de memoria
+    [[deriveddata-bloat-corruption]].
 
 ## La bitácora de producto (`CHANGELOG.md`) — qué cambió, en cristiano
 
