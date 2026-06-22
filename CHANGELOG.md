@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El mapa muscular pinta de verde los músculos frescos / The muscle map paints fresh muscles green.**
+  **ES** — En **Cuerpo → «Qué entrenar hoy»**, la silueta ya concuerda con la recomendación: un músculo **fresco** (listo para entrenar) se ve **verde**, uno a **media carga** ámbar, y uno **cargado** rojo. Antes, hasta los músculos que la tarjeta llamaba «frescos» —como las pantorrillas— salían dorados, porque el color casi nunca llegaba al verde. Los músculos que no has entrenado siguen en gris (sin datos). El mismo color se aplica ahora en la silueta, la lista «Más cargados» y el indicador al tocar un músculo.
+  **EN** — In **Body → "What to train today"**, the silhouette now matches the recommendation: a **fresh** muscle (ready to train) shows **green**, a **moderately** loaded one amber, and a **loaded** one red. Before, even muscles the card called "fresh" —like calves— came out gold, because the color rarely reached green. Muscles you haven't trained stay gray (no data). The same color now applies across the silhouette, the "Most loaded" list, and the tap indicator.
+  ([Cenit/Screens/MuscleMapScreen.swift](Cenit/Screens/MuscleMapScreen.swift))
+
 - **En «Hoy», las métricas se acomodan al centro y ocupan toda la pantalla / On "Today", the metrics grid now centers and fills the screen.**
   **ES** — La rejilla de métricas de **«Hoy»** (Esfuerzo, Sueño, HRV, FC, FC en reposo, Oxígeno, Pasos, Estrés) ya no queda pegada arriba con un hueco grande abajo: el aire sobrante se reparte por igual arriba y abajo, así que la rejilla baja al centro y la pantalla se ocupa completa. El dial sigue fijo arriba y los puntitos del pager cerca del dock; en pantallas chicas el espacio colapsa al gap compacto de siempre.
   **EN** — The **"Today"** metrics grid (Strain, Sleep, HRV, Heart Rate, Resting HR, Blood Oxygen, Steps, Stress) is no longer pinned to the top with a big gap below: leftover vertical space is split evenly above and below, so the grid drops to the center and fills the screen. The dial stays pinned at the top and the pager dots near the dock; on small screens the space collapses to the usual compact gap.
