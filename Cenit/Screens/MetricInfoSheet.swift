@@ -815,9 +815,9 @@ struct MetricInfoSheet: View {
     }
 
     /// The standardized «{band} · X of the last N days/nights in this range» readout shown above the ranges
-    /// table on every summary sheet — the active band (the band the latest reading falls in; Steps uses the
-    /// latest completed day, FER-264) plus how many of the window share it. One wording everywhere, matching
-    /// the trend's old per-metric line. Nocturnal metrics (sleep, SpO₂) read "nights". (FER-469)
+    /// table on every summary sheet — the active band = today's band (matching the highlighted row + the
+    /// chart; falls back to the latest completed reading), plus how many completed days share it. One
+    /// wording everywhere. Nocturnal metrics (sleep, SpO₂) read "nights". (FER-469 / FER-471)
     private var rangeReadout: (label: LocalizedStringKey, count: Int, total: Int)? {
         guard !info.bands.isEmpty, !trendData.isEmpty else { return nil }
         let toHours = info.id == "sleep"
@@ -826,8 +826,13 @@ struct MetricInfoSheet: View {
         let source = (isSteps && sorted.count > 1) ? Array(sorted.dropLast()) : sorted
         let values = source.map { toHours ? $0.value / 60 : $0.value }
         let bands = info.bands.map { TrendBand(label: $0.label, lower: $0.lower, upper: $0.upper) }
-        guard let active = TrendBands.activeBand(values: values, bands: bands) else { return nil }
-        return (info.bands[active.index].label, active.count, values.count)
+        // Active band = today's band (the highlighted row + the chart's shaded band), so the line agrees
+        // with both; the count still comes from completed days. Falls back to the most recent completed
+        // reading when there's no today value (e.g. no steps yet). (FER-471)
+        guard let ai = info.bands.firstIndex(where: { $0.isActive })
+            ?? TrendBands.activeBand(values: values, bands: bands)?.index else { return nil }
+        let count = values.reduce(0) { $0 + (bands[ai].contains($1) ? 1 : 0) }
+        return (info.bands[ai].label, count, values.count)
     }
 
     @ViewBuilder private var rangeReadoutLine: some View {
