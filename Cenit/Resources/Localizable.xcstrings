@@ -32664,6 +32664,669 @@
         }
       }
     },
+    "Tomorrow, if you rest well, you should be around ": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tomorrow, if you rest well, you should be around "
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mañana, si descansas bien, deberías rondar "
+          }
+        }
+      }
+    },
+    "Your highest point today was at %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your highest point today was at %@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu punto más alto de hoy fue a las %@."
+          }
+        }
+      }
+    },
+    "Coincided with “%@” · ": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coincided with “%@” · "
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coincidió con “%@” · "
+          }
+        }
+      }
+    },
+    "It didn't coincide with any of your events.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It didn't coincide with any of your events."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No coincidió con ninguno de tus eventos."
+          }
+        }
+      }
+    },
+    "It's coincidence, not cause.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It's coincidence, not cause."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Es coincidencia, no causa."
+          }
+        }
+      }
+    },
+    "Your most activated moments": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your most activated moments"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus momentos más activados"
+          }
+        }
+      }
+    },
+    "Your calmest moment": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your calmest moment"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu momento más tranquilo"
+          }
+        }
+      }
+    },
+    "no event on your calendar": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "no event on your calendar"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sin evento en tu calendario"
+          }
+        }
+      }
+    },
+    "Hold and slide to read each hour": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold and slide to read each hour"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mantén y desliza para ver cada hora"
+          }
+        }
+      }
+    },
+    "during activity or sleep": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "during activity or sleep"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "durante actividad o sueño"
+          }
+        }
+      }
+    },
+    "now": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "now"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ahora"
+          }
+        }
+      }
+    },
+    "How much of the last month sat in the Low band (calm time — higher is better), and how steady your daily stress is week to week (its coefficient of variation, CV — low = steady). The Low / Moderate / High bands (0–1 / 1–2 / 2–3) are the same for everyone because the index is already adjusted to your own baseline; they're drawn as the trend's legend below. (Plews 2013)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How much of the last month sat in the Low band (calm time — higher is better), and how steady your daily stress is week to week (its coefficient of variation, CV — low = steady). The Low / Moderate / High bands (0–1 / 1–2 / 2–3) are the same for everyone because the index is already adjusted to your own baseline; they're drawn as the trend's legend below. (Plews 2013)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuánto del último mes estuvo en la banda Baja (tiempo en calma — más es mejor), y qué tan constante es tu estrés diario semana a semana (su coeficiente de variación, CV — bajo = constante). Las bandas Baja / Moderada / Alta (0–1 / 1–2 / 2–3) son iguales para todos porque el índice ya está ajustado a tu propia línea base; se dibujan como la leyenda de la tendencia, abajo. (Plews 2013)"
+          }
+        }
+      }
+    },
+    "of last month": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "of last month"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "del último mes"
+          }
+        }
+      }
+    },
+    "Steadiness": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Steadiness"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estabilidad"
+          }
+        }
+      }
+    },
+    "week to week": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "week to week"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "semana a semana"
+          }
+        }
+      }
+    },
+    "Very steady": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Very steady"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muy estable"
+          }
+        }
+      }
+    },
+    "trend · bands": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "trend · bands"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tendencia · bandas"
+          }
+        }
+      }
+    },
+    "See your history": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See your history"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ve tu historial"
+          }
+        }
+      }
+    },
+    "How well": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How well"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qué tan bien"
+          }
+        }
+      }
+    },
+    "Stages": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stages"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Etapas"
+          }
+        }
+      }
+    },
+    "Sleep debt": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sleep debt"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deuda de sueño"
+          }
+        }
+      }
+    },
+    "%lld%% of your need": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld%% of your need"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld%% de lo que necesitas"
+          }
+        }
+      }
+    },
+    "%lld%% efficient": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld%% efficient"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld%% de eficiencia"
+          }
+        }
+      }
+    },
+    "Deep & REM where you usually are": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deep & REM where you usually are"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profundo y REM como sueles tenerlos"
+          }
+        }
+      }
+    },
+    "More deep sleep than usual": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More deep sleep than usual"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Más sueño profundo de lo normal"
+          }
+        }
+      }
+    },
+    "Less deep sleep than usual": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Less deep sleep than usual"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menos sueño profundo de lo normal"
+          }
+        }
+      }
+    },
+    "More REM than usual": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More REM than usual"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Más REM de lo normal"
+          }
+        }
+      }
+    },
+    "Less REM than usual": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Less REM than usual"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menos REM de lo normal"
+          }
+        }
+      }
+    },
+    "trends · debt · sub-metrics": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "trends · debt · sub-metrics"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tendencias · deuda · submétricas"
+          }
+        }
+      }
+    },
+    "14-day trend · what moves it": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "14-day trend · what moves it"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tendencia de 14 días · qué lo mueve"
+          }
+        }
+      }
+    },
+    "Where your recovery usually lands (the average of your recent days ± a band of your own variation, σ), how steady it is week to week (its coefficient of variation, CV), and how your training load is trending (the acute:chronic workload ratio, ACWR — context for recovery, never an injury claim). (Buchheit 2014; Plews 2013; Impellizzeri 2020)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where your recovery usually lands (the average of your recent days ± a band of your own variation, σ), how steady it is week to week (its coefficient of variation, CV), and how your training load is trending (the acute:chronic workload ratio, ACWR — context for recovery, never an injury claim). (Buchheit 2014; Plews 2013; Impellizzeri 2020)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dónde suele caer tu recuperación (el promedio de tus días recientes ± una banda de tu propia variación, σ), qué tan constante es semana a semana (su coeficiente de variación, CV), y hacia dónde va tu carga de entrenamiento (la razón de carga aguda:crónica, ACWR — contexto para la recuperación, nunca un diagnóstico de lesión). (Buchheit 2014; Plews 2013; Impellizzeri 2020)"
+          }
+        }
+      }
+    },
+    "Information about your recovery patterns": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Information about your recovery patterns"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Información sobre tus patrones de recuperación"
+          }
+        }
+      }
+    },
+    "Usually": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usually"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Normalmente"
+          }
+        }
+      }
+    },
+    "where you land when well": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "where you land when well"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "donde caes cuando estás bien"
+          }
+        }
+      }
+    },
+    "Recovery, 7-day moving average": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovery, 7-day moving average"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuperación, promedio móvil de 7 días"
+          }
+        }
+      }
+    },
+    "90-day calendar · trend": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "90-day calendar · trend"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "calendario de 90 días · tendencia"
+          }
+        }
+      }
+    },
+    "typical": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "typical"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "típico"
+          }
+        }
+      }
+    },
+    "Workouts · 14d": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workouts · 14d"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entrenamientos · 14 d"
+          }
+        }
+      }
+    },
+    "14-day trend with classification bands": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "14-day trend with classification bands"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tendencia de 14 días con bandas de clasificación"
+          }
+        }
+      }
+    },
     "HRV · today": {
       "extractionState": "manual",
       "localizations": {

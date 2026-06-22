@@ -78,6 +78,59 @@ ES: dict[str, str] = {
     "Each night's deviation · the band is your typical swing (±your variation) · 0 is your baseline.": "Desviación de cada noche · la banda es tu vaivén típico (±tu variación) · 0 es tu base.",
     "Variation": "Variación",
     "Average and change": "Promedio y cambio",
+    # Cuerpo es-MX — cadenas huérfanas del «mapa del día» (FER-433/377) + detalles de
+    # Estrés / Sueño / Esfuerzo que nunca se extrajeron al catálogo y caían al inglés.
+    # StressDayMapView — «Momentos primero»
+    'Your highest point today was at %@.': 'Tu punto más alto de hoy fue a las %@.',
+    'Coincided with “%@” · ': 'Coincidió con “%@” · ',
+    "It didn't coincide with any of your events.": 'No coincidió con ninguno de tus eventos.',
+    "It's coincidence, not cause.": 'Es coincidencia, no causa.',
+    'Your most activated moments': 'Tus momentos más activados',
+    'Your calmest moment': 'Tu momento más tranquilo',
+    'no event on your calendar': 'sin evento en tu calendario',
+    # StressBarsStrip — gráfica por hora arrastrable (FER-447)
+    'Hold and slide to read each hour': 'Mantén y desliza para ver cada hora',
+    'no reading': 'sin lectura',
+    'during activity or sleep': 'durante actividad o sueño',
+    'All day: %@. Not matched to a moment.': 'Todo el día: %@. No se asocia a ningún momento.',
+    'now': 'ahora',
+    # StressDetailScreen — «Tus patrones» + «Ve tu historial»
+    "How much of the last month sat in the Low band (calm time — higher is better), and how steady your daily stress is week to week (its coefficient of variation, CV — low = steady). The Low / Moderate / High bands (0–1 / 1–2 / 2–3) are the same for everyone because the index is already adjusted to your own baseline; they're drawn as the trend's legend below. (Plews 2013)": 'Cuánto del último mes estuvo en la banda Baja (tiempo en calma — más es mejor), y qué tan constante es tu estrés diario semana a semana (su coeficiente de variación, CV — bajo = constante). Las bandas Baja / Moderada / Alta (0–1 / 1–2 / 2–3) son iguales para todos porque el índice ya está ajustado a tu propia línea base; se dibujan como la leyenda de la tendencia, abajo. (Plews 2013)',
+    'of last month': 'del último mes',
+    'Steadiness': 'Estabilidad',
+    'week to week': 'semana a semana',
+    'Very steady': 'Muy estable',
+    'trend · bands': 'tendencia · bandas',
+    'See your history': 'Ve tu historial',
+    # SleepDetailScreen — «Tus patrones», etapas vs típico, etiquetas de VoiceOver
+    'How well': 'Qué tan bien',
+    'Stages': 'Etapas',
+    'Sleep debt': 'Deuda de sueño',
+    '%lld%% of your need': '%lld%% de lo que necesitas',
+    '%lld%% efficient': '%lld%% de eficiencia',
+    'Deep & REM where you usually are': 'Profundo y REM como sueles tenerlos',
+    'More deep sleep than usual': 'Más sueño profundo de lo normal',
+    'Less deep sleep than usual': 'Menos sueño profundo de lo normal',
+    'More REM than usual': 'Más REM de lo normal',
+    'Less REM than usual': 'Menos REM de lo normal',
+    'trends · debt · sub-metrics': 'tendencias · deuda · submétricas',
+    '%@, %lld%% last night': '%@, %lld%% anoche',
+    ', typical %lld%%': ', típico %lld%%',
+    # StrainDetailScreen — «Ve tu historial»
+    '14-day trend · what moves it': 'tendencia de 14 días · qué lo mueve',
+    # RecoveryDetailScreen — «Tus patrones» + accesibilidad de gráficas
+    'Where your recovery usually lands (the average of your recent days ± a band of your own variation, σ), how steady it is week to week (its coefficient of variation, CV), and how your training load is trending (the acute:chronic workload ratio, ACWR — context for recovery, never an injury claim). (Buchheit 2014; Plews 2013; Impellizzeri 2020)': 'Dónde suele caer tu recuperación (el promedio de tus días recientes ± una banda de tu propia variación, σ), qué tan constante es semana a semana (su coeficiente de variación, CV), y hacia dónde va tu carga de entrenamiento (la razón de carga aguda:crónica, ACWR — contexto para la recuperación, nunca un diagnóstico de lesión). (Buchheit 2014; Plews 2013; Impellizzeri 2020)',
+    'Information about your recovery patterns': 'Información sobre tus patrones de recuperación',
+    'Usually': 'Normalmente',
+    'where you land when well': 'donde caes cuando estás bien',
+    'Recovery, 7-day moving average': 'Recuperación, promedio móvil de 7 días',
+    '90-day calendar · trend': 'calendario de 90 días · tendencia',
+    # SkinTempDetailScreen — banda «típico»
+    'typical': 'típico',
+    # CuerpoView — tarjeta de Actividad
+    'Workouts · 14d': 'Entrenamientos · 14 d',
+    # MetricInfoSheet — accesibilidad de la gráfica de tendencia
+    '14-day trend with classification bands': 'tendencia de 14 días con bandas de clasificación',
     # FER-409 / 390 — Resumen post-sesión de fuerza + toggle «Guardar en Apple Salud»
     "Summary": "Resumen",
     "Effort": "Esfuerzo",

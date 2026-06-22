@@ -468,16 +468,17 @@ A short night (< 6 h) flags the morning read **low-confidence** (a short night s
 
 ## `RecoveryForecast` — one-day-ahead recovery projection
 
-Source: `RecoveryForecast.swift` (FER-188). Live in `RecoveryDetailScreen` (the "Mañana, si descansas igual: ~X" block). Answers a narrow question — *given how recovery has been trending and assuming you rest about the same, roughly where does tomorrow land?* — as a **trend projection with a range**, never a guarantee.
+Source: `RecoveryForecast.swift` (FER-188). Live in two places: `RecoveryDetailScreen` (the "Mañana, si descansas igual: ~X" block) and the post-session strength summary's recovery-cost block (FER-442, the "Mañana, si descansas bien, deberías rondar ~X%" line). Answers a narrow question — *given how recovery has been trending and assuming you rest about the same, roughly where does tomorrow land?* — as a **trend projection with a range**, never a guarantee.
 
 It projects the **recovery composite directly** rather than forecasting HRV and RHR separately and recomposing them: recovery is already the HRV-dominant composite, so its day-to-day series *is* the autoregressive trend of those drivers, de-noised and already on the 0–100 scale. The model is a **damped level + slope**:
 
 - `level` = mean of the last `levelDays` (7) valid days
 - `slope` = OLS slope of recovery vs day index over the trailing `window` (21 days), then `step = slope · 0.5`, clamped to ±8 pts/day (short noisy daily series over-extrapolate)
 - `debt` = a gentle, bounded downward drag from standing sleep debt (a **product heuristic**, not a peer-reviewed coefficient — "si descansas igual" means you won't repay it tomorrow)
-- `estimate = clamp(level + step − debt, 0…100)`; `range = estimate ± max(5, 1.15·σ)` — deliberately wide, because the band is the honesty
+- `strain` = an **optional**, bounded downward drag from an acute session done *today* whose cost hasn't yet landed in the recovery series (FER-442). A harder session delays post-exercise parasympathetic reactivation, so tomorrow sits a little below the trend alone (**direction** per Stanley, Peake & Buckley 2013 — see citation below; **magnitude** is a product-calibration knob, capped at 8 pts to stay inside the engine's ±8 one-day envelope). Off (0) unless the caller passes a session strain — the strength cost block does, the Recovery-detail trend does not.
+- `estimate = clamp(level + step − debt − strain, 0…100)`; `range = estimate ± max(5, 1.15·σ)` — deliberately wide, because the band is the honesty
 
-**Honest gate:** returns `nil` below `minDays` (14, ≈ two weeks of baseline); the caller then **hides** the block rather than inventing a number. The window/damping/cap/band/debt constants are product-calibration knobs, not validated quantities. APPROXIMATE. Reference: **De Sabbata & Simonini 2025** (*J Healthcare Informatics Research*, PMC12037944) — for univariate short-term wearable forecasting, "refining model complexity offers minimal benefit" and a random-walk baseline "remains competitive, if not superior", which is exactly why this is a damped level+slope model and not something heavier. (The paper's scope is short-term, cited accordingly.)
+**Honest gate:** returns `nil` below `minDays` (14, ≈ two weeks of baseline); the caller then **hides** the block rather than inventing a number. The window/damping/cap/band/debt/strain-drag constants are product-calibration knobs, not validated quantities. APPROXIMATE. References: **De Sabbata & Simonini 2025** (*J Healthcare Informatics Research*, PMC12037944) — for univariate short-term wearable forecasting, "refining model complexity offers minimal benefit" and a random-walk baseline "remains competitive, if not superior", which is exactly why this is a damped level+slope model and not something heavier (the paper's scope is short-term, cited accordingly); **Stanley, Peake & Buckley 2013** (*Sports Medicine* 43(12):1259–1277) — post-exercise cardiac parasympathetic reactivation is delayed by higher training load, the grounded *direction* (not magnitude) of the optional acute session-strain drag.
 
 ---
 

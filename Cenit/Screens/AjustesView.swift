@@ -222,7 +222,7 @@ private struct AjustesLanding: View {
                 Spacer(minLength: 8)
                 if let pct = live.batteryPct {
                     Text(live.charging == true ? "\(Int(pct.rounded()))% · Charging" : "\(Int(pct.rounded()))%")
-                        .font(StrandFont.bodyNumber).foregroundStyle(batteryColor(pct))
+                        .font(StrandFont.bodyNumber).foregroundStyle(theme.batteryColor(forLevel: pct))
                 }
             }
             .padding(.vertical, 6)
@@ -320,12 +320,6 @@ private struct AjustesLanding: View {
         if live.bonded { return String(localized: "Previously paired but not currently connected. Re-scan to reconnect.") }
         return String(localized: "No strap connected. Put your WHOOP nearby and tap Re-scan to pair.")
     }
-    private func batteryColor(_ pct: Double) -> Color {
-        if pct <= 15 { return theme.critical }
-        if pct <= 30 { return theme.warning }
-        return theme.inkSecondary
-    }
-
     // MARK: - Section scaffolding (Instrumento: overline + rows on paper, no card-in-card)
 
     @ViewBuilder

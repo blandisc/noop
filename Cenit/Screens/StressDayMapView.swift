@@ -118,7 +118,7 @@ struct StressDayMapBlock: View {
             } else {
                 headline(map.coincidence)
                 if hasReadings {
-                    StressBarsStrip(curve: map.curve, now: map.now, theme: theme)
+                    StressBarsStrip(curve: map.curve, events: map.timed, now: map.now, theme: theme)
                 }
                 momentsSections(map.moments)
             }
@@ -249,45 +249,166 @@ struct StressDayMapBlock: View {
     }
 }
 
-// MARK: - Supporting bars strip (the day's shape, not the protagonist) — FER-433
+// MARK: - Hourly bars strip (the day's shape, scrubbable) — FER-433 / 447
 
-/// A small bar-per-reading strip of the day's 0–3 stress over the waking window, colored by band. It's
-/// supporting context only — no peak dot, no event names; decorative for VoiceOver (the moments list and
+/// An hour-by-hour strip of the day's 0–3 stress — each bar is the MEAN of that civil hour's readings,
+/// colored by band, from midnight to the current hour. Hold-and-drag to scrub: the touched hour highlights
+/// and the readout names its level (band word in band colour) and the event that overlapped it. Taller than
+/// the old per-bucket strip so the shape reads clearly. Hours with no waking reading (activity / sleep) draw
+/// a faint stub, never a fabricated value. The precise peak + ranked moments still come from the fine 3-min
+/// curve (headline + list), so this stays the day's *shape*; decorative for VoiceOver (the moments list and
 /// headline carry the meaning).
 private struct StressBarsStrip: View {
     let curve: [StressEngine.StressPoint]
+    let events: [StressDayMap.DayEvent]
     let now: Date
     let theme: InstrumentoTheme
 
+    /// The hour the user is reading; it persists after release so the value stays legible. nil before any touch.
+    @State private var scrubHour: Int? = nil
+    /// True only while the finger is down — dims the un-selected bars and shows the cursor line.
+    @State private var isDragging = false
+
+    private static let barsHeight: CGFloat = 150
+
+    private var cal: Calendar { .current }
+    private var startOfDay: Date { cal.startOfDay(for: now) }
+    private var nowHour: Int { cal.component(.hour, from: now) }
+
+    /// Mean 0–3 stress per civil hour, midnight → the current hour (nil = no waking reading that hour).
+    private var hourly: [Double?] {
+        var sums = [Double](repeating: 0, count: 24)
+        var counts = [Int](repeating: 0, count: 24)
+        for p in curve {
+            guard let s = p.stress else { continue }
+            let h = cal.component(.hour, from: p.date)
+            guard (0..<24).contains(h) else { continue }
+            sums[h] += s; counts[h] += 1
+        }
+        return (0...nowHour).map { counts[$0] > 0 ? sums[$0] / Double(counts[$0]) : nil }
+    }
+
     var body: some View {
-        let dates = curve.map(\.date)
-        let lo = dates.first ?? now
-        let hiRaw = Swift.max(dates.last ?? now, now)
-        let hi = hiRaw > lo ? hiRaw : lo.addingTimeInterval(3600)
-        let span = hi.timeIntervalSince1970 - lo.timeIntervalSince1970
-        return VStack(alignment: .leading, spacing: 4) {
-            Canvas { ctx, size in
-                let barW: CGFloat = 3
-                let usableW = Swift.max(1, size.width - barW)
-                for p in curve {
-                    guard let s = p.stress else { continue }
-                    let fx = (p.date.timeIntervalSince1970 - lo.timeIntervalSince1970) / span
-                    let x = CGFloat(Swift.min(1, Swift.max(0, fx))) * usableW
-                    let h = CGFloat(Swift.min(1, Swift.max(0, s / 3))) * (size.height - 1)
-                    let rect = CGRect(x: x, y: size.height - h, width: barW, height: Swift.max(1, h))
-                    ctx.fill(Path(roundedRect: rect, cornerRadius: 1),
-                             with: .color(StressBand(score: s).dataColor(theme)))
+        let hours = hourly
+        return VStack(alignment: .leading, spacing: 8) {
+            readout(hours)
+            chart(hours)
+            axis
+        }
+        .sensoryFeedback(.selection, trigger: scrubHour)
+        .accessibilityHidden(true)
+    }
+
+    // MARK: Readout — hora + nivel + evento (the hour under the finger)
+
+    @ViewBuilder private func readout(_ hours: [Double?]) -> some View {
+        Group {
+            if let h = scrubHour, h < hours.count {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 8) {
+                        Text(verbatim: hourLabel(h)).font(StrandFont.headline).foregroundStyle(theme.ink)
+                        if let v = hours[h] {
+                            Text(StressBand(score: v).displayWord)
+                                .font(StrandFont.subhead)
+                                .foregroundStyle(StressBand(score: v).dataColor(theme))
+                        } else {
+                            Text("no reading").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                        }
+                    }
+                    eventLine(atHour: h, hasReading: hours[h] != nil)
+                }
+            } else {
+                HStack(spacing: 6) {
+                    Image(systemName: "hand.draw")
+                    Text("Hold and slide to read each hour")
+                }
+                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            }
+        }
+        .frame(height: 40, alignment: .bottomLeading)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder private func eventLine(atHour h: Int, hasReading: Bool) -> some View {
+        if !hasReading {
+            Text("during activity or sleep").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+        } else if let title = eventTitle(atHour: h) {
+            HStack(spacing: 5) {
+                Image(systemName: "calendar").font(.system(size: 11))
+                Text(verbatim: title).lineLimit(1).truncationMode(.tail)
+            }
+            .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+        } else {
+            Text("no event on your calendar")
+                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).italic()
+        }
+    }
+
+    // MARK: Bars + scrub
+
+    private func chart(_ hours: [Double?]) -> some View {
+        GeometryReader { geo in
+            let w = geo.size.width
+            let n = hours.count
+            HStack(alignment: .bottom, spacing: 3) {
+                ForEach(Array(0..<n), id: \.self) { h in
+                    RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                        .fill(hours[h].map { StressBand(score: $0).dataColor(theme) } ?? theme.hairlineStrong)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: barHeight(hours[h]), alignment: .bottom)
+                        .opacity(isDragging && scrubHour != h ? 0.3 : 1)
                 }
             }
-            .frame(height: 44)
-            HStack {
-                Text(verbatim: lo.formatted(.dateTime.hour()))
-                Spacer()
-                Text("now")
-            }
-            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            .frame(width: w, height: Self.barsHeight, alignment: .bottom)
+            .overlay(alignment: .leading) { cursor(w: w, n: n) }
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { val in
+                        isDragging = true
+                        let idx = Int((val.location.x / w) * CGFloat(n))
+                        scrubHour = Swift.min(n - 1, Swift.max(0, idx))
+                    }
+                    .onEnded { _ in isDragging = false }
+            )
         }
-        .accessibilityHidden(true)
+        .frame(height: Self.barsHeight)
+    }
+
+    @ViewBuilder private func cursor(w: CGFloat, n: Int) -> some View {
+        if isDragging, let h = scrubHour, n > 0 {
+            Rectangle().fill(theme.ink.opacity(0.55))
+                .frame(width: 1.5, height: Self.barsHeight + 2)
+                .offset(x: (CGFloat(h) + 0.5) / CGFloat(n) * w - 0.75, y: -1)
+        }
+    }
+
+    private var axis: some View {
+        HStack {
+            Text(verbatim: startOfDay.formatted(.dateTime.hour()))
+            Spacer()
+            Text("now").foregroundStyle(theme.ink)
+        }
+        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+    }
+
+    // MARK: Helpers
+
+    private func barHeight(_ v: Double?) -> CGFloat {
+        guard let v else { return 3 }
+        return Swift.max(7, CGFloat(Swift.min(1, v / 3)) * Self.barsHeight)
+    }
+
+    private func hourLabel(_ h: Int) -> String {
+        startOfDay.addingTimeInterval(TimeInterval(h * 3600)).formatted(.dateTime.hour())
+    }
+
+    /// The first timed event overlapping `[hourStart, hourStart+1h)`, cleaned for display. nil = none.
+    private func eventTitle(atHour h: Int) -> String? {
+        let s = startOfDay.addingTimeInterval(TimeInterval(h * 3600))
+        let e = s.addingTimeInterval(3600)
+        guard let ev = events.first(where: { $0.start < e && $0.end > s }) else { return nil }
+        return EventTitleCleaner.clean(ev.title)
     }
 }
 

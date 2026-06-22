@@ -167,12 +167,15 @@ extension WhoopStore {
 
     // MARK: - Reads
 
-    /// Cached sleep sessions overlapping [from, to] (by startTs), oldest first.
+    /// Cached sleep sessions that OVERLAP `[from, to]`, oldest first. A session `[s, e]` overlaps the
+    /// window iff `s <= to AND e >= from` — so a night that began before `from` (e.g. asleep before local
+    /// midnight) but runs into the window is still returned. Filtering on `startTs` alone would drop it,
+    /// leaving the post-midnight sleep un-excluded from the intraday stress curve (FER-448).
     public func sleepSessions(deviceId: String, from: Int, to: Int, limit: Int) async throws -> [CachedSleepSession] {
         try syncRead { db in
             try Row.fetchAll(db, sql: """
                 SELECT startTs, endTs, efficiency, restingHr, avgHrv, stagesJSON FROM sleepSession
-                WHERE deviceId = ? AND startTs >= ? AND startTs <= ?
+                WHERE deviceId = ? AND endTs >= ? AND startTs <= ?
                 ORDER BY startTs ASC LIMIT ?
                 """, arguments: [deviceId, from, to, limit])
                 .map {

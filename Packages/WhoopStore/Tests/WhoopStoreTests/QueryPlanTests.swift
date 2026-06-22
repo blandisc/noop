@@ -122,7 +122,7 @@ final class QueryPlanTests: XCTestCase {
         let store = try await WhoopStore.inMemory()
         let plan = try await store.queryPlanForTest("""
             SELECT startTs, endTs, efficiency, restingHr, avgHrv, stagesJSON FROM sleepSession
-            WHERE deviceId = ? AND startTs >= ? AND startTs <= ?
+            WHERE deviceId = ? AND endTs >= ? AND startTs <= ?
             ORDER BY startTs ASC LIMIT ?
             """, arguments: ["d", 0, 9_999_999_999, 100])
         assertIndexed(plan, table: "sleepSession")

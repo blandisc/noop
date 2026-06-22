@@ -443,11 +443,14 @@ brings the JSON in, so NOOP still makes no network call.
   weekend "social-jetlag" shift. Pure + DB-free like the rest; the app feeds it onset/wake out of
   `repo.sleeps`. The SD (minutes) is the validated figure; the 0–100 score is presentation only.
 - **`RecoveryForecast`** (FER-188) projects tomorrow's recovery one day ahead from the recent
-  recovery series — a damped level+slope trend plus a bounded sleep-debt drag — returning an
-  `estimate` with a deliberately wide confidence range, or `nil` below ~two weeks of base (the UI
-  then hides the block). A trend projection, never a guarantee; simple by design per the
-  short-term autoregressive-forecasting evidence (De Sabbata & Simonini, *J Healthc Inform Res*
-  2025). Pure + DB-free; the app feeds it the recovery column out of `repo.days`.
+  recovery series — a damped level+slope trend plus a bounded sleep-debt drag and an optional
+  acute session-strain drag (FER-442, for the post-session "tomorrow ~X%" line in the strength
+  summary; direction per Stanley 2013) — returning an `estimate` with a deliberately wide
+  confidence range, or `nil` below ~two weeks of base (the UI then hides the block). A trend
+  projection, never a guarantee; simple by design per the short-term autoregressive-forecasting
+  evidence (De Sabbata & Simonini, *J Healthc Inform Res* 2025). Pure + DB-free; the app feeds it
+  the recovery column out of `repo.days` (two consumers: the Recovery detail and the strength
+  summary cost block).
 - **`InsightEngine`** (FER-290) is the single orchestrator behind the redesigned Coach ("el Bucle"):
   it takes data already read from the store (`DailyMetric`, logged behaviours, sleep sessions) and
   runs a catalog of detectors — each a thin wrapper over one of the engines above (`BehaviorInsights`,

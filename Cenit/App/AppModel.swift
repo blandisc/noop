@@ -555,9 +555,21 @@ final class AppModel: ObservableObject {
             }
         }
 
+        // Tomorrow's projection given today's session cost (FER-442): recovery base = repo.days
+        // (already oldest→newest from Repository; nils kept so the engine respects missing-day
+        // spacing). "Si descansas bien" → no sleep-debt drag; the only downward pull is the acute
+        // session strain. nil (→ the line is hidden) when there's no strain or fewer than ~2 weeks
+        // of base — we never invent a number.
+        let recoverySeries = repo.days.map(\.recovery)
+        let costTomorrowPct: Int? = record.strain.flatMap { strain in
+            RecoveryForecast.compute(recovery: recoverySeries, sessionStrain: strain)
+                .map { Int($0.estimate.rounded()) }
+        }
+
         return StrengthSummary(routineName: session.routineName, durationS: durationS,
                                volumeKg: volumeKg, setCount: work.count, strain: record.strain,
                                costBand: SessionRecoveryCost.cost(sessionStrain: record.strain)?.band,
+                               costTomorrowPct: costTomorrowPct,
                                prs: prs, muscles: Array(muscles.prefix(6)), isFirstTime: prior.allSatisfy { $0.value.isEmpty })
     }
 

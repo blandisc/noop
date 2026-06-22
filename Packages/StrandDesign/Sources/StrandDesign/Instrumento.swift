@@ -111,6 +111,19 @@ public struct InstrumentoTheme: Equatable {
     )
 }
 
+public extension InstrumentoTheme {
+    /// Color de la batería del strap por nivel de carga — fuente ÚNICA para toda la app (Hoy, Ajustes…):
+    /// sana → `verdict` (verde); ≤20 % → `warning` (ámbar); ≤10 % → `critical` (rojo). El color vive solo
+    /// en el dato (el glifo en Hoy, el número en Ajustes); el resto se queda en tinta.
+    func batteryColor(forLevel pct: Double) -> Color {
+        switch pct {
+        case ...10: return critical   // ≤10 % — crítica
+        case ...20: return warning    // ≤20 % — baja
+        default:    return verdict    // sana
+        }
+    }
+}
+
 // MARK: - HR-zone ramp (workout detail)
 
 public extension InstrumentoTheme {
