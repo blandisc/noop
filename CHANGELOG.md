@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La gráfica de HRV ya aprovecha todo el ancho / The HRV chart now uses the full width (FER-460).**
+  **ES** — En el detalle de **HRV**, la curva de «Últimos 14 días» **ya llega hasta el borde derecho**: antes quedaba un hueco vacío porque se reservaba espacio para etiquetas de rango que HRV no usa. La última fecha sigue completa. Las gráficas con rangos etiquetados (FC en reposo, respiración, estrés…) no cambian: conservan su margen para esas etiquetas.
+  **EN** — In the **HRV** detail, the "Last 14 days" curve **now reaches the right edge**: there used to be an empty gap because space was reserved for range labels HRV doesn't use. The last date stays fully visible. Charts with labeled ranges (resting HR, respiration, stress…) are unchanged: they keep the margin those labels need.
+  ([Packages/StrandDesign/Sources/StrandDesign/TrendChart.swift](Packages/StrandDesign/Sources/StrandDesign/TrendChart.swift), [Cenit/Screens/MetricInfoSheet.swift](Cenit/Screens/MetricInfoSheet.swift))
 - **Las fechas de las gráficas ya se reparten parejo / Chart date labels now spread out evenly (FER-458).**
   **ES** — En todas las gráficas de tendencia (el resumen de Hoy y los detalles de cada vital), las **fechas de abajo ya no se amontonan a la derecha**: ahora aparecen **tres repartidas de borde a borde** que sí abarcan los días que ves (p. ej. *jun 8 · jun 14 · jun 21* en la vista de 14 días). Antes el eje se alineaba al calendario y dejaba la mitad izquierda en blanco. La curva de FC del día sigue mostrando horas y los rangos largos distinguen el mes por año.
   **EN** — Across every trend chart (Today's summary and each vital's detail), the **bottom date labels no longer clump on the right**: there are now **three spread edge-to-edge** that actually span the days shown (e.g. *Jun 8 · Jun 14 · Jun 21* on the 14-day view). The axis used to snap to the calendar and leave the left half blank. The intraday HR curve still shows hours, and long ranges tell repeated months apart by year.
