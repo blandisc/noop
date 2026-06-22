@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Las sesiones de fuerza ya graban tu frecuencia cardiaca / Strength sessions now record your heart rate.**
+  **ES** — Si entrenabas fuerza con la banda puesta pero **sin haber abierto antes la pantalla «En vivo»**, la sesión terminaba marcando **«Sin frecuencia cardiaca esta sesión»**, sin esfuerzo ni costo de recuperación. Ahora, al empezar una rutina guiada se enciende automáticamente la lectura de pulso en vivo (igual que en «En vivo»), así que el pulso se graba de principio a fin y el resumen muestra tu esfuerzo. Abrir y cerrar «En vivo» durante la sesión ya no corta el pulso del entreno.
+  **EN** — If you trained strength with the strap on but **without opening the "Live" screen first**, the session ended showing **"No heart rate this session"** — no effort, no recovery cost. Now starting a guided routine automatically turns on the live heart-rate read (just like "Live"), so your pulse is recorded end to end and the summary shows your effort. Opening and closing "Live" mid-session no longer cuts the workout's heart rate.
+  ([Cenit/App/AppModel.swift](Cenit/App/AppModel.swift), [Cenit/Screens/LiveView.swift](Cenit/Screens/LiveView.swift))
+
 - **Entrenar: desliza una rutina para eliminarla, con opción de deshacer / Train: swipe a routine to delete it, with undo.**
   **ES** — En **Entrenar → Mis rutinas** ya puedes **deslizar una rutina hacia la izquierda** para que aparezca el botón rojo **«Eliminar»** y borrarla de una vez —sin tener que mantener presionado y buscar el menú—. Si te equivocas, aparece un aviso breve con **«Deshacer»** que la restaura **con todos sus ejercicios** intactos. La sección conserva su look de papel cálido; el menú de mantener presionado sigue funcionando igual.
   **EN** — In **Train → My routines** you can now **swipe a routine left** to reveal a red **"Delete"** button and remove it in one go —no more long-pressing to find the menu—. Change your mind? A brief **"Undo"** toast restores it **with all its exercises** intact. The section keeps its warm-paper look; the long-press menu still works as before.
