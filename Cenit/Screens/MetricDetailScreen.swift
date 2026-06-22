@@ -607,8 +607,15 @@ struct MetricDetailScreen: View {
     }
 
     private var rangesYTicks: [Double]? {
-        let t = Set(spec.info.bands.flatMap { [$0.lower, $0.upper].compactMap { $0 } })
-        return t.isEmpty ? nil : t.sorted()
+        let thresholds = Set(spec.info.bands.flatMap { [$0.lower, $0.upper].compactMap { $0 } }).sorted()
+        guard let maxT = thresholds.last else { return nil }
+        // The line can climb above the top band (e.g. steps past «Muy activo»), but explicit ticks topped
+        // out at the highest threshold — so the upper part of the chart had no labels. Extend with round
+        // ticks above it (step ≈ a quarter of the top threshold). Charts only draws ticks inside the chart's
+        // domain, so the ones beyond where the line actually reaches simply don't render. (Detalle)
+        let step = Swift.max((maxT / 4).rounded(), 1)
+        let extra = (1...6).map { maxT + Double($0) * step }
+        return thresholds + extra
     }
 
     private func chartModeLabel(_ m: ChartMode) -> String {
