@@ -340,7 +340,7 @@ struct MuscleMapScreen: View {
 
     private func floatingLabel(_ m: MuscleFatigueMap.MuscleLoad) -> some View {
         HStack(spacing: 7) {
-            Circle().fill(loadByMuscle[m.muscle] != nil ? theme.muscleLoadColor(m.relative) : theme.hairlineStrong)
+            Circle().fill(loadByMuscle[m.muscle] != nil ? theme.muscleStateColor(m.relative) : theme.hairlineStrong)
                 .frame(width: 7, height: 7)
             Text(MuscleAtlas.name(m.muscle)).font(StrandFont.caption).fontWeight(.semibold).foregroundStyle(theme.paper)
             Text(stateSuffix(m.state)).font(StrandFont.caption).foregroundStyle(theme.paper.opacity(0.7))
@@ -357,7 +357,7 @@ struct MuscleMapScreen: View {
         let state = load?.state ?? .fresh
         return Button { selected = MuscleSelection(muscle: muscle) } label: {
             HStack(spacing: 10) {
-                Circle().fill(load != nil ? theme.muscleLoadColor(relative) : theme.hairlineStrong)
+                Circle().fill(load != nil ? theme.muscleStateColor(relative) : theme.hairlineStrong)
                     .frame(width: 9, height: 9)
                 VStack(spacing: 5) {
                     HStack {
@@ -369,7 +369,7 @@ struct MuscleMapScreen: View {
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
                             RoundedRectangle(cornerRadius: 3).fill(theme.hairline)
-                            RoundedRectangle(cornerRadius: 3).fill(theme.muscleLoadColor(relative))
+                            RoundedRectangle(cornerRadius: 3).fill(theme.muscleStateColor(relative))
                                 .frame(width: max(load != nil ? 6 : 0, geo.size.width * relative))
                         }
                     }
@@ -467,7 +467,7 @@ struct MuscleMapScreen: View {
                             ZStack(alignment: .leading) {
                                 RoundedRectangle(cornerRadius: 4).fill(theme.hairline)
                                 RoundedRectangle(cornerRadius: 4)
-                                    .fill(theme.muscleLoadColor(m.relative))
+                                    .fill(theme.muscleStateColor(m.relative))
                                     .frame(width: max(6, geo.size.width * m.relative))
                             }
                         }
@@ -641,7 +641,7 @@ private struct BodyFiguresView: View {
 
     private func color(for muscle: String) -> Color {
         guard let m = loadByMuscle[muscle], maxLoad > 0 else { return theme.hairlineStrong.opacity(0.55) }
-        return theme.muscleLoadColor(m.relative)
+        return theme.muscleStateColor(m.relative)
     }
 
     private func stateText(_ muscle: String) -> LocalizedStringKey {
@@ -851,6 +851,29 @@ private struct TrendLine: View {
             }
             .stroke(color, style: StrokeStyle(lineWidth: 2.5, lineJoin: .round))
         }
+    }
+}
+
+// MARK: - Fatigue-state colour
+
+private extension InstrumentoTheme {
+    /// Maps a muscle's relative load (0…1) onto `muscleLoadRamp` by fatigue STATE, so a fresh muscle reads
+    /// green, a moderate one amber and a loaded one red. The raw ramp puts its green only near 0, so a muscle
+    /// classified «fresh» (relative < `freshBelow`) painted at its raw fraction came out amber — contradicting
+    /// the recommendation card. Each state band maps to its own slice of the ramp, keeping a gentle gradient
+    /// within the band so the ranking still reads. (FER-516)
+    func muscleStateColor(_ relative: Double) -> Color {
+        let fresh = MuscleFatigueMap.freshBelow
+        let loaded = MuscleFatigueMap.loadedAbove
+        let position: Double
+        if relative < fresh {
+            position = relative / fresh * 0.06
+        } else if relative < loaded {
+            position = 0.45 + (relative - fresh) / (loaded - fresh) * 0.10
+        } else {
+            position = 0.80 + (relative - loaded) / (1 - loaded) * 0.20
+        }
+        return muscleLoadColor(position)
     }
 }
 #endif

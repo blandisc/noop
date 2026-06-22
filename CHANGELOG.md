@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El mapa muscular pinta de verde los músculos frescos / The muscle map paints fresh muscles green.**
+  **ES** — En **Cuerpo → «Qué entrenar hoy»**, la silueta ya concuerda con la recomendación: un músculo **fresco** (listo para entrenar) se ve **verde**, uno a **media carga** ámbar, y uno **cargado** rojo. Antes, hasta los músculos que la tarjeta llamaba «frescos» —como las pantorrillas— salían dorados, porque el color casi nunca llegaba al verde. Los músculos que no has entrenado siguen en gris (sin datos). El mismo color se aplica ahora en la silueta, la lista «Más cargados» y el indicador al tocar un músculo.
+  **EN** — In **Body → "What to train today"**, the silhouette now matches the recommendation: a **fresh** muscle (ready to train) shows **green**, a **moderately** loaded one amber, and a **loaded** one red. Before, even muscles the card called "fresh" —like calves— came out gold, because the color rarely reached green. Muscles you haven't trained stay gray (no data). The same color now applies across the silhouette, the "Most loaded" list, and the tap indicator.
+  ([Cenit/Screens/MuscleMapScreen.swift](Cenit/Screens/MuscleMapScreen.swift))
+
 - **Mira cómo evoluciona cada ejercicio, con tus records / See how each exercise is progressing, with your records.**
   **ES** — El detalle de un ejercicio (desde la biblioteca) ahora tiene un bloque **«Progreso»** con un **selector**: **peso máximo**, **1RM estimado** o **volumen**, cada uno graficado a lo largo del tiempo (toca la línea para ver el valor de cada punto). Debajo, **«Records personales»** con tu **mayor peso**, **más reps** y **mejor volumen de serie**, con la fecha de cada uno. Un ejercicio que aún no has registrado sigue mostrando su mensaje honesto, sin gráficas ni records en cero.
   **EN** — An exercise's detail (from the library) now has a **"Progress"** block with a **selector**: **max weight**, **estimated 1RM**, or **volume**, each charted over time (tap the line to read any point). Below it, **"Personal records"** with your **heaviest weight**, **most reps** and **best set volume**, each dated. An exercise you haven't logged yet still shows its honest message — no empty charts or zeroed records.
