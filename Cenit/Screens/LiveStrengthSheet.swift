@@ -398,6 +398,11 @@ struct LiveStrengthSheet: View {
                     topBar
                     if session.current == nil {
                         completePhase
+                    } else if session.isComplete, session.phase == .resting {
+                        // Every set is logged: surface the «terminar» state (big button + navigator) right
+                        // away instead of trapping the user in the rest timer. Tapping an exercise in the
+                        // navigator flips the phase to .capturing, which drops back here into editing.
+                        completePhase
                     } else if session.phase == .resting, session.restEndsAt != nil {
                         restPhase
                     } else {
@@ -720,7 +725,7 @@ struct LiveStrengthSheet: View {
             .padding(.top, 2)
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(Text("Distance \(distanceNumber(meters)) \(imperial ? "miles" : "kilometers")"))
+        .accessibilityLabel(Text("Distance \(distanceNumber(meters)) \(imperial ? String(localized: "miles") : String(localized: "kilometers"))"))
     }
 
     @ViewBuilder private func timeCard(running: Bool) -> some View {
@@ -835,13 +840,17 @@ struct LiveStrengthSheet: View {
                  : "Every exercise was skipped. Finish to close, or resume from the hub.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
-            Button { model.endStrengthSession(save: true) } label: {
+            Button { finishTapped() } label: {
                 Label("Finish", systemImage: "checkmark")
                     .font(StrandFont.headline).foregroundStyle(theme.paper)
                     .frame(maxWidth: .infinity).padding(.vertical, 15)
                     .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
             }
             .buttonStyle(.plain).padding(.top, 4)
+            // Keep the way back: tapping an exercise returns to its capture screen to edit (or add sets).
+            if !session.activeExercises.isEmpty {
+                planNavigator.padding(.top, 4)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -1295,7 +1304,7 @@ private struct SetTableDrawer: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text("Set \(index + 1), \(summary), \(set.done ? "done" : "pending")"))
+        .accessibilityLabel(Text("Set \(index + 1), \(summary), \(set.done ? String(localized: "done") : String(localized: "pending"))"))
         .accessibilityHint(Text("Tap to edit"))
         .accessibilityAddTraits(focused ? .isSelected : [])
     }
