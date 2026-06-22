@@ -68,6 +68,8 @@ private struct PatronesLanding: View {
     @State private var startLever: InsightItem? = nil
     @State private var showEfectos = false
     @State private var showAnota = false
+    /// «Diseña tu propio experimento» builder. FER-468.
+    @State private var showDisena = false
     /// Generic info explainer (the ⓘ on a section). FER-312.
     @State private var info: BucleInfo? = nil
     /// The running experiment whose detail sheet is open (racha + effect chart). FER-462/2b.
@@ -101,6 +103,7 @@ private struct PatronesLanding: View {
                     anotaSection
                     loQueFuncionaSection
                     relacionesSection
+                    disenaSection
                     expedienteSection
                 }
             }
@@ -144,6 +147,16 @@ private struct PatronesLanding: View {
             ExperimentDetailSheet(row: item.row, theme: theme) { Task { await load() } }
                 .instrumentoTheme(theme)
                 .environmentObject(repo)
+        }
+        .sheet(isPresented: $showDisena) {
+            DisenaExperimentoSheet(theme: theme) { behavior, outcome, sign, window in
+                await repo.startExperiment(behavior: behavior, outcome: outcome,
+                                           expectedSign: sign, windowDays: window)
+                showDisena = false
+                await load()
+            }
+            .instrumentoTheme(theme)
+            .environmentObject(repo)
         }
     }
 
@@ -641,6 +654,36 @@ private struct PatronesLanding: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+
+    // MARK: ¿Quieres probar algo? (free experiment builder, FER-468)
+
+    /// The free-experiment entry — shown only when nothing is in flight (MVP one-at-a-time). Opens the
+    /// builder where you pick a habit + metric + window, not bound to a detected lever.
+    @ViewBuilder private var disenaSection: some View {
+        if running == nil {
+            VStack(alignment: .leading, spacing: 11) {
+                Text("¿Quieres probar algo?").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Button { showDisena = true } label: {
+                    HStack(spacing: 13) {
+                        Image(systemName: "flask").font(.system(size: 20)).foregroundStyle(theme.inkSecondary)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Diseña tu propio experimento").font(StrandFont.headline).foregroundStyle(theme.ink)
+                            Text("Elige un hábito y mídelo una semana")
+                                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Spacer()
+                        Image(systemName: "plus").font(.system(size: 16, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    }
+                    .padding(16)
+                    .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                        .stroke(theme.hairlineStrong, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+            }
+        }
     }
 
     // MARK: Tu expediente (explorador por métrica)
