@@ -6,7 +6,7 @@ import WhoopProtocol
 /// transient, compressed, prunable outbox. Built on GRDB/SQLite.
 public enum WhoopStoreInfo {
     /// Bumped whenever the migrator gains a new migration.
-    public static let schemaVersion = 19
+    public static let schemaVersion = 20
 }
 
 /// WhoopStore is an `actor`: its public API is `async`, and all GRDB work runs on the
@@ -27,6 +27,11 @@ public actor WhoopStore {
     public init(path: String) async throws {
         var config = Configuration()
         config.prepareDatabase { db in
+            // INCREMENTAL auto-vacuum so freed pages can be reclaimed without a full file rewrite
+            // (FER-511 and the later size work). On a FRESH DB this takes effect immediately (set
+            // before any table is created, below); on an EXISTING DB it's a no-op until the one-time
+            // VACUUM (AppModel.compactDatabaseAfterSpo2PurgeIfNeeded) converts the file.
+            try db.execute(sql: "PRAGMA auto_vacuum = INCREMENTAL")
             try db.execute(sql: "PRAGMA journal_mode = WAL")
             // Bulk-write/read tuning. NORMAL is the durable, recommended pairing with WAL (only an
             // OS crash/power loss can lose the last transaction — acceptable here). Bigger page cache
@@ -77,6 +82,30 @@ public actor WhoopStore {
         try dbQueue.writeWithoutTransaction { db in
             try db.execute(sql: "PRAGMA wal_checkpoint(TRUNCATE)")
         }
+    }
+
+    /// Rebuild the database file with SQLite `VACUUM`, returning free pages (e.g. those left by the
+    /// FER-511 spo2 purge) to the OS so the `.sqlite` actually shrinks — a plain DELETE only marks
+    /// pages reusable. Also converts an existing file to the INCREMENTAL auto-vacuum mode set in
+    /// `prepareDatabase`. Heavy (rewrites the whole file): callers run it once, gated, off the launch
+    /// path. `VACUUM` must run outside a transaction, so this uses `writeWithoutTransaction` (mirrors
+    /// `checkpointWALImpl`); it runs on the actor's executor, off the main thread.
+    public func vacuum() async throws {
+        try vacuumImpl()
+    }
+
+    /// Non-async so GRDB's synchronous `writeWithoutTransaction` overload is chosen (mirrors
+    /// `checkpointWALImpl`). Runs on the actor's executor, off the main thread.
+    private func vacuumImpl() throws {
+        try dbQueue.writeWithoutTransaction { db in
+            try db.execute(sql: "VACUUM")
+        }
+    }
+
+    /// SQLite `PRAGMA page_count` — total pages in the main DB file. Tests use it to prove a
+    /// purge + `vacuum()` actually shrinks the file (page_count drops), not just frees pages.
+    public func pageCountForTest() async throws -> Int {
+        try syncRead { db in try Int.fetchOne(db, sql: "PRAGMA page_count") ?? 0 }
     }
 
     // MARK: - Introspection (used by tests)

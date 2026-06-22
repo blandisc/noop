@@ -39,7 +39,10 @@ extension WhoopStore {
             spo2: Int, skinTemp: Int, resp: Int, gravity: Int) {
         return try syncWrite { db in
             var hr = 0, rr = 0, ev = 0, bat = 0
-            var spo2 = 0, skin = 0, resp = 0, grav = 0
+            var skin = 0, resp = 0, grav = 0
+            // spo2Sample is no longer persisted (FER-511) — kept in the return tuple for shape
+            // stability (callers + the sync receipt read an 8-field tuple); always 0.
+            let spo2 = 0
             // Reuse one prepared statement per table instead of recompiling the same SQL on every
             // row. This is the hottest write path (every Collector.flush + every Backfiller chunk
             // over potentially millions of historical rows). cachedStatement persists the compiled
@@ -86,16 +89,10 @@ extension WhoopStore {
                     bat += db.changesCount
                 }
             }
-            if !streams.spo2.isEmpty {
-                let stmt = try db.cachedStatement(sql: """
-                    INSERT INTO spo2Sample (deviceId, ts, red, ir) VALUES (?, ?, ?, ?)
-                    ON CONFLICT(deviceId, ts) DO NOTHING
-                    """)
-                for s in streams.spo2 {
-                    try stmt.execute(arguments: [deviceId, s.ts, s.red, s.ir])
-                    spo2 += db.changesCount
-                }
-            }
+            // spo2Sample intentionally NOT written (FER-511): the raw red/ir ADC stream was write-only
+            // — nothing on-device reads it (the SpO₂ shown comes from dailyMetric.spo2Pct / Apple
+            // Health), so it was ~16% of the DB for nothing. `streams.spo2` is still decoded upstream
+            // (WhoopProtocol) but simply not stored; the v20 migration purges any existing rows.
             if !streams.skinTemp.isEmpty {
                 let stmt = try db.cachedStatement(sql: """
                     INSERT INTO skinTempSample (deviceId, ts, raw) VALUES (?, ?, ?)

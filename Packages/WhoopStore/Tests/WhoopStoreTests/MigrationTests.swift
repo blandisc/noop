@@ -41,7 +41,76 @@ final class MigrationTests: XCTestCase {
             let cols = try await store.columnNamesForTest(table: table)
             XCTAssertTrue(cols.contains("synced"), "\(table) missing synced column")
         }
-        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 19)
+        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 20)
+    }
+
+    /// v20 (FER-511) DELETEs the write-only `spo2Sample` rows and KEEPS the (now-empty) table. Append-only:
+    /// a DB that reached v19 with spo2 + the other four 1 Hz streams upgrades, spo2 ends empty, the table
+    /// still exists, and every other decoded stream is preserved untouched.
+    func testV20PurgesSpo2AndPreservesOtherStreams() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = WhoopStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v19")
+
+        try await dbQueue.write { db in
+            try db.execute(sql: "INSERT INTO spo2Sample (deviceId, ts, red, ir) VALUES ('d',1,10,20),('d',2,11,21)")
+            try db.execute(sql: "INSERT INTO hrSample (deviceId, ts, bpm) VALUES ('d',1,60),('d',2,61)")
+            try db.execute(sql: "INSERT INTO skinTempSample (deviceId, ts, raw) VALUES ('d',1,900)")
+            try db.execute(sql: "INSERT INTO respSample (deviceId, ts, raw) VALUES ('d',1,3000)")
+            try db.execute(sql: "INSERT INTO gravitySample (deviceId, ts, x, y, z) VALUES ('d',1,0.1,0.2,0.3)")
+            try db.execute(sql: "INSERT INTO rrInterval (deviceId, ts, rrMs) VALUES ('d',1,800)")
+        }
+
+        try migrator.migrate(dbQueue)   // → v20
+
+        try await dbQueue.read { db in
+            XCTAssertTrue(try db.tableExists("spo2Sample"), "v20 keeps the (empty) spo2Sample table")
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM spo2Sample"), 0, "v20 purges spo2 rows")
+            // Every other decoded stream is preserved untouched.
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM hrSample"), 2)
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM rrInterval"), 1)
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM skinTempSample"), 1)
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM respSample"), 1)
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM gravitySample"), 1)
+        }
+    }
+
+    /// Criterion: after the v20 purge + a VACUUM the file actually SHRINKS (pages returned to the OS),
+    /// not just marked reusable. Bloat spo2 on a real file, record page_count, migrate (purge) + VACUUM,
+    /// assert page_count drops materially.
+    func testV20PlusVacuumShrinksFile() async throws {
+        let path = NSTemporaryDirectory() + "whoopstore-vacuum-\(UUID().uuidString).sqlite"
+        defer { try? FileManager.default.removeItem(atPath: path) }
+        let dbQueue = try DatabaseQueue(path: path)
+        let migrator = WhoopStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v19")
+
+        try await dbQueue.write { db in
+            for i in 0..<20_000 {
+                try db.execute(sql: "INSERT INTO spo2Sample (deviceId, ts, red, ir) VALUES (?,?,?,?)",
+                               arguments: ["d", i, 18000, 17000])
+            }
+        }
+        let before = try await dbQueue.read { db in try Int.fetchOne(db, sql: "PRAGMA page_count") ?? 0 }
+
+        try migrator.migrate(dbQueue)   // → v20 DELETEs the spo2 rows
+        try await dbQueue.writeWithoutTransaction { db in try db.execute(sql: "VACUUM") }
+
+        let after = try await dbQueue.read { db in try Int.fetchOne(db, sql: "PRAGMA page_count") ?? 0 }
+        XCTAssertLessThan(after, before / 2,
+                          "VACUUM must return the purged spo2 pages (page_count before=\(before) after=\(after))")
+    }
+
+    /// The public `vacuum()` maintenance method (what AppModel calls once after the v20 purge) runs on a
+    /// real file store without throwing — VACUUM must execute outside a transaction.
+    func testVacuumMethodRunsOnFileStore() async throws {
+        let path = NSTemporaryDirectory() + "whoopstore-vac-\(UUID().uuidString).sqlite"
+        defer { try? FileManager.default.removeItem(atPath: path) }
+        let store = try await WhoopStore(path: path)
+        try await store.upsertDevice(id: "d", mac: nil, name: nil)
+        try await store.vacuum()   // must not throw
+        let pages = try await store.pageCountForTest()
+        XCTAssertGreaterThan(pages, 0)
     }
 
     /// v15 (FER-346) adds a nullable `supersetGroup` to `routineExercise` via ALTER ADD COLUMN, and
