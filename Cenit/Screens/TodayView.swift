@@ -569,9 +569,10 @@ struct TodayView: View {
             .animation(reduceMotion ? nil : StrandMotion.fade, value: showsSyncHint)
             // Inset superior `gap` (FER-202): el héroe queda alto pero respira.
             .padding(.horizontal, NoopMetrics.screenPadding)
-            // Margen inferior compacto (FER-475): los page dots (último elemento) quedan pegados al dock,
-            // no flotando con 24pt de aire. La rejilla de métricas mantiene su aire propio (cards + gap).
-            .padding(.bottom, NoopMetrics.space2)
+            // Sin margen inferior extra (FER-479): el dock de page dots (último elemento) baja hasta apenas
+            // sobre la «Barra de instrumento» y flota solo con el aire de su propia área tocable de 28pt
+            // (~11pt: el capsule de 6pt va centrado). El sobrante vertical se va ARRIBA (el Spacer único
+            // crece), no debajo del dock — se reubica, no se elimina. La rejilla mantiene su aire (cards + gap).
             .padding(.top, NoopMetrics.space2)
             // Llena al menos el alto visible para que los `Spacer` tengan sobrante que repartir; si el
             // contenido lo excede (p. ej. calibrando en pantalla chica), crece y hace scroll igual.
