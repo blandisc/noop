@@ -49,6 +49,8 @@ private struct PatronesLanding: View {
     @State private var journalTotal = 0
     /// Recent recovery series (last 14 nights) for the trend-finding glyph.
     @State private var trendSpark: [Double] = []
+    /// Identity keys of findings that surfaced recently (≤48 h) — the hero leads with one as «Nuevo». FER-466.
+    @State private var newInsightKeys: Set<String> = []
     @State private var loaded = false
 
     // N-of-1 experiment state (FER-307). One at a time: either a running experiment, or the most-recent
@@ -179,15 +181,24 @@ private struct PatronesLanding: View {
     // other finding renders with its datum + «Ver por qué». When nothing has surfaced yet (history is
     // sufficient but no finding cleared the bar), a quiet «sigo observando» keeps the hero non-empty.
 
-    /// The lead finding: the top-ranked insight, if any.
-    private var heroInsight: Insight? { insights.first }
+    /// The freshest non-behavior finding still within the «new» window — an anomaly/trend/correlation
+    /// that just surfaced from your data. It leads the hero with the «Nuevo» badge. Behavior levers are
+    /// excluded: the «sin que anotaras» framing is for findings that emerge without you logging. FER-466.
+    private var heroNewFinding: Insight? {
+        insights.first { $0.kind != .behavior && newInsightKeys.contains(InsightFreshness.key(for: $0)) }
+    }
+
+    /// The lead finding: a fresh finding if there is one, else the top-ranked insight.
+    private var heroInsight: Insight? { heroNewFinding ?? insights.first }
 
     @ViewBuilder private var heroSection: some View {
         if let hero = heroInsight {
-            if hero.kind == .behavior, hero.lever != nil {
+            if heroNewFinding == hero {
+                findingHero(hero, isNew: true)
+            } else if hero.kind == .behavior, hero.lever != nil {
                 leverHero(hero)
             } else {
-                findingHero(hero)
+                findingHero(hero, isNew: false)
             }
         } else {
             observingHero
@@ -215,9 +226,17 @@ private struct PatronesLanding: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func findingHero(_ insight: Insight) -> some View {
+    private func findingHero(_ insight: Insight, isNew: Bool) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(BucleFormat.kindLabel(insight.kind)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            if isNew {
+                HStack(spacing: 7) {
+                    Image(systemName: "sparkles").font(.system(size: 12, weight: .semibold))
+                    Text("Nuevo · lo notamos sin que anotaras").instrumentoOverline()
+                }
+                .foregroundStyle(theme.dataRecovery)
+            } else {
+                Text(BucleFormat.kindLabel(insight.kind)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            }
             Text(insight.title)
                 .font(.system(size: 27, weight: .semibold)).tracking(-0.4)
                 .lineSpacing(2)
@@ -867,6 +886,12 @@ private struct PatronesLanding: View {
         let proven = await repo.provenLevers()
         let generated = InsightEngine.promoteProven(InsightEngine.generate(inputs), provenLevers: proven)
 
+        // Freshness (FER-466): stamp first-seen per finding, decay after ~48 h. The hero leads with a
+        // fresh non-behavior finding as «Nuevo». Persisted in UserDefaults — no engine/DB change.
+        let freshKeys = InsightFreshness.refresh(
+            currentKeys: Set(generated.map { InsightFreshness.key(for: $0) }),
+            now: Date().timeIntervalSince1970)
+
         let importedQs = NSOrderedSet(array: imported.map(\.question)).array as? [String] ?? []
         let catalog = JournalCatalogStore.mergeCatalog(imported: importedQs, custom: [])
         let nights = days.filter { $0.avgHrv != nil }.count
@@ -884,6 +909,7 @@ private struct PatronesLanding: View {
 
         await MainActor.run {
             self.insights = generated
+            self.newInsightKeys = freshKeys
             self.usableNights = nights
             self.journalAnswered = todayAnswers.count
             self.journalTotal = max(catalog.count, 1)
@@ -1013,5 +1039,33 @@ private struct InsightItem: Identifiable {
 private struct ExperimentItem: Identifiable {
     let id = UUID()
     let row: ExperimentRow
+}
+
+// MARK: - Insight freshness (FER-466)
+
+/// Tracks which findings surfaced recently so the hero can lead with «Nuevo». The `InsightEngine` is
+/// stateless (it recomputes every run), so freshness lives here: a per-device first-seen timestamp per
+/// insight identity, persisted in UserDefaults (no DB migration — it's a UI nicety). A finding stays
+/// «new» for `ttl` after it first appears; if it disappears and returns, it reads as new again.
+enum InsightFreshness {
+    /// How long a finding stays «new» after first surfacing (~2 days).
+    static let ttl: TimeInterval = 48 * 3600
+    private static let storeKey = "fer466.insightFirstSeen"
+
+    /// A stable identity across engine runs — the title may be LLM-rewritten, so key on structure.
+    static func key(for insight: Insight) -> String {
+        "\(insight.kind.rawValue)|\(insight.datum.metric)|\(insight.lever?.behavior ?? "")"
+    }
+
+    /// Stamp first-seen for any newly-present key, prune keys no longer present, persist, and return the
+    /// subset still within `ttl`. `now` is unix seconds; `defaults` is injectable for testing.
+    static func refresh(currentKeys: Set<String>, now: Double,
+                        defaults: UserDefaults = .standard) -> Set<String> {
+        var map = (defaults.dictionary(forKey: storeKey) as? [String: Double]) ?? [:]
+        map = map.filter { currentKeys.contains($0.key) }
+        for k in currentKeys where map[k] == nil { map[k] = now }
+        defaults.set(map, forKey: storeKey)
+        return Set(map.filter { now - $0.value < ttl }.keys)
+    }
 }
 #endif
