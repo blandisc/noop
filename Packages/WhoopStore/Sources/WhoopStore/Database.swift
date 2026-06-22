@@ -417,6 +417,22 @@ extension WhoopStore {
                 SELECT lower(hex(randomblob(16))), re, pos, 'work', reps, w FROM seq
                 """)
         }
+
+        // v18 (FER-494): user-created folders for routines. Append-only — a new table plus a nullable
+        // `folderId` on `routine`; touches no prior migration. Existing routines keep folderId NULL →
+        // they fall into the UI's «Sin carpeta» section, zero loss. Deleting a folder NULLs its routines
+        // (StrengthStore.deleteFolder), never deletes them, so there is no ON DELETE here. No index:
+        // folders/routines are few and grouped in memory.
+        migrator.registerMigration("v18") { db in
+            try db.create(table: "routineFolder") { t in
+                t.column("id", .text).primaryKey()
+                t.column("name", .text).notNull()
+                t.column("sortOrder", .integer).notNull().defaults(to: 0)
+            }
+            try db.alter(table: "routine") { t in
+                t.add(column: "folderId", .text)   // nullable; NULL = no folder («Sin carpeta»)
+            }
+        }
         return migrator
     }
 }

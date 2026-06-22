@@ -61,6 +61,15 @@ private struct EntrenarLanding: View {
     @State private var swipedRoutineId: String? = nil
     /// A just-deleted routine + its exercises, kept in memory so «Undo» can restore it. FER-491.
     @State private var pendingUndo: DeletedRoutine? = nil
+    /// User-created folders for «Mis rutinas» (FER-494); empty = the flat list, as before.
+    @State private var folders: [RoutineFolder] = []
+    /// Drives the «new folder» name alert; `pendingMove` (if set) moves that routine into the new folder.
+    @State private var showNewFolder = false
+    @State private var newFolderName = ""
+    @State private var pendingMove: Routine? = nil
+    /// The folder being renamed (drives the rename alert) + its draft name.
+    @State private var renameFolder: RoutineFolder? = nil
+    @State private var renameText = ""
 
     /// Today's recovery (0–100), nil until a score exists. Drives whether the band shows.
     private var recovery: Double? { repo.today?.recovery }
@@ -128,6 +137,19 @@ private struct EntrenarLanding: View {
                     .preferredColorScheme(.light)
             }
         }
+        // New folder (FER-494): name it, then optionally drop a pending routine into it.
+        .alert("New folder", isPresented: $showNewFolder) {
+            TextField("Folder name", text: $newFolderName)
+            Button("Cancel", role: .cancel) { newFolderName = ""; pendingMove = nil }
+            Button("Create") { createFolder() }
+        }
+        // Rename folder.
+        .alert("Rename folder", isPresented: Binding(get: { renameFolder != nil },
+                                                     set: { if !$0 { renameFolder = nil } })) {
+            TextField("Folder name", text: $renameText)
+            Button("Cancel", role: .cancel) { renameFolder = nil }
+            Button("Save") { commitRename() }
+        }
         .task { await load() }
     }
 
@@ -179,39 +201,76 @@ private struct EntrenarLanding: View {
 
     // MARK: - «Mis rutinas»
 
+    /// Routines with no folder («Sin carpeta»).
+    private var unfiledRoutines: [Routine] { routines.filter { $0.folderId == nil } }
+    private func routines(in folder: RoutineFolder) -> [Routine] { routines.filter { $0.folderId == folder.id } }
+
     private var misRutinas: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("My routines").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             VStack(alignment: .leading, spacing: 0) {
-                ForEach(routines) { r in
-                    routineRow(r)
-                    if r.id != routines.last?.id { divider }
+                // A section per folder (FER-494), then the unfiled routines. With no folders this is
+                // just the flat list, as before — the «Sin carpeta» header only appears alongside folders.
+                ForEach(folders) { folder in
+                    folderHeader(folder)
+                    routineList(routines(in: folder))
                 }
+                if !folders.isEmpty && !unfiledRoutines.isEmpty {
+                    Text("Sin carpeta").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                        .padding(.top, 14).padding(.bottom, 2)
+                }
+                routineList(unfiledRoutines)
+
                 divider
-                Button { builderTarget = .new } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: "plus").frame(width: 30)
-                            .font(.system(size: 17)).foregroundStyle(theme.inkSecondary)
-                        Text("New routine").font(StrandFont.body).foregroundStyle(theme.inkSecondary)
-                        Spacer(minLength: 0)
-                    }
-                    .frame(minHeight: 44).contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
+                actionRow("plus", "New routine") { builderTarget = .new }
                 divider
-                Button { showTemplates = true } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: "square.stack.3d.up").frame(width: 30)
-                            .font(.system(size: 17)).foregroundStyle(theme.inkSecondary)
-                        Text("Start from a template").font(StrandFont.body).foregroundStyle(theme.inkSecondary)
-                        Spacer(minLength: 0)
-                    }
-                    .frame(minHeight: 44).contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityHint(Text("Copy a starter routine into My routines"))
+                actionRow("folder.badge.plus", "New folder") { startNewFolder(moving: nil) }
+                divider
+                actionRow("square.stack.3d.up", "Start from a template") { showTemplates = true }
+                    .accessibilityHint(Text("Copy a starter routine into My routines"))
             }
         }
+    }
+
+    /// The rows for one group of routines, each separated by a hairline.
+    @ViewBuilder
+    private func routineList(_ rs: [Routine]) -> some View {
+        ForEach(rs) { r in
+            routineRow(r)
+            if r.id != rs.last?.id { divider }
+        }
+    }
+
+    /// A folder section header: a folder glyph, its name + routine count, and a «⋯» menu to rename or
+    /// delete it (deleting keeps its routines, they fall to «Sin carpeta»).
+    private func folderHeader(_ f: RoutineFolder) -> some View {
+        HStack(spacing: 9) {
+            Image(systemName: "folder").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
+            Text(f.name).font(StrandFont.body).foregroundStyle(theme.ink)
+            Text("· \(routines(in: f).count)").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            Spacer(minLength: 0)
+            Menu {
+                Button { startRename(f) } label: { Label("Rename folder", systemImage: "pencil") }
+                Button(role: .destructive) { deleteFolder(f) } label: { Label("Delete folder", systemImage: "trash") }
+            } label: {
+                Image(systemName: "ellipsis").font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(theme.inkTertiary).frame(width: 32, height: 40).contentShape(Rectangle())
+            }
+        }
+        .padding(.top, 12).padding(.bottom, 2)
+    }
+
+    private func actionRow(_ symbol: String, _ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: symbol).frame(width: 30)
+                    .font(.system(size: 17)).foregroundStyle(theme.inkSecondary)
+                Text(title).font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                Spacer(minLength: 0)
+            }
+            .frame(minHeight: 44).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     private func routineRow(_ r: Routine) -> some View {
@@ -236,6 +295,18 @@ private struct EntrenarLanding: View {
             .buttonStyle(.plain)
             .contextMenu {
                 Button { builderTarget = .edit(r) } label: { Label("Edit routine", systemImage: "slider.horizontal.3") }
+                Menu {
+                    ForEach(folders) { f in
+                        Button { move(r, to: f.id) } label: {
+                            Label(f.name, systemImage: r.folderId == f.id ? "checkmark" : "folder")
+                        }
+                    }
+                    if r.folderId != nil {
+                        Button { move(r, to: nil) } label: { Label("Remove from folder", systemImage: "folder.badge.minus") }
+                    }
+                    Divider()
+                    Button { startNewFolder(moving: r) } label: { Label("New folder…", systemImage: "folder.badge.plus") }
+                } label: { Label("Move to…", systemImage: "folder") }
                 Button(role: .destructive) { delete(r) } label: { Label("Delete routine", systemImage: "trash") }
             }
         }
@@ -407,7 +478,65 @@ private struct EntrenarLanding: View {
         }
         routines = rs
         exerciseCounts = counts
+        folders = (try? await store.routineFolders()) ?? []
         loaded = true
+    }
+
+    // MARK: - Folders (FER-494)
+
+    private func startNewFolder(moving r: Routine?) {
+        pendingMove = r
+        newFolderName = ""
+        showNewFolder = true
+    }
+
+    /// Create the folder, then (if invoked from a routine's «Move to…») drop that routine into it.
+    private func createFolder() {
+        let name = newFolderName.trimmingCharacters(in: .whitespaces)
+        let toMove = pendingMove
+        newFolderName = ""; pendingMove = nil
+        guard !name.isEmpty else { return }
+        Task {
+            guard let store = await repo.storeHandle() else { return }
+            let folder = RoutineFolder(name: name, sortOrder: folders.count)
+            try? await store.saveFolder(folder)
+            if let toMove { try? await store.setRoutineFolder(routineId: toMove.id, folderId: folder.id) }
+            await load()
+        }
+    }
+
+    private func startRename(_ f: RoutineFolder) {
+        renameText = f.name
+        renameFolder = f
+    }
+
+    private func commitRename() {
+        guard let f = renameFolder else { return }
+        let name = renameText.trimmingCharacters(in: .whitespaces)
+        renameFolder = nil
+        guard !name.isEmpty else { return }
+        Task {
+            guard let store = await repo.storeHandle() else { return }
+            try? await store.saveFolder(RoutineFolder(id: f.id, name: name, sortOrder: f.sortOrder))
+            await load()
+        }
+    }
+
+    /// Delete a folder; its routines stay (they fall to «Sin carpeta»).
+    private func deleteFolder(_ f: RoutineFolder) {
+        Task {
+            guard let store = await repo.storeHandle() else { return }
+            try? await store.deleteFolder(id: f.id)
+            await load()
+        }
+    }
+
+    private func move(_ r: Routine, to folderId: String?) {
+        Task {
+            guard let store = await repo.storeHandle() else { return }
+            try? await store.setRoutineFolder(routineId: r.id, folderId: folderId)
+            await load()
+        }
     }
 }
 
