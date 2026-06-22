@@ -18,6 +18,66 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
+    # Detalle de Vital — rediseño narrativo (Hoy → Tu historia → (Tu patrón) → Método)
+    # Hero overlines («{métrica} · hoy»)
+    "HRV · today": "HRV · hoy",
+    "Resting HR · today": "FC en reposo · hoy",
+    "Respiratory rate · today": "Frecuencia respiratoria · hoy",
+    "Blood oxygen · today": "Oxígeno en sangre · hoy",
+    "Heart rate · today": "Frecuencia cardiaca · hoy",
+    # Hero — lectura de hoy, palabra de veredicto y contexto de 7 días
+    "bpm average": "bpm promedio",
+    "min %@ · max %@ · resting %@ bpm": "mín %@ · máx %@ · reposo %@ bpm",
+    "min %@ · max %@ bpm": "mín %@ · máx %@ bpm",
+    "Normal for you": "Normal para ti",
+    "Unusual for you": "Inusual para ti",
+    "Healthy": "Sano",
+    "7-day level · %@": "nivel 7 días · %@",
+    "7-day level · %@ %@": "nivel 7 días · %@ %@",
+    # Header readings (re-encuadradas a «hoy», ya no «el promedio de la última semana»)
+    "Higher HRV usually means better recovery. What matters is your trend, not any single day's number.": "Más variabilidad suele ser mejor recuperación. Lo que importa es tu tendencia, no el número de un día.",
+    "Your pulse when your body is calm. Lower usually means better fitness; a rise above your normal can be fatigue.": "Tu pulso cuando el cuerpo está en calma. Más bajo suele ser mejor estado; una subida sobre tu normal puede ser fatiga.",
+    "One of your steadiest signals. A rise above your own normal can be an early sign that something is taxing you.": "De tus señales más estables. Una subida sobre tu propio normal puede ser señal temprana de que algo te está exigiendo.",
+    "The oxygen in your blood, read at your wrist while you sleep. A healthy adult usually stays at 95% or above.": "El oxígeno en tu sangre, medido en la muñeca mientras duermes. Un adulto sano suele mantenerse en 95% o más.",
+    # Banda inline «hoy vs tu rango»
+    "your normal range · %lld nights": "tu rango normal · %lld noches",
+    "healthy zone ≥ 95%": "zona sana ≥ 95%",
+    "Healthy zone": "Zona sana",
+    # Overlines de sección
+    "Your story": "Tu historia",
+    "Your pattern": "Tu patrón",
+    "Your day": "Tu día",
+    "Reference range": "Rango de referencia",
+    # Tira de stats (celdas tocables)
+    "Average": "Promedio",
+    "Range": "Rango",
+    "Nights < 95%": "Noches < 95%",
+    "Nights below 95%": "Noches bajo 95%",
+    "of %lld": "de %lld",
+    "Min": "Mín",
+    "Max": "Máx",
+    # Disclosure de consistencia (lenguaje llano + mini-visual estable/variable)
+    "How alike your nights are to one another. \"Steady\" means they resemble each other. When HRV starts jumping from night to night — even while the average still looks high — it tends to get ahead of fatigue, before the number drops.": "Qué tan parecidas son tus noches entre sí. «Estable» significa que se parecen unas a otras. Cuando tu HRV empieza a saltar de una noche a otra —aunque el promedio siga alto— suele adelantarse a la fatiga, antes de que el número baje.",
+    "Steady · similar nights": "Estable · noches parecidas",
+    "Variable · precedes fatigue": "Variable · adelanta fatiga",
+    # SpO₂ — disclosure de la zona sana
+    "95% is the typical floor for a healthy adult — the same reference for everyone, not your personal baseline. Below 90% is considered low (hypoxemia). The wrist sensor is less precise than a medical oximeter, so read it as a trend.": "El 95% es el piso típico de un adulto sano — la misma referencia para todos, no tu base personal. Debajo de 90% se considera bajo (hipoxemia). El sensor de muñeca es menos preciso que un oxímetro médico, así que léelo como tendencia.",
+    # Tu patrón
+    "What moves it": "Qué la mueve",
+    "trend, not cause": "tendencia, no causa",
+    "Other signals from last night": "Otras señales de anoche",
+    "Resting HR %@": "FC en reposo %@",
+    # Temperatura de piel — rediseño narrativo
+    "Skin temperature · last night": "Temperatura de piel · anoche",
+    "First night warmer": "1.ª noche más cálida",
+    "%lld nights warmer": "%lld noches más cálidas",
+    "First night cooler": "1.ª noche más fría",
+    "%lld nights cooler": "%lld noches más frías",
+    "Your nightly baseline": "Tu base nocturna",
+    "typical swing · 0 = your baseline": "vaivén típico · 0 = tu base",
+    "Each night's deviation · the band is your typical swing (±your variation) · 0 is your baseline.": "Desviación de cada noche · la banda es tu vaivén típico (±tu variación) · 0 es tu base.",
+    "Variation": "Variación",
+    "Average and change": "Promedio y cambio",
     # FER-409 / 390 — Resumen post-sesión de fuerza + toggle «Guardar en Apple Salud»
     "Summary": "Resumen",
     "Effort": "Esfuerzo",
