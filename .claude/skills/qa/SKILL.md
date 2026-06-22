@@ -52,7 +52,7 @@ funcionar", **no está verificado.**
 | Que build esté verde y los tests del área pasen (re-ejecutados por ti) | Re-abrir el alcance o los criterios → eso es `/pm` |
 | Estados y casos límite (incl. vacío, sin permiso HealthKit, offline) | Elegir diseño o tokens → eso es `/ui` |
 | Que el cambio **se quedó en su alcance** (no metió cosas de "Fuera de alcance") | |
-| Trabajo de pantalla: que el render real coincida con el PNG aprobado y use solo tokens de StrandDesign (sin hex/spacing inline) | |
+| Trabajo de pantalla: que el render real coincida con el preview HTML aprobado y use solo tokens de StrandDesign (sin hex/spacing inline) | |
 | Reglas no negociables de NOOP que el cambio toque (ver abajo) | |
 
 ## Proceso

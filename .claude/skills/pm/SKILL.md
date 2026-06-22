@@ -114,16 +114,19 @@ abiertas). Banco de preguntas por tipo — elige las que apliquen:
 
 ### 4.5 Diseña la experiencia (UX) — solo carril pesado con pantalla
 Si el trabajo es **carril pesado** y toca UI (Feature con pantalla, o un flujo /
-estados nuevos), corre la **pasada de UX antes de redactar**: invoca la skill
-`/ux` (o delega en el
-subagente `ux`) con el contexto que llevas. La UX te devuelve el **flujo**, los
-**estados** (vacío, cargando, datos, error, **sin permiso HealthKit**,
-**offline/sin strap**), la **arquitectura de info**, el **copy es-MX** y la
-**accesibilidad**, más **criterios de aceptación de UX**. Inyecta todo eso en las
-secciones "Estados" y "Criterios de aceptación" del requerimiento — así el diseño
-de experiencia queda decidido aquí, no en el código. Para **carril ligero** (ajuste
-cosmético, copy, layout de una pantalla existente) y para bug / analytics / import
-/ performance / i18n / chore, **sáltate este paso**: resuelve estados y copy inline.
+estados nuevos), **lanza el subagente `ux` en paralelo**: no esperes a que termine
+para avanzar. Mientras trabaja, redacta las secciones estructurales del requerimiento
+(Contexto, Objetivo, Alcance técnico, Fuera de alcance, Reglas y lógica). Cuando
+el subagente devuelva su spec, inyecta su salida en las secciones "Estados" y
+"Criterios de aceptación". Así el diseño de experiencia queda decidido en el
+requerimiento sin bloquear la redacción.
+
+El subagente `ux` necesita: el contexto que llevas (qué pantalla, qué cambio, el
+`Carril`). Devuelve flujo, estados (incl. sin permiso HealthKit y offline/sin strap),
+arquitectura de info, copy es-MX y accesibilidad.
+
+Para **carril ligero** y para bug / analytics / import / performance / i18n / chore,
+**sáltate este paso**: resuelve estados y copy inline.
 
 ### 5. Redacta el requerimiento
 Usa la plantilla de abajo. Omite las secciones que no apliquen al tipo. El texto
