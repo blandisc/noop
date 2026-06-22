@@ -54,6 +54,8 @@ struct TodayView: View {
     /// Apple Salud when the measured Key Metrics are empty; `showDataSources` presents Data Sources
     /// so they can connect in one tap instead of hunting through the More tab. (FER-94)
     @EnvironmentObject var health: HealthKitBridge
+    /// Tab switcher — the «Explóralo en el Coach» handoff from the Detalle de Estrés (FER-452, mirrors Cuerpo).
+    @EnvironmentObject var tabRouter: TabRouter
     @State private var showDataSources = false
     /// Cuenta cada pull-to-refresh para disparar la háptica declarativa (`.sensoryFeedback`) al
     /// provocar el gesto de sincronización (FER-204).
@@ -119,6 +121,9 @@ struct TodayView: View {
     @State private var sleepDetail: SleepDetailItem? = nil
     @State private var strainDetail: StrainDetailItem? = nil
     @State private var stressDetail: StressDetailItem? = nil
+    /// The «mapa del día» driver (EventKit + intraday curve), built fresh when the Detalle de Estrés opens
+    /// from Today — so it shows the SAME chart + moments + patterns as Cuerpo (FER-452).
+    @State private var stressDayMap: CalendarDayMap? = nil
     @State private var metricSpec: MetricDetailSpec? = nil
 
     // THE single grid definition — every tile group reuses it so margins line up.
@@ -276,7 +281,14 @@ struct TodayView: View {
                                    curveLoader: { await loadStrainCurve() })
             }
             .sheet(item: $stressDetail) { item in
-                StressDetailScreen(theme: theme, model: item.model)
+                // SAME rich detail Cuerpo presents — the «mapa del día» (chart + moments) + patterns +
+                // the Coach handoff, wired through the shared `StressDayMapPresenter` (FER-452).
+                StressDetailScreen(theme: theme, model: item.model, dayMap: stressDayMap,
+                                   patternsLoader: { await StressDayMapPresenter.timeOfDayPatterns(
+                                       repo: repo, maxHR: model.profile.hrMax, restingHR: stressRestingHR) },
+                                   eventPatternsLoader: { await StressDayMapPresenter.eventPatterns(
+                                       repo: repo, map: stressDayMap) },
+                                   onExploreInCoach: { stressDetail = nil; tabRouter.select(.coach) })
             }
             .sheet(item: $metricSpec) { spec in
                 MetricDetailScreen(
@@ -333,6 +345,12 @@ struct TodayView: View {
         )
     }
 
+    /// Today's resting HR for the «mapa del día» (resolved, with the engine's default as the floor) — the
+    /// one input the shared `StressDayMapPresenter` can't derive itself. Same resolution Cuerpo uses. (FER-452)
+    private var stressRestingHR: Double {
+        resolveMeasured { $0.restingHr.map(Double.init) }?.value ?? StrainScorer.defaultRestingHR
+    }
+
     /// The "Ver más" hand-off for a metric: returns nil when there's no rich detail destination yet
     /// (SpO₂ / Heart Rate → no link shown). Otherwise returns a closure that defers presenting
     /// the rich detail until the summary dismisses (`pendingSeeMore` + `metricDetail = nil`). The detail
@@ -361,7 +379,11 @@ struct TodayView: View {
                     days: repo.days, today: repo.today, loaded: repo.loaded))
             }
         case "stress":
-            present = { stressDetail = StressDetailItem(model: stress) }
+            present = {
+                stressDayMap = StressDayMapPresenter.make(
+                    repo: repo, maxHR: model.profile.hrMax, restingHR: stressRestingHR)
+                stressDetail = StressDetailItem(model: stress)
+            }
         case "hrv":
             present = { metricSpec = .hrv(resolveMeasured { $0.avgHrv }?.value) }
         case "rhr":
@@ -2093,6 +2115,7 @@ struct TodayView: View {
 
     return TodayView()
         .environmentObject(repo)
+        .environmentObject(TabRouter())
         #if os(iOS)
         // iOS TodayView reads AppModel (first-launch "Scan for strap" CTA) and HealthKitBridge (the
         // Apple Health connect nudge); inject both so the iOS canvas renders instead of trapping on a
