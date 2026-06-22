@@ -46,6 +46,7 @@ final class Repository: ObservableObject {
         /// these so a partial-connection day shows Apple's HRV instead of a gap; `days` stays strap-only.
         var displayDays: [DailyMetric] = []
         var sleeps: [CachedSleepSession] = []
+        var appleSleeps: [CachedSleepSession] = []   // FER-486: Apple Health sleep sessions with a real stage timeline (band-uncovered nights), for the Detalle de Sueño hypnogram
         var importedSleep: [String: ImportedSleepFigures] = [:]
         /// Days whose surfaced daily row came from Apple Health (no strap coverage), so Trends/Sleep
         /// can badge the source without `DailyMetric` carrying a source column. (FER-62)
@@ -72,6 +73,9 @@ final class Repository: ObservableObject {
     var displayDays: [DailyMetric] { dashboard.displayDays }
     /// Cached sleep sessions, oldest→newest.
     var sleeps: [CachedSleepSession] { dashboard.sleeps }
+    /// Apple Health sleep sessions carrying a real per-epoch stage timeline (FER-486), for nights the
+    /// band didn't cover — the Detalle de Sueño draws a full hypnogram from these.
+    var appleSleeps: [CachedSleepSession] { dashboard.appleSleeps }
     /// Imported (export-verbatim) sleep figures by day. Empty until a WHOOP import lands.
     var importedSleep: [String: ImportedSleepFigures] { dashboard.importedSleep }
     var loaded: Bool { dashboard.loaded }
@@ -195,6 +199,11 @@ final class Repository: ObservableObject {
         let compSleepRaw = (try? await store.sleepSessions(deviceId: computedDeviceId, from: lo, to: hi, limit: 4000)) ?? []
         let impSleep = dataSourceMode.usesWhoop ? impSleepRaw : []
         let compSleep = dataSourceMode.usesWhoop ? compSleepRaw : []
+        // FER-486: Apple Health sleep sessions (real per-epoch stage timeline), gated on the mode. The band
+        // wins per night, so the appleSleeps surfaced to the Detalle drop any overlapping a strap session.
+        let appleSleepRaw = dataSourceMode.usesAppleHealth ? ((try? await store.sleepSessions(deviceId: "apple-health", from: lo, to: hi, limit: 4000)) ?? []) : []
+        let strapSleeps = Self.mergeSleep(imported: impSleep, computed: compSleep)
+        let appleSleeps = Self.appleSleepsNotCoveredByStrap(apple: appleSleepRaw, strap: strapSleeps)
 
         // Export-verbatim sleep figures (long-format metricSeries rows from WhoopImporter).
         // The Detalle de Sueño prefers these per day over its APPROXIMATE recomputations.
@@ -218,7 +227,8 @@ final class Repository: ObservableObject {
         self.dashboard = DashboardData(
             days: merged.days,
             displayDays: merged.displayDays,
-            sleeps: Self.mergeSleep(imported: impSleep, computed: compSleep),
+            sleeps: strapSleeps,
+            appleSleeps: appleSleeps,
             importedSleep: fig,
             appleHealthDays: merged.appleDays,
             storedStrapDays: storedStrap,
@@ -315,13 +325,39 @@ final class Repository: ObservableObject {
     /// collision), oldest first.
     func sleepSessions(from: Int, to: Int, limit: Int = 100) async -> [CachedSleepSession] {
         guard let store = await ensureStore() else { return [] }
-        // FER-484: in appleHealthOnly the strap is excluded from reads (Apple sleep sessions arrive in F3).
+        // FER-484/486: the mode filters which sources are read. Strap (imported + on-device computed) is
+        // gated on usesWhoop; Apple Health sleep sessions (FER-486, per-night stage timeline) on usesAppleHealth.
         let imported = dataSourceMode.usesWhoop ? ((try? await store.sleepSessions(deviceId: deviceId, from: from, to: to, limit: limit)) ?? []) : []
         let computed = dataSourceMode.usesWhoop ? ((try? await store.sleepSessions(deviceId: computedDeviceId, from: from, to: to, limit: limit)) ?? []) : []
+        let apple = dataSourceMode.usesAppleHealth ? ((try? await store.sleepSessions(deviceId: "apple-health", from: from, to: to, limit: limit)) ?? []) : []
+        return Self.mergeSleepSessions(imported: imported, computed: computed, apple: apple)
+    }
+
+    /// Merge sleep sessions across sources. Strap is the base — imported (real export) wins over the
+    /// on-device computed row on the same `startTs`. An Apple Health session is added ONLY if no strap
+    /// session overlaps its `[startTs, endTs]` span: the band wins PER NIGHT (FER-486), because a strap
+    /// night and Apple's session for the same sleep have different `startTs` (so a startTs dedup can't
+    /// catch them). Pure + static so `SleepSessionMergeTests` can pin it; with `apple == []` it is the
+    /// prior strap-only merge byte-for-byte (regression zero).
+    static func mergeSleepSessions(imported: [CachedSleepSession], computed: [CachedSleepSession],
+                                   apple: [CachedSleepSession]) -> [CachedSleepSession] {
         var byStart: [Int: CachedSleepSession] = [:]
         for s in computed { byStart[s.startTs] = s }
         for s in imported { byStart[s.startTs] = s }   // imported (real export) wins on the same start
-        return byStart.values.sorted { $0.startTs < $1.startTs }
+        let strap = Array(byStart.values)
+        func overlapsStrap(_ a: CachedSleepSession) -> Bool {
+            strap.contains { $0.startTs <= a.endTs && $0.endTs >= a.startTs }
+        }
+        let merged = strap + apple.filter { !overlapsStrap($0) }
+        return merged.sorted { $0.startTs < $1.startTs }
+    }
+
+    /// Apple Health sleep sessions to surface in the Detalle when the band didn't cover that night — the
+    /// band wins per night, so an Apple session overlapping ANY strap session's span is dropped (FER-486).
+    /// (Strap and Apple have different startTs for the same sleep, so this is interval-overlap, not startTs.)
+    static func appleSleepsNotCoveredByStrap(apple: [CachedSleepSession], strap: [CachedSleepSession]) -> [CachedSleepSession] {
+        apple.filter { a in !strap.contains { $0.startTs <= a.endTs && $0.endTs >= a.startTs } }
+             .sorted { $0.startTs < $1.startTs }
     }
 
     // MARK: - Metric explorer reads (generic substrate)

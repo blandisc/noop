@@ -419,7 +419,8 @@ struct TodayView: View {
         case "sleep":
             present = {
                 sleepDetail = SleepDetailItem(model: SleepDetailModel.build(
-                    days: repo.days, sleeps: repo.sleeps, importedSleep: repo.importedSleep,
+                    days: repo.days, sleeps: repo.sleeps, appleSleeps: repo.appleSleeps,
+                    importedSleep: repo.importedSleep,
                     appleHealthDays: repo.appleHealthDays, loaded: repo.loaded,
                     todayKey: Repository.localDayKey(Date())))
             }

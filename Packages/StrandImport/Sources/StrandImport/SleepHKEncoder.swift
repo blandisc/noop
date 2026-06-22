@@ -8,6 +8,12 @@ public struct SleepHKSample: Equatable {
     public let start: Date
     public let end: Date
     public let dedupeKey: String  // value for HKMetadataKeyExternalUUID
+
+    // Explicit public init — a public struct's memberwise init is internal, so `HealthKitBridge`
+    // (CenitApp module) couldn't construct these from `HKCategorySample`s without it (FER-486).
+    public init(hkValue: Int, start: Date, end: Date, dedupeKey: String) {
+        self.hkValue = hkValue; self.start = start; self.end = end; self.dedupeKey = dedupeKey
+    }
 }
 
 /// Maps `CachedSleepSession` records from WhoopStore into `SleepHKSample` descriptors
