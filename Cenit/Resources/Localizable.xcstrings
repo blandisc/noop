@@ -27372,6 +27372,16 @@
         }
       }
     },
+    "Tap again to see everything": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca otra vez para ver todo"
+          }
+        }
+      }
+    },
     "Tap to edit": {
       "localizations": {
         "en": {
@@ -28713,6 +28723,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cronometrando, %lld segundos. Objetivo %lld segundos."
+          }
+        }
+      }
+    },
+    "Tint lens": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lente del tinte"
           }
         }
       }
