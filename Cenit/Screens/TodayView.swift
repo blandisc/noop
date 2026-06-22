@@ -857,17 +857,114 @@ struct TodayView: View {
 
     // MARK: - Pager de 2 páginas (FER-465)
 
-    /// Página 1 del pager: el cuerpo del veredicto del día en palabras — la palabra del veredicto + «i» +
-    /// puentes/salvedades (`heroBody`) y las afordancias de onboarding (`heroFooter`), movidos TAL CUAL
-    /// desde el héroe. Cada modo (veredicto / descargando / base Apple / calibrando / espera) sigue
-    /// mostrando su copy aquí. (F3 sustituye este contenido por el Daily Brief con su motor de contenido.)
+    /// Página 1 del pager. Con veredicto (FER-470) muestra el **Daily Brief** —titular en palabras +
+    /// porqué + 2–3 viñetas, armado por `DailyBriefEngine`—; en los demás estados (descargando / base
+    /// Apple / calibrando / espera) conserva el copy honesto de `heroBody` + `heroFooter`. El motor
+    /// devuelve `nil` sin veredicto, así que el `else` cubre también ese caso de forma natural.
     @ViewBuilder private var verdictPage: some View {
         let state = heroState
-        VStack(spacing: NoopMetrics.space2) {
-            heroBody(state)
-            heroFooter(state)
+        if state == .verdict, let brief = dailyBrief {
+            dailyBriefView(brief)
+        } else {
+            VStack(spacing: NoopMetrics.space2) {
+                heroBody(state)
+                heroFooter(state)
+            }
+            .frame(maxWidth: .infinity, alignment: .top)
         }
-        .frame(maxWidth: .infinity, alignment: .top)
+    }
+
+    /// El Daily Brief del día (FER-470), armado desde el veredicto memoizado + la recuperación de hoy y su
+    /// media reciente (derivada con el MISMO `baselineDays()`/`history()` que los tiles) + el sueño de
+    /// anoche. `nil` sin veredicto → la página 1 cae al copy honesto.
+    private var dailyBrief: DailyBrief? {
+        let recBase = history(baselineDays()) { $0.recovery }
+        let recoveryBaseline = recBase.isEmpty ? nil : recBase.reduce(0, +) / Double(recBase.count)
+        let sleepMin = resolveMeasured(todayOnly: true) { $0.totalSleepMin }?.value
+        return DailyBriefEngine.make(readiness: readiness,
+                                     recovery: repo.today?.recovery,
+                                     recoveryBaseline: recoveryBaseline,
+                                     sleepMinutes: sleepMin)
+    }
+
+    /// El Daily Brief renderizado: titular en TINTA (el color vive en el dato, no en la palabra) que
+    /// abre el porqué (`WhyVerdictSheet`, como antes la palabra del veredicto), el porqué, y las viñetas.
+    /// Las viñetas van SIN chevron en F3 — su detalle por viñeta es F4.
+    private func dailyBriefView(_ brief: DailyBrief) -> some View {
+        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            Button { showWhyVerdict = true } label: {
+                HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space2) {
+                    Text(brief.titular)
+                        .font(StrandFont.title2).fontWeight(.semibold)
+                        .foregroundStyle(theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Image(systemName: "info.circle").font(.system(size: 15))
+                        .foregroundStyle(theme.inkTertiary)
+                    Spacer(minLength: 0)
+                }
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint(Text("Abre por qué el veredicto se lee así"))
+
+            Text(brief.why).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            VStack(spacing: 0) {
+                ForEach(Array(brief.bullets.enumerated()), id: \.offset) { i, b in
+                    briefBulletRow(b, showTopHairline: i > 0)
+                }
+            }
+            .padding(.top, NoopMetrics.space1)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Una viñeta del Daily Brief: glifo SF tintado por el flag (misma fuente de color que la palabra del
+    /// veredicto, vía `flagColor`) + lead semibold + sub con la cifra. Separador hairline entre viñetas.
+    private func briefBulletRow(_ b: DailyBrief.Bullet, showTopHairline: Bool) -> some View {
+        HStack(spacing: NoopMetrics.gap) {
+            Image(systemName: briefGlyph(b.kind))
+                .font(.system(size: 18))
+                .foregroundStyle(flagColor(b.flag))
+                .frame(width: 22)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(b.lead).font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
+                Text(b.sub).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, NoopMetrics.space2)
+        .overlay(alignment: .top) {
+            if showTopHairline { Rectangle().fill(theme.hairline).frame(height: 0.5) }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// SF Symbol por tema de viñeta (la presentación vive en la app, no en el motor puro).
+    private func briefGlyph(_ kind: DailyBrief.BulletKind) -> String {
+        switch kind {
+        case .sleep:    return "moon.fill"
+        case .recovery: return "arrow.up"
+        case .hrv:      return "waveform.path.ecg"
+        case .rhr:      return "bed.double.fill"
+        case .respRate: return "lungs.fill"
+        case .skinTemp: return "thermometer.medium"
+        case .acwr:     return "bolt.fill"
+        }
+    }
+
+    /// Color por `Flag`, la MISMA fuente que `WhyVerdictSheet`/la palabra del veredicto: good→verdict,
+    /// watch→warning, bad→critical, neutral→tinta terciaria. (FER-470)
+    private func flagColor(_ f: ReadinessEngine.Flag) -> Color {
+        switch f {
+        case .good:    return theme.verdict
+        case .neutral: return theme.inkTertiary
+        case .watch:   return theme.warning
+        case .bad:     return theme.critical
+        }
     }
 
     /// Página 2 del pager: «Métricas de hoy» tal cual — o la tarjeta de fuentes si no hay ninguna
