@@ -115,6 +115,10 @@ public final class BLEManager: NSObject, ObservableObject {
     /// tapping "Sync" dozens of times. Pure policy (`WhoopProtocol`); re-armed on every non-`.drain`
     /// (rate-limited) start in `requestSync`, consumed in `exitBackfilling`.
     private var drainPolicy = DrainContinuationPolicy()
+    /// FER-481: counts consecutive completed-but-empty offloads; feeds `BackfillPolicy`'s backoff so an
+    /// off-wrist strap that only emits EVENT packets isn't re-offloaded console-only every 90 s. Reset by
+    /// the first session that banks a real row (in `exitBackfilling`).
+    private var emptyTracker = EmptySyncTracker()
     /// Safety-net detector: strap reports newer data than us AND our frontier frozen 10 min ⇒ flag for
     /// reboot. behindGapSeconds avoids false positives when off-wrist / caught up. Insurance only.
     private var stuckDetector = StuckStrapDetector(stuckAfterSeconds: 600, behindGapSeconds: 300)
@@ -783,6 +787,9 @@ public final class BLEManager: NSObject, ObservableObject {
             state.lastSyncError = nil
             state.syncCompletedThisSession = true   // unlocks the receipt + verdict (FER-83)
             UserDefaults.standard.set(state.lastSyncedAt, forKey: "lastSyncedAt")
+            // FER-481: a completed session with 0 banked rows extends the empty streak (off-wrist /
+            // not-banking strap); a real row resets it. Drives BackfillPolicy's automatic-trigger backoff.
+            emptyTracker.record(rowsPersisted: rowsThisSession)
         case .interrupted(let message):
             state.lastSyncError = message
         case .silent:
@@ -965,8 +972,9 @@ public final class BLEManager: NSObject, ObservableObject {
             connected: state.connected, bonded: state.bonded, backfilling: backfilling) else { return }
         let now = Date().timeIntervalSince1970
         let last = UserDefaults.standard.object(forKey: BLEManager.backfillLastAtKey) as? Double
-        guard BackfillPolicy.shouldRun(trigger: trigger, now: now, lastBackfillAt: last) else {
-            log("Backfill: \(trigger) skipped (rate-limited; last \(last.map { Int(now - $0) } ?? -1)s ago)")
+        guard BackfillPolicy.shouldRun(trigger: trigger, now: now, lastBackfillAt: last,
+                                       emptyStreak: emptyTracker.streak) else {
+            log("Backfill: \(trigger) skipped (rate-limited; last \(last.map { Int(now - $0) } ?? -1)s ago; emptyStreak=\(emptyTracker.streak))")
             return
         }
         if beginBackfill() {
