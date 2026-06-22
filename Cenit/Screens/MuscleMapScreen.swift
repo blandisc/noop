@@ -44,6 +44,10 @@ struct MuscleMapScreen: View {
     @State private var loaded = false
     @State private var selected: MuscleSelection? = nil
     @State private var showMethod = false
+    /// The muscle the user tapped once — the «peek» (highlighted + a mini load indicator). A second tap
+    /// on the same muscle (or on the peek card) opens the full detail. `nil` = no peek; the figure falls
+    /// back to highlighting the most-loaded muscle.
+    @State private var peeked: String? = nil
 
     private static let trendDays = 84
 
@@ -61,6 +65,11 @@ struct MuscleMapScreen: View {
     }
     /// The most-loaded muscle (loads come back sorted by load, desc) — labels & outlines the figure.
     private var topMuscle: MuscleFatigueMap.MuscleLoad? { loads.first }
+    /// The muscle the floating label & figure outline point at: the active peek, else the most-loaded.
+    private var focused: MuscleFatigueMap.MuscleLoad? {
+        if let p = peeked { return loadByMuscle[p] ?? MuscleFatigueMap.MuscleLoad(muscle: p, load: 0, relative: 0, daysSinceLast: 0, state: .fresh, weeklySets: 0, band: .below) }
+        return topMuscle
+    }
     /// The muscles still in the loaded band — the hero's «still loaded today» line (most-loaded first).
     private var loadedMuscles: [MuscleFatigueMap.MuscleLoad] { loads.filter { $0.state == .loaded } }
 
@@ -73,10 +82,10 @@ struct MuscleMapScreen: View {
                         emptyState
                     } else {
                         hero
-                        lens
                         figures
                         ranking
                         method
+                        lensFooter
                     }
                 }
             }
@@ -96,7 +105,6 @@ struct MuscleMapScreen: View {
                 hits: hitsByMuscle[sel.muscle] ?? [],
                 recovery: recovery
             )
-            .presentationDetents([.large])
             .preferredColorScheme(.light)
         }
     }
@@ -259,28 +267,27 @@ struct MuscleMapScreen: View {
         return "Recovery is clear"
     }
 
-    // MARK: - Lens (recency of the tint)
+    // MARK: - Lens (recency of the tint) — discreet, at the foot
 
-    private var lens: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            HStack {
-                Text("Lens · tint recency").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Spacer()
-                Text("the weekly band is fixed").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            }
-            HStack(spacing: 6) {
+    /// A quiet inline control at the foot: the 3/7/14-day lens only recolors the figure's tint recency
+    /// (the weekly band stays fixed at 7 d), so it lives out of the main path — the sheet leads with
+    /// today's state, not a control.
+    private var lensFooter: some View {
+        HStack {
+            Text("Tint lens").font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+            Spacer()
+            HStack(spacing: 5) {
                 ForEach(MuscleFatigueMap.Window.allCases, id: \.rawValue) { w in
                     Button { withAnimation(StrandMotion.interactive) { window = w } } label: {
                         Text("\(w.days) d")
-                            .font(StrandFont.subhead)
+                            .font(StrandFont.caption)
                             .fontWeight(window == w ? .semibold : .regular)
-                            .foregroundStyle(window == w ? theme.ink : theme.inkSecondary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 6)
+                            .foregroundStyle(window == w ? theme.ink : theme.inkTertiary)
+                            .padding(.horizontal, 8).padding(.vertical, 3)
                             .background(
-                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                RoundedRectangle(cornerRadius: 7, style: .continuous)
                                     .fill(window == w ? theme.paper : .clear)
-                                    .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous)
                                         .strokeBorder(window == w ? theme.hairlineStrong : .clear, lineWidth: 1))
                             )
                     }
@@ -288,10 +295,9 @@ struct MuscleMapScreen: View {
                     .accessibilityLabel(Text("Window \(w.days) days"))
                 }
             }
-            .padding(3)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
         }
+        .padding(.top, 11)
+        .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 1) }
     }
 
     // MARK: - Figures (detailed anatomical silhouettes)
@@ -301,12 +307,19 @@ struct MuscleMapScreen: View {
             ZStack(alignment: .top) {
                 BodyFiguresView(theme: theme, loadByMuscle: loadByMuscle,
                                 maxLoad: loads.first?.load ?? 0,
-                                highlight: topMuscle?.muscle) { selected = MuscleSelection(muscle: $0) }
+                                highlight: focused?.muscle) { tapMuscle($0) }
                     .padding(.top, 10)
-                if let top = topMuscle { floatingLabel(top) }
+                if let f = focused { floatingLabel(f) }
             }
-            legend
-                .padding(.top, 6)
+            if let p = peeked {
+                peekCard(p).padding(.top, 4)
+                resetRow.padding(.top, 7)
+            } else {
+                legend.padding(.top, 6)
+                Text("Tap a muscle to see its load")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .padding(.top, 10)
+            }
         }
         .padding(EdgeInsets(top: 16, leading: 10, bottom: 12, trailing: 10))
         .frame(maxWidth: .infinity)
@@ -315,15 +328,94 @@ struct MuscleMapScreen: View {
             .strokeBorder(theme.hairline, lineWidth: 1))
     }
 
+    /// First tap on a muscle peeks it (highlight + mini indicator); a second tap on the same muscle
+    /// opens the full detail.
+    private func tapMuscle(_ muscle: String) {
+        if peeked == muscle {
+            selected = MuscleSelection(muscle: muscle)
+        } else {
+            withAnimation(StrandMotion.interactive) { peeked = muscle }
+        }
+    }
+
     private func floatingLabel(_ m: MuscleFatigueMap.MuscleLoad) -> some View {
         HStack(spacing: 7) {
-            Circle().fill(theme.muscleLoadColor(m.relative)).frame(width: 7, height: 7)
+            Circle().fill(loadByMuscle[m.muscle] != nil ? theme.muscleLoadColor(m.relative) : theme.hairlineStrong)
+                .frame(width: 7, height: 7)
             Text(MuscleAtlas.name(m.muscle)).font(StrandFont.caption).fontWeight(.semibold).foregroundStyle(theme.paper)
             Text(stateSuffix(m.state)).font(StrandFont.caption).foregroundStyle(theme.paper.opacity(0.7))
         }
         .padding(.horizontal, 11).padding(.vertical, 5)
         .background(theme.ink, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .accessibilityElement(children: .combine)
+    }
+
+    /// The mini load indicator for the peeked muscle — a tap target into the full detail.
+    private func peekCard(_ muscle: String) -> some View {
+        let load = loadByMuscle[muscle]
+        let relative = load?.relative ?? 0
+        let state = load?.state ?? .fresh
+        return Button { selected = MuscleSelection(muscle: muscle) } label: {
+            HStack(spacing: 10) {
+                Circle().fill(load != nil ? theme.muscleLoadColor(relative) : theme.hairlineStrong)
+                    .frame(width: 9, height: 9)
+                VStack(spacing: 5) {
+                    HStack {
+                        Text(MuscleAtlas.name(muscle)).font(StrandFont.body).fontWeight(.semibold).foregroundStyle(theme.ink)
+                        Spacer()
+                        Text(stateWord(state)).font(StrandFont.caption).fontWeight(.semibold)
+                            .foregroundStyle(load != nil ? stateColor(state) : theme.inkTertiary)
+                    }
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 3).fill(theme.hairline)
+                            RoundedRectangle(cornerRadius: 3).fill(theme.muscleLoadColor(relative))
+                                .frame(width: max(load != nil ? 6 : 0, geo.size.width * relative))
+                        }
+                    }
+                    .frame(height: 6)
+                }
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+            }
+            .padding(.horizontal, 11).padding(.vertical, 9)
+            .background(theme.paper, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 4)
+        .accessibilityHint(Text("Opens the full detail"))
+    }
+
+    private var resetRow: some View {
+        HStack {
+            Text("Tap again to see everything").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            Spacer()
+            Button { withAnimation(StrandMotion.interactive) { peeked = nil } } label: {
+                HStack(spacing: 3) {
+                    Image(systemName: "arrow.uturn.backward").font(.system(size: 11, weight: .semibold))
+                    Text("Reset").font(StrandFont.caption)
+                }
+                .foregroundStyle(theme.inkSecondary)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 4)
+    }
+
+    private func stateWord(_ s: MuscleFatigueMap.LoadState) -> LocalizedStringKey {
+        switch s {
+        case .fresh: return "fresh"
+        case .moderate: return "moderate"
+        case .loaded: return "loaded"
+        }
+    }
+
+    private func stateColor(_ s: MuscleFatigueMap.LoadState) -> Color {
+        switch s {
+        case .fresh: return theme.verdict
+        case .moderate: return theme.warning
+        case .loaded: return theme.muscleLoadColor(1)
+        }
     }
 
     private func stateSuffix(_ s: MuscleFatigueMap.LoadState) -> LocalizedStringKey {
@@ -346,9 +438,6 @@ struct MuscleMapScreen: View {
                 Spacer()
                 Text("Loaded").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
             }
-            Text("Tap a muscle to see its load")
-                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                .padding(.top, 5)
         }
         .padding(.horizontal, 6)
     }
@@ -356,16 +445,24 @@ struct MuscleMapScreen: View {
     // MARK: - Ranking
 
     private var ranking: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             Text("Most loaded").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             ForEach(loads, id: \.muscle) { m in
                 Button { selected = MuscleSelection(muscle: m.muscle) } label: {
-                    HStack(spacing: 10) {
-                        Text(MuscleAtlas.name(m.muscle))
-                            .font(StrandFont.body)
-                            .fontWeight(m.state == .fresh ? .semibold : .regular)
-                            .foregroundStyle(m.state == .fresh ? theme.verdict : theme.ink)
-                            .frame(width: 80, alignment: .leading)
+                    VStack(spacing: 6) {
+                        HStack(alignment: .firstTextBaseline) {
+                            Text(MuscleAtlas.name(m.muscle))
+                                .font(StrandFont.body)
+                                .fontWeight(m.state == .fresh ? .semibold : .regular)
+                                .foregroundStyle(m.state == .fresh ? theme.verdict : theme.ink)
+                                .lineLimit(1).minimumScaleFactor(0.85)
+                            Spacer(minLength: 8)
+                            if m.state == .fresh {
+                                Text("fresh").font(StrandFont.caption).fontWeight(.semibold).foregroundStyle(theme.verdict)
+                            } else {
+                                Text(lastText(m.daysSinceLast)).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                            }
+                        }
                         GeometryReader { geo in
                             ZStack(alignment: .leading) {
                                 RoundedRectangle(cornerRadius: 4).fill(theme.hairline)
@@ -375,15 +472,6 @@ struct MuscleMapScreen: View {
                             }
                         }
                         .frame(height: 7)
-                        Group {
-                            if m.state == .fresh {
-                                Text("fresh").foregroundStyle(theme.verdict).fontWeight(.semibold)
-                            } else {
-                                Text(lastText(m.daysSinceLast)).foregroundStyle(theme.inkSecondary)
-                            }
-                        }
-                        .font(StrandFont.caption)
-                        .frame(width: 58, alignment: .trailing)
                     }
                 }
                 .buttonStyle(.plain)
@@ -579,6 +667,11 @@ private struct MuscleDetailView: View {
     private var weeklySets: Double { load?.weeklySets ?? 0 }
     private var state: MuscleFatigueMap.LoadState { load?.state ?? .fresh }
 
+    /// The measured content height — drives a fitted sheet detent so the sheet rises only as far as the
+    /// content needs (with `.large` as a fallback when the content is taller than the fitted height, e.g.
+    /// large Dynamic Type).
+    @State private var contentHeight: CGFloat = 420
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: NoopMetrics.gap) {
@@ -600,8 +693,14 @@ private struct MuscleDetailView: View {
             .padding(.top, 24)
             .padding(.bottom, NoopMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .background(GeometryReader { proxy in
+                Color.clear.onAppear { contentHeight = proxy.size.height }
+                    .onChange(of: proxy.size.height) { _, h in contentHeight = h }
+            })
         }
         .background(theme.paper.ignoresSafeArea())
+        .presentationDetents([.height(contentHeight), .large])
+        .presentationDragIndicator(.visible)
     }
 
     /// The state hue. «Fresh» uses the map's sage (the head of `muscleLoadRamp`) so the fresh→loaded
