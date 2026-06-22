@@ -160,6 +160,9 @@ struct TodayView: View {
     @State private var memoReadiness: ReadinessEngine.Readiness?
     /// Los conteos de noches derivados de HRV, memoizados (ver `DerivedHrvCounts`).
     @State private var memoCounts: DerivedHrvCounts?
+    /// El nivel del veredicto de AYER, memoizado (FER-475): da continuidad en la página 1 «en espera»
+    /// («Ayer cerraste en Equilibrado») cuando aún no hay lectura de hoy. `nil`/insufficient → no se muestra.
+    @State private var memoYesterdayLevel: ReadinessEngine.Level?
 
     /// Los tres conteos de noches que el héroe/veredicto leen, agrupados para sembrarlos de una sola
     /// pasada sobre `repo.days` (antes cada propiedad remapeaba la historia por su cuenta).
@@ -193,6 +196,10 @@ struct TodayView: View {
     private func recomputeDerived() {
         memoReadiness = ReadinessEngine.evaluate(days: repo.days, today: Repository.localDayKey(Date()))
         memoCounts = computeHrvCounts()
+        // FER-475: el veredicto de ayer, para la línea de continuidad de la página 1 «en espera». Una vez
+        // por refresh (no por frame), junto al de hoy.
+        let yKey = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date())
+        memoYesterdayLevel = ReadinessEngine.evaluate(days: repo.days, today: yKey).level
         #if DEBUG
         // FER-172: prueba de que el veredicto se recalcula UNA vez por refresh. En scroll/animación/
         // ticks de HR esta línea NO debe reaparecer; solo sale una vez por `seq`. Compila fuera en release.
@@ -202,6 +209,13 @@ struct TodayView: View {
 
     /// Los conteos memoizados; cae a un cálculo en línea solo el primer frame (memo aún nil).
     private var hrvCounts: DerivedHrvCounts { memoCounts ?? computeHrvCounts() }
+
+    /// El nivel del veredicto de ayer, o `nil` si no hubo veredicto (sin historial suficiente). Para la
+    /// línea «Ayer cerraste en …» de la página 1 «en espera» (FER-475).
+    private var yesterdayVerdict: ReadinessEngine.Level? {
+        guard let l = memoYesterdayLevel, l != .insufficient else { return nil }
+        return l
+    }
 
     /// Recovery cold-start: recovery is nil until the HRV baseline crosses the seed gate
     /// (Baselines.minNightsSeed valid nights). While calibrating, this is the count of nights
@@ -862,18 +876,44 @@ struct TodayView: View {
         }
     }
 
-    /// Página 1 cuando aún no hay veredicto (FER-475): de madrugada / esperando el sync matutino, el Brief
-    /// no tiene nada que decir todavía. En vez del texto suelto que se veía vacío, una transición diseñada:
-    /// el copy honesto del estado (`heroBody`/`heroFooter`) + un puente claro a Métricas, donde sí hay algo
-    /// que ver ahora. El pager además ABRE en Métricas en este caso (`maybeAutoLandMetrics`); este puente
-    /// cubre cuando el usuario regresa al Brief.
+    /// Página 1 cuando aún no hay veredicto (FER-475). Para los estados de «aún no hay lectura» (`waiting`/
+    /// `importedBaseline`) muestra un Brief «en espera» ENRIQUECIDO: encabezado + titular honesto + por qué
+    /// llega + la continuidad «Ayer cerraste en …» + el puente a Métricas (NADA del copy viejo de «base
+    /// lista / strap»). Para `downloading` (la noche está bajando) y `calibrating` (onboarding de las
+    /// primeras noches) conserva su copy honesto de `heroBody` —siguen siendo precisos— + el puente.
     @ViewBuilder private func transitionalBriefView(_ state: HeroState) -> some View {
-        VStack(spacing: NoopMetrics.gap) {
-            heroBody(state)
-            heroFooter(state)
+        switch state {
+        case .waiting, .importedBaseline:
+            waitingBrief(state)
+        default:   // downloading / calibrating (y .verdict no llega aquí)
+            VStack(spacing: NoopMetrics.gap) {
+                heroBody(state)
+                heroFooter(state)
+                metricsBridge
+            }
+            .frame(maxWidth: .infinity, alignment: .top)
+        }
+    }
+
+    /// El Brief «en espera» enriquecido (FER-475): encabezado «DAILY BRIEF · EN ESPERA» + «Aún no hay
+    /// lectura de hoy» + cuándo llega + «Ayer cerraste en …» (si hubo veredicto ayer) + el puente a
+    /// Métricas. Sin el copy viejo de «tu base está lista / usa el strap».
+    private func waitingBrief(_ state: HeroState) -> some View {
+        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            briefHeader(now: false)
+            Text("Aún no hay lectura de hoy")
+                .font(StrandFont.title2).fontWeight(.semibold).foregroundStyle(theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(strapSeen
+                 ? "Tu veredicto llega con el primer sync de la mañana, cuando sincronices la noche."
+                 : "Conecta tu banda o Apple Salud y tu veredicto empezará a leerse cada mañana.")
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            if let y = yesterdayVerdict { yesterdayLine(y) }
+            heroFooter(state)   // conserva el CTA «Buscar strap» en base-Apple sin banda; vacío en espera
             metricsBridge
         }
-        .frame(maxWidth: .infinity, alignment: .top)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// El puente a «Métricas de hoy» desde la página 1 transicional: desliza el pager a la página 2 (donde
@@ -925,6 +965,7 @@ struct TodayView: View {
     /// tocables (FER-475) y el bloque atenuado «Más tarde hoy».
     private func dailyBriefView(_ brief: DailyBrief) -> some View {
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            briefHeader(now: true)
             Button { showWhyVerdict = true } label: {
                 HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space2) {
                     Text(brief.titular)
@@ -954,6 +995,32 @@ struct TodayView: View {
             laterTodaySection
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// El encabezado de la página 1 (FER-475): overline «DAILY BRIEF» · punto · «AHORA» (verde, con
+    /// veredicto) o «EN ESPERA» (tinta, sin lectura) + una regla hairline. Fiel al handoff.
+    private func briefHeader(now: Bool) -> some View {
+        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+            HStack(spacing: NoopMetrics.space2) {
+                Text("Daily Brief").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Circle().fill(theme.hairlineStrong).frame(width: 3, height: 3)
+                Text(now ? "Ahora" : "En espera").instrumentoOverline()
+                    .foregroundStyle(now ? theme.verdict : theme.inkTertiary)
+            }
+            Rectangle().fill(theme.hairline).frame(height: 0.5)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isHeader)
+    }
+
+    /// La línea de continuidad «Ayer cerraste en …» (FER-475): el nivel del veredicto de ayer en su color.
+    private func yesterdayLine(_ level: ReadinessEngine.Level) -> some View {
+        HStack(spacing: NoopMetrics.space2) {
+            Text("Ayer cerraste en").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+            Text(stateLabel(level)).font(StrandFont.subhead.weight(.semibold))
+                .foregroundStyle(verdictDataColor(level))
+        }
+        .accessibilityElement(children: .combine)
     }
 
     /// El bloque «Más tarde hoy» (FER-475): un adelanto ATENUADO de lo que vendrá (tu comida, tu
@@ -1642,22 +1709,28 @@ struct TodayView: View {
         }
     }
 
-    /// Encabezado de «Métricas de hoy»: overline + fila de estado (punto + palabra en color de nivel) a la
-    /// izquierda; píldora de pulso vivo (si hay strap visto) + botón «i» a la derecha. Con `insufficient`
-    /// (sin veredicto) NO inventa estado: solo el overline + la regla hairline de antes.
+    /// Encabezado de «Métricas de hoy»: overline + fila de estado a la izquierda; píldora de pulso vivo
+    /// (si hay strap visto) + botón «i» a la derecha. Con veredicto, la fila es la palabra del nivel en su
+    /// color (title2); sin veredicto (FER-475) dice «Aún no hay lectura de hoy» (punto en hairline, tinta
+    /// secundaria) — el dueño pidió que el estado de «sin lectura» también viva aquí.
     private var metricsHeader: some View {
         let level = readiness.level
         return HStack(alignment: .top, spacing: NoopMetrics.gap) {
             VStack(alignment: .leading, spacing: NoopMetrics.space2) {
                 Text("Métricas de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                if level != .insufficient {
-                    HStack(spacing: NoopMetrics.space2) {
+                HStack(spacing: NoopMetrics.space2) {
+                    if level == .insufficient {
+                        Circle().fill(theme.hairlineStrong).frame(width: 9, height: 9)
+                        Text("Aún no hay lectura de hoy").font(StrandFont.headline)
+                            .foregroundStyle(theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    } else {
                         Circle().fill(verdictDataColor(level)).frame(width: 9, height: 9)
                         Text(stateLabel(level)).font(StrandFont.title2).fontWeight(.semibold)
                             .foregroundStyle(verdictDataColor(level))
                     }
-                    .accessibilityElement(children: .combine)
                 }
+                .accessibilityElement(children: .combine)
             }
             Spacer(minLength: NoopMetrics.space2)
             if strapSeen { pulsePill }
@@ -1688,7 +1761,8 @@ struct TodayView: View {
 
     /// La escala de 4 segmentos (Desgastado · Exigido · Equilibrado · A punto). Solo el segmento del nivel
     /// actual se enciende en su color; el resto en hairline. Sitúa el estado en el continuo sin pintar un
-    /// semáforo completo (color solo en el dato). Con `insufficient` no se muestra (lo decide el llamador).
+    /// semáforo completo (color solo en el dato). Sin veredicto (`insufficient`) se muestra APAGADA —los 4
+    /// elementos en hairline, ninguno activo— por pedido del dueño (FER-475).
     private var stateScale: some View {
         let order: [ReadinessEngine.Level] = [.rundown, .strained, .balanced, .primed]
         let current = readiness.level
@@ -1750,7 +1824,7 @@ struct TodayView: View {
             // la escala de 4 segmentos (oculta sin veredicto). El pulso vivo se trajo aquí desde el héroe
             // (FER-282 lo tenía en la línea del veredicto). Rejilla fija 2×8 (2 columnas, 8 tiles), intacta.
             metricsHeader
-            if readiness.level != .insufficient { stateScale }
+            stateScale
             LazyVGrid(columns: tileGrid, alignment: .leading, spacing: NoopMetrics.gap) {
                 // Esfuerzo del día — carga del día, sin valencia (Δ en tinta neutra).
                 metricTile(TodayMetricTile(
