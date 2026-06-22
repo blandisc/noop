@@ -19,11 +19,13 @@ private struct TodayScrollOffsetKey: PreferenceKey {
 //
 // Composition (top → bottom), all inside `iosBody`:
 //   (a) HEADER — compact date overline + strap battery (`headerBlock`).
-//   (b) HERO   — the unified state instrument (`heroInstrument`): a 24h `DiurnalDial` with the
-//                recovery numeral concentric inside it, the verdict word, and a per-mode foot.
-//                One skeleton covers four modes (verdict / Apple-seeded base / calibrating / waiting).
-//   (c) METRICS — «Métricas de hoy» (`iosMetricsSection`): a 2×4 grid of themed tiles, each value
-//                in its data colour with a Δ-vs-7-day-average and a p25–p75 typical-range mini-band.
+//   (b) DIAL   — the fixed instrument head (`dialHeader`): a 24h `DiurnalDial` with the recovery numeral
+//                concentric inside it. `heroNumeral`/`heroState` still pick the numeral per mode (verdict /
+//                Apple-seeded base / calibrating / waiting). The verdict WORD moved out of the dial.
+//   (c) PAGER  — a 2-page horizontal pager (`todayPager`) below the dial, with page dots (FER-465):
+//                · Page 1 (`verdictPage`) — the day's verdict in words (`heroBody` + `heroFooter`).
+//                · Page 2 (`metricsPage`) — «Métricas de hoy» (`iosMetricsSection`): a 2×4 grid of themed
+//                  tiles, each value in its data colour with a Δ-vs-7-day-average and a p25–p75 mini-band.
 //
 // The dark legacy dashboard (RecoveryRing/StatTile grid/workouts) was removed once the redesign
 // shipped; this file is now «Instrumento»-only.
@@ -125,6 +127,11 @@ struct TodayView: View {
     /// from Today — so it shows the SAME chart + moments + patterns as Cuerpo (FER-452).
     @State private var stressDayMap: CalendarDayMap? = nil
     @State private var metricSpec: MetricDetailSpec? = nil
+
+    /// Página activa del pager de 2 páginas (FER-465): 0 = veredicto (Daily Brief) · 1 = «Métricas de hoy».
+    /// Optional porque es el binding de `.scrollPosition(id:)` (puede quedar nil a media transición); los
+    /// page dots lo leen con `?? 0`. Arranca en la página 1 del veredicto.
+    @State private var pagerPage: Int? = 0
 
     // THE single grid definition — every tile group reuses it so margins line up.
     private let grid = [GridItem(.adaptive(minimum: 168), spacing: NoopMetrics.gap)]
@@ -491,31 +498,25 @@ struct TodayView: View {
     private func todayScroll(_ proxy: GeometryProxy) -> some View {
         let scroll = ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                // El grupo superior conserva el ritmo de sección compacto (FER-202): gap de 16
-                // (`NoopMetrics.sectionGapCompact`) entre fecha, alerta y héroe.
+                // Cabecera FIJA del instrumento (FER-465): fecha + alerta + dial 24h con numeral. Sigue
+                // dentro del scroll vertical, así que el pull-to-refresh propio (FER-222) NO cambia. La
+                // palabra del veredicto ya NO vive aquí: se mudó a la página 1 del pager (`verdictPage`).
                 VStack(alignment: .leading, spacing: NoopMetrics.sectionGapCompact) {
                     headerBlock
                     HealthAlertBanner()
-                    // Héroe unificado (FER-160): UN solo instrumento de estado adaptable cubre los
-                    // cuatro modos (veredicto / base sembrada por Apple Health / calibrando / espera).
-                    // Lo único que cambia entre modos es QUÉ valor lleva el numeral, su color (regla
-                    // «color = listo / tinta = en espera») y el pie. Ver `heroInstrument` + `heroState`.
-                    heroInstrument
+                    dialHeader
                 }
-                // Gap mínimo héroe→«Métricas de hoy»: 8 (`NoopMetrics.space2`), el mismo ~8 compacto que
-                // daba el inset negativo de antes (FER-202/FER-217). Cuando sobra espacio, este Spacer
-                // crece a la par del de abajo y despega las métricas del héroe.
-                // El acceso al monitor en vivo «latido a latido» vive como pastilla de pulso en el
-                // encabezado de «Métricas de hoy» (FER-194), no como fila al pie. Ver `iosMetricsSection`.
-                // Mínimo a `space1` (4) en el caso compacto: cuando el contenido desborda, este Spacer va
-                // a su mínimo y cada punto cuenta para que Hoy quepa; cuando sobra espacio igual crece.
+                // Gap mínimo dial→pager: 8 (`space1`/`space2`), el mismo ~8 compacto de FER-202/217. Cuando
+                // sobra espacio, este Spacer crece a la par del de abajo y despega el pager del dial.
                 Spacer(minLength: NoopMetrics.space1)
-                // Sin ninguna fuente (ni strap ni Apple Health), las 8 tiles vacías no aportan: se
-                // ocultan y dejan paso a la tarjeta para conectar fuentes, y Hoy cabe de una. (FER-364)
-                if noSources { emptySourcesCard } else { iosMetricsSection }
-                // Gap mínimo bajo las métricas: 0 — el margen inferior lo da `.padding(.bottom)`. Cuando
-                // sobra espacio, este Spacer crece igual que el de arriba y «Métricas de hoy» queda
-                // centrada en el sobrante (opción aprobada por el dueño, FER-217).
+                // Pager horizontal de 2 páginas (FER-465): ① el veredicto del día en palabras · ② «Métricas
+                // de hoy» tal cual. Ancho de página = ancho de contenido (proxy − screenPadding lateral) para
+                // que el snap pagine de a una. Ejes ortogonales al scroll vertical → el swipe horizontal y el
+                // pull-to-refresh no se pelean.
+                todayPager(width: max(0, proxy.size.width - NoopMetrics.screenPadding * 2))
+                todayPageDots
+                // Gap mínimo al pie: 0 — el margen inferior lo da `.padding(.bottom)`. Cuando sobra espacio,
+                // este Spacer crece igual que el de arriba y el pager queda centrado en el sobrante (FER-217).
                 Spacer(minLength: 0)
             }
             // FER-274/FER-293: la pista del pull-to-refresh (chevron + microcopy) flota en el TOPE como
@@ -791,14 +792,13 @@ struct TodayView: View {
     /// Whether a strap has ever been seen (drives the foot affordance: Scan before, live pulse after).
     private var strapSeen: Bool { live.lastSyncedAt != nil || liveBpm != nil }
 
-    /// El instrumento: un esqueleto, cuatro modos. Jerarquía por espacio (sin card-in-card); color solo
-    /// en el dato (numeral de banda / palabra del veredicto). El dial del momento preside SIEMPRE a la
-    /// derecha — incluso en espera — para que la pantalla nunca se vea a medio construir.
-    @ViewBuilder private var heroInstrument: some View {
+    /// Cabecera FIJA del instrumento (FER-465): overline + dial 24h con el numeral concéntrico. El cuerpo
+    /// del veredicto en palabras (`heroBody` + `heroFooter`) ya NO vive aquí — se mudó a `verdictPage`
+    /// (página 1 del pager), así que arriba queda solo el dial + número. Conserva el giro del sync
+    /// (FER-221) y el «armado» del arco con el tirón (FER-222), intactos.
+    @ViewBuilder private var dialHeader: some View {
         let state = heroState
-        // Ritmo vertical compacto: gap del héroe a `space2` (8) en vez de `gap` (12) para que «Hoy»
-        // quepa de una durante la calibración —cuando la barra «afinando» suma una fila extra— sin
-        // tocar el dial grande de 180 (FER-205). El dueño eligió «compactar el ritmo» sobre achicar el dial.
+        // Ritmo vertical compacto (FER-205): gap a `space2` (8) entre overline y dial.
         VStack(spacing: NoopMetrics.space2) {
             // FER-283/284: la overline del héroe usa `instrumentoOverlineProminent` (14/medium) en tinta
             // secundaria — más presencia sin competir con el numeral. Un nudge de aire arriba la baja un
@@ -807,13 +807,10 @@ struct TodayView: View {
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.top, NoopMetrics.space1)
-            // Instrumento concéntrico (FER-169): el numeral domina el CENTRO del dial de 24h, no a su lado.
-            // Sin número que medir (em-dash) el dial es el protagonista; con número, el dato vive dentro del
-            // reloj. El dial preside SIEMPRE y centrado para que la pantalla nunca se vea a medio construir.
+            // Instrumento concéntrico (FER-169): el numeral domina el CENTRO del dial de 24h. Sin número que
+            // medir (em-dash) el dial es el protagonista; con número, el dato vive dentro del reloj.
             // `sleepWindow` ya es nil cuando anoche no hubo registro de strap, así que el dial omite la banda
-            // de sueño sola: contexto honesto en cada modo. Escala (FER-205): dial 180 con el numeral 60 (como
-            // antes de FER-202 — el dueño prefirió el dial grande), conservando el «/100» apilado y centrado
-            // debajo (FER-202). Con el dial grande Hoy puede volver a necesitar algo de scroll en calibrando.
+            // de sueño sola: contexto honesto en cada modo. Escala (FER-205): dial 180 con el numeral 60.
             ZStack {
                 // Viñeta radial cálida detrás del dial (handoff «Hoy · Estados», el
                 // `radial-gradient(circle, rgba(255,255,255,.8) 0% … 72%)` del mock): un pozo de luz
@@ -840,10 +837,72 @@ struct TodayView: View {
                             armProgress: pullProgress)
                 heroNumeral(state)
             }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    // MARK: - Pager de 2 páginas (FER-465)
+
+    /// Página 1 del pager: el cuerpo del veredicto del día en palabras — la palabra del veredicto + «i» +
+    /// puentes/salvedades (`heroBody`) y las afordancias de onboarding (`heroFooter`), movidos TAL CUAL
+    /// desde el héroe. Cada modo (veredicto / descargando / base Apple / calibrando / espera) sigue
+    /// mostrando su copy aquí. (F3 sustituye este contenido por el Daily Brief con su motor de contenido.)
+    @ViewBuilder private var verdictPage: some View {
+        let state = heroState
+        VStack(spacing: NoopMetrics.space2) {
             heroBody(state)
             heroFooter(state)
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: .top)
+    }
+
+    /// Página 2 del pager: «Métricas de hoy» tal cual — o la tarjeta de fuentes si no hay ninguna
+    /// (FER-364). El grid de tiles NO cambia (decisión del dueño en FER-464).
+    @ViewBuilder private var metricsPage: some View {
+        if noSources { emptySourcesCard } else { iosMetricsSection }
+    }
+
+    /// El pager horizontal de 2 páginas. `ScrollView(.horizontal)` con `.scrollTargetBehavior(.paging)`
+    /// (snap a página) + `.scrollPosition` para reflejar la página activa en los dots; `.scrollTargetLayout()`
+    /// en el riel. Cada página mide `width` (= ancho de contenido) para que el snap pagine de a una. El alto
+    /// lo fija la página más alta (Métricas); en la página 1 el resto queda en blanco hasta que F3 la llene
+    /// con el Daily Brief. Ejes ortogonales al scroll vertical → no se pelea con el pull-to-refresh.
+    @ViewBuilder private func todayPager(width: CGFloat) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(alignment: .top, spacing: 0) {
+                verdictPage.frame(width: width).id(0)
+                metricsPage.frame(width: width).id(1)
+            }
+            .scrollTargetLayout()
+        }
+        .scrollTargetBehavior(.paging)
+        .scrollPosition(id: $pagerPage)
+    }
+
+    /// Page dots: punto 6×6 inactivo (`hairlineStrong`) · barra 18×6 activa (`ink`), centrados. Tocar un
+    /// punto navega a su página (`StrandMotion.interactive`, omitida bajo Reduce Motion). El acento verde
+    /// NO se usa en el chrome: la página activa es TINTA, no verde (handoff). Área tocable de 28pt.
+    private var todayPageDots: some View {
+        HStack(spacing: NoopMetrics.space2) {
+            ForEach(0..<2, id: \.self) { i in
+                let active = (pagerPage ?? 0) == i
+                Button {
+                    withAnimation(reduceMotion ? nil : StrandMotion.interactive) { pagerPage = i }
+                } label: {
+                    Capsule(style: .continuous)
+                        .fill(active ? theme.ink : theme.hairlineStrong)
+                        .frame(width: active ? 18 : 6, height: 6)
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text(i == 0 ? "Veredicto del día" : "Métricas de hoy"))
+                .accessibilityAddTraits(active ? [.isButton, .isSelected] : .isButton)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.top, NoopMetrics.space2)
+        .animation(reduceMotion ? nil : StrandMotion.interactive, value: pagerPage)
     }
 
     /// Muestra la pista del pull-to-refresh (FER-293): en reposo (sin tirón en curso) y mientras NO se
