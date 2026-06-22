@@ -82,6 +82,7 @@ public enum RestReadinessRule {
                                 worn: Bool,
                                 restingHR: Double?,
                                 elapsedS: Int,
+                                targetHR: Int? = nil,
                                 marginBPM: Int = defaultMarginBPM,
                                 bandBPM: Int = defaultBandBPM,
                                 minRestS: Int = defaultMinRestS,
@@ -96,7 +97,9 @@ public enum RestReadinessRule {
                                  ready: released)
         }
 
-        let target = Int(resting.rounded()) + marginBPM
+        // FER-495: an explicit per-exercise target (resolved by `RestTarget`) overrides the FER-348
+        // resting+margin default. `nil` keeps FER-348 behavior bit-for-bit.
+        let target = targetHR ?? (Int(resting.rounded()) + marginBPM)
         let gap = max(0, hr - target)
 
         // 2. Ceiling — released regardless of HR (no infinite wait), still reporting the honest gap.
@@ -125,5 +128,53 @@ public enum RestReadinessRule {
         // 5. Still resting.
         return RestReadiness(bpmToReady: gap, targetReadyHR: target,
                              state: .resting, reason: .notReady, ready: false)
+    }
+}
+
+// MARK: - Configurable rest target (FER-495)
+
+/// Resolves the «ready» HR target (bpm) for one exercise's rest, per the user's chosen reference.
+/// Pure, Sendable, database-free. The verdict is fed to `RestReadinessRule.evaluate(targetHR:)`.
+///
+/// `Reference` is this rule's own vocabulary; the persisted domain enum (`StrandTraining.HRRestReference`)
+/// is mapped onto it by the app-layer consumer, so this math package stays decoupled from the data model.
+///
+/// Returns `nil` when the inputs can't yield an honest target — then the caller falls back to FER-348
+/// (resting+margin) or, with no resting baseline, to the fixed timer (never an invented HR).
+///
+/// Method — `karvonenReserve` uses the heart-rate reserve method (Karvonen MJ, Kentala E, Mustala O.
+/// "The effects of training on heart rate." Ann Med Exp Biol Fenn. 1957;35(3):307–315): the same %HRR
+/// the repo already uses in `StrainScorer`, here to set a rest floor instead of a workout intensity.
+/// APPROXIMATE — a rest cue, no clinical claim.
+public enum RestTarget {
+    /// How the rest target is derived. Mirrors `StrandTraining.HRRestReference` (mapped by the consumer).
+    public enum Reference: String, Equatable, Sendable {
+        case restingMargin    // FER-348 default — handled by evaluate(); resolve returns nil
+        case peakDrop         // target = peakHR · (1 − value)
+        case karvonenReserve  // target = restingHR + value·(maxHR − restingHR)
+        case fixedBpm         // target = value (bpm)
+    }
+
+    /// `value` is a fraction 0…1 for `peakDrop`/`karvonenReserve`, bpm for `fixedBpm`, unused for
+    /// `restingMargin`. Returns the target bpm, or `nil` when it can't be computed honestly.
+    public static func resolve(reference: Reference, value: Double,
+                               peakHR: Int?, restingHR: Double?, maxHR: Double?) -> Int? {
+        switch reference {
+        case .restingMargin:
+            return nil   // FER-348 path — evaluate() owns the resting+margin target (single source).
+        case .peakDrop:
+            guard let peak = peakHR, peak > 0 else { return nil }
+            let frac = min(max(value, 0), 0.9)            // clamp the drop to a sane 0–90%
+            var t = Double(peak) * (1 - frac)
+            if let r = restingHR { t = max(t, r) }        // floor: a target below resting is meaningless
+            return Int(t.rounded())
+        case .karvonenReserve:
+            guard let r = restingHR, let m = maxHR, m > r else { return nil }   // no profile → nil
+            let frac = min(max(value, 0), 1)
+            return Int((r + frac * (m - r)).rounded())
+        case .fixedBpm:
+            guard value > 0 else { return nil }
+            return Int(value.rounded())
+        }
     }
 }

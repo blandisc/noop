@@ -21,6 +21,24 @@ final class StrengthStoreTests: XCTestCase {
         XCTAssertTrue(tables.contains("experiment"))
     }
 
+    /// FER-495: the per-exercise HR rest target round-trips; an unconfigured exercise reads back as the
+    /// FER-348 default (`.restingMargin` / 0).
+    func testHRRestConfigRoundTrip() async throws {
+        let store = try await WhoopStore.inMemory()
+        let r = Routine(id: "rt1", name: "Pierna", createdTs: 0, updatedTs: 0)
+        let exs = [
+            RoutineExercise(id: "a", routineId: "rt1", exerciseId: "ex1", position: 0, targetSets: 3,
+                            hrRestReference: .karvonenReserve, hrRestValue: 0.45),
+            RoutineExercise(id: "b", routineId: "rt1", exerciseId: "ex2", position: 1, targetSets: 3,
+                            hrRestReference: .peakDrop, hrRestValue: 0.30),
+            RoutineExercise(id: "c", routineId: "rt1", exerciseId: "ex3", position: 2, targetSets: 3),  // default
+        ]
+        try await store.saveRoutine(r, exercises: exs)
+        let back = try await store.routineExercises(routineId: "rt1")
+        XCTAssertEqual(back.map(\.hrRestReference), [.karvonenReserve, .peakDrop, .restingMargin])
+        XCTAssertEqual(back.map(\.hrRestValue), [0.45, 0.30, 0])
+    }
+
     // MARK: - Folders (FER-494)
 
     /// Create + rename a folder round-trips via the public API (rename is an upsert on the same id).

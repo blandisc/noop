@@ -433,6 +433,16 @@ extension WhoopStore {
                 t.add(column: "folderId", .text)   // nullable; NULL = no folder («Sin carpeta»)
             }
         }
+
+        // v19 (FER-495): per-exercise HR rest target. Two columns on `routineExercise`; append-only,
+        // touches no prior migration. The defaults (`restingMargin` / 0) reproduce FER-348 exactly, so
+        // every existing heartRate routine keeps the resting+margin behavior with zero change on upgrade.
+        migrator.registerMigration("v19") { db in
+            try db.alter(table: "routineExercise") { t in
+                t.add(column: "hrRestReference", .text).notNull().defaults(to: "restingMargin")
+                t.add(column: "hrRestValue", .double).notNull().defaults(to: 0)
+            }
+        }
         return migrator
     }
 }
