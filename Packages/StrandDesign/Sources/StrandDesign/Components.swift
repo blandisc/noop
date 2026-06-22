@@ -52,57 +52,50 @@ public struct SegmentedPillControl<T: Hashable>: View {
         self.items = items; self._selection = selection; self.theme = theme; self.label = label
     }
     public var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: theme == nil ? 4 : 2) {
             ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                 let sel = item == selection
                 Button { withAnimation(StrandMotion.interactive) { selection = item } } label: {
-                    Text(label(item))
-                        // Instrumento reads a step larger (13 vs 12) and the active label gains weight, so
-                        // the selector isn't a tiny strip; legacy keeps the compact mono caption. (FER-439)
-                        .font(theme == nil ? StrandFont.captionNumber : StrandFont.subhead)
-                        .fontWeight(sel && theme != nil ? .semibold : nil)
-                        .lineLimit(1)                  // never wrap a pill label onto a 2nd line…
-                        .minimumScaleFactor(0.8)       // …shrink a tight label (e.g. «TODO») instead (FER-275)
-                        .foregroundStyle(segmentText(sel))
-                        .frame(minWidth: 32, maxWidth: theme == nil ? nil : .infinity)
-                        .padding(.vertical, theme == nil ? 6 : 8).padding(.horizontal, 11)
-                        .background(segmentBackground(sel))
-                        // ≥44pt touch target (the capsule stays compact, centered) — iOS minimum (FER-131 · 10).
-                        .frame(minWidth: 44, minHeight: 44)
-                        .contentShape(Rectangle())
+                    segment(item, sel)
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(3)
+        .padding(theme == nil ? 3 : 4)
         .background(trackFill, in: Capsule(style: .continuous))
         .overlay(Capsule(style: .continuous).strokeBorder(trackStroke, lineWidth: 1))
     }
 
-    // Legacy (theme == nil) keeps the exact dark-palette values; the Instrumento variant maps to
-    // paper-friendly tokens — active = a raised surface «thumb», not a faint tint.
-    private func segmentText(_ sel: Bool) -> Color {
-        guard let theme else { return sel ? InstrumentoTheme.base.paper : InstrumentoTheme.base.inkSecondary }
-        return sel ? theme.ink : theme.inkSecondary
-    }
-
-    /// The per-segment background. Instrumento: the active segment is an iOS-native raised «thumb» —
-    /// a `surface`-filled capsule with a hairline border that pops off the recessed `hairline` track
-    /// (clear when unselected). Much clearer than the old `ink.opacity(0.08)` tint. (FER-439)
-    @ViewBuilder private func segmentBackground(_ sel: Bool) -> some View {
+    /// One segment. Instrumento: the active «thumb» HUGS the label (content-width, centered in the
+    /// equal-width tap segment) so a short label like «M» gets a tight pill instead of an over-wide one;
+    /// the full segment stays the tap target. A touch shorter than the 44pt min (a wide secondary control).
+    /// Legacy (theme == nil) keeps the exact dark-palette look — UNCHANGED. (FER-439 / Detalle de Vital fix)
+    @ViewBuilder private func segment(_ item: T, _ sel: Bool) -> some View {
         if let theme {
-            // The thumb is INSET within its (equal-width) tap segment so it floats with margin — like the
-            // iOS native selected segment — instead of filling edge-to-edge and reading as an over-wide pill
-            // for a short label like «M». The full segment stays the tap target. (Detalle de Vital fix)
-            Capsule(style: .continuous)
-                .fill(sel ? theme.surface : Color.clear)
-                .overlay {
-                    if sel { Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1) }
+            Text(label(item))
+                .font(StrandFont.subhead)
+                .fontWeight(sel ? .semibold : .regular)
+                .lineLimit(1).minimumScaleFactor(0.85)
+                .foregroundStyle(sel ? theme.ink : theme.inkSecondary)
+                .padding(.vertical, 6).padding(.horizontal, 14)
+                .background {
+                    if sel {
+                        Capsule(style: .continuous).fill(theme.surface)
+                            .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                    }
                 }
-                .padding(.horizontal, 6)
-                .padding(.vertical, 3)
+                .frame(maxWidth: .infinity, minHeight: 38)
+                .contentShape(Rectangle())
         } else {
-            Capsule(style: .continuous).fill(sel ? StrandPalette.accent : Color.clear)
+            Text(label(item))
+                .font(StrandFont.captionNumber)
+                .lineLimit(1).minimumScaleFactor(0.8)
+                .foregroundStyle(sel ? InstrumentoTheme.base.paper : InstrumentoTheme.base.inkSecondary)
+                .frame(minWidth: 32)
+                .padding(.vertical, 6).padding(.horizontal, 11)
+                .background(Capsule(style: .continuous).fill(sel ? StrandPalette.accent : Color.clear))
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
         }
     }
 

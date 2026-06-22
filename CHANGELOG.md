@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El selector de periodo se ve mejor: la pastilla activa abraza su texto / The period selector looks better: the active pill hugs its text (FER-455).**
+  **ES** — En los selectores de periodo claros (S · M · 3M · 6M · 1A · Todo) y en el de Coach, la **pastilla activa ya no se estira** a todo lo ancho de su pestaña: ahora **abraza su etiqueta** y queda centrada, así una «M» se ve como una pastilla compacta en vez de una barra ancha con una letra chiquita. Además el control es **un poco más bajo**. El área para tocar sigue siendo toda la pestaña.
+  **EN** — In the light period selectors (W · M · 3M · 6M · 1Y · All) and Coach's, the **active pill no longer stretches** the full width of its tab: it now **hugs its label** and stays centered, so an "M" reads as a compact pill instead of a wide bar with a tiny letter. The control is also **a touch shorter**. The whole tab stays the tap target.
+  ([Packages/StrandDesign/Sources/StrandDesign/Components.swift](Packages/StrandDesign/Sources/StrandDesign/Components.swift))
 - **Detalle de Vital: gráfica más limpia y título con el color de su vital / Vital detail: cleaner chart and a title in its vital's color (FER-454).**
   **ES** — Segunda pasada de pulido: el **título de cada hoja** (p. ej. «HRV · HOY») ahora va en **el color de ese vital**; la **gráfica** se limpió —se quitó el lavado de color bajo la línea, así la **franja de tu rango normal** se ve nítida detrás de una línea limpia— y el pie ahora **dice qué es la franja** («la franja es tu rango normal»); la gráfica es más compacta y proporcionada al selector; y la animación de la ⓘ abre sin rebote.
   **EN** — Second polish pass: each **sheet's title** (e.g. "HRV · TODAY") now uses **that vital's color**; the **chart** was cleaned up —the color wash under the line is gone, so your **normal-range band** reads sharply behind a clean line— and the footer now **says what the band is** ("the band is your normal range"); the chart is more compact and proportionate to the selector; and the ⓘ opens without a bounce.
