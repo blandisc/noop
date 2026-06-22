@@ -27,7 +27,7 @@ struct ExerciseDetailScreen: View {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                 header
                 musclesSection
-                if !exercise.cues.isEmpty { howToSection }
+                if !exercise.displayCues(localized: StrengthDisplay.localized).isEmpty { howToSection }
                 if loaded {
                     if history.isEmpty { emptyHistory } else { historySection }
                 }
@@ -108,7 +108,7 @@ struct ExerciseDetailScreen: View {
             Divider().overlay(theme.hairline)
             Text("How to").instrumentoOverline().foregroundStyle(theme.inkTertiary).padding(.top, 18)
             VStack(alignment: .leading, spacing: 10) {
-                ForEach(Array(exercise.cues.enumerated()), id: \.offset) { index, cue in
+                ForEach(Array(exercise.displayCues(localized: StrengthDisplay.localized).enumerated()), id: \.offset) { index, cue in
                     HStack(alignment: .firstTextBaseline, spacing: 10) {
                         Text(verbatim: "\(index + 1)")
                             .font(StrandFont.captionNumber).foregroundStyle(theme.inkTertiary)
