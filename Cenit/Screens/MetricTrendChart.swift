@@ -74,7 +74,10 @@ enum MetricWindowMath {
         let n = Swift.min(rows.count, values.count)
         guard n > maxPoints, maxPoints > 1 else {
             return zip(rows, values).compactMap { row, value in
-                Repository.parseDayKey(row.day).map { TrendPoint(date: $0, value: value) }
+                // Anchor each day to NOON UTC (matching TodayView.loadTrend) so the local-zone axis/scrub
+                // label doesn't slip to the previous day west of UTC — a 22-jun point read "21 jun" in CDMX
+                // (UTC−6) because midnight-UTC fell on the prior local day. (date-mismatch detail vs summary)
+                Repository.parseDayKey(row.day).map { TrendPoint(date: $0.addingTimeInterval(12 * 3600), value: value) }
             }
         }
         let decimated = SeriesShape.decimate(Array(values.prefix(n)), maxPoints: maxPoints)
@@ -85,7 +88,7 @@ enum MetricWindowMath {
             let hi = (n * (b + 1)) / maxPoints
             let mid = Swift.min(lo + (hi - lo) / 2, n - 1)
             if let date = Repository.parseDayKey(rows[mid].day) {
-                out.append(TrendPoint(date: date, value: decimated[b]))
+                out.append(TrendPoint(date: date.addingTimeInterval(12 * 3600), value: decimated[b]))   // noon-UTC anchor (see above)
             }
         }
         return out
