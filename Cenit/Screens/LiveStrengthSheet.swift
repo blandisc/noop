@@ -41,6 +41,9 @@ struct StrengthSummary: Equatable {
     var volumeKg: Double
     var setCount: Int
     var strain: Double?
+    /// Average HR captured this session (≥2 samples), shown when the session was too short for an
+    /// effort score (`strain == nil`) so the receipt proves HR was recorded instead of claiming none (FER-498).
+    var avgHr: Int?
     var costBand: SessionRecoveryCost.Band?
     /// Tomorrow's projected recovery (0–100, rounded) given today's session cost — `nil` when there
     /// isn't ~2 weeks of recovery base (then the projection line is hidden). (FER-442)
@@ -1349,10 +1352,15 @@ struct LiveStrengthSheet: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            // Hero: effort (strain) in the effort hue, or duration in ink when the session had no HR.
+            // Hero: effort (strain) when the session was long enough; else the average HR if we captured
+            // any (a short session reads HR but can't score a meaningful effort, FER-498); else duration
+            // when there genuinely was no HR.
             if let strain = s.strain {
                 summaryHero(label: "Effort", value: Self.strainText(strain), unit: nil,
                             color: theme.dataStrain, caption: "What this session cost your body.")
+            } else if let avgHr = s.avgHr {
+                summaryHero(label: "Avg HR", value: "\(avgHr)", unit: "bpm",
+                            color: theme.dataStrain, caption: "Heart rate recorded; too short for an effort score.")
             } else {
                 summaryHero(label: "Duration", value: "\(s.durationS / 60)", unit: "min",
                             color: theme.ink, caption: "No heart rate this session.")
