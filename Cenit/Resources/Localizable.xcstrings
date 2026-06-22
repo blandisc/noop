@@ -1337,6 +1337,23 @@
         }
       }
     },
+    "%lld exercises to set up": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld exercises to set up"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld ejercicios por ubicar"
+          }
+        }
+      }
+    },
     "%lld frame%@ captured this session.": {
       "localizations": {
         "en": {
@@ -1921,6 +1938,23 @@
         }
       }
     },
+    "%lld routines · %lld exercises": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld routines · %lld exercises"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld rutinas · %lld ejercicios"
+          }
+        }
+      }
+    },
     "%lld seconds": {
       "extractionState": "manual",
       "localizations": {
@@ -1984,6 +2018,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld series"
+          }
+        }
+      }
+    },
+    "%lld sets aren't logged yet. Finish anyway and save the ones you did?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld sets aren't logged yet. Finish anyway and save the ones you did?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Te faltan %lld series por registrar. ¿Terminar de todos modos y guardar las que sí hiciste?"
           }
         }
       }
@@ -2285,6 +2335,48 @@
         }
       }
     },
+    "+": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+"
+          }
+        }
+      }
+    },
+    "+%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%@"
+          }
+        }
+      }
+    },
+    "+%@ %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%@ %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%@ %@"
+          }
+        }
+      }
+    },
     "+%@ later": {
       "extractionState": "manual",
       "localizations": {
@@ -2298,6 +2390,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "+%@ más tarde"
+          }
+        }
+      }
+    },
+    "+%@ over your usual calm.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%@ over your usual calm."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%@ sobre tu calma habitual."
           }
         }
       }
@@ -2332,6 +2440,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "+%lld% vs el mes pasado"
+          }
+        }
+      }
+    },
+    "+LOAD": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+LASTRE"
           }
         }
       }
@@ -3778,6 +3896,22 @@
         }
       }
     },
+    "Activated": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activated"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activado"
+          }
+        }
+      }
+    },
     "Active": {
       "extractionState": "manual",
       "localizations": {
@@ -3917,6 +4051,22 @@
         }
       }
     },
+    "Add 15 seconds": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add 15 seconds"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sumar 15 segundos"
+          }
+        }
+      }
+    },
     "Add Workout": {
       "localizations": {
         "es": {
@@ -4026,6 +4176,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Agregar métrica"
+          }
+        }
+      }
+    },
+    "Add set": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add set"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agregar serie"
           }
         }
       }
@@ -4373,6 +4539,22 @@
         }
       }
     },
+    "All done": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All done"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todo listo"
+          }
+        }
+      }
+    },
     "All history": {
       "localizations": {
         "en": {
@@ -4402,6 +4584,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Todo listo."
+          }
+        }
+      }
+    },
+    "All sets · %lld done": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All sets · %lld done"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todas las series · %lld hechas"
           }
         }
       }
@@ -5954,16 +6152,16 @@
       "comment": "A section of the app that shows the user's health and stress levels.",
       "isCommentAutoGenerated": true,
       "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cuerpo"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Body"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuerpo"
           }
         }
       }
@@ -6311,6 +6509,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Trae el plan de tu nutriólogo"
+          }
+        }
+      }
+    },
+    "Bring your plan from your AI": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bring your plan from your AI"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trae tu plan desde tu IA"
           }
         }
       }
@@ -6701,6 +6916,22 @@
         }
       }
     },
+    "Calm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calm"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calma"
+          }
+        }
+      }
+    },
     "Calm time": {
       "localizations": {
         "en": {
@@ -6985,6 +7216,22 @@
         }
       }
     },
+    "Change exercise": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change exercise"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cambiar ejercicio"
+          }
+        }
+      }
+    },
     "Check failed — try a re-sync": {
       "extractionState": "manual",
       "localizations": {
@@ -7248,6 +7495,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cierra la app oficial de WHOOP (o apaga el Bluetooth de ese teléfono), pon la banda en modo de emparejamiento (en una 5.0/MG, da toques firmes a la banda hasta que los LED parpadeen en azul) y vuelve a conectar."
+          }
+        }
+      }
+    },
+    "Close the set table": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close the set table"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cerrar la tabla de series"
           }
         }
       }
@@ -8253,6 +8516,16 @@
         }
       }
     },
+    "Copies it to this set": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La copia a esta serie"
+          }
+        }
+      }
+    },
     "Copy": {
       "localizations": {
         "en": {
@@ -8348,6 +8621,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Copia el prompt y pégalo en tu IA de confianza, junto con tu plan (PDF o foto)."
+          }
+        }
+      }
+    },
+    "Copy the prompt and paste it into your trusted AI, along with your plan (text, photo or PDF).": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy the prompt and paste it into your trusted AI, along with your plan (text, photo or PDF)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copia el prompt y pégalo en tu IA de confianza, junto con tu plan (texto, foto o PDF)."
           }
         }
       }
@@ -8480,6 +8770,40 @@
         }
       }
     },
+    "Create %lld routines": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create %lld routines"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crear %lld rutinas"
+          }
+        }
+      }
+    },
+    "Create new": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create new"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crear nuevo"
+          }
+        }
+      }
+    },
     "Create your first routine, or start from a template.": {
       "localizations": {
         "en": {
@@ -8492,6 +8816,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Crea tu primera rutina o empieza desde una plantilla."
+          }
+        }
+      }
+    },
+    "Created %lld routines": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Created %lld routines"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Creaste %lld rutinas"
           }
         }
       }
@@ -9182,6 +9523,38 @@
         }
       }
     },
+    "Decrease reps": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Decrease reps"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bajar reps"
+          }
+        }
+      }
+    },
+    "Decrease weight": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Decrease weight"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bajar peso"
+          }
+        }
+      }
+    },
     "Deep": {
       "localizations": {
         "en": {
@@ -9286,6 +9659,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Eliminar rutina"
+          }
+        }
+      }
+    },
+    "Delete set": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminar serie"
           }
         }
       }
@@ -9639,6 +10022,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Relación directa entre %@ y %@ (r=%@, n=%lld)."
+          }
+        }
+      }
+    },
+    "Discard": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descartar"
+          }
+        }
+      }
+    },
+    "Discard workout": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descartar entrenamiento"
+          }
+        }
+      }
+    },
+    "Discard workout?": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Descartar entrenamiento?"
           }
         }
       }
@@ -10703,6 +11116,22 @@
         }
       }
     },
+    "Every exercise was skipped. Finish to close, or resume from the hub.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every exercise was skipped. Finish to close, or resume from the hub."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saltaste todos los ejercicios. Termina para cerrar, o retoma desde el inicio."
+          }
+        }
+      }
+    },
     "Every night and every day will weave into a single read of you. Welcome to Cénit.": {
       "extractionState": "manual",
       "localizations": {
@@ -10881,6 +11310,16 @@
         }
       }
     },
+    "Everything you logged in this session will be deleted. This can't be undone.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se borrará todo lo que registraste en esta sesión. Esta acción no se puede deshacer."
+          }
+        }
+      }
+    },
     "Everything you train is still loaded.": {
       "localizations": {
         "en": {
@@ -10926,6 +11365,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ejercicio"
+          }
+        }
+      }
+    },
+    "Exercise %lld of %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exercise %lld of %lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ejercicio %lld de %lld"
           }
         }
       }
@@ -11213,6 +11668,38 @@
         }
       }
     },
+    "Finish workout": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finish workout"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terminar el entreno"
+          }
+        }
+      }
+    },
+    "Finish workout?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finish workout?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Terminar el entreno?"
+          }
+        }
+      }
+    },
     "Fire a single haptic pulse on the strap (requires a bonded connection)": {
       "localizations": {
         "en": {
@@ -11311,6 +11798,22 @@
         }
       }
     },
+    "First time": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "First time"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Primera vez"
+          }
+        }
+      }
+    },
     "First time logging these. From here on you'll see your progress.": {
       "extractionState": "manual",
       "localizations": {
@@ -11335,6 +11838,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Edad fitness"
+          }
+        }
+      }
+    },
+    "Focus": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Foco"
           }
         }
       }
@@ -12979,6 +13492,23 @@
         }
       }
     },
+    "How it's calculated": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How it's calculated"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cómo se calcula"
+          }
+        }
+      }
+    },
     "How long it took you to fall asleep after lights out. Ten to twenty minutes is a healthy range.": {
       "extractionState": "manual",
       "localizations": {
@@ -13640,6 +14170,23 @@
         }
       }
     },
+    "Import plan": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import plan"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importar plan"
+          }
+        }
+      }
+    },
     "Import your history first. A WHOOP export in Data Sources fills every metric you can explore here in about a minute.": {
       "localizations": {
         "en": {
@@ -13927,6 +14474,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Subir objetivo"
+          }
+        }
+      }
+    },
+    "Increase reps": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Increase reps"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subir reps"
+          }
+        }
+      }
+    },
+    "Increase weight": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Increase weight"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subir peso"
           }
         }
       }
@@ -14788,6 +15367,42 @@
         }
       }
     },
+    "KG": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KG"
+          }
+        }
+      }
+    },
+    "KM": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KM"
+          }
+        }
+      }
+    },
+    "Keep going": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep going"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seguir"
+          }
+        }
+      }
+    },
     "Keep wearing the band a few nights and it appears on its own — we don't show a half-finished number.": {
       "extractionState": "manual",
       "localizations": {
@@ -14878,6 +15493,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Métricas clave"
+          }
+        }
+      }
+    },
+    "LB": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "LB"
           }
         }
       }
@@ -15163,6 +15788,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Última vez"
+          }
+        }
+      }
+    },
+    "Last · %@ × %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last · %@ × %lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Última · %@ × %lld"
           }
         }
       }
@@ -16029,6 +16670,16 @@
         }
       }
     },
+    "MI": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MI"
+          }
+        }
+      }
+    },
     "MODERATE": {
       "extractionState": "stale",
       "localizations": {
@@ -16216,6 +16867,26 @@
         }
       }
     },
+    "Mark set %lld as done": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marcar la serie %lld como hecha"
+          }
+        }
+      }
+    },
+    "Mark set %lld as not done": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marcar la serie %lld como no hecha"
+          }
+        }
+      }
+    },
     "Mark what happened today": {
       "extractionState": "manual",
       "localizations": {
@@ -16266,6 +16937,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Coincidir"
+          }
+        }
+      }
+    },
+    "Matched · %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Matched · %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Emparejado · %@"
           }
         }
       }
@@ -16886,16 +17574,16 @@
       "comment": "The title of the \"More\" tab.",
       "isCommentAutoGenerated": true,
       "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Más"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "More"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Más"
           }
         }
       }
@@ -17029,6 +17717,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Más repeticiones"
+          }
+        }
+      }
+    },
+    "Move %@ earlier": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move %@ earlier"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mover %@ antes"
           }
         }
       }
@@ -17417,6 +18121,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nuevo · lo notamos sin que anotaras"
+          }
+        }
+      }
+    },
+    "Next": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siguiente"
           }
         }
       }
@@ -17957,6 +18671,16 @@
         }
       }
     },
+    "No previous record": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin registro anterior"
+          }
+        }
+      }
+    },
     "No reading": {
       "extractionState": "manual",
       "localizations": {
@@ -18164,6 +18888,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Aún no hay noches calificadas. Duerme con la banda puesta y NOOP conectado, y el motor calculará por sí mismo tu recuperación, esfuerzo y sueño, sin la nube de WHOOP."
+          }
+        }
+      }
+    },
+    "No sets logged yet — finishing will discard this workout.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No sets logged yet — finishing will discard this workout."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no registras series — terminar va a descartar este entreno."
           }
         }
       }
@@ -18666,6 +19406,16 @@
         }
       }
     },
+    "Not recorded": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin registrar"
+          }
+        }
+      }
+    },
     "Not saved: no heart rate from the strap.": {
       "localizations": {
         "en": {
@@ -18809,6 +19559,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nada del catálogo se mueve claramente con %@ en esta ventana. Amplía el rango para revelar relaciones."
+          }
+        }
+      }
+    },
+    "Nothing left": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing left"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nada pendiente"
           }
         }
       }
@@ -19251,6 +20017,40 @@
         }
       }
     },
+    "One of the exercises has an unsupported type. Check the file and try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One of the exercises has an unsupported type. Check the file and try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uno de los ejercicios tiene un tipo no compatible. Revisa el archivo e intenta de nuevo."
+          }
+        }
+      }
+    },
+    "One of the exercises has no name. Check the file and try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One of the exercises has no name. Check the file and try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uno de los ejercicios no tiene nombre. Revisa el archivo e intenta de nuevo."
+          }
+        }
+      }
+    },
     "One of the meals has an empty option. Check the file and try again.": {
       "extractionState": "manual",
       "localizations": {
@@ -19298,6 +20098,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Una de las comidas no tiene opciones de alimentos. Revisa el archivo y vuelve a intentar."
+          }
+        }
+      }
+    },
+    "One of the routines has no exercises. Check the file and try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One of the routines has no exercises. Check the file and try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una de las rutinas no tiene ejercicios. Revisa el archivo e intenta de nuevo."
           }
         }
       }
@@ -19466,6 +20283,38 @@
         }
       }
     },
+    "Open table": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open table"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abrir tabla"
+          }
+        }
+      }
+    },
+    "Open the set table": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open the set table"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abrir la tabla de series"
+          }
+        }
+      }
+    },
     "Open-source BLE reverse-engineering work. Thank you.": {
       "localizations": {
         "en": {
@@ -19550,6 +20399,32 @@
         }
       }
     },
+    "Opens the big-button mode": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre el modo de botones grandes"
+          }
+        }
+      }
+    },
+    "Opens the fatigue map": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the fatigue map"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre el mapa de fatiga"
+          }
+        }
+      }
+    },
     "Opens the full detail": {
       "extractionState": "manual",
       "localizations": {
@@ -19595,6 +20470,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Abre el detalle por deporte."
+          }
+        }
+      }
+    },
+    "Opens the timer": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre el cronómetro"
           }
         }
       }
@@ -19881,6 +20766,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "PICO"
+          }
+        }
+      }
+    },
+    "PREVIOUS": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ANTERIOR"
           }
         }
       }
@@ -20477,6 +21372,16 @@
         }
       }
     },
+    "Previous, %@": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anterior, %@"
+          }
+        }
+      }
+    },
     "Previously paired but not currently connected. Re-scan to reconnect.": {
       "localizations": {
         "en": {
@@ -20823,6 +21728,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sueño REM"
+          }
+        }
+      }
+    },
+    "REPS": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "REPS"
           }
         }
       }
@@ -21842,6 +22757,22 @@
         }
       }
     },
+    "Register set": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Register set"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registrar serie"
+          }
+        }
+      }
+    },
     "Regularity": {
       "extractionState": "manual",
       "localizations": {
@@ -21953,6 +22884,32 @@
         }
       }
     },
+    "Reps": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reps"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reps"
+          }
+        }
+      }
+    },
+    "Reps, set %lld": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reps, serie %lld"
+          }
+        }
+      }
+    },
     "Reset": {
       "localizations": {
         "en": {
@@ -21997,6 +22954,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Restablecer clave"
+          }
+        }
+      }
+    },
+    "Resolve %lld more to continue": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resolve %lld more to continue"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resuelve %lld más para continuar"
           }
         }
       }
@@ -22149,6 +23123,54 @@
         }
       }
     },
+    "Rest %lld min": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rest %lld min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descanso %lld min"
+          }
+        }
+      }
+    },
+    "Rest %lld seconds": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rest %lld seconds"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descanso de %lld segundos"
+          }
+        }
+      }
+    },
+    "Rest %llds": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rest %llds"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descanso %llds"
+          }
+        }
+      }
+    },
     "Rest & load": {
       "extractionState": "manual",
       "localizations": {
@@ -22213,6 +23235,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Día libre — tu plan no tiene comidas hoy. Vuelve mañana o usa ‹ ›."
+          }
+        }
+      }
+    },
+    "Rest done. %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rest done. %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descanso terminado. %@"
           }
         }
       }
@@ -22429,6 +23467,22 @@
         }
       }
     },
+    "Resting, %lld seconds left. %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resting, %lld seconds left. %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En descanso, faltan %lld segundos. %@"
+          }
+        }
+      }
+    },
     "Restorative": {
       "localizations": {
         "en": {
@@ -22525,6 +23579,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Restaurar…"
+          }
+        }
+      }
+    },
+    "Resume workout": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reanudar entrenamiento"
           }
         }
       }
@@ -22844,6 +23908,16 @@
         }
       }
     },
+    "SET": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SERIE"
+          }
+        }
+      }
+    },
     "SIGNIFICANT": {
       "localizations": {
         "en": {
@@ -22959,6 +24033,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Guardar plan"
+          }
+        }
+      }
+    },
+    "Save this workout?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save this workout?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Guardar este entreno?"
           }
         }
       }
@@ -23322,23 +24412,6 @@
         }
       }
     },
-    "How it's calculated": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "How it's calculated"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cómo se calcula"
-          }
-        }
-      }
-    },
     "See why": {
       "extractionState": "manual",
       "localizations": {
@@ -23584,6 +24657,48 @@
           "stringUnit": {
             "state": "translated",
             "value": "Después de una sesión así, sueles amanecer con un Charge unos %lld puntos más abajo, y vuelves a tu nivel en un día (n=%lld)."
+          }
+        }
+      }
+    },
+    "Set %lld": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Serie %lld"
+          }
+        }
+      }
+    },
+    "Set %lld of %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set %lld of %lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Serie %lld de %lld"
+          }
+        }
+      }
+    },
+    "Set %lld, %@, %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set %lld, %@, %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Serie %lld, %@, %@"
           }
         }
       }
@@ -24080,6 +25195,22 @@
         }
       }
     },
+    "Skip %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saltar %@"
+          }
+        }
+      }
+    },
     "Skip for now": {
       "extractionState": "stale",
       "localizations": {
@@ -24093,6 +25224,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Omitir por ahora"
+          }
+        }
+      }
+    },
+    "Skip rest": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip rest"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saltar descanso"
+          }
+        }
+      }
+    },
+    "Skip set": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip set"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saltar serie"
           }
         }
       }
@@ -25689,6 +26852,22 @@
         }
       }
     },
+    "Subtract 15 seconds": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subtract 15 seconds"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restar 15 segundos"
+          }
+        }
+      }
+    },
     "Suggested prompt: %@": {
       "localizations": {
         "en": {
@@ -25960,6 +27139,16 @@
         }
       }
     },
+    "TIME": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TIEMPO"
+          }
+        }
+      }
+    },
     "TODAY": {
       "extractionState": "manual",
       "localizations": {
@@ -26023,6 +27212,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Toca un músculo para ver cuándo volver a entrenarlo."
+          }
+        }
+      }
+    },
+    "Tap a set to edit it in the Focus.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap a set to edit it in the Focus."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca una serie para editarla en el Foco."
+          }
+        }
+      }
+    },
+    "Tap to edit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap to edit"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca para editar"
           }
         }
       }
@@ -26292,6 +27513,23 @@
         }
       }
     },
+    "That file isn't a NOOP workout plan. Make sure you used the prompt above.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That file isn't a NOOP workout plan. Make sure you used the prompt above."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ese archivo no es un plan de entrenamiento de NOOP. Asegúrate de haber usado el prompt de arriba."
+          }
+        }
+      }
+    },
     "That plan has no meals. Check the file and try again.": {
       "extractionState": "manual",
       "localizations": {
@@ -26305,6 +27543,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ese plan no tiene comidas. Revisa el archivo y vuelve a intentar."
+          }
+        }
+      }
+    },
+    "That plan has no routines. Check the file and try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That plan has no routines. Check the file and try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ese plan no tiene rutinas. Revisa el archivo e intenta de nuevo."
           }
         }
       }
@@ -26757,6 +28012,23 @@
         }
       }
     },
+    "The plan's unit isn't supported — it must be kg or lb.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The plan's unit isn't supported — it must be kg or lb."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La unidad del plan no es compatible — debe ser kg o lb."
+          }
+        }
+      }
+    },
     "The provider is rate-limiting requests right now. Wait a moment and try again.": {
       "localizations": {
         "en": {
@@ -26993,6 +28265,23 @@
         }
       }
     },
+    "These aren't in your library. Match each one to an exercise you have, or create it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These aren't in your library. Match each one to an exercise you have, or create it."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estos no están en tu biblioteca. Empareja cada uno con un ejercicio que tengas, o créalo."
+          }
+        }
+      }
+    },
     "These bands are the same for everyone because the index is already adjusted to your own baseline, not to the population — a 1.5 sits at YOUR normal. So there's no personal ± range to compute: what's worth watching is drifting into «High» for several days in a row.": {
       "extractionState": "manual",
       "localizations": {
@@ -27038,6 +28327,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vienen de tu historial de WHOOP y Apple Salud. Impórtalos en Orígenes de datos — o agrega uno que registraste en otro lado."
+          }
+        }
+      }
+    },
+    "They're in «My routines», ready to train.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "They're in «My routines», ready to train."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Están en «Mis rutinas», listas para entrenar."
           }
         }
       }
@@ -28105,6 +29411,22 @@
         }
       }
     },
+    "Up next · Set %lld · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Up next · Set %lld · %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sigue · Serie %lld · %@"
+          }
+        }
+      }
+    },
     "Up since your first reading in this range. VO₂max responds to training.": {
       "extractionState": "manual",
       "localizations": {
@@ -28201,6 +29523,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Usar modelo personalizado"
+          }
+        }
+      }
+    },
+    "Use suggested weight %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use suggested weight %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usar el peso sugerido %@"
           }
         }
       }
@@ -29435,6 +30773,16 @@
         }
       }
     },
+    "Weight, set %lld": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peso, serie %lld"
+          }
+        }
+      }
+    },
     "What correlates": {
       "localizations": {
         "en": {
@@ -30356,6 +31704,38 @@
         }
       }
     },
+    "Workout": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workout"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entreno"
+          }
+        }
+      }
+    },
+    "Workout complete": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workout complete"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entreno completo"
+          }
+        }
+      }
+    },
     "Workout saved": {
       "localizations": {
         "en": {
@@ -30605,6 +31985,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dejaste el acceso a Apple Salud desactivado. Puedes activarlo cuando quieras desde Ajustes. Cénit funciona sin él, con menos detalle."
+          }
+        }
+      }
+    },
+    "You logged %lld sets. Finish to save this workout.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You logged %lld sets. Finish to save this workout."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registraste %lld series. Toca Terminar para guardar el entreno."
           }
         }
       }
@@ -30907,6 +32303,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tu promedio"
+          }
+        }
+      }
+    },
+    "Your base": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your base"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu base"
           }
         }
       }
@@ -31310,6 +32722,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tu frecuencia cardíaca cuando tu cuerpo está en reposo total: lo que le cuesta latir sin hacer nada. Más baja suele indicar un sistema cardiovascular más fuerte y eficiente. Cénit la usa como cerca del 20% de tu recuperación; una subida respecto a tu norma puede señalar fatiga o que algo se está gestando."
+          }
+        }
+      }
+    },
+    "Your highest point today was at %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your highest point today was at %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu punto más alto de hoy fue a las %@"
           }
         }
       }
@@ -31758,6 +33186,23 @@
         }
       }
     },
+    "Your program": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your program"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu programa"
+          }
+        }
+      }
+    },
     "Your pulse when your body is calm. Lower usually means better fitness; a rise above your normal can be fatigue.": {
       "extractionState": "manual",
       "localizations": {
@@ -31864,6 +33309,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tu recuperación hoy es %lld%%."
+          }
+        }
+      }
+    },
+    "Your routines are created on your iPhone. NOOP never connects — you run the AI step yourself.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your routines are created on your iPhone. NOOP never connects — you run the AI step yourself."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus rutinas se crean en tu iPhone. NOOP nunca se conecta — el paso de la IA lo haces tú."
           }
         }
       }
@@ -32861,6 +34323,23 @@
         }
       }
     },
+    "bodyweight": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bodyweight"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "peso corporal"
+          }
+        }
+      }
+    },
     "bpm": {
       "localizations": {
         "en": {
@@ -33025,6 +34504,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "distancia"
+          }
+        }
+      }
+    },
+    "done": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "done"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hecha"
           }
         }
       }
@@ -33518,6 +35013,22 @@
         }
       }
     },
+    "km": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "km"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "km"
+          }
+        }
+      }
+    },
     "large": {
       "localizations": {
         "en": {
@@ -33820,6 +35331,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "menor"
+          }
+        }
+      }
+    },
+    "mi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "mi"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "mi"
           }
         }
       }
@@ -34570,6 +36097,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "p < 0.05"
+          }
+        }
+      }
+    },
+    "pending": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pending"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pendiente"
           }
         }
       }
@@ -36179,6 +37722,22 @@
         }
       }
     },
+    "your usual calm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "your usual calm"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tu calma habitual"
+          }
+        }
+      }
+    },
     "yrs": {
       "extractionState": "manual",
       "localizations": {
@@ -36212,6 +37771,22 @@
         }
       }
     },
+    "~%lld%%": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "~%lld%%"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "~%lld%%"
+          }
+        }
+      }
+    },
     "«%@» tends to coincide with higher stress.": {
       "localizations": {
         "en": {
@@ -36240,6 +37815,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "«%@» tiende a coincidir con tu estrés bajo."
+          }
+        }
+      }
+    },
+    "«Calm time» is the share of the last month that sat in the Low band; «steadiness» is how much your daily index varies week to week (its coefficient of variation — lower is steadier). The Low / Moderate / High bands (0–1 / 1–2 / 2–3) are the same for everyone because the index is already adjusted to your own baseline. (Plews 2013)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«Calm time» is the share of the last month that sat in the Low band; «steadiness» is how much your daily index varies week to week (its coefficient of variation — lower is steadier). The Low / Moderate / High bands (0–1 / 1–2 / 2–3) are the same for everyone because the index is already adjusted to your own baseline. (Plews 2013)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«Tiempo en calma» es la parte del último mes que pasó en la banda Baja; «estabilidad» es cuánto varía tu índice diario de una semana a otra (su coeficiente de variación — más bajo, más estable). Las bandas Baja / Moderada / Alta (0–1 / 1–2 / 2–3) son iguales para todos porque el índice ya está ajustado a tu propia base. (Plews 2013)"
           }
         }
       }
@@ -36669,1307 +38260,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "✓"
-          }
-        }
-      }
-    },
-    "Calm": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Calm"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Calma"
-          }
-        }
-      }
-    },
-    "Your base": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your base"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu base"
-          }
-        }
-      }
-    },
-    "Activated": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Activated"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Activado"
-          }
-        }
-      }
-    },
-    "your usual calm": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "your usual calm"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "tu calma habitual"
-          }
-        }
-      }
-    },
-    "Your highest point today was at %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your highest point today was at %@"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu punto más alto de hoy fue a las %@"
-          }
-        }
-      }
-    },
-    "+%@ over your usual calm.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "+%@ over your usual calm."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "+%@ sobre tu calma habitual."
-          }
-        }
-      }
-    },
-    "«Calm time» is the share of the last month that sat in the Low band; «steadiness» is how much your daily index varies week to week (its coefficient of variation — lower is steadier). The Low / Moderate / High bands (0–1 / 1–2 / 2–3) are the same for everyone because the index is already adjusted to your own baseline. (Plews 2013)": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "«Calm time» is the share of the last month that sat in the Low band; «steadiness» is how much your daily index varies week to week (its coefficient of variation — lower is steadier). The Low / Moderate / High bands (0–1 / 1–2 / 2–3) are the same for everyone because the index is already adjusted to your own baseline. (Plews 2013)"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "«Tiempo en calma» es la parte del último mes que pasó en la banda Baja; «estabilidad» es cuánto varía tu índice diario de una semana a otra (su coeficiente de variación — más bajo, más estable). Las bandas Baja / Moderada / Alta (0–1 / 1–2 / 2–3) son iguales para todos porque el índice ya está ajustado a tu propia base. (Plews 2013)"
-          }
-        }
-      }
-    },
-    "Finish workout?": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Finish workout?"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "¿Terminar el entreno?"
-          }
-        }
-      }
-    },
-    "Keep going": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Keep going"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Seguir"
-          }
-        }
-      }
-    },
-    "No sets logged yet — finishing will discard this workout.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No sets logged yet — finishing will discard this workout."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aún no registras series — terminar va a descartar este entreno."
-          }
-        }
-      }
-    },
-    "%lld sets aren't logged yet. Finish anyway and save the ones you did?": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld sets aren't logged yet. Finish anyway and save the ones you did?"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Te faltan %lld series por registrar. ¿Terminar de todos modos y guardar las que sí hiciste?"
-          }
-        }
-      }
-    },
-    "Save this workout?": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Save this workout?"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "¿Guardar este entreno?"
-          }
-        }
-      }
-    },
-    "Finish workout": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Finish workout"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Terminar el entreno"
-          }
-        }
-      }
-    },
-    "Exercise %lld of %lld": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Exercise %lld of %lld"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ejercicio %lld de %lld"
-          }
-        }
-      }
-    },
-    "Workout": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Workout"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Entreno"
-          }
-        }
-      }
-    },
-    "Rest %lld seconds": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rest %lld seconds"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Descanso de %lld segundos"
-          }
-        }
-      }
-    },
-    "Rest %lld min": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rest %lld min"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Descanso %lld min"
-          }
-        }
-      }
-    },
-    "Rest %llds": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rest %llds"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Descanso %llds"
-          }
-        }
-      }
-    },
-    "Open the set table": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open the set table"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abrir la tabla de series"
-          }
-        }
-      }
-    },
-    "Set %lld of %lld": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Set %lld of %lld"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Serie %lld de %lld"
-          }
-        }
-      }
-    },
-    "Last · %@ × %lld": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Last · %@ × %lld"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Última · %@ × %lld"
-          }
-        }
-      }
-    },
-    "Use suggested weight %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Use suggested weight %@"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Usar el peso sugerido %@"
-          }
-        }
-      }
-    },
-    "First time": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "First time"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Primera vez"
-          }
-        }
-      }
-    },
-    "+%@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "+%@"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "+%@"
-          }
-        }
-      }
-    },
-    "Decrease weight": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Decrease weight"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bajar peso"
-          }
-        }
-      }
-    },
-    "Increase weight": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Increase weight"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Subir peso"
-          }
-        }
-      }
-    },
-    "Reps": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reps"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reps"
-          }
-        }
-      }
-    },
-    "Decrease reps": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Decrease reps"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bajar reps"
-          }
-        }
-      }
-    },
-    "Increase reps": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Increase reps"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Subir reps"
-          }
-        }
-      }
-    },
-    "Register set": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Register set"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Registrar serie"
-          }
-        }
-      }
-    },
-    "+%@ %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "+%@ %@"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "+%@ %@"
-          }
-        }
-      }
-    },
-    "mi": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "mi"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "mi"
-          }
-        }
-      }
-    },
-    "km": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "km"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "km"
-          }
-        }
-      }
-    },
-    "All sets · %lld done": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "All sets · %lld done"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Todas las series · %lld hechas"
-          }
-        }
-      }
-    },
-    "Open table": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open table"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abrir tabla"
-          }
-        }
-      }
-    },
-    "All done": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "All done"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Todo listo"
-          }
-        }
-      }
-    },
-    "Nothing left": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nothing left"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nada pendiente"
-          }
-        }
-      }
-    },
-    "You logged %lld sets. Finish to save this workout.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You logged %lld sets. Finish to save this workout."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Registraste %lld series. Toca Terminar para guardar el entreno."
-          }
-        }
-      }
-    },
-    "Every exercise was skipped. Finish to close, or resume from the hub.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Every exercise was skipped. Finish to close, or resume from the hub."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Saltaste todos los ejercicios. Termina para cerrar, o retoma desde el inicio."
-          }
-        }
-      }
-    },
-    "~%lld%%": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "~%lld%%"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "~%lld%%"
-          }
-        }
-      }
-    },
-    "Opens the fatigue map": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Opens the fatigue map"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abre el mapa de fatiga"
-          }
-        }
-      }
-    },
-    "Rest done. %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rest done. %@"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Descanso terminado. %@"
-          }
-        }
-      }
-    },
-    "Resting, %lld seconds left. %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Resting, %lld seconds left. %@"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "En descanso, faltan %lld segundos. %@"
-          }
-        }
-      }
-    },
-    "Up next · Set %lld · %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Up next · Set %lld · %@"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sigue · Serie %lld · %@"
-          }
-        }
-      }
-    },
-    "Workout complete": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Workout complete"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Entreno completo"
-          }
-        }
-      }
-    },
-    "Subtract 15 seconds": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Subtract 15 seconds"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Restar 15 segundos"
-          }
-        }
-      }
-    },
-    "Add 15 seconds": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add 15 seconds"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sumar 15 segundos"
-          }
-        }
-      }
-    },
-    "Skip rest": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Skip rest"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Saltar descanso"
-          }
-        }
-      }
-    },
-    "Change exercise": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Change exercise"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cambiar ejercicio"
-          }
-        }
-      }
-    },
-    "Move %@ earlier": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Move %@ earlier"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mover %@ antes"
-          }
-        }
-      }
-    },
-    "Skip %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Skip %@"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Saltar %@"
-          }
-        }
-      }
-    },
-    "Tap a set to edit it in the Focus.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tap a set to edit it in the Focus."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Toca una serie para editarla en el Foco."
-          }
-        }
-      }
-    },
-    "Close the set table": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Close the set table"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cerrar la tabla de series"
-          }
-        }
-      }
-    },
-    "Add set": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add set"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Agregar serie"
-          }
-        }
-      }
-    },
-    "Skip set": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Skip set"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Saltar serie"
-          }
-        }
-      }
-    },
-    "Set %lld, %@, %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Set %lld, %@, %@"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Serie %lld, %@, %@"
-          }
-        }
-      }
-    },
-    "Tap to edit": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tap to edit"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Toca para editar"
-          }
-        }
-      }
-    },
-    "done": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "done"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "hecha"
-          }
-        }
-      }
-    },
-    "pending": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "pending"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "pendiente"
-          }
-        }
-      }
-    },
-    "Import plan": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Import plan"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Importar plan"
-          }
-        }
-      }
-    },
-    "Bring your plan from your AI": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bring your plan from your AI"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Trae tu plan desde tu IA"
-          }
-        }
-      }
-    },
-    "Copy the prompt and paste it into your trusted AI, along with your plan (text, photo or PDF).": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Copy the prompt and paste it into your trusted AI, along with your plan (text, photo or PDF)."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Copia el prompt y pégalo en tu IA de confianza, junto con tu plan (texto, foto o PDF)."
-          }
-        }
-      }
-    },
-    "Your routines are created on your iPhone. NOOP never connects — you run the AI step yourself.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your routines are created on your iPhone. NOOP never connects — you run the AI step yourself."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tus rutinas se crean en tu iPhone. NOOP nunca se conecta — el paso de la IA lo haces tú."
-          }
-        }
-      }
-    },
-    "%lld exercises to set up": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld exercises to set up"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld ejercicios por ubicar"
-          }
-        }
-      }
-    },
-    "These aren't in your library. Match each one to an exercise you have, or create it.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "These aren't in your library. Match each one to an exercise you have, or create it."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Estos no están en tu biblioteca. Empareja cada uno con un ejercicio que tengas, o créalo."
-          }
-        }
-      }
-    },
-    "Matched · %@": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Matched · %@"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Emparejado · %@"
-          }
-        }
-      }
-    },
-    "Create new": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Create new"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Crear nuevo"
-          }
-        }
-      }
-    },
-    "Resolve %lld more to continue": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Resolve %lld more to continue"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Resuelve %lld más para continuar"
-          }
-        }
-      }
-    },
-    "Your program": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your program"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu programa"
-          }
-        }
-      }
-    },
-    "%lld routines · %lld exercises": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld routines · %lld exercises"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld rutinas · %lld ejercicios"
-          }
-        }
-      }
-    },
-    "Create %lld routines": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Create %lld routines"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Crear %lld rutinas"
-          }
-        }
-      }
-    },
-    "Created %lld routines": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Created %lld routines"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Creaste %lld rutinas"
-          }
-        }
-      }
-    },
-    "They're in «My routines», ready to train.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "They're in «My routines», ready to train."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Están en «Mis rutinas», listas para entrenar."
-          }
-        }
-      }
-    },
-    "bodyweight": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "bodyweight"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "peso corporal"
-          }
-        }
-      }
-    },
-    "That file isn't a NOOP workout plan. Make sure you used the prompt above.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "That file isn't a NOOP workout plan. Make sure you used the prompt above."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ese archivo no es un plan de entrenamiento de NOOP. Asegúrate de haber usado el prompt de arriba."
-          }
-        }
-      }
-    },
-    "The plan's unit isn't supported — it must be kg or lb.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The plan's unit isn't supported — it must be kg or lb."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "La unidad del plan no es compatible — debe ser kg o lb."
-          }
-        }
-      }
-    },
-    "One of the exercises has an unsupported type. Check the file and try again.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "One of the exercises has an unsupported type. Check the file and try again."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Uno de los ejercicios tiene un tipo no compatible. Revisa el archivo e intenta de nuevo."
-          }
-        }
-      }
-    },
-    "That plan has no routines. Check the file and try again.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "That plan has no routines. Check the file and try again."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ese plan no tiene rutinas. Revisa el archivo e intenta de nuevo."
-          }
-        }
-      }
-    },
-    "One of the routines has no exercises. Check the file and try again.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "One of the routines has no exercises. Check the file and try again."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Una de las rutinas no tiene ejercicios. Revisa el archivo e intenta de nuevo."
-          }
-        }
-      }
-    },
-    "One of the exercises has no name. Check the file and try again.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "One of the exercises has no name. Check the file and try again."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Uno de los ejercicios no tiene nombre. Revisa el archivo e intenta de nuevo."
           }
         }
       }
