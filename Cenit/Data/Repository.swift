@@ -315,13 +315,31 @@ final class Repository: ObservableObject {
     /// collision), oldest first.
     func sleepSessions(from: Int, to: Int, limit: Int = 100) async -> [CachedSleepSession] {
         guard let store = await ensureStore() else { return [] }
-        // FER-484: in appleHealthOnly the strap is excluded from reads (Apple sleep sessions arrive in F3).
+        // FER-484/486: the mode filters which sources are read. Strap (imported + on-device computed) is
+        // gated on usesWhoop; Apple Health sleep sessions (FER-486, per-night stage timeline) on usesAppleHealth.
         let imported = dataSourceMode.usesWhoop ? ((try? await store.sleepSessions(deviceId: deviceId, from: from, to: to, limit: limit)) ?? []) : []
         let computed = dataSourceMode.usesWhoop ? ((try? await store.sleepSessions(deviceId: computedDeviceId, from: from, to: to, limit: limit)) ?? []) : []
+        let apple = dataSourceMode.usesAppleHealth ? ((try? await store.sleepSessions(deviceId: "apple-health", from: from, to: to, limit: limit)) ?? []) : []
+        return Self.mergeSleepSessions(imported: imported, computed: computed, apple: apple)
+    }
+
+    /// Merge sleep sessions across sources. Strap is the base — imported (real export) wins over the
+    /// on-device computed row on the same `startTs`. An Apple Health session is added ONLY if no strap
+    /// session overlaps its `[startTs, endTs]` span: the band wins PER NIGHT (FER-486), because a strap
+    /// night and Apple's session for the same sleep have different `startTs` (so a startTs dedup can't
+    /// catch them). Pure + static so `SleepSessionMergeTests` can pin it; with `apple == []` it is the
+    /// prior strap-only merge byte-for-byte (regression zero).
+    static func mergeSleepSessions(imported: [CachedSleepSession], computed: [CachedSleepSession],
+                                   apple: [CachedSleepSession]) -> [CachedSleepSession] {
         var byStart: [Int: CachedSleepSession] = [:]
         for s in computed { byStart[s.startTs] = s }
         for s in imported { byStart[s.startTs] = s }   // imported (real export) wins on the same start
-        return byStart.values.sorted { $0.startTs < $1.startTs }
+        let strap = Array(byStart.values)
+        func overlapsStrap(_ a: CachedSleepSession) -> Bool {
+            strap.contains { $0.startTs <= a.endTs && $0.endTs >= a.startTs }
+        }
+        let merged = strap + apple.filter { !overlapsStrap($0) }
+        return merged.sorted { $0.startTs < $1.startTs }
     }
 
     // MARK: - Metric explorer reads (generic substrate)

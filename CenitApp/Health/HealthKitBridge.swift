@@ -300,6 +300,11 @@ final class HealthKitBridge: ObservableObject {
         stage(11, "workouts")
         let wkRows = await collectWorkouts(start: start, end: end)
 
+        // FER-486: per-night Apple sleep SESSIONS with a stage timeline (for the Detalle de Sueño
+        // hypnogram), ALONGSIDE the daily totals from collectSleep above — F3 is additive. Pure decode
+        // (SleepHKDecoder, StrandImport); the idempotent upsert below keeps a re-sync from duplicating.
+        let appleSleepSessions = SleepHKDecoder.sessions(from: await collectSleepSamples(start: start, end: end))
+
         stage(12, "saving")
 
         // Build + upsert the store rows under the apple-health source.
@@ -350,6 +355,7 @@ final class HealthKitBridge: ObservableObject {
             try await store.upsertDailyMetrics(dmRows, deviceId: appleDeviceId)
             try await store.upsertMetricSeries(seriesRows, deviceId: appleDeviceId)
             try await store.upsertWorkouts(wkRows, deviceId: appleDeviceId)
+            try await store.upsertSleepSessions(appleSleepSessions, deviceId: appleDeviceId)   // FER-486 (F3): per-night stage timeline
             try await writeBack(whoopStore: store)
             lastSync = Date()
             lastError = nil
@@ -584,6 +590,25 @@ final class HealthKitBridge: ObservableObject {
                     sink(day, asleep[day], deep[day], rem[day], core[day])
                 }
                 cont.resume()
+            }
+            store.execute(q)
+        }
+    }
+
+    /// FER-486: the raw `sleepAnalysis` samples as platform-agnostic descriptors, so the pure
+    /// `SleepHKDecoder` (StrandImport) can group them into one per-night `CachedSleepSession` with a
+    /// stage timeline for the Detalle de Sueño hypnogram. Runs ALONGSIDE `collectSleep` (which keeps
+    /// producing the daily totals) — F3 is additive. No mapping/grouping here: this is the thin shell.
+    private func collectSleepSamples(start: Date, end: Date) async -> [SleepHKSample] {
+        guard let type = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else { return [] }
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: [])
+        return await withCheckedContinuation { (cont: CheckedContinuation<[SleepHKSample], Never>) in
+            let q = HKSampleQuery(sampleType: type, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, samples, _ in
+                let out: [SleepHKSample] = (samples ?? []).compactMap { s in
+                    guard let c = s as? HKCategorySample else { return nil }
+                    return SleepHKSample(hkValue: c.value, start: c.startDate, end: c.endDate, dedupeKey: "")
+                }
+                cont.resume(returning: out)
             }
             store.execute(q)
         }
