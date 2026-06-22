@@ -39358,6 +39358,22 @@
           }
         }
       }
+    },
+    "Opens the exercise": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the exercise"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre el ejercicio"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Toca un ejercicio en el historial o la rutina para ver su progreso / Tap an exercise in your history or routine to see its progress.**
+  **ES** — En el **detalle de un entrenamiento** (historial) y en la **rutina**, ahora puedes **tocar un ejercicio** para abrir su detalle con **Progreso** (peso máximo / 1RM / volumen) y **Records personales**. Antes solo se llegaba desde la biblioteca. Si un ejercicio no se reconoce, no queda como un toque muerto.
+  **EN** — In a **workout's detail** (history) and in your **routine**, you can now **tap an exercise** to open its detail with **Progress** (max weight / 1RM / volume) and **Personal records**. Before, you could only reach it from the library. If an exercise isn't recognized, it isn't a dead tap.
+  ([Cenit/Screens/WorkoutHistoryScreen.swift](Cenit/Screens/WorkoutHistoryScreen.swift), [Cenit/Screens/RutinaDeHoyScreen.swift](Cenit/Screens/RutinaDeHoyScreen.swift))
+
 - **El mapa muscular pinta de verde los músculos frescos / The muscle map paints fresh muscles green.**
   **ES** — En **Cuerpo → «Qué entrenar hoy»**, la silueta ya concuerda con la recomendación: un músculo **fresco** (listo para entrenar) se ve **verde**, uno a **media carga** ámbar, y uno **cargado** rojo. Antes, hasta los músculos que la tarjeta llamaba «frescos» —como las pantorrillas— salían dorados, porque el color casi nunca llegaba al verde. Los músculos que no has entrenado siguen en gris (sin datos). El mismo color se aplica ahora en la silueta, la lista «Más cargados» y el indicador al tocar un músculo.
   **EN** — In **Body → "What to train today"**, the silhouette now matches the recommendation: a **fresh** muscle (ready to train) shows **green**, a **moderately** loaded one amber, and a **loaded** one red. Before, even muscles the card called "fresh" —like calves— came out gold, because the color rarely reached green. Muscles you haven't trained stay gray (no data). The same color now applies across the silhouette, the "Most loaded" list, and the tap indicator.

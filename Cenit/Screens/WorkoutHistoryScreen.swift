@@ -181,6 +181,10 @@ struct WorkoutSessionDetailScreen: View {
 
     /// Work sets grouped by exercise, in the order they were performed.
     @State private var groups: [(exerciseId: String, name: String, sets: [SetEntry])] = []
+    /// Resolved exercises by id, so tapping a block opens its detail (FER-517).
+    @State private var exercisesByID: [String: Exercise] = [:]
+    /// The exercise whose detail sheet is open (nil = none).
+    @State private var detailExercise: Exercise?
     @State private var volumeKg: Double = 0
     @State private var setCount = 0
     @State private var loaded = false
@@ -205,6 +209,17 @@ struct WorkoutSessionDetailScreen: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
+        .sheet(item: $detailExercise) { ex in
+            NavigationStack {
+                ExerciseDetailScreen(exercise: ex)
+                    .toolbar { ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { detailExercise = nil }.foregroundStyle(theme.ink)
+                    } }
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbarBackground(theme.paper, for: .navigationBar)
+            }
+            .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        }
         .task { await load() }
     }
 
@@ -275,7 +290,7 @@ struct WorkoutSessionDetailScreen: View {
 
     private func exerciseBlock(_ g: (exerciseId: String, name: String, sets: [SetEntry])) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(g.name).font(StrandFont.headline).foregroundStyle(theme.ink)
+            exerciseTitle(g)
                 .padding(.bottom, 6)
             ForEach(Array(g.sets.enumerated()), id: \.element.id) { idx, set in
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -293,10 +308,32 @@ struct WorkoutSessionDetailScreen: View {
         }
     }
 
+    /// The exercise's name — a tappable row (name + chevron) that opens its detail when the exercise
+    /// resolves (FER-517); plain text otherwise, so there's no dead tap on an unknown id.
+    @ViewBuilder
+    private func exerciseTitle(_ g: (exerciseId: String, name: String, sets: [SetEntry])) -> some View {
+        if let ex = exercisesByID[g.exerciseId] {
+            Button { detailExercise = ex } label: {
+                HStack(spacing: 6) {
+                    Text(g.name).font(StrandFont.headline).foregroundStyle(theme.ink)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    Spacer(minLength: 0)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint(Text("Opens the exercise"))
+        } else {
+            Text(g.name).font(StrandFont.headline).foregroundStyle(theme.ink)
+        }
+    }
+
     private func load() async {
         let sets = await repo.sessionSets(sessionId: route.id)
         let exercises = await repo.allExercises()
         let names = Dictionary(exercises.map { ($0.id, $0.name) }, uniquingKeysWith: { a, _ in a })
+        exercisesByID = Dictionary(exercises.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
 
         // Only work sets, in performed order, grouped by exercise (first-seen order preserved).
         let work = sets.filter { $0.kind == .work }
