@@ -48,6 +48,27 @@ extension Repository {
         try await store.saveCustomExercise(e)
     }
 
+    // MARK: - Sessions (the completed-workout history)
+
+    /// Completed strength sessions, newest first — the «Mis entrenamientos» list (FER-504). Read-only.
+    func recentSessions(limit: Int = 200) async -> [StrengthSession] {
+        guard let store = await storeHandle() else { return [] }
+        return (try? await store.recentSessions(limit: limit)) ?? []
+    }
+
+    /// The logged sets of one session, in position order — the per-session breakdown (FER-504).
+    func sessionSets(sessionId: String) async -> [SetEntry] {
+        guard let store = await storeHandle() else { return [] }
+        return (try? await store.setEntries(sessionId: sessionId)) ?? []
+    }
+
+    /// Per-session work volume + completed-set count, keyed by session id — the numbers the history
+    /// list shows per row (FER-504). One aggregate read in the store.
+    func sessionVolumes() async -> [String: (volumeKg: Double, setCount: Int)] {
+        guard let store = await storeHandle() else { return [:] }
+        return (try? await store.sessionVolumes()) ?? [:]
+    }
+
     // MARK: - History (per exercise)
 
     /// Completed work sets for one exercise with their session start time, oldest→newest — the raw

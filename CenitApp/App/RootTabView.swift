@@ -22,6 +22,7 @@ struct RootTabView: View {
     private enum SecondaryScreen: String, Hashable {
         case coach                                // Coach hub
         case library                              // Entrenar hub — exercise library (FER-346)
+        case workoutHistory = "workouthistory"    // Entrenar hub — «Mis entrenamientos» (FER-504)
         case breathe, intervals, dieta            // Entrenar hub
         case routineToday                         // Entrenar hub — «Rutina de hoy» (DEBUG screenshot-nav)
         // Reachable via DEBUG screenshot-nav (pushed onto the Ajustes stack). Explore/Compare/Workouts
@@ -81,7 +82,8 @@ struct RootTabView: View {
                     openLibrary: { trainStack.append(SecondaryScreen.library) },
                     openBreathe: { trainStack.append(SecondaryScreen.breathe) },
                     openIntervals: { trainStack.append(SecondaryScreen.intervals) },
-                    openDiet: { trainStack.append(SecondaryScreen.dieta) }
+                    openDiet: { trainStack.append(SecondaryScreen.dieta) },
+                    openHistory: { trainStack.append(SecondaryScreen.workoutHistory) }
                 )
                 .barReservation(barHeight)
                 .navigationDestination(for: SecondaryScreen.self) { screen in
@@ -89,6 +91,9 @@ struct RootTabView: View {
                 }
                 .navigationDestination(for: RoutineRoute.self) { route in
                     trainChrome(RutinaDeHoyScreen(routineId: route.routineId))
+                }
+                .navigationDestination(for: WorkoutSessionRoute.self) { route in
+                    trainChrome(WorkoutSessionDetailScreen(route: route))
                 }
             }
             .toolbar(.hidden, for: .tabBar)
@@ -274,6 +279,7 @@ struct RootTabView: View {
         switch screen {
         case .coach:        CoachView()
         case .library:      ExerciseLibraryScreen()
+        case .workoutHistory: WorkoutHistoryScreen()
         case .breathe:      BreathingView()
         case .intervals:    IntervalTimerView()
         case .routineToday: RutinaDeHoyScreen(routineId: nil)

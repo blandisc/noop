@@ -271,6 +271,29 @@ extension WhoopStore {
         }
     }
 
+    /// Per-session work volume (Σ weight×reps) and completed-work-set count for the «Mis entrenamientos»
+    /// list (FER-504) — one GROUP BY, not a read per session. Only done work sets with both weight and
+    /// reps contribute to volume; the count is every done work set (a bodyweight set still counts).
+    public func sessionVolumes() async throws -> [String: (volumeKg: Double, setCount: Int)] {
+        try syncRead { db in
+            var out: [String: (volumeKg: Double, setCount: Int)] = [:]
+            let rows = try Row.fetchAll(db, sql: """
+                SELECT sessionId AS sid,
+                       COALESCE(SUM(CASE WHEN weightKg IS NOT NULL AND reps IS NOT NULL
+                                         THEN weightKg * reps ELSE 0 END), 0) AS vol,
+                       COUNT(*) AS cnt
+                FROM setEntry
+                WHERE kind = 'work' AND done = 1
+                GROUP BY sessionId
+                """)
+            for r in rows {
+                let sid: String = r["sid"]
+                out[sid] = (volumeKg: r["vol"], setCount: r["cnt"])
+            }
+            return out
+        }
+    }
+
     /// The most recent *work* sets for an exercise, newest first — powers "la última vez" pre-fill.
     public func lastWorkSets(exerciseId: String, limit: Int = 12) async throws -> [SetEntry] {
         try syncRead { db in

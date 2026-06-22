@@ -38675,6 +38675,118 @@
           }
         }
       }
+    },
+    "My workouts": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My workouts"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mis entrenamientos"
+          }
+        }
+      }
+    },
+    "The strength sessions you've finished.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The strength sessions you've finished."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las sesiones de fuerza que has terminado."
+          }
+        }
+      }
+    },
+    "When you finish a strength session, it shows up here with its breakdown, volume and effort.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When you finish a strength session, it shows up here with its breakdown, volume and effort."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuando termines una sesión de fuerza, aparecerá aquí con su desglose, volumen y esfuerzo."
+          }
+        }
+      }
+    },
+    "Strength workout": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strength workout"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entrenamiento de fuerza"
+          }
+        }
+      }
+    },
+    "%lld h %lld min": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld h %lld min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld h %2$lld min"
+          }
+        }
+      }
+    },
+    "%lld s": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld s"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld s"
+          }
+        }
+      }
+    },
+    "%lld m": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld m"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld m"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
