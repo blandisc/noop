@@ -273,9 +273,20 @@ final class Repository: ObservableObject {
         return (try? await store.hrBuckets(deviceId: deviceId, from: from, to: to, bucketSeconds: bucketSeconds)) ?? []
     }
 
+    /// Sleep sessions overlapping `[from, to]`, MERGED across the imported (raw `deviceId`) and on-device
+    /// COMPUTED (`computedDeviceId`, "-noop") sources — a live strap user's nightly sleep is written by the
+    /// IntelligenceEngine under "-noop", an import user's under the raw id. Reading only the raw id missed a
+    /// BLE user's sleep entirely, so the intraday-stress exclusion never fired and the night read as waking
+    /// (FER-451). Mirrors the dashboard's own sleep merge. Deduped by startTs (imported/export wins on a
+    /// collision), oldest first.
     func sleepSessions(from: Int, to: Int, limit: Int = 100) async -> [CachedSleepSession] {
         guard let store = await ensureStore() else { return [] }
-        return (try? await store.sleepSessions(deviceId: deviceId, from: from, to: to, limit: limit)) ?? []
+        let imported = (try? await store.sleepSessions(deviceId: deviceId, from: from, to: to, limit: limit)) ?? []
+        let computed = (try? await store.sleepSessions(deviceId: computedDeviceId, from: from, to: to, limit: limit)) ?? []
+        var byStart: [Int: CachedSleepSession] = [:]
+        for s in computed { byStart[s.startTs] = s }
+        for s in imported { byStart[s.startTs] = s }   // imported (real export) wins on the same start
+        return byStart.values.sorted { $0.startTs < $1.startTs }
     }
 
     // MARK: - Metric explorer reads (generic substrate)
