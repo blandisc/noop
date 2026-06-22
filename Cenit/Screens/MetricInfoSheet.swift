@@ -621,7 +621,6 @@ struct MetricInfoSheet: View {
                     weightsBlock(weights, note: info.weightsNote, dimmed: info.calibration != nil)
                 }
                 if !info.bands.isEmpty {
-                    rangeReadoutLine
                     bandsTable
                 }
                 if let method = info.method { methodDisclosure(method) }
@@ -942,6 +941,9 @@ struct MetricInfoSheet: View {
             Text("Last 14 days")
                 .font(StrandFont.headline)
                 .foregroundStyle(theme.ink)
+            // The «{band} · X of N days in this range» readout sits right under the title, contextualizing
+            // the period before the chart (instead of floating below it). (FER-473)
+            rangeReadoutLine
             if trendData.count > 1 {
                 if let bt = bandedTrend {
                     // The «{band} · X of N days in this range» readout now lives once, above the ranges
