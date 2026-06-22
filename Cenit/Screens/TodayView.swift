@@ -572,11 +572,9 @@ struct TodayView: View {
             .animation(reduceMotion ? nil : StrandMotion.fade, value: showsSyncHint)
             // Inset superior `gap` (FER-202): el héroe queda alto pero respira.
             .padding(.horizontal, NoopMetrics.screenPadding)
-            // Dock al ras (FER-488, sobre FER-479): el capsule va bottom-alineado en su área tocable de 28pt
-            // (ver `todayPageDots`) y este margen inferior de 3pt lo deja flotando ~3pt sobre la «Barra de
-            // instrumento» — el mínimo limpio sin tocar el hairline ni ocultarse tras el overlay flotante. El
-            // sobrante vertical sigue yéndose ARRIBA (el Spacer único crece). La rejilla mantiene su aire.
-            .padding(.bottom, 3)
+            // Margen inferior compacto (FER-475): los page dots (último elemento) quedan pegados al dock,
+            // no flotando con 24pt de aire. La rejilla de métricas mantiene su aire propio (cards + gap).
+            .padding(.bottom, NoopMetrics.space2)
             .padding(.top, NoopMetrics.space2)
             // Llena al menos el alto visible para que los `Spacer` tengan sobrante que repartir; si el
             // contenido lo excede (p. ej. calibrando en pantalla chica), crece y hace scroll igual.
@@ -1167,8 +1165,7 @@ struct TodayView: View {
 
     /// Page dots: punto 6×6 inactivo (`hairlineStrong`) · barra 18×6 activa (`ink`), centrados. Tocar un
     /// punto navega a su página (`StrandMotion.interactive`, omitida bajo Reduce Motion). El acento verde
-    /// NO se usa en el chrome: la página activa es TINTA, no verde (handoff). Área tocable de 28pt, con el
-    /// capsule bottom-alineado dentro de ella (FER-488) para que el dock baje al ras de la barra sin perder toque.
+    /// NO se usa en el chrome: la página activa es TINTA, no verde (handoff). Área tocable de 28pt.
     private var todayPageDots: some View {
         HStack(spacing: NoopMetrics.space2) {
             ForEach(0..<2, id: \.self) { i in
@@ -1179,7 +1176,7 @@ struct TodayView: View {
                     Capsule(style: .continuous)
                         .fill(active ? theme.ink : theme.hairlineStrong)
                         .frame(width: active ? 18 : 6, height: 6)
-                        .frame(width: 28, height: 28, alignment: .bottom)
+                        .frame(width: 28, height: 28)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
