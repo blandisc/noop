@@ -990,11 +990,12 @@ struct MetricInfoSheet: View {
         }
     }
 
-    /// The banded-chart configuration for the two metrics whose trend reads against fixed classification
-    /// bands (sleep, stress) — the active band the latest value falls in, the Y range anchored to the
-    /// band thresholds, ticks at those thresholds, and a paper-legible value format. Sleep is converted
-    /// to HOURS here (its series is stored in minutes); stress stays on its 0–3 score. `nil` for every
-    /// other metric, so they keep the plain auto-scaled chart. (FER-244)
+    /// The banded-chart configuration for the metrics whose trend reads against fixed classification
+    /// bands (sleep, stress, SpO₂, FC reposo, steps) — today's band shaded (the same one the ranges table
+    /// highlights and the readout names, FER-471), the Y range anchored to the band thresholds, ticks at
+    /// those thresholds, and a paper-legible value format. Sleep is converted to HOURS here (its series is
+    /// stored in minutes); the others keep their own units. `nil` for every other metric (HRV, VO₂max…),
+    /// so they keep the plain auto-scaled chart. (FER-244)
     private struct BandedTrend {
         var points: [TrendPoint]
         var bands: [TrendBand]
@@ -1008,14 +1009,27 @@ struct MetricInfoSheet: View {
     }
 
     private var bandedTrend: BandedTrend? {
-        guard info.id == "sleep" || info.id == "stress", !info.bands.isEmpty, trendData.count > 1 else { return nil }
+        // The metrics whose summary-sheet trend reads against fixed classification bands, drawn behind the
+        // line like sleep/stress — the same family that already carries the ranges table + readout
+        // (FER-459/469). Extending it here gives SpO₂, FC reposo and Pasos the labelled carriles their
+        // chart was missing, matching sleep/stress.
+        let banded: Set<String> = ["sleep", "stress", "spo2", "rhr", "steps"]
+        guard banded.contains(info.id), !info.bands.isEmpty, trendData.count > 1 else { return nil }
         let toHours = info.id == "sleep"
+        let isSteps = info.id == "steps"
         let sorted = trendData.sorted { $0.date < $1.date }
         let pts = sorted.map { TrendPoint(date: $0.date, value: toHours ? $0.value / 60 : $0.value) }
         let values = pts.map(\.value)
+        // Steps' latest point is today's partial total (FER-264): plot every day, but count completed days
+        // only so the partial total doesn't inflate the active band's tally.
+        let completed = (isSteps && values.count > 1) ? Array(values.dropLast()) : values
         var bands = info.bands.map { TrendBand(label: $0.label, lower: $0.lower, upper: $0.upper) }
-        guard let active = TrendBands.activeBand(values: values, bands: bands) else { return nil }
-        bands[active.index].isActive = true
+        // Shade today's band — the same one the ranges table highlights and the readout names (FER-471);
+        // fall back to the latest completed reading when there's no usable today.
+        guard let activeIdx = info.bands.firstIndex(where: { $0.isActive })
+            ?? TrendBands.activeBand(values: completed, bands: bands)?.index else { return nil }
+        bands[activeIdx].isActive = true
+        let activeCount = completed.reduce(0) { $0 + (bands[activeIdx].contains($1) ? 1 : 0) }
         let thresholds = Set(info.bands.flatMap { [$0.lower, $0.upper].compactMap { $0 } }).sorted()
         let tLo = thresholds.first ?? (values.min() ?? 0)
         let tHi = thresholds.last ?? (values.max() ?? 1)
@@ -1023,12 +1037,14 @@ struct MetricInfoSheet: View {
         let hi = max(values.max() ?? tHi, tHi)
         let pad = max((hi - lo) * 0.08, 0.25)
         let range = max(0, lo - pad)...(hi + pad)
+        // Sleep plots in hours (h/m); every other banded metric reuses its standard per-metric formatter
+        // (rhr → bpm, spo2 → %, steps → grouped integer, stress → one decimal).
         let fmt: (Double) -> String = toHours
             ? { v in let m = Int((v * 60).rounded()); return m % 60 > 0 ? "\(m / 60)h \(m % 60)m" : "\(m / 60)h" }
-            : { String(format: "%.1f", $0) }
+            : trendValueFormat
         return BandedTrend(points: pts, bands: bands, range: range, yTicks: thresholds,
                            color: metricHue, valueFormat: fmt,
-                           activeLabel: bands[active.index].label, count: active.count, total: values.count)
+                           activeLabel: bands[activeIdx].label, count: activeCount, total: completed.count)
     }
 
     /// Auto-scale: 15% headroom above the max, floor capped at zero.
