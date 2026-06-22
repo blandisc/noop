@@ -1693,18 +1693,24 @@ struct MetricDetailScreen: View {
     // MARK: - Ranges-mode fixed table (FER-469)
 
     /// Per-band counts for the «Ranges» table: each band with how many of the windowed (completed) days
-    /// fell in it, plus the active band (the band the latest reading falls in; Steps uses the latest
-    /// completed day, FER-264). `nil` when the metric has no labeled bands or there's no data.
+    /// fell in it, plus the active band = today's band (matching the chart's shaded band + the hero; falls
+    /// back to the latest completed reading). Counts read completed days only. `nil` when there are no
+    /// labeled bands or no data. (FER-469 / FER-471)
     private func rangesData(_ window: MetricWindow)
         -> (rows: [(band: MetricInfo.Band, count: Int)], activeIndex: Int, total: Int)? {
         let banded = spec.info.bands.filter { $0.lower != nil || $0.upper != nil }
         guard !banded.isEmpty else { return nil }
         let tbands = banded.map { TrendBand(label: $0.label, lower: $0.lower, upper: $0.upper) }
         let values = trendStatRows(window).map(\.value)
-        guard !values.isEmpty, let active = TrendBands.activeBand(values: values, bands: tbands) else { return nil }
+        guard !values.isEmpty else { return nil }
         var counts = Array(repeating: 0, count: banded.count)
         for v in values { if let i = TrendBands.index(containing: v, in: tbands) { counts[i] += 1 } }
-        return (Array(zip(banded, counts)), active.index, values.count)
+        // Active band = today's band (the chart's shaded band + the hero), so the table agrees with the
+        // chart; the counts still come from completed days. Falls back to the latest completed reading when
+        // there's no today value. (FER-471)
+        guard let activeIndex = banded.firstIndex(where: { $0.isActive })
+            ?? TrendBands.activeBand(values: values, bands: tbands)?.index else { return nil }
+        return (Array(zip(banded, counts)), activeIndex, values.count)
     }
 
     /// «Ranges» mode: the standardized «{band} · X of the last N days/nights in this range» line + a FIXED
