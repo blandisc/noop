@@ -87,9 +87,12 @@ public enum RestReadinessRule {
                                 bandBPM: Int = defaultBandBPM,
                                 minRestS: Int = defaultMinRestS,
                                 maxRestS: Int = defaultMaxRestS) -> RestReadiness {
-        // 1. No usable HR signal → honest fixed timer; never invent HR or color. The clock
-        //    still releases at the ceiling so the rest doesn't hang.
-        guard worn, let hr = currentHR, let resting = restingHR else {
+        // 1. We need live HR (+worn) AND a target — either the explicit one (FER-495) or the FER-348
+        //    resting+margin default. With neither, fall to the honest fixed timer (never invent HR or
+        //    color). The clock still releases at the ceiling so the rest doesn't hang. FER-506 relaxed
+        //    this: a peakDrop/fixedBpm target no longer requires a resting baseline.
+        guard worn, let hr = currentHR,
+              let target = targetHR ?? restingHR.map({ Int($0.rounded()) + marginBPM }) else {
             let released = elapsedS >= maxRestS
             return RestReadiness(bpmToReady: nil, targetReadyHR: nil,
                                  state: .noSignal,
@@ -97,9 +100,6 @@ public enum RestReadinessRule {
                                  ready: released)
         }
 
-        // FER-495: an explicit per-exercise target (resolved by `RestTarget`) overrides the FER-348
-        // resting+margin default. `nil` keeps FER-348 behavior bit-for-bit.
-        let target = targetHR ?? (Int(resting.rounded()) + marginBPM)
         let gap = max(0, hr - target)
 
         // 2. Ceiling — released regardless of HR (no infinite wait), still reporting the honest gap.
