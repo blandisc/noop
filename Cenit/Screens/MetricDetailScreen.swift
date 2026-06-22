@@ -494,7 +494,7 @@ struct MetricDetailScreen: View {
                     // «Ranges» mode shades the active classification band, labels shown. (Detalle de Vital)
                     bands: { _ in effectiveChartBands(window) },
                     bandColor: { _ in spec.clinicalBands ? theme.verdict : metricHue },
-                    yAxisValues: rangesModeActive ? rangesYTicks : clinicalYAxisValues,
+                    yAxisValues: rangesModeActive ? rangesYTicks(window) : clinicalYAxisValues,
                     // «Media móvil» auto-ticks: ask for more so a wide range (e.g. steps 0–15k) reads at finer
                     // increments instead of just 5k/10k/15k. Ignored when ticks are explicit («Rangos» bands,
                     // SpO₂'s clinical thresholds), and the compact summary/strain cards keep the default 4. (Detalle)
@@ -603,19 +603,25 @@ struct MetricDetailScreen: View {
         let hi = Swift.max(tHi, smoothed.max() ?? tHi)
         let lo = Swift.min(tLo, smoothed.min() ?? tLo)
         let span = hi - lo
-        return (lo - span * 0.1)...(hi + span * 0.28)
+        // Modest top headroom: the range already includes the data peak, so a small margin clears the
+        // «Media móvil ⇄ Rangos» selector above without leaving a big empty band over the line. (Detalle)
+        return (lo - span * 0.1)...(hi + span * 0.15)
     }
 
-    private var rangesYTicks: [Double]? {
+    /// «Ranges» Y ticks: the band thresholds, plus round ticks above the top band when the line climbs past
+    /// it (e.g. steps over «Muy activo») so the upper chart still has labels. Bounded to the chart's actual
+    /// domain top — Charts EXPANDS the y-scale to fit any explicit tick, so a tick above the domain would
+    /// stretch the axis into a big empty band over the line. Extend only up to where the line reaches. (Detalle)
+    private func rangesYTicks(_ window: MetricWindow) -> [Double]? {
         let thresholds = Set(spec.info.bands.flatMap { [$0.lower, $0.upper].compactMap { $0 } }).sorted()
         guard let maxT = thresholds.last else { return nil }
-        // The line can climb above the top band (e.g. steps past «Muy activo»), but explicit ticks topped
-        // out at the highest threshold — so the upper part of the chart had no labels. Extend with round
-        // ticks above it (step ≈ a quarter of the top threshold). Charts only draws ticks inside the chart's
-        // domain, so the ones beyond where the line actually reaches simply don't render. (Detalle)
+        let plotted = chartPlotsRaw ? window.values : SeriesShape.movingAverage(window.values, window: 7)
+        guard let top = rangesValueRange(plotted)?.upperBound, top > maxT else { return thresholds }
         let step = Swift.max((maxT / 4).rounded(), 1)
-        let extra = (1...6).map { maxT + Double($0) * step }
-        return thresholds + extra
+        var ticks = thresholds
+        var v = maxT + step
+        while v < top { ticks.append(v); v += step }
+        return ticks
     }
 
     private func chartModeLabel(_ m: ChartMode) -> String {

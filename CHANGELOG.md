@@ -20,8 +20,8 @@ approximate; Cénit is built from source — see the [README](README.md).
 ## Unreleased
 
 - **Detalle (vista «Rangos»): el eje Y pone labels por encima del carril más alto / Detail ("Ranges" view): the Y axis labels above the top band.**
-  **ES** — En la vista «Rangos» el eje Y solo marcaba los umbrales de banda (p. ej. 5k/8k/10k en Pasos), así que cuando la línea subía muy por encima del último umbral, el chart seguía pero el label se quedaba en 10k. Ahora, arriba del carril más alto se agregan marcas redondas (12.5k, 15k… en Pasos) para que la parte alta de la gráfica también tenga referencia. Las marcas que quedan por arriba de donde llega la línea no se dibujan.
-  **EN** — In the "Ranges" view the Y axis only marked the band thresholds (e.g. 5k/8k/10k for Steps), so when the line climbed well past the top threshold the chart kept going but the top label stayed at 10k. Now round ticks are added above the top band (12.5k, 15k… for Steps) so the upper part of the chart has a reference too. Ticks above where the line actually reaches aren't drawn.
+  **ES** — En la vista «Rangos» el eje Y solo marcaba los umbrales de banda (p. ej. 5k/8k/10k en Pasos), así que cuando la línea subía muy por encima del último umbral el label se quedaba en 10k. Ahora se agregan marcas redondas arriba del carril más alto (12.5k, 15k… en Pasos), **acotadas hasta donde llega la línea**: la gráfica ya no se estira con espacio vacío hasta 25k, sino que encuadra los datos con un margen chico sobre el pico.
+  **EN** — In the "Ranges" view the Y axis only marked the band thresholds (e.g. 5k/8k/10k for Steps), so when the line climbed past the top threshold the top label stayed at 10k. Round ticks are now added above the top band (12.5k, 15k… for Steps), **bounded to where the line reaches**: the chart no longer stretches to empty space up at 25k — it frames the data with a small margin above the peak.
   ([Cenit/Screens/MetricDetailScreen.swift](Cenit/Screens/MetricDetailScreen.swift))
 
 - **Batería: la app deja de re-sincronizar en vano una banda fuera de la muñeca / Battery: the app stops pointlessly re-syncing an off-wrist strap.**
