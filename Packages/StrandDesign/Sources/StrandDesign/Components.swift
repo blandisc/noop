@@ -91,11 +91,16 @@ public struct SegmentedPillControl<T: Hashable>: View {
     /// (clear when unselected). Much clearer than the old `ink.opacity(0.08)` tint. (FER-439)
     @ViewBuilder private func segmentBackground(_ sel: Bool) -> some View {
         if let theme {
+            // The thumb is INSET within its (equal-width) tap segment so it floats with margin — like the
+            // iOS native selected segment — instead of filling edge-to-edge and reading as an over-wide pill
+            // for a short label like «M». The full segment stays the tap target. (Detalle de Vital fix)
             Capsule(style: .continuous)
                 .fill(sel ? theme.surface : Color.clear)
                 .overlay {
                     if sel { Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1) }
                 }
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
         } else {
             Capsule(style: .continuous).fill(sel ? StrandPalette.accent : Color.clear)
         }

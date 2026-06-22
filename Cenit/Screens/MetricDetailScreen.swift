@@ -470,7 +470,7 @@ struct MetricDetailScreen: View {
                 style: .init(
                     smoothing: plotsRawValues ? nil : 7,
                     gradient: chartGradient,
-                    valueRange: { spec.chartDomain ?? chartRange($0) },
+                    valueRange: { narrativeChartValueRange($0) },
                     valueFormat: { "\(fmt($0)) \(unit)" },
                     // SpO₂ shades its clinical healthy zone; the redesigned personal vitals shade your own
                     // ±SD «normal range» behind the line; everything else stays band-less. (Detalle de Vital)
@@ -557,6 +557,22 @@ struct MetricDetailScreen: View {
         return (lo - pad)...(hi + pad)
     }
 
+    /// The chart's Y domain. SpO₂ keeps its fixed clinical domain. The redesigned personal-band vitals
+    /// (HRV / Resting HR / Respiration) OPEN the axis around the «normal range» band — domain = band ±
+    /// ~0.85× its width — so the band reads as a central stripe with air above and below, not a full-bleed
+    /// box that fills the whole plot. Everything else auto-fits to the line. (Detalle de Vital — fix «caja»)
+    private func narrativeChartValueRange(_ smoothed: [Double]) -> ClosedRange<Double> {
+        if let domain = spec.chartDomain { return domain }
+        if isNarrative, !spec.clinicalBands, let band = normalRange {
+            let span = band.upperBound - band.lowerBound
+            let pad = Swift.max(span * 0.85, 1)
+            let lo = Swift.min(band.lowerBound - pad, smoothed.min() ?? band.lowerBound)
+            let hi = Swift.max(band.upperBound + pad, smoothed.max() ?? band.upperBound)
+            return lo...hi
+        }
+        return chartRange(smoothed)
+    }
+
     /// The chart's caption: the 7-day-average note, suffixed with the window ("· last month") for a
     /// bounded range and left bare for ALL. The window name is already localized, so it's interpolated
     /// as a `String` (a `%@` placeholder), not re-localized as a key. (FER-211)
@@ -569,22 +585,13 @@ struct MetricDetailScreen: View {
         return spec.clinicalBands ? "Nightly readings" : "7-day moving average"
     }
 
+    /// The caption under the chart. It no longer appends "· last {range}" — the period selector right above
+    /// already says the range, and the interpolated form mis-agreed in Spanish ("últimos mes"). The smoothing
+    /// is ALWAYS a 7-day moving average regardless of the selected range, so the caption says so plainly.
     private func chartCaption(_ effectiveRange: ExploreRange) -> LocalizedStringKey {
-        if spec.sparseMeasured {
-            // VO₂max: the chart is the raw measured points over months, not a smoothed line.
-            return effectiveRange == .all
-                ? "Measured values."
-                : "Measured values · last \(effectiveRange.name)."
-        }
-        if spec.clinicalBands {
-            // Raw nightly values, not a moving average; the green band is the healthy 95–100% zone.
-            return effectiveRange == .all
-                ? "Nightly values · the shaded band is the healthy range."
-                : "Nightly values · last \(effectiveRange.name) · the shaded band is the healthy range."
-        }
-        return effectiveRange == .all
-            ? "7-day moving average."
-            : "7-day moving average · last \(effectiveRange.name)."
+        if spec.sparseMeasured { return "Measured values." }
+        if spec.clinicalBands { return "Nightly values · the shaded band is the healthy range." }
+        return "7-day moving average."
     }
 
     // MARK: - Normal range (rolling mean ± SD)
@@ -1321,7 +1328,7 @@ struct MetricDetailScreen: View {
 
     private var narrativeHero: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(narrativeHeroOverline).instrumentoOverline().foregroundStyle(theme.warning)
+            Text(narrativeHeroOverline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
             if isIntraday {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(heroTodayValue.map { fmt($0) } ?? "—")
@@ -1468,7 +1475,7 @@ struct MetricDetailScreen: View {
     @ViewBuilder private var inlineBandSection: some View {
         if let b = inlineBandData {
             VStack(alignment: .leading, spacing: 0) {
-                Button { withAnimation(StrandMotion.interactive) { toggle("band") } } label: {
+                Button { withAnimation(StrandMotion.gentle) { toggle("band") } } label: {
                     inlineBandBar(b)
                 }
                 .buttonStyle(.plain)
@@ -1512,7 +1519,9 @@ struct MetricDetailScreen: View {
             }
         }
         .padding(4)
-        .background(open ? theme.surface : Color.clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        // Open-state highlight is a warm paper tint (handoff #EFE7D6), NOT the near-white `surface` — that
+        // read as a stray white box behind the section. (Detalle de Vital fix)
+        .background(open ? theme.hairline : Color.clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .contentShape(Rectangle())
     }
 
@@ -1617,7 +1626,7 @@ struct MetricDetailScreen: View {
         let s = ComparisonEngine.stat(trendStatRows(window).map(\.value))
         return StatCell(slot: "promedio", label: "Average", value: fmt(s.mean),
                         unitSuffix: unit.isEmpty ? nil : unit, color: theme.ink,
-                        disclosure: (title: "Trend", text: EX_TREND))
+                        disclosure: (title: "Average", text: EX_TREND))
     }
 
     private func rangeCell(_ window: MetricWindow) -> StatCell {
@@ -1669,7 +1678,7 @@ struct MetricDetailScreen: View {
         let isOpen = openDisclosure == "stat:\(cell.slot)"
         let tappable = cell.disclosure != nil
         return Button {
-            withAnimation(StrandMotion.interactive) { toggle("stat:\(cell.slot)") }
+            withAnimation(StrandMotion.gentle) { toggle("stat:\(cell.slot)") }
         } label: {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 4) {
@@ -1712,12 +1721,14 @@ struct MetricDetailScreen: View {
         .background(theme.surface)
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
-        .transition(.opacity.combined(with: .move(edge: .top)))
+        // Fade in place (no slide): with the gentle spring this lets the content below settle smoothly
+        // instead of the panel flying in from the top and shoving everything down. (Detalle de Vital fix)
+        .transition(.opacity)
     }
 
     private func inlineDisclosure(label: LocalizedStringKey, text: LocalizedStringKey) -> some View {
         disclosurePanel {
-            Text(label).instrumentoOverline().foregroundStyle(theme.warning)
+            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
             Text(text).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -1727,7 +1738,7 @@ struct MetricDetailScreen: View {
     /// The consistency disclosure: plain language + a tiny «steady vs variable» visual + the CV definition.
     private var consistencyDisclosure: some View {
         disclosurePanel {
-            Text("Consistency").instrumentoOverline().foregroundStyle(theme.warning)
+            Text("Consistency").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             Text(EX_CONSIST_PLAIN).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(alignment: .top, spacing: 14) {
@@ -1762,7 +1773,7 @@ struct MetricDetailScreen: View {
 
     private var quemueveView: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Button { withAnimation(StrandMotion.interactive) { toggle("quemueve") } } label: {
+            Button { withAnimation(StrandMotion.gentle) { toggle("quemueve") } } label: {
                 HStack(spacing: 7) {
                     Text("What moves it").font(StrandFont.subhead).fontWeight(.semibold).foregroundStyle(theme.ink)
                     InlineFlagChip("trend, not cause", color: theme.inkTertiary)

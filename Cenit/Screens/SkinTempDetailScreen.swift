@@ -88,7 +88,7 @@ struct SkinTempDetailScreen: View {
     private var hero: some View {
         let v = model.today
         return VStack(alignment: .leading, spacing: 10) {
-            Text("Skin temperature · last night").instrumentoOverline().foregroundStyle(theme.warning)
+            Text("Skin temperature · last night").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             HStack(alignment: .top) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(v.map { fmt($0) } ?? "—")
@@ -150,7 +150,7 @@ struct SkinTempDetailScreen: View {
             let zero = CGFloat((0 - axisLo) / span)
             let mark = CGFloat(min(max((today - axisLo) / span, 0.02), 0.98))
             VStack(alignment: .leading, spacing: 0) {
-                Button { withAnimation(StrandMotion.interactive) { toggle("band") } } label: {
+                Button { withAnimation(StrandMotion.gentle) { toggle("band") } } label: {
                     inlineBandBar(bandLo: bandLo, bandHi: bandHi, zero: zero, mark: mark, sd: sd)
                 }
                 .buttonStyle(.plain)
@@ -197,7 +197,8 @@ struct SkinTempDetailScreen: View {
             }
         }
         .padding(4)
-        .background(open ? theme.surface : Color.clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        // Warm paper tint when open, not the near-white `surface`. (Detalle de Vital fix)
+        .background(open ? theme.hairline : Color.clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .contentShape(Rectangle())
     }
 
@@ -291,7 +292,7 @@ struct SkinTempDetailScreen: View {
         let isOpen = openDisclosure == "stat:\(slot)"
         let tappable = disclosure != nil
         return Button {
-            withAnimation(StrandMotion.interactive) { toggle("stat:\(slot)") }
+            withAnimation(StrandMotion.gentle) { toggle("stat:\(slot)") }
         } label: {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 4) {
@@ -329,12 +330,13 @@ struct SkinTempDetailScreen: View {
         .background(theme.surface)
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
-        .transition(.opacity.combined(with: .move(edge: .top)))
+        // Fade in place (no slide) — smoother than flying in from the top. (Detalle de Vital fix)
+        .transition(.opacity)
     }
 
     private func inlineDisclosure(label: LocalizedStringKey, text: LocalizedStringKey) -> some View {
         disclosurePanel {
-            Text(label).instrumentoOverline().foregroundStyle(theme.warning)
+            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
             Text(text).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -403,9 +405,12 @@ struct SkinTempDetailScreen: View {
     /// Auto-fit the chart's axis to the data, always including 0 and the ±typical band so the band reads as
     /// a band (not a clipped edge), with a little padding.
     private func chartRange(_ values: [Double], typical: Double) -> ClosedRange<Double> {
-        let lo = Swift.min(values.min() ?? 0, -typical, 0)
-        let hi = Swift.max(values.max() ?? 0, typical, 0)
-        let pad = Swift.max((hi - lo) * 0.15, 0.1)
+        // Open the axis around the ±typical band (≈ band ± 0.85× its full width) so it reads as a central
+        // stripe with air above and below — not a full-bleed box. Always include 0 and the data. (Detalle de Vital)
+        let edge = typical + Swift.max(typical * 1.7, 0.1)
+        let lo = Swift.min(values.min() ?? 0, -edge, 0)
+        let hi = Swift.max(values.max() ?? 0, edge, 0)
+        let pad = Swift.max((hi - lo) * 0.06, 0.05)
         return (lo - pad)...(hi + pad)
     }
 
