@@ -34,6 +34,8 @@ private struct RutinaDeHoyContent: View {
     @State private var loaded = false
     @State private var routine: Routine?
     @State private var rows: [PlanRow] = []
+    /// The exercise whose detail sheet is open (FER-517); nil = none.
+    @State private var detailExercise: Exercise?
 
     private var recovery: Double? { repo.today?.recovery }
     private var imperial: Bool { UnitSystem(rawValue: unitSystemRaw) == .imperial }
@@ -58,6 +60,17 @@ private struct RutinaDeHoyContent: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
+        .sheet(item: $detailExercise) { ex in
+            NavigationStack {
+                ExerciseDetailScreen(exercise: ex)
+                    .toolbar { ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { detailExercise = nil }.foregroundStyle(theme.ink)
+                    } }
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbarBackground(theme.paper, for: .navigationBar)
+            }
+            .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        }
         .task { await load() }
     }
 
@@ -104,7 +117,20 @@ private struct RutinaDeHoyContent: View {
         }
     }
 
+    @ViewBuilder
     private func planRow(_ row: PlanRow) -> some View {
+        // Tapping an exercise opens its detail (Progreso + Records, FER-517) — only when the slot
+        // resolves to a real exercise, so an unknown id is never a dead tap.
+        if let ex = row.exercise {
+            Button { detailExercise = ex } label: { planRowContent(row, tappable: true) }
+                .buttonStyle(.plain)
+                .accessibilityHint(Text("Opens the exercise"))
+        } else {
+            planRowContent(row, tappable: false)
+        }
+    }
+
+    private func planRowContent(_ row: PlanRow, tappable: Bool) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(row.name).font(StrandFont.body).foregroundStyle(theme.ink)
@@ -118,8 +144,13 @@ private struct RutinaDeHoyContent: View {
                     .font(StrandFont.bodyNumber).foregroundStyle(theme.ink)
                 restChip(row.re)
             }
+            if tappable {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+            }
         }
         .padding(.vertical, 11)
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
     }
 
