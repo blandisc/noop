@@ -38787,6 +38787,156 @@
           }
         }
       }
+    },
+    "How your data is read": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cómo se leen tus datos"
+          }
+        }
+      }
+    },
+    "Combined": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Combinado"
+          }
+        }
+      }
+    },
+    "Recommended": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recomendado"
+          }
+        }
+      }
+    },
+    "Band only": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo la banda"
+          }
+        }
+      }
+    },
+    "Only Apple Health": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo Apple Salud"
+          }
+        }
+      }
+    },
+    "Apple Health as the base, your band on top when you wear it. The most complete reading.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Salud de base y tu banda encima cuando la traes. La lectura más completa."
+          }
+        }
+      }
+    },
+    "Only what your band measures. Nights without the band won't have a reading.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo lo que mide tu banda. Las noches sin banda no tendrán lectura."
+          }
+        }
+      }
+    },
+    "Only what Apple Health records, without your band.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo lo que registra Apple Salud, sin tu banda."
+          }
+        }
+      }
+    },
+    "Switching modes only changes what you see. Cénit keeps storing everything from both sources; nothing is ever deleted.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cambiar de modo solo cambia lo que ves. Cénit sigue guardando todo de ambas fuentes; nunca se borra nada."
+          }
+        }
+      }
+    },
+    "Apple Health is disconnected; right now Combined only uses your band. Connect it to add its data.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Salud está desconectado; ahora mismo Combinado solo usa tu banda. Conéctalo para sumar sus datos."
+          }
+        }
+      }
+    },
+    "No band data yet. Connect it in Live or import your history to see anything in this mode.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hay datos de tu banda todavía. Conéctala en Live o importa tu historial para ver algo en este modo."
+          }
+        }
+      }
+    },
+    "Pair in Live": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parear en Live"
+          }
+        }
+      }
+    },
+    "Apple Health isn't available on this device.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Salud no está disponible en este dispositivo."
+          }
+        }
+      }
+    },
+    "Apple Health is disconnected. In this mode Cénit can't read new data.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Salud está desconectado. En este modo Cénit no podrá leer datos nuevos."
+          }
+        }
+      }
+    },
+    "For now, without your band the recovery and sleep detail come estimated or later. The day's numbers do read from Apple Health.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por ahora, sin tu banda el recovery y el detalle del sueño llegan estimados o más adelante. Los números del día sí se leen de Apple Salud."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

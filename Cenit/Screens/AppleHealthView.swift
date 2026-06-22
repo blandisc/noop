@@ -223,8 +223,8 @@ struct AppleHealthView: View {
             return
         }
 
-        async let rows = repo.appleDailyRows()
-        async let workouts = repo.workoutRows()
+        async let rows = repo.appleDailyRows(respectingMode: false)      // FER-485: diagnostic — show what's stored
+        async let workouts = repo.workoutRows(respectingMode: false)
 
         // Load the per-key series concurrently (was a sequential await loop = N+1 round-trips).
         // Same pattern as CompareView/InsightsView/MetricExplorerView (FER-318).
