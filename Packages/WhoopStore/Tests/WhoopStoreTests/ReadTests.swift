@@ -78,9 +78,9 @@ final class ReadTests: XCTestCase {
                          startTs: 0, endTs: 0, frameCount: 1, byteSize: 4),
             frames: [[0xAA, 0x00, 0x01, 0x02]])
         let stats = try await store.storageStats()
-        // dev1: 3 hr + 2 rr + 1 event + 1 battery + 1 spo2 + 1 skinTemp + 1 resp + 1 gravity = 11
-        // other: 1 hr = 1 → 12 decoded rows across all 8 tables.
-        XCTAssertEqual(stats.decodedRows, 12)
+        // dev1: 3 hr + 2 rr + 1 event + 1 battery + 0 spo2 (not stored, FER-511) + 1 skinTemp + 1 resp
+        //       + 1 gravity = 10; other: 1 hr = 1 → 11 decoded rows.
+        XCTAssertEqual(stats.decodedRows, 11)
         XCTAssertEqual(stats.rawBatches, 1)
         XCTAssertEqual(stats.rawBytes, 4)
     }

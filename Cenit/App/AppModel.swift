@@ -241,6 +241,7 @@ final class AppModel: ObservableObject {
             guard let self else { return }
             await self.repo.refresh()                          // surface any imported data at once
             await self.migrateDayKeysToLocalIfNeeded()         // FER-226: one-time UTC→local re-bucket (flag-gated)
+            await self.compactDatabaseAfterSpo2PurgeIfNeeded() // FER-511: one-time VACUUM after the spo2 purge (flag-gated)
             try? await Task.sleep(nanoseconds: 6_000_000_000)  // give the first offload a moment
             while !Task.isCancelled {
                 if Self.mayRecomputeAfterBackfill(backfilling: self.live.backfilling,
@@ -295,6 +296,29 @@ final class AppModel: ObservableObject {
         // Mark done so the heavy re-group doesn't re-run on every launch. The re-group is idempotent,
         // so marking even when Apple was skipped is harmless (a later HK connect lands local anyway).
         try? await store.setCursor(Self.dayKeyMigrationCursor, 1)
+    }
+
+    // MARK: - One-time DB compaction after the spo2 purge (FER-511)
+
+    /// Cursor flag (in the existing `cursors` table — no schema change) gating the one-time VACUUM
+    /// that returns the space freed by the v20 spo2 purge to the OS, so it runs at most once per
+    /// install. VACUUM rewrites the whole file, so it must NOT run on every launch.
+    private static let spo2CompactCursor = "spo2VacuumV1Done"
+
+    /// The v20 migration DELETEs the write-only spo2 rows, but the pages stay allocated (WAL, and the
+    /// existing file was created with auto_vacuum=NONE) so the `.sqlite` doesn't shrink on its own.
+    /// Run a single VACUUM to reclaim them (and convert the file to INCREMENTAL auto-vacuum going
+    /// forward). Flag-gated + off the launch critical path (called from the analysis task). Best-effort:
+    /// a failure just leaves the space reclaimable on a later run.
+    func compactDatabaseAfterSpo2PurgeIfNeeded() async {
+        guard let store = await repo.storeHandle() else { return }   // no store yet → retry next launch
+        if ((try? await store.cursor(Self.spo2CompactCursor)) ?? nil) == 1 { return }   // already done
+        do {
+            try await store.vacuum()
+            try await store.setCursor(Self.spo2CompactCursor, 1)
+        } catch {
+            // Leave the cursor unset so the next launch retries; the freed pages remain reclaimable.
+        }
     }
 
     /// Prune rows for `deviceId` dated AFTER today's local civil day — the spurious "future-in-local"

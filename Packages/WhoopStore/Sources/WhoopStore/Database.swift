@@ -443,6 +443,18 @@ extension WhoopStore {
                 t.add(column: "hrRestValue", .double).notNull().defaults(to: 0)
             }
         }
+
+        // v20 (FER-511): stop storing the write-only `spo2Sample` stream and reclaim its space. The raw
+        // red/ir ADC samples were never read on-device (the SpO₂ the UI shows comes from
+        // dailyMetric.spo2Pct / Apple Health), so they were ~16% of the DB for nothing. Append-only:
+        // this DELETEs the existing rows but KEEPS the (now-empty) table, so `Reads.spo2Samples` and
+        // `storageStats` still compile and a downgraded reader sees an empty table, not a missing one.
+        // New rows stop being written in `StreamStore.insert`. The one-time VACUUM that returns the
+        // freed pages to the OS runs post-launch (AppModel.compactDatabaseAfterSpo2PurgeIfNeeded) —
+        // VACUUM cannot run inside a migration transaction.
+        migrator.registerMigration("v20") { db in
+            try db.execute(sql: "DELETE FROM spo2Sample")
+        }
         return migrator
     }
 }

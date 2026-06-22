@@ -50,7 +50,7 @@ final class BiometricStreamTests: XCTestCase {
         try await store.upsertDevice(id: "dev1", mac: nil, name: nil)
         let n = try await store.insert(bioStreams(), deviceId: "dev1")
         XCTAssertEqual(n.hr, 1)
-        XCTAssertEqual(n.spo2, 1)
+        XCTAssertEqual(n.spo2, 0)   // spo2 is no longer persisted (FER-511)
         XCTAssertEqual(n.skinTemp, 1)
         XCTAssertEqual(n.resp, 1)
         XCTAssertEqual(n.gravity, 1)
@@ -94,8 +94,9 @@ final class BiometricStreamTests: XCTestCase {
         _ = try await store.insert(bioStreams(), deviceId: "other")
 
         let from = 0, to = 2_000_000_000, lim = 100
+        // spo2 is no longer persisted (FER-511) → the round-trip read comes back empty.
         let spo2 = try await store.spo2Samples(deviceId: "dev1", from: from, to: to, limit: lim)
-        XCTAssertEqual(spo2, [SpO2Sample(ts: 1700000000, red: 18000, ir: 17000)])
+        XCTAssertEqual(spo2, [])
 
         let skin = try await store.skinTempSamples(deviceId: "dev1", from: from, to: to, limit: lim)
         XCTAssertEqual(skin, [SkinTempSample(ts: 1700000000, raw: 900)])
@@ -108,17 +109,34 @@ final class BiometricStreamTests: XCTestCase {
     }
 
     func testBiometricReadsRespectRangeAndScope() async throws {
+        // Uses gravity (still persisted) to cover windowing + limit; spo2 is no longer stored (FER-511).
         let store = try await WhoopStore.inMemory()
         try await store.upsertDevice(id: "dev1", mac: nil, name: nil)
         _ = try await store.insert(
-            Streams(spo2: [SpO2Sample(ts: 100, red: 1, ir: 2),
-                           SpO2Sample(ts: 200, red: 3, ir: 4),
-                           SpO2Sample(ts: 300, red: 5, ir: 6)]),
+            Streams(gravity: [GravitySample(ts: 100, x: 1, y: 0, z: 0),
+                              GravitySample(ts: 200, x: 3, y: 0, z: 0),
+                              GravitySample(ts: 300, x: 5, y: 0, z: 0)]),
             deviceId: "dev1")
-        let windowed = try await store.spo2Samples(deviceId: "dev1", from: 150, to: 250, limit: 100)
-        XCTAssertEqual(windowed, [SpO2Sample(ts: 200, red: 3, ir: 4)])  // inclusive
-        let limited = try await store.spo2Samples(deviceId: "dev1", from: 0, to: 1000, limit: 2)
+        let windowed = try await store.gravitySamples(deviceId: "dev1", from: 150, to: 250, limit: 100)
+        XCTAssertEqual(windowed, [GravitySample(ts: 200, x: 3, y: 0, z: 0)])  // inclusive
+        let limited = try await store.gravitySamples(deviceId: "dev1", from: 0, to: 1000, limit: 2)
         XCTAssertEqual(limited.count, 2)
         XCTAssertEqual(limited.first?.ts, 100)
+    }
+
+    /// FER-511: spo2 is decoded upstream but no longer stored. `insert()` reports 0 spo2 inserts, the
+    /// table stays empty, and a windowed read comes back empty — while the other biometric streams in
+    /// the SAME `Streams` are still persisted.
+    func testSpo2IsNotPersisted() async throws {
+        let store = try await WhoopStore.inMemory()
+        try await store.upsertDevice(id: "dev1", mac: nil, name: nil)
+        let n = try await store.insert(bioStreams(), deviceId: "dev1")
+        XCTAssertEqual(n.spo2, 0, "spo2 must not be inserted")
+        XCTAssertEqual(n.skinTemp, 1, "the other biometric streams are still stored")
+        let counts = try await store.sampleCounts()
+        XCTAssertEqual(counts.spo2, 0, "the spo2Sample table stays empty")
+        XCTAssertEqual(counts.skinTemp, 1)
+        let read = try await store.spo2Samples(deviceId: "dev1", from: 0, to: 2_000_000_000, limit: 100)
+        XCTAssertTrue(read.isEmpty, "spo2Samples reads back empty (table is never written)")
     }
 }
