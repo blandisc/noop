@@ -1,0 +1,30 @@
+# Guards against hardcoded non-English UI strings creeping back into the localized screens (FER-472).
+#
+# The String Catalog is `sourceLanguage: en`: user-facing strings must be English literals (keys) so they
+# carry an `es` translation and switch with the app language. This check fails the PR if a Spanish literal
+# shows up in a user-facing call in the files it covers. Python-only — no Xcode, no secrets, fast.
+# Expand the file list in Tools/check-hardcoded-strings.py as more screens are localized.
+name: i18n guard
+
+on:
+  pull_request:
+    paths:
+      - 'Cenit/Screens/BucleView.swift'
+      - 'Cenit/Screens/BucleSheets.swift'
+      - 'Tools/check-hardcoded-strings.py'
+      - '.github/workflows/i18n-guard.yml'
+  push:
+    paths:
+      - 'Cenit/Screens/BucleView.swift'
+      - 'Cenit/Screens/BucleSheets.swift'
+      - 'Tools/check-hardcoded-strings.py'
+      - '.github/workflows/i18n-guard.yml'
+  workflow_dispatch:
+
+jobs:
+  hardcoded-strings:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for hardcoded non-English UI strings
+        run: python3 Tools/check-hardcoded-strings.py

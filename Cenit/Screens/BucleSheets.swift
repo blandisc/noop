@@ -55,12 +55,12 @@ struct PalancaDetailSheet: View {
 
                 // Evidence.
                 VStack(spacing: 0) {
-                    evidenceRow("Muestra", "\(insight.evidence.n)")
+                    evidenceRow("Sample", "\(insight.evidence.n)")
                     if let p = insight.evidence.pAdjusted ?? insight.evidence.pValue {
-                        evidenceRow("Significancia", significanceText(p, sig: insight.evidence.significant, kind: insight.kind))
+                        evidenceRow("Significance", significanceText(p, sig: insight.evidence.significant, kind: insight.kind))
                     }
                     if let d = insight.evidence.effectSize {
-                        evidenceRow("Tamaño de efecto", String(format: "%.2f · %@", d, BucleFormat.magnitudeWord(d)))
+                        evidenceRow("Effect size", String(format: "%.2f · %@", d, BucleFormat.magnitudeWord(d)))
                     }
                 }
 
@@ -81,7 +81,7 @@ struct PalancaDetailSheet: View {
                     Button(action: onProbar) {
                         HStack(spacing: 7) {
                             Image(systemName: "flask").font(.system(size: 17))
-                            Text("Probar esta idea una semana").font(StrandFont.headline)
+                            Text("Try this idea for a week").font(StrandFont.headline)
                             Image(systemName: "arrow.right").font(.system(size: 15))
                         }
                         .foregroundStyle(theme.ink)
@@ -100,7 +100,7 @@ struct PalancaDetailSheet: View {
         .background(theme.paper.ignoresSafeArea())
     }
 
-    private func evidenceRow(_ key: String, _ value: String) -> some View {
+    private func evidenceRow(_ key: LocalizedStringKey, _ value: String) -> some View {
         HStack {
             Text(key).font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
             Spacer()
@@ -117,15 +117,15 @@ struct PalancaDetailSheet: View {
                                                     meanWith: bd.meanWith, meanWithout: bd.meanWithout)
         let maxMean = max(bd.meanWith, bd.meanWithout, 1)
         VStack(alignment: .leading, spacing: 12) {
-            breakdownBar(label: "Con el hábito", mean: bd.meanWith, n: bd.nWith,
+            breakdownBar(label: "With the habit", mean: bd.meanWith, n: bd.nWith,
                          frac: bd.meanWith / maxMean, good: withIsBetter)
-            breakdownBar(label: "Sin el hábito", mean: bd.meanWithout, n: bd.nWithout,
+            breakdownBar(label: "Without the habit", mean: bd.meanWithout, n: bd.nWithout,
                          frac: bd.meanWithout / maxMean, good: !withIsBetter)
         }
         .padding(.top, 4)
     }
 
-    private func breakdownBar(label: String, mean: Double, n: Int, frac: Double, good: Bool) -> some View {
+    private func breakdownBar(label: LocalizedStringKey, mean: Double, n: Int, frac: Double, good: Bool) -> some View {
         HStack(spacing: 11) {
             Text(label).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .frame(width: 108, alignment: .leading)
@@ -141,7 +141,6 @@ struct PalancaDetailSheet: View {
                 .foregroundStyle(theme.ink).frame(width: 34, alignment: .trailing)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(label): \(Int(mean.rounded())), \(n) días")
     }
 
     private var datumText: String {
@@ -159,25 +158,25 @@ struct PalancaDetailSheet: View {
     private func significanceText(_ p: Double, sig: Bool, kind: InsightKind) -> String {
         let pStr = p < 0.01 ? "p < 0.01" : String(format: "p = %.2f", p)
         // Daily metric series are autocorrelated, so a cross-metric correlation's p overstates certainty:
-        // never stamp it "significativo" (mirrors InsightsView's discipline). Behavior with/without
+        // never stamp it "significant" (mirrors InsightsView's discipline). Behavior with/without
         // comparisons are the less-dependent case the engine does flag.
-        if kind == .correlation { return "\(pStr) · exploratorio" }
-        return sig ? "\(pStr) · significativo" : "\(pStr) · exploratorio"
+        let word = (kind != .correlation && sig) ? String(localized: "significant") : String(localized: "exploratory")
+        return "\(pStr) · \(word)"
     }
 
     private var confidenceTitle: String {
         switch insight.confidence {
-        case .candidate: return "Candidato — aún sin experimento"
-        case .proven:    return "Probado por tu experimento"
-        case .medium:    return "Lectura de tus datos"
+        case .candidate: return String(localized: "Candidate — no experiment yet")
+        case .proven:    return String(localized: "Proven by your experiment")
+        case .medium:    return String(localized: "A read of your data")
         }
     }
 
     private var confidenceBody: String {
         switch insight.confidence {
-        case .candidate: return "Es una asociación fuerte en tus datos, pero no prueba causa. Un experimento puede ascenderla a «probada»."
-        case .proven:    return "Un experimento N-of-1 confirmó este efecto en ti."
-        case .medium:    return "Un dato observado de tu historial, no una afirmación de causa."
+        case .candidate: return String(localized: "It's a strong association in your data, but not proof of cause. An experiment can promote it to «proven».")
+        case .proven:    return String(localized: "An N-of-1 experiment confirmed this effect for you.")
+        case .medium:    return String(localized: "An observed value from your history, not a claim of cause.")
         }
     }
 }
@@ -214,8 +213,8 @@ struct EfectosExplorerSheet: View {
         ScrollView {
             VStack(alignment: .leading, spacing: NoopMetrics.gap) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Efectos de tus hábitos").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    Text("Cómo cada hábito mueve una métrica, en todo tu historial. Asociaciones, no causa.")
+                    Text("Habit effects").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text("How each habit moves a metric, across your whole history. Associations, not cause.")
                         .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -231,7 +230,7 @@ struct EfectosExplorerSheet: View {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(BucleFormat.behaviorName(insight)).font(StrandFont.headline)
                                     .foregroundStyle(theme.ink)
-                                Text("\(insight.evidence.n) noches").font(StrandFont.footnote)
+                                Text("\(insight.evidence.n) nights").font(StrandFont.footnote)
                                     .foregroundStyle(theme.inkTertiary)
                             }
                             Spacer()
@@ -304,10 +303,10 @@ struct AnotaTuDiaSheet: View {
         ScrollView {
             VStack(alignment: .leading, spacing: NoopMetrics.gap) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text("Anota tu día").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text("Log your day").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     Spacer()
                     if !isEditable {
-                        Text("Solo lectura").font(StrandFont.captionNumber).foregroundStyle(theme.inkTertiary)
+                        Text("Read-only").font(StrandFont.captionNumber).foregroundStyle(theme.inkTertiary)
                             .padding(.horizontal, 8).padding(.vertical, 2)
                             .overlay(Capsule().stroke(theme.hairlineStrong, lineWidth: 1))
                     }
@@ -318,8 +317,8 @@ struct AnotaTuDiaSheet: View {
                 HStack(spacing: 6) {
                     Image(systemName: isEditable ? "pencil" : "lock")
                         .font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
-                    Text(isEditable ? "Lo que no marques se asume “No”."
-                                    : "Solo Hoy y Ayer se pueden editar. Los días viejos quedan fijos.")
+                    Text(isEditable ? "What you don't mark counts as “No”."
+                                    : "Only Today and Yesterday can be edited. Older days stay fixed.")
                         .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -329,7 +328,7 @@ struct AnotaTuDiaSheet: View {
                     HStack {
                         Text(BucleFormat.shortLabel(q)).font(StrandFont.body).foregroundStyle(theme.ink)
                         Spacer()
-                        answerPill("Sí", q: q, value: true)
+                        answerPill("Yes", q: q, value: true)
                         answerPill("No", q: q, value: false)
                     }
                     .padding(.vertical, 11)
@@ -384,17 +383,18 @@ struct AnotaTuDiaSheet: View {
 
     private func dayName(_ offset: Int, _ date: Date) -> String {
         switch offset {
-        case 0:  return "Hoy"
-        case 1:  return "Ayer"
+        case 0:  return String(localized: "Today")
+        case 1:  return String(localized: "Yesterday")
         default: return Self.weekday.string(from: date)
         }
     }
 
+    // Dates follow the app language (FER-472): es → «JUE», en → «THU».
     private static let weekday: DateFormatter = {
-        let f = DateFormatter(); f.locale = Locale(identifier: "es_MX"); f.dateFormat = "EEE"; return f
+        let f = DateFormatter(); f.locale = .current; f.dateFormat = "EEE"; return f
     }()
     private static let dayNumber: DateFormatter = {
-        let f = DateFormatter(); f.locale = Locale(identifier: "es_MX"); f.dateFormat = "d"; return f
+        let f = DateFormatter(); f.locale = .current; f.dateFormat = "d"; return f
     }()
 
     // MARK: Answer pill (editable only on Hoy/Ayer)
@@ -454,16 +454,16 @@ struct AnotaTuDiaSheet: View {
 enum BucleFormat {
     static func kindLabel(_ kind: InsightKind) -> String {
         switch kind {
-        case .behavior:        return "Comportamiento"
-        case .correlation:     return "Relación entre métricas"
-        case .nightAnomaly:    return "Anomalía · anoche"
-        case .trend:           return "Tendencia"
-        case .forecast:        return "Pronóstico"
-        case .sleepRegularity: return "Regularidad de sueño"
-        case .sleepDebt:       return "Deuda de sueño"
-        case .activityCost:    return "Costo de un deporte"
-        case .trainingLoad:    return "Carga de entrenamiento"
-        case .fitnessAge:      return "Edad fitness"
+        case .behavior:        return String(localized: "Behavior")
+        case .correlation:     return String(localized: "Relationship between metrics")
+        case .nightAnomaly:    return String(localized: "Anomaly · last night")
+        case .trend:           return String(localized: "Trend")
+        case .forecast:        return String(localized: "Forecast")
+        case .sleepRegularity: return String(localized: "Sleep regularity")
+        case .sleepDebt:       return String(localized: "Sleep debt")
+        case .activityCost:    return String(localized: "A sport's cost")
+        case .trainingLoad:    return String(localized: "Training load")
+        case .fitnessAge:      return String(localized: "Fitness age")
         }
     }
 
@@ -518,18 +518,6 @@ enum BucleFormat {
         }
     }
 
-    /// The short lead clause of a signal's read, for the compact «Señales» chip — the engine's `detail`
-    /// is a full clause ("por encima de tu base — bien recuperado" / "en zona buena (agudo:crónico 1.05)");
-    /// this trims to the part before the dash / parenthesis / separator so the 3-up row stays glanceable.
-    /// Shows the engine's OWN words (no fabricated copy) — the full read lives in the explainer sheet.
-    static func signalShortDetail(_ detail: String) -> String {
-        var s = detail
-        for sep in ["—", " (", "(", " · ", ": "] {
-            if let r = s.range(of: sep) { s = String(s[..<r.lowerBound]) }
-        }
-        return s.trimmingCharacters(in: .whitespaces)
-    }
-
     /// Whether the WITH-habit mean is the better outcome, respecting the metric's direction (only resting
     /// HR is lower-is-better). The one place this rule lives, shared by the lever dumbbell and the detail
     /// sheet's breakdown bars so they can never disagree about which side wins.
@@ -558,23 +546,10 @@ enum BucleFormat {
 
     static func magnitudeWord(_ d: Double) -> String {
         switch abs(d) {
-        case ..<0.2:  return "insignificante"
-        case ..<0.5:  return "chico"
-        case ..<0.8:  return "moderado"
-        default:      return "grande"
-        }
-    }
-
-    /// The es-MX verdict phrase for a readiness level — the «Decisión de hoy» hero word. Shared by the
-    /// Bucle hero and its explainer. nil (no read yet) reads as «Día parejo.»; the hero never shows it.
-    static func verdictWord(_ level: ReadinessEngine.Level?) -> String {
-        switch level {
-        case .primed:       return "Empuja hoy."
-        case .balanced:     return "Día parejo."
-        case .strained:     return "Ve con calma."
-        case .rundown:      return "Hoy toca descansar."
-        case .insufficient: return "Aún calibrando."
-        case nil:           return "Día parejo."
+        case ..<0.2:  return String(localized: "negligible")
+        case ..<0.5:  return String(localized: "small")
+        case ..<0.8:  return String(localized: "moderate")
+        default:      return String(localized: "large")
         }
     }
 
@@ -582,9 +557,9 @@ enum BucleFormat {
 
     static func verdictHeadline(_ v: Verdict) -> String {
         switch v {
-        case .sustained:    return "Se sostuvo."
-        case .notSustained: return "No se sostuvo esta vez."
-        case .insufficient: return "Sin señal suficiente."
+        case .sustained:    return String(localized: "It held up.")
+        case .notSustained: return String(localized: "It didn't hold up this time.")
+        case .insufficient: return String(localized: "Not enough signal.")
         }
     }
 
@@ -592,11 +567,11 @@ enum BucleFormat {
                                adherent: Int, window: Int) -> String {
         switch v {
         case .sustained:
-            return "“\(behavior)” subió tu \(outcome) en la semana. La marcamos como probada en Lo que funciona en ti."
+            return String(localized: "“\(behavior)” raised your \(outcome) this week. We marked it as proven in What works for you.")
         case .notSustained:
-            return "“\(behavior)” no movió tu \(outcome) en esta semana. Una semana es poca evidencia — puedes volver a intentarlo."
+            return String(localized: "“\(behavior)” didn't move your \(outcome) this week. A week is weak evidence — you can try again.")
         case .insufficient:
-            return "Cumpliste \(adherent) de \(window) días: faltaron días para juzgar. Inténtalo otra semana anotando a diario."
+            return String(localized: "You kept \(adherent) of \(window) days: not enough days to judge. Try another week, logging daily.")
         }
     }
 
@@ -638,29 +613,29 @@ struct StartExperimentSheet: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                Text("Nuevo experimento").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Text("Probar “\(displayName)”")
+                Text("New experiment").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("Test “\(displayName)”")
                     .font(StrandFont.title2).foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true).padding(.top, 8)
 
-                (Text("En tus datos, “\(displayName)” va con ")
+                (Text("In your data, “\(displayName)” goes with ")
                     + Text(BucleFormat.signedDelta(insight.datum.value, unit: insight.datum.unit))
                         .foregroundColor(theme.positiveText).bold()
-                    + Text(" de \(leverOutcome). Una semana lo confirma en tu cuerpo."))
+                    + Text(" of \(leverOutcome). A week confirms it in your body."))
                     .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true).padding(.top, 10)
 
                 VStack(alignment: .leading, spacing: 13) {
-                    stepRow(1, "Anota cada día si lo cumpliste, en “Anota tu día”.")
-                    stepRow(2, "Al cerrar, comparamos esos días con tu base.")
-                    stepRow(3, "Si el efecto se sostiene, queda probada.")
+                    stepRow(1, "Log each day whether you kept it, in “Log your day”.")
+                    stepRow(2, "When it closes, we compare those days with your baseline.")
+                    stepRow(3, "If the effect holds, it becomes proven.")
                 }
                 .padding(.top, 18)
 
                 HStack(alignment: .firstTextBaseline) {
-                    Text("Durante \(Self.windowDays) días").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    Text("For \(Self.windowDays) days").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                     Spacer()
-                    Text("veredicto el \(verdictDate)").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                    Text("verdict on \(verdictDate)").font(StrandFont.subhead).foregroundStyle(theme.ink)
                 }
                 .padding(.top, 18).padding(.top, 14)
                 .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
@@ -668,14 +643,14 @@ struct StartExperimentSheet: View {
                 Button {
                     Task { await onStart(leverBehavior, leverOutcome, expectedSign) }
                 } label: {
-                    Text("Empezar").font(StrandFont.headline).foregroundStyle(theme.paper)
+                    Text("Start").font(StrandFont.headline).foregroundStyle(theme.paper)
                         .frame(maxWidth: .infinity).padding(15)
                         .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
                 }
                 .buttonStyle(.plain).padding(.top, 18)
 
                 Button { dismiss() } label: {
-                    Text("Ahora no").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                    Text("Not now").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.plain).padding(.top, 13)
@@ -686,7 +661,7 @@ struct StartExperimentSheet: View {
         .background(theme.paper.ignoresSafeArea())
     }
 
-    private func stepRow(_ n: Int, _ text: String) -> some View {
+    private func stepRow(_ n: Int, _ text: LocalizedStringKey) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 11) {
             Text("\(n)").font(StrandFont.captionNumber).foregroundStyle(theme.inkTertiary)
                 .frame(minWidth: 14, alignment: .leading)
@@ -695,8 +670,9 @@ struct StartExperimentSheet: View {
         }
     }
 
+    // Date follows the app language (FER-472).
     private static let dateFormatter: DateFormatter = {
-        let f = DateFormatter(); f.locale = Locale(identifier: "es_MX"); f.dateFormat = "EEE d MMM"
+        let f = DateFormatter(); f.locale = .current; f.dateFormat = "EEE d MMM"
         return f
     }()
 }
@@ -712,20 +688,20 @@ struct BucleInfo: Identifiable {
     let body: LocalizedStringKey
 
     static let onDevice = BucleInfo(
-        id: "on-device", systemImage: "cpu", title: "Todo en tu teléfono",
-        body: "Cénit calcula tu recuperación, tus hallazgos y tus palancas aquí, en tu iPhone — sin nube, sin cuenta, sin servidor.\n\nLo único que sale a internet es «Pregúntale a tus datos», y solo si conectas tu propia clave de IA.")
+        id: "on-device", systemImage: "cpu", title: "Everything on your phone",
+        body: "Cénit computes your recovery, your findings and your levers here, on your iPhone — no cloud, no account, no server.\n\nThe only thing that goes to the internet is «Ask your data», and only if you connect your own AI key.")
 
     static let loQueFunciona = BucleInfo(
-        id: "lo-que-funciona", systemImage: "flask", title: "Lo que funciona en ti",
-        body: "Comparamos tus días con y sin cada hábito que anotas. Si la diferencia es real en tus números, aparece aquí como una palanca.\n\nSon candidatos hasta que un experimento los pruebe. Todo se calcula en tu teléfono.")
+        id: "lo-que-funciona", systemImage: "flask", title: "What works for you",
+        body: "We compare your days with and without each habit you log. If the difference is real in your numbers, it shows up here as a lever.\n\nThey're candidates until an experiment proves them. Everything is computed on your phone.")
 
     static let hallazgos = BucleInfo(
-        id: "hallazgos", systemImage: "dot.radiowaves.left.and.right", title: "Hallazgos",
-        body: "Tu teléfono revisa tus noches y te avisa de tres cosas: lo que se sale de lo normal (una anomalía), lo que viene en tendencia (subiendo o bajando), y qué métricas se mueven juntas.\n\nTodo a partir de tus propios datos.")
+        id: "hallazgos", systemImage: "dot.radiowaves.left.and.right", title: "Findings",
+        body: "Your phone reviews your nights and flags three things: what's out of the ordinary (an anomaly), what's trending (up or down), and which metrics move together.\n\nAll from your own data.")
 
     static let efectos = BucleInfo(
-        id: "efectos", systemImage: "chart.bar", title: "Efectos de tus hábitos",
-        body: "Aquí exploras todo tu historial: elige una métrica (recuperación, HRV, sueño, FC en reposo) y mira cómo cada hábito que anotas la mueve, en promedio.\n\nEs la versión a fondo de «Lo que funciona en ti». Asociaciones, no causa.")
+        id: "efectos", systemImage: "chart.bar", title: "Habit effects",
+        body: "Here you explore your whole history: pick a metric (recovery, HRV, sleep, resting HR) and see how each habit you log moves it, on average.\n\nIt's the deep version of «What works for you». Associations, not cause.")
 }
 
 struct BucleInfoSheet: View {
@@ -794,11 +770,11 @@ struct ExperimentDetailSheet: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("En prueba").instrumentoOverline().foregroundStyle(theme.dataRecovery)
+            Text("On trial").instrumentoOverline().foregroundStyle(theme.dataRecovery)
             Text(BucleFormat.behaviorLabel(row.behavior))
                 .font(.system(size: 28, weight: .semibold)).foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true).padding(.top, 8)
-            Text("a prueba sobre tu \(row.outcome)")
+            Text("on trial against your \(row.outcome)")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary).padding(.top, 4)
         }
     }
@@ -806,9 +782,9 @@ struct ExperimentDetailSheet: View {
     private func dayProgress(_ p: ExperimentProgress) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("Día \(p.elapsedDay)").font(.system(size: 40, weight: .semibold)).monospacedDigit()
+                Text("Day \(p.elapsedDay)").font(.system(size: 40, weight: .semibold)).monospacedDigit()
                     .lineLimit(1).minimumScaleFactor(0.6).foregroundStyle(theme.ink)
-                Text("de \(row.windowDays)").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                Text("of \(row.windowDays)").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
             }
             ProgressView(value: Double(p.elapsedDay), total: Double(row.windowDays))
                 .tint(theme.dataRecovery).padding(.top, 12)
@@ -819,17 +795,17 @@ struct ExperimentDetailSheet: View {
         if p.supportsStreak {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text("Tu racha").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text("Your streak").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     Spacer()
                     HStack(spacing: 4) {
                         Image(systemName: "flame").font(.system(size: 11, weight: .medium))
-                        Text("Mejor: \(p.streakBest)").font(StrandFont.captionNumber)
+                        Text("Best: \(p.streakBest)").font(StrandFont.captionNumber)
                     }
                     .foregroundStyle(theme.inkTertiary)
                 }
                 HStack(alignment: .firstTextBaseline, spacing: 7) {
                     Text("\(p.streakCurrent)").font(StrandFont.number(30)).foregroundStyle(theme.ink)
-                    Text("noches seguidas · cumpliste \(p.adherent) de \(p.elapsedDay)")
+                    Text("nights in a row · kept \(p.adherent) of \(p.elapsedDay)")
                         .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -843,20 +819,20 @@ struct ExperimentDetailSheet: View {
     @ViewBuilder private var effectBlock: some View {
         if let e = effect, e.values.count >= 2 {
             VStack(alignment: .leading, spacing: 0) {
-                Text("Tu \(outcomePhrase) durante el experimento")
+                Text("Your \(outcomePhrase) during the experiment")
                     .instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 ExperimentEffectChart(values: e.values, baseline: e.beforeMean,
                                       accent: BucleFormat.metricColor(row.outcome, theme), theme: theme)
                     .padding(.top, 12)
                 HStack {
-                    Text("— — media antes").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    Text("— — average before").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                     Spacer()
                     if let d = e.delta {
                         HStack(spacing: 4) {
                             Text(BucleFormat.signedDelta(d, unit: e.unit))
                                 .font(StrandFont.mono(15, weight: .semibold))
                                 .foregroundStyle(deltaIsGood(d) ? theme.positiveText : theme.critical)
-                            Text("vs antes").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                            Text("vs before").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                         }
                     }
                 }
@@ -866,17 +842,19 @@ struct ExperimentDetailSheet: View {
     }
 
     private var checkIn: some View {
-        let question = row.behavior.isEmpty ? "¿Lo cumpliste hoy?" : row.behavior
+        // The journal QUESTION is data; show its localized short label, never the raw English key (FER-472).
+        let question = row.behavior.isEmpty ? String(localized: "Did you keep it today?")
+                                            : BucleFormat.behaviorLabel(row.behavior)
         return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 6) {
                 Circle().fill(theme.dataRecovery).frame(width: 8, height: 8)
-                Text("Pendiente hoy").instrumentoOverline().foregroundStyle(theme.dataRecovery)
+                Text("Pending today").instrumentoOverline().foregroundStyle(theme.dataRecovery)
             }
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text(question).font(StrandFont.headline).foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 8)
-                checkInToggle("Sí", answeredYes: true)
+                checkInToggle("Yes", answeredYes: true)
                 checkInToggle("No", answeredYes: false)
             }
             .padding(.top, 11)
@@ -887,7 +865,7 @@ struct ExperimentDetailSheet: View {
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(theme.dataRecovery, lineWidth: 1.5))
     }
 
-    private func checkInToggle(_ label: String, answeredYes: Bool) -> some View {
+    private func checkInToggle(_ label: LocalizedStringKey, answeredYes: Bool) -> some View {
         Button {
             Task {
                 await repo.saveJournalAnswer(day: Repository.localDayKey(Date()),
@@ -902,13 +880,13 @@ struct ExperimentDetailSheet: View {
                 .overlay(Capsule().stroke(theme.hairlineStrong, lineWidth: 1))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(label), \(row.behavior)")
+        .accessibilityLabel(label)
     }
 
     private var meta: some View {
         HStack(spacing: 8) {
             Image(systemName: "calendar").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
-            Text("Veredicto el ").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            Text("Verdict on ").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 + Text(progress?.verdictDate ?? "—").font(StrandFont.subhead).foregroundStyle(theme.ink).bold()
         }
     }
@@ -917,7 +895,7 @@ struct ExperimentDetailSheet: View {
         Button {
             Task { await repo.cancelExperiment(row); onChanged(); dismiss() }
         } label: {
-            Text("Cancelar experimento").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+            Text("Cancel experiment").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
                 .frame(maxWidth: .infinity)
         }
         .buttonStyle(.plain)
@@ -932,12 +910,13 @@ struct ExperimentDetailSheet: View {
         await MainActor.run { progress = p; effect = e }
     }
 
-    /// es-MX phrase for the outcome in «Tu <…> durante el experimento».
+    /// Localized phrase for the outcome in «Your <…> during the experiment». Recovery/sleep get a
+    /// localized word; HRV / resting HR keep the engine's data label (localized at the engine layer, FER-418).
     private var outcomePhrase: String {
         switch row.outcome {
-        case "Recuperación": return "recuperación"
-        case "Sueño":        return "sueño"
-        default:             return row.outcome   // HRV / FC en reposo stay as-is
+        case "Recuperación": return String(localized: "recovery")
+        case "Sueño":        return String(localized: "sleep")
+        default:             return row.outcome   // HRV / FC en reposo stay as-is (engine data)
         }
     }
 
@@ -984,20 +963,20 @@ struct DisenaExperimentoSheet: View {
         ScrollView {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Nuevo experimento").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    Text("Diseña tu propio experimento")
+                    Text("New experiment").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text("Design your own experiment")
                         .font(StrandFont.title2).foregroundStyle(theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text("Elige un hábito que quieras adoptar y mídelo contra una métrica. Lo confirmamos comparando esos días con tu base.")
+                    Text("Pick a habit you want to adopt and measure it against a metric. We confirm it by comparing those days with your baseline.")
                         .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
-                // Hábito
+                // Habit
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("El hábito").instrumentoOverline().foregroundStyle(theme.inkTertiary).padding(.bottom, 2)
+                    Text("The habit").instrumentoOverline().foregroundStyle(theme.inkTertiary).padding(.bottom, 2)
                     if behaviors.isEmpty {
-                        Text("Aún no tienes hábitos para probar. Anota algunos días primero.")
+                        Text("You don't have habits to test yet. Log a few days first.")
                             .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
                             .padding(.vertical, 12)
                     } else {
@@ -1019,29 +998,29 @@ struct DisenaExperimentoSheet: View {
                     }
                 }
 
-                // Objetivo
+                // Metric
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("La métrica").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text("The metric").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     SegmentedPillControl(outcomes, selection: $outcome, theme: theme) { $0 }
                 }
 
-                // Ventana
+                // Window
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("La ventana").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    SegmentedPillControl([7, 14, 21], selection: $windowDays, theme: theme) { "\($0) días" }
+                    Text("The window").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    SegmentedPillControl([7, 14, 21], selection: $windowDays, theme: theme) { String(localized: "\($0) days") }
                 }
 
                 HStack {
-                    Text("Anota cada día si lo cumpliste").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    Text("Log each day whether you kept it").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                     Spacer()
-                    Text("veredicto el \(verdictDate)").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                    Text("verdict on \(verdictDate)").font(StrandFont.subhead).foregroundStyle(theme.ink)
                 }
                 .padding(.top, 4)
 
                 Button {
                     if let behavior { Task { await onStart(behavior, outcome, expectedSign, windowDays) } }
                 } label: {
-                    Text("Empezar").font(StrandFont.headline)
+                    Text("Start").font(StrandFont.headline)
                         .foregroundStyle(behavior == nil ? theme.inkTertiary : theme.paper)
                         .frame(maxWidth: .infinity).padding(15)
                         .background(behavior == nil ? theme.surface : theme.ink,
@@ -1052,7 +1031,7 @@ struct DisenaExperimentoSheet: View {
                 .buttonStyle(.plain).disabled(behavior == nil)
 
                 Button { dismiss() } label: {
-                    Text("Ahora no").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                    Text("Not now").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.plain)
