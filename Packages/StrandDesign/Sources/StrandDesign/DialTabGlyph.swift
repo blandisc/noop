@@ -32,29 +32,30 @@ public struct DialTabGlyph: View {
     public var body: some View {
         Canvas { ctx, sz in
             let c = CGPoint(x: sz.width / 2, y: sz.height / 2)
-            let r = sz.width * 0.346
-            let lw = lineWidth ?? max(1.2, sz.width * 0.063)
+            let r: CGFloat = sz.width * 0.346
+            let lw: CGFloat = lineWidth ?? max(1.2, sz.width * 0.063)
 
             // The 24h bezel.
             ctx.stroke(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)),
                        with: .color(color), lineWidth: lw)
 
             // Four short cardinal ticks just inside the ring, to orient the face.
-            let tick = sz.width * 0.072
+            let tick: CGFloat = sz.width * 0.072
             for deg in stride(from: 0.0, to: 360.0, by: 90.0) {
-                let a = deg * .pi / 180
-                let outer = CGPoint(x: c.x + cos(a) * r, y: c.y + sin(a) * r)
-                let inner = CGPoint(x: c.x + cos(a) * (r - tick), y: c.y + sin(a) * (r - tick))
+                let a: Double = deg * .pi / 180
+                let ca = CGFloat(cos(a)), sa = CGFloat(sin(a))
+                let outer = CGPoint(x: c.x + ca * r, y: c.y + sa * r)
+                let inner = CGPoint(x: c.x + ca * (r - tick), y: c.y + sa * (r - tick))
                 var p = Path(); p.move(to: inner); p.addLine(to: outer)
                 ctx.stroke(p, with: .color(color), style: StrokeStyle(lineWidth: lw, lineCap: .round))
             }
 
             // The now-dot — upper-right, seated on the ring (≈ -45°). Echoes the
             // DiurnalDial's now marker; here it's part of the glyph's identity.
-            let da = -45.0 * .pi / 180
-            let dr = r * 0.8
-            let dp = CGPoint(x: c.x + cos(da) * dr, y: c.y + sin(da) * dr)
-            let dotR = sz.width * 0.066
+            let da: Double = -45.0 * .pi / 180
+            let dr: CGFloat = r * 0.8
+            let dp = CGPoint(x: c.x + CGFloat(cos(da)) * dr, y: c.y + CGFloat(sin(da)) * dr)
+            let dotR: CGFloat = sz.width * 0.066
             ctx.fill(Path(ellipseIn: CGRect(x: dp.x - dotR, y: dp.y - dotR, width: dotR * 2, height: dotR * 2)),
                      with: .color(color))
         }

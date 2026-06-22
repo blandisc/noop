@@ -90,9 +90,9 @@ public struct InsightGlyph: View {
         let lo = series.min()!, hi = series.max()!
         let span = Swift.max(hi - lo, 0.0001)
         let n = series.count
-        return series.enumerated().map { i, v in
-            let x = 2 + (44 - 2) * CGFloat(i) / CGFloat(n - 1)
-            let y = 25 - (25 - 5) * CGFloat((v - lo) / span)
+        return series.enumerated().map { (i, v) -> CGPoint in
+            let x: CGFloat = 2 + 42 * CGFloat(i) / CGFloat(n - 1)
+            let y: CGFloat = 25 - 20 * CGFloat((v - lo) / span)
             return CGPoint(x: x, y: y)
         }
     }
