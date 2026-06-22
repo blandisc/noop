@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Hoy: el dock de puntos del pager baja un poco, más cerca de la barra / Today: the pager dots dock sits a bit lower, closer to the tab bar.**
+  **ES** — En **Hoy**, los puntitos del pager (el indicador de página) flotaban con demasiado aire sobre la barra de pestañas. Ahora bajan ~8pt y quedan flotando justo encima de la barra (≈11pt, el aire de su propia área tocable de 28pt); el espacio sobrante se **reubica arriba** del dock, no se elimina. Sin cambios en el dial, el encabezado ni la rejilla de métricas.
+  **EN** — On **Hoy**, the pager dots (the page indicator) floated with too much air above the tab bar. They now drop ~8pt and float just above the bar (≈11pt, the air from their own 28pt tap target); the freed space **moves above** the dock rather than being removed. No changes to the dial, header, or metrics grid.
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **Detalle de Sueño: se quita la etiqueta «tu necesidad» de la gráfica de deuda semanal / Sleep detail: drop the "your need" label from the weekly debt chart.**
   **ES** — En la gráfica de **Deuda de la semana**, la etiqueta «tu necesidad» se dibujaba pegada a la línea base y una noche de **superávit** (barra verde) crecía justo detrás del texto, asomando el verde; además confundía. Se quita la etiqueta: la línea base se queda como referencia (arriba dormiste de más, abajo te faltó) y el texto del bloque sigue explicando el sentido. Misma gráfica, mismos datos.
   **EN** — In the **Weekly debt** chart, the "your need" label sat pinned to the baseline and a **surplus** night (green bar) grew right behind the text, leaking green; it also read as confusing. The label is removed: the baseline stays as the reference (above = slept over, below = fell short) and the block's caption still explains it. Same chart, same data.
