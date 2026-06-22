@@ -133,9 +133,17 @@ struct StressDayMapBlock: View {
     @ViewBuilder private func headline(_ c: StressDayMap.Coincidence?) -> some View {
         if let c {
             let time = c.peakDate.formatted(.dateTime.hour().minute())
+            // Give the peak a SIZE, not just an hour (Pase v2 #3): how far it rose above your usual calm
+            // (the Low / activated boundary, `activatedFloor` = 1.0 — the same line drawn behind the bars).
+            let overCalm = c.peakStress - StressMoments.activatedFloor
+            let head = Text("Your highest point today was at \(time)").foregroundColor(theme.ink)
+            let tail: Text = overCalm >= 0.1
+                ? Text(verbatim: " — ").foregroundColor(theme.inkTertiary)
+                    + Text("+\(magFmt(overCalm)) over your usual calm.").foregroundColor(bandColor(c.peakStress))
+                : Text(verbatim: ".").foregroundColor(theme.ink)
             VStack(alignment: .leading, spacing: 4) {
-                Text("Your highest point today was at \(time).")
-                    .font(StrandFont.headline).foregroundStyle(theme.ink)
+                (head + tail)
+                    .font(StrandFont.headline)
                     .fixedSize(horizontal: false, vertical: true)
                 if let ev = c.event {
                     (Text("Coincided with “\(EventTitleCleaner.clean(ev.title))” · ")
@@ -221,6 +229,9 @@ struct StressDayMapBlock: View {
 
     private func bandColor(_ score: Double) -> Color { StressBand(score: score).dataColor(theme) }
     private func bandWord(_ score: Double) -> LocalizedStringKey { StressBand(score: score).displayWord }
+
+    /// A 0–3 magnitude at one decimal, with no sign (the caller prepends «+»). e.g. 0.9.
+    private func magFmt(_ v: Double) -> String { String(format: "%.1f", v) }
 
     private func allDayRow(_ events: [StressDayMap.DayEvent]) -> some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -350,14 +361,18 @@ private struct StressBarsStrip: View {
         GeometryReader { geo in
             let w = geo.size.width
             let n = hours.count
-            HStack(alignment: .bottom, spacing: 3) {
-                ForEach(Array(0..<n), id: \.self) { h in
-                    RoundedRectangle(cornerRadius: 1.5, style: .continuous)
-                        .fill(hours[h].map { StressBand(score: $0).dataColor(theme) } ?? theme.hairlineStrong)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: barHeight(hours[h]), alignment: .bottom)
-                        .opacity(isDragging && scrubHour != h ? 0.3 : 1)
+            ZStack(alignment: .bottomLeading) {
+                calmReferenceLine                     // «your usual calm» dashed line, behind the bars (#6)
+                HStack(alignment: .bottom, spacing: 3) {
+                    ForEach(Array(0..<n), id: \.self) { h in
+                        RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                            .fill(hours[h].map { StressBand(score: $0).dataColor(theme) } ?? theme.hairlineStrong)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: barHeight(hours[h]), alignment: .bottom)
+                            .opacity(isDragging && scrubHour != h ? 0.3 : 1)
+                    }
                 }
+                .frame(width: w, height: Self.barsHeight, alignment: .bottom)
             }
             .frame(width: w, height: Self.barsHeight, alignment: .bottom)
             .overlay(alignment: .leading) { cursor(w: w, n: n) }
@@ -373,6 +388,24 @@ private struct StressBarsStrip: View {
             )
         }
         .frame(height: Self.barsHeight)
+    }
+
+    /// A dotted «your usual calm» reference (Pase v2 #6): a horizontal dashed line at the Low / activated
+    /// boundary (stress 1.0, `activatedFloor`), so which hours rose into activated reads at a glance —
+    /// exactly the bars that are NOT calm-colored. Drawn behind the bars, with a quiet right-aligned tag.
+    private var calmReferenceLine: some View {
+        let frac = CGFloat(StressMoments.activatedFloor / 3.0)   // 1.0 of 0–3
+        return VStack(alignment: .trailing, spacing: 2) {
+            Text("your usual calm")
+                .font(.system(size: 9, weight: .medium))
+                .foregroundStyle(theme.inkTertiary)
+            DashedHLine()
+                .stroke(theme.hairlineStrong, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                .frame(height: 1)
+        }
+        .frame(maxWidth: .infinity, alignment: .trailing)
+        .offset(y: -frac * Self.barsHeight)
+        .allowsHitTesting(false)
     }
 
     @ViewBuilder private func cursor(w: CGFloat, n: Int) -> some View {
@@ -463,6 +496,18 @@ private struct CalendarPickerSheet: View {
 
     private func toggle(_ id: String) {
         if selected.contains(id) { selected.remove(id) } else { selected.insert(id) }
+    }
+}
+
+// MARK: - Dashed horizontal line (for the «your usual calm» reference)
+
+/// A single horizontal line through the view's vertical center, for `.stroke(dash:)`. Token-free shape.
+private struct DashedHLine: Shape {
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: 0, y: rect.midY))
+        p.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
+        return p
     }
 }
 #endif

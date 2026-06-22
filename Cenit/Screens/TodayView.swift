@@ -328,14 +328,14 @@ struct TodayView: View {
                                    curveLoader: { await loadStrainCurve() })
             }
             .sheet(item: $stressDetail) { item in
-                // SAME rich detail Cuerpo presents — the «mapa del día» (chart + moments) + patterns +
-                // the Coach handoff, wired through the shared `StressDayMapPresenter` (FER-452).
+                // SAME rich detail Cuerpo presents — the «mapa del día» (chart + moments) + patterns,
+                // wired through the shared `StressDayMapPresenter` (FER-452). The cross-day pattern line
+                // is read-only (the Coach handoff was removed, Pase v2 #7).
                 StressDetailScreen(theme: theme, model: item.model, dayMap: stressDayMap,
                                    patternsLoader: { await StressDayMapPresenter.timeOfDayPatterns(
                                        repo: repo, maxHR: model.profile.hrMax, restingHR: stressRestingHR) },
                                    eventPatternsLoader: { await StressDayMapPresenter.eventPatterns(
-                                       repo: repo, map: stressDayMap) },
-                                   onExploreInCoach: { stressDetail = nil; tabRouter.select(.coach) })
+                                       repo: repo, map: stressDayMap) })
             }
             .sheet(item: $metricSpec) { spec in
                 MetricDetailScreen(
