@@ -133,9 +133,11 @@ struct TodayView: View {
     /// page dots lo leen con `?? 0`. Arranca en la página 1 del veredicto.
     @State private var pagerPage: Int? = 0
 
-    /// Presenta la hoja de estado (FER-467): el botón «i» del encabezado de «Métricas de hoy» abre la
-    /// explicación del estado + la leyenda de niveles, que ya no vive en línea para limpiar la pantalla.
-    @State private var showStatusSheet = false
+    /// Ya se aplicó UNA vez el aterrizaje inicial en Métricas cuando no había veredicto (FER-475): de
+    /// madrugada, sin lectura de hoy, el pager abre en la página 2 (Métricas) porque el Brief aún no tiene
+    /// nada que decir. Una sola vez por aparición — luego respeta dónde deslice el usuario y no re-salta
+    /// cuando llega el veredicto matutino.
+    @State private var didAutoLandMetrics = false
 
     // THE single grid definition — every tile group reuses it so margins line up.
     private let grid = [GridItem(.adaptive(minimum: 168), spacing: NoopMetrics.gap)]
@@ -277,16 +279,6 @@ struct TodayView: View {
             }
             .sheet(isPresented: $showWhyVerdict) {
                 WhyVerdictSheet(readiness: readiness, theme: theme, sleepMinutes: repo.today?.totalSleepMin)
-            }
-            // Hoja de estado (FER-467): la explicación del estado de hoy + la leyenda de niveles, que ya no
-            // vive en línea (se quitó para limpiar la pantalla — handoff). El tema se pasa por el valor
-            // capturado (no se propaga por `.sheet`); fondo de papel + claro como las demás hojas.
-            .sheet(isPresented: $showStatusSheet) {
-                statusSheet
-                    .presentationDetents([.medium])
-                    .presentationDragIndicator(.visible)
-                    .presentationBackground(theme.paper)
-                    .preferredColorScheme(.light)
             }
             // Rich «Instrumento» Detalle, drilled into from a summary sheet's "Ver más" — the SAME screens
             // Cuerpo presents, theme passed explicitly (it doesn't propagate through `.sheet`), NO nested
@@ -866,12 +858,53 @@ struct TodayView: View {
         if state == .verdict, let brief = dailyBrief {
             dailyBriefView(brief)
         } else {
-            VStack(spacing: NoopMetrics.space2) {
-                heroBody(state)
-                heroFooter(state)
-            }
-            .frame(maxWidth: .infinity, alignment: .top)
+            transitionalBriefView(state)
         }
+    }
+
+    /// Página 1 cuando aún no hay veredicto (FER-475): de madrugada / esperando el sync matutino, el Brief
+    /// no tiene nada que decir todavía. En vez del texto suelto que se veía vacío, una transición diseñada:
+    /// el copy honesto del estado (`heroBody`/`heroFooter`) + un puente claro a Métricas, donde sí hay algo
+    /// que ver ahora. El pager además ABRE en Métricas en este caso (`maybeAutoLandMetrics`); este puente
+    /// cubre cuando el usuario regresa al Brief.
+    @ViewBuilder private func transitionalBriefView(_ state: HeroState) -> some View {
+        VStack(spacing: NoopMetrics.gap) {
+            heroBody(state)
+            heroFooter(state)
+            metricsBridge
+        }
+        .frame(maxWidth: .infinity, alignment: .top)
+    }
+
+    /// El puente a «Métricas de hoy» desde la página 1 transicional: desliza el pager a la página 2 (donde
+    /// hay datos que ver mientras llega el veredicto). Cápsula en tinta — chrome, no dato (sin verde).
+    private var metricsBridge: some View {
+        Button {
+            withAnimation(reduceMotion ? nil : StrandMotion.interactive) { pagerPage = 1 }
+        } label: {
+            HStack(spacing: NoopMetrics.space2) {
+                Text("Ver tus métricas de hoy").font(StrandFont.subhead.weight(.semibold))
+                Image(systemName: "arrow.right").font(.system(size: 13, weight: .semibold))
+            }
+            .foregroundStyle(theme.inkSecondary)
+            .padding(.horizontal, NoopMetrics.cardPadding).padding(.vertical, NoopMetrics.gap)
+            .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.top, NoopMetrics.space2)
+        .accessibilityHint(Text("Abre la página de métricas de hoy"))
+    }
+
+    /// Aterrizaje inicial del pager (FER-475): UNA sola vez, cuando los datos ya cargaron (`repo.loaded`),
+    /// si no hay veredicto abre en Métricas (página 2). Se llama desde `loadAll` tras sembrar el veredicto,
+    /// así que `heroState` ya es definitivo. El flag evita re-saltar cuando llega el veredicto matutino o el
+    /// usuario desliza a propósito — solo decide el destino de apertura, no pelea con sus gestos.
+    @MainActor private func maybeAutoLandMetrics() {
+        guard !didAutoLandMetrics, repo.loaded else { return }
+        didAutoLandMetrics = true
+        if heroState != .verdict { pagerPage = 1 }
     }
 
     /// El Daily Brief del día (FER-470), armado desde el veredicto memoizado + la recuperación de hoy y su
@@ -1636,7 +1669,10 @@ struct TodayView: View {
     /// El botón «i» del encabezado: círculo con borde `hairlineStrong` + glifo info en tinta terciaria.
     /// Abre la hoja de estado (la explicación ya no vive en línea, para limpiar la pantalla — handoff).
     private var infoStateButton: some View {
-        Button { showStatusSheet = true } label: {
+        // FER-475 (fix): abre `WhyVerdictSheet` —la explicación RICA del estado (señales en σ + leyenda
+        // completa de 4 niveles + salvedad de noche corta)—, la misma hoja que abre el titular del Brief.
+        // Reemplaza la hoja de estado mínima que había quitado info (el dueño la pidió de vuelta completa).
+        Button { showWhyVerdict = true } label: {
             Image(systemName: "info.circle")
                 .font(.system(size: 15))
                 .foregroundStyle(theme.inkTertiary)
@@ -1646,8 +1682,8 @@ struct TodayView: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text("Qué significa tu estado"))
-        .accessibilityHint(Text("Abre la explicación de tu estado de hoy"))
+        .accessibilityLabel(Text("Por qué tu estado se lee así"))
+        .accessibilityHint(Text("Abre tus señales de hoy y qué significan"))
     }
 
     /// La escala de 4 segmentos (Desgastado · Exigido · Equilibrado · A punto). Solo el segmento del nivel
@@ -1675,46 +1711,6 @@ struct TodayView: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("Escala de estado"))
         .accessibilityValue(Text(stateLabel(current)))
-    }
-
-    /// La hoja de estado (FER-467): kicker «TU ESTADO HOY» + la palabra del estado en su color + la
-    /// explicación (`readiness.summary`, el mismo texto del motor) + una leyenda por valencia. Los colores
-    /// son los de `verdictDataColor` (una sola fuente por nivel), agrupados en 3 tiers: listo (verde),
-    /// precaución (ámbar), recuperación (rojo). Con `insufficient` omite la palabra y solo deja la
-    /// explicación honesta de que aún no hay veredicto.
-    private var statusSheet: some View {
-        let level = readiness.level
-        return ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-                Text("Tu estado hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                if level != .insufficient {
-                    Text(stateLabel(level)).font(StrandFont.title2).fontWeight(.semibold)
-                        .foregroundStyle(verdictDataColor(level))
-                }
-                Text(readiness.summary).font(StrandFont.body).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                VStack(alignment: .leading, spacing: NoopMetrics.space2) {
-                    statusLegendRow(color: theme.verdict,  name: "A punto · Equilibrado", meaning: "listo para entrenar")
-                    statusLegendRow(color: theme.warning,  name: "Exigido",               meaning: "entrena con control")
-                    statusLegendRow(color: theme.critical, name: "Desgastado",            meaning: "toma hoy como recuperación")
-                }
-                .padding(.top, NoopMetrics.space2)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(NoopMetrics.screenPadding)
-        }
-    }
-
-    /// Una fila de la leyenda de la hoja de estado: punto de color del tier + nombre (en tinta) + qué
-    /// significa (tinta terciaria).
-    private func statusLegendRow(color: Color, name: LocalizedStringKey, meaning: LocalizedStringKey) -> some View {
-        HStack(spacing: NoopMetrics.space2) {
-            Circle().fill(color).frame(width: 9, height: 9)
-            Text(name).font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
-            Text(meaning).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            Spacer(minLength: 0)
-        }
-        .accessibilityElement(children: .combine)
     }
 
     /// "Métricas de hoy" — la lectura intradía del día como rejilla 2×4 de 8 tiles (valor + Δ vs ayer),
@@ -2213,6 +2209,9 @@ struct TodayView: View {
         // (FER-172). `recomputeDerived()` es síncrono y lee `repo.days`/`today`/`appleHealthDays`, ya
         // disponibles sin esperar las consultas de sparklines.
         recomputeDerived()
+        // FER-475: con los datos ya sembrados, decide UNA vez el aterrizaje del pager — si no hay veredicto
+        // (madrugada / esperando el sync), abre en Métricas (página 2), donde sí hay algo que ver.
+        maybeAutoLandMetrics()
         // Issue every query concurrently, then collect. The store is a serial DatabaseQueue so I/O still
         // serializes, but the memoized ensureStore() makes the parallel first-callers share ONE open, and
         // the queries run back-to-back with no main-actor ping-pong.
