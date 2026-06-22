@@ -60,9 +60,13 @@ struct InstrumentTabBar<Tag: Hashable>: View {
         HStack(alignment: .top, spacing: 0) {
             ForEach(items, id: \.tag) { item in tab(item) }
         }
-        // Padding superior compacto (FER-488): 4pt en vez de 8 para que los iconos suban y el dock de page
-        // dots de «Hoy» quede aún más cerca de la barra. Aplica en las 5 pestañas (cosmético, reversible).
-        .padding(.top, 4)
+        .padding(.top, 8)
+        // Baja el contenido de la barra ~10pt hacia la zona del home-indicator (FER-490): los iconos/labels
+        // se apoyaban arriba y dejaban un hueco vacío grande debajo, así que la barra «se veía muy arriba».
+        // El padding negativo reduce la altura medida (`BarHeightKey`) → la reserva por pestaña (`barReservation`)
+        // baja lo mismo, de modo que TODO el conjunto (barra + frontera del contenido) se desplaza junto: ni
+        // solapes, ni hueco nuevo arriba, sin encimar la línea del home-indicator (~24pt de holgura). 5 pestañas.
+        .padding(.bottom, -10)
         .frame(maxWidth: .infinity)
         // The surface (and its top hairline) extend through the home-indicator area;
         // the buttons sit above it in the safe region.
