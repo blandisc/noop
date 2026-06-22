@@ -195,6 +195,13 @@ struct MetricDetailScreen: View {
         if visibleBlocks.contains(.seriesChartBand) {
             blockDivider
             chartBlock(window)
+            // The «where you've been across the ranges» summary for Steps (legacy layout). (FER-459)
+            if let sentence = bandSummarySentence(window) {
+                sentence
+                    .font(StrandFont.subhead)
+                    .foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         if visibleBlocks.contains(.normalRange), spec.descriptor.key != "hrv" {
             blockDivider
@@ -1653,6 +1660,14 @@ struct MetricDetailScreen: View {
             Text("Your story").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             if visibleBlocks.contains(.periodSelector) { periodSelector(window) }
             chartBlock(window)
+            // The one-line «where you've been across the ranges» summary, shared verbatim with the
+            // summary sheet's ranges list. (FER-459)
+            if let sentence = bandSummarySentence(window) {
+                sentence
+                    .font(StrandFont.subhead)
+                    .foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             // «Days in range»: in moving-average mode it's your PERSONAL band; in ranges mode it's the
             // population classification band you fall in today, and that line carries the ⓘ that expands
             // every band's cutoffs (athlete / excellent / normal / …). (Detalle de Vital — cortes de rango)
@@ -1689,6 +1704,30 @@ struct MetricDetailScreen: View {
         guard vals.count > 1 else { return nil }
         let inRange = vals.reduce(0) { $0 + (band.contains($1) ? 1 : 0) }
         return "\(inRange) of the last \(vals.count) days within your range"
+    }
+
+    // MARK: - Band trend summary sentence (FER-459)
+
+    /// Metrics that carry labeled population ranges → they get the «where you've been» summary sentence
+    /// (Resting HR / Respiration / SpO₂ / Steps). HRV has no fixed bands; Heart Rate is intraday.
+    private var hasBandSentence: Bool {
+        !isIntraday && spec.descriptor.key != "hrv"
+            && spec.info.bands.contains { $0.lower != nil || $0.upper != nil }
+    }
+
+    /// The one-line summary sentence for the detail, classifying the windowed completed days against the
+    /// metric's population bands. Identical wording to the summary sheet (shared `BandSummaryCopy`). Steps'
+    /// in-progress day is excluded (FER-264), so it carries no "today" clause. (FER-459)
+    private func bandSummarySentence(_ window: MetricWindow) -> Text? {
+        guard hasBandSentence else { return nil }
+        let banded = spec.info.bands.filter { $0.lower != nil || $0.upper != nil }
+        let bands = banded.map { TrendBand(label: $0.label, lower: $0.lower, upper: $0.upper) }
+        let todayIndex = dropsIncompleteToday ? nil : banded.firstIndex(where: { $0.isActive })
+        guard let s = TrendBands.summarize(values: trendStatRows(window).map(\.value),
+                                           bands: bands, todayIndex: todayIndex) else { return nil }
+        return BandSummaryCopy.sentence(s, labels: banded.map(\.label),
+                                        nightly: BandSummaryCopy.isNightly(metricID: spec.descriptor.key),
+                                        hue: metricHue)
     }
 
     /// «Ranges» mode's counterpart to `daysInRangeLine`: how many windowed days fell in the population

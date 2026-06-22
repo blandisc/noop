@@ -620,7 +620,15 @@ struct MetricInfoSheet: View {
                 if let weights = info.weights {
                     weightsBlock(weights, note: info.weightsNote, dimmed: info.calibration != nil)
                 }
-                if !info.bands.isEmpty { bandsTable }
+                if !info.bands.isEmpty {
+                    if let sentence = bandSummarySentence {
+                        sentence
+                            .font(StrandFont.subhead)
+                            .foregroundStyle(theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    bandsTable
+                }
                 if let method = info.method { methodDisclosure(method) }
                 if appleConnectHint {
                     appleConnectLine
@@ -750,9 +758,10 @@ struct MetricInfoSheet: View {
     }
 
     private var bandsTable: some View {
-        VStack(spacing: 0) {
+        let counts = bandSummary?.counts
+        return VStack(spacing: 0) {
             ForEach(Array(info.bands.enumerated()), id: \.offset) { i, band in
-                bandRow(band)
+                bandRow(band, count: counts.flatMap { i < $0.count ? $0[i] : nil })
                 if i < info.bands.count - 1 {
                     Divider().overlay(theme.hairline).padding(.leading, 36)
                 }
@@ -761,7 +770,9 @@ struct MetricInfoSheet: View {
         .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    private func bandRow(_ band: MetricInfo.Band) -> some View {
+    /// One reference-band row. `count` (when the trend has loaded) shows how many of the windowed
+    /// days/nights fell in this band — the "días en tu rango" readout, now per band. (FER-459)
+    private func bandRow(_ band: MetricInfo.Band, count: Int?) -> some View {
         HStack(spacing: 10) {
             Circle()
                 .fill(band.isActive ? metricHue : theme.inkTertiary.opacity(0.45))
@@ -771,17 +782,48 @@ struct MetricInfoSheet: View {
                 .font(StrandFont.subhead)
                 .foregroundStyle(band.isActive ? theme.ink : theme.inkSecondary)
             Spacer()
-            // The active band already reads from four signals (tinted dot, ink label, tinted range, row
-            // tint); the old left-pointing arrow + the 22pt it reserved on every row was redundant
-            // data-ink. Dropping it lets the range breathe in the freed width. (isActive untouched.)
             Text(band.range)
                 .font(StrandFont.captionNumber)
                 .foregroundStyle(band.isActive ? metricHue : theme.inkTertiary)
-                .padding(.trailing, 14)
+            if let count {
+                Text(BandSummaryCopy.countLabel(count, nightly: BandSummaryCopy.isNightly(metricID: info.id)))
+                    .font(StrandFont.captionNumber)
+                    .foregroundStyle(band.isActive ? metricHue : theme.inkTertiary.opacity(0.85))
+                    .frame(minWidth: 56, alignment: .trailing)
+            }
         }
+        .padding(.trailing, 14)
         .padding(.vertical, 11)
         .frame(maxWidth: .infinity)
         .background(band.isActive ? metricHue.opacity(0.12) : Color.clear)
+    }
+
+    // MARK: - Band trend summary (FER-459)
+
+    /// Band classification of the loaded 14-day trend — the per-band counts + the summary sentence.
+    /// `nil` until the trend loads, or when the metric carries no bands (HRV). Steps' in-progress day is
+    /// excluded from the trend (FER-264), so it gets no "today" band → no today clause.
+    private var bandSummary: BandTrendSummary? {
+        guard !info.bands.isEmpty, !trendData.isEmpty else { return nil }
+        // Sleep's bands are in HOURS but its trend is in minutes — convert so the classification lines up
+        // (same `toHours` as `bandedTrend`). Every other metric's trend already matches its band units.
+        let toHours = info.id == "sleep"
+        // Steps' latest point is the in-progress day (FER-264) — drop it so the counts read completed days
+        // only, and it carries no "today" band.
+        let isSteps = info.id == "steps"
+        let sorted = trendData.sorted { $0.date < $1.date }
+        let source = (isSteps && sorted.count > 1) ? Array(sorted.dropLast()) : sorted
+        let values = source.map { toHours ? $0.value / 60 : $0.value }
+        let bands = info.bands.map { TrendBand(label: $0.label, lower: $0.lower, upper: $0.upper) }
+        let todayIndex = isSteps ? nil : info.bands.firstIndex(where: { $0.isActive })
+        return TrendBands.summarize(values: values, bands: bands, todayIndex: todayIndex)
+    }
+
+    private var bandSummarySentence: Text? {
+        guard let s = bandSummary else { return nil }
+        return BandSummaryCopy.sentence(s, labels: info.bands.map(\.label),
+                                        nightly: BandSummaryCopy.isNightly(metricID: info.id),
+                                        hue: metricHue)
     }
 
     // MARK: - Heart-rate 24h chart (FER-137)

@@ -60,6 +60,88 @@ public enum TrendBands {
         let count = values.reduce(0) { $0 + (band.contains($1) ? 1 : 0) }
         return (idx, count)
     }
+
+    /// Summarise how `values` distribute across `bands`, and where "today" sits relative to the band you
+    /// were in most. The plain-language reading behind the per-band day counts + the one-line summary
+    /// sentence ("Has estado sobre todo en Normal; hoy bajaste a Excelente"). `todayIndex` is the band of
+    /// today's reading, supplied by the caller so the summary and detail screens agree; pass `nil` when
+    /// there's no usable today (e.g. a partial step day). Pure, so the copy is identical wherever it's
+    /// shown and can be unit-tested. Returns `nil` if no value lands in any band. (FER-459)
+    public static func summarize(values: [Double], bands: [TrendBand], todayIndex: Int?) -> BandTrendSummary? {
+        guard !bands.isEmpty else { return nil }
+        var counts = Array(repeating: 0, count: bands.count)
+        var n = 0
+        for v in values {
+            if let i = index(containing: v, in: bands) { counts[i] += 1; n += 1 }
+        }
+        guard n > 0 else { return nil }
+
+        // Rank bands by count (desc), ties broken by the lower band index so the result is deterministic.
+        let ranked = counts.indices.sorted { counts[$0] != counts[$1] ? counts[$0] > counts[$1] : $0 < $1 }
+        let dominant = ranked[0]
+        let second: Int? = (ranked.count > 1 && counts[ranked[1]] > 0) ? ranked[1] : nil
+        let domCount = counts[dominant]
+        let share = Double(domCount) / Double(n)
+
+        let tier: BandTrendSummary.Tier
+        if domCount == n {
+            tier = .always
+        } else if share >= 0.8 {
+            tier = .almostAlways
+        } else if share >= 0.5, second == nil || domCount > counts[second!] {
+            tier = .mostly
+        } else if let s = second, abs(dominant - s) == 1,
+                  Double(domCount + counts[s]) / Double(n) >= 0.7 {
+            tier = .alternating
+        } else {
+            tier = .scattered
+        }
+
+        let rel: BandTrendSummary.Relation?
+        if let ti = todayIndex {
+            rel = ti == dominant ? .same : (ti < dominant ? .lower : .higher)
+        } else {
+            rel = nil
+        }
+        return BandTrendSummary(counts: counts, n: n, dominant: dominant, second: second,
+                                tier: tier, todayIndex: todayIndex, todayVsDominant: rel)
+    }
+}
+
+/// A plain-language reading of how a windowed series sits across its bands. Built by `TrendBands.summarize`
+/// and turned into copy by the screens. (FER-459)
+public struct BandTrendSummary: Equatable {
+    /// Per-band day/night counts, parallel to the `bands` passed in.
+    public let counts: [Int]
+    /// How many values landed in some band (the window size with data).
+    public let n: Int
+    /// Band index you were in most (ties broken toward the lower band index).
+    public let dominant: Int
+    /// Runner-up band index, or `nil` when only one band saw any value.
+    public let second: Int?
+    public let tier: Tier
+    /// Band of today's reading, or `nil` when there's no usable today.
+    public let todayIndex: Int?
+    /// Where today sits relative to the dominant band (by band order), or `nil` when `todayIndex` is `nil`.
+    public let todayVsDominant: Relation?
+
+    public init(counts: [Int], n: Int, dominant: Int, second: Int?, tier: Tier,
+                todayIndex: Int?, todayVsDominant: Relation?) {
+        self.counts = counts; self.n = n; self.dominant = dominant; self.second = second
+        self.tier = tier; self.todayIndex = todayIndex; self.todayVsDominant = todayVsDominant
+    }
+
+    /// How concentrated the window is in its dominant band.
+    public enum Tier: Equatable {
+        case always           // every reading in the dominant band
+        case almostAlways     // dominant share ≥ 0.8
+        case mostly           // dominant is a clear, unique majority (≥ 0.5)
+        case alternating      // the top two bands are adjacent and together cover most of the window
+        case scattered        // spread out, no clear shape
+    }
+
+    /// Today's band vs the dominant band, by band order (lower index = lower numeric value).
+    public enum Relation: Equatable { case same, lower, higher }
 }
 
 public struct TrendChart: View {
