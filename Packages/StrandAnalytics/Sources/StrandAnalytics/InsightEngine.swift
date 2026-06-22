@@ -327,14 +327,23 @@ public enum InsightEngine {
 
     // MARK: - Insight builders for the association family
 
+    /// The journal QUESTION is a stable English data key (never localised); for display we look up its
+    /// short label in the app's String Catalog (es «Alcohol», en «Alcohol»), falling back to the raw
+    /// question for custom/imported behaviors not in the catalog. Same source the app's labels use, so
+    /// the engine's insight text and the screen's lever rows can't disagree. FER-477.
+    private static func behaviorDisplay(_ behavior: String) -> String {
+        Bundle.main.localizedString(forKey: behavior, value: behavior, table: nil)
+    }
+
     private static func behaviorInsight(_ e: BehaviorEffect, metric: Outcome,
                                         qAdjusted: Double, significant: Bool, n: Int) -> Insight {
         let pct = e.pctChange.map { abs($0) } ?? 0
         let pctInt = Int(pct.rounded())
-        let title = String(localized: "‘\(e.behavior)’ and your \(metric.displayLabel)", bundle: .main)
+        let beh = behaviorDisplay(e.behavior)
+        let title = String(localized: "‘\(beh)’ and your \(metric.displayLabel)", bundle: .main)
         let reading = e.delta < 0
-            ? String(localized: "On days with ‘\(e.behavior)’, your \(metric.displayLabel) drops \(pctInt)% (n=\(e.nWith) vs \(e.nWithout)).", bundle: .main)
-            : String(localized: "On days with ‘\(e.behavior)’, your \(metric.displayLabel) rises \(pctInt)% (n=\(e.nWith) vs \(e.nWithout)).", bundle: .main)
+            ? String(localized: "On days with ‘\(beh)’, your \(metric.displayLabel) drops \(pctInt)% (n=\(e.nWith) vs \(e.nWithout)).", bundle: .main)
+            : String(localized: "On days with ‘\(beh)’, your \(metric.displayLabel) rises \(pctInt)% (n=\(e.nWith) vs \(e.nWithout)).", bundle: .main)
         let datum = InsightDatum(value: round1(e.delta), unit: metric.unit, metric: metric.label)
         let evidence = InsightEvidence(n: n, pValue: e.pApprox, pAdjusted: qAdjusted,
                                        effectSize: e.cohensD, significant: significant)

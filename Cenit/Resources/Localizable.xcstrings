@@ -35591,6 +35591,319 @@
           }
         }
       }
+    },
+    "‘%@’ and your %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "‘%@’ y tu %@"
+          }
+        }
+      }
+    },
+    "On days with ‘%@’, your %@ drops %lld%% (n=%lld vs %lld).": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En los días con ‘%@’, tu %@ baja %lld%% (n=%lld vs %lld)."
+          }
+        }
+      }
+    },
+    "On days with ‘%@’, your %@ rises %lld%% (n=%lld vs %lld).": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En los días con ‘%@’, tu %@ sube %lld%% (n=%lld vs %lld)."
+          }
+        }
+      }
+    },
+    "%@ and %@ go together": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ y %@ van juntas"
+          }
+        }
+      }
+    },
+    "Inverse relationship between %@ and %@ (r=%@, n=%lld).": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relación inversa entre %@ y %@ (r=%@, n=%lld)."
+          }
+        }
+      }
+    },
+    "Direct relationship between %@ and %@ (r=%@, n=%lld).": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relación directa entre %@ y %@ (r=%@, n=%lld)."
+          }
+        }
+      }
+    },
+    "Last night your %@ ran below your baseline (z=%@, baseline %lld%@).": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anoche tu %@ estuvo por debajo de tu base (z=%@, base %lld%@)."
+          }
+        }
+      }
+    },
+    "Last night your %@ ran above your baseline (z=%@, baseline %lld%@).": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anoche tu %@ estuvo por encima de tu base (z=%@, base %lld%@)."
+          }
+        }
+      }
+    },
+    "Over the last %lld days your Recovery averaged %lld vs %lld before (%lld%%).": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En los últimos %lld días tu recuperación promedió %lld vs %lld antes (%lld%%)."
+          }
+        }
+      }
+    },
+    "Forecast for tomorrow: %lld (range %lld–%lld, %lld days).": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pronóstico para mañana: %lld (rango %lld–%lld, %lld días)."
+          }
+        }
+      }
+    },
+    "After %@, your next-day Recovery drops ~%lld pts vs your rest days (n=%lld).": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Después de %@, tu recuperación del día siguiente baja ~%lld pts vs tus días de descanso (n=%lld)."
+          }
+        }
+      }
+    },
+    "Your fitness age is %lld years (±%lld), %lld younger than your real age.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu edad fitness es %lld años (±%lld), %lld menor que tu edad real."
+          }
+        }
+      }
+    },
+    "Your fitness age is %lld years (±%lld), %lld older than your real age.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu edad fitness es %lld años (±%lld), %lld mayor que tu edad real."
+          }
+        }
+      }
+    },
+    "Did you drink any alcohol?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alcohol"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alcohol"
+          }
+        }
+      }
+    },
+    "Did you have caffeine late in the day?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Late caffeine"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cafeína tarde"
+          }
+        }
+      }
+    },
+    "Did you view a screen in bed?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen in bed"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pantalla en cama"
+          }
+        }
+      }
+    },
+    "Did you eat close to bedtime?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Late dinner"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cena tardía"
+          }
+        }
+      }
+    },
+    "Did you feel stressed?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stressed"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estrés"
+          }
+        }
+      }
+    },
+    "Did you use a sauna?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sauna"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sauna"
+          }
+        }
+      }
+    },
+    "Did you share your bed?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shared bed"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compartí cama"
+          }
+        }
+      }
+    },
+    "Did you feel sick or ill?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Felt unwell"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Me sentí mal"
+          }
+        }
+      }
+    },
+    "Did you take magnesium?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magnesium"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magnesio"
+          }
+        }
+      }
+    },
+    "Did you read before bed?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read before bed"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leí antes de dormir"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
