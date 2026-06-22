@@ -486,13 +486,13 @@ struct MetricDetailScreen: View {
                     // No area fill when a band is drawn: the band + clean line read sharply; the area was
                     // a second teal wash that muddied the overlap. A shorter chart keeps it proportionate
                     // to the period selector above. «Ranges» mode is a touch taller to fit the band labels. (Detalle de Vital)
-                    showsArea: effectiveChartBands.isEmpty,
+                    showsArea: effectiveChartBands(window).isEmpty,
                     height: rangesModeActive ? 184 : (isNarrative ? 156 : 200),
-                    valueRange: { rangesModeActive ? (rangesValueRange ?? narrativeChartValueRange($0)) : narrativeChartValueRange($0) },
+                    valueRange: { rangesModeActive ? (rangesValueRange($0) ?? narrativeChartValueRange($0)) : narrativeChartValueRange($0) },
                     valueFormat: { "\(fmt($0)) \(unit)" },
                     // SpO₂ shades its clinical healthy zone; the personal vitals shade your ±SD «normal range»;
                     // «Ranges» mode shades the active classification band, labels shown. (Detalle de Vital)
-                    bands: { _ in effectiveChartBands },
+                    bands: { _ in effectiveChartBands(window) },
                     bandColor: { _ in spec.clinicalBands ? theme.verdict : metricHue },
                     yAxisValues: rangesModeActive ? rangesYTicks : clinicalYAxisValues,
                     alertThreshold: spec.clinicalBands ? spec.lowThreshold : nil,
@@ -571,28 +571,35 @@ struct MetricDetailScreen: View {
     private var rangesModeActive: Bool { hasRangesMode && chartMode == .ranges }
 
     /// The bands drawn on the chart: the labeled classification ranges in «Ranges» mode (active one shaded),
-    /// else the personal/clinical band.
-    private var effectiveChartBands: [TrendBand] {
-        if rangesModeActive {
-            return spec.info.bands.compactMap { b in
-                (b.lower != nil || b.upper != nil)
-                    ? TrendBand(label: b.label, lower: b.lower, upper: b.upper, isActive: b.isActive)
-                    : nil
-            }
+    /// else the personal/clinical band. The active band is the SAME one the ranges table highlights —
+    /// today's band (`isActive`), falling back to the latest completed reading — so the shaded band and the
+    /// table agree. Without the fallback the chart shaded nothing whenever `isActive` wasn't set (e.g. a
+    /// partial step day), even though the table still highlighted a band. (FER-471 · mirrors `rangesData`)
+    private func effectiveChartBands(_ window: MetricWindow) -> [TrendBand] {
+        guard rangesModeActive else { return narrativeChartBands }
+        let banded = spec.info.bands.filter { $0.lower != nil || $0.upper != nil }
+        guard !banded.isEmpty else { return [] }
+        let tbands = banded.map { TrendBand(label: $0.label, lower: $0.lower, upper: $0.upper) }
+        let values = trendStatRows(window).map(\.value)
+        let activeIndex = banded.firstIndex(where: { $0.isActive })
+            ?? TrendBands.activeBand(values: values, bands: tbands)?.index
+        return banded.enumerated().map { i, b in
+            TrendBand(label: b.label, lower: b.lower, upper: b.upper, isActive: i == activeIndex)
         }
-        return narrativeChartBands
     }
 
-    /// In «Ranges» mode, span every classification threshold (with margin) so all bands read; the active one
-    /// shaded shows where you fall. The TOP margin is wider than the bottom: the chart's Y-scale has no top
-    /// inset, so with an even margin the highest band + the data peak hugged the plot's top edge — and with
-    /// the «Media móvil ⇄ Rangos» selector sitting just above, they read as overlapping it. The extra top
-    /// headroom pushes them down so they clear the selector. (Detalle de Vital)
-    private var rangesValueRange: ClosedRange<Double>? {
+    /// In «Ranges» mode, span every classification threshold so all bands read, AND include the plotted
+    /// line's own min/max — the line can climb past the top band (e.g. steps well over «Muy activo»), and a
+    /// band-only range let the peak shoot off the top. The TOP margin is wider than the bottom: the chart's
+    /// Y-scale has no top inset, so without headroom the peak hugged the plot's top edge and — with the
+    /// «Media móvil ⇄ Rangos» selector just above — read as overlapping it. (Detalle de Vital · FER-471)
+    private func rangesValueRange(_ smoothed: [Double]) -> ClosedRange<Double>? {
         let bounds = spec.info.bands.flatMap { [$0.lower, $0.upper].compactMap { $0 } }
-        guard let lo = bounds.min(), let hi = bounds.max(), hi > lo else { return nil }
+        guard let tLo = bounds.min(), let tHi = bounds.max(), tHi > tLo else { return nil }
+        let hi = Swift.max(tHi, smoothed.max() ?? tHi)
+        let lo = Swift.min(tLo, smoothed.min() ?? tLo)
         let span = hi - lo
-        return (lo - span * 0.4)...(hi + span * 0.6)
+        return (lo - span * 0.1)...(hi + span * 0.28)
     }
 
     private var rangesYTicks: [Double]? {
