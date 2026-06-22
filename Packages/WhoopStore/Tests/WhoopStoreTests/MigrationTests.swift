@@ -41,7 +41,7 @@ final class MigrationTests: XCTestCase {
             let cols = try await store.columnNamesForTest(table: table)
             XCTAssertTrue(cols.contains("synced"), "\(table) missing synced column")
         }
-        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 16)
+        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 17)
     }
 
     /// v15 (FER-346) adds a nullable `supersetGroup` to `routineExercise` via ALTER ADD COLUMN, and
@@ -137,6 +137,66 @@ final class MigrationTests: XCTestCase {
         try await store.saveRoutine(routine, exercises: exs)
         let read = try await store.routineExercises(routineId: "r1")
         XCTAssertEqual(read.map(\.supersetGroup), [1, 1, nil])
+    }
+
+    /// v17 (FER-492) creates `routineSet` and back-fills it from each existing `routineExercise`'s
+    /// target* columns: MAX(targetSets,1) 'work' rows carrying the single legacy reps/weight, 1:1, with
+    /// the old routineExercise rows surviving. Drives the migrator (upTo v13 → insert v13 rows → v17).
+    func testV17BackfillsRoutineSetsFromTargets() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = WhoopStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v13")
+
+        try await dbQueue.write { db in
+            try db.execute(sql:
+                "INSERT INTO routine (id, name, createdTs, updatedTs, sortOrder) VALUES ('r1','Old',0,0,0)")
+            // A 3-set exercise with reps/weight, and a 1-set exercise with both NULL.
+            try db.execute(sql: """
+                INSERT INTO routineExercise
+                    (id, routineId, exerciseId, position, targetSets, targetReps, targetWeightKg,
+                     warmupPercents, restMode, restSeconds)
+                VALUES ('re1','r1','ex1',0,3,8,60.0,'[]','fixed',90)
+                """)
+            try db.execute(sql: """
+                INSERT INTO routineExercise
+                    (id, routineId, exerciseId, position, targetSets, targetReps, targetWeightKg,
+                     warmupPercents, restMode, restSeconds)
+                VALUES ('re2','r1','ex2',1,1,NULL,NULL,'[]','fixed',90)
+                """)
+        }
+
+        try migrator.migrate(dbQueue)   // → v17
+
+        try await dbQueue.read { db in
+            XCTAssertTrue(try db.tableExists("routineSet"), "v17 must create routineSet")
+            // re1 → exactly 3 work rows, all reps=8 / weight=60, positions 0,1,2.
+            let re1 = try Row.fetchAll(db, sql:
+                "SELECT * FROM routineSet WHERE routineExerciseId='re1' ORDER BY position")
+            XCTAssertEqual(re1.count, 3)
+            XCTAssertEqual(re1.map { $0["position"] as Int }, [0, 1, 2])
+            XCTAssertTrue(re1.allSatisfy { ($0["reps"] as Int?) == 8 })
+            XCTAssertTrue(re1.allSatisfy { ($0["weightKg"] as Double?) == 60.0 })
+            XCTAssertTrue(re1.allSatisfy { ($0["kind"] as String) == "work" })
+            // re2 → exactly 1 row with NULL reps/weight.
+            let re2 = try Row.fetchAll(db, sql: "SELECT * FROM routineSet WHERE routineExerciseId='re2'")
+            XCTAssertEqual(re2.count, 1)
+            XCTAssertNil(re2.first?["reps"] as Int?)
+            XCTAssertNil(re2.first?["weightKg"] as Double?)
+            // The old routineExercise rows survive untouched.
+            let reCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM routineExercise") ?? 0
+            XCTAssertEqual(reCount, 2)
+        }
+    }
+
+    /// `routineSet` has the (routineExerciseId, position) index, mirroring setEntry's grain.
+    func testV17CreatesRoutineSetIndex() async throws {
+        let store = try await WhoopStore.inMemory()
+        let tables = try await store.tableNames()
+        XCTAssertTrue(tables.contains("routineSet"))
+        let cols = try await store.columnNamesForTest(table: "routineSet")
+        for expected in ["id", "routineExerciseId", "position", "kind", "reps", "weightKg"] {
+            XCTAssertTrue(cols.contains(expected), "routineSet missing column \(expected)")
+        }
     }
 
     /// v12 (FER-307) creates the `experiment` table with `id` as the sole primary key.

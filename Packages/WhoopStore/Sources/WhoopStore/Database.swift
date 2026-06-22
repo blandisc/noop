@@ -386,6 +386,37 @@ extension WhoopStore {
                 t.add(column: "optionIndex", .integer)   // nullable; NULL = option not recorded
             }
         }
+
+        // v17 (FER-492): per-set routine prescription. `routineSet` mirrors `setEntry`'s grain — one row
+        // per planned set, so the plan and the performed log line up. Append-only: a new table + index,
+        // touching no prior migration. Back-fill expands each existing `routineExercise` into MAX(targetSets,1)
+        // 'work' rows carrying the single legacy reps/weight, so old routines open 1:1 with zero loss; the
+        // legacy target* columns stay as derived compatibility fields. `kind` is written 'work' only here
+        // (warm-ups stay as warmupPercents, expanded at runtime) but exists so materializing them later
+        // needs no migration.
+        migrator.registerMigration("v17") { db in
+            try db.create(table: "routineSet") { t in
+                t.column("id", .text).primaryKey()
+                t.column("routineExerciseId", .text).notNull()
+                t.column("position", .integer).notNull()
+                t.column("kind", .text).notNull()          // work | warmup (v17 writes only 'work')
+                t.column("reps", .integer)
+                t.column("weightKg", .double)
+            }
+            try db.create(index: "idx_routineSet_re_pos",
+                          on: "routineSet", columns: ["routineExerciseId", "position"])
+            // Recursive CTE expands targetSets (>=1) into N positions, carrying the single legacy
+            // reps/weight to each. lower(hex(randomblob(16))) gives a stable per-row id.
+            try db.execute(sql: """
+                WITH RECURSIVE seq(re, pos, n, reps, w) AS (
+                    SELECT id, 0, MAX(targetSets, 1), targetReps, targetWeightKg FROM routineExercise
+                    UNION ALL
+                    SELECT re, pos + 1, n, reps, w FROM seq WHERE pos + 1 < n
+                )
+                INSERT INTO routineSet (id, routineExerciseId, position, kind, reps, weightKg)
+                SELECT lower(hex(randomblob(16))), re, pos, 'work', reps, w FROM seq
+                """)
+        }
         return migrator
     }
 }
