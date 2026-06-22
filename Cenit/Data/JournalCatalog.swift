@@ -55,22 +55,10 @@ final class JournalCatalogStore: ObservableObject {
     /// here as a display-only mapping (FER-312). Unknown questions (custom / imported) fall back to
     /// the verbatim string.
     nonisolated static func esLabel(for question: String) -> String {
-        // The diet lever (FER-385) is the one native Coach behavior, so its label is fully localized es/en
-        // through the String Catalog (English source key) rather than the es-MX-only starter map.
         if question == dietBehaviorKey { return String(localized: "I followed my diet", bundle: .main) }
-        return Self.esLabels[question] ?? question
+        // The short display label lives in the String Catalog (en + es), so it follows the app language —
+        // single source shared with the InsightEngine. The journal QUESTION is the catalog key; unknown
+        // (custom/imported) questions fall back to the raw question. FER-477.
+        return Bundle.main.localizedString(forKey: question, value: question, table: nil)
     }
-
-    private nonisolated static let esLabels: [String: String] = [
-        "Did you drink any alcohol?": "Alcohol",
-        "Did you have caffeine late in the day?": "Cafeína tarde",
-        "Did you view a screen in bed?": "Pantalla en cama",
-        "Did you eat close to bedtime?": "Cena tardía",
-        "Did you feel stressed?": "Estrés",
-        "Did you use a sauna?": "Sauna",
-        "Did you share your bed?": "Compartí cama",
-        "Did you feel sick or ill?": "Me sentí mal",
-        "Did you take magnesium?": "Magnesio",
-        "Did you read before bed?": "Leí antes de dormir",
-    ]
 }
