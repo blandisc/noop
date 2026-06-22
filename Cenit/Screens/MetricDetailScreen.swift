@@ -1566,8 +1566,7 @@ struct MetricDetailScreen: View {
     }
 
     private func inlineBandBar(_ b: InlineBand) -> some View {
-        let open = openDisclosure == "band"
-        return VStack(spacing: 6) {
+        VStack(spacing: 6) {
             // The bar, today's value above the thumb, and the edge numbers under their ACTUAL positions
             // (the band's edges for a personal range, the axis ends for SpO₂) — anchored by fraction with
             // `.position`, so a number never floats away from the mark it labels. `.position` is clamped a
@@ -1615,9 +1614,9 @@ struct MetricDetailScreen: View {
             }
         }
         .padding(4)
-        // Open-state highlight is a warm paper tint (handoff #EFE7D6), NOT the near-white `surface` — that
-        // read as a stray white box behind the section. (Detalle de Vital fix)
-        .background(open ? theme.hairline : Color.clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        // No open-state fill behind the band: any tint near the rail color (`hairline`) swallows the track —
+        // when the disclosure opened the café tint matched the rail and the range chart vanished. The open
+        // state is already signalled by the disclosure card below. (Detalle de Vital fix)
         .contentShape(Rectangle())
     }
 

@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Al abrir «Información» en la barra «tu rango normal», ya no aparece un recuadro que tapa la gráfica / Opening "Information" on the "your normal range" bar no longer paints a box over the chart.**
+  **ES** — En la hoja de detalle de un vital (FC en reposo, HRV, respiración…), al tocar la ⓘ de la barra «tu rango normal» se pintaba un recuadro café del mismo color que el riel de la barra, así que el riel se fundía con el fondo y la gráfica de rango se perdía. Se quitó ese realce: ahora el riel se ve completo y el estado abierto lo sigue marcando la tarjeta de texto que aparece debajo.
+  **EN** — On a vital's detail sheet (Resting HR, HRV, Respiration…), tapping the ⓘ on the "your normal range" bar painted a café box the same color as the bar's rail, so the rail blended into the background and the range chart disappeared. That highlight was removed: the rail now shows in full and the open state is still signalled by the text card below.
+  ([Cenit/Screens/MetricDetailScreen.swift](Cenit/Screens/MetricDetailScreen.swift))
 - **Hoy cabe en una sola pantalla durante la calibración / Today fits on a single screen while calibrating.**
   **ES** — La rejilla de «Métricas de hoy» se compactó un poco (tiles más juntas y un pelín más bajas) para que la pantalla de **Hoy** quepa **sin scroll** incluso cuando la barra «Afinando con tu strap» suma una fila durante la calibración. El dial grande del veredicto y el héroe no cambian; las tiles siguen creciendo con tipografía grande (Dynamic Type) para no cortar texto.
   **EN** — The "Today's metrics" grid was tightened a touch (tiles closer together and slightly shorter) so the **Today** screen fits **without scrolling** even when the "Afinando con tu strap" bar adds a row during calibration. The large verdict dial and hero are unchanged; tiles still grow with large type (Dynamic Type) so text never clips.
