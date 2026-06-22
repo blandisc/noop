@@ -128,6 +128,9 @@ struct MetricTrendChart<Empty: View>: View {
         /// The active band's hue, resolved from the same last plotted value.
         var bandColor: (Double) -> Color = { _ in .clear }
         var yAxisValues: [Double]? = nil
+        /// Target automatic Y-tick count when `yAxisValues` is nil (band charts pass explicit ticks). Default
+        /// 4; the detail «Media móvil» charts raise it so a wide range reads at finer increments. (Detalle)
+        var yTickCount: Int = 4
         var alertThreshold: Double? = nil
         var alertColor: Color = .clear
         /// When true, the LAST plotted point (the right edge of the line = today / the most recent night)
@@ -186,7 +189,8 @@ struct MetricTrendChart<Empty: View>: View {
             referenceLine: style.referenceLine,
             referenceLineColor: style.referenceLineColor,
             markedPoint: style.marksLastPoint ? points.last : nil,
-            bandLabelsHidden: style.bandLabelsHidden
+            bandLabelsHidden: style.bandLabelsHidden,
+            yTickCount: style.yTickCount
         )
         .accessibilityElement()
         .accessibilityLabel(Text(style.accessibilityLabel))

@@ -196,6 +196,11 @@ public struct TrendChart: View {
     /// fills to the right edge. The HRV «Últimos 14 días» card opts in; other band-less charts keep the
     /// default inset. (FER-460)
     public var tightTrailing: Bool
+    /// Target number of automatic Y-axis ticks (a hint Charts rounds to "nice" values). Only applies when
+    /// `yAxisValues` is nil (band charts pass explicit ticks). Default 4 keeps the compact summary/strain
+    /// cards quiet; the taller detail «Media móvil» charts pass a higher count so a wide range (e.g. steps
+    /// 0–15k) reads at finer increments instead of just 5k/10k/15k.
+    public var yTickCount: Int
 
     public init(
         points: [TrendPoint],
@@ -217,7 +222,8 @@ public struct TrendChart: View {
         referenceLineColor: Color = .clear,
         markedPoint: TrendPoint? = nil,
         bandLabelsHidden: Bool = false,
-        tightTrailing: Bool = false
+        tightTrailing: Bool = false,
+        yTickCount: Int = 4
     ) {
         self.points = points.sorted { $0.date < $1.date }
         self.gradient = gradient
@@ -239,6 +245,7 @@ public struct TrendChart: View {
         self.markedPoint = markedPoint
         self.bandLabelsHidden = bandLabelsHidden
         self.tightTrailing = tightTrailing
+        self.yTickCount = yTickCount
     }
 
     /// Right inset on the X-scale. Labelled bands need a wide gutter so the band text clears the line;
@@ -400,7 +407,7 @@ public struct TrendChart: View {
                         .font(StrandFont.footnote)
                 }
             } else {
-                AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { _ in
+                AxisMarks(position: .leading, values: .automatic(desiredCount: yTickCount)) { _ in
                     AxisGridLine().foregroundStyle(gridLineColor.opacity(0.4))
                     AxisValueLabel().foregroundStyle(axisLabelColor)
                         .font(StrandFont.footnote)
