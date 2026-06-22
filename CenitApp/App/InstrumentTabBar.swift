@@ -60,17 +60,20 @@ struct InstrumentTabBar<Tag: Hashable>: View {
         HStack(alignment: .top, spacing: 0) {
             ForEach(items, id: \.tag) { item in tab(item) }
         }
-        .padding(.top, 8)
+        .padding(.top, 6)
+        // FER-475: el dock se sienta MÁS ABAJO. Antes los botones respetaban TODA el área del
+        // home-indicator (~34pt de papel vacío bajo las etiquetas); ahora la barra ignora ese inset y
+        // deja una holgura fija y cómoda (14pt) sobre el indicador → dock más compacto, sin taparlo.
+        .padding(.bottom, 14)
         .frame(maxWidth: .infinity)
-        // The surface (and its top hairline) extend through the home-indicator area;
-        // the buttons sit above it in the safe region.
+        // The surface (and its top hairline) fill the whole bar down to the screen edge.
         .background(alignment: .top) {
             ZStack(alignment: .top) {
                 surface
                 Rectangle().fill(rule).frame(height: 0.5)
             }
-            .ignoresSafeArea(edges: .bottom)
         }
+        .ignoresSafeArea(edges: .bottom)
         .animation(reduceMotion ? nil : StrandMotion.interactive, value: isLight)
         .animation(reduceMotion ? nil : StrandMotion.interactive, value: selection)
     }

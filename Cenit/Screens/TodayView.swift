@@ -546,18 +546,18 @@ struct TodayView: View {
                     HealthAlertBanner()
                     dialHeader
                 }
-                // Gap mínimo dial→pager: 8 (`space1`/`space2`), el mismo ~8 compacto de FER-202/217. Cuando
-                // sobra espacio, este Spacer crece a la par del de abajo y despega el pager del dial.
-                Spacer(minLength: NoopMetrics.space1)
+                // Gap FIJO dial→pager (FER-475): el contenido se queda pegado arriba; el sobrante vertical se
+                // va todo abajo (Spacer único más abajo), empujando los page dots junto al dock en vez de
+                // dejarlos flotando a media pantalla con espacio desperdiciado.
+                Spacer().frame(height: NoopMetrics.space1)
                 // Pager horizontal de 2 páginas (FER-465): ① el veredicto del día en palabras · ② «Métricas
                 // de hoy» tal cual. Ancho de página = ancho de contenido (proxy − screenPadding lateral) para
                 // que el snap pagine de a una. Ejes ortogonales al scroll vertical → el swipe horizontal y el
                 // pull-to-refresh no se pelean.
                 todayPager(width: max(0, proxy.size.width - NoopMetrics.screenPadding * 2))
+                // El sobrante vertical vive AQUÍ: manda los page dots al fondo, cerca del dock (FER-475).
+                Spacer(minLength: NoopMetrics.space2)
                 todayPageDots
-                // Gap mínimo al pie: 0 — el margen inferior lo da `.padding(.bottom)`. Cuando sobra espacio,
-                // este Spacer crece igual que el de arriba y el pager queda centrado en el sobrante (FER-217).
-                Spacer(minLength: 0)
             }
             // FER-274/FER-293: la pista del pull-to-refresh (chevron + microcopy) flota en el TOPE como
             // overlay — NO ocupa alto de layout, así que no empuja el héroe ni desborda la pantalla (a
