@@ -2,6 +2,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 import StrandDesign
 import WhoopStore
+import StrandAnalytics
 #if os(iOS)
 import HealthKit   // HKAuthorizationStatus, for the write-back permission tally
 import UIKit       // UIApplication.openSettingsURLString
@@ -28,6 +29,9 @@ struct DataSourcesView: View {
     @Environment(\.instrumentoTheme) private var theme
     @State private var showingImporter = false
     @State private var importTarget: ImportTarget = .whoop
+    /// FER-485: the mode the user picked this session (nil → reflect the persisted `model.sources.mode`).
+    @State private var pickedMode: DataSourceMode?
+    @Environment(\.dismiss) private var dismiss
     #if os(iOS)
     // Live two-way Apple Health. Injected by CenitApp.
     @EnvironmentObject private var health: HealthKitBridge
@@ -58,6 +62,9 @@ struct DataSourcesView: View {
                         .padding(.top, 2)
                 }
 
+                #if os(iOS)
+                sourceModeSection
+                #endif
                 importSection
                 appleHealthSection
                 bandSyncSection
@@ -110,6 +117,154 @@ struct DataSourcesView: View {
 
     private var divider: some View { Divider().overlay(theme.hairline) }
 
+    // MARK: - Cómo se leen tus datos (FER-485 — data-source mode selector)
+
+    #if os(iOS)
+    /// The mode the rows reflect: the in-session pick, else the persisted store value.
+    private var activeMode: DataSourceMode { pickedMode ?? model.sources.mode }
+
+    @ViewBuilder
+    private var sourceModeSection: some View {
+        section("How your data is read") {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(DataSourceMode.allCases.enumerated()), id: \.element) { idx, mode in
+                    if idx > 0 { divider }
+                    sourceModeRow(mode)
+                }
+                divider
+                // Fixed reassurance — always visible, in every mode (the owner's invariant).
+                Text("Switching modes only changes what you see. Cénit keeps storing everything from both sources; nothing is ever deleted.")
+                    .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 12)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func sourceModeRow(_ mode: DataSourceMode) -> some View {
+        let isActive = activeMode == mode
+        let disabled = mode == .appleHealthOnly && health.auth == .unavailable
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top, spacing: 10) {
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 8) {
+                        Text(modeTitle(mode)).font(StrandFont.body).foregroundStyle(theme.ink)
+                        if mode == .combined {
+                            Text("Recommended").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                        }
+                    }
+                    Text(modeSubtitle(mode)).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 8)
+                if isActive {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(theme.verdict)
+                        .accessibilityHidden(true)
+                }
+            }
+            .padding(.vertical, 11)
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                guard !disabled, !isActive else { return }
+                pickedMode = mode
+                model.setDataSourceMode(mode)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(isActive ? [.isButton, .isSelected] : .isButton)
+
+            sourceModeNote(mode, isActive: isActive)
+        }
+        .padding(.horizontal, isActive ? 10 : 0)
+        .padding(.bottom, isActive ? 4 : 0)
+        .background(isActive ? theme.surface : Color.clear,
+                    in: RoundedRectangle(cornerRadius: 9))
+        .opacity(disabled ? 0.4 : 1)
+    }
+
+    /// Per-mode warning / honesty line — shown only when that mode is the active one.
+    @ViewBuilder
+    private func sourceModeNote(_ mode: DataSourceMode, isActive: Bool) -> some View {
+        if isActive {
+            switch mode {
+            case .combined:
+                if health.auth == .denied || health.auth == .unknown {
+                    warningLine("Apple Health is disconnected; right now Combined only uses your band. Connect it to add its data.")
+                    connectAction
+                }
+            case .whoopOnly:
+                if !live.bonded && repo.storedStrapDays.isEmpty {
+                    warningLine("No band data yet. Connect it in Live or import your history to see anything in this mode.")
+                    QuietButton("Pair in Live") { dismiss() }.padding(.top, 8)
+                }
+            case .appleHealthOnly:
+                if health.auth == .unavailable {
+                    warningLine("Apple Health isn't available on this device.")
+                } else {
+                    if health.auth == .denied || health.auth == .unknown {
+                        warningLine("Apple Health is disconnected. In this mode Cénit can't read new data.")
+                        connectAction
+                    }
+                    Text("For now, without your band the recovery and sleep detail come estimated or later. The day's numbers do read from Apple Health.")
+                        .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 9)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func warningLine(_ key: LocalizedStringKey) -> some View {
+        HStack(alignment: .top, spacing: 7) {
+            Circle().fill(theme.warning).frame(width: 6, height: 6)
+                .padding(.top, 5).accessibilityHidden(true)
+            Text(key).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.top, 9)
+    }
+
+    /// Connect Apple Health in place (first ask) or deep-link to Settings (previously declined) — mirrors
+    /// `appleHealthConnectBody`'s permission cascade so the app is consistent with itself.
+    @ViewBuilder
+    private var connectAction: some View {
+        if health.auth == .denied {
+            settingsButton.padding(.top, 8)
+        } else {
+            QuietButton(hkBusy ? "Connecting…" : "Connect Apple Health") {
+                Task {
+                    hkBusy = true
+                    await health.requestAuthorization()
+                    if health.auth == .authorized { await health.sync() }
+                    hkBusy = false
+                }
+            }
+            .disabled(hkBusy)
+            .padding(.top, 8)
+        }
+    }
+
+    private func modeTitle(_ mode: DataSourceMode) -> LocalizedStringKey {
+        switch mode {
+        case .combined:        return "Combined"
+        case .whoopOnly:       return "Band only"
+        case .appleHealthOnly: return "Only Apple Health"
+        }
+    }
+
+    private func modeSubtitle(_ mode: DataSourceMode) -> LocalizedStringKey {
+        switch mode {
+        case .combined:        return "Apple Health as the base, your band on top when you wear it. The most complete reading."
+        case .whoopOnly:       return "Only what your band measures. Nights without the band won't have a reading."
+        case .appleHealthOnly: return "Only what Apple Health records, without your band."
+        }
+    }
+    #endif
+
     // MARK: - Importar (WHOOP .zip + Apple Health .zip)
 
     private var importSection: some View {
@@ -134,7 +289,7 @@ struct DataSourcesView: View {
                 Text(verbatim: s).font(StrandFont.subhead)
                     .foregroundStyle(model.whoopImportFailed ? theme.warning : theme.verdict)
             }
-            Text("\(repo.days.count) days · \(repo.sleeps.count) sleeps stored")
+            Text("\(repo.storedStrapDays.count) days · \(repo.storedSleepsCount) sleeps stored")
                 .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
         }
     }
@@ -602,7 +757,9 @@ struct DataSourcesView: View {
         // Hide the whole section when there's nothing to show: no strap days, and Apple Health is
         // denied/unavailable or has imported nothing (mirrors the dark screen's guards).
         let healthAccessible = health.auth != .denied && health.auth != .unavailable
-        let showsCoverage = !repo.days.isEmpty || (!repo.appleHealthDays.isEmpty && healthAccessible)
+        // FER-485: coverage is diagnostic — it reads the STORED day sets (unfiltered by the mode), so it
+        // shows what's on the iPhone even in «Solo la banda» / «Solo Apple Salud».
+        let showsCoverage = !repo.storedStrapDays.isEmpty || (!repo.storedAppleOnlyDays.isEmpty && healthAccessible)
         if showsCoverage || sourcesHasContent {
             section("Coverage") {
                 if showsCoverage {
@@ -626,9 +783,10 @@ struct DataSourcesView: View {
         let days30: [String] = (0..<30).reversed().compactMap { offset in
             cal.date(byAdding: .day, value: -offset, to: today).map { Repository.localDayKey($0) }
         }
-        let allDayKeys = Set(repo.days.map(\.day))
-        let whoopCount = days30.filter { allDayKeys.contains($0) && !repo.appleHealthDays.contains($0) }.count
-        let appleCount = days30.filter { repo.appleHealthDays.contains($0) }.count
+        let strapDays = repo.storedStrapDays      // FER-485: stored coverage, unfiltered by the mode
+        let appleOnly = repo.storedAppleOnlyDays
+        let whoopCount = days30.filter { strapDays.contains($0) }.count
+        let appleCount = days30.filter { appleOnly.contains($0) }.count
         let emptyCount  = 30 - whoopCount - appleCount
         VStack(alignment: .leading, spacing: 8) {
             Text(coverageSummaryString(whoop: whoopCount, apple: appleCount))
@@ -636,8 +794,8 @@ struct DataSourcesView: View {
                 .foregroundStyle(whoopCount + appleCount > 0 ? theme.inkSecondary : theme.inkTertiary)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 6), spacing: 4) {
                 ForEach(Array(days30.enumerated()), id: \.offset) { _, day in
-                    let isWhoop = allDayKeys.contains(day) && !repo.appleHealthDays.contains(day)
-                    let isApple = repo.appleHealthDays.contains(day)
+                    let isWhoop = strapDays.contains(day)
+                    let isApple = appleOnly.contains(day)
                     RoundedRectangle(cornerRadius: 4)
                         .fill(isWhoop ? theme.dataRecovery
                               : isApple ? theme.dataSpO2
@@ -692,8 +850,8 @@ struct DataSourcesView: View {
 
     /// True when there's a per-source line or a sync line worth showing (mirrors `SourcesSummaryCard`).
     private var sourcesHasContent: Bool {
-        let whoopDays = repo.days.count - repo.appleHealthDays.count
-        let hasData = whoopDays > 0 || repo.appleHealthDays.count > 0
+        let whoopDays = repo.storedStrapDays.count
+        let hasData = whoopDays > 0 || repo.storedAppleOnlyDays.count > 0
         let hasSync = live.lastSyncError != nil || live.lastSyncedAt != nil
         return hasData || (!live.backfilling && hasSync)
     }
@@ -703,8 +861,8 @@ struct DataSourcesView: View {
     /// `NoopCard` on warm paper would be card-in-card); same data, same conditions.
     @ViewBuilder
     private var sourcesSummary: some View {
-        let whoopDays = repo.days.count - repo.appleHealthDays.count
-        let ahDays    = repo.appleHealthDays.count
+        let whoopDays = repo.storedStrapDays.count
+        let ahDays    = repo.storedAppleOnlyDays.count
         let hasData   = whoopDays > 0 || ahDays > 0
         let hasSync   = live.lastSyncError != nil || live.lastSyncedAt != nil
         let showsSync = !live.backfilling && hasSync
@@ -734,7 +892,7 @@ struct DataSourcesView: View {
             }
         }
         .task {
-            appleWorkouts = (await repo.workoutRows()).filter { $0.source == "apple-health" }.count
+            appleWorkouts = (await repo.workoutRows(respectingMode: false)).filter { $0.source == "apple-health" }.count
         }
     }
 
