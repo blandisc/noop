@@ -24,6 +24,7 @@ struct RootTabView: View {
         case library                              // Entrenar hub — exercise library (FER-346)
         case workoutHistory = "workouthistory"    // Entrenar hub — «Mis entrenamientos» (FER-504)
         case breathe, intervals, dieta            // Entrenar hub
+        case weeklyPlan = "weeklyplan"            // Entrenar hub — weekly plan editor (FER-533)
         case routineToday                         // Entrenar hub — «Rutina de hoy» (DEBUG screenshot-nav)
         // Reachable via DEBUG screenshot-nav (pushed onto the Ajustes stack). Explore/Compare/Workouts
         // also still open from Cuerpo's footer; the rest open as sheets from the Ajustes root (FER-337).
@@ -83,7 +84,8 @@ struct RootTabView: View {
                     openBreathe: { trainStack.append(SecondaryScreen.breathe) },
                     openIntervals: { trainStack.append(SecondaryScreen.intervals) },
                     openDiet: { trainStack.append(SecondaryScreen.dieta) },
-                    openHistory: { trainStack.append(SecondaryScreen.workoutHistory) }
+                    openHistory: { trainStack.append(SecondaryScreen.workoutHistory) },
+                    openWeeklyPlan: { trainStack.append(SecondaryScreen.weeklyPlan) }
                 )
                 .barReservation(barHeight)
                 .navigationDestination(for: SecondaryScreen.self) { screen in
@@ -217,7 +219,7 @@ struct RootTabView: View {
     private func hub(for screen: SecondaryScreen) -> Tab {
         switch screen {
         case .coach: return .coach
-        case .library, .breathe, .intervals, .dieta, .routineToday: return .train
+        case .library, .breathe, .intervals, .dieta, .weeklyPlan, .routineToday: return .train
         default:                               return .settings
         }
     }
@@ -282,6 +284,7 @@ struct RootTabView: View {
         case .workoutHistory: WorkoutHistoryScreen()
         case .breathe:      BreathingView()
         case .intervals:    IntervalTimerView()
+        case .weeklyPlan:   WeeklyPlanEditorView(openLibrary: { trainStack.append(SecondaryScreen.library) })
         case .routineToday: RutinaDeHoyScreen(routineId: nil)
         case .dieta:        DietCaptureView()
         case .explore:      MetricExplorerView()
