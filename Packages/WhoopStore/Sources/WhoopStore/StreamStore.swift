@@ -37,6 +37,11 @@ extension WhoopStore {
     public func insert(_ streams: Streams, deviceId: String) async throws
         -> (hr: Int, rr: Int, events: Int, battery: Int,
             spo2: Int, skinTemp: Int, resp: Int, gravity: Int) {
+        // v21: the five 1 Hz tables store `deviceId` as an integer surrogate. Resolve it ONCE per call
+        // (cached after the first), creating the mapping on demand so this NEVER throws on an unknown id
+        // — that's what keeps the Backfiller from acking+trimming history it failed to persist.
+        // event/battery/stepSample still store the TEXT `deviceId` (not migrated in v21).
+        let intId = try await resolvedDeviceId(deviceId, createIfMissing: true)!
         return try syncWrite { db in
             var hr = 0, rr = 0, ev = 0, bat = 0
             var skin = 0, resp = 0, grav = 0
@@ -54,7 +59,7 @@ extension WhoopStore {
                     ON CONFLICT(deviceId, ts) DO NOTHING
                     """)
                 for s in streams.hr {
-                    try stmt.execute(arguments: [deviceId, s.ts, s.bpm])
+                    try stmt.execute(arguments: [intId, s.ts, s.bpm])
                     hr += db.changesCount
                 }
             }
@@ -64,7 +69,7 @@ extension WhoopStore {
                     ON CONFLICT(deviceId, ts, rrMs) DO NOTHING
                     """)
                 for r in streams.rr {
-                    try stmt.execute(arguments: [deviceId, r.ts, r.rrMs])
+                    try stmt.execute(arguments: [intId, r.ts, r.rrMs])
                     rr += db.changesCount
                 }
             }
@@ -99,7 +104,7 @@ extension WhoopStore {
                     ON CONFLICT(deviceId, ts) DO NOTHING
                     """)
                 for s in streams.skinTemp {
-                    try stmt.execute(arguments: [deviceId, s.ts, s.raw])
+                    try stmt.execute(arguments: [intId, s.ts, s.raw])
                     skin += db.changesCount
                 }
             }
@@ -109,7 +114,7 @@ extension WhoopStore {
                     ON CONFLICT(deviceId, ts) DO NOTHING
                     """)
                 for s in streams.resp {
-                    try stmt.execute(arguments: [deviceId, s.ts, s.raw])
+                    try stmt.execute(arguments: [intId, s.ts, s.raw])
                     resp += db.changesCount
                 }
             }
@@ -119,7 +124,7 @@ extension WhoopStore {
                     ON CONFLICT(deviceId, ts) DO NOTHING
                     """)
                 for s in streams.gravity {
-                    try stmt.execute(arguments: [deviceId, s.ts, s.x, s.y, s.z])
+                    try stmt.execute(arguments: [intId, s.ts, s.x, s.y, s.z])
                     grav += db.changesCount
                 }
             }

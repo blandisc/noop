@@ -242,6 +242,7 @@ final class AppModel: ObservableObject {
             await self.repo.refresh()                          // surface any imported data at once
             await self.migrateDayKeysToLocalIfNeeded()         // FER-226: one-time UTC→local re-bucket (flag-gated)
             await self.compactDatabaseAfterSpo2PurgeIfNeeded() // FER-511: one-time VACUUM after the spo2 purge (flag-gated)
+            await self.compactDatabaseAfterRebuildIfNeeded()   // FER-513: one-time VACUUM after the v21 rebuild (flag-gated)
             try? await Task.sleep(nanoseconds: 6_000_000_000)  // give the first offload a moment
             while !Task.isCancelled {
                 if Self.mayRecomputeAfterBackfill(backfilling: self.live.backfilling,
@@ -316,6 +317,28 @@ final class AppModel: ObservableObject {
         do {
             try await store.vacuum()
             try await store.setCursor(Self.spo2CompactCursor, 1)
+        } catch {
+            // Leave the cursor unset so the next launch retries; the freed pages remain reclaimable.
+        }
+    }
+
+    // MARK: - One-time DB compaction after the v21 WITHOUT-ROWID rebuild (FER-513)
+
+    /// Cursor flag gating the one-time VACUUM that returns the space freed by the v21 rebuild (the five
+    /// 1 Hz tables shrank ~60% but the old pages stay allocated until a VACUUM). Distinct from the spo2
+    /// one so each runs exactly once. VACUUM rewrites the whole file → must NOT run every launch.
+    private static let rebuildCompactCursor = "rebuildVacuumV1Done"
+
+    /// After the v21 migration rebuilds the sample tables WITHOUT ROWID + integer deviceId, the file is
+    /// much smaller logically but the freed pages aren't returned to the OS until a VACUUM. Run one,
+    /// flag-gated + off the launch critical path. Best-effort: on failure (e.g. disk full) the cursor is
+    /// left unset so the next launch retries, and SQLite's atomic VACUUM never corrupts on a partial run.
+    func compactDatabaseAfterRebuildIfNeeded() async {
+        guard let store = await repo.storeHandle() else { return }   // no store yet → retry next launch
+        if ((try? await store.cursor(Self.rebuildCompactCursor)) ?? nil) == 1 { return }   // already done
+        do {
+            try await store.vacuum()
+            try await store.setCursor(Self.rebuildCompactCursor, 1)
         } catch {
             // Leave the cursor unset so the next launch retries; the freed pages remain reclaimable.
         }
