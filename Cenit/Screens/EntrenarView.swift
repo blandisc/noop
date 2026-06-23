@@ -315,6 +315,7 @@ private struct EntrenarLanding: View {
             .buttonStyle(.plain)
             .contextMenu {
                 Button { builderTarget = .edit(r) } label: { Label("Edit routine", systemImage: "slider.horizontal.3") }
+                Button { duplicate(r) } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
                 Menu {
                     ForEach(folders) { f in
                         Button { move(r, to: f.id) } label: {
@@ -626,6 +627,31 @@ private struct EntrenarLanding: View {
             guard let store = await repo.storeHandle() else { return }
             try? await store.setRoutineFolder(routineId: r.id, folderId: folderId)
             await refreshFoldersAndRoutines()
+        }
+    }
+
+    // MARK: - Duplicate (FER-528)
+
+    /// Deep-copy a routine into an independent «(copy)» in the same folder — fresh ids on the routine, its
+    /// exercises and their per-set rows (FER-492), so editing the copy never touches the original. The
+    /// `exerciseId` reference is kept (it points at the catalog, not at a copy).
+    private func duplicate(_ r: Routine) {
+        Task {
+            let exercises = await repo.routineExercises(routineId: r.id)
+            let now = Int(Date().timeIntervalSince1970)
+            let newId = UUID().uuidString
+            let copy = Routine(id: newId, name: "\(r.name) \(String(localized: "(copy)"))",
+                               tag: r.tag, folderId: r.folderId, createdTs: now, updatedTs: now,
+                               sortOrder: r.sortOrder)
+            let copiedExercises = exercises.map { ex -> RoutineExercise in
+                var c = ex
+                c.id = UUID().uuidString
+                c.routineId = newId
+                c.sets = ex.sets.map { var s = $0; s.id = UUID().uuidString; return s }
+                return c
+            }
+            try? await repo.saveRoutine(copy, exercises: copiedExercises)
+            await load()
         }
     }
 }
