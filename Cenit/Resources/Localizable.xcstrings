@@ -41481,6 +41481,406 @@
           }
         }
       }
+    },
+    "What you didn't know about yourself": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lo que no sabías de ti"
+          }
+        }
+      }
+    },
+    "without you logging it · %lld days": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sin que lo anotaras · %lld días"
+          }
+        }
+      }
+    },
+    "Correlations you couldn't see": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Correlaciones que no veías"
+          }
+        }
+      }
+    },
+    "I haven't found clear links yet. They'll show up here as soon as I see them.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todavía no encuentro vínculos claros. Aparecerán aquí en cuanto los vea."
+          }
+        }
+      }
+    },
+    "Put something new to the test": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pon a prueba algo nuevo"
+          }
+        }
+      }
+    },
+    "You don't have to wait — an experiment speeds up what I learn about you.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No tienes que esperar — un experimento acelera lo que aprendo de ti."
+          }
+        }
+      }
+    },
+    "Turn a hunch into a correlation of your own.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Convierte una corazonada en una correlación tuya."
+          }
+        }
+      }
+    },
+    "You don't have any experiment running right now.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ahora mismo no tienes ningún experimento corriendo."
+          }
+        }
+      }
+    },
+    "On trial · %lld/%lld": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En prueba · %lld/%lld"
+          }
+        }
+      }
+    },
+    "Verdict %@": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Veredicto %@"
+          }
+        }
+      }
+    },
+    "Best streak %lld · see effect chart": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mejor racha %lld · ver gráfica de efecto"
+          }
+        }
+      }
+    },
+    "See effect chart": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver gráfica de efecto"
+          }
+        }
+      }
+    },
+    "Kept today · logged": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cumplido hoy · registrado"
+          }
+        }
+      }
+    },
+    "Missed today · logged": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No cumplido hoy · registrado"
+          }
+        }
+      }
+    },
+    "You can still change it": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún puedes cambiarlo"
+          }
+        }
+      }
+    },
+    "Verdict · it worked": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Veredicto · funcionó"
+          }
+        }
+      }
+    },
+    "Verdict · no clear effect": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Veredicto · sin efecto claro"
+          }
+        }
+      }
+    },
+    "Save to Confirmed": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardar en Confirmado"
+          }
+        }
+      }
+    },
+    "Repeat": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repetir"
+          }
+        }
+      }
+    },
+    "Try 1 more week": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Probar 1 semana más"
+          }
+        }
+      }
+    },
+    "Effect": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Efecto"
+          }
+        }
+      }
+    },
+    "Kept": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cumplido"
+          }
+        }
+      }
+    },
+    "Confidence": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confianza"
+          }
+        }
+      }
+    },
+    "Suggested for you": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sugerido para ti"
+          }
+        }
+      }
+    },
+    "I spotted a hunch in your data. Try it 7 nights and I'll tell you if it's real for you.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vi una corazonada en tus datos. Pruébalo 7 noches y te digo si es real para ti."
+          }
+        }
+      }
+    },
+    "Start trial": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empezar prueba"
+          }
+        }
+      }
+    },
+    "Design an experiment": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diseña un experimento"
+          }
+        }
+      }
+    },
+    "Design one yourself": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diseña uno tú mismo"
+          }
+        }
+      }
+    },
+    "Confirmed · works for you": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirmado · funciona en ti"
+          }
+        }
+      }
+    },
+    "Add your own": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aporta lo tuyo"
+          }
+        }
+      }
+    },
+    "The more you log, the more patterns I find": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuanto más anotas, más patrones encuentro"
+          }
+        }
+      }
+    },
+    "Relate two metrics yourself": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relaciona dos métricas tú mismo"
+          }
+        }
+      }
+    },
+    "Feel like something affects you? Put it to the test": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Sientes que algo te afecta? Ponlo a prueba"
+          }
+        }
+      }
+    },
+    "Your record · everything found": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu expediente · todo lo encontrado"
+          }
+        }
+      }
+    },
+    "effects measured": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "efectos medidos"
+          }
+        }
+      }
+    },
+    "Every habit, lever and experiment, archived": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada hábito, palanca y experimento, archivado"
+          }
+        }
+      }
+    },
+    "I'm still learning how your body works.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún estoy aprendiendo cómo funciona tu cuerpo."
+          }
+        }
+      }
+    },
+    "I need about two weeks of data to reveal your first pattern with confidence.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Necesito unas dos semanas de datos para revelarte tu primer patrón con confianza."
+          }
+        }
+      }
+    },
+    "%lld of %lld days": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld de %lld días"
+          }
+        }
+      }
+    },
+    "Nothing proven yet — your experiments will land here.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nada confirmado aún — tus experimentos caerán aquí."
+          }
+        }
+      }
     }
   },
   "version": "1.1"
