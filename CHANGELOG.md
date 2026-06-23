@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El editor de descanso entre series ya está completo en español / The rest-between-sets editor is now fully in Spanish.**
+  **ES** — En el editor de descanso (el que usas tanto en la sesión de fuerza en vivo como al editar una rutina), unas etiquetas se habían quedado en inglés: **«Descanso entre series»**, el selector **«Por FC» / «Fijo»** y **«Segundos»**. Ahora se ven en español como el resto de la pantalla.
+  **EN** — In the rest editor (used both in the live strength session and when editing a routine), a few labels had stayed in English: **"Rest between sets"**, the **"By HR" / "Fixed"** toggle, and **"Seconds"**. They now read in Spanish like the rest of the screen.
+  ([Cenit/Resources/Localizable.xcstrings](Cenit/Resources/Localizable.xcstrings), [Cenit/Screens/RestEditor.swift](Cenit/Screens/RestEditor.swift))
+
 - **El detalle de cada métrica ahora dice cómo va su promedio vs el periodo anterior / Each metric detail now shows how its average moved vs the previous period.**
   **ES** — Bajo la gráfica de un vital (HRV, FC en reposo, Respiración, SpO₂, Pasos) ahora aparece una línea **«Promedio · {periodo} · {valor} · {Δ%} vs periodo previo»**. El promedio se recalcula para el periodo que elijas (semana, mes, 3M, 6M, año), y el cambio se compara contra el periodo anterior del mismo largo, **coloreado según la buena dirección de cada métrica**: verde si mejora, ámbar si va en contra, gris si está plano. Cuando no hay un periodo previo completo (p. ej. «Todo»), solo se muestra el promedio. En la vista de «Rangos» no aparece.
   **EN** — Below a vital's chart (HRV, resting HR, respiration, SpO₂, steps) there's now a line **"Average · {period} · {value} · {Δ%} vs previous"**. The average recomputes for whichever period you pick (week, month, 3M, 6M, year), and the change is compared against the previous window of the same length, **coloured by each metric's good direction**: green when it improves, amber when it goes against you, grey when flat. When there's no full previous period (e.g. "All"), it shows the average alone. It's hidden in the "Ranges" view.
