@@ -423,7 +423,8 @@ private struct CuerpoLanding: View {
     private func domainCard<Content: View>(_ title: LocalizedStringKey,
                                            @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(title).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            // Serif group header (FER-581 — the handoff titles the landing's domain groups in serif 27).
+            Text(title).font(StrandFont.serif(27)).foregroundStyle(theme.ink)
                 .frame(maxWidth: .infinity, alignment: .leading)
             content()
         }
@@ -506,7 +507,7 @@ private struct CuerpoLanding: View {
         Button { showMuscleMap = true } label: {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 8) {
-                    Text("Muscle map").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text("Muscle map").font(StrandFont.serif(27)).foregroundStyle(theme.ink)   // serif group (FER-581)
                     // Provisional placement here, pending a product decision on its permanent home (likely
                     // Entrenar / Patrones) — flagged, not final. (FER-566 / handoff «DE MOMENTO»)
                     InlineFlagChip("For now", color: theme.warning)
@@ -582,7 +583,7 @@ private struct CuerpoLanding: View {
         } label: {
             HStack(spacing: 14) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Recovery").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text("Recovery").font(StrandFont.serif(27)).foregroundStyle(theme.ink)   // serif group (FER-581)
                     recoveryHeroNumeral(score: score, calibrating: cal, color: color)
                     Text(recoverySubtitle(score: score, calibrating: cal))
                         .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)

@@ -38,7 +38,7 @@ struct ActivityRecoverySheet: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 Text("After each sport")
-                    .font(StrandFont.title2)
+                    .font(StrandFont.serif(23))   // serif in-screen title (FER-581)
                     .foregroundStyle(theme.ink)
 
                 Text("This is how your Charge tends to look the morning after each sport, compared with your rest days. It's what we observe in your history, not a cause-and-effect link.")
