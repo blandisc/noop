@@ -9959,6 +9959,76 @@
         }
       }
     },
+    "Muscles": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Músculos"
+          }
+        }
+      }
+    },
+    "How to": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cómo se hace"
+          }
+        }
+      }
+    },
+    "Primary at full ink · assisting at half": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Primario en tinta llena · asistente a media"
+          }
+        }
+      }
+    },
+    "Not logged yet": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún sin registrar"
+          }
+        }
+      }
+    },
+    "Your best mark, your last session and your estimated 1RM appear here once you complete a work set.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu mejor marca, tu última sesión y tu 1RM estimado aparecen aquí cuando completes una serie de trabajo."
+          }
+        }
+      }
+    },
+    "Weight × reps": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peso × reps"
+          }
+        }
+      }
+    },
+    "Barbell, dumbbell, machine, cable": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barra, mancuerna, máquina, cable"
+          }
+        }
+      }
+    },
     "Measured by": {
       "localizations": {
         "es": {
