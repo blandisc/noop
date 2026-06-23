@@ -190,6 +190,56 @@ final class WorkoutProgramImporterTests: XCTestCase {
         XCTAssertNil(r.match("Press de banca con barra"))                       // different wording → no match
     }
 
+    // MARK: - Catalog id (FER-521)
+
+    private let withIds = """
+    { "schema":"noop.workout.v1", "idioma":"es", "programa":"P",
+      "rutinas":[ { "nombre":"A", "ejercicios":[
+        { "id":"Barbell_Squat", "nombre":"Sentadilla profunda rara", "series":4, "reps":8 },
+        { "id":"  ", "nombre":"Press de banca con barra", "series":3 },
+        { "id":"Does_Not_Exist", "nombre":"Movimiento inventado", "series":3 } ] } ] }
+    """
+
+    func testParsesOptionalIdAndTrimsEmpty() throws {
+        let p = try importer.parse(text: withIds)
+        let ex = p.routines[0].exercises
+        XCTAssertEqual(ex[0].id, "Barbell_Squat")
+        XCTAssertNil(ex[1].id, "an all-whitespace id parses to nil")
+        XCTAssertEqual(ex[2].id, "Does_Not_Exist")
+    }
+
+    func testParsesPlanWithoutIdsUnchanged() throws {
+        // Retro-compat: a plan with no `id` field still parses (id == nil for every exercise).
+        let p = try importer.parse(text: validES)
+        XCTAssertTrue(p.routines.flatMap { $0.exercises }.allSatisfy { $0.id == nil })
+    }
+
+    func testResolveByIdThenName_AndInvalidIdDegrades() throws {
+        let p = try importer.parse(text: withIds)
+        let known = [ex("Barbell_Squat", "Barbell Squat"),
+                     bench("Barbell_Bench_Press", "Press de banca con barra")]
+        let r = WorkoutExerciseReconciler(known: known)
+        let ex0 = p.routines[0].exercises[0]   // valid id, weird name
+        let ex1 = p.routines[0].exercises[1]   // no id, name matches
+        let ex2 = p.routines[0].exercises[2]   // invalid id, name doesn't match
+        XCTAssertEqual(r.resolve(ex0)?.id, "Barbell_Squat", "matches by id despite the odd name")
+        XCTAssertEqual(r.resolve(ex1)?.id, "Barbell_Bench_Press", "no id → matches by name")
+        XCTAssertNil(r.resolve(ex2), "invalid id degrades to name, which also misses → unmatched")
+    }
+
+    func testUnmatchedNamesSkipsExercisesResolvedById() throws {
+        let p = try importer.parse(text: withIds)
+        let known = [ex("Barbell_Squat", "Barbell Squat")]   // only the id target exists
+        let r = WorkoutExerciseReconciler(known: known)
+        // ex0 resolves by id (skipped); ex1 (Press de banca) and ex2 (inventado) are unmatched.
+        XCTAssertEqual(r.unmatchedNames(in: p), ["Press de banca con barra", "Movimiento inventado"])
+    }
+
+    private func bench(_ id: String, _ nameES: String) -> Exercise {
+        Exercise(id: id, name: "Barbell Bench Press", nameES: nameES, type: .weightReps, equipment: nil,
+                 primaryMuscles: [], secondaryMuscles: [], cues: [])
+    }
+
     func testReconcilerMatchesSpanishAndEnglishNames() {
         // An exercise that carries both names (catalog entry, FER-501) matches a plan written in
         // either language; an exercise with only an English name still matches English.
