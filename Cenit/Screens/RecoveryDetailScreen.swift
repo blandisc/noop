@@ -689,7 +689,7 @@ struct RecoveryDetailScreen: View {
 
     @ViewBuilder private var historySection: some View {
         VStack(alignment: .leading, spacing: historyExpanded ? 22 : 0) {
-            historyDisclosureHeader(caption: "90-day calendar · trend")
+            historyDisclosureHeader(caption: model.series.count >= 2 ? "90-day calendar · trend" : "90-day calendar")
             if historyExpanded {
                 calendarBlock
                 if model.series.count >= 2 {
