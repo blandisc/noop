@@ -157,8 +157,6 @@ private struct EntrenarLanding: View {
                 }
                 if let summary = splitSummary {
                     Text(summary).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                } else if loaded {
-                    Text("Calibrating").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 }
             }
             Spacer(minLength: 8)
