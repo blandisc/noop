@@ -1113,7 +1113,7 @@ struct TodayView: View {
     /// (FER-475): abre `WhyVerdictSheet` —«tus señales de hoy» en σ— el detalle compartido de cualquier
     /// viñeta (el handoff usa una hoja con cuerpo común). Separador hairline entre viñetas.
     private func briefBulletRow(_ b: DailyBrief.Bullet, showTopHairline: Bool) -> some View {
-        Button { showWhyVerdict = true } label: {
+        Button { openBriefBullet(b.kind) } label: {
             HStack(spacing: NoopMetrics.gap) {
                 Image(systemName: briefGlyph(b.kind))
                     .font(.system(size: 18))
@@ -1137,6 +1137,28 @@ struct TodayView: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityHint(Text("Abre el detalle de tus señales de hoy"))
+    }
+
+    /// FER-589: cada viñeta del Brief abre el DETALLE de su señal (el mismo destino que la pill/tile de
+    /// esa métrica), no la hoja genérica del veredicto. `skinTemp`/`acwr` no tienen detalle propio (son
+    /// contexto del veredicto) → ahí sí cae a `WhyVerdictSheet`, a propósito.
+    private func openBriefBullet(_ kind: DailyBrief.BulletKind) {
+        switch kind {
+        case .sleep:
+            metricDetail = .sleep(resolveMeasured(todayOnly: true) { $0.totalSleepMin }.map { Int($0.value.rounded()) })
+        case .recovery:
+            metricDetail = .recovery(score: recoveryScore,
+                                     calibrationNights: recoveryCalibration,
+                                     nightsNeeded: Baselines.minNightsSeed)
+        case .hrv:
+            metricDetail = .hrv(latestFromDisplay { $0.avgHrv }?.value)
+        case .rhr:
+            metricDetail = .restingHR(latestFromDisplay { $0.restingHr.map(Double.init) }.map { Int($0.value.rounded()) })
+        case .respRate:
+            metricDetail = .respiratory(latestFromDisplay { $0.respRateBpm }?.value)
+        case .skinTemp, .acwr:
+            showWhyVerdict = true   // sin detalle de métrica propio → el porqué del veredicto
+        }
     }
 
     /// SF Symbol por tema de viñeta (la presentación vive en la app, no en el motor puro).
