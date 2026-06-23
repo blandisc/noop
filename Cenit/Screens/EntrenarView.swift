@@ -298,26 +298,40 @@ private struct EntrenarLanding: View {
     // MARK: - ④ Suggestion (engine is FER-532 — TrainingRegulation.lightAlternative)
     //
     // A CONTEXTUAL lighter alternative, derived from today's recovery against your personal baseline
-    // (same input the recovery line uses). It appears ONLY when there is something to suggest — recovery
-    // below normal → a gentler option, above normal → an optional add-on — and HIDES within the normal
-    // band or with no signal. Always advisory: it never blocks training, «tú decides».
+    // (same input the recovery line uses). When recovery is below normal → a gentler option, above normal
+    // → an optional add-on; both are tappable, advisory, never a block. Within the normal band or with no
+    // signal the engine returns nil and the row falls back to an INFORMATIONAL placeholder (FER-559) that
+    // explains the row will surface a suggestion once there's a signal — not tappable, no destination.
 
     @ViewBuilder private var suggestionRow: some View {
         if let alt = TrainingRegulation.lightAlternative(recovery: recovery) {
             Button { suggestionAction(alt) } label: {
-                HStack(spacing: 11) {
-                    Image(systemName: suggestionIcon(alt)).font(.system(size: 17)).foregroundStyle(theme.inkTertiary)
-                    Text(suggestionLabel(alt))
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    Spacer(minLength: 8)
-                    Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkDim)
-                }
-                .padding(.horizontal, 15).padding(.vertical, 13)
-                .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [3, 3])).foregroundStyle(theme.hairlineStrong))
+                suggestionRowBody(icon: suggestionIcon(alt), label: suggestionLabel(alt),
+                                  iconTint: theme.inkTertiary, labelTint: theme.inkSecondary, showsChevron: true)
             }
             .buttonStyle(.plain)
+        } else {
+            suggestionRowBody(icon: "sparkles",
+                              label: "Suggestions will appear here based on your recovery",
+                              iconTint: theme.inkDim, labelTint: theme.inkTertiary, showsChevron: false)
         }
+    }
+
+    private func suggestionRowBody(icon: String, label: LocalizedStringKey, iconTint: Color,
+                                   labelTint: Color, showsChevron: Bool) -> some View {
+        HStack(spacing: 11) {
+            Image(systemName: icon).font(.system(size: 17)).foregroundStyle(iconTint)
+            Text(label).font(StrandFont.subhead).foregroundStyle(labelTint)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 8)
+            if showsChevron {
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkDim)
+            }
+        }
+        .padding(.horizontal, 15).padding(.vertical, 13)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [3, 3])).foregroundStyle(theme.hairlineStrong))
     }
 
     private func suggestionIcon(_ alt: TrainingRegulation.LightAlternative) -> String {
