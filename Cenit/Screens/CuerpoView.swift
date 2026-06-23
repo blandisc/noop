@@ -15,8 +15,14 @@ import Foundation
 // legend) tap straight into their detail, with the «How you wake after each sport» insight nested under
 // a hairline inside Activity → connect nudge → global actions (Compare · See all metrics) at the foot.
 // Each stat is its own tap target (the direct shortcut the old rows had); the card header is a quiet
-// label (no chevron — «See all metrics» at the foot is the one catalog door, no duplicate). Only the
-// hero carries a trend on the landing — the dense stats are a number, not a chart.
+// label (no chevron — «See all metrics» at the foot is the one catalog door, no duplicate).
+//
+// FER-566 (supersedes the FER-186 "number, not a chart" rule): every signal now carries a mini-trend
+// sparkline — the hero plus each stat in Rest & load, Vitals and Steps — EXCEPT Longevity and
+// Entrenamientos (numbers, not curves) and Heart Rate (intraday, no daily series). A period selector
+// under the header (`selectedPeriod`) re-windows ALL of them at once, and the hero's «vs tu media»
+// delta recomputes against the same window. Stress draws its spark from the stored daily stress series
+// (it isn't a `DailyMetric` field); every other spark slices `displayDays` by the selected period.
 //
 // Detail bridge: every vital now opens a light «Instrumento» sheet — the scalar vitals (HRV / Resting HR /
 // Respiración / SpO₂) through the unified `MetricDetailScreen` (FER-185), and the composite/own-shaped ones
@@ -144,10 +150,15 @@ private struct CuerpoLanding: View {
     /// Presents the light Body-age detail sheet.
     @State private var showBodyAge = false
 
+    /// The period the landing's sparklines (hero + every stat) window over. The header selector drives it;
+    /// each spark re-slices `repo.displayDays` to this window on change, and the hero's «vs tu media» delta
+    /// recomputes against the same window. (FER-566 — supersedes the fixed 14-day hero spark of FER-186.)
+    @State private var selectedPeriod: ExploreRange = .month
+
     // Loaded once per refresh (memoized in `loadAll`) so the body never re-scans history per render.
-    /// The 14-day Recovery trend — the ONLY sparkline on the card landing (the hero). The dense stats
-    /// are a number, not a chart, so no per-metric sparks are computed anymore. (FER-186 card redesign)
-    @State private var recoverySpark: [Double] = []
+    /// The stored daily stress series (0–3), kept so the «Stress» stat can draw a sparkline — stress isn't a
+    /// `DailyMetric` field, so unlike the other stats its spark reads this series, not `displayDays`. (FER-566)
+    @State private var stressSeries: [(day: String, value: Double)] = []
     @State private var hrPoints: [TrendPoint] = []
     @State private var appleDays: [AppleDaily] = []
     @State private var appleMetricDays: [DailyMetric] = []
@@ -176,6 +187,7 @@ private struct CuerpoLanding: View {
         ScrollView {
             VStack(alignment: .leading, spacing: NoopMetrics.gap) {
                 titleBlock
+                periodSelector
                 recoveryHero
                 restLoadCard
                 muscleMapCard
@@ -364,6 +376,43 @@ private struct CuerpoLanding: View {
         let f = DateFormatter(); f.locale = Locale(identifier: "es_MX"); f.dateFormat = "EEE d MMM"; return f
     }()
 
+    // MARK: - Period selector (FER-566) — re-windows every sparkline on the landing
+
+    /// The W/M/3M/6M/1Y/ALL pills under the header (same `ExploreRange` the detail screens use). Changing it
+    /// re-windows the hero trend + every stat sparkline + the hero's «vs tu media» delta.
+    private var periodSelector: some View {
+        SegmentedPillControl(ExploreRange.allCases, selection: $selectedPeriod, theme: theme) { $0.label }
+    }
+
+    // MARK: - Sparkline windowing (FER-566)
+
+    /// The display dashboard sliced to the selected period (most recent calendar days ending today). `.all`
+    /// returns the whole dashboard. Pure read of in-memory `displayDays` — cheap enough to recompute per
+    /// render, which is what makes the sparks reactive to the selector.
+    private var periodWindow: [DailyMetric] {
+        guard let n = selectedPeriod.days else { return repo.displayDays }
+        return trailingDisplay(n)
+    }
+
+    /// A stat's sparkline values over the selected period, from `displayDays` (the same layered source the
+    /// values draw from). <2 points → the stat draws no spark.
+    private func windowedSpark(_ pick: (DailyMetric) -> Double?) -> [Double] {
+        periodWindow.compactMap(pick)
+    }
+
+    /// The Recovery hero trend over the selected period (was a fixed 14 days in FER-186). Computed, not
+    /// memoized, so it re-windows when the selector changes.
+    private var recoverySpark: [Double] { windowedSpark(\.recovery) }
+
+    /// The stress sparkline over the selected period — from the stored daily stress series (stress isn't a
+    /// `DailyMetric` field). `.all` uses the whole series; otherwise the trailing window.
+    private var stressSpark: [Double] {
+        guard let n = selectedPeriod.days else { return stressSeries.map(\.value) }
+        let cutoffKey = Repository.localDayKey(
+            Calendar.current.date(byAdding: .day, value: -(n - 1), to: Date()) ?? Date())
+        return stressSeries.filter { $0.day >= cutoffKey }.map(\.value)
+    }
+
     // MARK: - Domain card scaffolding (Instrumento rule 3: one surface, no card-in-card)
 
     /// A domain card: a quiet overline header (a label — it only orients, Instrumento rule 4) over its
@@ -388,7 +437,7 @@ private struct CuerpoLanding: View {
     /// legend. `value == nil` is an honest empty state.
     private func statColumn(_ label: LocalizedStringKey, value: String?, unit: String? = nil,
                             color: Color, legend: LocalizedStringKey? = nil, estimate: Bool = false,
-                            fromApple: Bool = false, tap: @escaping () -> Void) -> some View {
+                            fromApple: Bool = false, spark: [Double] = [], tap: @escaping () -> Void) -> some View {
         Button(action: tap) {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 5) {
@@ -403,6 +452,17 @@ private struct CuerpoLanding: View {
                     if let unit, value != nil {
                         Text(unit).font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
                     }
+                }
+                // Mini-trend over the selected period — re-windows with the header selector (FER-566). A stat
+                // with <2 points in the window draws nothing (honest empty state, never a fake spark). Color
+                // ONLY on the datum (Instrumento): the line carries the stat's own data hue, area very faint.
+                if value != nil, spark.count > 1 {
+                    Sparkline(values: spark,
+                              gradient: Gradient(colors: [color.opacity(0.5), color]),
+                              lineWidth: 1.6, showsArea: true, showsHead: false, showsScrub: false)
+                        .frame(height: 16)
+                        .padding(.top, 2)
+                        .accessibilityHidden(true)
                 }
                 if let legend {
                     Text(legend).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
@@ -441,6 +501,9 @@ private struct CuerpoLanding: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 8) {
                     Text("Muscle map").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    // Provisional placement here, pending a product decision on its permanent home (likely
+                    // Entrenar / Patrones) — flagged, not final. (FER-566 / handoff «DE MOMENTO»)
+                    InlineFlagChip("For now", color: theme.warning)
                     Spacer(minLength: 8)
                     Image(systemName: "chevron.right")
                         .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
@@ -595,7 +658,7 @@ private struct CuerpoLanding: View {
     private var sleepStat: some View {
         let r = resolveMeasured { $0.totalSleepMin }
         return statColumn("Sleep", value: r.map { sleepText($0.value) }, color: theme.dataSleep,
-                          fromApple: r?.fromApple == true) {
+                          fromApple: r?.fromApple == true, spark: windowedSpark { $0.totalSleepMin }) {
             sleepDetail = SleepDetailItem(model: SleepDetailModel.build(
                 days: repo.days,
                 sleeps: repo.sleeps,
@@ -610,7 +673,7 @@ private struct CuerpoLanding: View {
     private var strainStat: some View {
         let v = repo.today?.strain
         return statColumn("Day Strain", value: v.map { String(format: "%.1f", $0) },
-                          color: theme.dataStrain) {
+                          color: theme.dataStrain, spark: windowedSpark { $0.strain }) {
             // Opens the rich Detalle de Esfuerzo (FER-238) — built fresh from the in-memory dashboard;
             // the intraday curve loads async in the screen via `loadStrainCurve`. (Hoy still uses
             // `MetricInfo.strain`/`MetricInfoSheet`.)
@@ -623,7 +686,7 @@ private struct CuerpoLanding: View {
         let s = stressModel?.score
         return statColumn("Stress", value: s.map { String(format: "%.1f", $0) },
                           unit: s == nil ? nil : "/ 3",
-                          color: s.map(stressDataColor) ?? theme.inkTertiary) {
+                          color: s.map(stressDataColor) ?? theme.inkTertiary, spark: stressSpark) {
             stressDayMap = StressDayMapPresenter.make(
                 repo: repo, maxHR: model.profile.hrMax, restingHR: stressRestingHR)
             stressDetail = StressDetailItem(model: stressModel)
@@ -639,7 +702,8 @@ private struct CuerpoLanding: View {
     private var hrvStat: some View {
         let r = resolveMeasured { $0.avgHrv }
         return statColumn("HRV", value: r.map { "\(Int($0.value.rounded()))" }, unit: String(localized: "ms"),
-                          color: theme.dataHrv, fromApple: r?.fromApple == true) {
+                          color: theme.dataHrv, fromApple: r?.fromApple == true,
+                          spark: windowedSpark { $0.avgHrv }) {
             metricSpec = .hrv(r?.value)
         }
     }
@@ -647,7 +711,8 @@ private struct CuerpoLanding: View {
     private var rhrStat: some View {
         let r = resolveMeasured { $0.restingHr.map(Double.init) }
         return statColumn("Resting HR", value: r.map { "\(Int($0.value.rounded()))" }, unit: String(localized: "bpm"),
-                          color: theme.dataHeart, fromApple: r?.fromApple == true) {
+                          color: theme.dataHeart, fromApple: r?.fromApple == true,
+                          spark: windowedSpark { $0.restingHr.map(Double.init) }) {
             metricSpec = .restingHR(r.map { Int($0.value.rounded()) })
         }
     }
@@ -655,13 +720,17 @@ private struct CuerpoLanding: View {
     private var spo2Stat: some View {
         let r = resolveMeasured { $0.spo2Pct }
         return statColumn("Blood Oxygen", value: r.map { String(format: "%.0f", $0.value) }, unit: "%",
-                          color: theme.dataSpO2, fromApple: r?.fromApple == true) {
+                          color: theme.dataSpO2, fromApple: r?.fromApple == true,
+                          spark: windowedSpark { $0.spo2Pct }) {
             metricSpec = .spo2(r?.value)
         }
     }
 
     private var heartStat: some View {
         let avg = hrTodayAvg
+        // No sparkline: Heart Rate is an intraday metric (today's mean of the 5-min buckets), not a daily
+        // dashboard series — its own detail has no period trend either (FER-253). A daily mean-HR series
+        // doesn't exist in `displayDays`, so the honest landing read is the number alone. (FER-566)
         return statColumn("Heart Rate", value: avg.map { "\($0)" }, unit: String(localized: "bpm"),
                           color: theme.dataHeart) {
             metricSpec = .heartRate(avg)
@@ -671,7 +740,8 @@ private struct CuerpoLanding: View {
     private var respStat: some View {
         let r = resolveMeasured { $0.respRateBpm }
         return statColumn("Respiratory", value: r.map { String(format: "%.1f", $0.value) }, unit: String(localized: "rpm"),
-                          color: theme.dataSpO2, fromApple: r?.fromApple == true) {
+                          color: theme.dataSpO2, fromApple: r?.fromApple == true,
+                          spark: windowedSpark { $0.respRateBpm }) {
             metricSpec = .respiratory(r?.value)
         }
     }
@@ -679,7 +749,8 @@ private struct CuerpoLanding: View {
     private var skinTempStat: some View {
         let r = resolveMeasured { $0.skinTempDevC }
         return statColumn("Skin temp", value: r.map { String(format: "%+.1f", $0.value) }, unit: "°C",
-                          color: theme.dataStrain, fromApple: r?.fromApple == true) {
+                          color: theme.dataStrain, fromApple: r?.fromApple == true,
+                          spark: windowedSpark { $0.skinTempDevC }) {
             // Opens the rich light Detalle de Temperatura de la piel (FER-256) — built fresh from the
             // in-memory dashboard (última lectura resuelta + serie completa de `displayDays`).
             skinTempDetail = SkinTempDetailItem(model: SkinTempDetailModel.build(
@@ -690,7 +761,8 @@ private struct CuerpoLanding: View {
     private var stepsStat: some View {
         let steps = freshSteps
         return statColumn("Steps", value: steps.map { intString(Double($0)) },
-                          color: theme.dataSteps, fromApple: steps != nil) {
+                          color: theme.dataSteps, fromApple: steps != nil,
+                          spark: windowedSpark { $0.steps.map(Double.init) }) {
             metricSpec = .steps(steps)
         }
     }
@@ -840,6 +912,8 @@ private struct CuerpoLanding: View {
                 HStack(spacing: 8) {
                     Text("How you wake after each sport")
                         .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    // Provisional placement (likely Entrenar / Patrones later) — flagged, not final. (FER-566)
+                    InlineFlagChip("For now", color: theme.warning)
                     Spacer(minLength: 8)
                     if activityCosts.isEmpty {
                         Text("Gathering data").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
@@ -944,9 +1018,9 @@ private struct CuerpoLanding: View {
             nightlyHrv: repo.days.map(\.avgHrv),
             hasRecovery: repo.today?.recovery != nil)
 
-        // The hero's 14-day Recovery trend — the only sparkline on the card landing. From the merged
-        // display dashboard (in memory) so it resolves for both import and BLE users (FER-149).
-        recoverySpark = trailingDisplay(14).compactMap(\.recovery)
+        // The sparklines (hero + every stat) are computed properties windowed by `selectedPeriod` straight
+        // off `repo.displayDays`, so they re-window on selector change without a reload (FER-566). Only the
+        // stored stress series needs loading here (stress isn't a `DailyMetric` field).
 
         // Today's HR is bucketed; the rest of the daily/Apple rows feed values, not sparklines.
         async let adRows     = repo.appleDailyRows()
@@ -973,7 +1047,9 @@ private struct CuerpoLanding: View {
             TrendPoint(date: Date(timeIntervalSince1970: TimeInterval($0.ts)), value: $0.bpm)
         }
         // displayDays = Apple-health fallback (FER-149); local todayKey ignores a UTC "tomorrow" row (FER-226).
-        let stress = StressModel(days: repo.displayDays, stored: await stressRows, todayKey: Repository.localDayKey(Date()))
+        let stored = await stressRows
+        stressSeries = stored   // for the Stress stat's sparkline (FER-566)
+        let stress = StressModel(days: repo.displayDays, stored: stored, todayKey: Repository.localDayKey(Date()))
         stressModel = stress
 
         fitnessAge = computeFitnessAge()

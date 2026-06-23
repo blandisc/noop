@@ -1,6 +1,12 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "For now": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "For now" } },
+        "es": { "stringUnit": { "state": "translated", "value": "De momento" } }
+      }
+    },
     "vs previous": {
       "localizations": {
         "en": {
