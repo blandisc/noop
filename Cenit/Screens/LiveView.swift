@@ -270,8 +270,8 @@ struct LiveView: View {
                       stored: c?.rr ?? 0, isLive: isLiveHR)
 
             groupHeader("Completes on sync").padding(.top, 12)
-            syncRow(icon: "drop.fill", name: "Blood oxygen (SpO₂)", stored: c?.spo2 ?? 0, ago: ago)
-            rowDivider
+            // SpO₂ is decoded but no longer persisted (FER-511), so it's omitted here rather than
+            // showing a perpetual "—"/0 row that reads as a fault.
             syncRow(icon: "thermometer", name: "Skin temperature", stored: c?.skinTemp ?? 0, ago: ago)
             rowDivider
             syncRow(icon: "lungs.fill", name: "Respiration", stored: c?.resp ?? 0, ago: ago)
@@ -317,7 +317,7 @@ struct LiveView: View {
         .padding(.vertical, 8)
     }
 
-    /// A sync-only signal (SpO₂ / temp / respiration / movement): name · sync freshness · stored
+    /// A sync-only signal (temp / respiration / movement): name · sync freshness · stored
     /// count · grey dot. Honest: only claims "synced" when this stream actually has stored rows.
     private func syncRow(icon: String, name: LocalizedStringKey, stored: Int, ago: String?) -> some View {
         let syncedAgo = stored > 0 ? ago : nil

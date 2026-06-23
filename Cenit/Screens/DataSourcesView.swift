@@ -737,10 +737,11 @@ struct DataSourcesView: View {
         }
     }
 
-    /// The six sensor streams the receipt reports, paired with their (localizable) English label keys
-    /// — `key` doubles as the stable ForEach id and the LocalizedStringKey lookup (FER-83).
+    /// The stored sensor streams the receipt reports, paired with their (localizable) English label keys
+    /// — `key` doubles as the stable ForEach id and the LocalizedStringKey lookup (FER-83). SpO₂ is
+    /// decoded but no longer persisted (FER-511), so it's omitted here rather than showing a fixed "0".
     private static func syncSensorRows(_ r: LiveState.SyncReceipt) -> [(key: String, count: Int)] {
-        [("Heart rate", r.hr), ("R-R", r.rr), ("Blood oxygen", r.spo2),
+        [("Heart rate", r.hr), ("R-R", r.rr),
          ("Temperature", r.skinTemp), ("Respiration", r.resp), ("Movement", r.gravity)]
     }
 
