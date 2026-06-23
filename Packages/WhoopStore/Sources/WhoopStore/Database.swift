@@ -548,6 +548,20 @@ extension WhoopStore {
                 t.column("ts", .integer).notNull()
             }
         }
+
+        // v23 (FER-531): the weekly split — one row per weekday → routineId («La Semana» redesign).
+        // Append-only: a brand-new table, touches no prior migration; existing routines/folders are
+        // untouched and every user simply starts with an empty split (→ the planner's «no plan yet»
+        // state). `weekday` (1…7, Calendar convention) is the PRIMARY KEY = at most one routine per day,
+        // so assigning a day is an idempotent upsert. No FK to `routine`: deleting a routine clears its
+        // schedule rows in the same transaction (StrengthStore.deleteRoutine), and a dangling routineId
+        // derives to a rest day rather than crashing. No index — at most 7 rows.
+        migrator.registerMigration("v23") { db in
+            try db.create(table: "routineSchedule") { t in
+                t.column("weekday", .integer).primaryKey()   // 1…7 (Calendar weekday); one routine per day
+                t.column("routineId", .text).notNull()
+            }
+        }
         return migrator
     }
 }
