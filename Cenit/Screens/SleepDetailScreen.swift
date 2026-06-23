@@ -45,7 +45,6 @@ struct SleepDetailScreen: View {
     /// The duration trend's period window + chart mode, mirroring the vitals' Detalle (FER-573). The series
     /// is parsed to dates ONCE in `onAppear` (the model is immutable per presentation).
     @State private var range: ExploreRange = .month
-    @State private var chartMode: MetricDetailScreen.ChartMode = .movingAverage
     @State private var durationParsed: [(day: String, date: Date?, value: Double)] = []
 
     var body: some View {
@@ -600,118 +599,42 @@ struct SleepDetailScreen: View {
         .accessibilityValue(Text(historyExpanded ? "expanded" : "collapsed"))
     }
 
-    // MARK: - Tendencia de duración (selector de periodo + Media móvil ⇄ Rangos) — en «See your history»
+    // MARK: - Tendencia de duración (línea + niveles tocables + «N de tus últimos M noches») — patrón F6c
     //
-    // The unified scaffold (FER-573): a period selector (W/M/3M/6M/1Y) + a «Media móvil ⇄ Rangos» toggle,
-    // mirroring the vitals' Detalle. «Media móvil» = 7-day MA with the optimal 7–9 h band + a dynamic
-    // period average with Δ vs the previous equal window (sleep duration ↑ is better). «Rangos» = the
-    // classification chart (6/7/9 h bands) with the active-band header + per-night counts — no Δ there.
+    // The F6c level instrument applied to sleep DURATION only — the rest of the screen (the dual hero,
+    // hypnogram, stages, regularity, debt) keeps its own rich shape (the owner's «no aplanar» decision).
+    // The line is the nightly hours over the period you pick, the active level's band shaded; the levels
+    // are F6a's Short / Adequate / Optimal / Extended, converted from minutes to hours. It supersedes the
+    // old «Media móvil ⇄ Rangos» toggle, folding both into one tappable instrument. (FER-572)
     @ViewBuilder
     private var durationTrendBlock: some View {
         let window = MetricWindowMath.make(durationParsed, selected: range)
         DetailBlock("Duration trend", theme: theme) {
-            VStack(alignment: .leading, spacing: 12) {
-                if window.values.count >= 2 {
-                    SegmentedPillControl(ExploreRange.allCases, selection: $range, theme: theme) { $0.label }
-                    SegmentedPillControl(MetricDetailScreen.ChartMode.allCases, selection: $chartMode, theme: theme) {
-                        sleepChartModeLabel($0)
-                    }
-                    if chartMode == .ranges {
-                        durationRangesTrend(window)
-                    } else {
-                        durationMovingAverageTrend(window)
-                    }
-                } else {
-                    emptyWell(text: "Not enough nights yet to draw a trend.")
-                }
-            }
-        }
-    }
-
-    private func sleepChartModeLabel(_ m: MetricDetailScreen.ChartMode) -> String {
-        m == .movingAverage ? String(localized: "Moving average") : String(localized: "Ranges")
-    }
-
-    /// «Media móvil» mode: the 7-day MA line over the selected window behind the optimal 7–9 h band, plus
-    /// the dynamic period average + Δ vs the previous equal window (sleep duration ↑ = good). (FER-573)
-    @ViewBuilder
-    private func durationMovingAverageTrend(_ window: MetricWindow) -> some View {
-        let stat = ComparisonEngine.stat(window.values)
-        let comparison = window.range.periodComparison(of: model.durationSeries)
-        VStack(alignment: .leading, spacing: 10) {
-            MetricTrendChart(
-                range: $range, window: window, theme: theme, showsSelector: false,
-                style: .init(
-                    smoothing: 7,
-                    gradient: Gradient(colors: [theme.dataSleep.opacity(0.5), theme.dataSleep]),
-                    valueRange: { sleepDurationRange($0) },
+            if window.values.count >= 2 {
+                MetricLevelsExplorer(
+                    theme: theme,
+                    range: $range,
+                    window: window,
+                    levels: sleepHourLevels,
+                    todayValue: model.durationSeries.last?.value,
+                    hue: theme.dataSleep,
+                    unit: "h",
                     valueFormat: { String(format: "%.1f", $0) },
-                    bands: { _ in [TrendBand(label: "", lower: 7, upper: 9, isActive: true)] },
-                    bandColor: { _ in theme.dataSleep },
-                    marksLastPoint: true,
-                    bandLabelsHidden: true,
-                    accessibilityLabel: "Hours asleep per night, 7-day moving average"
+                    nightly: true,
+                    accessibilityLabel: "Hours asleep per night by level"
                 )
-            ) {
-                emptyWell(text: "Not enough nights in this range to draw a trend.")
+            } else {
+                emptyWell(text: "Not enough nights yet to draw a trend.")
             }
-            TrendStatSummary(
-                average: String(format: "%.1f", stat.mean),
-                unit: "h",
-                pctChange: comparison?.pctChange,
-                polarity: .higherIsBetter,
-                period: window.range.comparisonPeriod ?? .month,
-                rangeLow: String(format: "%.1f", stat.min),
-                rangeHigh: String(format: "%.1f h", stat.max),
-                theme: theme
-            )
         }
     }
 
-    /// «Rangos» mode: the classification chart over the selected window (6/7/9 h bands, active one shaded),
-    /// led by the active-band header + how many of the windowed nights land there. No Δ here. (FER-573)
-    @ViewBuilder
-    private func durationRangesTrend(_ window: MetricWindow) -> some View {
-        let pts = window.rows.compactMap { r in
-            Repository.parseDayKey(r.day).map { TrendPoint(date: $0, value: r.value) }
+    /// F6a's sleep levels (Short / Adequate / Optimal / Extended) converted from MINUTES to HOURS — the
+    /// `durationSeries` the chart plots is in hours. Keeps F6a as the single source of the thresholds. (FER-572)
+    private var sleepHourLevels: [MetricLevels.Level] {
+        MetricLevels.levels(for: .sleep).map {
+            MetricLevels.Level(key: $0.key, lower: $0.lower.map { $0 / 60 }, upper: $0.upper.map { $0 / 60 })
         }
-        if let bt = bandedDuration(pts) {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 6) {
-                    Text(bt.activeLabel).foregroundStyle(theme.dataSleep)
-                    Text(verbatim: "·").foregroundStyle(theme.inkTertiary)
-                    Text("\(bt.count) of the last \(bt.total) nights in this range")
-                        .foregroundStyle(theme.inkSecondary)
-                }
-                .font(StrandFont.subhead)
-                TrendChart(
-                    points: pts,
-                    gradient: Gradient(colors: [theme.dataSleep.opacity(0.5), theme.dataSleep]),
-                    valueRange: bt.range,
-                    showsArea: false,
-                    height: 160,
-                    showsScrub: true,
-                    valueFormat: bt.valueFormat,
-                    axisLabelColor: theme.inkTertiary,
-                    gridLineColor: theme.hairline,
-                    bands: bt.bands,
-                    bandColor: theme.dataSleep,
-                    yAxisValues: bt.yTicks
-                )
-                .accessibilityElement()
-                .accessibilityLabel(Text("Hours asleep per night, with classification bands"))
-            }
-        } else {
-            emptyWell(text: "Not enough nights yet to draw a trend.")
-        }
-    }
-
-    /// Y-domain for the «Media móvil» duration chart: open around the optimal 7–9 h band so it reads as a
-    /// central stripe, widened to include the smoothed line when it runs outside. (FER-573)
-    private func sleepDurationRange(_ smoothed: [Double]) -> ClosedRange<Double> {
-        let lo = Swift.min(6, smoothed.min() ?? 6) - 0.5
-        let hi = Swift.max(10, smoothed.max() ?? 10) + 0.5
-        return lo...hi
     }
 
     // MARK: - 5b. Deuda semanal (cifra dominante + barras por noche)
@@ -1022,45 +945,6 @@ struct SleepDetailScreen: View {
         return Swift.min(100, night.stages.asleep / bed * 100)
     }
 
-    /// The 4-band classification config for the duration trend — the same reading as the Today sleep
-    /// sheet (`MetricInfoSheet.bandedTrend`, FER-244): Short/Adequate/Optimal/Extended, the active band
-    /// the latest night sits in, the Y range anchored to the 6/7/9 h thresholds, ticks at those
-    /// thresholds, and an hours-and-minutes value format. `nil` when the latest value matches no band,
-    /// so the chart falls back to its empty well. (FER-249 v2)
-    private struct BandedDuration {
-        var bands: [TrendBand]
-        var range: ClosedRange<Double>
-        var yTicks: [Double]
-        var valueFormat: (Double) -> String
-        var activeLabel: LocalizedStringKey
-        var count: Int
-        var total: Int
-    }
-
-
-    private func bandedDuration(_ pts: [TrendPoint]) -> BandedDuration? {
-        let values = pts.map(\.value)
-        // Half-open bounds [lower, upper) match TrendBand.contains and the Today sheet's bands exactly.
-        var bands: [TrendBand] = [
-            TrendBand(label: "Short",    lower: nil, upper: 6),
-            TrendBand(label: "Adequate", lower: 6,   upper: 7),
-            TrendBand(label: "Optimal",  lower: 7,   upper: 9),
-            TrendBand(label: "Extended", lower: 9,   upper: nil),
-        ]
-        guard let active = TrendBands.activeBand(values: values, bands: bands) else { return nil }
-        bands[active.index].isActive = true
-        let thresholds: [Double] = [6, 7, 9]
-        let lo = Swift.min(values.min() ?? 6, 6)
-        let hi = Swift.max(values.max() ?? 9, 9)
-        let pad = Swift.max((hi - lo) * 0.08, 0.25)
-        let range = Swift.max(0, lo - pad)...(hi + pad)
-        let fmt: (Double) -> String = { v in
-            let m = Int((v * 60).rounded())
-            return m % 60 > 0 ? "\(m / 60)h \(m % 60)m" : "\(m / 60)h"
-        }
-        return BandedDuration(bands: bands, range: range, yTicks: thresholds, valueFormat: fmt,
-                              activeLabel: bands[active.index].label, count: active.count, total: values.count)
-    }
 }
 
 // MARK: - Sheet paper background (iOS 16.4+ presentationBackground)

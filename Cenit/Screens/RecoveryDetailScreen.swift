@@ -74,7 +74,15 @@ struct RecoveryDetailScreen: View {
                         blockDivider
                         patternsBlock
                     }
-                    // Level 3 · «See your history»: the calendar + trend, collapsed by default.
+                    // The F6c level instrument (line + tappable levels + «N de tus últimos M días») over the
+                    // FIXED recovery levels (Agotado / Bajo / Moderado / A punto / Pleno, 0–100). Surfaced as
+                    // a visible block — it folds in the old 7-day-average trend that lived in «See your
+                    // history». (FER-572)
+                    if model.series.count >= 2 {
+                        blockDivider
+                        levelsBlock
+                    }
+                    // Level 3 · «See your history»: the 90-day calendar, collapsed by default.
                     blockDivider
                     historySection
                     blockDivider
@@ -587,43 +595,27 @@ struct RecoveryDetailScreen: View {
         }
     }
 
-    // MARK: - 4. Selector de periodo + Tendencia (+ Prom/Mediana/Mín/Máx/σ)
+    // MARK: - 4. Niveles (línea + niveles tocables + «N de tus últimos M días») — patrón F6c
 
-    private var trendBlock: some View {
+    /// The F6c level instrument: a recovery line over the period you pick, the active level's band shaded,
+    /// a «{level} · N de tus últimos M días» phrase and a TAPPABLE levels list (Agotado / Bajo / Moderado /
+    /// A punto / Pleno, 0–100). Reuses F6a (`MetricLevels.recovery`) + the shared `MetricLevelsExplorer`. It
+    /// supersedes the old 7-day-average trend block, surfacing recovery's distribution at a glance. The
+    /// fixed levels (not relative-to-base) read as the app's own readiness language. (FER-572)
+    private var levelsBlock: some View {
         let window = MetricWindowMath.make(parsed, selected: range)
-        let stat = ComparisonEngine.stat(window.values)
-        // Compare the selected window against the equally-long window before it, not always the calendar
-        // month. `.all` has no previous period, so no chip. (FER-264)
-        let comparison = window.range.periodComparison(of: model.series)
-        return DetailBlock("Trend", theme: theme) {
-            VStack(alignment: .leading, spacing: 10) {
-                MetricTrendChart(
-                    range: $range,
-                    window: window,
-                    theme: theme,
-                    style: .init(
-                        smoothing: 7,
-                        gradient: Gradient(colors: [theme.dataRecovery.opacity(0.5), theme.dataRecovery]),
-                        valueRange: { chartRange($0) },
-                        valueFormat: { "\(Int($0.rounded()))" },
-                        accessibilityLabel: "Recovery, 7-day moving average"
-                    )
-                ) {
-                    emptyWell(text: "Not enough days in this range to draw a trend.")
-                }
-                if window.values.count > 1 {
-                    TrendStatSummary(
-                        average: "\(Int(stat.mean.rounded()))",
-                        pctChange: comparison?.pctChange,
-                        polarity: .higherIsBetter,
-                        period: window.range.comparisonPeriod ?? .month,
-                        rangeLow: "\(Int(stat.min.rounded()))",
-                        rangeHigh: "\(Int(stat.max.rounded()))",
-                        theme: theme
-                    )
-                }
-            }
-        }
+        return MetricLevelsExplorer(
+            theme: theme,
+            range: $range,
+            window: window,
+            levels: MetricLevels.levels(for: .recovery),
+            todayValue: model.score.map(Double.init),
+            hue: theme.dataRecovery,
+            unit: "",
+            valueFormat: { "\(Int($0.rounded()))" },
+            domain: 0...100,
+            accessibilityLabel: "Recovery by level"
+        )
     }
 
     // MARK: - 5. Consistencia (coeficiente de variación)
@@ -642,13 +634,9 @@ struct RecoveryDetailScreen: View {
 
     @ViewBuilder private var historySection: some View {
         VStack(alignment: .leading, spacing: historyExpanded ? 22 : 0) {
-            historyDisclosureHeader(caption: "90-day calendar · trend")
+            historyDisclosureHeader(caption: "90-day calendar")
             if historyExpanded {
                 calendarBlock
-                if model.series.count >= 2 {
-                    blockDivider
-                    trendBlock
-                }
             }
         }
     }
@@ -866,17 +854,6 @@ struct RecoveryDetailScreen: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 28)
         .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
-
-    // MARK: - Chart axis
-
-    /// Auto-fit the chart's axis to the smoothed line, clamped to the 0–100 recovery scale.
-    private func chartRange(_ smoothed: [Double]) -> ClosedRange<Double> {
-        let lo = smoothed.min() ?? 0
-        let hi = smoothed.max() ?? 100
-        if hi <= lo { return Swift.max(0, lo - 5)...Swift.min(100, hi + 5) }
-        let pad = (hi - lo) * 0.15
-        return Swift.max(0, lo - pad)...Swift.min(100, hi + pad)
     }
 
     static let dayParser: DateFormatter = {

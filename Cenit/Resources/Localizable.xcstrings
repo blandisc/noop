@@ -55,6 +55,18 @@
         "es" : { "stringUnit" : { "state" : "translated", "value" : "%lld días con datos en este rango" } }
       }
     },
+    "%lld of your last %lld nights" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld of your last %lld nights" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "%lld de tus últimas %lld noches" } }
+      }
+    },
+    "%lld nights with data in this range" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld nights with data in this range" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "%lld noches con datos en este rango" } }
+      }
+    },
     "For now": {
       "localizations": {
         "en": {
