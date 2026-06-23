@@ -61,6 +61,23 @@ public enum StrandFont {
     /// (relative to `.footnote`, 13pt at default).
     public static let mono = Font.system(.footnote, design: .monospaced)
 
+    // MARK: Serif — in-screen headlines & verdict phrases ONLY (§2)
+
+    /// `Instrument Serif` (Regular 400) — for in-screen headlines and verdict phrases ONLY
+    /// (e.g. "Vienes recuperando mejor."). NEVER a tab name, NEVER a datum, NEVER a numeral —
+    /// those stay SF (chrome) and mono (values). The face is Regular-only: don't add `.bold()`
+    /// or `.fontWeight(.semibold)` at the call site (it would synthesize an ugly faux-bold).
+    /// Bundled with the package (OFL) and registered on first use; scales with Dynamic Type via
+    /// `relativeTo` (UIFontMetrics under the hood), so it grows with the reader's text size.
+    public static func serif(_ size: CGFloat, relativeTo textStyle: Font.TextStyle = .title2) -> Font {
+        ensureFontsRegistered()
+        return .custom("Instrument Serif", size: size, relativeTo: textStyle)
+    }
+
+    /// The «Hoy» verdict phrase — the Daily Brief titular ("Vienes recuperando mejor."). Sized a
+    /// touch above the old `title2` so the airier serif reads with the same presence (scales w/ `.title2`).
+    public static let serifVerdict = serif(25, relativeTo: .title2)
+
     // MARK: Numeric variants (tabular digits)
 
     /// A monospaced-digit numeric style at an arbitrary size/weight, for live values.
@@ -130,6 +147,6 @@ public extension View {
     }
     .frame(width: 520, height: 620)
     .background(InstrumentoTheme.base.paper)
-    .preferredColorScheme(.dark)
+    .preferredColorScheme(.light)
 }
 #endif

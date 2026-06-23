@@ -1013,7 +1013,9 @@ struct TodayView: View {
             Button { showWhyVerdict = true } label: {
                 HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space2) {
                     Text(brief.titular)
-                        .font(StrandFont.title2).fontWeight(.semibold)
+                        // §2 «Instrumento»: el veredicto va en serif (Instrument Serif, Regular 400).
+                        // Sin `.semibold` — la cara es solo Regular y forzar peso sintetiza un falso-bold.
+                        .font(StrandFont.serifVerdict)
                         .foregroundStyle(theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                     Image(systemName: "info.circle").font(.system(size: 15))
@@ -2714,6 +2716,6 @@ struct TodayView: View {
         .environmentObject(HealthKitBridge(repo: repo, appleDeviceId: "preview-apple", noopDeviceId: "preview"))
         #endif
         .frame(width: 920, height: 940)
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(.light)
 }
 #endif

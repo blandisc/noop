@@ -646,7 +646,7 @@ private func sampleTrend(days: Int, base: Double, swing: Double) -> [TrendPoint]
     .padding(28)
     .frame(width: 720, height: 340)
     .background(InstrumentoTheme.base.paper)
-    .preferredColorScheme(.dark)
+    .preferredColorScheme(.light)
 }
 
 #Preview("TrendChart — HRV") {
@@ -665,6 +665,6 @@ private func sampleTrend(days: Int, base: Double, swing: Double) -> [TrendPoint]
     .padding(28)
     .frame(width: 720, height: 340)
     .background(InstrumentoTheme.base.paper)
-    .preferredColorScheme(.dark)
+    .preferredColorScheme(.light)
 }
 #endif
