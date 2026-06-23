@@ -87,13 +87,13 @@ struct StressDetailScreen: View {
                     // former «Normal range» block is gone from the daily scroll — those Low/Mod/High
                     // bands are already drawn behind the trend line as its legend (one dispersion read).
                     patternsBlock(model)
-                    // The F6c level instrument (line + tappable levels + «N de tus últimos M días») over the
-                    // fixed Low / Medium / High levels (0–3). Surfaced as a visible block — it folds in the
-                    // old L3 trend, whose bands were already this metric's levels. (FER-572)
+                    // Level 3 · «See your history»: the daily 0–3 trend over the fixed Low/Mod/High bands +
+                    // the handoff's «Media · periodo · valor · Δ% vs previo» caption (↓). The handoff's
+                    // Detalle · Estrés is a trend, not a tappable levels list — FER-596 restored it over the
+                    // F6c levels instrument FER-572 had swapped in. (The mapa del día moved up to Level 1.5.)
                     if model.fullTrend.count >= 2 {
                         blockDivider
-                        levelsBlock(model)
-                        averageCaption   // handoff «Media · periodo · valor · Δ% vs previo» + rango (FER-587)
+                        historySection(model)
                     }
                     blockDivider
                     methodDisclosure(model)
@@ -259,18 +259,44 @@ struct StressDetailScreen: View {
         .accessibilityHidden(true)
     }
 
-    // MARK: - 2. Niveles (línea + niveles tocables + «N de tus últimos M días») — patrón F6c
+    // MARK: - 2. Ver tu historial — la tendencia diaria 0–3 sobre las bandas fijas + «Media …»
 
-    /// The F6c level instrument: the daily 0–3 line over the period you pick, the active level's band
-    /// shaded, a «{level} · N de tus últimos M días» phrase and a TAPPABLE levels list (Low / Medium /
-    /// High, 0–3). Reuses F6a (`MetricLevels.stress`) + the shared `MetricLevelsExplorer`. It supersedes
-    /// the old L3 trend block, whose fixed Low/Mod/High bands were already this metric's levels. The hue is
-    /// `warning` (the «elevated» stress tone) — stress has no single good direction, so the instrument
-    /// reads in one neutral-but-activated colour rather than recolouring per band. (FER-572)
-    /// The handoff's period-average caption + range, under the levels explorer (FER-587, option ii).
-    /// Stress good direction is DOWN (lower is calmer); shown on the 0–3 scale, no unit.
-    @ViewBuilder private var averageCaption: some View {
+    /// «See your history»: the daily 0–3 stress line over the fixed Low / Moderate / High zones (0–1 / 1–2 /
+    /// 2–3), with the period selector and the handoff's period-average caption below it. Restores the trend
+    /// the F6c levels instrument had replaced (FER-596) — the handoff's Detalle · Estrés is a trend, not a
+    /// tappable levels list. The bands behind the line are this metric's fixed zones (drawn as the legend);
+    /// the z-score / RMSSD jargon stays under «See the method».
+    private func historySection(_ model: StressModel) -> some View {
         let window = MetricWindowMath.make(parsed, selected: range)
+        return VStack(alignment: .leading, spacing: 12) {
+            Text("See your history").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            // The daily 0–3 line over the three fixed band zones (Low / Moderate / High), drawn by
+            // `MetricTrendChart`'s native bands with explicit Y ticks at 0/1/2/3. Raw daily values, not a
+            // moving average — the stress signal is read day to day.
+            MetricTrendChart(
+                range: $range,
+                window: window,
+                theme: theme,
+                style: .init(
+                    gradient: Gradient(colors: [theme.inkSecondary.opacity(0.5), theme.inkSecondary]),
+                    showsArea: false,
+                    valueRange: { _ in 0...3 },
+                    valueFormat: { String(format: "%.1f", $0) },
+                    bands: { stressBands(activeValue: $0) },
+                    bandColor: { bandColor(StressBand(score: $0)) },
+                    yAxisValues: [0, 1, 2, 3],
+                    accessibilityLabel: "Daily stress index, 0 to 3"
+                )
+            ) {
+                emptyWell(text: "Not enough days in this range to draw a trend.")
+            }
+            averageCaption(window)   // handoff «Media · periodo · valor · Δ% vs previo» + rango (↓) (FER-587)
+        }
+    }
+
+    /// The handoff's period-average caption + range, under the trend (FER-587). Stress good direction is
+    /// DOWN (lower is calmer); shown on the 0–3 scale, no unit. Reuses the `window` the trend already made.
+    @ViewBuilder private func averageCaption(_ window: MetricWindow) -> some View {
         if window.values.count > 1 {
             let s = ComparisonEngine.stat(window.values)
             DynamicAverageCaption(
@@ -283,20 +309,13 @@ struct StressDetailScreen: View {
         }
     }
 
-    private func levelsBlock(_ model: StressModel) -> some View {
-        let window = MetricWindowMath.make(parsed, selected: range)
-        return MetricLevelsExplorer(
-            theme: theme,
-            range: $range,
-            window: window,
-            levels: MetricLevels.levels(for: .stress),
-            todayValue: model.score,
-            hue: theme.warning,
-            unit: "",
-            valueFormat: { String(format: "%.1f", $0) },
-            domain: 0...3,
-            accessibilityLabel: "Daily stress index by level"
-        )
+    /// The three fixed stress zones as `TrendBand`s, with the one holding `activeValue` shaded as the bracket.
+    private func stressBands(activeValue v: Double) -> [TrendBand] {
+        [
+            TrendBand(label: "Low", lower: nil, upper: 1, isActive: v < 1),
+            TrendBand(label: "Moderate", lower: 1, upper: 2, isActive: v >= 1 && v < 2),
+            TrendBand(label: "High", lower: 2, upper: nil, isActive: v >= 2),
+        ]
     }
 
     // MARK: - Level 2 · «Your patterns» — calm time + consistency, fused to plain lines
