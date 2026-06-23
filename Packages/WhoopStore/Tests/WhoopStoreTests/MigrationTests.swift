@@ -62,7 +62,28 @@ final class MigrationTests: XCTestCase {
                               "\(table) keeps synced (not rebuilt)")
             }
         }
-        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 21)
+        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 22)
+    }
+
+    /// v22 (FER-523) adds the learned-exercise-alias table; the CRUD round-trips and re-mapping a name
+    /// overwrites (PK on the normalized name).
+    func testV22LearnedAliasTableRoundTripsAndOverwrites() async throws {
+        let store = try await WhoopStore.inMemory()   // migrated to v22
+        // A successful read proves the table exists (it'd throw otherwise); it starts empty.
+        var aliases = try await store.learnedExerciseAliases()
+        XCTAssertTrue(aliases.isEmpty)
+
+        try await store.saveLearnedExerciseAlias(name: "press plano", exerciseId: "Some_Id", ts: 100)
+        try await store.saveLearnedExerciseAlias(name: "sentadilla rara", exerciseId: "Squat_Id", ts: 100)
+        aliases = try await store.learnedExerciseAliases()
+        XCTAssertEqual(aliases["press plano"], "Some_Id")
+        XCTAssertEqual(aliases["sentadilla rara"], "Squat_Id")
+
+        // Re-mapping the same normalized name overwrites (one mapping per name).
+        try await store.saveLearnedExerciseAlias(name: "press plano", exerciseId: "Other_Id", ts: 200)
+        aliases = try await store.learnedExerciseAliases()
+        XCTAssertEqual(aliases["press plano"], "Other_Id")
+        XCTAssertEqual(aliases.count, 2)
     }
 
     /// v21 (FER-513) rebuilds the five 1 Hz tables as WITHOUT ROWID + integer `deviceId`, with ZERO data

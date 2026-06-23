@@ -254,6 +254,29 @@ final class WorkoutProgramImporterTests: XCTestCase {
 
     private func we(_ name: String) -> WorkoutExercise { WorkoutExercise(name: name, sets: 1) }
 
+    func testReconcilerResolvesLearnedAlias() {
+        // FER-523: a name the user mapped before resolves on its own (after id/name/curated alias).
+        let known = [ex("squat", "Squat"), ex("bench", "Bench Press")]
+        let learned = ["mi sentadilla magica": "squat"]   // normalized name → id
+        let r = WorkoutExerciseReconciler(known: known, learned: learned)
+        XCTAssertEqual(r.resolve(we("Mi Sentadilla Mágica"))?.id, "squat")   // case/accents fold
+        XCTAssertNil(r.resolve(we("algo nunca visto")))
+        // A learned alias pointing at an unknown id is dropped (no crash, no false match).
+        let r2 = WorkoutExerciseReconciler(known: known, learned: ["x": "does_not_exist"])
+        XCTAssertNil(r2.resolve(we("x")))
+    }
+
+    func testSuggestionsRankByTokenOverlap() {
+        let r = WorkoutExerciseReconciler(known: ExerciseCatalog.all)
+        let s = r.suggestions(for: "barbell bench press wide")
+        XCTAssertFalse(s.isEmpty, "a close name should surface candidates")
+        // The top suggestion shares the most tokens with the query (a bench-press barbell variant).
+        XCTAssertTrue(s.first!.name.localizedCaseInsensitiveContains("bench"), "top: \(s.first!.name)")
+        XCTAssertLessThanOrEqual(s.count, 3, "respects the default limit")
+        // Gibberish with no token overlap yields nothing (threshold).
+        XCTAssertTrue(r.suggestions(for: "zzzzz qqqqq").isEmpty)
+    }
+
     func testReconcilerMatchesSpanishAndEnglishNames() {
         // An exercise that carries both names (catalog entry, FER-501) matches a plan written in
         // either language; an exercise with only an English name still matches English.

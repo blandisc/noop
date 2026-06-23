@@ -64,6 +64,29 @@ extension WhoopStore {
                  cues: decodeJSON(r["cues"], as: [String].self, default: []))
     }
 
+    // MARK: - Learned exercise aliases (FER-523)
+
+    /// Remember that an imported exercise name maps to a catalog/custom exercise — so the next import of
+    /// that name resolves on its own. `name` is the NORMALIZED imported name (the caller normalizes with
+    /// the reconciler's rule). Re-mapping the same name overwrites.
+    public func saveLearnedExerciseAlias(name: String, exerciseId: String, ts: Int) async throws {
+        try syncWrite { db in
+            try db.execute(sql: """
+                INSERT INTO learnedExerciseAlias (name, exerciseId, ts) VALUES (?, ?, ?)
+                ON CONFLICT(name) DO UPDATE SET exerciseId = excluded.exerciseId, ts = excluded.ts
+                """, arguments: [name, exerciseId, ts])
+        }
+    }
+
+    /// Every learned alias as normalized-name → exerciseId, for the import reconciler to consult.
+    public func learnedExerciseAliases() async throws -> [String: String] {
+        try syncRead { db in
+            let rows = try Row.fetchAll(db, sql: "SELECT name, exerciseId FROM learnedExerciseAlias")
+            return Dictionary(rows.map { ($0["name"] as String, $0["exerciseId"] as String) },
+                              uniquingKeysWith: { first, _ in first })
+        }
+    }
+
     // MARK: - Routines
 
     /// Save a routine and replace its ordered exercise list in one transaction.
