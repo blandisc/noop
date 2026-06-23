@@ -206,9 +206,7 @@ private struct CuerpoLanding: View {
                 intradayCurveLoader: spec.blocks.contains(.intradayCurve) ? { hrPoints } : nil,
                 hrMax: Double(model.profile.hrMax),
                 restingHR: resolveMeasured { $0.restingHr.map(Double.init) }?.value,
-                todayKey: Repository.localDayKey(Date()),
-                // FER-571: la hoja ya se abrió DESDE Tendencias, así que «Ver más» solo cierra de vuelta a ella.
-                onSeeTrends: {}
+                todayKey: Repository.localDayKey(Date())
             )
         }
         .sheet(item: $recoveryDetail) { item in

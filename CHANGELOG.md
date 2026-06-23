@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El detalle de tus vitales vuelve a ser la pantalla completa / Your vitals' detail is the full screen again.**
+  **ES** — HRV, FC en reposo, SpO₂, Respiración y Pasos volvieron a abrir su **pantalla de detalle rica** —la del handoff— con su rango normal, la gráfica «Tu historia» con promedio y cambio vs el periodo previo, consistencia, qué la mueve y vitales de la noche, según cada una. Tocar el dato en Tendencias abre el detalle directo, y en Hoy «Ver más» te lleva ahí (antes te dejaba en una vista resumida sin salida).
+  **EN** — HRV, resting HR, SpO₂, Respiration and Steps open their **full rich detail screen** again — the handoff one — with your normal range, the "Your history" chart with average and change vs the previous period, consistency, what moves it and night vitals, as applies to each. Tapping the number in Trends opens the detail directly, and on Today "See more" takes you there (it used to leave you on a summarized view with no way forward).
+  ([Cenit/Screens/MetricDetailScreen.swift](Cenit/Screens/MetricDetailScreen.swift))
+
 - **La batería de tu banda va junto a la fecha en Hoy, y su icono ya no es un Apple Watch / Your band's battery sits next to the date on Today, and its icon is no longer an Apple Watch.**
   **ES** — En «Hoy», la batería de tu banda se movió **junto a la fecha** (arriba a la izquierda), con un divisor entre ambas; la píldora de tu pulso queda sola a la derecha. Y en la carta de **Latidos**, la fila de la banda dejó de usar el icono del Apple Watch (confundía): ahora es un **icono de sensor** que transmite, sin marca. El color de la batería sigue por nivel (verde / ámbar / rojo).
   **EN** — On «Hoy», your band's battery moved **next to the date** (top-left), with a divider between them; your pulse pill now sits alone on the right. And in the **Heartbeats** card, the band row no longer uses the Apple Watch icon (it was misleading): it's now a **sensor icon** that broadcasts, brand-agnostic. Battery color still follows the level (green / amber / red).
