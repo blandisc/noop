@@ -482,111 +482,11 @@ private struct RoutineExerciseEditor: View {
 
     // MARK: Rest
 
+    // The rest editor (mode + duration / HR target) is the shared `RestEditor` so the builder and the
+    // in-session rest editor (FER-540) stay identical.
     private var rest: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            Text("Rest between sets").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Picker("Rest mode", selection: $item.re.restMode) {
-                Text("By HR").tag(RestMode.heartRate)
-                Text("Fixed").tag(RestMode.fixed)
-            }
-            .pickerStyle(.segmented)
-            if item.re.restMode == .fixed {
-                valueRow("Seconds", display: "\(item.re.restSeconds) s") {
-                    Stepper("Seconds", value: $item.re.restSeconds, in: 15...300, step: 15)
-                        .labelsHidden().tint(theme.inkSecondary)
-                }
-            } else {
-                // FER-495: how the HR rest target is computed. «Automatic» (restingMargin) = FER-348.
-                HStack(spacing: 14) {
-                    Text("Reference").font(StrandFont.body).foregroundStyle(theme.ink)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Menu {
-                        ForEach([HRRestReference.restingMargin, .peakDrop, .karvonenReserve, .fixedBpm], id: \.self) { ref in
-                            Button { selectHRReference(ref) } label: { Text(Self.hrRefLabel(ref)) }
-                        }
-                    } label: {
-                        HStack(spacing: 6) {
-                            Text(Self.hrRefLabel(item.re.hrRestReference)).font(StrandFont.body).foregroundStyle(theme.ink)
-                            Image(systemName: "chevron.down").font(.system(size: 13)).foregroundStyle(theme.inkTertiary)
-                        }
-                    }
-                }
-                .frame(minHeight: 40)
-                hrValueRow
-            }
-            Text(restFootnote).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    /// The value stepper for the chosen HR reference (hidden for «Automatic», which has no value).
-    @ViewBuilder
-    private var hrValueRow: some View {
-        switch item.re.hrRestReference {
-        case .restingMargin:
-            EmptyView()
-        case .peakDrop:
-            valueRow("Target drop", display: "\(Int((item.re.hrRestValue * 100).rounded())) %") {
-                Stepper("Target drop", value: $item.re.hrRestValue, in: 0.1...0.6, step: 0.05)
-                    .labelsHidden().tint(theme.inkSecondary)
-            }
-        case .karvonenReserve:
-            valueRow("Drop to", display: "\(Int((item.re.hrRestValue * 100).rounded())) %") {
-                Stepper("Drop to", value: $item.re.hrRestValue, in: 0.4...0.8, step: 0.05)
-                    .labelsHidden().tint(theme.inkSecondary)
-            }
-        case .fixedBpm:
-            valueRow("Ready below", display: "\(Int(item.re.hrRestValue.rounded())) bpm") {
-                Stepper("Ready below", value: $item.re.hrRestValue, in: 80...160, step: 5)
-                    .labelsHidden().tint(theme.inkSecondary)
-            }
-        }
-    }
-
-    private func valueRow<Control: View>(_ label: LocalizedStringKey, display: String,
-                                         @ViewBuilder control: () -> Control) -> some View {
-        HStack(spacing: 14) {
-            Text(label).font(StrandFont.body).foregroundStyle(theme.ink).frame(maxWidth: .infinity, alignment: .leading)
-            HStack(spacing: 10) {
-                Text(display).font(StrandFont.bodyNumber).foregroundStyle(theme.ink)
-                control()
-            }
-        }
-        .frame(minHeight: 40)
-    }
-
-    /// Set the reference and seed a sensible default value for it (fractions vs bpm differ wildly).
-    private func selectHRReference(_ ref: HRRestReference) {
-        item.re.hrRestReference = ref
-        switch ref {
-        case .restingMargin: item.re.hrRestValue = 0
-        case .peakDrop:      item.re.hrRestValue = 0.30
-        case .karvonenReserve: item.re.hrRestValue = 0.60
-        case .fixedBpm:      item.re.hrRestValue = 110
-        }
-    }
-
-    private static func hrRefLabel(_ ref: HRRestReference) -> LocalizedStringKey {
-        switch ref {
-        case .restingMargin:   return "Automatic"
-        case .peakDrop:        return "% of peak"
-        case .karvonenReserve: return "% of reserve"
-        case .fixedBpm:        return "Threshold (bpm)"
-        }
-    }
-
-    private var restFootnote: LocalizedStringKey {
-        if item.re.restMode == .fixed { return "A fixed countdown between sets." }
-        switch item.re.hrRestReference {
-        case .restingMargin:
-            return "Ready when your pulse returns near your resting rate — your strap reads it."
-        case .peakDrop:
-            return "Ready when your pulse drops the chosen % from the set's peak. No max or resting HR needed."
-        case .karvonenReserve:
-            return "Ready at the chosen % of your heart-rate reserve (Karvonen). Uses your max and resting HR; falls back to the timer if either is missing."
-        case .fixedBpm:
-            return "Ready when your pulse drops below the chosen rate."
-        }
+        RestEditor(restMode: $item.re.restMode, restSeconds: $item.re.restSeconds,
+                   hrRestReference: $item.re.hrRestReference, hrRestValue: $item.re.hrRestValue)
     }
 
 }

@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Ajusta el descanso de un ejercicio sin salir del entreno / Tweak an exercise's rest without leaving your workout.**
+  **ES** — En plena sesión, cada ejercicio muestra un chip de **descanso** (p.ej. «Descanso · 90 s» o «Descanso · por FC»). Tócalo para cambiar la **duración y el modo** (por frecuencia cardiaca ↔ tiempo fijo) con los mismos controles del editor de rutinas. El cambio aplica de inmediato a tus siguientes descansos y, si el entreno viene de una rutina guardada, **queda guardado en la rutina** para la próxima vez (si es un entreno libre, aplica solo a esta sesión). El ajuste rápido de ±15 s del descanso en curso sigue igual.
+  **EN** — Mid-workout, every exercise shows a **rest** chip (e.g. "Rest · 90 s" or "Rest · by HR"). Tap it to change the **duration and mode** (by heart rate ↔ fixed time) with the same controls as the routine editor. The change applies to your next rests right away and, when the workout came from a saved routine, it's **saved back to the routine** for next time (for a freestyle workout it applies to this session only). The quick ±15 s nudge on the running rest is unchanged.
+  ([Cenit/Screens/RestEditor.swift](Cenit/Screens/RestEditor.swift), [Cenit/Screens/LiveStrengthSheet.swift](Cenit/Screens/LiveStrengthSheet.swift))
+
 - **Toca un ejercicio en plena sesión para ver cómo se hace / Tap an exercise mid-session to see how it's done.**
   **ES** — Durante un entrenamiento, ahora puedes **tocar el nombre de un ejercicio** (con el chevron ›) para abrir su **Detalle**: cómo se hace paso a paso, tu **tendencia** (peso máx / 1RM estimado / volumen) y tus récords. Al cerrarlo, tu sesión sigue exactamente igual —tus series, el cronómetro y el descanso no se pierden—.
   **EN** — During a workout, you can now **tap an exercise's name** (with the › chevron) to open its **Detail**: step-by-step how-to, your **trend** (max weight / estimated 1RM / volume) and your records. Closing it leaves your session exactly as it was —your sets, the timer and the rest aren't lost—.

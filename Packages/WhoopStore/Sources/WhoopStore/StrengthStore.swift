@@ -196,6 +196,23 @@ extension WhoopStore {
         }
     }
 
+    /// Pinpoint-update one routine exercise's rest config, editable mid-session (FER-540). Touches only
+    /// that row's four rest columns + the routine's `updatedTs` — it does NOT rewrite the routine's other
+    /// exercises or any `routineSet` rows, so the per-set prescription is untouched (unlike `saveRoutine`).
+    public func updateRoutineExerciseRest(routineExerciseId reId: String, routineId: String,
+                                          mode: RestMode, seconds: Int,
+                                          reference: HRRestReference, value: Double, updatedTs: Int) async throws {
+        try syncWrite { db in
+            try db.execute(sql: """
+                UPDATE routineExercise
+                   SET restMode = ?, restSeconds = ?, hrRestReference = ?, hrRestValue = ?
+                 WHERE id = ?
+                """, arguments: [mode.rawValue, seconds, reference.rawValue, value, reId])
+            try db.execute(sql: "UPDATE routine SET updatedTs = ? WHERE id = ?",
+                           arguments: [updatedTs, routineId])
+        }
+    }
+
     /// Persist a new folder order: `sortOrder = index` per id (FER-526). One UPDATE per id in a
     /// transaction; touches nothing else.
     public func reorderFolders(_ idsInOrder: [String]) async throws {

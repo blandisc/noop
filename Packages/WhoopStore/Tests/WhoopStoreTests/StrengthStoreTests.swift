@@ -39,6 +39,43 @@ final class StrengthStoreTests: XCTestCase {
         XCTAssertEqual(back.map(\.hrRestValue), [0.45, 0.30, 0])
     }
 
+    /// FER-540: editing rest mid-session pinpoint-updates one exercise's four rest fields and leaves its
+    /// per-set prescription AND the other exercises untouched (unlike a full `saveRoutine` rewrite).
+    func testUpdateRoutineExerciseRestPinpoint() async throws {
+        let store = try await WhoopStore.inMemory()
+        let r = Routine(id: "rt1", name: "Pierna", createdTs: 0, updatedTs: 0)
+        let exs = [
+            RoutineExercise(id: "a", routineId: "rt1", exerciseId: "ex1", position: 0, targetSets: 2,
+                            restMode: .fixed, restSeconds: 60,
+                            sets: [RoutineSet(position: 0, kind: .work, reps: 8, weightKg: 60),
+                                   RoutineSet(position: 1, kind: .work, reps: 6, weightKg: 70)]),
+            RoutineExercise(id: "b", routineId: "rt1", exerciseId: "ex2", position: 1, targetSets: 3,
+                            restMode: .fixed, restSeconds: 45),
+        ]
+        try await store.saveRoutine(r, exercises: exs)
+
+        try await store.updateRoutineExerciseRest(routineExerciseId: "a", routineId: "rt1",
+            mode: .heartRate, seconds: 120, reference: .peakDrop, value: 0.25, updatedTs: 999)
+
+        let back = try await store.routineExercises(routineId: "rt1")
+        let a = back.first { $0.id == "a" }!
+        let b = back.first { $0.id == "b" }!
+        // The edited exercise has the new rest config…
+        XCTAssertEqual(a.restMode, .heartRate)
+        XCTAssertEqual(a.restSeconds, 120)
+        XCTAssertEqual(a.hrRestReference, .peakDrop)
+        XCTAssertEqual(a.hrRestValue, 0.25)
+        // …its per-set prescription is intact…
+        XCTAssertEqual(a.sets.filter { $0.kind == .work }.map(\.reps), [8, 6])
+        XCTAssertEqual(a.sets.filter { $0.kind == .work }.map(\.weightKg), [60, 70])
+        // …and the other exercise is untouched.
+        XCTAssertEqual(b.restMode, .fixed)
+        XCTAssertEqual(b.restSeconds, 45)
+        // The routine's updatedTs was bumped.
+        let routine = try await store.routines().first { $0.id == "rt1" }
+        XCTAssertEqual(routine?.updatedTs, 999)
+    }
+
     // MARK: - Folders (FER-494)
 
     /// Create + rename a folder round-trips via the public API (rename is an upsert on the same id).

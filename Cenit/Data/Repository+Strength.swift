@@ -28,6 +28,17 @@ extension Repository {
         try await store.saveRoutine(routine, exercises: exercises)
     }
 
+    /// Pinpoint-update one routine exercise's rest config (FER-540) — for editing rest mid-session
+    /// without rewriting the whole routine. No-op when the store can't be opened.
+    func updateRoutineExerciseRest(routineExerciseId reId: String, routineId: String,
+                                   mode: RestMode, seconds: Int,
+                                   reference: HRRestReference, value: Double) async {
+        guard let store = await storeHandle() else { return }
+        try? await store.updateRoutineExerciseRest(
+            routineExerciseId: reId, routineId: routineId, mode: mode, seconds: seconds,
+            reference: reference, value: value, updatedTs: Int(Date().timeIntervalSince1970))
+    }
+
     func deleteRoutine(id: String) async throws {
         guard let store = await storeHandle() else { return }
         try await store.deleteRoutine(id: id)
