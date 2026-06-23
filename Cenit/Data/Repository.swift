@@ -231,15 +231,18 @@ final class Repository: ObservableObject {
         for p in need { fig[p.day, default: ImportedSleepFigures()].needMin = p.value }
         for p in debt { fig[p.day, default: ImportedSleepFigures()].debtMin = p.value }
 
-        // FER-153 (Capa 2): the ESTIMATED recovery for band-less Apple nights, computed read-time (no
-        // migration/persistence). It is NOT folded into the merge — `days`/`displayDays` stay band-measured
-        // so no recovery statistic over history can mix in an estimate; it surfaces only via `repo.today`
-        // (single day). `whoopOnly` → `apple == []` → empty. `mergeDaily` is the unchanged band/Apple merge.
-        let strapDays = Set(imported.map(\.day)).union(computed.map(\.day))
-        let estimates = Self.appleRecoveryEstimates(apple: apple, strapDays: strapDays)
-
         // One assignment → one objectWillChange for the whole refresh (was four).
         let merged = Self.mergeDaily(imported: imported, computed: computed, apple: apple)
+        // FER-153 (Capa 2) + FER-529 (F4b): the ESTIMATED recovery for any day whose MEASURED recovery is
+        // nil — a band-less Apple night (FER-153) OR a cold-start night where the band is worn but its RMSSD
+        // baseline isn't seeded yet (FER-529). Computed read-time (no migration/persistence). Eligibility
+        // mirrors the `repo.today` selector EXACTLY (`recovery == nil`), so an estimate exists ⟺ it would be
+        // surfaced — `isRecoveryEstimated` never lies, and the band wins the instant it can compute. It is
+        // NOT folded into the merge — `days`/`displayDays` stay band-measured, so no recovery statistic over
+        // history can mix in an estimate; it surfaces only via `repo.today` (single day). `whoopOnly` →
+        // `apple == []` → empty. `mergeDaily` is the unchanged band/Apple merge.
+        let daysNeedingEstimate = Set(merged.days.filter { $0.recovery == nil }.map(\.day))
+        let estimates = Self.appleRecoveryEstimates(apple: apple, eligibleDays: daysNeedingEstimate)
         // FER-485: stored per-source coverage from the UNFILTERED raws (the always-Combined truth), so the
         // diagnostic coverage shows what's stored even when the mode hides a source from the dashboard.
         let storedStrap = Set(importedRaw.map(\.day)).union(computedRaw.map(\.day))
@@ -300,13 +303,18 @@ final class Repository: ObservableObject {
         return (days, appleDays, displayDays)
     }
 
-    /// FER-153 (Capa 2): the ESTIMATED recovery for each **band-less** Apple night, keyed by day. The
-    /// SDNN-vs-own-SDNN estimate is computed by the pure `AppleRecoveryEstimator` (separate baseline,
-    /// never the strap's RMSSD). This **does NOT touch `days`/`displayDays`** — those stay band-MEASURED
-    /// only so no recovery statistic over history can ever mix in an estimate. The estimate is surfaced
-    /// for display ONLY through `repo.today` (single day) + `isRecoveryEstimated`/`recoveryConfidence`.
-    /// Pure + static so `RepositoryMergeTests` can pin it. `apple == []` (whoopOnly) → empty.
-    static func appleRecoveryEstimates(apple: [DailyMetric], strapDays: Set<String>)
+    /// FER-153 (Capa 2) + FER-529 (F4b): the ESTIMATED recovery for each day in `eligibleDays`, keyed by
+    /// day. `eligibleDays` is exactly the set of days whose MEASURED recovery is nil (mirrors the
+    /// `repo.today` selector) — a band-less Apple night, OR a cold-start night where the band is worn but
+    /// its RMSSD baseline isn't seeded yet. The SDNN-vs-own-SDNN estimate is computed by the pure
+    /// `AppleRecoveryEstimator` (separate baseline, never the strap's RMSSD). This **does NOT touch
+    /// `days`/`displayDays`** — those stay band-MEASURED only so no recovery statistic over history can ever
+    /// mix in an estimate. The estimate is surfaced for display ONLY through `repo.today` (single day) +
+    /// `isRecoveryEstimated`/`recoveryConfidence`. Keying on `eligibleDays` (⟺ `recovery == nil`) keeps
+    /// `isRecoveryEstimated` honest: an estimate exists only where it would actually be shown, so the band
+    /// wins the instant it can compute. Pure + static so `RepositoryMergeTests` can pin it. `apple == []`
+    /// (whoopOnly) → empty.
+    static func appleRecoveryEstimates(apple: [DailyMetric], eligibleDays: Set<String>)
         -> [String: AppleRecoveryEstimator.DayEstimate] {
         guard !apple.isEmpty else { return [:] }
         let nights = apple.map {
@@ -315,8 +323,8 @@ final class Repository: ObservableObject {
                                          sleepPerf: $0.efficiency, sleepMinutes: $0.totalSleepMin)
         }
         var out: [String: AppleRecoveryEstimator.DayEstimate] = [:]
-        for e in AppleRecoveryEstimator.estimate(nights: nights) where !strapDays.contains(e.day) {
-            out[e.day] = e   // band-less only — a strap-covered night surfaces the band recovery (band wins)
+        for e in AppleRecoveryEstimator.estimate(nights: nights) where eligibleDays.contains(e.day) {
+            out[e.day] = e   // surfaced only where the measured recovery is nil (band-less OR cold-start)
         }
         return out
     }

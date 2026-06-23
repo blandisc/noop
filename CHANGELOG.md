@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Tu recovery aparece desde la primera noche, aunque estrenes la banda / Your recovery shows from the very first night, even on a brand-new band.**
+  **ES** — Si estrenas la banda mientras tu Apple Watch ya venía midiendo, ya **no** verás «—» tus primeras noches: mientras la banda junta las 4 noches que necesita para calibrar su base, Cénit muestra un recovery **estimado** desde tu Apple Watch, con el sello **⌚** y su nivel de confianza. En cuanto tu banda calibra, el número **cambia solo** al de la banda y desaparece el ⌚ —esa ausencia es la señal de que ya es tu medición real—. Nunca se mezclan ni se promedian los dos. Sin historial en Apple Salud, sigue mostrando «calibrando».
+  **EN** — If you start a brand-new band while your Apple Watch was already measuring, you'll **no longer** see "—" your first nights: while the band gathers the 4 nights it needs to calibrate its baseline, Cénit shows an **estimated** recovery from your Apple Watch, with the **⌚** seal and its confidence level. The moment your band calibrates, the number **switches on its own** to the band's and the ⌚ disappears —that absence is the signal it's now your real reading—. The two are never mixed or averaged. Without Apple Health history, it still shows "calibrating".
+  ([Cenit/Data/Repository.swift](Cenit/Data/Repository.swift), [Cenit/Screens/RecoveryDetailScreen.swift](Cenit/Screens/RecoveryDetailScreen.swift))
+
 - **Edita una rutina sin buscarla: un botón ⋯ a la vista / Edit a routine without hunting for it: a visible ⋯ button.**
   **ES** — En **Entrenar → Mis rutinas**, cada rutina ahora muestra un botón **⋯** a la derecha (como ya lo tenían las carpetas) con **Editar rutina · Duplicar · Mover a… · Borrar rutina**. Editar ya existía, pero estaba escondido en el mantener-presionado; ahora está a un toque.
   **EN** — In **Train → My routines**, every routine now shows a **⋯** button on the right (like folders already did) with **Edit routine · Duplicate · Move to… · Delete routine**. Editing already existed, but it was hidden behind a long-press; now it's one tap away.
