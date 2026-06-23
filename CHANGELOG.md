@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **En el mapa muscular, lo que no has entrenado se ve fresco (verde) / In the muscle map, what you haven't trained shows fresh (green).**
+  **ES** — En **Cuerpo → «Qué entrenar hoy»**, un músculo que no has entrenado en la ventana ahora se ve **verde (fresco)** en vez de gris, y su etiqueta dice «fresco» igual que los demás. Antes había una inconsistencia: lo no entrenado salía gris pero la app lo llamaba «fresco». Ahora «fresco» = verde en todos lados (silueta, lista «Más cargados» y al tocar un músculo).
+  **EN** — In **Body → "What to train today"**, a muscle you haven't trained in the window now shows **green (fresh)** instead of gray, and its label says "fresh" like the rest. Before there was an inconsistency: untrained muscles were gray yet the app called them "fresh." Now "fresh" = green everywhere (silhouette, the "Most loaded" list, and when you tap a muscle).
+  ([Cenit/Screens/MuscleMapScreen.swift](Cenit/Screens/MuscleMapScreen.swift))
+
 - **Toca un ejercicio en el historial o la rutina para ver su progreso / Tap an exercise in your history or routine to see its progress.**
   **ES** — En el **detalle de un entrenamiento** (historial) y en la **rutina**, ahora puedes **tocar un ejercicio** para abrir su detalle con **Progreso** (peso máximo / 1RM / volumen) y **Records personales**. Antes solo se llegaba desde la biblioteca. Si un ejercicio no se reconoce, no queda como un toque muerto.
   **EN** — In a **workout's detail** (history) and in your **routine**, you can now **tap an exercise** to open its detail with **Progress** (max weight / 1RM / volume) and **Personal records**. Before, you could only reach it from the library. If an exercise isn't recognized, it isn't a dead tap.
