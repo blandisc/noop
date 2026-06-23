@@ -72,6 +72,8 @@ private struct PatronesLanding: View {
     @State private var showDisena = false
     /// «Relaciona dos métricas tú mismo» (§5) → the Compare overlay, the same screen as Cuerpo. FER (Patrones v2).
     @State private var showCompare = false
+    /// «Empezar de cero» confirmation — wipes the user-contributed journal + experiments. Irreversible.
+    @State private var showResetConfirm = false
     /// Generic info explainer (the ⓘ on a section). FER-312.
     @State private var info: BucleInfo? = nil
     /// The running experiment whose detail sheet is open (racha + effect chart). FER-462/2b.
@@ -102,6 +104,7 @@ private struct PatronesLanding: View {
                 confirmadoSection      // §4 · Confirmado · funciona en ti
                 aportaSection          // §5 · Aporta lo tuyo
                 expedienteSection      // §6 · Tu expediente
+                if hasContributed { resetFooter }
             }
             .padding(.horizontal, NoopMetrics.screenPadding)
             .padding(.top, 14)
@@ -160,6 +163,18 @@ private struct PatronesLanding: View {
             CompareView()
                 .instrumentoTheme(theme)
                 .environmentObject(repo)
+        }
+        .confirmationDialog("Start from scratch?", isPresented: $showResetConfirm, titleVisibility: .visible) {
+            Button("Delete what I logged", role: .destructive) {
+                Task {
+                    await repo.resetContributedPatrones()
+                    dismissedExperimentId = ""
+                    await load()
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This erases everything you contributed — your day journal and all your experiments (with their verdicts). The patterns detected from your body stay, and your imported WHOOP history is untouched. This can't be undone.")
         }
     }
 
@@ -963,6 +978,29 @@ private struct PatronesLanding: View {
             .foregroundStyle(theme.dataRecovery)
             .padding(.horizontal, 9).padding(.vertical, 3)
             .background(theme.dataRecovery.opacity(0.12), in: Capsule())
+    }
+
+    // MARK: «Empezar de cero» (reset what the user contributed)
+
+    /// True when there's anything the user contributed to clear (journal-derived levers, an experiment,
+    /// or a logged day) — so the reset footer only shows when it would do something.
+    private var hasContributed: Bool {
+        !curatedLevers.isEmpty || running != nil || finished != nil || journalAnswered > 0
+    }
+
+    /// A quiet, understated reset at the foot of the screen — destructive, so it opens a confirmation
+    /// that spells out exactly what's erased (and what isn't). Tertiary ink per the DNA (no loud color).
+    private var resetFooter: some View {
+        Button(role: .destructive) { showResetConfirm = true } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.counterclockwise").font(.system(size: 12, weight: .semibold))
+                Text("Start from scratch").font(StrandFont.footnote)
+            }
+            .foregroundStyle(theme.inkTertiary)
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 26)
     }
 
     /// An honest, dashed empty box for a section with no data yet (calibrating / pre-finding).

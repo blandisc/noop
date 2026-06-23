@@ -152,6 +152,17 @@ extension WhoopStore {
         }
     }
 
+    /// Delete EVERY journal answer for a source (`deviceId`). The «empezar de cero» reset clears the
+    /// native logging stream (`noop-journal`) without ever touching imported rows (a different source
+    /// id). Returns rows deleted.
+    @discardableResult
+    public func deleteAllJournal(deviceId: String) async throws -> Int {
+        try syncWrite { db in
+            try db.execute(sql: "DELETE FROM journal WHERE deviceId = ?", arguments: [deviceId])
+            return db.changesCount
+        }
+    }
+
     /// Upsert workouts. Natural key (deviceId, startTs, sport). Returns rows changed.
     ///
     /// Batched into multi-row INSERTs (≤70 rows / 910 bound vars per statement; 13 vars/row, SQLite's

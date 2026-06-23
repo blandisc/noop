@@ -602,6 +602,16 @@ final class Repository: ObservableObject {
         return out
     }
 
+    /// «Empezar de cero» (Patrones): wipe everything the user CONTRIBUTED — the native in-app journal
+    /// and every experiment (with its verdicts, so the derived proven levers clear too). It never touches
+    /// the imported WHOOP journal (a different source id) nor the biometric history the detected findings
+    /// are recomputed from — those aren't stored records, so they regenerate on their own. Irreversible.
+    func resetContributedPatrones() async {
+        guard let store = await ensureStore() else { return }
+        _ = try? await store.deleteAllJournal(deviceId: Self.journalDeviceId)
+        _ = try? await store.deleteAllExperiments(deviceId: Self.journalDeviceId)
+    }
+
     /// Start a 7-day experiment on a candidate lever. No-op (returns nil) if one already runs.
     @discardableResult
     func startExperiment(behavior: String, outcome: String, expectedSign: Int,

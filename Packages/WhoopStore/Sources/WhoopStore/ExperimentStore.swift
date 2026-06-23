@@ -87,6 +87,19 @@ extension WhoopStore {
         }
     }
 
+    // MARK: - Delete
+
+    /// Delete EVERY experiment for `deviceId` (running + completed + cancelled). The «empezar de cero»
+    /// reset uses this; it also clears the derived proven levers, since those come from the completed
+    /// rows. Returns rows deleted.
+    @discardableResult
+    public func deleteAllExperiments(deviceId: String) async throws -> Int {
+        try syncWrite { db in
+            try db.execute(sql: "DELETE FROM experiment WHERE deviceId = ?", arguments: [deviceId])
+            return db.changesCount
+        }
+    }
+
     // MARK: - Reads
 
     /// The current `running` experiment for `deviceId` (the most recently created one, if several
