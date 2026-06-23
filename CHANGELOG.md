@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **En Tendencias, tocar cualquier parte de un dato lo abre / In Trends, tapping anywhere on a number opens it.**
+  **ES** — Antes, en Tendencias, solo el número abría su detalle; tocar la mini-curva (la parte más grande) no hacía nada. Ahora **todo el recuadro del dato** —etiqueta, número y mini-curva— abre su hoja de detalle.
+  **EN** — Before, in Trends only the number opened its detail; tapping the mini-trend (the biggest part) did nothing. Now the **whole tile** — label, number and mini-trend — opens its detail sheet.
+  ([Cenit/Screens/CuerpoView.swift](Cenit/Screens/CuerpoView.swift))
+
 - **La tendencia de duración del sueño ahora tiene periodo y dos vistas / The sleep-duration trend now has a period selector and two views.**
   **ES** — En el Detalle de Sueño, «Tendencia de duración» pasó de una vista fija de 14 noches a la misma mecánica que tus vitales: un **selector de periodo (S / M / 3M / 6M / 1A)** que re-encuadra la gráfica, y un toggle **Media móvil ⇄ Rangos**. En «Media móvil» ves tu promedio de 7 noches sobre la banda óptima de **7–9 h**, con el **promedio del periodo y su cambio vs el periodo anterior** (verde cuando duermes más). En «Rangos» ves en qué banda (corta / óptima / larga) caen tus noches y cuántas. El resto del Detalle de Sueño no cambia.
   **EN** — In the Sleep detail, "Duration trend" went from a fixed 14-night view to the same mechanic as your vitals: a **period selector (W / M / 3M / 6M / 1Y)** that re-windows the chart, and a **Moving average ⇄ Ranges** toggle. In "Moving average" you see your 7-night average over the optimal **7–9 h** band, with the **period average and its change vs the previous period** (green when you sleep more). In "Ranges" you see which band (short / optimal / long) your nights fall in and how many. The rest of the Sleep detail is unchanged.
