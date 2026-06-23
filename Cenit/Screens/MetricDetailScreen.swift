@@ -321,38 +321,20 @@ struct MetricDetailScreen: View {
     /// The value that sets today's active level: the latest reading for the vitals; the latest COMPLETED day
     /// for steps (today is still a running total). nil when there's no reading. (FER-571)
     private var levelTodayValue: Double? {
-        guard spec.currentDayIncomplete else { return todayValue }
-        if let key = todayKey { return series.last(where: { $0.day != key })?.value }
-        return series.dropLast().last?.value
+        // Steps' today is a running total → use the latest COMPLETED day (the same `dropsIncompleteToday`
+        // rule `trendStatRows`/`trendComparisonSeries` apply); every other metric's today is final. (FER-571)
+        spec.currentDayIncomplete ? trendComparisonSeries.last?.value : todayValue
     }
 
     private func levelData(_ window: MetricWindow) -> LevelData? {
         guard let levels = levelLevels else { return nil }
         let values = trendStatRows(window).map(\.value)   // completed days (steps drops the in-progress today)
         let today = levelTodayValue
-        if let fm = fixedMetricForKey {
-            let c = MetricLevels.classification(for: fm, values: values, today: today)
-            return LevelData(levels: c.levels, counts: c.counts, total: c.total, todayIndex: c.activeIndex)
-        }
-        // HRV's custom (log-aware) levels: F6a's core classifier is private, so count with the same half-open
-        // [lower, upper) contract here. (FER-571)
-        let r = classifyLevels(values, today: today, levels: levels)
-        return LevelData(levels: levels, counts: r.counts, total: r.counts.reduce(0, +), todayIndex: r.activeIndex)
-    }
-
-    private func classifyLevels(_ values: [Double], today: Double?, levels: [MetricLevels.Level])
-        -> (counts: [Int], activeIndex: Int?) {
-        func idx(_ v: Double) -> Int {
-            for (i, l) in levels.enumerated() {
-                let aboveLo = l.lower.map { v >= $0 } ?? true
-                let belowHi = l.upper.map { v < $0 } ?? true
-                if aboveLo && belowHi { return i }
-            }
-            return max(0, levels.count - 1)
-        }
-        var counts = [Int](repeating: 0, count: levels.count)
-        for v in values { counts[idx(v)] += 1 }
-        return (counts, today.map(idx))
+        // Fixed metrics use F6a's per-metric thresholds; HRV passes its own log-derived levels. Both go
+        // through the same F6a classifier (half-open [lower, upper), counts sum to the window). (FER-571)
+        let c = fixedMetricForKey.map { MetricLevels.classification(for: $0, values: values, today: today) }
+            ?? MetricLevels.classification(values: values, today: today, levels: levels)
+        return LevelData(levels: c.levels, counts: c.counts, total: c.total, todayIndex: c.activeIndex)
     }
 
     /// The level the chart + phrase highlight: the user's selection, else today's. (FER-571)
