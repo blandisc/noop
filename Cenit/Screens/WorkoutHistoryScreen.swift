@@ -33,6 +33,14 @@ struct WorkoutHistoryScreen: View {
     @State private var routineNames: [String: String] = [:]
     @State private var volumes: [String: (volumeKg: Double, setCount: Int)] = [:]
     @State private var loaded = false
+    /// A just-deleted session + its sets, kept in memory so «Undo» can restore it intact (FER-527).
+    @State private var pendingUndo: DeletedSession? = nil
+
+    private struct DeletedSession: Identifiable {
+        let id = UUID()
+        let session: StrengthSession
+        let sets: [SetEntry]
+    }
 
     var body: some View {
         ScrollView {
@@ -50,6 +58,9 @@ struct WorkoutHistoryScreen: View {
         .background(theme.paper.ignoresSafeArea())
         // The detail push (`WorkoutSessionRoute`) is registered once on the Entrenar NavigationStack in
         // RootTabView (alongside the other train routes), so it isn't re-declared here.
+        // «Undo» toast after a delete (FER-527), same pattern as «Mis rutinas» (FER-491).
+        .overlay(alignment: .bottom) { if let d = pendingUndo { undoBanner(d) } }
+        .sensoryFeedback(trigger: pendingUndo?.id) { _, new in new != nil ? .warning : nil }
         .task { await load() }
     }
 
@@ -69,6 +80,11 @@ struct WorkoutHistoryScreen: View {
                     sessionCard(session)
                 }
                 .buttonStyle(.plain)
+                .contextMenu {
+                    Button(role: .destructive) { delete(session) } label: {
+                        Label("Delete workout", systemImage: "trash")
+                    }
+                }
             }
         }
     }
@@ -155,6 +171,47 @@ struct WorkoutHistoryScreen: View {
     private func route(for session: StrengthSession) -> WorkoutSessionRoute {
         WorkoutSessionRoute(id: session.id, startTs: session.startTs, endTs: session.endTs,
                             strain: session.strain, avgHr: session.avgHr, routineName: name(for: session))
+    }
+
+    // MARK: - Delete / undo (FER-527)
+
+    /// Read the session's sets (so an undo can restore them), delete it (the store recomputes the affected
+    /// PRs), reload, then show «Undo».
+    private func delete(_ session: StrengthSession) {
+        Task {
+            let sets = await repo.sessionSets(sessionId: session.id)
+            try? await repo.deleteSession(id: session.id)
+            await load()
+            withAnimation { pendingUndo = DeletedSession(session: session, sets: sets) }
+        }
+    }
+
+    private func undoDelete(_ d: DeletedSession) {
+        Task {
+            try? await repo.saveSession(d.session, sets: d.sets)   // re-saving re-derives its PRs
+            await load()
+            withAnimation { pendingUndo = nil }
+        }
+    }
+
+    private func undoBanner(_ d: DeletedSession) -> some View {
+        HStack(spacing: 12) {
+            Text("Workout deleted").font(StrandFont.subhead).foregroundStyle(theme.surface)
+            Spacer(minLength: 8)
+            Button { undoDelete(d) } label: {
+                Text("Undo").font(StrandFont.headline).foregroundStyle(theme.surface)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 18).padding(.vertical, 14)
+        .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+        .padding(.horizontal, NoopMetrics.screenPadding)
+        .padding(.bottom, 8)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+        .task(id: d.id) {
+            try? await Task.sleep(nanoseconds: 4_000_000_000)
+            withAnimation { if pendingUndo?.id == d.id { pendingUndo = nil } }
+        }
     }
 
     private func load() async {

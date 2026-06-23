@@ -81,6 +81,18 @@ extension Repository {
         return (try? await store.sessionVolumes()) ?? [:]
     }
 
+    /// Delete a completed session (+ its sets) and recompute the affected PRs (FER-527).
+    func deleteSession(id: String) async throws {
+        guard let store = await storeHandle() else { return }
+        try await store.deleteSession(id: id)
+    }
+
+    /// Restore a session deleted by «Undo» — re-saving re-derives its PRs (FER-527).
+    func saveSession(_ session: StrengthSession, sets: [SetEntry]) async throws {
+        guard let store = await storeHandle() else { return }
+        try await store.saveSession(session, sets: sets)
+    }
+
     // MARK: - History (per exercise)
 
     /// Completed work sets for one exercise with their session start time, oldest→newest — the raw
