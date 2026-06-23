@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La tendencia vuelve a «Ver tu historial» en Recuperación / The trend returns to "See your history" in Recovery.**
+  **ES** — En el detalle de **Recuperación**, dentro de **«Ver tu historial»** ahora ves —junto al calendario de 90 días— la **gráfica de tendencia** con su selector de periodo (S·M·3M·6M·1A·Todo) y la línea **«Media · periodo · valor · cambio % vs el periodo previo»** con su rango. El bloque **«Recuperación por nivel»** se conserva tal cual; la línea «Media» que vivía debajo de él se movió junto a la tendencia para no repetirla.
+  **EN** — In the **Recovery** detail, inside **"See your history"** you now see — next to the 90-day calendar — the **trend chart** with its period selector (W·M·3M·6M·1Y·All) and the **"Average · period · value · % change vs the previous period"** line with its range. The **"Recovery by level"** block stays exactly as is; the "Average" line that used to sit under it moved next to the trend so it isn't repeated.
+  ([Cenit/Screens/RecoveryDetailScreen.swift](Cenit/Screens/RecoveryDetailScreen.swift))
+
 - **El historial de duración del sueño recupera el toggle Media móvil / Rangos / Sleep's duration history regains the Moving average / Ranges toggle.**
   **ES** — En el Detalle de Sueño, la **Tendencia de duración** vuelve a ofrecer el toggle **Media móvil ⇄ Rangos** con su selector de periodo (S · M · 3M · 6M · 1A): «Media móvil» dibuja la media de 7 noches sobre la **banda óptima 7–9 h**, y «Rangos» clasifica tus noches (Corto / Suficiente / Óptimo / Extenso) marcando dónde caen. Bajo la gráfica sigues leyendo el promedio del periodo y su cambio vs el periodo previo. Sustituye la lista de niveles que se había colado ahí; el resto del Detalle de Sueño no cambia.
   **EN** — In the Sleep detail, the **Duration trend** offers the **Moving average ⇄ Ranges** toggle again, with its period selector (W · M · 3M · 6M · 1Y): "Moving average" draws the 7-night average over the **optimal 7–9 h band**, and "Ranges" classifies your nights (Short / Adequate / Optimal / Extended), marking where they land. Below the chart you still read the period average and its change vs the previous period. It replaces the levels list that had slipped in there; the rest of the Sleep detail is unchanged.
