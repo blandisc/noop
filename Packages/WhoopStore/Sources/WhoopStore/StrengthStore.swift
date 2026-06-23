@@ -162,12 +162,36 @@ extension WhoopStore {
         }
     }
 
-    /// Move one routine into a folder (or out, with `folderId == nil`). A pinpoint UPDATE — it does not
-    /// touch the routine's exercises/sets, unlike `saveRoutine` which rewrites them.
+    /// Move one routine into a folder (or out, with `folderId == nil`), landing it at the end of the
+    /// global order (`sortOrder = MAX+1`) so a drop drops it last in its new group (FER-526). A pinpoint
+    /// UPDATE — it does not touch the routine's exercises/sets, unlike `saveRoutine` which rewrites them.
     public func setRoutineFolder(routineId: String, folderId: String?) async throws {
         try syncWrite { db in
-            try db.execute(sql: "UPDATE routine SET folderId = ? WHERE id = ?",
-                           arguments: [folderId, routineId])
+            let maxOrder = try Int.fetchOne(db, sql: "SELECT MAX(sortOrder) FROM routine") ?? -1
+            try db.execute(sql: "UPDATE routine SET folderId = ?, sortOrder = ? WHERE id = ?",
+                           arguments: [folderId, maxOrder + 1, routineId])
+        }
+    }
+
+    /// Persist a new folder order: `sortOrder = index` per id (FER-526). One UPDATE per id in a
+    /// transaction; touches nothing else.
+    public func reorderFolders(_ idsInOrder: [String]) async throws {
+        try syncWrite { db in
+            for (idx, id) in idsInOrder.enumerated() {
+                try db.execute(sql: "UPDATE routineFolder SET sortOrder = ? WHERE id = ?", arguments: [idx, id])
+            }
+        }
+    }
+
+    /// Persist a new routine order: `sortOrder = global index` per id (FER-526). `idsInOrder` is the full
+    /// displayed order (folders in order → each folder's routines → «Sin carpeta» last). The display groups
+    /// by folderId, so a global index is enough — it only has to be monotonic within each group. Only
+    /// touches `routine.sortOrder` — never folderId, routineExercise or routineSet.
+    public func reorderRoutines(_ idsInOrder: [String]) async throws {
+        try syncWrite { db in
+            for (idx, id) in idsInOrder.enumerated() {
+                try db.execute(sql: "UPDATE routine SET sortOrder = ? WHERE id = ?", arguments: [idx, id])
+            }
         }
     }
 

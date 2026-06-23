@@ -33,6 +33,18 @@ extension Repository {
         try await store.deleteRoutine(id: id)
     }
 
+    // MARK: - Reorder (FER-526)
+
+    func reorderFolders(_ idsInOrder: [String]) async throws {
+        guard let store = await storeHandle() else { return }
+        try await store.reorderFolders(idsInOrder)
+    }
+
+    func reorderRoutines(_ idsInOrder: [String]) async throws {
+        guard let store = await storeHandle() else { return }
+        try await store.reorderRoutines(idsInOrder)
+    }
+
     // MARK: - Exercises (bundled catalog + user-created)
 
     /// The full exercise list a library screen browses: the bundled seed catalog merged with the

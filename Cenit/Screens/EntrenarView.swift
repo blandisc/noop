@@ -74,6 +74,10 @@ private struct EntrenarLanding: View {
     /// The folder being renamed (drives the rename alert) + its draft name.
     @State private var renameFolder: RoutineFolder? = nil
     @State private var renameText = ""
+    /// Which drop target is currently highlighted while dragging (FER-526). A folder id, or the
+    /// `unfiledDropID` sentinel for the «Sin carpeta» section.
+    @State private var dropTarget: String? = nil
+    private static let unfiledDropID = "__unfiled__"
 
     /// Today's recovery (0–100), nil until a score exists. Drives whether the band shows.
     private var recovery: Double? { repo.today?.recovery }
@@ -223,7 +227,17 @@ private struct EntrenarLanding: View {
                 }
                 if !folders.isEmpty && !unfiled.isEmpty {
                     Text("Unfiled").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 14).padding(.bottom, 2)
+                        .padding(.horizontal, dropTarget == Self.unfiledDropID ? 10 : 0)
+                        .background(dropTarget == Self.unfiledDropID ? theme.surface : .clear,
+                                    in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .overlay { if dropTarget == Self.unfiledDropID {
+                            RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(theme.ink, lineWidth: 1.5) } }
+                        .animation(.snappy, value: dropTarget)
+                        .contentShape(Rectangle())
+                        .dropDestination(for: String.self) { items, _ in handleDrop(onFolder: nil, items) }
+                            isTargeted: { setDropTarget(Self.unfiledDropID, $0) }
                 }
                 routineList(unfiled)
 
@@ -250,7 +264,8 @@ private struct EntrenarLanding: View {
     /// A folder section header: a folder glyph, its name + routine count, and a «⋯» menu to rename or
     /// delete it (deleting keeps its routines, they fall to «Sin carpeta»).
     private func folderHeader(_ f: RoutineFolder, count: Int) -> some View {
-        HStack(spacing: 9) {
+        let targeted = dropTarget == f.id
+        return HStack(spacing: 9) {
             Image(systemName: "folder").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
             Text(f.name).font(StrandFont.body).foregroundStyle(theme.ink)
             Text("· \(count)").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
@@ -264,6 +279,16 @@ private struct EntrenarLanding: View {
             }
         }
         .padding(.top, 12).padding(.bottom, 2)
+        .padding(.horizontal, targeted ? 10 : 0)
+        .background(targeted ? theme.surface : .clear, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay { if targeted {
+            RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(theme.ink, lineWidth: 1.5) } }
+        .animation(.snappy, value: targeted)
+        .contentShape(Rectangle())
+        // Drag the header to reorder folders; drop a routine (or another folder) onto it (FER-526).
+        .draggable("f:\(f.id)")
+        .dropDestination(for: String.self) { items, _ in handleDrop(onFolder: f.id, items) }
+            isTargeted: { setDropTarget(f.id, $0) }
     }
 
     private func actionRow(_ symbol: String, _ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
@@ -316,6 +341,66 @@ private struct EntrenarLanding: View {
                 Button(role: .destructive) { delete(r) } label: { Label("Delete routine", systemImage: "trash") }
             }
         }
+        // Drag a routine to move it into a folder (drop on a folder header) or reorder it (drop on a row).
+        // Long-press-drag is distinct from the FER-491 horizontal swipe and the tap-to-open. (FER-526)
+        .draggable("r:\(r.id)")
+        .dropDestination(for: String.self) { items, _ in handleDrop(onRoutine: r, items) }
+    }
+
+    // MARK: - Drag & drop (FER-526)
+
+    /// Parse a drag payload «r:<id>» / «f:<id>».
+    private func dragID(_ s: String, _ prefix: Character) -> String? {
+        guard let first = s.first, first == prefix, s.dropFirst().first == ":" else { return nil }
+        return String(s.dropFirst(2))
+    }
+
+    private func setDropTarget(_ id: String, _ targeted: Bool) {
+        if targeted { dropTarget = id } else if dropTarget == id { dropTarget = nil }
+    }
+
+    /// The full displayed routine order: folders in order → each folder's routines → «Sin carpeta» last.
+    private func flattenedRoutineIds() -> [String] {
+        let byFolder = routinesByFolder
+        var ids = folders.flatMap { (byFolder[$0.id] ?? []).map(\.id) }
+        ids += (byFolder[nil] ?? []).map(\.id)
+        return ids
+    }
+
+    /// Drop onto a folder header (or «Sin carpeta» with `folderId == nil`): a routine moves there; a folder
+    /// reorders before this one.
+    private func handleDrop(onFolder folderId: String?, _ items: [String]) -> Bool {
+        dropTarget = nil
+        guard let item = items.first else { return false }
+        if let rid = dragID(item, "r") {
+            if let r = routines.first(where: { $0.id == rid }) { move(r, to: folderId) }
+            return true
+        }
+        if let fid = dragID(item, "f"), let targetFolderId = folderId {
+            reorderFolder(fid, before: targetFolderId)
+            return true
+        }
+        return false
+    }
+
+    /// Drop a routine onto another routine row → reorder it just before the target in the global order.
+    private func handleDrop(onRoutine target: Routine, _ items: [String]) -> Bool {
+        guard let item = items.first, let rid = dragID(item, "r"), rid != target.id else { return false }
+        var order = flattenedRoutineIds()
+        order.removeAll { $0 == rid }
+        guard let idx = order.firstIndex(of: target.id) else { return false }
+        order.insert(rid, at: idx)
+        Task { try? await repo.reorderRoutines(order); await load() }
+        return true
+    }
+
+    private func reorderFolder(_ draggedId: String, before targetId: String) {
+        guard draggedId != targetId else { return }
+        var order = folders.map(\.id)
+        order.removeAll { $0 == draggedId }
+        guard let idx = order.firstIndex(of: targetId) else { return }
+        order.insert(draggedId, at: idx)
+        Task { try? await repo.reorderFolders(order); await load() }
     }
 
     // MARK: - Delete / undo (FER-491)

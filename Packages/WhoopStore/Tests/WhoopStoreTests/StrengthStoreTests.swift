@@ -100,6 +100,54 @@ final class StrengthStoreTests: XCTestCase {
         XCTAssertEqual(back.first?.folderId, "f1")
     }
 
+    // MARK: - Reorder (FER-526)
+
+    /// `reorderFolders` persists the given order (sortOrder = index), and `routineFolders()` returns it.
+    func testReorderFoldersPersists() async throws {
+        let store = try await WhoopStore.inMemory()
+        try await store.saveFolder(RoutineFolder(id: "a", name: "A", sortOrder: 0))
+        try await store.saveFolder(RoutineFolder(id: "b", name: "B", sortOrder: 1))
+        try await store.saveFolder(RoutineFolder(id: "c", name: "C", sortOrder: 2))
+        try await store.reorderFolders(["c", "a", "b"])
+        let back = try await store.routineFolders()
+        XCTAssertEqual(back.map(\.id), ["c", "a", "b"])
+    }
+
+    /// `reorderRoutines` persists the global order and never rewrites the routines' exercises/sets (FER-492).
+    func testReorderRoutinesPersistsAndKeepsExercises() async throws {
+        let store = try await WhoopStore.inMemory()
+        for i in 0..<3 {
+            let ex = [RoutineExercise(id: "re\(i)", routineId: "rt\(i)", exerciseId: "ex", position: 0,
+                                      targetSets: 3, sets: [RoutineSet(position: 0, kind: .work, reps: 8, weightKg: 50)])]
+            try await store.saveRoutine(Routine(id: "rt\(i)", name: "R\(i)", createdTs: 0, updatedTs: 0), exercises: ex)
+        }
+        try await store.reorderRoutines(["rt2", "rt0", "rt1"])
+        let back = try await store.routines()
+        XCTAssertEqual(back.map(\.id), ["rt2", "rt0", "rt1"])
+        // The moved routine's per-set plan survives the reorder.
+        let sets = try await store.routineExercises(routineId: "rt2").first?.sets
+        XCTAssertEqual(sets?.count, 1)
+        XCTAssertEqual(sets?.first?.reps, 8)
+    }
+
+    /// Moving a routine to a folder lands it at the end of the global order (sortOrder = max+1) and keeps
+    /// its exercises.
+    func testMoveToFolderLandsAtEndAndKeepsExercises() async throws {
+        let store = try await WhoopStore.inMemory()
+        try await store.saveFolder(RoutineFolder(id: "f1", name: "Empuje", sortOrder: 0))
+        for i in 0..<3 {
+            let ex = [RoutineExercise(id: "re\(i)", routineId: "rt\(i)", exerciseId: "ex", position: 0, targetSets: 3)]
+            try await store.saveRoutine(Routine(id: "rt\(i)", name: "R\(i)", createdTs: 0, updatedTs: 0), exercises: ex)
+        }
+        try await store.reorderRoutines(["rt0", "rt1", "rt2"])   // sortOrder 0,1,2
+        try await store.setRoutineFolder(routineId: "rt0", folderId: "f1")
+        let back = try await store.routines()
+        XCTAssertEqual(back.first(where: { $0.id == "rt0" })?.folderId, "f1")
+        XCTAssertEqual(back.last?.id, "rt0", "moved routine lands last in the global order")
+        let exCount = try await store.routineExercises(routineId: "rt0").count
+        XCTAssertEqual(exCount, 1)
+    }
+
     func testRoutineRoundTrip() async throws {
         let store = try await WhoopStore.inMemory()
         let r = Routine(id: "rt1", name: "Día de empuje", tag: "Empuje", createdTs: 100, updatedTs: 100)
