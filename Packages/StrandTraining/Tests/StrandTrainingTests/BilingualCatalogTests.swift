@@ -54,6 +54,15 @@ final class BilingualCatalogTests: XCTestCase {
         XCTAssertEqual(custom.displayCues(localized: true), ["paso uno"])
     }
 
+    func testEveryAliasPointsToACatalogId() {
+        // FER-522: every curated synonym must target a real catalog exercise (a typo'd id would silently
+        // never match). The table is non-empty.
+        XCTAssertFalse(ExerciseAliases.all.isEmpty, "the alias table should be bundled and non-empty")
+        for (alias, id) in ExerciseAliases.all {
+            XCTAssertNotNil(ExerciseCatalog.byID(id), "alias '\(alias)' points to unknown id '\(id)'")
+        }
+    }
+
     func testMuscleVocabularyCoversEveryCatalogMuscle() {
         let used = Set(ExerciseCatalog.all.flatMap { $0.primaryMuscles + $0.secondaryMuscles })
         for muscle in used {

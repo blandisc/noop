@@ -240,6 +240,20 @@ final class WorkoutProgramImporterTests: XCTestCase {
                  primaryMuscles: [], secondaryMuscles: [], cues: [])
     }
 
+    func testReconcilerMatchesCuratedSynonyms() {
+        // FER-522: a common variant that is neither the exact catalog name nor an id still resolves via
+        // the curated alias table — in Spanish or English, accents folded.
+        let r = WorkoutExerciseReconciler(known: ExerciseCatalog.all)
+        XCTAssertEqual(r.resolve(we("press plano"))?.id, "Barbell_Bench_Press_-_Medium_Grip")
+        XCTAssertEqual(r.resolve(we("flat bench press"))?.id, "Barbell_Bench_Press_-_Medium_Grip")
+        XCTAssertEqual(r.resolve(we("Jalón Dorsal"))?.id, "Wide-Grip_Lat_Pulldown")   // case + accents folded
+        XCTAssertEqual(r.resolve(we("sentadilla profunda"))?.id, "Barbell_Full_Squat")
+        XCTAssertEqual(r.resolve(we("desplantes"))?.id, "Dumbbell_Lunges")           // es-MX variant
+        XCTAssertNil(r.resolve(we("ejercicio que no existe en ningún lado")))         // no id/name/alias
+    }
+
+    private func we(_ name: String) -> WorkoutExercise { WorkoutExercise(name: name, sets: 1) }
+
     func testReconcilerMatchesSpanishAndEnglishNames() {
         // An exercise that carries both names (catalog entry, FER-501) matches a plan written in
         // either language; an exercise with only an English name still matches English.
