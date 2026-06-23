@@ -60,10 +60,6 @@ struct MetricDetailScreen: View {
     /// the DB-free screen can't reproduce timezone-for-timezone). Lets the trend figures drop the
     /// in-progress current day for a cumulative metric (steps). nil → nothing is dropped. (FER-264)
     var todayKey: String? = nil
-    /// «See more in Trends» action for the F6b level pattern (FER-571). The caller routes to the Tendencias
-    /// tab (`tabRouter.select(.body)`) or, when the detail is already opened FROM Tendencias, a no-op (the
-    /// link just dismisses back to it). `nil` hides the link. The screen dismisses itself after calling it.
-    var onSeeTrends: (() -> Void)? = nil
 
     enum Depth { case focus, full }
 
@@ -76,11 +72,7 @@ struct MetricDetailScreen: View {
         var restingHR: Double?
     }
 
-    /// Dismisses the sheet from the F6b nav close button and the «See more in Trends» link. (FER-571)
     @Environment(\.dismiss) private var dismiss
-    /// The level the user is exploring in the F6b levels list — `nil` shows today's level. Tapping a row
-    /// highlights its band on the chart, dims the rest and re-reads the phrase; tapping it again clears. (FER-571)
-    @State private var selectedLevelIndex: Int? = nil
     @State private var range: ExploreRange = .month
     /// Which inline disclosure is open (one at a time per sheet): `"band"`, `"stat:<slot>"` or `"quemueve"`.
     /// nil = none. Replaces the per-block ⓘ `InfoAccordion`s for the redesigned vitals — the whole datum is
@@ -111,15 +103,6 @@ struct MetricDetailScreen: View {
         ["hrv", "rhr", "resp_rate", "spo2", "heart_rate"].contains(spec.descriptor.key)
     }
 
-    /// The five metrics the F6b level pattern (FER-571) covers — the four narrative vitals MINUS Heart Rate
-    /// (which keeps its intraday curve) PLUS Steps. They render nav → range → line chart → «{level} · N días»
-    /// → tappable levels list → «See more in Trends», dropping the prom/mín/máx/último stat strip and the
-    /// old hero/inline-band. Recovery/Strain/Stress/Sleep have their own screens → F6c. (FER-571)
-    /// FER-592: el dueño decidió volver al **detalle rico del handoff** (B) para los vitales — el handoff
-    /// NO tiene patrón de niveles. Se restauró el cuerpo rico (revert de FER-579) y se apaga la ruta de
-    /// niveles aquí. La infra `MetricLevels`/`MetricLevelsExplorer` sigue viva para las pantallas own-shaped.
-    private var usesLevels: Bool { false }
-
     // MARK: - Depth → visible blocks
 
     /// `.full` shows everything the spec declares; `.focus` shows only the day-photo subset.
@@ -142,9 +125,6 @@ struct MetricDetailScreen: View {
         let window = MetricWindowMath.make(parsedSeries, selected: range)
         return ScrollView {
             VStack(alignment: .leading, spacing: 22) {
-                if usesLevels {
-                    levelPatternBody(window)
-                } else {
                 hero
                 if loaded {
                     // Heart Rate's intraday path has no "N/7 nights" calibration — each block shows its
@@ -166,7 +146,6 @@ struct MetricDetailScreen: View {
                     }
                 } else {
                     loadingWell(height: 160)
-                }
                 }
             }
             .padding(NoopMetrics.screenPadding)
@@ -273,332 +252,6 @@ struct MetricDetailScreen: View {
     /// A subtle 1px rule between blocks (token-only, no hex). (FER-216)
     private var blockDivider: some View {
         Rectangle().fill(theme.hairline).frame(height: 1)
-    }
-
-    // MARK: - Detalle de Métrica · level pattern (FER-571 / F6b)
-    //
-    // The five `usesLevels` metrics (HRV / Resting HR / Blood oxygen / Respiration / Steps) replace the old
-    // hero + inline band + prom/mín/máx/último stat strip with: a nav (close · serif name · ⓘ method · source
-    // chip), a range control, a RAW-value line chart (head point = today, the highlighted level's band shaded),
-    // a «{level} · N días» phrase, a TAPPABLE levels list (tap a row → highlight its band, dim the rest, re-read
-    // the phrase; today keeps a ring while you explore), and a «See more in Trends» link. Levels + counts come
-    // from F6a (`MetricLevels`); HRV uses its personal, log-aware cut points (multiplicative band in ms).
-
-    /// One render's level classification: the ordered levels, per-level day counts, the total counted, and
-    /// the level today's reading sits in (the «· today» row + ring). (FER-571)
-    private struct LevelData {
-        let levels: [MetricLevels.Level]
-        let counts: [Int]
-        let total: Int
-        let todayIndex: Int?
-    }
-
-    /// The F6a fixed metric for this key, or nil for HRV (which uses personal relative levels). (FER-571)
-    private var fixedMetricForKey: MetricLevels.FixedMetric? {
-        switch spec.descriptor.key {
-        case "rhr":       return .restingHR
-        case "spo2":      return .bloodOxygen
-        case "resp_rate": return .respiration
-        case "steps":     return .steps
-        default:          return nil
-        }
-    }
-
-    /// The ordered levels for this metric: F6a's fixed thresholds, or HRV's personal cut points. HRV is
-    /// log-normal, so the cuts are derived in LOG space via `Baselines.normalRange` (which back-transforms
-    /// exp(lnBaseline ± σ) to ms) — the band is multiplicative, not a raw linear ±SD, exactly as F6a's
-    /// `relativeLevels` note prescribes. nil for HRV until there's a baseline. (FER-571 · Plews 2013)
-    private var levelLevels: [MetricLevels.Level]? {
-        if let fm = fixedMetricForKey { return MetricLevels.levels(for: fm) }
-        guard spec.descriptor.key == "hrv", let s = baselineState, s.nValid >= 1 else { return nil }
-        let band = Baselines.normalRange(s)
-        return [
-            MetricLevels.Level(key: "below",  lower: nil, upper: band.lowerBound),
-            MetricLevels.Level(key: "inBase", lower: band.lowerBound, upper: band.upperBound),
-            MetricLevels.Level(key: "above",  lower: band.upperBound, upper: nil),
-        ]
-    }
-
-    /// The value that sets today's active level: the latest reading for the vitals; the latest COMPLETED day
-    /// for steps (today is still a running total). nil when there's no reading. (FER-571)
-    private var levelTodayValue: Double? {
-        // Steps' today is a running total → use the latest COMPLETED day (the same `dropsIncompleteToday`
-        // rule `trendStatRows`/`trendComparisonSeries` apply); every other metric's today is final. (FER-571)
-        spec.currentDayIncomplete ? trendComparisonSeries.last?.value : todayValue
-    }
-
-    private func levelData(_ window: MetricWindow) -> LevelData? {
-        guard let levels = levelLevels else { return nil }
-        let values = trendStatRows(window).map(\.value)   // completed days (steps drops the in-progress today)
-        let today = levelTodayValue
-        // Fixed metrics use F6a's per-metric thresholds; HRV passes its own log-derived levels. Both go
-        // through the same F6a classifier (half-open [lower, upper), counts sum to the window). (FER-571)
-        let c = fixedMetricForKey.map { MetricLevels.classification(for: $0, values: values, today: today) }
-            ?? MetricLevels.classification(values: values, today: today, levels: levels)
-        return LevelData(levels: c.levels, counts: c.counts, total: c.total, todayIndex: c.activeIndex)
-    }
-
-    /// The level the chart + phrase highlight: the user's selection, else today's. (FER-571)
-    private func displayLevelIndex(_ data: LevelData) -> Int? {
-        if let s = selectedLevelIndex, data.levels.indices.contains(s) { return s }
-        return data.todayIndex
-    }
-
-    // MARK: Level pattern — views
-
-    @ViewBuilder private func levelPatternBody(_ window: MetricWindow) -> some View {
-        levelNav
-        if loaded {
-            if let data = levelData(window) {
-                VStack(alignment: .leading, spacing: 22) {
-                    levelRangeControl(window)
-                    levelPhrase(data)
-                    levelChart(window, data)
-                    levelList(data)
-                    if spec.descriptor.key == "hrv" { hrvBaseNote }
-                    if let onSeeTrends { levelSeeMore(onSeeTrends) }
-                    if visibleBlocks.contains(.method), let method = spec.info.method {
-                        methodDisclosure(method)
-                    }
-                }
-            } else {
-                // HRV with no baseline yet (or no levels): the same calibration well the rest of the screen uses.
-                calibrationBlock
-            }
-        } else {
-            loadingWell(height: 200)
-        }
-    }
-
-    private var levelNav: some View {
-        HStack(spacing: NoopMetrics.space2) {
-            Button { dismiss() } label: {
-                Image(systemName: "chevron.left").font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(theme.inkSecondary).frame(width: 28, height: 28)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Close")
-            Text(levelNavTitle).font(StrandFont.serif(24)).foregroundStyle(theme.ink)
-            if spec.info.method != nil {
-                Button { withAnimation(.easeInOut(duration: 0.25)) { methodExpanded.toggle() } } label: {
-                    Image(systemName: "info.circle").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("How it's calculated")
-            }
-            Spacer(minLength: 8)
-            levelSourceChip
-        }
-    }
-
-    /// The nav source chip (F4 / FER-552): Apple when today's datum came from Apple Health, else the band —
-    /// Steps are always Apple-sourced. The «calculated» mode is for the derived metrics (none of the five here).
-    @ViewBuilder private var levelSourceChip: some View {
-        if loaded {
-            if todayFromApple || spec.descriptor.key == "steps" {
-                InlineFlagChip("Apple", color: theme.dataSpO2)
-            } else {
-                InlineFlagChip("Band", color: theme.dataRecovery)
-            }
-        }
-    }
-
-    private var levelNavTitle: LocalizedStringKey {
-        switch spec.descriptor.key {
-        case "hrv":        return "HRV"
-        case "rhr":        return "Resting HR"
-        case "spo2":       return "Blood oxygen"
-        case "resp_rate":  return "Respiratory rate"
-        case "steps":      return "Steps"
-        default:           return ""
-        }
-    }
-
-    private func levelRangeControl(_ window: MetricWindow) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            SegmentedPillControl(ExploreRange.allCases, selection: $range, theme: theme) { $0.label }
-                .onChange(of: range) { _ in selectedLevelIndex = nil }
-            if window.fellBack {
-                Text("Showing the last \(window.rows.count) days")
-                    .font(StrandFont.footnote).foregroundStyle(theme.warning)
-            }
-        }
-    }
-
-    @ViewBuilder private func levelPhrase(_ data: LevelData) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            if let i = displayLevelIndex(data) {
-                Text(levelLabel(data.levels[i].key)).font(StrandFont.title1).foregroundStyle(metricHue)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text("\(data.counts[i]) of your last \(data.total) days")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-            } else {
-                Text("No reading today").font(StrandFont.title1).foregroundStyle(theme.inkTertiary)
-                Text("\(data.total) days with data in this range")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-            }
-        }
-    }
-
-    @ViewBuilder private func levelChart(_ window: MetricWindow, _ data: LevelData) -> some View {
-        let highlight = displayLevelIndex(data)
-        MetricTrendChart(
-            range: $range, window: window, theme: theme, showsSelector: false,
-            style: .init(
-                smoothing: nil,                          // RAW daily values so the dots fall in the bands the counts read
-                gradient: chartGradient,
-                showsArea: false,
-                height: 168,
-                valueRange: { levelChartDomain(data, values: $0) },
-                valueFormat: { "\(fmt($0)) \(unit)" },
-                bands: { _ in levelChartBands(data, highlight: highlight) },
-                bandColor: { _ in metricHue },
-                yAxisValues: levelYTicks(data),
-                yTickCount: 5,
-                marksLastPoint: data.todayIndex != nil,
-                markedPointHollow: selectedLevelIndex != nil && selectedLevelIndex != data.todayIndex,
-                markedPointRingFill: theme.paper,
-                bandLabelsHidden: true,                  // the levels are named in the list, not on the plot
-                accessibilityLabel: chartAccessibilityLabel
-            )
-        ) {
-            emptyWell(text: "No readings in this range.")
-        }
-        if spec.currentDayIncomplete, window.values.count > 1 {
-            Text("The line includes today, still in progress; the figures below use completed days only.")
-                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    private func levelChartBands(_ data: LevelData, highlight: Int?) -> [TrendBand] {
-        data.levels.enumerated().map { i, l in
-            TrendBand(label: "", lower: l.lower, upper: l.upper, isActive: i == highlight)
-        }
-    }
-
-    /// The chart's Y domain: SpO₂'s fixed clinical 88…100, else the level thresholds + the plotted line's
-    /// own min/max with a little breath (steps anchor at 0 — an absolute count). (FER-571)
-    private func levelChartDomain(_ data: LevelData, values: [Double]) -> ClosedRange<Double> {
-        if let d = spec.chartDomain { return d }
-        let bounds = data.levels.flatMap { [$0.lower, $0.upper].compactMap { $0 } }
-        let pool = bounds + values
-        guard let lo0 = pool.min(), let hi0 = pool.max(), hi0 > lo0 else {
-            let v = values.first ?? bounds.first ?? 0
-            return (v - 1)...(v + 1)
-        }
-        let steps = spec.descriptor.key == "steps"
-        let lo = steps ? 0 : lo0
-        let span = max(hi0 - lo, 0.0001)
-        return (lo - (steps ? 0 : span * 0.1))...(hi0 + span * 0.12)
-    }
-
-    private func levelYTicks(_ data: LevelData) -> [Double]? {
-        let t = Set(data.levels.flatMap { [$0.lower, $0.upper].compactMap { $0 } }).sorted()
-        return t.isEmpty ? nil : t
-    }
-
-    private func levelList(_ data: LevelData) -> some View {
-        let highlight = displayLevelIndex(data)
-        return VStack(spacing: 0) {
-            ForEach(Array(data.levels.enumerated()), id: \.offset) { i, level in
-                levelRow(index: i, level: level, data: data, highlight: highlight)
-                if i < data.levels.count - 1 {
-                    Divider().overlay(theme.hairline).padding(.leading, 34)
-                }
-            }
-        }
-    }
-
-    private func levelRow(index i: Int, level: MetricLevels.Level, data: LevelData, highlight: Int?) -> some View {
-        let isHighlight = i == highlight
-        let isToday = i == data.todayIndex
-        return Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                selectedLevelIndex = (selectedLevelIndex == i) ? nil : i   // tap the highlighted row → back to today
-            }
-        } label: {
-            HStack(spacing: 10) {
-                levelDot(isHighlight: isHighlight, isToday: isToday)
-                Text(levelLabel(level.key)).font(StrandFont.subhead)
-                    .foregroundStyle(isHighlight ? theme.ink : theme.inkSecondary)
-                if isToday {
-                    Text("· today").font(StrandFont.footnote).foregroundStyle(metricHue)
-                }
-                Spacer(minLength: 8)
-                Text(levelRangeText(level)).font(StrandFont.captionNumber)
-                    .foregroundStyle(isHighlight ? metricHue : theme.inkTertiary)
-                Text(BandSummaryCopy.countLabel(data.counts[i], nightly: false))
-                    .font(StrandFont.captionNumber)
-                    .foregroundStyle(isHighlight ? metricHue : theme.inkTertiary.opacity(0.85))
-                    .frame(minWidth: 50, alignment: .trailing)
-            }
-            .padding(.horizontal, 12).padding(.vertical, 11)
-            .frame(maxWidth: .infinity)
-            .background(isHighlight ? metricHue.opacity(0.10) : Color.clear,
-                        in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .combine)
-        .accessibilityHint(Text("Highlights this level on the chart"))
-    }
-
-    /// The row's dot: filled in the metric hue when highlighted, a hollow RING when it's today's level but
-    /// you're exploring another (matching the chart's hollow head), else a quiet dot. (FER-571 · option A)
-    @ViewBuilder private func levelDot(isHighlight: Bool, isToday: Bool) -> some View {
-        if isToday && !isHighlight {
-            Circle().strokeBorder(metricHue, lineWidth: 2).frame(width: 8, height: 8)
-        } else {
-            Circle().fill(isHighlight ? metricHue : theme.inkTertiary.opacity(0.45)).frame(width: 8, height: 8)
-        }
-    }
-
-    private var hrvBaseNote: some View {
-        Text("Your levels come from your own baseline, not a table.")
-            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            .fixedSize(horizontal: false, vertical: true)
-    }
-
-    private func levelSeeMore(_ action: @escaping () -> Void) -> some View {
-        Button {
-            action(); dismiss()
-        } label: {
-            HStack(spacing: 5) {
-                Text("See more in Trends").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(theme.inkTertiary)
-            }
-        }
-        .buttonStyle(.plain)
-    }
-
-    /// A level's numeric range, half-open `[lower, upper)`: «< hi» (open below), «≥ lo» (open above), «lo–hi».
-    private func levelRangeText(_ level: MetricLevels.Level) -> String {
-        switch (level.lower, level.upper) {
-        case let (nil, hi?):  return "< \(fmt(hi))"
-        case let (lo?, nil):  return "≥ \(fmt(lo))"
-        case let (lo?, hi?):  return "\(fmt(lo))–\(fmt(hi))"
-        case (nil, nil):      return ""
-        }
-    }
-
-    /// The es-MX/en label for an F6a level key. (FER-571)
-    private func levelLabel(_ key: String) -> LocalizedStringKey {
-        switch key {
-        case "athlete":    return "Athlete"
-        case "excellent":  return "Excellent"
-        case "normal":     return "Normal"
-        case "elevated":   return "Elevated"
-        case "low":        return "Low"
-        case "sedentary":  return "Sedentary"
-        case "active":     return "Active"
-        case "veryActive": return "Very active"
-        case "below":      return "Below your base"
-        case "inBase":     return "In your base"
-        case "above":      return "Above your base"
-        default:           return LocalizedStringKey(key)
-        }
     }
 
     // MARK: - Derived series
