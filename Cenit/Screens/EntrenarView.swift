@@ -29,6 +29,9 @@ struct EntrenarView: View {
     var openHistory: () -> Void
     /// Push the weekly plan editor (FER-533) — opened from «Tu plan · Editar» and the empty state.
     var openWeeklyPlan: () -> Void
+    /// Push «Mis rutinas» (the routine library) — the «Empezar» chooser's «Routine» falls back here on a
+    /// rest day, so a day with no assigned routine can still pick one to start or build a new one (FER-558).
+    var openRoutines: () -> Void
     /// Push a completed strength session's detail (from a «done» day in the week strip).
     var openWorkoutSession: (WorkoutSessionRoute) -> Void
 
@@ -36,7 +39,7 @@ struct EntrenarView: View {
         EntrenarLanding(openRoutine: openRoutine, openLibrary: openLibrary,
                         openBreathe: openBreathe, openIntervals: openIntervals, openDiet: openDiet,
                         openHistory: openHistory, openWeeklyPlan: openWeeklyPlan,
-                        openWorkoutSession: openWorkoutSession)
+                        openRoutines: openRoutines, openWorkoutSession: openWorkoutSession)
             .instrumentoTheme(.base)
     }
 }
@@ -54,6 +57,7 @@ private struct EntrenarLanding: View {
     var openDiet: () -> Void
     var openHistory: () -> Void
     var openWeeklyPlan: () -> Void
+    var openRoutines: () -> Void
     var openWorkoutSession: (WorkoutSessionRoute) -> Void
 
     @State private var loaded = false
@@ -302,26 +306,40 @@ private struct EntrenarLanding: View {
     // MARK: - ④ Suggestion (engine is FER-532 — TrainingRegulation.lightAlternative)
     //
     // A CONTEXTUAL lighter alternative, derived from today's recovery against your personal baseline
-    // (same input the recovery line uses). It appears ONLY when there is something to suggest — recovery
-    // below normal → a gentler option, above normal → an optional add-on — and HIDES within the normal
-    // band or with no signal. Always advisory: it never blocks training, «tú decides».
+    // (same input the recovery line uses). When recovery is below normal → a gentler option, above normal
+    // → an optional add-on; both are tappable, advisory, never a block. Within the normal band or with no
+    // signal the engine returns nil and the row falls back to an INFORMATIONAL placeholder (FER-559) that
+    // explains the row will surface a suggestion once there's a signal — not tappable, no destination.
 
     @ViewBuilder private var suggestionRow: some View {
         if let alt = TrainingRegulation.lightAlternative(recovery: recovery) {
             Button { suggestionAction(alt) } label: {
-                HStack(spacing: 11) {
-                    Image(systemName: suggestionIcon(alt)).font(.system(size: 17)).foregroundStyle(theme.inkTertiary)
-                    Text(suggestionLabel(alt))
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    Spacer(minLength: 8)
-                    Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkDim)
-                }
-                .padding(.horizontal, 15).padding(.vertical, 13)
-                .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [3, 3])).foregroundStyle(theme.hairlineStrong))
+                suggestionRowBody(icon: suggestionIcon(alt), label: suggestionLabel(alt),
+                                  iconTint: theme.inkTertiary, labelTint: theme.inkSecondary, showsChevron: true)
             }
             .buttonStyle(.plain)
+        } else {
+            suggestionRowBody(icon: "sparkles",
+                              label: "Suggestions will appear here based on your recovery",
+                              iconTint: theme.inkDim, labelTint: theme.inkTertiary, showsChevron: false)
         }
+    }
+
+    private func suggestionRowBody(icon: String, label: LocalizedStringKey, iconTint: Color,
+                                   labelTint: Color, showsChevron: Bool) -> some View {
+        HStack(spacing: 11) {
+            Image(systemName: icon).font(.system(size: 17)).foregroundStyle(iconTint)
+            Text(label).font(StrandFont.subhead).foregroundStyle(labelTint)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 8)
+            if showsChevron {
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkDim)
+            }
+        }
+        .padding(.horizontal, 15).padding(.vertical, 13)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [3, 3])).foregroundStyle(theme.hairlineStrong))
     }
 
     private func suggestionIcon(_ alt: TrainingRegulation.LightAlternative) -> String {
@@ -478,7 +496,8 @@ private struct EntrenarLanding: View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Empezar").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             Text("What are you training?").font(StrandFont.title2).foregroundStyle(theme.ink).padding(.top, 2)
-            chooserOption("dumbbell", "Routine", subtitle: todayRoutine?.name, isDefault: true) { pick(.routine) }
+            chooserOption("dumbbell", "Routine", subtitle: todayRoutine?.name ?? String(localized: "Choose or build one"),
+                          isDefault: true) { pick(.routine) }
             chooserOption("timer", "Intervals", subtitle: nil) { pick(.intervals) }
             chooserOption("wind", "Breathe", subtitle: nil) { pick(.breathe) }
             chooserOption("dot.radiowaves.left.and.right", "Live", subtitle: nil) { pick(.live) }
@@ -519,7 +538,7 @@ private struct EntrenarLanding: View {
         guard let kind = pendingStart else { return }
         pendingStart = nil
         switch kind {
-        case .routine:   if let id = todayRoutineId { openRoutine(id) }
+        case .routine:   if let id = todayRoutineId { openRoutine(id) } else { openRoutines() }
         case .intervals: openIntervals()
         case .breathe:   openBreathe()
         case .live:      if model.activeWorkout == nil { model.startWorkout() }; showLive = true
