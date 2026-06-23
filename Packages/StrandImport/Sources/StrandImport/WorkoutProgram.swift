@@ -43,6 +43,10 @@ public enum WorkoutWeightUnit: String, Codable, Sendable, Equatable, CaseIterabl
 /// One exercise slot of a routine: the LLM's exercise name (matched to the catalog later) plus its
 /// target scheme. Optional fields are nil when the plan doesn't declare them — never invented.
 public struct WorkoutExercise: Codable, Sendable, Equatable {
+    /// The catalog id the LLM picked from NOOP's list (FER-521). `nil` when the plan didn't carry one
+    /// (older plans, or an exercise the LLM couldn't place). When set, the importer matches by this id
+    /// first — exact and language-proof — and only falls back to the name. An unknown id is ignored.
+    public let id: String?                  // wire: "id"
     public let name: String                 // wire: "nombre" (verbatim; the reconciliation key)
     public let type: ExerciseType           // wire: "tipo" (default .weightReps)
     public let sets: Int                     // wire: "series" (≥1; a routine slot needs at least one set)
@@ -52,10 +56,10 @@ public struct WorkoutExercise: Codable, Sendable, Equatable {
     public let warmupPercents: [Double]     // wire: "calentamiento_pcts" (fractions in (0,1])
     public let supersetGroup: Int?          // wire: "superset" (opaque grouping within a routine)
 
-    public init(name: String, type: ExerciseType = .weightReps, sets: Int, reps: Int? = nil,
+    public init(id: String? = nil, name: String, type: ExerciseType = .weightReps, sets: Int, reps: Int? = nil,
                 weightKg: Double? = nil, restSeconds: Int? = nil, warmupPercents: [Double] = [],
                 supersetGroup: Int? = nil) {
-        self.name = name; self.type = type; self.sets = sets; self.reps = reps
+        self.id = id; self.name = name; self.type = type; self.sets = sets; self.reps = reps
         self.weightKg = weightKg; self.restSeconds = restSeconds
         self.warmupPercents = warmupPercents; self.supersetGroup = supersetGroup
     }
@@ -173,6 +177,10 @@ public struct WorkoutProgramImporter {
                 guard !exName.isEmpty else {
                     throw WorkoutProgramParseError.exerciseWithoutName(routine: routineLabel)
                 }
+                // id — optional catalog id the LLM picked from NOOP's list (FER-521). Empty → nil. Its
+                // validity (exists in the catalog) is checked at reconciliation, not here.
+                let idTrimmed = (e["id"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+                let exId = (idTrimmed?.isEmpty == false) ? idTrimmed : nil
                 // tipo — optional, defaults to weightReps; an explicit unknown value is rejected.
                 let type: ExerciseType
                 if let tipoRaw = e["tipo"] as? String {
@@ -195,7 +203,7 @@ public struct WorkoutProgramImporter {
                     .filter { $0 > 0 && $0 <= 1 }
                 let superset = Self.intValue(e["superset"])
                 exercises.append(WorkoutExercise(
-                    name: exName, type: type, sets: sets, reps: reps, weightKg: weightKg,
+                    id: exId, name: exName, type: type, sets: sets, reps: reps, weightKg: weightKg,
                     restSeconds: rest, warmupPercents: warmups, supersetGroup: superset))
             }
             routines.append(WorkoutRoutine(name: routineName,
@@ -241,20 +249,24 @@ public struct WorkoutProgramImporter {
 /// Pure (takes the known exercises in), so it's swift-testable without a database.
 public struct WorkoutExerciseReconciler {
     private let byNormalizedName: [String: Exercise]
+    private let byId: [String: Exercise]
 
-    /// Build from the known exercises (catalog + custom). Indexes each exercise by BOTH its English
-    /// `name` and its Spanish `nameES` (when present, FER-501), so a plan written in either language
-    /// matches the catalog. On a normalized-name collision the first wins — deterministic, and the
-    /// app passes the catalog sorted by name.
+    /// Build from the known exercises (catalog + custom). Indexes each exercise by its `id` (FER-521)
+    /// and by BOTH its English `name` and Spanish `nameES` (FER-501), so a plan matches by the catalog
+    /// id the LLM picked, or by name in either language. On a normalized-name collision the first wins —
+    /// deterministic, and the app passes the catalog sorted by name.
     public init(known: [Exercise]) {
         var map: [String: Exercise] = [:]
+        var ids: [String: Exercise] = [:]
         for ex in known {
+            ids[ex.id] = ex
             for name in [ex.name, ex.nameES].compactMap({ $0 }) {
                 let key = Self.normalize(name)
                 if map[key] == nil { map[key] = ex }
             }
         }
         byNormalizedName = map
+        byId = ids
     }
 
     /// The catalog exercise whose name matches `name` after normalization, or nil if none does.
@@ -262,16 +274,25 @@ public struct WorkoutExerciseReconciler {
         byNormalizedName[Self.normalize(name)]
     }
 
-    /// The unique exercise names across the program that have no catalog match, in first-seen order
-    /// (deduped by normalized name, but the original spelling is kept for display). These are exactly
-    /// the names the import screen asks the user to map or create.
+    /// Resolve an imported exercise to a known one: by its declared catalog `id` first (FER-521 — exact
+    /// and language-proof), then by normalized name (EN/ES). An unknown/invalid id is ignored, degrading
+    /// to the name match. Returns nil only when neither resolves (→ the user maps it).
+    public func resolve(_ exercise: WorkoutExercise) -> Exercise? {
+        if let id = exercise.id, let hit = byId[id] { return hit }
+        return match(exercise.name)
+    }
+
+    /// The unique exercise names across the program that DON'T resolve (by id or name), in first-seen
+    /// order, deduped by normalized name. These are exactly the names the import screen asks the user to
+    /// map or create. An exercise carrying a valid id is resolved and never listed here.
     public func unmatchedNames(in program: WorkoutProgram) -> [String] {
         var seen = Set<String>()
         var result: [String] = []
         for routine in program.routines {
             for ex in routine.exercises {
+                guard resolve(ex) == nil else { continue }
                 let key = Self.normalize(ex.name)
-                guard byNormalizedName[key] == nil, !seen.contains(key) else { continue }
+                guard !seen.contains(key) else { continue }
                 seen.insert(key)
                 result.append(ex.name)
             }
