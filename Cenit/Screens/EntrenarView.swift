@@ -71,6 +71,8 @@ private struct EntrenarLanding: View {
     @State private var showLive = false
     /// «Import plan» (FER-496) from «Tu plan»'s footer.
     @State private var showImport = false
+    /// Drives the Recovery Detail sheet opened from the recovery chip (FER-557).
+    @State private var recoveryDetail: RecoveryDetailItem? = nil
 
     private enum StartKind { case routine, intervals, breathe, live }
 
@@ -125,6 +127,11 @@ private struct EntrenarLanding: View {
                 .presentationBackground(theme.paper)
                 .preferredColorScheme(.light)
         }
+        // Recovery detail from the chip — same sheet Today/Cuerpo open; theme passed explicitly (it
+        // doesn't cross the `.sheet` boundary, FER-162), no nested NavigationStack (FER-171). (FER-557)
+        .sheet(item: $recoveryDetail) { item in
+            RecoveryDetailScreen(theme: theme, model: item.model)
+        }
         // The guided strength session (FER-347), hosted at the landing root so it survives tab switches;
         // the session lives in AppModel, so swiping the sheet down only hides it (the «Resume» row re-opens).
         .sheet(isPresented: $model.strengthSheetPresented, onDismiss: {
@@ -146,25 +153,30 @@ private struct EntrenarLanding: View {
     // MARK: - ① Header + recovery chip
 
     private var header: some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 5) {
-                HStack(spacing: 8) {
-                    DumbbellGlyph().frame(width: 22, height: 22).foregroundStyle(theme.ink)
-                    Text("Train").font(StrandFont.title1).foregroundStyle(theme.ink)
+        VStack(alignment: .leading, spacing: 7) {
+            // One-piece wordmark row — same lockup, size and baseline as «Tendencias»/«Patrones» so the
+            // three tab titles match. Glyph = the dock's tab icon; trailing = the recovery chip. (FER-557)
+            HStack(alignment: .center) {
+                HStack(spacing: 9) {
+                    Image(systemName: "figure.strengthtraining.functional")
+                        .font(.system(size: 19)).frame(width: 22, height: 22).foregroundStyle(theme.ink)
+                    Text("Train").font(.system(size: 21, weight: .semibold)).tracking(-0.3).foregroundStyle(theme.ink)
                 }
-                if let summary = splitSummary {
-                    Text(summary).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                }
+                .accessibilityElement(children: .combine).accessibilityLabel(Text("Train"))
+                Spacer(minLength: 8)
+                if let rec = recovery { recoveryChip(rec) }   // hidden while calibrating (no score)
             }
-            Spacer(minLength: 8)
-            if let rec = recovery { recoveryChip(rec) }   // hidden while calibrating (no score)
+            // Cadence as a quiet context line below the wordmark (not stacked inside the lockup).
+            if let cadence = cadenceText {
+                Text(cadence).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            }
         }
     }
 
-    /// The recovery chip: a small 240° arc (the `dataRecovery` gradient, no bloom/bead) + the numeral.
-    /// Tapping opens the recovery detail. The single glanceable point of color in the header.
+    /// The recovery chip: a small arc (`dataRecovery`) + the numeral. Tapping opens the Recovery Detail
+    /// sheet (same as Today/Cuerpo) — it does NOT switch tabs. The one glanceable point of color here.
     private func recoveryChip(_ rec: Double) -> some View {
-        Button { tabRouter.select(.today) } label: {
+        Button { recoveryDetail = RecoveryDetailItem(model: RecoveryDetailModel.build(repo: repo)) } label: {
             HStack(spacing: 7) {
                 RecoveryChipRing(score: rec).frame(width: 22, height: 22)
                 Text("\(Int(rec.rounded()))")
@@ -175,7 +187,7 @@ private struct EntrenarLanding: View {
             .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text("Recovery \(Int(rec.rounded())). Open details."))
+        .accessibilityLabel(Text("Recovery \(Int(rec.rounded())). See details."))
     }
 
     // MARK: - ② Week strip
@@ -572,14 +584,12 @@ private struct EntrenarLanding: View {
                                       includesCurrentWeek: true)
     }
 
-    /// Distinct routine names in the split (in week order), for the header overline.
-    private var splitSummary: String? {
-        var seen = Set<String>(); var names: [String] = []
-        for wd in orderedWeekdays {
-            guard let id = split[wd], let n = routinesById[id]?.name, !seen.contains(id) else { continue }
-            seen.insert(id); names.append(n)
-        }
-        return names.isEmpty ? nil : names.joined(separator: " · ")
+    /// Header cadence line — how many days a week the split trains. One line, not the (long) list of
+    /// routine names; the names live in «Tu plan» and «Hoy». `nil` when there's no split. (FER-557)
+    private var cadenceText: String? {
+        let n = split.keys.count
+        guard n > 0 else { return nil }
+        return n == 1 ? String(localized: "1 day a week") : String(localized: "\(n) days a week")
     }
 
     /// One row per distinct routine in the split: its name + the weekdays it's assigned to.
@@ -609,11 +619,10 @@ private struct EntrenarLanding: View {
     private var streakWeeksText: String { String(localized: "\(streak) weeks") }
 
     private func recoveryLine(_ rec: Double) -> String {
-        let n = Int(rec.rounded())
         switch TrainingRegulation.suggest(recovery: rec)?.reason {
-        case .recoveryHigh: return String(localized: "Recovered \(n) · you can take on your full plan.")
-        case .recoveryLow:  return String(localized: "Recovered \(n) · maybe ease the volume today.")
-        default:            return String(localized: "Recovered \(n) · keep your usual load.")
+        case .recoveryHigh: return String(localized: "Recovery high for you · you can take on your full plan.")
+        case .recoveryLow:  return String(localized: "Recovery low for you · maybe ease the volume today.")
+        default:            return String(localized: "Recovery in your range · train at your usual load.")
         }
     }
 
@@ -656,23 +665,6 @@ private struct RecoveryChipRing: View {
     }
 }
 
-// MARK: - Dumbbell glyph (header + tab)
-
-/// The line-dumbbell wordmark glyph. `currentColor`; viewBox 0 0 24 24.
-private struct DumbbellGlyph: View {
-    var body: some View {
-        GeometryReader { geo in
-            let s = min(geo.size.width, geo.size.height) / 24
-            Path { p in
-                func v(_ x: CGFloat, _ y0: CGFloat, _ y1: CGFloat) { p.move(to: CGPoint(x: x * s, y: y0 * s)); p.addLine(to: CGPoint(x: x * s, y: y1 * s)) }
-                v(5, 9, 15); v(8, 7, 17); v(16, 7, 17); v(19, 9, 15)
-                p.move(to: CGPoint(x: 8 * s, y: 12 * s)); p.addLine(to: CGPoint(x: 16 * s, y: 12 * s))
-            }
-            .stroke(style: StrokeStyle(lineWidth: 1.9, lineCap: .round, lineJoin: .round))
-        }
-    }
-}
-
 // MARK: - Recovery band (the «sube / mantén / baja» autoregulation suggestion — FER-349)
 
 /// The recovery band: an OPT-IN "push / hold / ease" suggestion driven by the cited `TrainingRegulation`
@@ -686,7 +678,7 @@ struct RecoveryBand: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Recovery band").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("Today's load").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             if let s = suggestion {
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
                     Text(word(s.adjustment)).font(StrandFont.title2).foregroundStyle(color(s.adjustment))
@@ -710,11 +702,10 @@ struct RecoveryBand: View {
         switch a { case .dialUp: return theme.verdict; case .hold: return theme.ink; case .dialBack: return theme.warning }
     }
     private func detail(_ reason: TrainingRegulation.Reason) -> String {
-        let n = Int(recovery.rounded())
         switch reason {
-        case .recoveryHigh:  return String(localized: "Recovery \(n) · high. A good day to add load.")
-        case .withinNormal:  return String(localized: "Recovery \(n) · moderate. Keep your usual load.")
-        case .recoveryLow:   return String(localized: "Recovery \(n) · low. Pull back the volume today.")
+        case .recoveryHigh:  return String(localized: "Your recovery is high for you. A good day to add weight or sets.")
+        case .withinNormal:  return String(localized: "Your recovery is in your normal range. Train at your usual load.")
+        case .recoveryLow:   return String(localized: "Your recovery is low for you. Easing the volume or intensity helps today.")
         }
     }
 }
