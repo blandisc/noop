@@ -74,7 +74,7 @@ enum MetricCatalog {
         d("recovery", String(localized: "Recovery"), "Recovery", "%", "my-whoop", "heart.circle", 0, true),
         d("hrv", String(localized: "Heart Rate Variability"), "Recovery", "ms", "my-whoop", "waveform.path.ecg", 0, true),
         d("rhr", String(localized: "Resting Heart Rate"), "Recovery", String(localized: "bpm"), "my-whoop", "heart", 0, false),
-        d("resp_rate", String(localized: "Respiratory Rate"), "Recovery", "rpm", "my-whoop", "lungs", 1, nil),
+        d("resp_rate", String(localized: "Respiratory Rate"), "Recovery", "rpm", "my-whoop", "lungs", 1, false),
         d("spo2", String(localized: "Blood Oxygen"), "Recovery", "%", "my-whoop", "drop", 0, true),
         d("skin_temp", String(localized: "Skin Temperature"), "Recovery", "°C", "my-whoop", "thermometer", 1, nil),
 

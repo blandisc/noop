@@ -535,6 +535,7 @@ struct MetricDetailScreen: View {
                 Text(chartCaption(window.range))
                     .font(StrandFont.footnote)
                     .foregroundStyle(theme.inkTertiary)
+                dynamicAverageCaption(window)
                 if spec.currentDayIncomplete {
                     // The line includes today (still adding up), so its right edge can dip; the figures
                     // below read only completed days — so the two may not line up exactly. (FER-264)
@@ -699,6 +700,35 @@ struct MetricDetailScreen: View {
         // Name the shaded band so the horizontal lines on the chart read as «your normal range». (Detalle de Vital)
         if isNarrative, normalRange != nil { return "7-day moving average · the band is your normal range." }
         return "7-day moving average."
+    }
+
+    /// «Average · {window} · {value} · {Δ%} vs previous» — the period average recomputed for the SELECTED
+    /// window, with its change vs the immediately-preceding equal window coloured by the metric's good
+    /// direction (HRV↑, resting HR↓, respiration↓, SpO₂↑, steps↑). Reuses the SAME `ComparisonEngine`
+    /// figures + polarity as the trend block, so the caption and the stat strip never disagree. Hidden in
+    /// «Ranges» mode and for sparsely-measured metrics (VO₂max); when there's no previous window of equal
+    /// length (e.g. ALL, or too little history) it shows the average alone, never an invented Δ. (FER-563)
+    @ViewBuilder private func dynamicAverageCaption(_ window: MetricWindow) -> some View {
+        let rows = trendStatRows(window)
+        if !rangesModeActive, !spec.sparseMeasured, rows.count > 1 {
+            let mean = ComparisonEngine.stat(rows.map(\.value)).mean
+            let valueStr = unit.isEmpty ? fmt(mean) : "\(fmt(mean)) \(unit)"
+            let head = Text("Average") + Text(verbatim: " · \(window.range.name) · \(valueStr)")
+            Group {
+                if let pct = window.range.periodComparison(of: trendComparisonSeries)?.pctChange {
+                    let rounded = Int(abs(pct).rounded())
+                    let arrow = rounded == 0 ? "" : (pct >= 0 ? "▲ " : "▼ ")
+                    head
+                        + Text(verbatim: " · \(arrow)\(rounded)% ").foregroundColor(trendDeltaColor(pct))
+                        + Text("vs previous")
+                } else {
+                    head
+                }
+            }
+            .font(StrandFont.footnote)
+            .foregroundStyle(theme.inkTertiary)
+            .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     // MARK: - Normal range (rolling mean ± SD)
@@ -1876,18 +1906,21 @@ struct MetricDetailScreen: View {
     private func trendCell(_ window: MetricWindow) -> StatCell? {
         guard let pct = window.range.periodComparison(of: trendComparisonSeries)?.pctChange else { return nil }
         let rounded = Int(abs(pct).rounded())
-        let flat = rounded == 0
-        let arrow = flat ? "" : (pct >= 0 ? "▲ " : "▼ ")
-        let color: Color = {
-            if flat { return theme.inkSecondary }
-            switch trendPolarity {
-            case .higherIsBetter: return pct > 0 ? theme.verdict : theme.warning
-            case .lowerIsBetter:  return pct < 0 ? theme.verdict : theme.warning
-            case .neutral:        return theme.inkSecondary
-            }
-        }()
+        let arrow = rounded == 0 ? "" : (pct >= 0 ? "▲ " : "▼ ")
         return StatCell(slot: "tendencia", label: "Trend", value: "\(arrow)\(rounded)%",
-                        color: color, disclosure: (title: "Trend", text: EX_TREND))
+                        color: trendDeltaColor(pct), disclosure: (title: "Trend", text: EX_TREND))
+    }
+
+    /// Colour for a period-over-period % change, by this metric's polarity: the good direction → verdict,
+    /// against → warning, flat (rounds to 0%) or a neutral metric → quiet ink. Shared by the trend stat
+    /// cell and the dynamic-average caption so the two never disagree. (FER-563)
+    private func trendDeltaColor(_ pct: Double) -> Color {
+        if Int(abs(pct).rounded()) == 0 { return theme.inkSecondary }
+        switch trendPolarity {
+        case .higherIsBetter: return pct > 0 ? theme.verdict : theme.warning
+        case .lowerIsBetter:  return pct < 0 ? theme.verdict : theme.warning
+        case .neutral:        return theme.inkSecondary
+        }
     }
 
     private func consistencyCell() -> StatCell? {
