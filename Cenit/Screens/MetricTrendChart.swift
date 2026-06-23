@@ -141,6 +141,12 @@ struct MetricTrendChart<Empty: View>: View {
         /// caller can't pass an exact `TrendPoint` because the line is decimated internally, so the
         /// component marks `points.last` for it. (Detalle de Vital · narrativa)
         var marksLastPoint: Bool = false
+        /// When true (and `marksLastPoint`), the last point is drawn as a HOLLOW ring rather than a filled
+        /// dot — the F6b level pattern uses it to keep TODAY marked while you explore a level other than its
+        /// own. (FER-571)
+        var markedPointHollow: Bool = false
+        /// The fill of a hollow marked point's centre — pass the sheet's paper so the ring reads cleanly. (FER-571)
+        var markedPointRingFill: Color = .clear
         /// Draw bands without their in-plot label (and without the wide right gutter): the band reads as a
         /// quiet «your normal range» context behind the line, named in the caption / inline bar instead.
         var bandLabelsHidden: Bool = false
@@ -192,6 +198,8 @@ struct MetricTrendChart<Empty: View>: View {
             referenceLine: style.referenceLine,
             referenceLineColor: style.referenceLineColor,
             markedPoint: style.marksLastPoint ? points.last : nil,
+            markedPointHollow: style.markedPointHollow,
+            markedPointRingFill: style.markedPointRingFill,
             bandLabelsHidden: style.bandLabelsHidden,
             yTickCount: style.yTickCount
         )

@@ -1,6 +1,60 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Above your base" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Above your base" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Arriba de tu base" } }
+      }
+    },
+    "Below your base" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Below your base" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Debajo de tu base" } }
+      }
+    },
+    "In your base" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "In your base" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "En tu base" } }
+      }
+    },
+    "No reading today" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No reading today" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Sin lectura de hoy" } }
+      }
+    },
+    "See more in Trends" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "See more in Trends" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Ver más en Tendencias" } }
+      }
+    },
+    "Highlights this level on the chart" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Highlights this level on the chart" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Resalta este nivel en la gráfica" } }
+      }
+    },
+    "Your levels come from your own baseline, not a table." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your levels come from your own baseline, not a table." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Tus niveles salen de tu propia base, no de una tabla." } }
+      }
+    },
+    "%lld of your last %lld days" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld of your last %lld days" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "%lld de tus últimos %lld días" } }
+      }
+    },
+    "%lld days with data in this range" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld days with data in this range" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "%lld días con datos en este rango" } }
+      }
+    },
     "For now": {
       "localizations": {
         "en": { "stringUnit": { "state": "translated", "value": "For now" } },

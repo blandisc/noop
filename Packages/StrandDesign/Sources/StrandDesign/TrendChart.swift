@@ -186,6 +186,14 @@ public struct TrendChart: View {
     public var referenceLineColor: Color
     /// A single point to emphasise with a larger filled dot (e.g. the day's peak HR). `nil` = none. (FER-253)
     public var markedPoint: TrendPoint?
+    /// When true, `markedPoint` is drawn as a HOLLOW ring (a `markedPointRingFill`-filled centre punched
+    /// out of the hue) instead of a solid dot — so it still reads as "this is today" even when the band it
+    /// sits in is NOT the highlighted one. The redesigned metric detail (F6b) sets this while you explore a
+    /// level other than today's, keeping your real reading marked. (FER-571)
+    public var markedPointHollow: Bool
+    /// The fill of a hollow marked point's centre — pass the chart's own background (the sheet's paper) so
+    /// the ring reads cleanly over the line. Ignored unless `markedPointHollow` is true. (FER-571)
+    public var markedPointRingFill: Color
     /// When true, bands are drawn (shaded fill + edge lines) WITHOUT their right-aligned text label, and
     /// the wide right gutter that label needs is dropped. For the redesigned vital detail, where the band
     /// is a quiet «your normal range» context behind the line and is named in the caption / inline bar, not
@@ -221,6 +229,8 @@ public struct TrendChart: View {
         referenceLine: Double? = nil,
         referenceLineColor: Color = .clear,
         markedPoint: TrendPoint? = nil,
+        markedPointHollow: Bool = false,
+        markedPointRingFill: Color = .clear,
         bandLabelsHidden: Bool = false,
         tightTrailing: Bool = false,
         yTickCount: Int = 4
@@ -243,6 +253,8 @@ public struct TrendChart: View {
         self.referenceLine = referenceLine
         self.referenceLineColor = referenceLineColor
         self.markedPoint = markedPoint
+        self.markedPointHollow = markedPointHollow
+        self.markedPointRingFill = markedPointRingFill
         self.bandLabelsHidden = bandLabelsHidden
         self.tightTrailing = tightTrailing
         self.yTickCount = yTickCount
@@ -361,14 +373,23 @@ public struct TrendChart: View {
                 }
             }
             // A single emphasised dot at a caller-chosen point (e.g. the day's peak). Larger than the
-            // per-point dots, in the line's hue, so it reads as "this is the moment". (FER-253)
+            // per-point dots, in the line's hue, so it reads as "this is the moment". (FER-253) When
+            // `markedPointHollow`, it's a ring instead — a paper-filled centre punched out of the hue —
+            // so today stays marked while you explore a level other than its own. (FER-571)
             if let peak = markedPoint {
-                PointMark(
-                    x: .value("Date", peak.date),
-                    y: .value("Value", peak.value)
-                )
-                .symbolSize(70)
-                .foregroundStyle(StrandPalette.sample(stops: gradient.toStops(), at: unit(peak.value)))
+                let hue = StrandPalette.sample(stops: gradient.toStops(), at: unit(peak.value))
+                if markedPointHollow {
+                    PointMark(x: .value("Date", peak.date), y: .value("Value", peak.value))
+                        .symbolSize(92)
+                        .foregroundStyle(hue)
+                    PointMark(x: .value("Date", peak.date), y: .value("Value", peak.value))
+                        .symbolSize(34)
+                        .foregroundStyle(markedPointRingFill)
+                } else {
+                    PointMark(x: .value("Date", peak.date), y: .value("Value", peak.value))
+                        .symbolSize(70)
+                        .foregroundStyle(hue)
+                }
             }
         }
         // No draw-on / interpolation animation when the data changes (switching period rebuilds the
@@ -665,6 +686,34 @@ private func sampleTrend(days: Int, base: Double, swing: Double) -> [TrendPoint]
     .padding(28)
     .frame(width: 720, height: 340)
     .background(InstrumentoTheme.base.paper)
+    .preferredColorScheme(.light)
+}
+
+#Preview("TrendChart — level band + hollow today (F6b)") {
+    let pts = sampleTrend(days: 14, base: 64, swing: 8)
+    let theme = InstrumentoTheme.base
+    return VStack(alignment: .leading, spacing: 16) {
+        Text("Today's band highlighted (filled head)").strandOverline()
+        TrendChart(
+            points: pts, gradient: Gradient(colors: [theme.dataHeart.opacity(0.5), theme.dataHeart]),
+            valueRange: 48...88, showsArea: false, height: 150,
+            axisLabelColor: theme.inkTertiary, gridLineColor: theme.hairline,
+            bands: [TrendBand(label: "", lower: 60, upper: 80, isActive: true)],
+            bandColor: theme.dataHeart, yAxisValues: [50, 60, 80],
+            markedPoint: pts.last, bandLabelsHidden: true)
+        Text("Another level selected (hollow head keeps today)").strandOverline()
+        TrendChart(
+            points: pts, gradient: Gradient(colors: [theme.dataHeart.opacity(0.5), theme.dataHeart]),
+            valueRange: 48...88, showsArea: false, height: 150,
+            axisLabelColor: theme.inkTertiary, gridLineColor: theme.hairline,
+            bands: [TrendBand(label: "", lower: nil, upper: 50, isActive: true)],
+            bandColor: theme.dataHeart, yAxisValues: [50, 60, 80],
+            markedPoint: pts.last, markedPointHollow: true, markedPointRingFill: theme.paper,
+            bandLabelsHidden: true)
+    }
+    .padding(28)
+    .frame(width: 720, height: 420)
+    .background(theme.paper)
     .preferredColorScheme(.light)
 }
 #endif
