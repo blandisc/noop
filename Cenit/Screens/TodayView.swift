@@ -410,14 +410,7 @@ struct TodayView: View {
         switch id {
         case "recovery":
             present = {
-                let key = Repository.localDayKey(Date())
-                recoveryDetail = RecoveryDetailItem(model: RecoveryDetailModel.build(
-                    days: repo.days, today: repo.today,
-                    todayKey: key,
-                    appleHealthDays: repo.appleHealthDays,
-                    loaded: repo.loaded, importedSleep: repo.importedSleep,
-                    isEstimated: repo.isRecoveryEstimated(key),
-                    confidence: repo.recoveryConfidence(key)))
+                recoveryDetail = RecoveryDetailItem(model: RecoveryDetailModel.build(repo: repo))
             }
         case "sleep":
             present = {

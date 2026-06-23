@@ -994,6 +994,19 @@ struct RecoveryDetailModel {
 
     // MARK: - Build
 
+    /// Convenience: build the whole model straight from the repo. Hoy and Cuerpo both open the recovery
+    /// detail the same way, so they share this instead of each assembling the argument list (incl. the
+    /// FER-153 estimate flags). (`@MainActor` to read the repo's published state on the main actor.)
+    @MainActor
+    static func build(repo: Repository) -> RecoveryDetailModel {
+        let key = Repository.localDayKey(Date())
+        return build(days: repo.days, today: repo.today, todayKey: key,
+                     appleHealthDays: repo.appleHealthDays, loaded: repo.loaded,
+                     importedSleep: repo.importedSleep,
+                     isEstimated: repo.isRecoveryEstimated(key),
+                     confidence: repo.recoveryConfidence(key))
+    }
+
     /// Build the whole model from the repo's in-memory dashboard. Pure (no DB). `days` is the strap +
     /// on-device dashboard (`repo.days`, the baseline source — FER-149); `today` is `repo.today`; `todayKey`
     /// is the device's local day key.
