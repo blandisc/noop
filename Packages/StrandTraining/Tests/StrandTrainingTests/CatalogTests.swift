@@ -32,6 +32,26 @@ final class CatalogTests: XCTestCase {
         XCTAssertNil(ExerciseCatalog.byID("definitely-not-a-real-id"))
     }
 
+    func testIsometricHoldsAreTimeBased() {
+        // FER-539: isometric holds (held for time, no rep count) must be `.time`
+        // so the guided session shows the timer Foco instead of asking for reps.
+        let holds = ["Plank", "Side_Bridge", "Isometric_Chest_Squeezes",
+                     "Isometric_Neck_Exercise_-_Front_And_Back",
+                     "Isometric_Neck_Exercise_-_Sides", "Crucifix"]
+        for id in holds {
+            XCTAssertEqual(ExerciseCatalog.byID(id)?.type, .time,
+                           "\(id) is an isometric hold and must be measured by time")
+        }
+    }
+
+    func testRepMovementsStayReps() {
+        // Counterexamples: "Isometric"/"Iron Cross" in the name but a dynamic rep
+        // movement in the cues — must NOT be reclassified to `.time` (FER-539).
+        XCTAssertEqual(ExerciseCatalog.byID("Iron_Cross")?.type, .weightReps)        // dumbbell rep movement
+        XCTAssertEqual(ExerciseCatalog.byID("Cable_Iron_Cross")?.type, .weightReps)  // cable flye
+        XCTAssertEqual(ExerciseCatalog.byID("Isometric_Wipers")?.type, .bodyweight)  // dynamic side-to-side
+    }
+
     func testMuscleInvolvementWeights() {
         let e = Exercise(id: "x", name: "Bench", type: .weightReps, equipment: "barbell",
                          primaryMuscles: ["chest"], secondaryMuscles: ["triceps", "shoulders"],
