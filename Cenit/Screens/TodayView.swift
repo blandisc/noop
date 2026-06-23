@@ -312,7 +312,9 @@ struct TodayView: View {
             .sheet(isPresented: $showWhyVerdict) {
                 WhyVerdictSheet(readiness: readiness, theme: theme,
                                 sleepMinutes: repo.today?.totalSleepMin,
-                                emptyStateExplanation: whyEmptyExplanation)
+                                emptyStateExplanation: whyEmptyExplanation,
+                                isRecoveryEstimated: repo.isRecoveryEstimated(Repository.localDayKey(Date())),
+                                recoveryConfidence: repo.recoveryConfidence(Repository.localDayKey(Date())))
             }
             // Rich «Instrumento» Detalle, drilled into from a summary sheet's "Ver más" — the SAME screens
             // Cuerpo presents, theme passed explicitly (it doesn't propagate through `.sheet`), NO nested
@@ -893,6 +895,12 @@ struct TodayView: View {
                             armProgress: pullProgress)
                 heroNumeral(state)
             }
+            // FER-545: sello «estimado · confianza» bajo el dial cuando el veredicto de hoy es un estimado
+            // de Apple (noche sin banda). Vive en el camino PRINCIPAL (cabecera fija, ambas páginas), no
+            // solo en el fallback de página 1 — así el veredicto estimado nunca se ve idéntico al de banda.
+            if state == .verdict, repo.isRecoveryEstimated(Repository.localDayKey(Date())) {
+                estimatedTodayMarker
+            }
         }
         .frame(maxWidth: .infinity)
     }
@@ -1388,11 +1396,8 @@ struct TodayView: View {
         let r = readiness
         if r.level != .insufficient {
             // FER-549 (B1): la palabra del veredicto + el «¿por qué?» ya viven en el CENTRO del dial; aquí
-            // (el fallback de página 1 sin Daily Brief) ya no se repiten para no duplicar el mismo dato en
-            // pantalla. Este bloque conserva solo los modificadores honestos (estimado / puente / confianza).
-            // FER-153: a band-less Apple night drives the verdict from an ESTIMATED recovery — mark it so
-            // the day never reads identical to a band reading; the full explanation is one tap into the detail.
-            if repo.isRecoveryEstimated(Repository.localDayKey(Date())) { estimatedTodayMarker }
+            // (el fallback de página 1 sin Daily Brief) ya no se repiten. FER-545: el sello «estimado» también
+            // subió al dial (camino principal), así que aquí solo quedan los modificadores de puente/confianza.
             if let bridge = r.bridge {
                 Text(bridge).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .multilineTextAlignment(.center)

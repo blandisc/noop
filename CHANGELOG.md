@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El veredicto estimado de tu Apple Watch ya se marca como tal / An estimated verdict from your Apple Watch is now marked as such.**
+  **ES** — Una mañana sin banda, Cénit estima tu recuperación desde tu Apple Watch. Antes ese número salía «pelón», idéntico a uno de banda. Ahora el dial lo marca **«estimado · confianza X»** (con el ícono del Apple Watch), y al tocar el dial el «¿por qué?» explica que viene del HRV (SDNN) de tu Apple Watch —una medida distinta a la de tu banda, de menor grado—. Una mañana con banda se ve igual que siempre, sin sello.
+  **EN** — On a morning without the band, Cénit estimates your recovery from your Apple Watch. That number used to look "bare", identical to a band one. Now the dial marks it **"estimated · X confidence"** (with the Apple Watch icon), and tapping the dial the "why" explains it comes from your Apple Watch HRV (SDNN) —a different measure than your band's, a lower grade—. A morning with the band looks the same as always, no seal.
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift), [Cenit/Screens/WhyVerdictSheet.swift](Cenit/Screens/WhyVerdictSheet.swift))
+
 - **El veredicto de Hoy ahora se lee en serif / Today's verdict now reads in a serif headline.**
   **ES** — La frase del veredicto en «Hoy» (p. ej. «Vienes recuperando mejor.») ahora se compone en **Instrument Serif**, la tipografía editorial del sistema «Instrumento diurno» — reservada solo para titulares y frases de veredicto, nunca para un número o una etiqueta. La fuente viene incluida en la app (funciona 100 % sin conexión) y escala con el tamaño de texto del sistema. El resto de la app no cambia.
   **EN** — The verdict phrase on «Hoy» (e.g. "Vienes recuperando mejor.") is now set in **Instrument Serif**, the «Instrumento diurno» editorial face — reserved for headlines and verdict phrases only, never a number or a label. The font ships inside the app (works fully offline) and scales with your system text size. Nothing else changes.
