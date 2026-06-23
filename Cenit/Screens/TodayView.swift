@@ -354,9 +354,7 @@ struct TodayView: View {
                     intradayCurveLoader: spec.blocks.contains(.intradayCurve) ? { hrPoints } : nil,
                     hrMax: Double(model.profile.hrMax),
                     restingHR: resolveMeasured { $0.restingHr.map(Double.init) }?.value,
-                    todayKey: Repository.localDayKey(Date()),
-                    // FER-571: «Ver más en Tendencias» salta al tab Cuerpo (Tendencias) y cierra la hoja.
-                    onSeeTrends: { tabRouter.select(.body) }
+                    todayKey: Repository.localDayKey(Date())
                 )
             }
     }
