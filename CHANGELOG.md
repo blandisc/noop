@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **En Entrenar, la sugerencia se adapta a tu recuperación / In Train, the suggestion adapts to your recovery.**
+  **ES** — La fila de **«Sugerencia»** del planificador ya no es fija: aparece **solo cuando hay algo que sugerir**, según tu recuperación de hoy frente a tu normal. Si vienes **bajo**, te ofrece una opción más suave (respiración de recuperación); si vienes **con energía**, una opción ligera **opcional** (intervalos). En un día normal, o si aún no hay dato, la fila simplemente no aparece. Sigue siendo una sugerencia: nunca bloquea, tú decides.
+  **EN** — The planner's **«Suggestion»** row is no longer fixed: it shows up **only when there's something to suggest**, based on today's recovery against your normal. If you're **low**, it offers a gentler option (recovery breathing); if you're **feeling good**, an **optional** light option (intervals). On a normal day, or with no data yet, the row simply doesn't appear. It's still a suggestion: it never blocks, you decide.
+  ([Cenit/Screens/EntrenarView.swift](Cenit/Screens/EntrenarView.swift), [Packages/StrandAnalytics/.../TrainingRegulation.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/TrainingRegulation.swift))
+
 - **En Hoy, tu estado vuelve al centro del dial y la píldora de pulso dice qué tan fresca es / On Today, your status returns to the center of the dial and the pulse pill shows how fresh it is.**
   **ES** — En la pantalla Hoy, la palabra de tu veredicto («A punto», «Equilibrado», …) vuelve a aparecer **dentro del dial**, justo bajo el número, en su color; tócala para ver «¿por qué?». Y la píldora de tu pulso ahora muestra, junto a los latidos, **hace cuánto se actualizó** («⟳ 2m»), para que sepas si la lectura es reciente. Cuando aún no hay veredicto del día, el dial no inventa una palabra.
   **EN** — On the Today screen, your verdict word ("Primed", "Balanced", …) is back **inside the dial**, right under the number, in its color; tap it for the "why". And your pulse pill now shows, next to the beats, **how long ago it updated** ("⟳ 2m"), so you know how fresh the reading is. When there's no verdict yet for the day, the dial doesn't invent a word.
