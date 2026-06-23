@@ -21,9 +21,14 @@ import Foundation
 // SIN `NavigationStack` anidado (un stack anidado cruzando el path de la tab crasheaba SwiftUI, FER-171).
 //
 // Bloques, cada uno con su ⓘ (`InfoAccordion`) salvo el método (DisclosureGroup): 1) Hero (valor de hoy
-// en `theme.dataStrain`, lectura por zona) · 2) Cómo se acumuló hoy (curva intradía, async) · 3) Zonas
-// (las 4 bandas de `MetricInfo.strain`, la activa marcada) · 4) Tendencia 14d (+ Prom/Mín/Máx) · 5) Ver
-// el método. Consume `StrandAnalytics`/la curva de `CuerpoView.loadStrainCurve()` TAL CUAL: no crea math.
+// en `theme.dataStrain`, lectura por nivel) · 2) Cómo se acumuló hoy (curva intradía, async) · 3) Niveles
+// (la tabla de las 4 bandas fijas de `MetricInfo.strain`, la activa marcada) · 4) «Ver tu historial»
+// (tendencia con selector + «Media · periodo · Δ%» neutral + qué lo mueve, plegado) · 5) Ver el método.
+// Consume `StrandAnalytics`/la curva de `CuerpoView.loadStrainCurve()` TAL CUAL: no crea math.
+//
+// FER-597 lo alinea al handoff «Detalle · Esfuerzo»: UNA sola tabla de Niveles + la tendencia de vuelta en
+// «Ver tu historial» (revierte el `MetricLevelsExplorer` de FER-572, que duplicaba los niveles y ocupaba el
+// lugar de la tendencia). El explorer sigue vivo para las pantallas hermanas — solo deja de usarse aquí.
 
 /// Light «Instrumento» Detalle de Esfuerzo. Built once from a `StrainDetailModel` (the caller injects the
 /// model so the screen stays DB-free); the intraday curve is loaded async (it reads HR samples from the
@@ -46,9 +51,9 @@ struct StrainDetailScreen: View {
     @State private var curve: [TrendPoint] = []
     @State private var curveLoaded = false
     @State private var methodExpanded = false
-    /// Level-3 disclosure: the 14-day trend + «What moves your strain» live under «See your history»,
-    /// collapsed on open. Strain is the LIGHT cut — no Level 2 — so this is the only re-sequencing
-    /// state, and it folds just those two blocks for consistency. (Detalles escalonados)
+    /// Level-3 disclosure: the period trend (+ «Media · periodo · Δ%») and «What moves your strain» live
+    /// under «See your history», collapsed on open. Strain is the LIGHT cut — no Level 2 — so this is the
+    /// only re-sequencing state, and it folds just those blocks for consistency. (Detalles escalonados)
     @State private var historyExpanded = false
 
     var body: some View {
@@ -65,18 +70,14 @@ struct StrainDetailScreen: View {
                         blockDivider
                         curveBlock
                     }
-                    // The F6c level instrument (line + tappable levels + «N de tus últimos M días»)
-                    // replaces the old static zones once there's history to count; with no history it
-                    // falls back to the FIXED zones reference, honest about the missing score. (FER-572)
+                    // Niveles · the handoff's single reference table (the 4 fixed bands of `MetricInfo.strain`,
+                    // the active one marked). FIXED reference, so it shows even on a brand-new empty screen —
+                    // the hero's "—" reading is honest about the missing score. The FER-572 level explorer was
+                    // a SECOND copy of these same bands AND took the trend's place; it's gone. (FER-597)
                     blockDivider
-                    if model.series.count >= 2 {
-                        levelsBlock
-                        averageCaption   // handoff «Media · periodo · valor · Δ% vs previo» + rango (FER-587)
-                    } else {
-                        zonesBlock
-                    }
-                    // Level 3 · «See your history»: what moves your strain, collapsed by default. The trend
-                    // chart folded in here moved up into the level instrument above. (FER-572)
+                    levelsTable
+                    // Level 3 · «Ver tu historial»: the period trend + «Media · periodo · Δ%» (neutral) + what
+                    // moves your strain, collapsed by default — the handoff's history, restored here. (FER-597)
                     if model.hasData {
                         blockDivider
                         historySection
@@ -182,17 +183,18 @@ struct StrainDetailScreen: View {
         }
     }
 
-    // MARK: - 3. Zonas (las 4 bandas fijas, la activa marcada)
+    // MARK: - 3. Niveles (las 4 bandas fijas, la activa marcada) — la tabla de referencia del handoff
 
-    private var zonesBlock: some View {
-        // The bands (Rest/Light · Moderate · Hard · Extreme, with the active one flagged for today's
-        // value) come straight from the shared `MetricInfo.strain` factory — same source of truth the
-        // legacy sheet used — so the zones never disagree across screens.
+    /// The handoff's «Niveles» reference table: the 4 fixed bands (Rest/Light · Moderate · Hard · Extreme,
+    /// the active one flagged for today's value) straight from the shared `MetricInfo.strain` factory — the
+    /// same source of truth the hero reading uses, so the table and the highlighted band can never disagree.
+    /// This is now the SOLE levels block; the FER-572 `MetricLevelsExplorer` duplicated it. (FER-597)
+    private var levelsTable: some View {
         let bands = MetricInfo.strain(model.today).bands
         return InfoAccordion(
-            title: "Zones",
+            title: "Levels",
             explanation: "Your heart rate falls into one of four intensity zones through the day. The highlighted row is where today's score lands on the 0–21 scale.",
-            accessibilityLabel: "Information about the strain zones",
+            accessibilityLabel: "Information about the strain levels",
             theme: theme
         ) {
             VStack(spacing: 0) {
@@ -226,16 +228,43 @@ struct StrainDetailScreen: View {
         .background(band.isActive ? theme.dataStrain.opacity(0.10) : Color.clear)
     }
 
-    // MARK: - 4. Niveles (línea + niveles tocables + «N de tus últimos M días») — patrón F6c
+    // MARK: - 4. Tendencia (selector + «Media · periodo · Δ%») — vive en «Ver tu historial»
 
-    /// The F6c level instrument: a RAW-value line over the period you pick, the active level's band shaded,
-    /// a «{level} · N de tus últimos M días» phrase and a TAPPABLE levels list (Rest / Light / Moderate /
-    /// Hard / Extreme, 0–21). Reuses F6a (`MetricLevels.strain`) + the shared `MetricLevelsExplorer`. It
-    /// supersedes both the static zones block and the old 7-day-average trend, which it folds into one. (FER-572)
-    /// The handoff's period-average caption + range, under the levels explorer (FER-587, option ii).
-    /// Effort is NEUTRAL (no good direction → no colour on the Δ); shown on the 0–21 scale, no unit.
-    @ViewBuilder private var averageCaption: some View {
-        let window = MetricWindowMath.make(parsed, selected: range)
+    /// The handoff's trend: a period selector (`MetricTrendChart`) over the daily strain series, drawn as a
+    /// 7-day moving average (strain is a noisy day-to-day composite), in the strain hue. No ⓘ — the smoothing
+    /// is named in the caption right below and the TRIMP math lives in «See the method». Replaces FER-572's
+    /// level explorer, which doubled the Niveles table AND took this trend's place. The `window` is derived
+    /// once by the caller (`expandedHistory`) and shared with `averageCaption` — the FER-216 rule. (FER-597)
+    private func trendBlock(_ window: MetricWindow) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            MetricTrendChart(
+                range: $range,
+                window: window,
+                theme: theme,
+                style: .init(
+                    smoothing: 7,
+                    gradient: chartGradient,
+                    height: 160,
+                    valueRange: { chartRange($0) },
+                    valueFormat: { fmt($0) },
+                    accessibilityLabel: "Day strain, 7-day moving average"
+                )
+            ) {
+                emptyWell(text: "Not enough days in this range to draw a trend.")
+            }
+            if window.values.count > 1 {
+                Text("7-day moving average")
+                    .font(StrandFont.footnote)
+                    .foregroundStyle(theme.inkTertiary)
+            }
+        }
+    }
+
+    /// The handoff's period-average caption: «Media · periodo · valor · Δ% vs previo» + the window's range,
+    /// from the SAME `ComparisonEngine` figures as the trend. Effort is NEUTRAL (no good direction → no colour
+    /// on the Δ); shown on the 0–21 scale, no unit. Sits right under the trend in «Ver tu historial», sharing
+    /// the same `window` the trend already derived. (FER-587)
+    @ViewBuilder private func averageCaption(_ window: MetricWindow) -> some View {
         if window.values.count > 1 {
             let s = ComparisonEngine.stat(window.values)
             DynamicAverageCaption(
@@ -246,22 +275,6 @@ struct StrainDetailScreen: View {
                 rangeText: "\(fmt(s.min))–\(fmt(s.max))",
                 theme: theme)
         }
-    }
-
-    private var levelsBlock: some View {
-        let window = MetricWindowMath.make(parsed, selected: range)
-        return MetricLevelsExplorer(
-            theme: theme,
-            range: $range,
-            window: window,
-            levels: MetricLevels.levels(for: .strain),
-            todayValue: model.today,
-            hue: theme.dataStrain,
-            unit: "",
-            valueFormat: { String(Int($0.rounded())) },
-            domain: 0...21,
-            accessibilityLabel: "Day strain by level"
-        )
     }
 
     // MARK: - 4.5 Qué mueve tu esfuerzo (correlación direccional, gated — FER-239)
@@ -319,10 +332,25 @@ struct StrainDetailScreen: View {
 
     @ViewBuilder private var historySection: some View {
         VStack(alignment: .leading, spacing: historyExpanded ? 22 : 0) {
-            historyDisclosureHeader(caption: "What moves it")
-            if historyExpanded {
-                whatMovesBlock
+            historyDisclosureHeader(caption: "Trend · what moves it")
+            if historyExpanded { expandedHistory }
+        }
+    }
+
+    /// «Ver tu historial» expanded: the period trend + «Media · periodo · Δ%» (neutral), then the gated
+    /// directional drivers. The window is derived ONCE here and handed to both the chart and the caption
+    /// (the FER-216 «compute the window once» rule), instead of each re-deriving it. The trend needs ≥2
+    /// days; «what moves it» carries its own sufficiency gate. The section only renders under `model.hasData`
+    /// (see `body`), so `whatMovesBlock` is unconditional here. (FER-597)
+    private var expandedHistory: some View {
+        let window = MetricWindowMath.make(parsed, selected: range)
+        return VStack(alignment: .leading, spacing: 22) {
+            if model.series.count >= 2 {
+                trendBlock(window)
+                averageCaption(window)
+                blockDivider
             }
+            whatMovesBlock
         }
     }
 
@@ -405,6 +433,16 @@ struct StrainDetailScreen: View {
     // MARK: - Colour + format
 
     private var chartGradient: Gradient { Gradient(colors: [theme.dataStrain.opacity(0.5), theme.dataStrain]) }
+
+    /// The trend chart's Y domain: the smoothed line's own min/max with a little breath, clamped to the
+    /// fixed 0–21 strain scale so the axis never runs past the metric's range. (FER-597)
+    private func chartRange(_ smoothed: [Double]) -> ClosedRange<Double> {
+        let lo = smoothed.min() ?? 0
+        let hi = smoothed.max() ?? 21
+        if hi <= lo { return Swift.max(0, lo - 1)...Swift.min(21, hi + 1) }
+        let pad = (hi - lo) * 0.15
+        return Swift.max(0, lo - pad)...Swift.min(21, hi + pad)
+    }
 
     /// Strain reads to one decimal (0–21), like the row and the hero.
     private func fmt(_ v: Double) -> String { String(format: "%.1f", v) }
