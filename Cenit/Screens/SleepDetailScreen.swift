@@ -1038,7 +1038,6 @@ struct SleepDetailScreen: View {
         var total: Int
     }
 
-
     private func bandedDuration(_ pts: [TrendPoint]) -> BandedDuration? {
         let values = pts.map(\.value)
         // Half-open bounds [lower, upper) match TrendBand.contains and the Today sheet's bands exactly.
