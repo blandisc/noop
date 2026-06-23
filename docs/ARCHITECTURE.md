@@ -450,9 +450,9 @@ band win per night by interval overlap. No migration — the `sleepSession` tabl
 `deviceId`.
 
 The **recovery** counterpart for a band-less night is an **estimate computed read-time** (FER-153), not a
-stored value: `Repository.refresh` runs `AppleRecoveryEstimator` over the `apple-health` daily rows and
-injects the score onto the band-less Apple rows (`injectAppleEstimate`) before `mergeDaily`, so the band
-wins wherever it has the night by the existing precedence. The estimate is **deliberately kept out of
+stored value: `Repository.refresh` runs `AppleRecoveryEstimator` over the `apple-health` daily rows
+(`appleRecoveryEstimates`, band-less nights only — the band wins wherever it has the night). The estimate is
+**deliberately kept out of
 `days`/`displayDays`** (`appleRecoveryEstimates` returns a `[day: estimate]` map on `DashboardData`, it is
 NOT folded into the merge) — so **every recovery statistic over history stays band-measured**: the recovery
 baseline, the rest-day baseline (`activityCosts`), the Coach's correlations/forecast (`InsightEngine`), the

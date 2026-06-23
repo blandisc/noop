@@ -946,9 +946,9 @@ private extension DailyMetric {
             activeKcalEst: activeKcalEst ?? other.activeKcalEst)
     }
 
-    /// A copy with `recovery` substituted (the struct has no `copy()`). Used to inject the Apple-Health
-    /// estimated recovery onto a band-less Apple row before the merge (FER-153) — every other field is
-    /// carried verbatim, so the row's HRV/sleep stay Apple's own.
+    /// A copy with `recovery` substituted (the struct has no `copy()`). Used by `repo.today` to surface the
+    /// Apple-Health estimated recovery on today's single row when the band didn't cover the night (FER-153)
+    /// — every other field is carried verbatim, so the row's HRV/sleep stay Apple's own.
     func withRecovery(_ r: Double?) -> DailyMetric {
         DailyMetric(day: day, totalSleepMin: totalSleepMin, efficiency: efficiency, deepMin: deepMin,
                     remMin: remMin, lightMin: lightMin, disturbances: disturbances, restingHr: restingHr,
