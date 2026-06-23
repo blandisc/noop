@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Edita una rutina sin buscarla: un botón ⋯ a la vista / Edit a routine without hunting for it: a visible ⋯ button.**
+  **ES** — En **Entrenar → Mis rutinas**, cada rutina ahora muestra un botón **⋯** a la derecha (como ya lo tenían las carpetas) con **Editar rutina · Duplicar · Mover a… · Borrar rutina**. Editar ya existía, pero estaba escondido en el mantener-presionado; ahora está a un toque.
+  **EN** — In **Train → My routines**, every routine now shows a **⋯** button on the right (like folders already did) with **Edit routine · Duplicate · Move to… · Delete routine**. Editing already existed, but it was hidden behind a long-press; now it's one tap away.
+  ([Cenit/Screens/EntrenarView.swift](Cenit/Screens/EntrenarView.swift))
+
 - **Duplica una rutina para crear una variante / Duplicate a routine to spin off a variant.**
   **ES** — En **Entrenar → Mis rutinas**, mantén presionada una rutina y elige **«Duplicar»**: crea una copia independiente llamada «… (copia)» en la misma carpeta, con todos sus ejercicios, series, pesos y descansos. Edítala sin tocar la original — perfecto para armar una versión más pesada o un día B sin empezar de cero.
   **EN** — In **Train → My routines**, long-press a routine and pick **"Duplicate"**: it makes an independent copy named "… (copy)" in the same folder, with all its exercises, sets, weights and rest. Edit it without touching the original — perfect for a heavier version or a B-day without starting from scratch.

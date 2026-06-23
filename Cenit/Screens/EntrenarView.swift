@@ -293,42 +293,53 @@ private struct EntrenarLanding: View {
         .buttonStyle(.plain)
     }
 
+    // The routine's actions, shared by the long-press contextMenu and the visible ⋯ menu (FER-535).
+    @ViewBuilder
+    private func routineActions(_ r: Routine) -> some View {
+        Button { builderTarget = .edit(r) } label: { Label("Edit routine", systemImage: "slider.horizontal.3") }
+        Button { duplicate(r) } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
+        Menu {
+            ForEach(folders) { f in
+                Button { move(r, to: f.id) } label: {
+                    Label(f.name, systemImage: r.folderId == f.id ? "checkmark" : "folder")
+                }
+            }
+            if r.folderId != nil {
+                Button { move(r, to: nil) } label: { Label("Remove from folder", systemImage: "folder.badge.minus") }
+            }
+            Divider()
+            Button { startNewFolder(moving: r) } label: { Label("New folder…", systemImage: "folder.badge.plus") }
+        } label: { Label("Move to…", systemImage: "folder") }
+        Button(role: .destructive) { delete(r) } label: { Label("Delete routine", systemImage: "trash") }
+    }
+
     private func routineRow(_ r: Routine) -> some View {
         SwipeToDeleteRow(
             isOpen: Binding(get: { swipedRoutineId == r.id },
                             set: { swipedRoutineId = $0 ? r.id : nil }),
             onDelete: { delete(r) }
         ) {
-            Button { openRoutine(r.id) } label: {
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(r.name).font(StrandFont.body).foregroundStyle(theme.ink)
-                        Text(exerciseCountText(exerciseCounts[r.id] ?? 0))
-                            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    }
-                    Spacer(minLength: 8)
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-                }
-                .frame(minHeight: 48).contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .contextMenu {
-                Button { builderTarget = .edit(r) } label: { Label("Edit routine", systemImage: "slider.horizontal.3") }
-                Button { duplicate(r) } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
-                Menu {
-                    ForEach(folders) { f in
-                        Button { move(r, to: f.id) } label: {
-                            Label(f.name, systemImage: r.folderId == f.id ? "checkmark" : "folder")
+            HStack(spacing: 8) {
+                // Tap the name area to open the routine; the ⋯ menu is a separate trailing control
+                // (so tapping it never opens the routine). Long-press still shows the same menu. (FER-535)
+                Button { openRoutine(r.id) } label: {
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(r.name).font(StrandFont.body).foregroundStyle(theme.ink)
+                            Text(exerciseCountText(exerciseCounts[r.id] ?? 0))
+                                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                         }
+                        Spacer(minLength: 8)
                     }
-                    if r.folderId != nil {
-                        Button { move(r, to: nil) } label: { Label("Remove from folder", systemImage: "folder.badge.minus") }
-                    }
-                    Divider()
-                    Button { startNewFolder(moving: r) } label: { Label("New folder…", systemImage: "folder.badge.plus") }
-                } label: { Label("Move to…", systemImage: "folder") }
-                Button(role: .destructive) { delete(r) } label: { Label("Delete routine", systemImage: "trash") }
+                    .frame(minHeight: 48).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .contextMenu { routineActions(r) }
+
+                Menu { routineActions(r) } label: {
+                    Image(systemName: "ellipsis").font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(theme.inkTertiary).frame(width: 32, height: 48).contentShape(Rectangle())
+                }
             }
         }
         // Drag a routine to move it into a folder (drop on a folder header) or reorder it (drop on a row).
