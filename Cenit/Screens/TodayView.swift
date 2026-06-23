@@ -1244,44 +1244,63 @@ struct TodayView: View {
     /// (FER-221): «recalculando», en sintonía con el dial girando. Vuelve a tinta al terminar.
     private var heroNumeralInk: Color { isSyncing ? theme.inkTertiary : theme.ink }
 
-    /// El numeral dominante — lo único que “grita” el estado. Veredicto → recuperación SIEMPRE en TINTA:
-    /// el color por nivel lo lleva la PALABRA del veredicto, no el número, así nunca se contradicen
-    /// (FER-206; antes el número iba en color de banda y podía pelearse con la palabra, p. ej. «66» ámbar
-    /// bajo «Equilibrado» verde). Calibrando → «N/4» en tinta (progreso, no dato). Espera/base Apple →
-    /// em-dash «—» en tinta. Numeral 60 con el denominador («/100» o «/seed») apilado pequeño y centrado
-    /// debajo (FER-202).
+    /// El numeral dominante — lo único que “grita” el estado. Veredicto (FER-549): número Y palabra van en
+    /// el MISMO color de nivel, así nunca se contradicen (a diferencia del caso que evitó FER-206: número
+    /// en color de banda ≠ color de nivel de la palabra). Sin palabra (`insufficient`) el número se queda
+    /// en tinta. Calibrando → «N/4» en tinta (progreso, no dato). Espera/base Apple → em-dash «—» en tinta.
+    /// Numeral 60 con el denominador («/100» o «/seed») apilado pequeño y centrado debajo (FER-202), y la
+    /// palabra del nivel apilada bajo él (FER-549).
     @ViewBuilder private func heroNumeral(_ s: HeroState) -> some View {
         switch s {
         case .verdict:
             let score = recoveryScore
-            // Concéntrico (FER-169/202): el NÚMERO queda centrado en el eje del dial, con el «/100» apilado
-            // pequeño y centrado DEBAJO (antes flotaba a la derecha con un «/100» espejo invisible que lo
-            // descentraba y lo desbordaba del aro). La escala también vive en el detalle de recuperación.
-            Group {
-                if let score {
-                    VStack(spacing: NoopMetrics.space1) {
-                        Text("\(score)").instrumentoHero(60)
-                            .foregroundStyle(heroNumeralInk)
-                        // FER-274: el «/100» lleva un chevron EN LÍNEA como pista de que el numeral es
-                        // tocable — sin un tercer renglón que descentre el número del dial (FER-270).
-                        HStack(spacing: NoopMetrics.space1) {
-                            Text("/100").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
-                            Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
-                                .foregroundStyle(theme.inkTertiary)
-                                .accessibilityHidden(true)
+            let lvl = readiness.level
+            // FER-549 (B1): la PALABRA del veredicto regresa al centro del dial, apilada bajo el numeral.
+            // Con palabra, el número se tiñe por nivel (MISMO color que la palabra — no se contradicen, a
+            // diferencia del caso FER-206 donde el número iba en color de banda ≠ color de nivel). Sin
+            // palabra (`insufficient`) el número se queda en tinta como antes.
+            let hasWord = lvl != .insufficient
+            let numColor = isSyncing ? theme.inkTertiary
+                : (hasWord ? verdictDataColor(lvl) : heroNumeralInk)
+            VStack(spacing: NoopMetrics.space2) {
+                // Concéntrico (FER-169/202): el NÚMERO queda centrado en el eje del dial, con el «/100»
+                // apilado pequeño y centrado DEBAJO. El número abre la hoja RESUMIDA de recuperación
+                // (MetricInfoSheet), igual que las demás métricas de Hoy (FER-232).
+                Group {
+                    if let score {
+                        VStack(spacing: NoopMetrics.space1) {
+                            Text("\(score)").instrumentoHero(60)
+                                .foregroundStyle(numColor)
+                            // FER-274: el «/100» lleva un chevron EN LÍNEA como pista de que el numeral es
+                            // tocable — sin un tercer renglón que descentre el número del dial (FER-270).
+                            HStack(spacing: NoopMetrics.space1) {
+                                Text("/100").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                                Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
+                                    .foregroundStyle(theme.inkTertiary)
+                                    .accessibilityHidden(true)
+                            }
                         }
+                    } else {
+                        Text("—").instrumentoHero(60).foregroundStyle(theme.inkTertiary)
                     }
-                } else {
-                    Text("—").instrumentoHero(60).foregroundStyle(theme.inkTertiary)
                 }
-            }
-            // El número abre la hoja RESUMIDA de recuperación (MetricInfoSheet), igual que las demás
-            // métricas de Hoy — el detalle rico «Instrumento» (RecoveryDetailScreen) vive en Cuerpo (FER-232).
-            .contentShape(Rectangle())
-            .onTapGesture {
-                metricDetail = .recovery(score: recoveryScore,
-                                         calibrationNights: recoveryCalibration,
-                                         nightsNeeded: Baselines.minNightsSeed)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    metricDetail = .recovery(score: recoveryScore,
+                                             calibrationNights: recoveryCalibration,
+                                             nightsNeeded: Baselines.minNightsSeed)
+                }
+                // La palabra del nivel en su color; toca → «¿Por qué?» (`WhyVerdictSheet`), la misma hoja
+                // que abren la «i» de Métricas y el titular del Brief. `insufficient` no tiene palabra.
+                if hasWord {
+                    Button { showWhyVerdict = true } label: {
+                        Text(stateLabel(lvl)).font(StrandFont.subhead).fontWeight(.semibold)
+                            .foregroundStyle(isSyncing ? theme.inkTertiary : verdictDataColor(lvl))
+                            .multilineTextAlignment(.center)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint(Text("Abre por qué el veredicto se lee así"))
+                }
             }
         case .calibrating(let nights):
             // Apilado (FER-202), igual que el veredicto: «N» centrado en el eje del dial con el «/seed»
@@ -1358,24 +1377,9 @@ struct TodayView: View {
     @ViewBuilder private var verdictBody: some View {
         let r = readiness
         if r.level != .insufficient {
-            // FER-467: la palabra del veredicto + «i» quedan centradas en el eje del dial. El pulso vivo
-            // ya no se ancla aquí — se mudó al encabezado de «Métricas de hoy» (página 2).
-            Button { showWhyVerdict = true } label: {
-                HStack(spacing: NoopMetrics.space2) {
-                    Text(r.headline).font(StrandFont.title2).fontWeight(.semibold)
-                        .foregroundStyle(verdictDataColor(r.level))
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Image(systemName: "info.circle").font(.system(size: 15))
-                        .foregroundStyle(theme.inkTertiary)
-                }
-                // Objetivo táctil HIG de 44pt (FER-276): el titular del veredicto + la «i» quedan
-                // centrados en un área tocable de ≥44pt de alto, sin cambiar su tamaño visual.
-                .frame(minHeight: 44)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityHint(Text("Abre por qué el veredicto se lee así"))
+            // FER-549 (B1): la palabra del veredicto + el «¿por qué?» ya viven en el CENTRO del dial; aquí
+            // (el fallback de página 1 sin Daily Brief) ya no se repiten para no duplicar el mismo dato en
+            // pantalla. Este bloque conserva solo los modificadores honestos (estimado / puente / confianza).
             // FER-153: a band-less Apple night drives the verdict from an ESTIMATED recovery — mark it so
             // the day never reads identical to a band reading; the full explanation is one tap into the detail.
             if repo.isRecoveryEstimated(Repository.localDayKey(Date())) { estimatedTodayMarker }
@@ -1565,19 +1569,45 @@ struct TodayView: View {
     private struct LivePulsePill: View {
         var liveBpm: Int?
         var isLiveHR: Bool
+        /// FER-549 (B6): instante del último sync, para mostrar «hace cuánto» dentro de la píldora.
+        var lastSyncedAt: Double?
         let onTap: () -> Void
         @Environment(\.instrumentoTheme) private var theme
 
+        /// Mismo formato abreviado que `SyncInline` (FER-446): «3 min», «1 h», «2 d».
+        private static let relativeFormatter: RelativeDateTimeFormatter = {
+            let f = RelativeDateTimeFormatter()
+            f.unitsStyle = .abbreviated
+            return f
+        }()
+
         var body: some View {
             Button(action: onTap) {
-                // Chip compacto (FER-265): punto que late + bpm + chevron. La cápsula + el chevron son
-                // el lenguaje iOS de «esto se toca»; el punto en color de dato (vivo) es el único color.
+                // Chip compacto (FER-265): punto que late + bpm + frescura + chevron. La cápsula + el
+                // chevron son el lenguaje iOS de «esto se toca»; el punto en color de dato (vivo) es el
+                // único color.
                 HStack(alignment: .center, spacing: NoopMetrics.space1) {
                     Circle().fill(isLiveHR ? theme.dataHeart : theme.inkTertiary)
                         .frame(width: 7, height: 7)
                     Text(liveBpm.map { "\($0)" } ?? "—").font(StrandFont.number(13, weight: .semibold))
                         .foregroundStyle(liveBpm == nil ? theme.inkTertiary : theme.ink)
                     Text("bpm").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    // FER-549 (B6): separador hairline + ícono refrescar (⟳) + «hace cuánto» se actualizó.
+                    // El ⟳ comunica que se puede refrescar; el tiempo dice qué tan fresca es la lectura.
+                    if let at = lastSyncedAt {
+                        Rectangle().fill(theme.hairline).frame(width: 1, height: 10)
+                            .padding(.horizontal, NoopMetrics.space1)
+                            .accessibilityHidden(true)
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                            .font(.system(size: 9, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                            .accessibilityHidden(true)
+                        TimelineView(.periodic(from: .now, by: 60)) { context in
+                            let delta = Swift.min(at - context.date.timeIntervalSince1970, -1)
+                            Text(Self.relativeFormatter.localizedString(fromTimeInterval: delta))
+                                .font(StrandFont.number(11, weight: .regular))
+                                .foregroundStyle(theme.inkTertiary)
+                        }
+                    }
                     Image(systemName: "chevron.right")
                         .font(.system(size: 9, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                 }
@@ -1964,7 +1994,8 @@ struct TodayView: View {
     /// con strap visto; tocarla abre el monitor latido-a-latido. (El anclaje `withPulsePill` a la línea
     /// del veredicto, FER-282, se retiró: el pulso ya no vive en el héroe / página 1.)
     private var pulsePill: some View {
-        LivePulsePill(liveBpm: liveBpm, isLiveHR: isLiveHR, onTap: { showLiveMonitor = true })
+        LivePulsePill(liveBpm: liveBpm, isLiveHR: isLiveHR, lastSyncedAt: live.lastSyncedAt,
+                      onTap: { showLiveMonitor = true })
     }
 
     /// La rejilla de «Métricas de hoy»: dos columnas iguales → 8 tiles en 4 renglones de 2.
