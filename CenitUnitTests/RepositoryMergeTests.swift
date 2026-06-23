@@ -157,4 +157,44 @@ final class RepositoryMergeTests: XCTestCase {
         XCTAssertEqual(r.days.map(\.avgHrv), [77, 80])              // Apple values, no strap
         XCTAssertEqual(r.appleDays, ["2026-06-10", "2026-06-11"])  // all Apple-sourced
     }
+
+    // MARK: - FER-153 — Apple estimates are a side map, never folded into days/displayDays
+
+    /// An Apple row with SDNN + sleep, for the estimate tests.
+    private func appleRow(_ day: String, hrv: Double, sleep: Double = 420) -> DailyMetric {
+        DailyMetric(day: day, totalSleepMin: sleep, efficiency: nil, deepMin: nil, remMin: nil,
+                    lightMin: nil, disturbances: nil, restingHr: 55, avgHrv: hrv, recovery: nil,
+                    strain: nil, exerciseCount: nil)
+    }
+
+    /// With ≥ seed Apple nights, every band-LESS night gets an estimate (score + confidence); a
+    /// band-covered day (in `strapDays`) gets none — the band wins.
+    func testEstimatesForBandlessDaysOnly() {
+        let apple = (1...5).map { appleRow(String(format: "2026-06-%02d", $0), hrv: 50) }
+        let est = Repository.appleRecoveryEstimates(apple: apple, strapDays: ["2026-06-03"])
+
+        XCTAssertEqual(Set(est.keys), ["2026-06-01", "2026-06-02", "2026-06-04", "2026-06-05"])
+        XCTAssertNil(est["2026-06-03"])                          // band wins → no estimate
+        XCTAssertNotNil(est["2026-06-01"]?.score)
+        XCTAssertEqual(est["2026-06-01"]?.confidence, .calibrating)   // few nights → low
+    }
+
+    /// The estimate is NEVER folded into the merged days — `mergeDaily` is the unchanged band/Apple merge,
+    /// so `days`/`displayDays` recovery stays band-measured (no recovery statistic over history sees it).
+    func testMergeDailyUnaffectedByEstimates() {
+        let apple = (1...5).map { appleRow(String(format: "2026-06-%02d", $0), hrv: 50) }
+        let r = Repository.mergeDaily(imported: [], computed: [], apple: apple)
+        XCTAssertTrue(r.days.allSatisfy { $0.recovery == nil })   // Apple rows carry no recovery into days
+    }
+
+    /// whoopOnly path: the mode filter hands `apple == []`, so there is no estimate at all.
+    func testNoEstimateWhenAppleEmpty() {
+        XCTAssertTrue(Repository.appleRecoveryEstimates(apple: [], strapDays: []).isEmpty)
+    }
+
+    /// Cold-start: fewer than the seed of Apple HRV nights → no estimate (UI shows "—").
+    func testNoEstimateBelowSeed() {
+        let apple = (1...3).map { appleRow(String(format: "2026-06-%02d", $0), hrv: 50) }
+        XCTAssertTrue(Repository.appleRecoveryEstimates(apple: apple, strapDays: []).isEmpty)
+    }
 }

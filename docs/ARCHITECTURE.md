@@ -467,6 +467,19 @@ or Apple-Health-only) draws the same per-epoch hypnogram as a strap night. The r
 band win per night by interval overlap. No migration — the `sleepSession` table already partitions by
 `deviceId`.
 
+The **recovery** counterpart for a band-less night is an **estimate computed read-time** (FER-153), not a
+stored value: `Repository.refresh` runs `AppleRecoveryEstimator` over the `apple-health` daily rows
+(`appleRecoveryEstimates`, band-less nights only — the band wins wherever it has the night). The estimate is
+**deliberately kept out of
+`days`/`displayDays`** (`appleRecoveryEstimates` returns a `[day: estimate]` map on `DashboardData`, it is
+NOT folded into the merge) — so **every recovery statistic over history stays band-measured**: the recovery
+baseline, the rest-day baseline (`activityCosts`), the Coach's correlations/forecast (`InsightEngine`), the
+strain↔recovery driver (`WhatMovesStrainEngine`), the metric-explorer/compare sweeps, the AI-coach average —
+none can mix in an estimate, with no per-consumer carve-outs to maintain. The estimate surfaces for display
+on **`repo.today` only** (a single-day override: today's row gets the estimate when the band didn't cover the
+night), which is what the ring, the verdict and the recovery-detail hero read. `isEstimated` /
+`recoveryConfidence` are derived from the same map; no column, no migration.
+
 ---
 
 ## 9. Analytics (StrandAnalytics)
@@ -479,6 +492,12 @@ band win per night by interval overlap. No migration — the `sleepSession` tabl
   efficiency, resting HR, average HRV, and a hypnogram.
 - **`RecoveryScorer`** normalizes nightly HRV/RHR (and a sleep-performance proxy) against baselines
   into a `0–100` score.
+- **`AppleRecoveryEstimator`** (FER-153) scores an **estimated** recovery for a night that did not come
+  from the band, from Apple Health's **SDNN** against the user's **own** Apple SDNN baseline — SDNN-vs-SDNN,
+  **never converted to RMSSD** — reusing the same `RecoveryScorer` model. A separate baseline, never mixed
+  with the strap's RMSSD; SDNN is a different construct (total vs vagal variability) and ultra-short/all-day,
+  so the result is labelled «estimado» with a `ScoreConfidence` grade, never equated to a band recovery
+  (Task Force 1996; Shaffer & Ginsberg 2017). Pure + DB-free; surfaced read-time (see §8), not persisted.
 - **`StrainScorer`** integrates the day's HR window into a `0–21` cardiovascular load (Tanaka HRmax
   from age unless overridden).
 - **`WorkoutDetector`** segments exercise bouts from HR + motion.
