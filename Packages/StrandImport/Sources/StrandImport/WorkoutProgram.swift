@@ -296,9 +296,9 @@ public struct WorkoutExerciseReconciler {
         tokenized = tokens
     }
 
-    /// The catalog exercise whose name matches `name` after normalization, or nil if none does.
+    /// The catalog exercise whose name matches `name` after pre-clean + normalization, or nil if none does.
     public func match(_ name: String) -> Exercise? {
-        byNormalizedName[Self.normalize(name)]
+        byNormalizedName[Self.normalize(Self.preClean(name))]
     }
 
     /// Resolve an imported exercise to a known one, in cascade: declared catalog `id` (FER-521) >
@@ -307,8 +307,8 @@ public struct WorkoutExerciseReconciler {
     /// (→ the user maps it, and that choice becomes a learned alias for next time).
     public func resolve(_ exercise: WorkoutExercise) -> Exercise? {
         if let id = exercise.id, let hit = byId[id] { return hit }
-        let key = Self.normalize(exercise.name)
-        return match(exercise.name) ?? byAlias[key] ?? byLearned[key]
+        let key = Self.normalize(Self.preClean(exercise.name))
+        return byNormalizedName[key] ?? byAlias[key] ?? byLearned[key]
     }
 
     /// Up to `limit` catalog/custom exercises whose name is closest to `name` by token-set overlap
@@ -324,7 +324,7 @@ public struct WorkoutExerciseReconciler {
     /// the adversarial test (FER-542) uses the scores to assert that trap names surface no high-confidence
     /// match, so loosening coverage can't quietly start auto-suggesting garbage.
     func scoredSuggestions(for name: String) -> [(exercise: Exercise, score: Double)] {
-        let query = Set(Self.normalize(name).split(separator: " ").map(String.init))
+        let query = Set(Self.normalize(Self.preClean(name)).split(separator: " ").map(String.init))
         guard !query.isEmpty else { return [] }
         return tokenized.compactMap { entry -> (exercise: Exercise, score: Double)? in
             // Best Jaccard over the exercise's name variants (EN / ES), so a long name in the OTHER
@@ -363,5 +363,24 @@ public struct WorkoutExerciseReconciler {
         let folded = name.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: nil)
         let parts = folded.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
         return parts.joined(separator: " ")
+    }
+
+    /// Strip the formatting noise an LLM (or a user pasting its output) wraps around an exercise name,
+    /// BEFORE matching (FER-544): a leading list bullet/enumerator ("- ", "• ", "1. ", "2) ") and a
+    /// trailing volume annotation ("4x8", "3 x 10", "4 series", "12 reps"). Applied only to the imported
+    /// NAME on the lookup path (resolve / match / suggestions) — never to how the catalog, aliases, or
+    /// learned aliases are indexed — so it can't shift the catalog identity guard or the persisted
+    /// learned-alias key. Anchored and single-shot, so it never erodes a legitimate name: internal hyphens
+    /// ("Close-Grip"), "3/4 Sit-Up", "21s", "Farmer's Walk", and "cardio 30 minutos" are all left intact.
+    static func preClean(_ name: String) -> String {
+        var s = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        // 1) one leading list bullet or enumerator ("- ", "* ", "• ", "1. ", "2) "), followed by a space.
+        s = s.replacingOccurrences(of: #"^([-*•‣◦·]+|\d+[.)])\s+"#, with: "", options: .regularExpression)
+        // 2) one trailing volume annotation: "NxM" / "N x M" …
+        s = s.replacingOccurrences(of: #"\s+\d+\s*[xX×]\s*\d+$"#, with: "", options: .regularExpression)
+        // … or "N series" / "N reps" / "N repeticiones" (case-insensitive).
+        s = s.replacingOccurrences(of: #"(?i)\s+\d+\s*(series|serie|sets|set|reps|rep|repeticiones)$"#,
+                                   with: "", options: .regularExpression)
+        return s.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }

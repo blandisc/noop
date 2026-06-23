@@ -104,21 +104,25 @@ final class AdversarialMatchingTests: XCTestCase {
         ("domindas", "Pullups"),
         ("peso muerto rumano con barra", "Romanian_Deadlift"),
         ("elevacion lateral con mancuernas", "Side_Lateral_Raise"),
+
+        // --- FER-544 B4: LLM format noise — a leading bullet/number or a trailing "NxM"/"N reps" that
+        // `preClean` now strips before matching, so these pasted-as-is names resolve on their own. ---
+        ("- press militar", "Standing_Military_Press"),
+        ("• sentadilla con barra", "Barbell_Squat"),
+        ("press de banca 4x8", "Barbell_Bench_Press_-_Medium_Grip"),
+        ("sentadilla 3x10", "Barbell_Squat"),
+        ("1. peso muerto", "Barbell_Deadlift"),
     ]
 
     /// Ambiguous / not-an-exercise names. They must NOT auto-resolve (→ mapping) and must NOT surface a
     /// high-confidence fuzzy suggestion (the trap-discipline guard).
+    /// Ambiguous / not-an-exercise names. They must NOT auto-resolve (→ mapping) and must NOT surface a
+    /// high-confidence fuzzy suggestion. Includes FER-544 cases where `preClean` strips a trailing volume
+    /// annotation down to a bare, ambiguous word ("press 3x5" → "press") — which correctly stays unmatched.
     private static let traps = [
         "press", "máquina", "cardio 30 minutos", "estiramiento", "circuito de core",
         "movilidad de cadera", "descanso activo", "calentamiento", "enfriamiento",
-    ]
-
-    /// FER-542 documented gap: `normalize` keeps a leading bullet/number and an inline "NxM", so these
-    /// real-world pasted forms don't resolve today. NOT counted in the coverage floor — they are the
-    /// evidence for a separate algorithm issue (a light name pre-clean). This test asserts they stay
-    /// unmatched so the day a pre-clean lands, the assertion flips and reminds us to fold them in.
-    private static let formatNoise = [
-        "- press militar", "• sentadilla con barra", "press de banca 4x8", "sentadilla 3x10", "1. peso muerto",
+        "press 3x5", "remo 12 reps", "curl 4 series",
     ]
 
     // MARK: - A: catalog-wide identity guard
@@ -147,6 +151,36 @@ final class AdversarialMatchingTests: XCTestCase {
             + "ES \(esCount - esUnresolved.count)/\(esCount)")
         XCTAssertTrue(enUnresolved.isEmpty, "English names that no longer resolve:\n" + enUnresolved.joined(separator: "\n"))
         XCTAssertTrue(esUnresolved.isEmpty, "Spanish names that no longer resolve:\n" + esUnresolved.joined(separator: "\n"))
+    }
+
+    // MARK: - FER-544: preClean strips noise but never erodes a legitimate name
+
+    func testPreCleanStripsFormatNoise() {
+        let strip: [(String, String)] = [
+            ("- press militar", "press militar"),
+            ("• sentadilla con barra", "sentadilla con barra"),
+            ("* peso muerto", "peso muerto"),
+            ("1. peso muerto", "peso muerto"),
+            ("2) sentadilla", "sentadilla"),
+            ("press de banca 4x8", "press de banca"),
+            ("sentadilla 3 x 10", "sentadilla"),
+            ("press 3x5", "press"),
+            ("curl 4 series", "curl"),
+            ("remo 12 reps", "remo"),
+        ]
+        for (input, expected) in strip {
+            XCTAssertEqual(WorkoutExerciseReconciler.preClean(input), expected, "preClean(\(input.debugDescription))")
+        }
+    }
+
+    /// preClean must be the identity on names that only LOOK like they carry noise — internal hyphens,
+    /// a leading number that's part of the name, a trailing token that isn't an NxM/units annotation.
+    func testPreCleanPreservesLegitimateNames() {
+        let untouched = ["Close-Grip Bench Press", "3/4 Sit-Up", "90/90 Hamstring", "Farmer's Walk",
+                         "cardio 30 minutos", "21s", "Figure 8 Walk", "T-Bar Row"]
+        for name in untouched {
+            XCTAssertEqual(WorkoutExerciseReconciler.preClean(name), name, "preClean must not touch \(name.debugDescription)")
+        }
     }
 
     // MARK: - B + C: coverage + stricter metrics
@@ -210,13 +244,4 @@ final class AdversarialMatchingTests: XCTestCase {
             "Least-effort coverage regressed — fewer names auto-resolve or lead the 'did you mean…?' list.")
     }
 
-    /// Documents the format-noise gap (FER-542 lever B finding): these don't resolve today. If a future
-    /// name pre-clean lands, this assertion flips → fold them into the labeled fixture above.
-    func testFormatNoiseIsAKnownGap() {
-        let reconciler = WorkoutExerciseReconciler(known: ExerciseCatalog.all)
-        for name in Self.formatNoise {
-            XCTAssertNil(reconciler.resolve(WorkoutExercise(name: name, sets: 1)),
-                "Format noise \(name.debugDescription) now resolves — fold it into the labeled fixture.")
-        }
-    }
 }
