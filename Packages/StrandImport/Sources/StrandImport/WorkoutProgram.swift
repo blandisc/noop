@@ -316,9 +316,17 @@ public struct WorkoutExerciseReconciler {
     /// import screen offers for a name that didn't resolve (FER-523). Ranked by similarity, then name for
     /// a stable order. Never auto-applied — the user confirms.
     public func suggestions(for name: String, limit: Int = 3) -> [Exercise] {
+        scoredSuggestions(for: name).prefix(limit).map { $0.exercise }
+    }
+
+    /// The scored fuzzy matches (exercise, Jaccard 0…1) above the minimum similarity, ranked best-first —
+    /// what `suggestions` returns before it drops the scores and truncates. Internal (not public API):
+    /// the adversarial test (FER-542) uses the scores to assert that trap names surface no high-confidence
+    /// match, so loosening coverage can't quietly start auto-suggesting garbage.
+    func scoredSuggestions(for name: String) -> [(exercise: Exercise, score: Double)] {
         let query = Set(Self.normalize(name).split(separator: " ").map(String.init))
         guard !query.isEmpty else { return [] }
-        let scored: [(exercise: Exercise, score: Double)] = tokenized.compactMap { entry in
+        return tokenized.compactMap { entry -> (exercise: Exercise, score: Double)? in
             // Best Jaccard over the exercise's name variants (EN / ES), so a long name in the OTHER
             // language doesn't dilute the match.
             let score = entry.tokenSets.map { set -> Double in
@@ -328,10 +336,7 @@ public struct WorkoutExerciseReconciler {
             }.max() ?? 0
             return score >= 0.34 ? (entry.exercise, score) : nil
         }
-        return scored
-            .sorted { $0.score != $1.score ? $0.score > $1.score : $0.exercise.name < $1.exercise.name }
-            .prefix(limit)
-            .map { $0.exercise }
+        .sorted { $0.score != $1.score ? $0.score > $1.score : $0.exercise.name < $1.exercise.name }
     }
 
     /// The unique exercise names across the program that DON'T resolve (by id or name), in first-seen
