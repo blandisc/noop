@@ -136,6 +136,47 @@ public struct MetricRowButtonStyle: ButtonStyle {
     }
 }
 
+// MARK: - Press feedback styles (shared)
+//
+// The «Instrumento» screens give every tappable surface the touch feedback the flat `.plain` style
+// lacks. Three shapes, by what's being pressed:
+//   • `MetricRowButtonStyle` (above) — a transparent row: fill a faint tint BEHIND the label.
+//   • `SurfacePressStyle`            — a card that paints its OWN surface: overlay the tint ON TOP,
+//                                      clipped to the rounded shape (a behind-fill would be hidden).
+//   • `ControlPressStyle`            — a filled / text button: a quiet scale + dim (a tint wouldn't read).
+// Pass the by-hour theme's faint fill (e.g. `theme.ink.opacity(0.05)`) so the press reads on warm paper.
+
+/// Press feedback for a card that paints its own background: overlay a faint tint, clipped to the
+/// card's rounded shape, while pressed. Same 5%-ink + easeOut(0.12) feel as `MetricRowButtonStyle`.
+public struct SurfacePressStyle: ButtonStyle {
+    var tint: Color
+    var radius: CGFloat
+    public init(tint: Color, radius: CGFloat = NoopMetrics.cardRadius) {
+        self.tint = tint; self.radius = radius
+    }
+    public func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .overlay {
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .fill(tint)
+                    .opacity(configuration.isPressed ? 1 : 0)
+            }
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+    }
+}
+
+/// Press feedback for a filled or text button: a quiet scale + dim while pressed (the `interactive`
+/// spring), since a tint overlay wouldn't read on a saturated fill.
+public struct ControlPressStyle: ButtonStyle {
+    public init() {}
+    public func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.82 : 1)
+            .scaleEffect(configuration.isPressed ? 0.98 : 1)
+            .animation(StrandMotion.interactive, value: configuration.isPressed)
+    }
+}
+
 // MARK: - Inline flag chip
 
 /// A tiny outlined chip for inline caveats next to a label (e.g. "Low conf" on HRV after a short

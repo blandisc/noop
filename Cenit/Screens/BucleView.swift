@@ -316,7 +316,7 @@ private struct PatronesLanding: View {
                                 in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
                     .shadow(color: theme.dataRecovery.opacity(0.25), radius: 3, x: 0, y: 1)
                 }
-                .buttonStyle(PressNudge())
+                .buttonStyle(ControlPressStyle())
             }
             Button { detail = InsightItem(insight: insight) } label: {
                 HStack(spacing: 4) {
@@ -327,7 +327,7 @@ private struct PatronesLanding: View {
                 .frame(minHeight: 44)
                 .contentShape(Rectangle())
             }
-            .buttonStyle(PressNudge())
+            .buttonStyle(ControlPressStyle())
         }
     }
 
@@ -407,7 +407,7 @@ private struct PatronesLanding: View {
             .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
             .contentShape(Rectangle())
         }
-        .buttonStyle(PressTint(theme: theme, radius: 10))
+        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05), radius: 10))
     }
 
     // MARK: §3 · Pon a prueba algo nuevo (the running experiment + builder)
@@ -521,7 +521,7 @@ private struct PatronesLanding: View {
                 .frame(minHeight: 44)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(PressNudge())
+        .buttonStyle(ControlPressStyle())
         .accessibilityLabel(label)
     }
 
@@ -551,7 +551,7 @@ private struct PatronesLanding: View {
                         .padding(.vertical, 8).padding(.leading, 12)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(PressNudge())
+                .buttonStyle(ControlPressStyle())
             }
             .padding(.top, 13)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -572,7 +572,7 @@ private struct PatronesLanding: View {
             .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
             .contentShape(Rectangle())
         }
-        .buttonStyle(PressTint(theme: theme, radius: 10))
+        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05), radius: 10))
     }
 
     /// The experiment verdict (State 3): a result card. «Funcionó» graduates to §4 (the engine already
@@ -606,7 +606,7 @@ private struct PatronesLanding: View {
                         .padding(.vertical, 11)
                         .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
                     }
-                    .buttonStyle(PressNudge())
+                    .buttonStyle(ControlPressStyle())
                     quietButton("Repeat") { restartExperiment(exp) }
                 }
                 .padding(.top, 15)
@@ -624,12 +624,12 @@ private struct PatronesLanding: View {
                             .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
                                 .stroke(theme.hairlineStrong, lineWidth: 1))
                     }
-                    .buttonStyle(PressNudge())
+                    .buttonStyle(ControlPressStyle())
                     Button { dismissVerdict(exp) } label: {
                         Text("Discard").font(StrandFont.headline).foregroundStyle(theme.inkTertiary)
                             .padding(.horizontal, 14).padding(.vertical, 11)
                     }
-                    .buttonStyle(PressNudge())
+                    .buttonStyle(ControlPressStyle())
                 }
                 .padding(.top, 14)
             }
@@ -681,7 +681,7 @@ private struct PatronesLanding: View {
                         .padding(.horizontal, 16).padding(.vertical, 9)
                         .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
                 }
-                .buttonStyle(PressNudge())
+                .buttonStyle(ControlPressStyle())
             }
             .padding(.top, 13)
         }
@@ -708,7 +708,7 @@ private struct PatronesLanding: View {
                 .stroke(theme.hairlineStrong, style: StrokeStyle(lineWidth: 1, dash: [4])))
             .contentShape(Rectangle())
         }
-        .buttonStyle(PressTint(theme: theme, radius: NoopMetrics.controlRadius))
+        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05), radius: NoopMetrics.controlRadius))
         .padding(.top, 11)
     }
 
@@ -739,7 +739,7 @@ private struct PatronesLanding: View {
                 .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
                     .stroke(theme.hairlineStrong, lineWidth: 1))
         }
-        .buttonStyle(PressNudge())
+        .buttonStyle(ControlPressStyle())
     }
 
     // MARK: §4 · Confirmado · funciona en ti (proven levers)
@@ -779,7 +779,7 @@ private struct PatronesLanding: View {
             .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
             .contentShape(Rectangle())
         }
-        .buttonStyle(PressTint(theme: theme, radius: 10))
+        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05), radius: 10))
     }
 
     // MARK: §5 · Aporta lo tuyo (journal + relate-two-metrics)
@@ -815,7 +815,7 @@ private struct PatronesLanding: View {
             }
             .surfaceRow(theme)
         }
-        .buttonStyle(PressTint(theme: theme))
+        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05)))
     }
 
     private var relacionaRow: some View {
@@ -833,7 +833,7 @@ private struct PatronesLanding: View {
             }
             .surfaceRow(theme)
         }
-        .buttonStyle(PressTint(theme: theme))
+        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05)))
     }
 
     // MARK: §6 · Tu expediente (the archive)
@@ -873,7 +873,7 @@ private struct PatronesLanding: View {
                     .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
                         .stroke(theme.hairlineStrong, lineWidth: 1))
                 }
-                .buttonStyle(PressTint(theme: theme))
+                .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05)))
                 .padding(.top, 11)
             }
         }
@@ -955,7 +955,7 @@ private struct PatronesLanding: View {
                             .padding(.horizontal, 6)
                             .contentShape(Rectangle())
                     }
-                    .buttonStyle(PressNudge())
+                    .buttonStyle(ControlPressStyle())
                     .accessibilityLabel("How this section works")
                 }
                 Spacer()
@@ -969,7 +969,7 @@ private struct PatronesLanding: View {
                         .padding(.vertical, 6)
                         .contentShape(Rectangle())
                     }
-                    .buttonStyle(PressNudge())
+                    .buttonStyle(ControlPressStyle())
                 }
             }
             content()
@@ -1018,7 +1018,7 @@ private struct PatronesLanding: View {
             .padding(.vertical, 8)
             .contentShape(Rectangle())
         }
-        .buttonStyle(PressNudge())
+        .buttonStyle(ControlPressStyle())
         .padding(.top, 26)
     }
 
@@ -1168,38 +1168,6 @@ private extension View {
             .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
                 .stroke(theme.hairlineStrong, lineWidth: 1))
-    }
-}
-
-// MARK: - Press feedback (matches CuerpoView / TodayView)
-//
-// Patrones' rows & CTAs used `.buttonStyle(.plain)` (no touch feedback). These mirror the press
-// vocabulary the sibling Instrumento screens already use: a 5%-ink tint overlay clipped to the
-// row/card shape for surfaces, and a quiet scale+opacity nudge for filled/text CTAs. Defined
-// locally to match the established per-screen convention (CuerpoView keeps its own `CardPressStyle`).
-
-/// Press feedback for a tappable row or card: overlay a faint ink tint, clipped to the shape, on press.
-private struct PressTint: ButtonStyle {
-    var theme: InstrumentoTheme
-    var radius: CGFloat = NoopMetrics.cardRadius
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .overlay {
-                RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .fill(theme.ink.opacity(0.05))
-                    .opacity(configuration.isPressed ? 1 : 0)
-            }
-            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
-    }
-}
-
-/// Press feedback for a filled / text button: a quiet scale + dim on press (the `interactive` spring).
-private struct PressNudge: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .opacity(configuration.isPressed ? 0.82 : 1)
-            .scaleEffect(configuration.isPressed ? 0.98 : 1)
-            .animation(StrandMotion.interactive, value: configuration.isPressed)
     }
 }
 
