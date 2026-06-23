@@ -627,7 +627,7 @@ struct TodayView: View {
     /// aunque el usuario no tenga banda).
     /// El `repo.refresh()` final asegura que la pantalla refleje lo último (los scores se recalculan
     /// solos vía `repo.refreshSeq` → `.task(id:)`). El `sleep` corto conserva el «soltar pronto» (~1.2 s)
-    /// de FER-204; el offload largo sigue en segundo plano, reflejado en el dial girando + `SyncInline`.
+    /// de FER-204; el offload largo sigue en segundo plano, reflejado en el dial girando + la cápsula de pulso.
     @MainActor
     private func pullToSync() async {
         syncHaptic += 1                       // dispara la háptica `.medium` al provocar el gesto
@@ -766,14 +766,14 @@ struct TodayView: View {
         HStack(alignment: .center, spacing: NoopMetrics.space2) {
             utilityRow
             Spacer(minLength: NoopMetrics.space2)
-            // FER-550: en reposo el header muestra la PÍLDORA DE PULSO (con su frescura ⟳ 2m, FER-549),
-            // que se mudó aquí desde el encabezado de «Métricas de hoy» (retirado en F2). Durante el sync
-            // cede al `SyncInline` para no perder el progreso de paquetes («Sincronizando… / N paquetes»);
-            // el dial girando (FER-221) acompaña. Sin strap visto, ni pulso ni sync — solo fecha + batería.
-            if live.backfilling || live.draining {
-                SyncInline(backfilling: live.backfilling || live.draining, chunks: live.syncChunksThisSession,
-                           lastSyncedAt: live.lastSyncedAt)
-            } else if strapSeen {
+            // FER-550: el header muestra la PÍLDORA DE PULSO (con su frescura ⟳, FER-549), que se mudó aquí
+            // desde el encabezado de «Métricas de hoy» (retirado en F2). El dial girando (FER-221) acompaña
+            // el sync.
+            // FER-583: la cápsula de pulso se mantiene SIEMPRE (en reposo y sincronizando); solo cambia su
+            // texto de frescura (⟳ hace 30 s → ⟳ Sincronizando… / N paquetes, con el glifo girando). Antes
+            // el sync REEMPLAZABA la cápsula por una línea suelta (sin bpm), lo que escondía el pulso y, como
+            // medía menos alto, hacía «saltar» el header. Sin strap visto no hay cápsula — solo fecha+batería.
+            if strapSeen || live.backfilling || live.draining {
                 pulsePill
             }
             if let pct = live.batteryPct {
@@ -1588,42 +1588,45 @@ struct TodayView: View {
         var isLiveHR: Bool
         /// FER-549 (B6): instante del último sync, para mostrar «hace cuánto» dentro de la píldora.
         var lastSyncedAt: Double?
+        /// FER-583: estado de sincronización. La cápsula se MANTIENE durante el sync (antes cedía su lugar a
+        /// una línea suelta sin bpm); solo su frescura pasa a «Sincronizando…» / «N paquetes» con el ⟳ girando.
+        var backfilling: Bool = false
+        var chunks: Int = 0
         let onTap: () -> Void
         @Environment(\.instrumentoTheme) private var theme
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-        /// Mismo formato abreviado que `SyncInline` (FER-446): «3 min», «1 h», «2 d».
-        private static let relativeFormatter: RelativeDateTimeFormatter = {
-            let f = RelativeDateTimeFormatter()
-            f.unitsStyle = .abbreviated
-            return f
-        }()
+        /// Tiempo relativo en unidades de UNA letra (FER-575/583): «hace 30 s / 5 m / 2 h / 3 d». Núcleo
+        /// neutro («30 s», idéntico es/en) envuelto en la clave bilingüe «%@ ago» (es: «hace %@»).
+        private static func compactAgo(_ secondsAgo: Double) -> String {
+            let s = Int(secondsAgo.rounded())
+            let core: String
+            if s < 60 { core = "\(s) s" }
+            else if s < 3600 { core = "\(s / 60) m" }
+            else if s < 86_400 { core = "\(s / 3600) h" }
+            else { core = "\(s / 86_400) d" }
+            return String(localized: "\(core) ago")
+        }
 
         var body: some View {
             Button(action: onTap) {
-                // Chip compacto (FER-265): punto que late + bpm + frescura + chevron. La cápsula + el
-                // chevron son el lenguaje iOS de «esto se toca»; el punto en color de dato (vivo) es el
-                // único color.
+                // Chip compacto (FER-265): punto que late + bpm + frescura/estado de sync + chevron. La
+                // cápsula + el chevron son el lenguaje iOS de «esto se toca»; el punto en color de dato
+                // (vivo) es el único color.
                 HStack(alignment: .center, spacing: NoopMetrics.space1) {
                     Circle().fill(isLiveHR ? theme.dataHeart : theme.inkTertiary)
                         .frame(width: 7, height: 7)
                     Text(liveBpm.map { "\($0)" } ?? "—").font(StrandFont.number(13, weight: .semibold))
                         .foregroundStyle(liveBpm == nil ? theme.inkTertiary : theme.ink)
                     Text("bpm").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    // FER-549 (B6): separador hairline + ícono refrescar (⟳) + «hace cuánto» se actualizó.
-                    // El ⟳ comunica que se puede refrescar; el tiempo dice qué tan fresca es la lectura.
-                    if let at = lastSyncedAt {
+                    // FER-549 (B6) + FER-583: separador + ⟳ + frescura/estado. El ⟳ gira mientras `backfilling`;
+                    // el texto es «Sincronizando…»/«N paquetes» en sync, o «hace 30 s» en reposo.
+                    if backfilling || lastSyncedAt != nil {
                         Rectangle().fill(theme.hairline).frame(width: 1, height: 10)
                             .padding(.horizontal, NoopMetrics.space1)
                             .accessibilityHidden(true)
-                        Image(systemName: "arrow.triangle.2.circlepath")
-                            .font(.system(size: 9, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-                            .accessibilityHidden(true)
-                        TimelineView(.periodic(from: .now, by: 60)) { context in
-                            let delta = Swift.min(at - context.date.timeIntervalSince1970, -1)
-                            Text(Self.relativeFormatter.localizedString(fromTimeInterval: delta))
-                                .font(StrandFont.number(11, weight: .regular))
-                                .foregroundStyle(theme.inkTertiary)
-                        }
+                        syncGlyph
+                        freshness
                     }
                     Image(systemName: "chevron.right")
                         .font(.system(size: 9, weight: .semibold)).foregroundStyle(theme.inkTertiary)
@@ -1642,54 +1645,17 @@ struct TodayView: View {
             .accessibilityElement(children: .ignore)
             .accessibilityAddTraits(.isButton)
             .accessibilityLabel(Text(isLiveHR ? "Frecuencia cardiaca en vivo" : "Frecuencia cardiaca"))
-            .accessibilityValue(Text(liveBpm.map { "\($0) bpm" } ?? "Sin lectura"))
+            .accessibilityValue(backfilling
+                ? Text("Sincronizando")
+                : Text(liveBpm.map { "\($0) bpm" } ?? "Sin lectura"))
             .accessibilityHint(Text("Abre el monitor latido a latido"))
         }
-    }
 
-    /// Línea de sincronización inline (FER-265): vive junto al sello «Hoy», ya no al pie. Reposo →
-    /// glifo + tiempo relativo («hace 3 min»); sincronizando → glifo GIRANDO + conteo de paquetes
-    /// («12 paquetes») o «Sincronizando…» con 0. El dial del héroe gira en paralelo (FER-221).
-    private struct SyncInline: View {
-        let backfilling: Bool
-        let chunks: Int
-        let lastSyncedAt: Double?
-        @Environment(\.instrumentoTheme) private var theme
-        @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-        /// Tiempo relativo en unidades de UNA letra (FER-575): «hace 30 s», «hace 5 m», «hace 2 h»,
-        /// «hace 3 d». El `RelativeDateTimeFormatter(.abbreviated)` daba «min» para minutos; el dueño
-        /// quiere «m». Construye solo el núcleo «30 s» (idéntico es/en: s/m/h/d) y lo envuelve en la
-        /// clave bilingüe «%@ ago» (es: «hace %@»). Escalones: <60 s → s; <60 m → m; <24 h → h; resto d.
-        private static func compactAgo(_ secondsAgo: Double) -> String {
-            let s = Int(secondsAgo.rounded())
-            let core: String
-            if s < 60 { core = "\(s) s" }
-            else if s < 3600 { core = "\(s / 60) m" }
-            else if s < 86_400 { core = "\(s / 3600) h" }
-            else { core = "\(s / 86_400) d" }
-            return String(localized: "\(core) ago")
-        }
-
-        var body: some View {
-            HStack(spacing: NoopMetrics.space1) {
-                glyph
-                label
-            }
-            .font(StrandFont.caption)
-            .foregroundStyle(theme.inkTertiary)
-            .lineLimit(1)
-            .accessibilityElement(children: .combine)
-        }
-
-        /// El glifo de sync. Gira SOLO mientras `backfilling`, a velocidad constante manejada por
-        /// `TimelineView(.animation)` (ángulo = tiempo × 240°/s, ~1.5 s/vuelta) — al terminar no hay
-        /// TimelineView y el glifo se detiene en seco (el `.repeatForever` de SwiftUI no cancelaba
-        /// limpio, FER-267). Reduce Motion → estático. En reposo es un glifo quieto que desambigua que
-        /// el tiempo de al lado es la última sincronización.
-        @ViewBuilder private var glyph: some View {
+        /// El glifo ⟳: gira a velocidad constante mientras `backfilling` (ángulo = tiempo × 240°/s, ~1.5 s/
+        /// vuelta, como el header viejo de FER-267); estático en reposo o bajo Reduce Motion.
+        @ViewBuilder private var syncGlyph: some View {
             let base = Image(systemName: "arrow.triangle.2.circlepath")
-                .font(.system(size: 10))
+                .font(.system(size: 9, weight: .semibold))
                 .foregroundStyle(backfilling ? theme.verdict : theme.inkTertiary)
             if backfilling && !reduceMotion {
                 TimelineView(.animation) { context in
@@ -1702,20 +1668,20 @@ struct TodayView: View {
             }
         }
 
-        @ViewBuilder private var label: some View {
+        /// La frescura/estado a la derecha del ⟳: en sync, «N paquetes» (o «Sincronizando…» con 0) en verde;
+        /// en reposo, «hace 30 s» en una letra. Mismas claves que el header viejo para conservar es/en.
+        @ViewBuilder private var freshness: some View {
             if backfilling {
-                // String(localized:) localiza la interpolación (clave «%lld packets»); un `Text(String)`
-                // por ternario sería verbatim y saldría en inglés (FER-267).
                 Text(chunks > 0 ? String(localized: "\(chunks) packets") : String(localized: "Syncing…"))
-                    .monospacedDigit()
+                    .font(StrandFont.caption).monospacedDigit()
+                    .foregroundStyle(theme.verdict)
             } else if let at = lastSyncedAt {
                 TimelineView(.periodic(from: .now, by: 60)) { context in
-                    // Acota a ≥1 s en el pasado para que nunca diga «hace 0 s» / un futuro cuando ≈ ahora.
                     let secondsAgo = Swift.max(context.date.timeIntervalSince1970 - at, 1)
-                    Text(verbatim: Self.compactAgo(secondsAgo)).monospacedDigit()
+                    Text(verbatim: Self.compactAgo(secondsAgo))
+                        .font(StrandFont.number(11, weight: .regular)).monospacedDigit()
+                        .foregroundStyle(theme.inkTertiary)
                 }
-            } else {
-                Text("Last sync — never")
             }
         }
     }
@@ -1966,6 +1932,8 @@ struct TodayView: View {
     /// del veredicto, FER-282, se retiró: el pulso ya no vive en el héroe / página 1.)
     private var pulsePill: some View {
         LivePulsePill(liveBpm: liveBpm, isLiveHR: isLiveHR, lastSyncedAt: live.lastSyncedAt,
+                      backfilling: live.backfilling || live.draining,
+                      chunks: live.syncChunksThisSession,
                       onTap: { showLiveMonitor = true })
     }
 
