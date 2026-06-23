@@ -77,6 +77,9 @@ private struct EntrenarLanding: View {
     @State private var showImport = false
     /// Drives the templates sheet opened straight on the mobility routine from the ④ «softer» suggestion (FER-554).
     @State private var showMobilityTemplate = false
+    /// «Empezar» from the mobility template stashes its (name, slots) here; the session starts on the sheet's
+    /// dismiss so it never stacks on the templates sheet (FER-560).
+    @State private var pendingMobility: (name: String, slots: [StrengthSessionModel.PlanSlot])? = nil
     /// Drives the Recovery Detail sheet opened from the recovery chip (FER-557).
     @State private var recoveryDetail: RecoveryDetailItem? = nil
 
@@ -124,10 +127,13 @@ private struct EntrenarLanding: View {
             WorkoutImportView { await load() }
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
-        // The ④ «softer» suggestion (FER-554) opens the templates sheet straight on the mobility routine —
-        // selectable/startable like any other template. Theme doesn't cross the sheet boundary (FER-190).
-        .sheet(isPresented: $showMobilityTemplate) {
-            StarterTemplatesSheet(initialSelection: StarterTemplates.byID("mobility")) { await load() }
+        // The ④ «softer» suggestion (FER-554) opens the templates sheet straight on the mobility routine.
+        // It's a «do it now» context (FER-560): «Empezar» starts a one-off guided session (on the sheet's
+        // dismiss, so it never stacks — FER-171), with «Add to my routines» as the secondary action. Theme
+        // doesn't cross the sheet boundary (FER-190).
+        .sheet(isPresented: $showMobilityTemplate, onDismiss: startPendingMobility) {
+            StarterTemplatesSheet(initialSelection: StarterTemplates.byID("mobility"),
+                                  onStart: { name, slots in pendingMobility = (name, slots) }) { await load() }
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
         // Live workout (the chooser's «En vivo»).
@@ -543,6 +549,14 @@ private struct EntrenarLanding: View {
         case .breathe:   openBreathe()
         case .live:      if model.activeWorkout == nil { model.startWorkout() }; showLive = true
         }
+    }
+
+    /// Start the mobility session «Empezar» queued from the template sheet — performed on its dismiss so the
+    /// guided session sheet doesn't stack on the templates sheet (FER-560). A one-off: not saved to routines.
+    private func startPendingMobility() {
+        guard let p = pendingMobility else { return }
+        pendingMobility = nil
+        model.startStrengthSession(routineId: nil, routineName: p.name, slots: p.slots)
     }
 
     // MARK: - Card shell + bits

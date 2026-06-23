@@ -1865,7 +1865,7 @@ struct TodayView: View {
                     icon: "bed.double.fill",
                     value: rhrR.map { "\(Int($0.value.rounded()))" } ?? "—", unit: String(localized: "bpm"),
                     valueColor: theme.dataHeart,
-                    fromApple: rhrR?.fromApple == true,
+                    source: rhrR?.fromApple == true ? .apple : .band,
                     context: tileContext(today: rhrR?.value, history: history(base) { $0.restingHr.map(Double.init) },
                                          betterHigher: false, deadband: 1, positive: positiveDelta) { "\(Int($0.rounded())) \(String(localized: "bpm"))" },
                     series: areaSeries(base, today: rhrR?.value) { $0.restingHr.map(Double.init) }
@@ -1876,7 +1876,7 @@ struct TodayView: View {
                     icon: "drop.fill",
                     value: spo2R.map { String(format: "%.0f", $0.value) } ?? "—", unit: "%",
                     valueColor: theme.dataSpO2,
-                    fromApple: spo2R?.fromApple == true,
+                    source: spo2R?.fromApple == true ? .apple : .band,
                     context: tileContext(today: spo2R?.value, history: history(base) { $0.spo2Pct },
                                          betterHigher: true, deadband: 0.5, positive: positiveDelta) { "\(Int($0.rounded())) %" },
                     series: areaSeries(base, today: spo2R?.value) { $0.spo2Pct }
@@ -1887,7 +1887,7 @@ struct TodayView: View {
                     icon: "figure.walk",
                     value: stepsT.map { intString($0) } ?? "—",
                     valueColor: theme.dataSteps,
-                    fromApple: true,
+                    source: .apple,
                     context: tileContext(today: stepsT, history: history(base) { $0.steps.map(Double.init) },
                                          betterHigher: true, deadband: 100, positive: positiveDelta) { intString($0) },
                     series: areaSeries(base, today: stepsT) { $0.steps.map(Double.init) }
@@ -1899,6 +1899,7 @@ struct TodayView: View {
                     value: stressT.map { String(format: "%.1f", $0) } ?? "—",
                     unit: stressT == nil ? nil : "/ 3",
                     valueColor: stressT.map(stressDataColor) ?? theme.inkTertiary,
+                    source: .calculated,
                     context: tileContext(today: stressT, history: stressHistory,
                                          betterHigher: false, deadband: 0.1, positive: positiveDelta) { String(format: "%.1f", $0) },
                     // El estrés no es campo de DailyMetric: su serie sale del proxy diario 0–3 (incluye hoy).
@@ -1910,7 +1911,7 @@ struct TodayView: View {
                     icon: "lungs.fill",
                     value: respR.map { String(format: "%.1f", $0.value) } ?? "—", unit: String(localized: "rpm"),
                     valueColor: theme.dataSpO2,
-                    fromApple: respR?.fromApple == true,
+                    source: respR?.fromApple == true ? .apple : .band,
                     context: tileContext(today: respR?.value, history: history(base) { $0.respRateBpm },
                                          betterHigher: nil, deadband: 0.5, positive: positiveDelta) { String(format: "%.1f", $0) },
                     series: areaSeries(base, today: respR?.value) { $0.respRateBpm }
@@ -1938,9 +1939,11 @@ struct TodayView: View {
     @ViewBuilder
     private func glanceRow(recovery: Double?, hrv: (value: Double, fromApple: Bool)?,
                            sleep: (value: Double, fromApple: Bool)?, base: [DailyMetric], positive: Color) -> some View {
-        HStack(alignment: .top, spacing: NoopMetrics.gap) {
+        // FER-552: la recuperación de hoy es de banda salvo que sea un estimado de Apple (noche sin banda).
+        let recSource: MetricSource = repo.isRecoveryEstimated(Repository.localDayKey(Date())) ? .apple : .band
+        return HStack(alignment: .top, spacing: NoopMetrics.gap) {
             glancePill(label: "Recovery", icon: "heart.fill", color: theme.dataRecovery,
-                       value: recovery.map { "\(Int($0.rounded()))" } ?? "—", unit: nil,
+                       value: recovery.map { "\(Int($0.rounded()))" } ?? "—", unit: nil, source: recSource,
                        today: recovery, history: history(base) { $0.recovery },
                        betterHigher: true, deadband: 2, positive: positive, format: { "\(Int($0.rounded()))" }) {
                 metricDetail = .recovery(score: recoveryScore,
@@ -1949,12 +1952,14 @@ struct TodayView: View {
             }
             glancePill(label: "HRV", icon: "waveform.path.ecg", color: theme.dataHrv,
                        value: hrv.map { "\(Int($0.value.rounded()))" } ?? "—", unit: String(localized: "ms"),
+                       source: hrv?.fromApple == true ? .apple : .band,
                        today: hrv?.value, history: history(base) { $0.avgHrv },
                        betterHigher: true, deadband: 1, positive: positive, format: { "\(Int($0.rounded()))" }) {
                 metricDetail = .hrv(hrv?.value)
             }
             glancePill(label: "Sleep", icon: "moon.fill", color: theme.dataSleep,
                        value: sleep.map { sleepText($0.value) } ?? "—", unit: nil,
+                       source: sleep?.fromApple == true ? .apple : .band,
                        today: sleep?.value, history: history(base) { $0.totalSleepMin },
                        betterHigher: true, deadband: 5, positive: positive, format: { sleepDeltaText($0) }) {
                 metricDetail = .sleep(sleep.map { Int($0.value.rounded()) })
@@ -1965,14 +1970,14 @@ struct TodayView: View {
     /// Una pill del Vistazo, envuelta en su `Button` tocable (mismo realce que los tiles). El delta vs media
     /// se computa con `tileContext` (se ignora su banda) para no duplicar la lógica.
     private func glancePill(label: LocalizedStringKey, icon: String, color: Color,
-                            value: String, unit: String?,
+                            value: String, unit: String?, source: MetricSource,
                             today: Double?, history: [Double], betterHigher: Bool?, deadband: Double,
                             positive: Color, format: @escaping (Double) -> String,
                             onTap: @escaping () -> Void) -> some View {
         let ctx = tileContext(today: today, history: history, betterHigher: betterHigher,
                               deadband: deadband, positive: positive, format)
         return Button(action: onTap) {
-            GlancePill(label: label, icon: icon, color: color, value: value, unit: unit, delta: ctx)
+            GlancePill(label: label, icon: icon, color: color, value: value, unit: unit, source: source, delta: ctx)
         }
         .buttonStyle(TileButtonStyle(liftBorder: theme.hairlineStrong))
         .accessibilityHint(Text("Abre el detalle"))
@@ -1986,6 +1991,7 @@ struct TodayView: View {
         let color: Color
         let value: String
         var unit: String? = nil
+        var source: MetricSource = .band
         let delta: TileContext?
         @Environment(\.instrumentoTheme) private var theme
 
@@ -2010,7 +2016,11 @@ struct TodayView: View {
                         Text(unit).font(StrandFont.caption).foregroundStyle(isEmpty ? theme.inkDim : theme.inkTertiary)
                     }
                 }
-                deltaView
+                HStack(spacing: NoopMetrics.space1) {
+                    deltaView
+                    Spacer(minLength: 0)
+                    if !isEmpty { SourceChip(source: source) }   // FER-552: fuente real del dato
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, NoopMetrics.gap).padding(.vertical, NoopMetrics.space2)
@@ -2153,6 +2163,24 @@ struct TodayView: View {
     /// 7 días (izquierda, FER-258) + badge de fuente (derecha): W = banda, ♥ = Apple Salud (FER-233).
     /// Tematizado con tokens de `InstrumentoTheme` sobre el papel `surface` con hairline — sin el
     /// `NoopCard` oscuro, que no lee sobre el papel claro. Lee el tema del entorno.
+    /// FER-552 (A1): de dónde vino un dato ESE día. Dinámico por-dato; lo resuelve cada call site desde
+    /// `fromApple` (ya filtrado por el modo activo) o, para los derivados, fijo. No toca el motor de fuentes.
+    private enum MetricSource { case band, apple, calculated }
+
+    /// El chip de fuente (handoff «Hoy v2», opción A del dueño): BANDA (verde) · APPLE (azul) · CALCULADO
+    /// (tinta). Reusa `InlineFlagChip` (StrandDesign). El texto se localiza (es: «BANDA/APPLE/CALCULADO»).
+    private struct SourceChip: View {
+        let source: MetricSource
+        @Environment(\.instrumentoTheme) private var theme
+        var body: some View {
+            switch source {
+            case .band:       InlineFlagChip("Band", color: theme.dataRecovery)
+            case .apple:      InlineFlagChip("Apple", color: theme.dataSpO2)
+            case .calculated: InlineFlagChip("Calculated", color: theme.inkTertiary)
+            }
+        }
+    }
+
     private struct TodayMetricTile: View {
         let label: LocalizedStringKey
         /// SF Symbol de la métrica (handoff «Hoy · Estados»): un glifo junto a la etiqueta, en el color
@@ -2163,7 +2191,8 @@ struct TodayView: View {
         let value: String
         var unit: String? = nil
         let valueColor: Color
-        var fromApple: Bool = false
+        /// FER-552: la fuente real del dato de hoy (banda / Apple / calculado) → chip dinámico en el pie.
+        var source: MetricSource = .band
         var context: TileContext? = nil
         /// FER-551: los hasta 14 valores diarios para la mini-gráfica de área (la cabeza = hoy). Vacío o
         /// con <3 puntos → no se dibuja el área (cae al placeholder/«armando»).
@@ -2302,15 +2331,10 @@ struct TodayView: View {
                                          : "\(magnitude) below your 7-day average"))
         }
 
-        /// Badge de fuente por EXCEPCIÓN (FER-278): el strap es la fuente esperada → sin marca; solo lo
-        /// prestado de Apple Salud lleva ♥ (en tinta, nunca color de dato). Antes el strap mostraba una
-        /// «W» redundante en cada tile; ahora «sin badge = tu strap».
+        /// Badge de fuente (FER-552, opción A): chip explícito BANDA / APPLE / CALCULADO con la fuente real
+        /// del dato del día. Se oculta sin lectura de hoy («—»): un dato ausente no tiene fuente que marcar.
         @ViewBuilder private var sourceBadge: some View {
-            if fromApple {
-                Image(systemName: "heart.fill")
-                    .font(.system(size: 10)).foregroundStyle(theme.inkTertiary)
-                    .accessibilityLabel(Text("de Apple Salud"))
-            }
+            if !isEmpty { SourceChip(source: source) }
         }
     }
 
