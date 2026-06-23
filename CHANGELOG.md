@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El veredicto estimado de tu Apple Watch ya se marca como tal / An estimated verdict from your Apple Watch is now marked as such.**
+  **ES** — Una mañana sin banda, Cénit estima tu recuperación desde tu Apple Watch. Antes ese número salía «pelón», idéntico a uno de banda. Ahora el dial lo marca **«estimado · confianza X»** (con el ícono del Apple Watch), y al tocar el dial el «¿por qué?» explica que viene del HRV (SDNN) de tu Apple Watch —una medida distinta a la de tu banda, de menor grado—. Una mañana con banda se ve igual que siempre, sin sello.
+  **EN** — On a morning without the band, Cénit estimates your recovery from your Apple Watch. That number used to look "bare", identical to a band one. Now the dial marks it **"estimated · X confidence"** (with the Apple Watch icon), and tapping the dial the "why" explains it comes from your Apple Watch HRV (SDNN) —a different measure than your band's, a lower grade—. A morning with the band looks the same as always, no seal.
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift), [Cenit/Screens/WhyVerdictSheet.swift](Cenit/Screens/WhyVerdictSheet.swift))
+
 - **En Hoy, cada dato dice de dónde viene: banda, Apple o calculado / On Today, each number says where it comes from: band, Apple or calculated.**
   **ES** — En la vista Métricas, cada pill y cada tile lleva ahora un chip con su **fuente real del día**: **BANDA** (tu strap), **APPLE** (Apple Salud) o **CALCULADO** (lo que Cénit deriva, como el Estrés). Es dinámico por-dato: en modo Combinado, si una noche no traías la banda, ese dato se marca **APPLE** sin mentir; en Solo Apple Salud nada dice «BANDA», y en Solo banda nada dice «APPLE». Cambiar de modo solo cambia lo que ves; nada se borra.
   **EN** — In the Metrics view, each pill and tile now carries a chip with its **real source for the day**: **BAND** (your strap), **APPLE** (Apple Health) or **CALCULATED** (what Cénit derives, like Stress). It's dynamic per-datum: in Combined mode, if you didn't wear the band one night, that number is marked **APPLE** without lying; in Apple-Health-only nothing says "BAND", and in band-only nothing says "APPLE". Switching modes only changes what you see; nothing is deleted.

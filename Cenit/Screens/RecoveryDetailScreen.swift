@@ -140,12 +140,10 @@ struct RecoveryDetailScreen: View {
     /// The hero ⓘ copy: the standard recovery explanation, plus — for an Apple estimate — the honest
     /// caveat that it comes from Apple's SDNN against your own Apple norm, a lower grade than the band. (FER-153)
     private var heroExplanation: LocalizedStringKey {
-        if model.isColdStartEstimate {
-            return "This recovery is ESTIMATED from your Apple Watch HRV (SDNN) and sleep while your band is still calibrating its own baseline, compared with your own Apple-Health baseline. SDNN isn't the same measure as the band's HRV, so it's a lower-confidence proxy — read it as a guide, not a band reading. It switches to your band automatically once it's calibrated. Not a diagnosis."
-        }
-        if model.isEstimated {
-            return "This recovery is ESTIMATED from your Apple Watch HRV (SDNN) and sleep on a night your band didn't record, compared with your own Apple-Health baseline. SDNN isn't the same measure as the band's HRV, so it's a lower-confidence proxy — read it as a guide, not a band reading. Not a diagnosis."
-        }
+        // FER-545: el caveat del estimado vive ahora en `WhyVerdictSheet` (un solo hogar); aquí se referencia
+        // para no duplicar el texto SDNN-vs-RMSSD.
+        if model.isColdStartEstimate { return WhyVerdictSheet.estimatedCaveat(coldStart: true) }
+        if model.isEstimated { return WhyVerdictSheet.estimatedCaveat(coldStart: false) }
         return "Recovery blends several signals from your nervous system — your HRV above all, plus resting heart rate, sleep and breathing — and compares them with your own baseline from recent weeks. It's an estimate of how ready your body is today, not a diagnosis. (Buchheit 2014)"
     }
 
