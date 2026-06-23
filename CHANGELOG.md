@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **«Marcar todo recuperado»: pon el mapa muscular en fresco tras un descanso / "Mark all recovered": reset the muscle map to fresh after a rest.**
+  **ES** — En **Cuerpo → «Qué entrenar hoy»** hay un nuevo botón **«Marcar todo recuperado»**: con una confirmación, pone todos los músculos en fresco (verde), como si hubieras descansado. **No borra tu historial de entrenamientos** —sigue intacto en «Mis entrenamientos»— y, al registrar un entreno nuevo, ese músculo se vuelve a cargar. Útil tras un descanso, una enfermedad, o si el mapa quedó desactualizado. (El botón de antes que solo quitaba la selección ahora se llama «Quitar selección».)
+  **EN** — In **Body → "What to train today"** there's a new **"Mark all recovered"** button: with a confirmation, it sets every muscle to fresh (green), as if you'd rested. It **doesn't delete your workout history** —it stays intact in "My workouts"— and logging a new workout loads that muscle again. Handy after a rest, an illness, or when the map went stale. (The old button that only cleared the selection is now called "Deselect".)
+  ([Cenit/Screens/MuscleMapScreen.swift](Cenit/Screens/MuscleMapScreen.swift))
+
 - **En el mapa muscular, lo que no has entrenado se ve fresco (verde) / In the muscle map, what you haven't trained shows fresh (green).**
   **ES** — En **Cuerpo → «Qué entrenar hoy»**, un músculo que no has entrenado en la ventana ahora se ve **verde (fresco)** en vez de gris, y su etiqueta dice «fresco» igual que los demás. Antes había una inconsistencia: lo no entrenado salía gris pero la app lo llamaba «fresco». Ahora «fresco» = verde en todos lados (silueta, lista «Más cargados» y al tocar un músculo).
   **EN** — In **Body → "What to train today"**, a muscle you haven't trained in the window now shows **green (fresh)** instead of gray, and its label says "fresh" like the rest. Before there was an inconsistency: untrained muscles were gray yet the app called them "fresh." Now "fresh" = green everywhere (silhouette, the "Most loaded" list, and when you tap a muscle).
