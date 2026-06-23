@@ -1842,8 +1842,8 @@ struct TodayView: View {
             // de aquí (el dial ya lleva la palabra del veredicto, FER-549) y el pulso vivo se mudó al header
             // de arriba; el «¿por qué?» se alcanza tocando la palabra del dial.
             glanceRow(recovery: recR, hrv: hrvR, sleep: sleepR, base: base, positive: positiveDelta)
-            // Overline de la sección: la rejilla de hoy. La gráfica de tendencia de 14 días (área) llega en
-            // F3 (FER-551); en F2 cada tile conserva su mini-banda de 7 días.
+            // Overline de la sección: la rejilla de hoy. Cada tile trae su tendencia de 14 días como
+            // mini-gráfica de área (FER-551) + su «vs media».
             Text("Métricas de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 .padding(.top, NoopMetrics.space1)
             LazyVGrid(columns: tileGrid, alignment: .leading, spacing: NoopMetrics.gap) {
@@ -2352,11 +2352,13 @@ struct TodayView: View {
         /// vertical para que el trazo y el punto-cabeza no se recorten. Serie plana → línea al centro.
         private func points(in size: CGSize) -> [CGPoint] {
             let lo = series.min() ?? 0, hi = series.max() ?? 1
+            let flat = (hi - lo) <= .ulpOfOne
             let span = Swift.max(hi - lo, .ulpOfOne)
             let n = series.count
             return series.indices.map { i in
                 let x = n <= 1 ? size.width / 2 : size.width * CGFloat(i) / CGFloat(n - 1)
-                let frac = CGFloat((series[i] - lo) / span)
+                // Serie plana → línea al CENTRO (sin un valle al fondo por un span de ~cero).
+                let frac = flat ? 0.5 : CGFloat((series[i] - lo) / span)
                 let y = (size.height - vInset) - frac * (size.height - 2 * vInset)
                 return CGPoint(x: x, y: y)
             }
