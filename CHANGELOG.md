@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Cada tile de Hoy ahora trae tu tendencia de 14 días / Each Today tile now shows your 14-day trend.**
+  **ES** — En la rejilla de Métricas, cada tile (Esfuerzo, FC reposo, Oxígeno, Pasos, Estrés, Respiración) cambia la barrita de rango por una **mini-gráfica de área de 14 días** con tus valores reales, tintada por su color y con un punto en el día de hoy: ves de un vistazo si vienes subiendo o bajando. Se conserva tu «±N vs media» abajo. Si aún no hay suficientes días, dice «aún construyendo».
+  **EN** — In the Metrics grid, each tile (Strain, Resting HR, Blood Oxygen, Steps, Stress, Respiration) swaps the little range bar for a **14-day area mini-chart** of your real values, tinted in its color with a dot on today: you see at a glance whether you're trending up or down. Your "±N vs average" stays below it. If there aren't enough days yet, it says it's still building.
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **En un día de descanso, «Empezar → Rutina» ya te lleva a tus rutinas / On a rest day, «Start → Routine» now takes you to your routines.**
   **ES** — Antes, en un día que tu plan deja de descanso, tocar **«Empezar»** y elegir **«Rutina»** no abría nada: la hoja se cerraba en silencio. Ahora te lleva a **«Mis rutinas»**, donde puedes **elegir una guardada y empezarla** o **crear una nueva** al momento. Así, aunque hoy no tengas nada agendado, puedes entrenar sin quedarte atorado.
   **EN** — Before, on a day your plan leaves as rest, tapping **«Start»** and picking **«Routine»** opened nothing — the sheet just closed silently. Now it takes you to **«My routines»**, where you can **pick a saved one and start it** or **build a new one** on the spot. So even with nothing scheduled today, you can train without getting stuck.
