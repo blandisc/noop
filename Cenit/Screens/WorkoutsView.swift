@@ -52,7 +52,6 @@ struct WorkoutsView: View {
             }
         }
         .background(theme.paper.ignoresSafeArea())
-        .navigationTitle("Workouts")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
@@ -112,6 +111,10 @@ struct WorkoutsView: View {
         let fellBack = effectiveRange != range
         let n = rows.count
         return VStack(alignment: .leading, spacing: 12) {
+            // Serif in-screen headline — the «Instrumento» detail-screen identity (FER-598), matching the
+            // sibling detail sheets. No ⓘ: this is a log, not a metric to explain. Replaces the old
+            // `navigationTitle("Workouts")` in the bar so the title isn't duplicated.
+            InstrumentoScreenTitle("My workouts", theme: theme)
             VStack(alignment: .leading, spacing: 4) {
                 Text(verbatim: effectiveRange.caption).instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
