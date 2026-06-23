@@ -95,4 +95,63 @@ public enum WeeklySplit {
         }
         return streak
     }
+
+    // MARK: - Daily adherence streak («días cumpliendo el plan»)
+    //
+    // A DAY-level streak the landing shows as a thin strip above the week (FER-574): unlike
+    // `consistencyStreak` (which counts WEEKS that met the plan), this counts consecutive DAYS in which
+    // you did what the plan asked — train on a training day, OR simply rest on a rest day. A planned rest
+    // day is "kept", so it never breaks the run; only a TRAINING day with no completed session does. This
+    // answers the question the strip makes visual: "how many days in a row have I kept my plan?".
+    //
+    // Like everything here it's PURE and takes plain primitives. The app projects each calendar day to a
+    // `DayPlan` (was today a training day in the CURRENT split? did a session complete that day?) in local
+    // time before calling — same current-split assumption as `consistencyStreak` (we keep no history of
+    // past split shapes, so a day's "was it a training day" is read from today's plan). Bookkeeping, not
+    // physiology: deterministic, no citation, no clinical claim.
+
+    /// One calendar day's plan vs. what happened, as the app projects it (local time).
+    public struct DayPlan: Equatable, Sendable {
+        public let isTrainingDay: Bool   // the current split assigns a routine to this weekday
+        public let trained: Bool         // a session completed on this day
+        public init(isTrainingDay: Bool, trained: Bool) {
+            self.isTrainingDay = isTrainingDay; self.trained = trained
+        }
+    }
+
+    /// How a single day reads in the streak strip. The UI maps each to a color (no copy here).
+    public enum DayAdherence: Equatable, Sendable {
+        case metTrained    // training day, trained → kept (the strong-green cell)
+        case metRest       // rest day → kept by resting (the faint-green cell)
+        case missed        // training day, no session → BREAKS the streak (the empty cell)
+        case pendingToday  // today is a training day not yet trained → neither counts nor breaks
+    }
+
+    /// Classify each day in `days` (ordered oldest → newest). When `includesToday` is true the LAST
+    /// element is today still in progress: a training day not yet trained reads as `pendingToday` (the day
+    /// isn't over), not `missed`.
+    public static func dailyAdherence(days: [DayPlan], includesToday: Bool) -> [DayAdherence] {
+        days.enumerated().map { idx, day in
+            let isToday = includesToday && idx == days.count - 1
+            if !day.isTrainingDay { return .metRest }
+            if day.trained { return .metTrained }
+            return isToday ? .pendingToday : .missed
+        }
+    }
+
+    /// The streak: consecutive kept days ending now. Walks back from the newest day; a kept day
+    /// (`metTrained`/`metRest`) extends it, `pendingToday` is skipped (a fresh day shouldn't break a real
+    /// streak, the same spirit as `consistencyStreak`'s in-progress week), and the first `missed`
+    /// terminates it.
+    public static func adherenceStreak(_ adherence: [DayAdherence]) -> Int {
+        var streak = 0
+        for day in adherence.reversed() {
+            switch day {
+            case .metTrained, .metRest: streak += 1
+            case .pendingToday:         continue
+            case .missed:               return streak
+            }
+        }
+        return streak
+    }
 }
