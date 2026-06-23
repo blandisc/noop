@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El veredicto de Hoy ahora se lee en serif / Today's verdict now reads in a serif headline.**
+  **ES** — La frase del veredicto en «Hoy» (p. ej. «Vienes recuperando mejor.») ahora se compone en **Instrument Serif**, la tipografía editorial del sistema «Instrumento diurno» — reservada solo para titulares y frases de veredicto, nunca para un número o una etiqueta. La fuente viene incluida en la app (funciona 100 % sin conexión) y escala con el tamaño de texto del sistema. El resto de la app no cambia.
+  **EN** — The verdict phrase on «Hoy» (e.g. "Vienes recuperando mejor.") is now set in **Instrument Serif**, the «Instrumento diurno» editorial face — reserved for headlines and verdict phrases only, never a number or a label. The font ships inside the app (works fully offline) and scales with your system text size. Nothing else changes.
+  ([Packages/StrandDesign/Sources/StrandDesign/Typography.swift](Packages/StrandDesign/Sources/StrandDesign/Typography.swift), [Packages/StrandDesign/Sources/StrandDesign/FontRegistration.swift](Packages/StrandDesign/Sources/StrandDesign/FontRegistration.swift), [Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
 - **Nueva rutina de Movilidad para los días suaves / New Mobility routine for softer days.**
   **ES** — Cuando tu recuperación viene **baja**, la sugerencia de Entrenar ahora te lleva a una nueva rutina de **Movilidad y cardio ligero** (~20 min, solo peso corporal) en vez de a Respira. La rutina vive en el catálogo de plantillas como cualquier otra: la previsualizas, la copias a «Mis rutinas» y la editas a tu gusto. Es un reinicio suave, sin equipo y sin promesas clínicas.
   **EN** — When your recovery is **low**, the Train suggestion now takes you to a new **Mobility & light cardio** routine (~20 min, bodyweight only) instead of Breathe. It lives in the templates catalog like any other: preview it, copy it into «My routines», and edit it to taste. A gentle reset, no equipment, no clinical claims.

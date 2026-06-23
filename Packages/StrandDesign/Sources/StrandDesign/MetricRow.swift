@@ -175,7 +175,7 @@ public struct InlineFlagChip: View {
     .padding(.horizontal, 18)
     .frame(width: 340, height: 220)
     .background(InstrumentoTheme.base.paper)
-    .preferredColorScheme(.dark)
+    .preferredColorScheme(.light)
 }
 
 #Preview("MetricRow · pressed") {
@@ -189,6 +189,6 @@ public struct InlineFlagChip: View {
     .padding(.horizontal, 18)
     .frame(width: 340, height: 80)
     .background(InstrumentoTheme.base.paper)
-    .preferredColorScheme(.dark)
+    .preferredColorScheme(.light)
 }
 #endif

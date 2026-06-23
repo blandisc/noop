@@ -390,6 +390,6 @@ private func sampleYear() -> [RecoveryDay] {
     .padding(28)
     .frame(width: 900, height: 240)
     .background(InstrumentoTheme.base.paper)
-    .preferredColorScheme(.dark)
+    .preferredColorScheme(.light)
 }
 #endif

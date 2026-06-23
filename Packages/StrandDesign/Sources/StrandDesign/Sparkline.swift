@@ -260,6 +260,6 @@ private func sampleHR() -> [Double] {
     .padding(24)
     .frame(width: 380, height: 240)
     .background(InstrumentoTheme.base.surface)
-    .preferredColorScheme(.dark)
+    .preferredColorScheme(.light)
 }
 #endif
