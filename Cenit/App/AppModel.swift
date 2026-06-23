@@ -841,18 +841,26 @@ final class AppModel: ObservableObject {
     private func evaluateIllness(_ days: [DailyMetric]) {
         let previous = healthAlert
         guard behavior.illnessWatch, days.count >= 14 else { healthAlert = nil; return }
-        // `recent` is a small sample — by design 2 nights, but a single night if one is missing.
-        let recent = Array(days.suffix(2))
-        let base = Array(days.suffix(31).dropLast(3))    // ~28 days ending 3 days ago
         func mean(_ vals: [Double]) -> Double? { vals.isEmpty ? nil : vals.reduce(0, +) / Double(vals.count) }
-        func rm(_ kp: (DailyMetric) -> Double?) -> Double? { mean(recent.compactMap(kp)) }
+        // FER-543: the HRV term scores against a STRAP-ONLY history — Apple-only nights carry SDNN, not the
+        // band's RMSSD, so mixing them into the illness HRV baseline contaminates it the same way FER-519
+        // fixed for the recovery baseline (RMSSD↔SDNN aren't interchangeable, no published conversion;
+        // Shaffer & Ginsberg 2017). RHR / respiration are the same physical metric across sources, and Apple
+        // writes no skin temp, so those three terms keep the full history. `appleHealthDays == []` ⇒ identity
+        // (whoopOnly / a strap-only user → no change).
+        let strapDays = IntelligenceEngine.strapOnlyHistory(days, appleHealthDays: repo.appleHealthDays)
 
         // Each anomaly fires by z-score ≥2σ against the baseline's OWN dispersion (robust σ via
         // IllnessWatch), not a fixed offset — so the same absolute Δ trips a stable user but not a
-        // volatile one. The flag string still reports the human-readable Δ.
+        // volatile one. The flag string still reports the human-readable Δ. `src` is the per-term history
+        // (`days` for all but HRV, which passes `strapDays`): recent = last ~2 nights (a single night if one
+        // is missing), base = the ~28 nights ending 3 days ago.
         var flags: [String] = []
-        func anomaly(_ kp: (DailyMetric) -> Double?, higherIsWorse: Bool) -> (r: Double, b: Double)? {
-            guard let r = rm(kp),
+        func anomaly(_ kp: (DailyMetric) -> Double?, higherIsWorse: Bool,
+                     from src: [DailyMetric] = days) -> (r: Double, b: Double)? {
+            let recent = Array(src.suffix(2))
+            let base = Array(src.suffix(31).dropLast(3))
+            guard let r = mean(recent.compactMap(kp)),
                   let dev = IllnessWatch.deviation(recentMean: r, base: base.compactMap(kp), higherIsWorse: higherIsWorse),
                   dev.z >= IllnessWatch.zThreshold else { return nil }
             return (r, dev.baseMean)
@@ -860,7 +868,7 @@ final class AppModel: ObservableObject {
         if let a = anomaly({ $0.restingHr.map(Double.init) }, higherIsWorse: true) {
             flags.append(String(localized: "resting HR +\(Int((a.r - a.b).rounded())) bpm"))
         }
-        if let a = anomaly({ $0.avgHrv }, higherIsWorse: false), a.b > 0 {
+        if let a = anomaly({ $0.avgHrv }, higherIsWorse: false, from: strapDays), a.b > 0 {
             flags.append(String(localized: "HRV −\(Int(((1 - a.r / a.b) * 100).rounded()))%"))
         }
         if let a = anomaly({ $0.skinTempDevC }, higherIsWorse: true) {
