@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **«Mis entrenamientos» se titula como las demás pantallas de detalle / "My workouts" is titled like the other detail screens.**
+  **ES** — La pantalla de entrenamientos ahora encabeza con el **titular serif «Mis entrenamientos» dentro de la pantalla** (la misma identidad que Recuperación, Esfuerzo y los demás detalles), en vez del título pequeño en la barra. La barra superior queda limpia, con solo **Listo** y **+**; el conteo de sesiones y el resto del hero no cambian.
+  **EN** — The workouts screen now leads with the **serif "My workouts" headline inside the screen** (the same identity as Recovery, Strain and the other detail screens), instead of the small title in the bar. The top bar is now clean, with just **Done** and **+**; the session count and the rest of the hero are unchanged.
+  ([Cenit/Screens/WorkoutsView.swift](Cenit/Screens/WorkoutsView.swift))
+
 - **El detalle de tus vitales vuelve a ser la pantalla completa / Your vitals' detail is the full screen again.**
   **ES** — HRV, FC en reposo, SpO₂, Respiración y Pasos volvieron a abrir su **pantalla de detalle rica** —la del handoff— con su rango normal, la gráfica «Tu historia» con promedio y cambio vs el periodo previo, consistencia, qué la mueve y vitales de la noche, según cada una. Tocar el dato en Tendencias abre el detalle directo, y en Hoy «Ver más» te lleva ahí (antes te dejaba en una vista resumida sin salida).
   **EN** — HRV, resting HR, SpO₂, Respiration and Steps open their **full rich detail screen** again — the handoff one — with your normal range, the "Your history" chart with average and change vs the previous period, consistency, what moves it and night vitals, as applies to each. Tapping the number in Trends opens the detail directly, and on Today "See more" takes you there (it used to leave you on a summarized view with no way forward).
