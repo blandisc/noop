@@ -75,15 +75,15 @@ struct RecoveryDetailScreen: View {
                         patternsBlock
                     }
                     // The F6c level instrument (line + tappable levels + «N de tus últimos M días») over the
-                    // FIXED recovery levels (Agotado / Bajo / Moderado / A punto / Pleno, 0–100). Surfaced as
-                    // a visible block — it folds in the old 7-day-average trend that lived in «See your
-                    // history». (FER-572)
+                    // FIXED recovery levels (Agotado / Bajo / Moderado / A punto / Pleno, 0–100). Kept by the
+                    // owner's call (FER-594): the handoff's trend + «Media …» live below in «See your
+                    // history», so this block carries NO average caption — that sits with the trend. (FER-572)
                     if model.series.count >= 2 {
                         blockDivider
                         levelsBlock
-                        averageCaption   // handoff «Media · periodo · valor · Δ% vs previo» + rango (FER-587)
                     }
-                    // Level 3 · «See your history»: the 90-day calendar, collapsed by default.
+                    // Level 3 · «See your history»: the 90-day calendar + the period-selector trend (with the
+                    // handoff's «Media …» caption), collapsed by default. (FER-594)
                     blockDivider
                     historySection
                     blockDivider
@@ -596,15 +596,37 @@ struct RecoveryDetailScreen: View {
         }
     }
 
-    // MARK: - 4. Niveles (línea + niveles tocables + «N de tus últimos M días») — patrón F6c
+    // MARK: - 4. Tendencia (selector de periodo + gráfica + «Media …») — vive en «See your history» (FER-594)
 
-    /// The F6c level instrument: a recovery line over the period you pick, the active level's band shaded,
-    /// a «{level} · N de tus últimos M días» phrase and a TAPPABLE levels list (Agotado / Bajo / Moderado /
-    /// A punto / Pleno, 0–100). Reuses F6a (`MetricLevels.recovery`) + the shared `MetricLevelsExplorer`. It
-    /// supersedes the old 7-day-average trend block, surfacing recovery's distribution at a glance. The
-    /// fixed levels (not relative-to-base) read as the app's own readiness language. (FER-572)
-    /// The handoff's period-average caption + range, under the levels explorer (FER-587, option ii).
-    /// Recovery rises = good; the score is unitless (/100). Δ vs the previous equal window.
+    /// The trend block inside «See your history», realigning to «Detalle · Recuperación» (FER-594): a recovery
+    /// line (7-day MA) over the period you pick, with the handoff's period-average caption below it. Co-exists
+    /// with the `levelsBlock` above (kept by the owner's call) — this block carries the «Media …» caption, the
+    /// levels block does not. Reuses the shared `MetricTrendChart` and its W/M/3M/6M/1Y/ALL selector.
+    private var trendBlock: some View {
+        let window = MetricWindowMath.make(parsed, selected: range)
+        return DetailBlock("Trend", theme: theme) {
+            VStack(alignment: .leading, spacing: 10) {
+                MetricTrendChart(
+                    range: $range,
+                    window: window,
+                    theme: theme,
+                    style: .init(
+                        smoothing: 7,
+                        gradient: Gradient(colors: [theme.dataRecovery.opacity(0.5), theme.dataRecovery]),
+                        valueRange: { chartRange($0) },
+                        valueFormat: { "\(Int($0.rounded()))" },
+                        accessibilityLabel: "Recovery, 7-day moving average"
+                    )
+                ) {
+                    emptyWell(text: "Not enough days in this range to draw a trend.")
+                }
+                averageCaption
+            }
+        }
+    }
+
+    /// The handoff's period-average caption + range, under the trend (FER-587, option ii). Recovery rises =
+    /// good; the score is unitless (/100). Δ vs the previous equal window.
     @ViewBuilder private var averageCaption: some View {
         let window = MetricWindowMath.make(parsed, selected: range)
         if window.values.count > 1 {
@@ -619,6 +641,22 @@ struct RecoveryDetailScreen: View {
         }
     }
 
+    /// Auto-fit the trend chart's Y axis to the smoothed line, clamped to the 0–100 recovery scale. (FER-594)
+    private func chartRange(_ smoothed: [Double]) -> ClosedRange<Double> {
+        let lo = smoothed.min() ?? 0
+        let hi = smoothed.max() ?? 100
+        if hi <= lo { return Swift.max(0, lo - 5)...Swift.min(100, hi + 5) }
+        let pad = (hi - lo) * 0.15
+        return Swift.max(0, lo - pad)...Swift.min(100, hi + pad)
+    }
+
+    // MARK: - 4b. Recuperación por nivel (línea + niveles tocables + «N de tus últimos M días») — patrón F6c
+
+    /// The F6c level instrument, kept by the owner's call (FER-594): a recovery line over the period you pick,
+    /// the active level's band shaded, a «{level} · N de tus últimos M días» phrase and a TAPPABLE levels list
+    /// (Agotado / Bajo / Moderado / A punto / Pleno, 0–100). Reuses F6a (`MetricLevels.recovery`) + the shared
+    /// `MetricLevelsExplorer`. It shares the `range` selection with the trend in «See your history»; the
+    /// «Media …» caption lives with that trend, not here. (FER-572)
     private var levelsBlock: some View {
         let window = MetricWindowMath.make(parsed, selected: range)
         return MetricLevelsExplorer(
@@ -651,9 +689,13 @@ struct RecoveryDetailScreen: View {
 
     @ViewBuilder private var historySection: some View {
         VStack(alignment: .leading, spacing: historyExpanded ? 22 : 0) {
-            historyDisclosureHeader(caption: "90-day calendar")
+            historyDisclosureHeader(caption: "90-day calendar · trend")
             if historyExpanded {
                 calendarBlock
+                if model.series.count >= 2 {
+                    blockDivider
+                    trendBlock
+                }
             }
         }
     }
