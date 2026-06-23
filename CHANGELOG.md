@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **En el Daily Brief de Hoy, cada renglón abre el detalle de su señal / On Today's Daily Brief, each row opens its own signal's detail.**
+  **ES** — Tocar un renglón del Daily Brief (p. ej. «Dormiste poco») abría siempre la misma hoja del «¿por qué?» del veredicto. Ahora cada renglón abre **su propio detalle**: Sueño → Sueño, HRV → HRV, FC en reposo → FC en reposo, Recuperación → Recuperación. (Las señales sin pantalla propia —temperatura de piel, carga— sí abren el «¿por qué?» del veredicto, que es su contexto.)
+  **EN** — Tapping a Daily Brief row (e.g. "You slept little") always opened the same verdict "why" sheet. Now each row opens **its own detail**: Sleep → Sleep, HRV → HRV, resting HR → resting HR, Recovery → Recovery. (Signals without their own screen — skin temperature, load — still open the verdict "why", which is their context.)
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **El promedio del periodo vuelve a verse bajo la gráfica de cada detalle / The period average is back under each detail's chart.**
   **ES** — En Recuperación, Esfuerzo, Estrés y Sueño, bajo la gráfica de niveles ahora se lee **«Media · {periodo} · {valor} · {Δ%} vs periodo previo»** —el promedio del periodo que elijas y su cambio frente al periodo anterior, **coloreado** según la buena dirección de cada métrica (Esfuerzo es neutral)— más una línea pequeña con el **Rango mín–máx**. Es el formato del handoff, conservando el rango.
   **EN** — In Recovery, Strain, Stress and Sleep, under the levels chart you now read **"Average · {period} · {value} · {Δ%} vs previous"** — the average for whichever period you pick and its change vs the previous one, **coloured** by each metric's good direction (Strain is neutral) — plus a small **Range min–max** line. It's the handoff format, keeping the range.
