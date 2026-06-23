@@ -509,7 +509,7 @@ private struct CuerpoLanding: View {
         return Button {
             let key = Repository.localDayKey(Date())
             recoveryDetail = RecoveryDetailItem(model: RecoveryDetailModel.build(
-                days: repo.days,
+                days: repo.daysBandRecovery,
                 today: repo.today,
                 todayKey: key,
                 appleHealthDays: repo.appleHealthDays,

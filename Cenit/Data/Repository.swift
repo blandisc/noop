@@ -100,6 +100,23 @@ final class Repository: ObservableObject {
     func isRecoveryEstimated(_ day: String) -> Bool { dashboard.estimatedRecoveryDays.contains(day) }
     /// Confidence grade for an estimated-recovery day; nil when the day isn't an Apple estimate.
     func recoveryConfidence(_ day: String) -> ScoreConfidence? { dashboard.recoveryConfidence[day] }
+    /// `days`, but with the Apple-Health ESTIMATED recovery removed (recovery → nil on the estimated days)
+    /// — i.e. recovery is band-MEASURED-only, exactly the pre-FER-153 semantics. **Multi-day recovery
+    /// aggregators must read this, not `days`**: the rest-day baseline (`activityCosts`), the Coach's
+    /// recovery correlations/forecast (`InsightEngine`), and the post-session forecast — none of them may
+    /// mix an Apple estimate into a statistic over history (the house rule the recovery baseline already
+    /// keeps). Single-day "today's recovery" reads (the ring, the verdict, the training gates) keep using
+    /// `days`/`today`, which carry the estimate. Identity (same array) when there's no estimate. (FER-153)
+    var daysBandRecovery: [DailyMetric] {
+        Self.bandRecoveryOnly(dashboard.days, estimatedDays: dashboard.estimatedRecoveryDays)
+    }
+
+    /// Pure core of `daysBandRecovery`: `days` with `recovery` nulled on `estimatedDays`. Static so
+    /// `RepositoryMergeTests` can pin it. Identity (same array) when `estimatedDays` is empty. (FER-153)
+    static func bandRecoveryOnly(_ days: [DailyMetric], estimatedDays: Set<String>) -> [DailyMetric] {
+        guard !estimatedDays.isEmpty else { return days }
+        return days.map { estimatedDays.contains($0.day) ? $0.withRecovery(nil) : $0 }
+    }
 
     init(deviceId: String) { self.deviceId = deviceId }
 
@@ -800,8 +817,9 @@ final class Repository: ObservableObject {
     ///    carry no real sport, so they'd pool into one meaningless "Activity" bucket (FER-139 scope).
     ///  - Day-keying: each session's start maps to a day-key in the device's LOCAL zone — the same
     ///    calendar `DailyMetric.day` uses — so the engine's UTC D→D+1 string arithmetic stays aligned.
-    ///  - Recovery: `days` (strap-derived on-device scores), NOT `displayDays`, so the rest-day
-    ///    baseline never mixes in Apple-Health back-fill (house rule, matches the recovery baseline).
+    ///  - Recovery: `daysBandRecovery` (band-MEASURED scores only, NOT `displayDays` and NOT the
+    ///    Apple-Health ESTIMATE), so the rest-day baseline never mixes in Apple values (house rule,
+    ///    matches the recovery baseline). (FER-153 keeps the estimate out of this multi-day statistic.)
     func activityCosts(from rows: [WorkoutRow]) -> [ActivityCost] {
         let sessions = rows
             .filter { WorkoutSource.classify($0.source) != .detected }
@@ -809,7 +827,7 @@ final class Repository: ObservableObject {
                                               sport: WorkoutSource.displaySport($0.sport)) }
         let activityDaysBySport = ActivityCostInputs.activityDaysBySport(sessions, timeZone: .current)
         var recoveryByDay: [String: Double] = [:]
-        for d in days { if let r = d.recovery { recoveryByDay[d.day] = r } }
+        for d in daysBandRecovery { if let r = d.recovery { recoveryByDay[d.day] = r } }
         return ActivityCostEngine.evaluate(activityDaysBySport: activityDaysBySport,
                                            recoveryByDay: recoveryByDay)
     }

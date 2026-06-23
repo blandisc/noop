@@ -196,4 +196,23 @@ final class RepositoryMergeTests: XCTestCase {
         XCTAssertTrue(e.estimatedDays.isEmpty)
         XCTAssertTrue(e.rows.allSatisfy { $0.recovery == nil })
     }
+
+    /// `bandRecoveryOnly` nulls recovery exactly on the estimated days (band-measured only), leaving every
+    /// other field — and the band days' recovery — intact. This is what the multi-day recovery aggregators
+    /// (activityCosts, the Coach, the post-session forecast) read so an Apple estimate never enters a
+    /// statistic over history. (FER-153, the D1 fix.)
+    func testBandRecoveryOnlyNullsEstimatedDaysOnly() {
+        let bandDay = DailyMetric(day: "2026-06-01", totalSleepMin: 400, efficiency: nil, deepMin: nil,
+                                  remMin: nil, lightMin: nil, disturbances: nil, restingHr: 50,
+                                  avgHrv: 60, recovery: 72, strain: 10, exerciseCount: nil)
+        let estDay = DailyMetric(day: "2026-06-02", totalSleepMin: 410, efficiency: nil, deepMin: nil,
+                                 remMin: nil, lightMin: nil, disturbances: nil, restingHr: 55,
+                                 avgHrv: 48, recovery: 64, strain: nil, exerciseCount: nil)  // estimated
+        let out = Repository.bandRecoveryOnly([bandDay, estDay], estimatedDays: ["2026-06-02"])
+        XCTAssertEqual(out.first { $0.day == "2026-06-01" }?.recovery, 72)   // band day untouched
+        XCTAssertNil(out.first { $0.day == "2026-06-02" }?.recovery)         // estimate nulled
+        XCTAssertEqual(out.first { $0.day == "2026-06-02" }?.avgHrv, 48)     // other fields intact
+        // No estimated days → identity (same values).
+        XCTAssertEqual(Repository.bandRecoveryOnly([bandDay], estimatedDays: []).first?.recovery, 72)
+    }
 }

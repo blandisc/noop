@@ -456,7 +456,11 @@ wins wherever it has the night by the existing precedence. It writes only the `r
 Apple rows the band didn't cover — so the strap RMSSD baseline (which folds `avgHrv`, never `recovery`) is
 untouched. `isEstimated` is therefore **derived** (an Apple-surfaced day with a non-nil recovery is, by
 construction, the estimate — no other path writes recovery there); the confidence grade rides
-`DashboardData`, not a column. No migration.
+`DashboardData`, not a column. No migration. **Single-day** recovery reads (the ring, the verdict, the
+training gates) use `repo.days`/`today` and so show the estimate; every **multi-day recovery statistic**
+(the rest-day baseline in `activityCosts`, the Coach's recovery correlations/forecast in `InsightEngine`,
+the post-session forecast) instead reads `Repository.daysBandRecovery` — `days` with the estimate nulled —
+so an Apple estimate never enters a statistic over history (the same house rule the RMSSD baseline keeps).
 
 ---
 
