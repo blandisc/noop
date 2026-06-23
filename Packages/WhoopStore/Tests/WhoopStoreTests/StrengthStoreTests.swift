@@ -76,6 +76,28 @@ final class StrengthStoreTests: XCTestCase {
         XCTAssertEqual(routine?.updatedTs, 999)
     }
 
+    /// FER-541: the exercise type override round-trips, upserts (one row per id), and clears back to empty.
+    func testExerciseTypeOverrideRoundTrip() async throws {
+        let store = try await WhoopStore.inMemory()
+        let empty = try await store.exerciseTypeOverrides()
+        XCTAssertTrue(empty.isEmpty)
+
+        try await store.setExerciseTypeOverride("Plank", type: .time, ts: 1)
+        let afterSet = try await store.exerciseTypeOverrides()
+        XCTAssertEqual(afterSet["Plank"], .time)
+
+        // Upsert: setting the same id again replaces, not duplicates.
+        try await store.setExerciseTypeOverride("Plank", type: .bodyweight, ts: 2)
+        let all = try await store.exerciseTypeOverrides()
+        XCTAssertEqual(all.count, 1)
+        XCTAssertEqual(all["Plank"], .bodyweight)
+
+        // Clearing reverts to no override.
+        try await store.clearExerciseTypeOverride("Plank")
+        let afterClear = try await store.exerciseTypeOverrides()
+        XCTAssertTrue(afterClear.isEmpty)
+    }
+
     // MARK: - Folders (FER-494)
 
     /// Create + rename a folder round-trips via the public API (rename is an upsert on the same id).
