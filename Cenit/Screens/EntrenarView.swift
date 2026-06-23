@@ -77,6 +77,9 @@ private struct EntrenarLanding: View {
     @State private var showImport = false
     /// Drives the templates sheet opened straight on the mobility routine from the ④ «softer» suggestion (FER-554).
     @State private var showMobilityTemplate = false
+    /// «Empezar» from the mobility template stashes its (name, slots) here; the session starts on the sheet's
+    /// dismiss so it never stacks on the templates sheet (FER-560).
+    @State private var pendingMobility: (name: String, slots: [StrengthSessionModel.PlanSlot])? = nil
     /// Drives the Recovery Detail sheet opened from the recovery chip (FER-557).
     @State private var recoveryDetail: RecoveryDetailItem? = nil
 
@@ -124,10 +127,13 @@ private struct EntrenarLanding: View {
             WorkoutImportView { await load() }
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
-        // The ④ «softer» suggestion (FER-554) opens the templates sheet straight on the mobility routine —
-        // selectable/startable like any other template. Theme doesn't cross the sheet boundary (FER-190).
-        .sheet(isPresented: $showMobilityTemplate) {
-            StarterTemplatesSheet(initialSelection: StarterTemplates.byID("mobility")) { await load() }
+        // The ④ «softer» suggestion (FER-554) opens the templates sheet straight on the mobility routine.
+        // It's a «do it now» context (FER-560): «Empezar» starts a one-off guided session (on the sheet's
+        // dismiss, so it never stacks — FER-171), with «Add to my routines» as the secondary action. Theme
+        // doesn't cross the sheet boundary (FER-190).
+        .sheet(isPresented: $showMobilityTemplate, onDismiss: startPendingMobility) {
+            StarterTemplatesSheet(initialSelection: StarterTemplates.byID("mobility"),
+                                  onStart: { name, slots in pendingMobility = (name, slots) }) { await load() }
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
         // Live workout (the chooser's «En vivo»).
@@ -313,33 +319,36 @@ private struct EntrenarLanding: View {
 
     @ViewBuilder private var suggestionRow: some View {
         if let alt = TrainingRegulation.lightAlternative(recovery: recovery) {
+            // A REAL recommendation: present (ink text + solid border), reads as actionable (FER-569).
             Button { suggestionAction(alt) } label: {
                 suggestionRowBody(icon: suggestionIcon(alt), label: suggestionLabel(alt),
-                                  iconTint: theme.inkTertiary, labelTint: theme.inkSecondary, showsChevron: true)
+                                  iconTint: theme.inkSecondary, labelTint: theme.ink, showsChevron: true, dashed: false)
             }
             .buttonStyle(.plain)
         } else {
+            // No signal yet: a quiet, dashed placeholder that just explains what the row is for.
             suggestionRowBody(icon: "sparkles",
                               label: "Suggestions will appear here based on your recovery",
-                              iconTint: theme.inkDim, labelTint: theme.inkTertiary, showsChevron: false)
+                              iconTint: theme.inkDim, labelTint: theme.inkTertiary, showsChevron: false, dashed: true)
         }
     }
 
     private func suggestionRowBody(icon: String, label: LocalizedStringKey, iconTint: Color,
-                                   labelTint: Color, showsChevron: Bool) -> some View {
+                                   labelTint: Color, showsChevron: Bool, dashed: Bool) -> some View {
         HStack(spacing: 11) {
             Image(systemName: icon).font(.system(size: 17)).foregroundStyle(iconTint)
             Text(label).font(StrandFont.subhead).foregroundStyle(labelTint)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 8)
             if showsChevron {
-                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkDim)
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
         }
         .padding(.horizontal, 15).padding(.vertical, 13)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [3, 3])).foregroundStyle(theme.hairlineStrong))
+            .strokeBorder(style: dashed ? StrokeStyle(lineWidth: 1, dash: [3, 3]) : StrokeStyle(lineWidth: 1))
+            .foregroundStyle(theme.hairlineStrong))
     }
 
     private func suggestionIcon(_ alt: TrainingRegulation.LightAlternative) -> String {
@@ -543,6 +552,14 @@ private struct EntrenarLanding: View {
         case .breathe:   openBreathe()
         case .live:      if model.activeWorkout == nil { model.startWorkout() }; showLive = true
         }
+    }
+
+    /// Start the mobility session «Empezar» queued from the template sheet — performed on its dismiss so the
+    /// guided session sheet doesn't stack on the templates sheet (FER-560). A one-off: not saved to routines.
+    private func startPendingMobility() {
+        guard let p = pendingMobility else { return }
+        pendingMobility = nil
+        model.startStrengthSession(routineId: nil, routineName: p.name, slots: p.slots)
     }
 
     // MARK: - Card shell + bits

@@ -14,9 +14,12 @@ settings:
     # $(CURRENT_PROJECT_VERSION). Bump it here once per TestFlight / App Store upload.
     CURRENT_PROJECT_VERSION: "25"
     SWIFT_VERSION: "5.0"
-    # Emit localizable strings so Xcode auto-extracts every LocalizedStringKey into the
-    # String Catalog on build (the English (US) base entries).
-    SWIFT_EMIT_LOC_STRINGS: YES
+    # Auto-extraction of LocalizedStringKey into the String Catalog on build is DISABLED:
+    # Xcode 26.3's extractor (IDEXCStringsSupportCore / StringTraceGraph) crashes with a
+    # stack-overflow recursion on our string-construction graph, taking the whole IDE down
+    # on every build. The String Catalog is maintained from the .stringsdata in DerivedData
+    # instead. Re-enable once the offending pattern / Xcode bug is resolved (FER-568).
+    SWIFT_EMIT_LOC_STRINGS: NO
     SWIFT_STRICT_CONCURRENCY: minimal
     DEVELOPMENT_TEAM: "B7KRCF776Z"
     CODE_SIGN_STYLE: Automatic
@@ -107,7 +110,8 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: NO
         TARGETED_DEVICE_FAMILY: "1"
-        SWIFT_EMIT_LOC_STRINGS: YES
+        # See note on the base setting: disabled to avoid the Xcode 26.3 extractor crash.
+        SWIFT_EMIT_LOC_STRINGS: NO
     dependencies:
       - package: WhoopProtocol
       - package: WhoopStore
