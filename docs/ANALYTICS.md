@@ -20,6 +20,7 @@ The package contains more analytics than the app currently calls. This section i
 |---|---|---|
 | `HRVAnalyzer` | `HRVAnalyzer.swift` | **Library-only** as a type. The app computes RMSSD inline via `AppModel.rmssd(_:)` (same Task-Force formula) for the live stress nudge. |
 | `RecoveryScorer` | `RecoveryScorer.swift` | **Live.** Runs inside `AnalyticsEngine.analyzeDay` via `Cenit/Data/IntelligenceEngine.swift`; computed recoveries are persisted under the `"<deviceId>-noop"` source and merged **under** any imported `recovery_score_pct` (imports always win). APPROXIMATE. |
+| `AppleRecoveryEstimator` | `AppleRecoveryEstimator.swift` | **Live.** Surfaced read-time by `Repository.refresh` for **band-less** Apple nights only (FER-153): an ESTIMATED recovery from Apple SDNN vs the user's own Apple norm, labelled «estimado» + grade. Not persisted, no migration. APPROXIMATE. |
 | `StrainScorer` | `StrainScorer.swift` | **Live.** Day strain is computed on-device for nights the strap offloaded; the imported `day_strain` column still wins for imported days. APPROXIMATE. |
 | `SleepStager` | `SleepStager.swift` | **Live.** Stages each offloaded night inside `analyzeDay`; computed sessions are persisted under the `"-noop"` source, with imported sleeps taking precedence. APPROXIMATE. |
 | `Baselines` | `Baselines.swift` | **Live.** Seeds the recovery baseline in `IntelligenceEngine.analyzeRecent` (two-pass cold-start). The illness early-warning in `AppModel` still uses its own trailing-window baseline math inline (see below). |
@@ -192,6 +193,16 @@ HRV is the dominant driver. If its baseline isn't usable yet (`BaselineState.usa
 ### Resting HR (`restingHR`)
 
 "Lowest sustained HR" during the in-bed window = the **minimum of 5-minute non-overlapping bin means** of HR samples in `[start, end]`. This rejects single-beat dips while capturing the night's true floor.
+
+### Estimated recovery from Apple Health (`AppleRecoveryEstimator`, FER-153)
+
+Source: `AppleRecoveryEstimator.swift`. When a night did **not** come from the band, this scores an **estimated** recovery from Apple Health's HRV + sleep against the user's **own** Apple norm, so a band-less night reads a number instead of "—". It is **library code surfaced read-time** by the app: `Repository.refresh` maps each `apple-health` daily row into a `Night`, calls `estimate(...)`, and injects the score onto the **band-less** Apple rows before `mergeDaily` (the band wins wherever it has the night). Nothing is persisted and there is no migration.
+
+**The method (and why it's honest).** Apple exposes HRV as **SDNN**, not the **RMSSD** the band path uses. The estimator builds a **separate** SDNN baseline (plus optional RHR / respiration) from the user's own previous Apple nights and scores tonight's SDNN against it with the **same** `RecoveryScorer` z-score + logistic — **SDNN-vs-SDNN, never converted to RMSSD**. Because the log-domain z is relative and scale-invariant, the same *relative* deviation yields the same score regardless of the absolute ms scale, so "norma propia" carries no hidden cross-metric bias (proven by a scale-invariance test). Below `Baselines.minNightsSeed` Apple HRV nights the baseline isn't usable → no estimate (honest cold-start, "—").
+
+**Construct caveat (do not let copy overclaim).** SDNN reflects **total** variability (sympathetic + parasympathetic); RMSSD reflects the **vagally-mediated** component (Shaffer & Ginsberg 2017, *Front Public Health* 5:258). Both are valid time-domain HRV measures (Task Force 1996, *Circulation* 93(5):1043–1065). Apple's SDNN is also ultra-short (~60 s) and aggregated across the whole day, not sleep-windowed — so this is an "autonomic state vs your own Apple norm" proxy, **not** the band's nocturnal-vagal recovery, and a "70" here is **not** interchangeable with a "70" from the band. It is therefore shown **labelled «estimado» with a lower confidence grade** (`ScoreConfidence`), with an explanation, on every surface (Today hero + Recovery detail). No clinical/diagnostic claim.
+
+**Confidence** (`ScoreConfidence`, product-calibration knobs, not validated): high (≥ `minNightsTrust` Apple nights) · medium (≥ 7) · low (≥ seed); dropped one tier when overnight coverage is thin (`sleepMinutes < ~3 h`, a loose proxy since the SDNN is all-day). Pure + DB-free, like the rest of the package.
 
 ---
 

@@ -507,13 +507,16 @@ private struct CuerpoLanding: View {
         let showSpark = spark.count > 1 && score != nil
         let color = score.map(recoveryColor) ?? theme.inkTertiary
         return Button {
+            let key = Repository.localDayKey(Date())
             recoveryDetail = RecoveryDetailItem(model: RecoveryDetailModel.build(
                 days: repo.days,
                 today: repo.today,
-                todayKey: Repository.localDayKey(Date()),
+                todayKey: key,
                 appleHealthDays: repo.appleHealthDays,
                 loaded: repo.loaded,
-                importedSleep: repo.importedSleep))
+                importedSleep: repo.importedSleep,
+                isEstimated: repo.isRecoveryEstimated(key),
+                confidence: repo.recoveryConfidence(key)))
         } label: {
             HStack(spacing: 14) {
                 VStack(alignment: .leading, spacing: 3) {

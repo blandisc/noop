@@ -410,11 +410,14 @@ struct TodayView: View {
         switch id {
         case "recovery":
             present = {
+                let key = Repository.localDayKey(Date())
                 recoveryDetail = RecoveryDetailItem(model: RecoveryDetailModel.build(
                     days: repo.days, today: repo.today,
-                    todayKey: Repository.localDayKey(Date()),
+                    todayKey: key,
                     appleHealthDays: repo.appleHealthDays,
-                    loaded: repo.loaded, importedSleep: repo.importedSleep))
+                    loaded: repo.loaded, importedSleep: repo.importedSleep,
+                    isEstimated: repo.isRecoveryEstimated(key),
+                    confidence: repo.recoveryConfidence(key)))
             }
         case "sleep":
             present = {
@@ -1378,6 +1381,9 @@ struct TodayView: View {
             }
             .buttonStyle(.plain)
             .accessibilityHint(Text("Abre por qué el veredicto se lee así"))
+            // FER-153: a band-less Apple night drives the verdict from an ESTIMATED recovery — mark it so
+            // the day never reads identical to a band reading; the full explanation is one tap into the detail.
+            if repo.isRecoveryEstimated(Repository.localDayKey(Date())) { estimatedTodayMarker }
             if let bridge = r.bridge {
                 Text(bridge).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .multilineTextAlignment(.center)
@@ -1404,6 +1410,18 @@ struct TodayView: View {
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
         }
+    }
+
+    /// FER-153: «Estimado · confianza X» bajo el veredicto cuando la lectura del día es un estimado de Apple
+    /// (noche sin banda). Token-only; reusa la frase localizada del Detalle de recuperación.
+    private var estimatedTodayMarker: some View {
+        HStack(spacing: NoopMetrics.space2) {
+            Image(systemName: "applewatch").font(.system(size: 10, weight: .semibold))
+                .accessibilityHidden(true)
+            Text(RecoveryDetailScreen.confidenceLabel(repo.recoveryConfidence(Repository.localDayKey(Date()))))
+                .font(StrandFont.caption)
+        }
+        .foregroundStyle(theme.inkSecondary)
     }
 
     /// El pie del héroe — solo afordancias de onboarding (FER-189): el CTA «Buscar strap» cuando nunca se

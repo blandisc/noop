@@ -60,6 +60,12 @@ final class Repository: ObservableObject {
         /// Count of stored strap sleep sessions, UNFILTERED by the mode (FER-485) — the import block's
         /// «… sleeps stored» line reads this so it stays honest in «Solo Apple Salud».
         var storedSleepsCount: Int = 0
+        /// Days whose surfaced recovery is an Apple-Health ESTIMATE (a band-less night scored from SDNN
+        /// vs the user's own Apple norm, FER-153) — so the recovery surfaces can label it «estimado» +
+        /// grade WITHOUT a `DailyMetric` source/flag column (derived: an Apple-surfaced day with a
+        /// non-nil recovery is, by construction, our estimate — no other path writes recovery there).
+        var estimatedRecoveryDays: Set<String> = []
+        var recoveryConfidence: [String: ScoreConfidence] = [:]
         var loaded = false
         var seq = 0
     }
@@ -90,6 +96,10 @@ final class Repository: ObservableObject {
     var storedStrapDays: Set<String> { dashboard.storedStrapDays }
     var storedAppleOnlyDays: Set<String> { dashboard.storedAppleOnlyDays }
     var storedSleepsCount: Int { dashboard.storedSleepsCount }
+    /// True when the surfaced recovery for `day` is an Apple-Health estimate (band-less night, FER-153).
+    func isRecoveryEstimated(_ day: String) -> Bool { dashboard.estimatedRecoveryDays.contains(day) }
+    /// Confidence grade for an estimated-recovery day; nil when the day isn't an Apple estimate.
+    func recoveryConfidence(_ day: String) -> ScoreConfidence? { dashboard.recoveryConfidence[day] }
 
     init(deviceId: String) { self.deviceId = deviceId }
 
@@ -217,8 +227,16 @@ final class Repository: ObservableObject {
         for p in need { fig[p.day, default: ImportedSleepFigures()].needMin = p.value }
         for p in debt { fig[p.day, default: ImportedSleepFigures()].debtMin = p.value }
 
+        // FER-153 (Capa 2): an ESTIMATED recovery for band-less Apple nights, computed read-time so it
+        // tracks the current Apple data + mode with no migration/persistence. Only the `recovery` field
+        // is set, and only on Apple rows the band didn't cover — so the strap RMSSD baseline (which folds
+        // `avgHrv`, never `recovery`) and the strap days' `displayDays` stay untouched, and `mergeDaily`'s
+        // precedence makes the band win wherever it has the night. `whoopOnly` → `apple == []` → no estimate.
+        let strapDays = Set(imported.map(\.day)).union(computed.map(\.day))
+        let est = Self.injectAppleEstimate(apple: apple, strapDays: strapDays)
+
         // One assignment → one objectWillChange for the whole refresh (was four).
-        let merged = Self.mergeDaily(imported: imported, computed: computed, apple: apple)
+        let merged = Self.mergeDaily(imported: imported, computed: computed, apple: est.rows)
         // FER-485: stored per-source coverage from the UNFILTERED raws (the always-Combined truth), so the
         // diagnostic coverage shows what's stored even when the mode hides a source from the dashboard.
         let storedStrap = Set(importedRaw.map(\.day)).union(computedRaw.map(\.day))
@@ -234,6 +252,8 @@ final class Repository: ObservableObject {
             storedStrapDays: storedStrap,
             storedAppleOnlyDays: storedAppleOnly,
             storedSleepsCount: storedSleeps,
+            estimatedRecoveryDays: est.estimatedDays,
+            recoveryConfidence: est.confidence,
             loaded: true,
             seq: dashboard.seq + 1
         )
@@ -276,6 +296,36 @@ final class Repository: ObservableObject {
             appleByDay[row.day].map { row.fillingNils(from: $0) } ?? row
         }
         return (days, appleDays, displayDays)
+    }
+
+    /// FER-153 (Capa 2): estimate recovery for band-less Apple nights and inject it into the Apple rows
+    /// so `mergeDaily` surfaces it ONLY where the band didn't cover the night (the band wins by
+    /// precedence). The SDNN-vs-own-SDNN estimate is computed by the pure `AppleRecoveryEstimator`
+    /// (separate baseline, never the strap's RMSSD). Returns the Apple rows (estimate set only on
+    /// band-less days), the days carrying an estimate, and their confidence grades. Pure + static so
+    /// `RepositoryMergeTests` can pin it. `apple == []` (whoopOnly) → input unchanged, empty sets.
+    static func injectAppleEstimate(apple: [DailyMetric], strapDays: Set<String>)
+        -> (rows: [DailyMetric], estimatedDays: Set<String>, confidence: [String: ScoreConfidence]) {
+        guard !apple.isEmpty else { return (apple, [], [:]) }
+        let nights = apple.map {
+            AppleRecoveryEstimator.Night(day: $0.day, hrvSDNN: $0.avgHrv,
+                                         restingHr: $0.restingHr.map(Double.init), resp: $0.respRateBpm,
+                                         sleepPerf: $0.efficiency, sleepMinutes: $0.totalSleepMin)
+        }
+        var estByDay: [String: AppleRecoveryEstimator.DayEstimate] = [:]
+        for e in AppleRecoveryEstimator.estimate(nights: nights) { estByDay[e.day] = e }
+        var estimatedDays = Set<String>()
+        var confidence: [String: ScoreConfidence] = [:]
+        let rows = apple.map { row -> DailyMetric in
+            // Inject ONLY on a band-less night that has no recovery yet — a strap-covered day surfaces
+            // the band row (band wins) and leaving its Apple row's recovery nil keeps that day's
+            // `displayDays`/`fillingNils` byte-for-byte unchanged (regression zero).
+            guard let e = estByDay[row.day], !strapDays.contains(row.day), row.recovery == nil else { return row }
+            estimatedDays.insert(row.day)
+            confidence[row.day] = e.confidence
+            return row.withRecovery(e.score)
+        }
+        return (rows, estimatedDays, confidence)
     }
 
     /// Same precedence for sleep sessions, keyed by the day the night ends on.
@@ -900,5 +950,16 @@ private extension DailyMetric {
             respRateBpm: respRateBpm ?? other.respRateBpm,
             steps: steps ?? other.steps,
             activeKcalEst: activeKcalEst ?? other.activeKcalEst)
+    }
+
+    /// A copy with `recovery` substituted (the struct has no `copy()`). Used to inject the Apple-Health
+    /// estimated recovery onto a band-less Apple row before the merge (FER-153) — every other field is
+    /// carried verbatim, so the row's HRV/sleep stay Apple's own.
+    func withRecovery(_ r: Double?) -> DailyMetric {
+        DailyMetric(day: day, totalSleepMin: totalSleepMin, efficiency: efficiency, deepMin: deepMin,
+                    remMin: remMin, lightMin: lightMin, disturbances: disturbances, restingHr: restingHr,
+                    avgHrv: avgHrv, recovery: r, strain: strain, exerciseCount: exerciseCount,
+                    spo2Pct: spo2Pct, skinTempDevC: skinTempDevC, respRateBpm: respRateBpm,
+                    steps: steps, activeKcalEst: activeKcalEst)
     }
 }

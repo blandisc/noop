@@ -17,4 +17,16 @@ public enum ScoreConfidence: String, Equatable, Sendable, Codable {
     case calibrating
     case building
     case solid
+
+    /// One tier lower, floored at `.calibrating` (solid → building → calibrating).
+    /// Used to down-grade a result when one input is thin even though the baseline
+    /// is otherwise trusted (e.g. AppleRecoveryEstimator: trusted baseline but poor
+    /// overnight coverage). Keeps the ladder ordered without a numeric raw value.
+    public var lowered: ScoreConfidence {
+        switch self {
+        case .solid:       return .building
+        case .building:    return .calibrating
+        case .calibrating: return .calibrating
+        }
+    }
 }
