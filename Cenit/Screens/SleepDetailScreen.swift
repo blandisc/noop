@@ -611,18 +611,30 @@ struct SleepDetailScreen: View {
         let window = MetricWindowMath.make(durationParsed, selected: range)
         DetailBlock("Duration trend", theme: theme) {
             if window.values.count >= 2 {
-                MetricLevelsExplorer(
-                    theme: theme,
-                    range: $range,
-                    window: window,
-                    levels: sleepHourLevels,
-                    todayValue: model.durationSeries.last?.value,
-                    hue: theme.dataSleep,
-                    unit: "h",
-                    valueFormat: { String(format: "%.1f", $0) },
-                    nightly: true,
-                    accessibilityLabel: "Hours asleep per night by level"
-                )
+                VStack(alignment: .leading, spacing: 10) {
+                    MetricLevelsExplorer(
+                        theme: theme,
+                        range: $range,
+                        window: window,
+                        levels: sleepHourLevels,
+                        todayValue: model.durationSeries.last?.value,
+                        hue: theme.dataSleep,
+                        unit: "h",
+                        valueFormat: { String(format: "%.1f", $0) },
+                        nightly: true,
+                        accessibilityLabel: "Hours asleep per night by level"
+                    )
+                    // handoff «Media · periodo · valor · Δ% vs previo» + rango — sleep duration ↑ = good. (FER-587)
+                    let s = ComparisonEngine.stat(window.values)
+                    DynamicAverageCaption(
+                        windowName: range.name,
+                        average: String(format: "%.1f", s.mean),
+                        unit: "h",
+                        pctChange: range.periodComparison(of: model.durationSeries)?.pctChange,
+                        polarity: .higherIsBetter,
+                        rangeText: "\(String(format: "%.1f", s.min))–\(String(format: "%.1f", s.max))",
+                        theme: theme)
+                }
             } else {
                 emptyWell(text: "Not enough nights yet to draw a trend.")
             }

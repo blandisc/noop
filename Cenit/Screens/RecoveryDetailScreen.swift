@@ -81,6 +81,7 @@ struct RecoveryDetailScreen: View {
                     if model.series.count >= 2 {
                         blockDivider
                         levelsBlock
+                        averageCaption   // handoff «Media · periodo · valor · Δ% vs previo» + rango (FER-587)
                     }
                     // Level 3 · «See your history»: the 90-day calendar, collapsed by default.
                     blockDivider
@@ -602,6 +603,22 @@ struct RecoveryDetailScreen: View {
     /// A punto / Pleno, 0–100). Reuses F6a (`MetricLevels.recovery`) + the shared `MetricLevelsExplorer`. It
     /// supersedes the old 7-day-average trend block, surfacing recovery's distribution at a glance. The
     /// fixed levels (not relative-to-base) read as the app's own readiness language. (FER-572)
+    /// The handoff's period-average caption + range, under the levels explorer (FER-587, option ii).
+    /// Recovery rises = good; the score is unitless (/100). Δ vs the previous equal window.
+    @ViewBuilder private var averageCaption: some View {
+        let window = MetricWindowMath.make(parsed, selected: range)
+        if window.values.count > 1 {
+            let s = ComparisonEngine.stat(window.values)
+            DynamicAverageCaption(
+                windowName: range.name,
+                average: "\(Int(s.mean.rounded()))",
+                pctChange: range.periodComparison(of: model.series)?.pctChange,
+                polarity: .higherIsBetter,
+                rangeText: "\(Int(s.min.rounded()))–\(Int(s.max.rounded()))",
+                theme: theme)
+        }
+    }
+
     private var levelsBlock: some View {
         let window = MetricWindowMath.make(parsed, selected: range)
         return MetricLevelsExplorer(

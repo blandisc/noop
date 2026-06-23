@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El promedio del periodo vuelve a verse bajo la gráfica de cada detalle / The period average is back under each detail's chart.**
+  **ES** — En Recuperación, Esfuerzo, Estrés y Sueño, bajo la gráfica de niveles ahora se lee **«Media · {periodo} · {valor} · {Δ%} vs periodo previo»** —el promedio del periodo que elijas y su cambio frente al periodo anterior, **coloreado** según la buena dirección de cada métrica (Esfuerzo es neutral)— más una línea pequeña con el **Rango mín–máx**. Es el formato del handoff, conservando el rango.
+  **EN** — In Recovery, Strain, Stress and Sleep, under the levels chart you now read **"Average · {period} · {value} · {Δ%} vs previous"** — the average for whichever period you pick and its change vs the previous one, **coloured** by each metric's good direction (Strain is neutral) — plus a small **Range min–max** line. It's the handoff format, keeping the range.
+  ([Cenit/Screens/RecoveryDetailScreen.swift](Cenit/Screens/RecoveryDetailScreen.swift), [Packages/StrandDesign/Sources/StrandDesign/Components.swift](Packages/StrandDesign/Sources/StrandDesign/Components.swift))
+
 - **Patrones: «Empezar de cero» para borrar lo que anotaste / Patterns: "Start from scratch" to wipe what you logged.**
   **ES** — Al fondo de **Patrones** hay un botón discreto **«Empezar de cero»** que borra **lo que tú aportaste**: tu diario en la app (check-ins / «anota tu día») y todos tus experimentos con sus veredictos (con eso se limpian también las palancas «probadas» de §4). Pide confirmación y es irreversible. **No** toca los patrones que el motor detecta de tu cuerpo (esos se recalculan solos desde tu historial fisiológico) ni tu journal importado de WHOOP.
   **EN** — At the foot of **Patterns** there's a quiet **"Start from scratch"** button that wipes **what you contributed**: your in-app journal (check-ins / "log your day") and every experiment with its verdicts (which also clears the "proven" levers in §4). It asks for confirmation and can't be undone. It does **not** touch the patterns the engine detects from your body (those recompute on their own from your physiological history) nor your imported WHOOP journal.

@@ -93,6 +93,7 @@ struct StressDetailScreen: View {
                     if model.fullTrend.count >= 2 {
                         blockDivider
                         levelsBlock(model)
+                        averageCaption   // handoff «Media · periodo · valor · Δ% vs previo» + rango (FER-587)
                     }
                     blockDivider
                     methodDisclosure(model)
@@ -266,6 +267,22 @@ struct StressDetailScreen: View {
     /// the old L3 trend block, whose fixed Low/Mod/High bands were already this metric's levels. The hue is
     /// `warning` (the «elevated» stress tone) — stress has no single good direction, so the instrument
     /// reads in one neutral-but-activated colour rather than recolouring per band. (FER-572)
+    /// The handoff's period-average caption + range, under the levels explorer (FER-587, option ii).
+    /// Stress good direction is DOWN (lower is calmer); shown on the 0–3 scale, no unit.
+    @ViewBuilder private var averageCaption: some View {
+        let window = MetricWindowMath.make(parsed, selected: range)
+        if window.values.count > 1 {
+            let s = ComparisonEngine.stat(window.values)
+            DynamicAverageCaption(
+                windowName: range.name,
+                average: fmt(s.mean),
+                pctChange: range.periodComparison(of: parsed.map { ($0.day, $0.value) })?.pctChange,
+                polarity: .lowerIsBetter,
+                rangeText: "\(fmt(s.min))–\(fmt(s.max))",
+                theme: theme)
+        }
+    }
+
     private func levelsBlock(_ model: StressModel) -> some View {
         let window = MetricWindowMath.make(parsed, selected: range)
         return MetricLevelsExplorer(

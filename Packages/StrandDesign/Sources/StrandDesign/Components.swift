@@ -172,3 +172,66 @@ public struct InstrumentoScreenTitle: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
+
+// MARK: - Dynamic period-average caption (FER-587 · handoff «Media · … vs previo»)
+
+/// The handoff's one-line period average under a trend: «Average · {window} · {value} · {Δ%} vs previous»,
+/// with the Δ coloured by the metric's good direction, plus an optional small «Range {lo–hi}» line so the
+/// min–max stays visible (the owner's option ii). The host computes the figures (it owns the full series);
+/// this is presentation only. Hidden Δ when `pctChange` is nil (no previous period). (FER-587)
+public struct DynamicAverageCaption: View {
+    let windowName: String
+    let average: String
+    let unit: String?
+    let pctChange: Double?
+    let polarity: TrendStatSummary.Polarity
+    let rangeText: String?
+    let theme: InstrumentoTheme
+
+    public init(windowName: String, average: String, unit: String? = nil, pctChange: Double?,
+                polarity: TrendStatSummary.Polarity, rangeText: String? = nil, theme: InstrumentoTheme) {
+        self.windowName = windowName
+        self.average = average
+        self.unit = unit
+        self.pctChange = pctChange
+        self.polarity = polarity
+        self.rangeText = rangeText
+        self.theme = theme
+    }
+
+    private var deltaColor: Color {
+        guard let v = pctChange, Int(abs(v).rounded()) != 0 else { return theme.inkSecondary }
+        switch polarity {
+        case .neutral:        return theme.inkSecondary
+        case .higherIsBetter: return v > 0 ? theme.verdict : theme.warning
+        case .lowerIsBetter:  return v < 0 ? theme.verdict : theme.warning
+        }
+    }
+
+    public var body: some View {
+        let unitSuffix = unit.map { " \($0)" } ?? ""
+        let head = Text("Average") + Text(verbatim: " · \(windowName) · \(average)\(unitSuffix)")
+        return VStack(alignment: .leading, spacing: 3) {
+            Group {
+                if let pct = pctChange {
+                    let rounded = Int(abs(pct).rounded())
+                    let arrow = rounded == 0 ? "" : (pct >= 0 ? "▲ " : "▼ ")
+                    head
+                        + Text(verbatim: " · \(arrow)\(rounded)% ").foregroundColor(deltaColor)
+                        + Text("vs previous")
+                } else {
+                    head
+                }
+            }
+            .font(StrandFont.footnote)
+            .foregroundStyle(theme.inkTertiary)
+            .fixedSize(horizontal: false, vertical: true)
+            if let rangeText {
+                (Text("Range") + Text(verbatim: " \(rangeText)"))
+                    .font(StrandFont.footnote)
+                    .foregroundStyle(theme.inkTertiary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
