@@ -121,5 +121,15 @@
  {"alias": "desplantes", "id": "Dumbbell_Lunges"},
  {"alias": "crunch", "id": "Crunches"},
  {"alias": "abdominal", "id": "Crunches"},
- {"alias": "elevacion de piernas", "id": "Hanging_Leg_Raise"}
+ {"alias": "elevacion de piernas", "id": "Hanging_Leg_Raise"},
+ {"alias": "bb bench press", "id": "Barbell_Bench_Press_-_Medium_Grip"},
+ {"alias": "bb row", "id": "Bent_Over_Barbell_Row"},
+ {"alias": "db bench press", "id": "Dumbbell_Bench_Press"},
+ {"alias": "db shoulder press", "id": "Dumbbell_Shoulder_Press"},
+ {"alias": "cgbp", "id": "Close-Grip_Barbell_Bench_Press"},
+ {"alias": "press de banca", "id": "Barbell_Bench_Press_-_Medium_Grip"},
+ {"alias": "press banca plano", "id": "Barbell_Bench_Press_-_Medium_Grip"},
+ {"alias": "peso muerto rumano con barra", "id": "Romanian_Deadlift"},
+ {"alias": "elevacion lateral con mancuernas", "id": "Side_Lateral_Raise"},
+ {"alias": "curl de biceps con mancuerna", "id": "Dumbbell_Bicep_Curl"}
 ]
