@@ -37,8 +37,6 @@ struct MetricLevelsExplorer: View {
     let valueFormat: (Double) -> String
     /// A fixed Y domain (recovery 0…100, strain 0…21, stress 0…3); nil auto-fits to the levels + line.
     var domain: ClosedRange<Double>? = nil
-    /// Anchor the chart's Y floor at 0 (counts like steps); the four F6c metrics keep their own domains.
-    var anchorsAtZero: Bool = false
     /// Count overnight readings as «nights» rather than «days» in the phrase + the per-level counts. Sleep's
     /// duration block sets this true; the others read daily. (FER-572)
     var nightly: Bool = false
@@ -143,7 +141,7 @@ struct MetricLevelsExplorer: View {
     }
 
     /// The chart's Y domain: a caller-fixed domain, else the level thresholds + the line's own min/max
-    /// with a little breath (0-anchored when `anchorsAtZero`). (mirrors F6b `levelChartDomain`)
+    /// with a little breath. (mirrors F6b `levelChartDomain`)
     private func chartDomain(_ d: LevelData, values: [Double]) -> ClosedRange<Double> {
         if let dom = domain { return dom }
         let bounds = d.levels.flatMap { [$0.lower, $0.upper].compactMap { $0 } }
@@ -152,9 +150,8 @@ struct MetricLevelsExplorer: View {
             let v = values.first ?? bounds.first ?? 0
             return (v - 1)...(v + 1)
         }
-        let lo = anchorsAtZero ? 0 : lo0
-        let span = max(hi0 - lo, 0.0001)
-        return (lo - (anchorsAtZero ? 0 : span * 0.1))...(hi0 + span * 0.12)
+        let span = max(hi0 - lo0, 0.0001)
+        return (lo0 - span * 0.1)...(hi0 + span * 0.12)
     }
 
     private func yTicks(_ d: LevelData) -> [Double]? {
