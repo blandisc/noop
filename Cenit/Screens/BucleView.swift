@@ -316,7 +316,7 @@ private struct PatronesLanding: View {
                                 in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
                     .shadow(color: theme.dataRecovery.opacity(0.25), radius: 3, x: 0, y: 1)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PressNudge())
             }
             Button { detail = InsightItem(insight: insight) } label: {
                 HStack(spacing: 4) {
@@ -324,8 +324,10 @@ private struct PatronesLanding: View {
                     Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold))
                 }
                 .foregroundStyle(theme.inkSecondary)
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PressNudge())
         }
     }
 
@@ -371,7 +373,7 @@ private struct PatronesLanding: View {
     // MARK: §2 · Correlaciones que no veías (passive findings)
 
     private var correlacionesSection: some View {
-        section(2, "Correlations you couldn't see") {
+        section(2, "Correlations you couldn't see", showsTopRule: false) {
             let rels = correlationInsights
             if rels.isEmpty {
                 emptyBox("I haven't found clear links yet. They'll show up here as soon as I see them.")
@@ -405,7 +407,7 @@ private struct PatronesLanding: View {
             .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressTint(theme: theme, radius: 10))
     }
 
     // MARK: §3 · Pon a prueba algo nuevo (the running experiment + builder)
@@ -455,7 +457,7 @@ private struct PatronesLanding: View {
             if p.pendingCheckIn {
                 checkInRow(p).padding(.top, 13)
             } else if let yes = p.markedYesToday {
-                markedRecord(yes: yes, behavior: p.row.behavior).padding(.top, 13)
+                markedRecord(yes: yes, behavior: p.row.behavior)
             }
             detailFooter(p.row, leading: String(localized: "Best streak \(p.streakBest) · see effect chart"))
         }
@@ -516,39 +518,45 @@ private struct PatronesLanding: View {
                 .frame(minWidth: 30)
                 .padding(.horizontal, 15).padding(.vertical, 7)
                 .overlay(Capsule().stroke(theme.hairlineStrong, lineWidth: 1))
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressNudge())
         .accessibilityLabel(label)
     }
 
-    /// The «check-in marcado» record (State 4): today's answer is in, with an inline Deshacer that clears it.
+    /// The «check-in marcado» record (State 4): today's answer is in, with an inline Deshacer that clears
+    /// it. An inline row under a hairline (not a nested filled box — DNA rule 3, no card-in-card); the
+    /// kept/missed state reads from the icon (green check vs tertiary slash), not a fill.
     private func markedRecord(yes: Bool, behavior: String) -> some View {
-        HStack(spacing: 9) {
-            Image(systemName: yes ? "checkmark.circle" : "circle.slash")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(yes ? theme.dataRecovery : theme.inkTertiary)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(yes ? String(localized: "Kept today · logged") : String(localized: "Missed today · logged"))
-                    .font(StrandFont.subhead).foregroundStyle(theme.ink)
-                Text("You can still change it").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-            }
-            Spacer(minLength: 8)
-            Button {
-                Task {
-                    await repo.clearJournalAnswer(day: Repository.localDayKey(Date()), question: behavior)
-                    await load()
+        VStack(spacing: 0) {
+            Rectangle().fill(theme.hairline).frame(height: 0.5)
+            HStack(spacing: 9) {
+                Image(systemName: yes ? "checkmark.circle" : "circle.slash")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(yes ? theme.dataRecovery : theme.inkTertiary)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(yes ? String(localized: "Kept today · logged") : String(localized: "Missed today · logged"))
+                        .font(StrandFont.subhead).foregroundStyle(theme.ink)
+                    Text("You can still change it").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                 }
-            } label: {
-                Text("Undo").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).underline()
+                Spacer(minLength: 8)
+                Button {
+                    Task {
+                        await repo.clearJournalAnswer(day: Repository.localDayKey(Date()), question: behavior)
+                        await load()
+                    }
+                } label: {
+                    Text("Undo").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).underline()
+                        .padding(.vertical, 8).padding(.leading, 12)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(PressNudge())
             }
-            .buttonStyle(.plain)
+            .padding(.top, 13)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(yes ? theme.dataRecovery.opacity(0.08) : theme.paperLo,
-                    in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .stroke(yes ? theme.dataRecovery.opacity(0.25) : theme.hairline, lineWidth: 1))
+        .padding(.top, 13)
     }
 
     /// The card footer (Option A) — a quiet tappable row into the experiment's racha + effect-chart detail.
@@ -564,7 +572,7 @@ private struct PatronesLanding: View {
             .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressTint(theme: theme, radius: 10))
     }
 
     /// The experiment verdict (State 3): a result card. «Funcionó» graduates to §4 (the engine already
@@ -598,7 +606,7 @@ private struct PatronesLanding: View {
                         .padding(.vertical, 11)
                         .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(PressNudge())
                     quietButton("Repeat") { restartExperiment(exp) }
                 }
                 .padding(.top, 15)
@@ -616,12 +624,12 @@ private struct PatronesLanding: View {
                             .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
                                 .stroke(theme.hairlineStrong, lineWidth: 1))
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(PressNudge())
                     Button { dismissVerdict(exp) } label: {
                         Text("Discard").font(StrandFont.headline).foregroundStyle(theme.inkTertiary)
                             .padding(.horizontal, 14).padding(.vertical, 11)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(PressNudge())
                 }
                 .padding(.top, 14)
             }
@@ -673,7 +681,7 @@ private struct PatronesLanding: View {
                         .padding(.horizontal, 16).padding(.vertical, 9)
                         .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PressNudge())
             }
             .padding(.top, 13)
         }
@@ -696,11 +704,11 @@ private struct PatronesLanding: View {
                 Image(systemName: "plus").font(.system(size: 16, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .padding(.horizontal, 14).padding(.vertical, 13)
-            .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
                 .stroke(theme.hairlineStrong, style: StrokeStyle(lineWidth: 1, dash: [4])))
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressTint(theme: theme, radius: NoopMetrics.controlRadius))
         .padding(.top, 11)
     }
 
@@ -731,7 +739,7 @@ private struct PatronesLanding: View {
                 .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
                     .stroke(theme.hairlineStrong, lineWidth: 1))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressNudge())
     }
 
     // MARK: §4 · Confirmado · funciona en ti (proven levers)
@@ -771,7 +779,7 @@ private struct PatronesLanding: View {
             .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressTint(theme: theme, radius: 10))
     }
 
     // MARK: §5 · Aporta lo tuyo (journal + relate-two-metrics)
@@ -807,7 +815,7 @@ private struct PatronesLanding: View {
             }
             .surfaceRow(theme)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressTint(theme: theme))
     }
 
     private var relacionaRow: some View {
@@ -825,7 +833,7 @@ private struct PatronesLanding: View {
             }
             .surfaceRow(theme)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressTint(theme: theme))
     }
 
     // MARK: §6 · Tu expediente (the archive)
@@ -865,7 +873,7 @@ private struct PatronesLanding: View {
                     .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
                         .stroke(theme.hairlineStrong, lineWidth: 1))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PressTint(theme: theme))
                 .padding(.top, 11)
             }
         }
@@ -928,11 +936,14 @@ private struct PatronesLanding: View {
     // MARK: Section scaffold
 
     /// A numbered section: a top hairline, a numbered dot + overline label (with optional ⓘ and a trailing
-    /// link), then the content. The shared rhythm for §2–§6.
+    /// link), then the content. The shared rhythm for §2–§6. `showsTopRule` is `false` for the first
+    /// section (§2), which flows straight from the hero — hero + §2 are both passive findings, so they
+    /// read as one block, separated by a rule only from §3 onward (the «action» beats).
     private func section<Content: View>(_ n: Int, _ title: LocalizedStringKey,
                                         info infoItem: BucleInfo? = nil,
                                         trailing: String? = nil,
                                         trailingAction: (() -> Void)? = nil,
+                                        showsTopRule: Bool = true,
                                         @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -940,9 +951,11 @@ private struct PatronesLanding: View {
                 Text(title).instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 if let infoItem {
                     Button { info = infoItem } label: {
-                        Image(systemName: "info.circle").font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
+                        Image(systemName: "info.circle").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
+                            .padding(.horizontal, 6)
+                            .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(PressNudge())
                     .accessibilityLabel("How this section works")
                 }
                 Spacer()
@@ -953,14 +966,18 @@ private struct PatronesLanding: View {
                             Image(systemName: "chevron.right").font(.system(size: 11))
                         }
                         .foregroundStyle(theme.inkTertiary)
+                        .padding(.vertical, 6)
+                        .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(PressNudge())
                 }
             }
             content()
         }
         .padding(.top, 18)
-        .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
+        .overlay(alignment: .top) {
+            if showsTopRule { Rectangle().fill(theme.hairline).frame(height: 0.5) }
+        }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
@@ -974,7 +991,7 @@ private struct PatronesLanding: View {
 
     private func recChip(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 9, weight: .semibold)).textCase(.uppercase).tracking(0.5)
+            .font(StrandFont.overline).textCase(.uppercase).tracking(0.5)
             .foregroundStyle(theme.dataRecovery)
             .padding(.horizontal, 9).padding(.vertical, 3)
             .background(theme.dataRecovery.opacity(0.12), in: Capsule())
@@ -998,8 +1015,10 @@ private struct PatronesLanding: View {
             }
             .foregroundStyle(theme.inkTertiary)
             .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressNudge())
         .padding(.top, 26)
     }
 
@@ -1011,7 +1030,7 @@ private struct PatronesLanding: View {
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity)
             .padding(16)
-            .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
                 .stroke(theme.hairlineStrong, style: StrokeStyle(lineWidth: 1, dash: [4])))
             .padding(.top, 11)
     }
@@ -1149,6 +1168,38 @@ private extension View {
             .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
                 .stroke(theme.hairlineStrong, lineWidth: 1))
+    }
+}
+
+// MARK: - Press feedback (matches CuerpoView / TodayView)
+//
+// Patrones' rows & CTAs used `.buttonStyle(.plain)` (no touch feedback). These mirror the press
+// vocabulary the sibling Instrumento screens already use: a 5%-ink tint overlay clipped to the
+// row/card shape for surfaces, and a quiet scale+opacity nudge for filled/text CTAs. Defined
+// locally to match the established per-screen convention (CuerpoView keeps its own `CardPressStyle`).
+
+/// Press feedback for a tappable row or card: overlay a faint ink tint, clipped to the shape, on press.
+private struct PressTint: ButtonStyle {
+    var theme: InstrumentoTheme
+    var radius: CGFloat = NoopMetrics.cardRadius
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .overlay {
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .fill(theme.ink.opacity(0.05))
+                    .opacity(configuration.isPressed ? 1 : 0)
+            }
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+    }
+}
+
+/// Press feedback for a filled / text button: a quiet scale + dim on press (the `interactive` spring).
+private struct PressNudge: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.82 : 1)
+            .scaleEffect(configuration.isPressed ? 0.98 : 1)
+            .animation(StrandMotion.interactive, value: configuration.isPressed)
     }
 }
 
