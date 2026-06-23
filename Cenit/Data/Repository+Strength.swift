@@ -58,17 +58,61 @@ extension Repository {
 
     // MARK: - Exercises (bundled catalog + user-created)
 
-    /// The full exercise list a library screen browses: the bundled seed catalog merged with the
-    /// user's own exercises, sorted by name. The catalog is read-only; custom ones are editable.
+    /// The full exercise list a library screen browses: the bundled seed catalog merged with the user's
+    /// own exercises, sorted by name — each one re-typed by the user's measurement-type override (FER-541)
+    /// so a catalog or custom override is respected everywhere this list feeds. Catalog stays read-only;
+    /// the override is applied on read, not baked into the bundled data.
     func allExercises() async -> [Exercise] {
         guard let store = await storeHandle() else { return ExerciseCatalog.all }
         let custom = (try? await store.customExercises()) ?? []
-        return (ExerciseCatalog.all + custom).sorted { $0.name < $1.name }
+        let overrides = (try? await store.exerciseTypeOverrides()) ?? [:]
+        let merged = (ExerciseCatalog.all + custom).map { ex -> Exercise in
+            if let ov = overrides[ex.id], ov != ex.type { return ex.retyped(to: ov) }
+            return ex
+        }
+        return merged.sorted { $0.name < $1.name }
+    }
+
+    /// Resolve one exercise by id (catalog or custom) with its user type override applied — the single
+    /// point every guided-session / builder / detail path uses, so no reader sees a non-overridden type.
+    /// Precedence: override > custom > catalog (FER-541). nil if the id is unknown.
+    func resolvedExercise(_ id: String) async -> Exercise? {
+        let catalog = ExerciseCatalog.byID(id)
+        var custom: Exercise?
+        var override: ExerciseType?
+        if let store = await storeHandle() {
+            custom = (try? await store.customExercises())?.first { $0.id == id }
+            override = (try? await store.exerciseTypeOverrides())?[id]
+        }
+        guard let base = custom ?? catalog else { return nil }
+        let eff = ExerciseTypeResolver.effectiveType(override: override, custom: custom?.type, catalog: catalog?.type)
+        return (eff != nil && eff != base.type) ? base.retyped(to: eff!) : base
     }
 
     func saveCustomExercise(_ e: Exercise) async throws {
         guard let store = await storeHandle() else { return }
         try await store.saveCustomExercise(e)
+    }
+
+    // MARK: - Exercise type overrides (FER-541)
+
+    /// The user's current type override for an exercise (nil = none) — so the detail screen can offer
+    /// «revert to default» only when there is one.
+    func exerciseTypeOverride(_ exerciseId: String) async -> ExerciseType? {
+        guard let store = await storeHandle() else { return nil }
+        return (try? await store.exerciseTypeOverrides())?[exerciseId]
+    }
+
+    /// Override an exercise's measurement type (catalog or custom).
+    func setExerciseTypeOverride(_ exerciseId: String, type: ExerciseType) async {
+        guard let store = await storeHandle() else { return }
+        try? await store.setExerciseTypeOverride(exerciseId, type: type, ts: Int(Date().timeIntervalSince1970))
+    }
+
+    /// Drop an exercise's type override → it reverts to its catalog/custom default.
+    func clearExerciseTypeOverride(_ exerciseId: String) async {
+        guard let store = await storeHandle() else { return }
+        try? await store.clearExerciseTypeOverride(exerciseId)
     }
 
     // MARK: - Learned exercise aliases (import matching memory — FER-523)
@@ -140,5 +184,14 @@ extension Repository {
     func recentWorkSets(sinceTs: Int) async -> [(exerciseId: String, startTs: Int)] {
         guard let store = await storeHandle() else { return [] }
         return (try? await store.workSetsSince(sinceTs)) ?? []
+    }
+}
+
+extension Exercise {
+    /// Rebuild this exercise with a different measurement type, preserving every other field (FER-541).
+    /// The id is kept, so PRs / history / matching stay linked; `Exercise` is an immutable value type.
+    func retyped(to t: ExerciseType) -> Exercise {
+        Exercise(id: id, name: name, nameES: nameES, type: t, equipment: equipment,
+                 primaryMuscles: primaryMuscles, secondaryMuscles: secondaryMuscles, cues: cues, cuesES: cuesES)
     }
 }

@@ -599,3 +599,12 @@ extension WhoopStore {
             """, arguments: StatementArguments(args))
     }
 }
+
+/// The single rule for an exercise's effective measurement type (FER-541): a **user override** wins,
+/// then a **custom** exercise's own type, then the **bundled catalog**'s. Pure so the precedence is
+/// unit-tested without a store; the app's resolver (`Repository`) loads the three inputs and applies it.
+public enum ExerciseTypeResolver {
+    public static func effectiveType(override: ExerciseType?, custom: ExerciseType?, catalog: ExerciseType?) -> ExerciseType? {
+        override ?? custom ?? catalog
+    }
+}

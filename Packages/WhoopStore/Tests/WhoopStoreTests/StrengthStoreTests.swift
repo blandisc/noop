@@ -98,6 +98,18 @@ final class StrengthStoreTests: XCTestCase {
         XCTAssertTrue(afterClear.isEmpty)
     }
 
+    /// FER-541: the effective-type precedence is override > custom > catalog.
+    func testEffectiveTypePrecedence() {
+        // Override wins over everything.
+        XCTAssertEqual(ExerciseTypeResolver.effectiveType(override: .time, custom: .weightReps, catalog: .bodyweight), .time)
+        // No override → custom wins over catalog.
+        XCTAssertEqual(ExerciseTypeResolver.effectiveType(override: nil, custom: .weightReps, catalog: .bodyweight), .weightReps)
+        // No override, no custom → catalog.
+        XCTAssertEqual(ExerciseTypeResolver.effectiveType(override: nil, custom: nil, catalog: .time), .time)
+        // Nothing known → nil.
+        XCTAssertNil(ExerciseTypeResolver.effectiveType(override: nil, custom: nil, catalog: nil))
+    }
+
     // MARK: - Folders (FER-494)
 
     /// Create + rename a folder round-trips via the public API (rename is an upsert on the same id).
