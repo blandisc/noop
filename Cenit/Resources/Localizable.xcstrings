@@ -5019,6 +5019,38 @@
         }
       }
     },
+    "Band": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Band"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Banda"
+          }
+        }
+      }
+    },
+    "Calculated": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calculated"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calculado"
+          }
+        }
+      }
+    },
     "Apple Health": {
       "localizations": {
         "en": {
