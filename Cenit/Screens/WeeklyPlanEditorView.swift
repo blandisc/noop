@@ -21,6 +21,8 @@ struct WeeklyPlanEditorView: View {
     /// The one «Build» entry that navigates rather than presenting a sheet: push the exercise library
     /// onto the Entrenar stack (owned by RootTabView).
     var openLibrary: () -> Void
+    /// Push «Mis rutinas» — routine + folder management (FER-534).
+    var openRoutines: () -> Void
 
     @State private var loaded = false
     @State private var routines: [Routine] = []
@@ -166,6 +168,8 @@ struct WeeklyPlanEditorView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Build").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             VStack(spacing: 0) {
+                buildRow("My routines", "list.bullet", action: openRoutines)
+                divider
                 buildRow("New routine", "plus") { builderTarget = .new }
                 divider
                 buildRow("Start from a template", "square.stack.3d.up") { showTemplates = true }
