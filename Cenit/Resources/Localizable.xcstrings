@@ -7727,6 +7727,22 @@
         }
       }
     },
+    "Choose or build one": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose or build one"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elige o crea una"
+          }
+        }
+      }
+    },
     "Choose the buzz pattern for %@": {
       "localizations": {
         "en": {
