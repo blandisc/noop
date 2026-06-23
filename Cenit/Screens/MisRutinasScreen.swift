@@ -1,0 +1,530 @@
+#if os(iOS)
+import SwiftUI
+import StrandDesign
+import StrandTraining
+
+// MARK: - «Mis rutinas» — routine + folder management (FER-534)
+//
+// The routine library management — create / edit / duplicate / delete routines, folders (FER-494),
+// swipe-to-delete with undo (FER-491), and drag-to-reorder/move (FER-526). It used to live inline on the
+// Entrenar landing; the «La Semana» redesign (FER-530) turned the landing into a planner, so this moved
+// into its own screen, reached from the weekly plan editor's «Build» section. Same behavior, relocated.
+//
+// Navigation (opening a routine, browsing the library) is owned by the Entrenar NavigationStack in
+// RootTabView and reaches here via the injected closures.
+
+struct MisRutinasScreen: View {
+    @EnvironmentObject var repo: Repository
+    @Environment(\.instrumentoTheme) private var theme
+
+    var openRoutine: (String) -> Void
+    var openLibrary: () -> Void
+
+    @State private var loaded = false
+    @State private var routines: [Routine] = []
+    @State private var exerciseCounts: [String: Int] = [:]
+    @State private var builderTarget: BuilderTarget? = nil
+    @State private var showTemplates = false
+    @State private var showImport = false
+    @State private var swipedRoutineId: String? = nil
+    @State private var pendingUndo: DeletedRoutine? = nil
+    @State private var folders: [RoutineFolder] = []
+    @State private var showNewFolder = false
+    @State private var newFolderName = ""
+    @State private var pendingMove: Routine? = nil
+    @State private var renameFolder: RoutineFolder? = nil
+    @State private var renameText = ""
+    @State private var dropTarget: String? = nil
+    private static let unfiledDropID = "__unfiled__"
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+                header
+                if loaded {
+                    if routines.isEmpty { emptyState } else { misRutinas }
+                }
+            }
+            .padding(.top, 20)
+            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.bottom, NoopMetrics.screenPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(theme.paper.ignoresSafeArea())
+        .overlay(alignment: .bottom) { if let d = pendingUndo { undoBanner(d) } }
+        .sensoryFeedback(trigger: pendingUndo?.id) { _, new in new != nil ? .warning : nil }
+        .sheet(item: $builderTarget) { target in
+            RoutineBuilderScreen(routine: target.routine) { await load() }
+                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        }
+        .sheet(isPresented: $showTemplates) {
+            StarterTemplatesSheet { await load() }
+                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        }
+        .sheet(isPresented: $showImport) {
+            WorkoutImportView { await load() }
+                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        }
+        .alert("New folder", isPresented: $showNewFolder) {
+            TextField("Folder name", text: $newFolderName)
+            Button("Cancel", role: .cancel) { newFolderName = ""; pendingMove = nil }
+            Button("Create") { createFolder() }
+        }
+        .alert("Rename folder", isPresented: Binding(get: { renameFolder != nil },
+                                                     set: { if !$0 { renameFolder = nil } })) {
+            TextField("Folder name", text: $renameText)
+            Button("Cancel", role: .cancel) { renameFolder = nil }
+            Button("Save") { commitRename() }
+        }
+        .task { await load() }
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("My routines").font(StrandFont.title1).foregroundStyle(theme.ink)
+            Text("Create, edit and organize the routines you assign to your week.")
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    // MARK: - The list
+
+    private var routinesByFolder: [String?: [Routine]] { Dictionary(grouping: routines, by: \.folderId) }
+
+    private var misRutinas: some View {
+        let byFolder = routinesByFolder
+        let unfiled = byFolder[nil] ?? []
+        return VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(folders) { folder in
+                    let rs = byFolder[folder.id] ?? []
+                    folderHeader(folder, count: rs.count)
+                    routineList(rs)
+                }
+                if !folders.isEmpty && !unfiled.isEmpty {
+                    Text("Unfiled").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 14).padding(.bottom, 2)
+                        .dropHighlight(dropTarget == Self.unfiledDropID, fill: theme.surface, stroke: theme.ink)
+                        .dropDestination(for: String.self) { items, _ in handleDrop(onFolder: nil, items) }
+                            isTargeted: { setDropTarget(Self.unfiledDropID, $0) }
+                }
+                routineList(unfiled)
+
+                divider
+                actionRow("plus", "New routine") { builderTarget = .new }
+                divider
+                actionRow("folder.badge.plus", "New folder") { startNewFolder(moving: nil) }
+                divider
+                actionRow("square.stack.3d.up", "Start from a template") { showTemplates = true }
+                    .accessibilityHint(Text("Copy a starter routine into My routines"))
+                divider
+                actionRow("square.and.arrow.down", "Import plan") { showImport = true }
+                divider
+                actionRow("book", "Exercise library", action: openLibrary)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func routineList(_ rs: [Routine]) -> some View {
+        ForEach(rs) { r in
+            routineRow(r)
+            if r.id != rs.last?.id { divider }
+        }
+    }
+
+    private func folderHeader(_ f: RoutineFolder, count: Int) -> some View {
+        let targeted = dropTarget == f.id
+        return HStack(spacing: 9) {
+            Image(systemName: "folder").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
+            Text(f.name).font(StrandFont.body).foregroundStyle(theme.ink)
+            Text("· \(count)").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            Spacer(minLength: 0)
+            Menu {
+                Button { startRename(f) } label: { Label("Rename folder", systemImage: "pencil") }
+                Button(role: .destructive) { deleteFolder(f) } label: { Label("Delete folder", systemImage: "trash") }
+            } label: {
+                Image(systemName: "ellipsis").font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(theme.inkTertiary).frame(width: 32, height: 40).contentShape(Rectangle())
+            }
+        }
+        .padding(.top, 12).padding(.bottom, 2)
+        .dropHighlight(targeted, fill: theme.surface, stroke: theme.ink)
+        .draggable("f:\(f.id)")
+        .dropDestination(for: String.self) { items, _ in handleDrop(onFolder: f.id, items) }
+            isTargeted: { setDropTarget(f.id, $0) }
+    }
+
+    private func actionRow(_ symbol: String, _ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: symbol).frame(width: 30)
+                    .font(.system(size: 17)).foregroundStyle(theme.inkSecondary)
+                Text(title).font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                Spacer(minLength: 0)
+            }
+            .frame(minHeight: 44).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func routineActions(_ r: Routine) -> some View {
+        Button { builderTarget = .edit(r) } label: { Label("Edit routine", systemImage: "slider.horizontal.3") }
+        Button { duplicate(r) } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
+        Menu {
+            ForEach(folders) { f in
+                Button { move(r, to: f.id) } label: {
+                    Label(f.name, systemImage: r.folderId == f.id ? "checkmark" : "folder")
+                }
+            }
+            if r.folderId != nil {
+                Button { move(r, to: nil) } label: { Label("Remove from folder", systemImage: "folder.badge.minus") }
+            }
+            Divider()
+            Button { startNewFolder(moving: r) } label: { Label("New folder…", systemImage: "folder.badge.plus") }
+        } label: { Label("Move to…", systemImage: "folder") }
+        Button(role: .destructive) { delete(r) } label: { Label("Delete routine", systemImage: "trash") }
+    }
+
+    private func routineRow(_ r: Routine) -> some View {
+        SwipeToDeleteRow(
+            isOpen: Binding(get: { swipedRoutineId == r.id },
+                            set: { swipedRoutineId = $0 ? r.id : nil }),
+            onDelete: { delete(r) }
+        ) {
+            HStack(spacing: 8) {
+                Button { openRoutine(r.id) } label: {
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(r.name).font(StrandFont.body).foregroundStyle(theme.ink)
+                            Text(exerciseCountText(exerciseCounts[r.id] ?? 0))
+                                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        }
+                        Spacer(minLength: 8)
+                    }
+                    .frame(minHeight: 48).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .contextMenu { routineActions(r) }
+
+                Menu { routineActions(r) } label: {
+                    Image(systemName: "ellipsis").font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(theme.inkTertiary).frame(width: 32, height: 48).contentShape(Rectangle())
+                }
+            }
+        }
+        .draggable("r:\(r.id)")
+        .dropDestination(for: String.self) { items, _ in handleDrop(onRoutine: r, items) }
+    }
+
+    // MARK: - Empty state
+
+    private var emptyState: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "dumbbell")
+                .font(.system(size: 38, weight: .regular)).foregroundStyle(theme.inkTertiary)
+                .accessibilityHidden(true)
+            Text("No routines yet")
+                .font(StrandFont.title2).foregroundStyle(theme.ink).multilineTextAlignment(.center)
+            Text("Create your first routine, or start from a template.")
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+            VStack(spacing: 8) {
+                QuietButton("New routine") { builderTarget = .new }
+                Button { showTemplates = true } label: {
+                    Text("Start from a template")
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                }
+                .buttonStyle(.plain)
+                Button { showImport = true } label: {
+                    Text("Import plan")
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                }
+                .buttonStyle(.plain)
+                Button(action: openLibrary) {
+                    Text("Browse the exercise library")
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.top, 4)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 28)
+        .padding(.horizontal, 18)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+            .strokeBorder(theme.hairline, lineWidth: 1))
+    }
+
+    // MARK: - Drag & drop (FER-526)
+
+    private func dragID(_ s: String, _ prefix: Character) -> String? {
+        guard let first = s.first, first == prefix, s.dropFirst().first == ":" else { return nil }
+        return String(s.dropFirst(2))
+    }
+
+    private func setDropTarget(_ id: String, _ targeted: Bool) {
+        if targeted { dropTarget = id } else if dropTarget == id { dropTarget = nil }
+    }
+
+    private func flattenedRoutineIds() -> [String] {
+        let byFolder = routinesByFolder
+        var ids = folders.flatMap { (byFolder[$0.id] ?? []).map(\.id) }
+        ids += (byFolder[nil] ?? []).map(\.id)
+        return ids
+    }
+
+    private func handleDrop(onFolder folderId: String?, _ items: [String]) -> Bool {
+        dropTarget = nil
+        guard let item = items.first else { return false }
+        if let rid = dragID(item, "r") {
+            if let r = routines.first(where: { $0.id == rid }) { move(r, to: folderId) }
+            return true
+        }
+        if let fid = dragID(item, "f"), let targetFolderId = folderId {
+            reorderFolder(fid, before: targetFolderId)
+            return true
+        }
+        return false
+    }
+
+    private func handleDrop(onRoutine target: Routine, _ items: [String]) -> Bool {
+        guard let item = items.first, let rid = dragID(item, "r"), rid != target.id else { return false }
+        var order = flattenedRoutineIds()
+        order.removeAll { $0 == rid }
+        guard let idx = order.firstIndex(of: target.id) else { return false }
+        order.insert(rid, at: idx)
+        Task { try? await repo.reorderRoutines(order); await refreshFoldersAndRoutines() }
+        return true
+    }
+
+    private func reorderFolder(_ draggedId: String, before targetId: String) {
+        guard draggedId != targetId else { return }
+        var order = folders.map(\.id)
+        order.removeAll { $0 == draggedId }
+        guard let idx = order.firstIndex(of: targetId) else { return }
+        order.insert(draggedId, at: idx)
+        Task { try? await repo.reorderFolders(order); await refreshFoldersAndRoutines() }
+    }
+
+    // MARK: - Delete / undo (FER-491)
+
+    private struct DeletedRoutine: Identifiable {
+        let id = UUID()
+        let routine: Routine
+        let exercises: [RoutineExercise]
+    }
+
+    private func delete(_ r: Routine) {
+        swipedRoutineId = nil
+        Task {
+            let exercises = await repo.routineExercises(routineId: r.id)
+            try? await repo.deleteRoutine(id: r.id)
+            await load()
+            withAnimation { pendingUndo = DeletedRoutine(routine: r, exercises: exercises) }
+        }
+    }
+
+    private func undoDelete(_ d: DeletedRoutine) {
+        Task {
+            try? await repo.saveRoutine(d.routine, exercises: d.exercises)
+            await load()
+            withAnimation { pendingUndo = nil }
+        }
+    }
+
+    private func undoBanner(_ d: DeletedRoutine) -> some View {
+        HStack(spacing: 12) {
+            Text("Routine deleted").font(StrandFont.subhead).foregroundStyle(theme.surface)
+            Spacer(minLength: 8)
+            Button { undoDelete(d) } label: {
+                Text("Undo").font(StrandFont.headline).foregroundStyle(theme.surface)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 18).padding(.vertical, 14)
+        .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+        .padding(.horizontal, NoopMetrics.screenPadding)
+        .padding(.bottom, 8)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+        .task(id: d.id) {
+            try? await Task.sleep(nanoseconds: 4_000_000_000)
+            withAnimation { if pendingUndo?.id == d.id { pendingUndo = nil } }
+        }
+    }
+
+    // MARK: - Duplicate (FER-528)
+
+    private func duplicate(_ r: Routine) {
+        Task {
+            let exercises = await repo.routineExercises(routineId: r.id)
+            let now = Int(Date().timeIntervalSince1970)
+            let newId = UUID().uuidString
+            let copy = Routine(id: newId, name: "\(r.name) \(String(localized: "(copy)"))",
+                               tag: r.tag, folderId: r.folderId, createdTs: now, updatedTs: now,
+                               sortOrder: r.sortOrder)
+            let copiedExercises = exercises.map { ex -> RoutineExercise in
+                var c = ex
+                c.id = UUID().uuidString
+                c.routineId = newId
+                c.sets = ex.sets.map { var s = $0; s.id = UUID().uuidString; return s }
+                return c
+            }
+            try? await repo.saveRoutine(copy, exercises: copiedExercises)
+            await load()
+        }
+    }
+
+    // MARK: - Folders (FER-494)
+
+    private func startNewFolder(moving r: Routine?) {
+        pendingMove = r; newFolderName = ""; showNewFolder = true
+    }
+
+    private func createFolder() {
+        let name = newFolderName.trimmingCharacters(in: .whitespaces)
+        let toMove = pendingMove
+        newFolderName = ""; pendingMove = nil
+        guard !name.isEmpty else { return }
+        Task {
+            guard let store = await repo.storeHandle() else { return }
+            let folder = RoutineFolder(name: name, sortOrder: folders.count)
+            try? await store.saveFolder(folder)
+            if let toMove { try? await store.setRoutineFolder(routineId: toMove.id, folderId: folder.id) }
+            await refreshFoldersAndRoutines()
+        }
+    }
+
+    private func startRename(_ f: RoutineFolder) { renameText = f.name; renameFolder = f }
+
+    private func commitRename() {
+        guard let f = renameFolder else { return }
+        let name = renameText.trimmingCharacters(in: .whitespaces)
+        renameFolder = nil
+        guard !name.isEmpty else { return }
+        Task {
+            guard let store = await repo.storeHandle() else { return }
+            try? await store.saveFolder(RoutineFolder(id: f.id, name: name, sortOrder: f.sortOrder))
+            await refreshFoldersAndRoutines()
+        }
+    }
+
+    private func deleteFolder(_ f: RoutineFolder) {
+        Task {
+            guard let store = await repo.storeHandle() else { return }
+            try? await store.deleteFolder(id: f.id)
+            await refreshFoldersAndRoutines()
+        }
+    }
+
+    private func move(_ r: Routine, to folderId: String?) {
+        Task {
+            guard let store = await repo.storeHandle() else { return }
+            try? await store.setRoutineFolder(routineId: r.id, folderId: folderId)
+            await refreshFoldersAndRoutines()
+        }
+    }
+
+    // MARK: - Data
+
+    private func load() async {
+        guard let store = await repo.storeHandle() else { loaded = true; return }
+        let rs = (try? await store.routines()) ?? []
+        var counts: [String: Int] = [:]
+        for r in rs {
+            counts[r.id] = (try? await store.routineExercises(routineId: r.id))?.count ?? 0
+        }
+        routines = rs
+        exerciseCounts = counts
+        folders = (try? await store.routineFolders()) ?? []
+        loaded = true
+    }
+
+    private func refreshFoldersAndRoutines() async {
+        guard let store = await repo.storeHandle() else { return }
+        routines = (try? await store.routines()) ?? []
+        folders = (try? await store.routineFolders()) ?? []
+    }
+
+    private func exerciseCountText(_ n: Int) -> String { String(localized: "\(n) exercises") }
+
+    private var divider: some View { Divider().overlay(theme.hairline) }
+}
+
+// MARK: - Swipe-to-delete row (FER-491)
+
+private struct SwipeToDeleteRow<Content: View>: View {
+    @Environment(\.instrumentoTheme) private var theme
+    @Binding var isOpen: Bool
+    let onDelete: () -> Void
+    @ViewBuilder var content: Content
+
+    @State private var offset: CGFloat = 0
+
+    private let revealWidth: CGFloat = 96
+    private let fullSwipeThreshold: CGFloat = 200
+
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            Button(action: onDelete) {
+                Image(systemName: "trash")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(theme.surface)
+                    .frame(width: revealWidth)
+                    .frame(maxHeight: .infinity)
+                    .background(theme.critical)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("Delete routine"))
+
+            content
+                .background(theme.paper)
+                .offset(x: offset)
+                .highPriorityGesture(drag)
+        }
+        .clipped()
+        .onChange(of: isOpen) { _, open in
+            if !open { withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) { offset = 0 } }
+        }
+    }
+
+    private var drag: some Gesture {
+        DragGesture(minimumDistance: 18)
+            .onChanged { v in
+                guard abs(v.translation.width) > abs(v.translation.height) else { return }
+                let base: CGFloat = isOpen ? -revealWidth : 0
+                offset = min(0, base + v.translation.width)
+            }
+            .onEnded { v in
+                let dx = v.translation.width
+                if !isOpen && -v.predictedEndTranslation.width > fullSwipeThreshold {
+                    onDelete()
+                    return
+                }
+                let open = isOpen ? !(dx > revealWidth * 0.5) : (-dx > revealWidth * 0.5)
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+                    offset = open ? -revealWidth : 0
+                }
+                isOpen = open
+            }
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func dropHighlight(_ targeted: Bool, fill: Color, stroke: Color) -> some View {
+        self
+            .padding(.horizontal, targeted ? 10 : 0)
+            .background(targeted ? fill : .clear, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay { if targeted {
+                RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(stroke, lineWidth: 1.5) } }
+            .animation(.snappy, value: targeted)
+            .contentShape(Rectangle())
+    }
+}
+#endif
