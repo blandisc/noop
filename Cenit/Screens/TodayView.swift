@@ -1850,7 +1850,8 @@ struct TodayView: View {
         let recR    = repo.today?.recovery
         let respR   = latestFromDisplay { $0.respRateBpm }
 
-        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+        // FER-581: ritmo vertical un poco más apretado (gap→space2) para recortar el scroll de la página.
+        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
             // FER-550 (fiel al handoff): «Vistazo» — Recuperación / HRV / Sueño en 3 pills compactas (el
             // dato de un vistazo, sin mini-banda). El estado del día y la escala de 4 segmentos se retiraron
             // de aquí (el dial ya lleva la palabra del veredicto, FER-549) y el pulso vivo se mudó al header
@@ -1858,8 +1859,16 @@ struct TodayView: View {
             glanceRow(recovery: recR, hrv: hrvR, sleep: sleepR, base: base, positive: positiveDelta)
             // Overline de la sección: la rejilla de hoy. Cada tile trae su tendencia de 14 días como
             // mini-gráfica de área (FER-551) + su «vs media».
-            Text("Métricas de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                .padding(.top, NoopMetrics.space1)
+            // FER-581: el rótulo de la sección y la leyenda de fuente comparten renglón. El lado derecho
+            // del overline estaba vacío y la leyenda al pie sumaba un renglón (con su gap) que empujaba el
+            // scroll; subirla aquí recupera ese alto sin perder la explicación de los puntos.
+            HStack(spacing: NoopMetrics.space2) {
+                Text("Métricas de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    .lineLimit(1)
+                Spacer(minLength: NoopMetrics.space2)
+                sourceLegend
+            }
+            .padding(.top, NoopMetrics.space1)
             LazyVGrid(columns: tileGrid, alignment: .leading, spacing: NoopMetrics.gap) {
                 // Esfuerzo del día — carga del día, sin valencia (Δ en tinta neutra).
                 metricTile(TodayMetricTile(
@@ -1929,25 +1938,18 @@ struct TodayView: View {
                     series: areaSeries(base, today: respR?.value) { $0.respRateBpm }
                 )) { metricDetail = .respiratory(respR?.value) }
             }
-            // FER-575: leyenda única al pie DERECHO que define el punto de color de fuente de pills y
-            // tiles (banda / Apple / calculado). Reemplaza la palabra-badge por-dato de FER-552: cada
-            // dato solo lleva un punto y el significado se explica aquí una vez. (La de FER-278 «W Strap ·
-            // Apple Salud» se había quitado; vuelve en esta forma compacta.)
-            sourceLegend
         }
     }
 
-    /// Leyenda de fuente (FER-575): un renglón alineado a la derecha que mapea cada punto de color a su
-    /// fuente. Oculta a VoiceOver — cada pill/tile ya anuncia su fuente vía el `accessibilityLabel` del
-    /// punto (`SourceChip`), así que repetirla aquí sería ruido.
+    /// Leyenda de fuente (FER-575, reubicada en FER-581 al renglón del rótulo «Métricas de hoy»): mapea
+    /// cada punto de color a su fuente. Oculta a VoiceOver — cada pill/tile ya anuncia su fuente vía el
+    /// `accessibilityLabel` del punto (`SourceChip`), así que repetirla aquí sería ruido.
     private var sourceLegend: some View {
-        HStack(spacing: NoopMetrics.gap) {
-            Spacer(minLength: 0)
+        HStack(spacing: NoopMetrics.space2) {
             legendDot(theme.dataRecovery, "Band")
             legendDot(theme.dataSpO2, "Apple Health source")
             legendDot(theme.inkTertiary, "Calculated")
         }
-        .padding(.top, NoopMetrics.space1)
         .accessibilityHidden(true)
     }
 
@@ -1955,6 +1957,7 @@ struct TodayView: View {
         HStack(spacing: NoopMetrics.space1) {
             Circle().fill(color).frame(width: 6, height: 6)
             Text(label).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                .lineLimit(1).minimumScaleFactor(0.8)
         }
     }
 
