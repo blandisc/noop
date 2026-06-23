@@ -217,6 +217,15 @@ public enum MetricLevels {
         classify(values: values, today: today, levels: relativeLevels(baseline: baseline, sd: sd, k: k))
     }
 
+    /// Classify a window of values against a caller-supplied `levels` array, rather than a metric's own
+    /// fixed or symmetric-relative levels. F6b (HRV) uses this with personal cut points derived in LOG space
+    /// from `Baselines.normalRange` (a multiplicative band in ms) — which the linear `relativeClassification`
+    /// can't express. Same counting contract: half-open `[lower, upper)`, per-level counts summing to the
+    /// window size, and the level `today` sits in. (FER-571)
+    public static func classification(values: [Double], today: Double?, levels: [Level]) -> Classification {
+        classify(values: values, today: today, levels: levels)
+    }
+
     // MARK: - Core (shared by fixed & relative)
 
     /// Index of the level `value` falls into, for any contiguous, total, low→high `levels` array.
