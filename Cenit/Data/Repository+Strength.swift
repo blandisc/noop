@@ -66,11 +66,7 @@ extension Repository {
         guard let store = await storeHandle() else { return ExerciseCatalog.all }
         let custom = (try? await store.customExercises()) ?? []
         let overrides = (try? await store.exerciseTypeOverrides()) ?? [:]
-        let merged = (ExerciseCatalog.all + custom).map { ex -> Exercise in
-            if let ov = overrides[ex.id], ov != ex.type { return ex.retyped(to: ov) }
-            return ex
-        }
-        return merged.sorted { $0.name < $1.name }
+        return (ExerciseCatalog.all + custom).map { $0.applying(overrides) }.sorted { $0.name < $1.name }
     }
 
     /// Resolve one exercise by id (catalog or custom) with its user type override applied — the single
@@ -193,5 +189,11 @@ extension Exercise {
     func retyped(to t: ExerciseType) -> Exercise {
         Exercise(id: id, name: name, nameES: nameES, type: t, equipment: equipment,
                  primaryMuscles: primaryMuscles, secondaryMuscles: secondaryMuscles, cues: cues, cuesES: cuesES)
+    }
+
+    /// Apply a user type-override map (FER-541): re-type if this exercise's id is overridden, else
+    /// unchanged. The single fold every list-resolution path uses, so they can't diverge.
+    func applying(_ overrides: [String: ExerciseType]) -> Exercise {
+        overrides[id].map { retyped(to: $0) } ?? self
     }
 }

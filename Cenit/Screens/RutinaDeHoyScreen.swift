@@ -238,8 +238,7 @@ private struct RutinaDeHoyContent: View {
         routine = r
         var built: [PlanRow] = []
         for re in exs {
-            let base = ExerciseCatalog.byID(re.exerciseId) ?? customByID[re.exerciseId]
-            let ex = base.flatMap { e in overrides[e.id].map { e.retyped(to: $0) } } ?? base
+            let ex = (ExerciseCatalog.byID(re.exerciseId) ?? customByID[re.exerciseId])?.applying(overrides)
             // Recent work sets power the «la última vez» prefill in the guided session (FER-347).
             let last = (try? await store.lastWorkSets(exerciseId: re.exerciseId, limit: 4)) ?? []
             built.append(PlanRow(re: re, exercise: ex, lastSets: last))
