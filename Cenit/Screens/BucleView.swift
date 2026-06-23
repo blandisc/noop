@@ -373,7 +373,7 @@ private struct PatronesLanding: View {
     // MARK: §2 · Correlaciones que no veías (passive findings)
 
     private var correlacionesSection: some View {
-        section(2, "Correlations you couldn't see") {
+        section(2, "Correlations you couldn't see", showsTopRule: false) {
             let rels = correlationInsights
             if rels.isEmpty {
                 emptyBox("I haven't found clear links yet. They'll show up here as soon as I see them.")
@@ -936,11 +936,14 @@ private struct PatronesLanding: View {
     // MARK: Section scaffold
 
     /// A numbered section: a top hairline, a numbered dot + overline label (with optional ⓘ and a trailing
-    /// link), then the content. The shared rhythm for §2–§6.
+    /// link), then the content. The shared rhythm for §2–§6. `showsTopRule` is `false` for the first
+    /// section (§2), which flows straight from the hero — hero + §2 are both passive findings, so they
+    /// read as one block, separated by a rule only from §3 onward (the «action» beats).
     private func section<Content: View>(_ n: Int, _ title: LocalizedStringKey,
                                         info infoItem: BucleInfo? = nil,
                                         trailing: String? = nil,
                                         trailingAction: (() -> Void)? = nil,
+                                        showsTopRule: Bool = true,
                                         @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -972,7 +975,9 @@ private struct PatronesLanding: View {
             content()
         }
         .padding(.top, 18)
-        .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
+        .overlay(alignment: .top) {
+            if showsTopRule { Rectangle().fill(theme.hairline).frame(height: 0.5) }
+        }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
