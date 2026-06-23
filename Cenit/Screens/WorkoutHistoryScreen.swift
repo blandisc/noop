@@ -21,6 +21,24 @@ struct WorkoutSessionRoute: Hashable {
     let routineName: String
 }
 
+/// Cross-screen state for the workout-history stack (FER-556). The detail is a sibling pushed onto the
+/// same NavigationStack as the list, not its child — so a delete or edit done in the detail can't reach
+/// the list directly. This shared object bridges them: the detail seeds `pendingUndo` (the list shows the
+/// «Undo» banner after the pop) and bumps `reloadToken` (the list reloads, since `.task` isn't re-run on
+/// pop-back). Injected once on the Entrenar NavigationStack in RootTabView.
+@MainActor final class WorkoutHistoryCoordinator: ObservableObject {
+    /// A just-deleted session + its sets, kept so «Undo» can restore it intact (reused from FER-527).
+    struct DeletedSession: Identifiable, Equatable {
+        let id = UUID()
+        let session: StrengthSession
+        let sets: [SetEntry]
+    }
+    @Published var pendingUndo: DeletedSession?
+    /// Bumped after an edit/delete deeper in the stack so the list refreshes when shown again.
+    @Published var reloadToken = 0
+    func bumpReload() { reloadToken &+= 1 }
+}
+
 // MARK: - List
 
 struct WorkoutHistoryScreen: View {
@@ -29,18 +47,11 @@ struct WorkoutHistoryScreen: View {
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var system: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
 
+    @EnvironmentObject private var coordinator: WorkoutHistoryCoordinator
     @State private var sessions: [StrengthSession] = []
     @State private var routineNames: [String: String] = [:]
     @State private var volumes: [String: (volumeKg: Double, setCount: Int)] = [:]
     @State private var loaded = false
-    /// A just-deleted session + its sets, kept in memory so «Undo» can restore it intact (FER-527).
-    @State private var pendingUndo: DeletedSession? = nil
-
-    private struct DeletedSession: Identifiable {
-        let id = UUID()
-        let session: StrengthSession
-        let sets: [SetEntry]
-    }
 
     var body: some View {
         ScrollView {
@@ -58,10 +69,11 @@ struct WorkoutHistoryScreen: View {
         .background(theme.paper.ignoresSafeArea())
         // The detail push (`WorkoutSessionRoute`) is registered once on the Entrenar NavigationStack in
         // RootTabView (alongside the other train routes), so it isn't re-declared here.
-        // «Undo» toast after a delete (FER-527), same pattern as «Mis rutinas» (FER-491).
-        .overlay(alignment: .bottom) { if let d = pendingUndo { undoBanner(d) } }
-        .sensoryFeedback(trigger: pendingUndo?.id) { _, new in new != nil ? .warning : nil }
-        .task { await load() }
+        // «Undo» toast after a delete (FER-527), now seeded by the list OR the detail via the coordinator.
+        .overlay(alignment: .bottom) { if let d = coordinator.pendingUndo { undoBanner(d) } }
+        .sensoryFeedback(trigger: coordinator.pendingUndo?.id) { _, new in new != nil ? .warning : nil }
+        // Reloads on first appear (token 0) and whenever a delete/edit deeper in the stack bumps it.
+        .task(id: coordinator.reloadToken) { await load() }
     }
 
     private var header: some View {
@@ -176,25 +188,25 @@ struct WorkoutHistoryScreen: View {
     // MARK: - Delete / undo (FER-527)
 
     /// Read the session's sets (so an undo can restore them), delete it (the store recomputes the affected
-    /// PRs), reload, then show «Undo».
+    /// PRs), reload, then show «Undo» via the coordinator.
     private func delete(_ session: StrengthSession) {
         Task {
             let sets = await repo.sessionSets(sessionId: session.id)
             try? await repo.deleteSession(id: session.id)
             await load()
-            withAnimation { pendingUndo = DeletedSession(session: session, sets: sets) }
+            withAnimation { coordinator.pendingUndo = .init(session: session, sets: sets) }
         }
     }
 
-    private func undoDelete(_ d: DeletedSession) {
+    private func undoDelete(_ d: WorkoutHistoryCoordinator.DeletedSession) {
         Task {
             try? await repo.saveSession(d.session, sets: d.sets)   // re-saving re-derives its PRs
             await load()
-            withAnimation { pendingUndo = nil }
+            withAnimation { coordinator.pendingUndo = nil }
         }
     }
 
-    private func undoBanner(_ d: DeletedSession) -> some View {
+    private func undoBanner(_ d: WorkoutHistoryCoordinator.DeletedSession) -> some View {
         HStack(spacing: 12) {
             Text("Workout deleted").font(StrandFont.subhead).foregroundStyle(theme.surface)
             Spacer(minLength: 8)
@@ -210,7 +222,7 @@ struct WorkoutHistoryScreen: View {
         .transition(.move(edge: .bottom).combined(with: .opacity))
         .task(id: d.id) {
             try? await Task.sleep(nanoseconds: 4_000_000_000)
-            withAnimation { if pendingUndo?.id == d.id { pendingUndo = nil } }
+            withAnimation { if coordinator.pendingUndo?.id == d.id { coordinator.pendingUndo = nil } }
         }
     }
 
@@ -232,7 +244,9 @@ struct WorkoutSessionDetailScreen: View {
     let route: WorkoutSessionRoute
 
     @Environment(\.instrumentoTheme) private var theme
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var repo: Repository
+    @EnvironmentObject private var coordinator: WorkoutHistoryCoordinator
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var system: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
 
@@ -245,6 +259,23 @@ struct WorkoutSessionDetailScreen: View {
     @State private var volumeKg: Double = 0
     @State private var setCount = 0
     @State private var loaded = false
+    /// The full session row (incl. notes/routineId the route doesn't carry) — seeds the edit sheet (FER-556).
+    @State private var fullSession: StrengthSession?
+    @State private var allSets: [SetEntry] = []
+    @State private var routineNames: [String: String] = [:]
+    @State private var showEdit = false
+    @State private var showDeleteConfirm = false
+
+    // Display prefers the reloaded `fullSession` (so an edit's new date/routine shows at once), falling
+    // back to the immutable route while it loads (FER-556).
+    private var dispStart: Int { fullSession?.startTs ?? route.startTs }
+    private var dispEnd: Int? { fullSession.map(\.endTs) ?? route.endTs }
+    private var dispStrain: Double? { fullSession.map(\.strain) ?? route.strain }
+    private var dispAvgHr: Int? { fullSession.map(\.avgHr) ?? route.avgHr }
+    private var dispRoutineName: String {
+        guard let s = fullSession else { return route.routineName }
+        return s.routineId.flatMap { routineNames[$0] } ?? String(localized: "Strength workout")
+    }
 
     var body: some View {
         ScrollView {
@@ -266,6 +297,26 @@ struct WorkoutSessionDetailScreen: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
+        // «Editar» / «Borrar entrenamiento» — visible from the detail, so deleting no longer needs the
+        // list's long-press, and editing a saved session is finally possible (FER-556).
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button { showEdit = true } label: { Label("Edit", systemImage: "pencil") }
+                        .disabled(fullSession == nil)
+                    Button(role: .destructive) { showDeleteConfirm = true } label: {
+                        Label("Delete workout", systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle").foregroundStyle(theme.ink)
+                }
+                .accessibilityLabel(Text("More options"))
+            }
+        }
+        .confirmationDialog("Delete this workout?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
+            Button("Delete workout", role: .destructive) { performDelete() }
+            Button("Cancel", role: .cancel) {}
+        } message: { Text("This removes the workout from your history.") }
         .sheet(item: $detailExercise) { ex in
             NavigationStack {
                 ExerciseDetailScreen(exercise: ex)
@@ -277,14 +328,41 @@ struct WorkoutSessionDetailScreen: View {
             }
             .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
+        .sheet(isPresented: $showEdit) {
+            if let s = fullSession {
+                WorkoutEditSheet(session: s, sets: allSets) { await onEdited() }
+                    .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+            }
+        }
         .task { await load() }
+    }
+
+    /// Delete from the detail: read the sets (so an undo can restore them), delete (the store recomputes
+    /// the affected PRs), seed the coordinator's «Undo» + reload, then pop back to the list (FER-556).
+    private func performDelete() {
+        Task {
+            let sets = allSets.isEmpty ? await repo.sessionSets(sessionId: route.id) : allSets
+            try? await repo.deleteSession(id: route.id)
+            let session = fullSession ?? StrengthSession(id: route.id, startTs: route.startTs,
+                                                         endTs: route.endTs, strain: route.strain, avgHr: route.avgHr)
+            coordinator.pendingUndo = .init(session: session, sets: sets)
+            coordinator.bumpReload()
+            dismiss()
+        }
+    }
+
+    /// After the edit sheet saves: reload the detail in place and bump the list so its row reflects the
+    /// new date/routine/volume when popped back to.
+    private func onEdited() async {
+        await load()
+        coordinator.bumpReload()
     }
 
     private var heading: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(StrengthHistoryFormat.dateTime(route.startTs)).instrumentoOverline()
+            Text(StrengthHistoryFormat.dateTime(dispStart)).instrumentoOverline()
                 .foregroundStyle(theme.inkTertiary)
-            Text(route.routineName).font(StrandFont.title1).foregroundStyle(theme.ink)
+            Text(dispRoutineName).font(StrandFont.title1).foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -293,10 +371,10 @@ struct WorkoutSessionDetailScreen: View {
     // the same rule as the post-session receipt (FER-409).
     @ViewBuilder
     private var hero: some View {
-        if let strain = route.strain {
+        if let strain = dispStrain {
             heroStat("Effort", StrengthHistoryFormat.strain(strain), unit: nil,
                      color: theme.dataStrain, caption: "What this session cost your body.")
-        } else if let mins = StrengthHistoryFormat.durationMinutes(start: route.startTs, end: route.endTs) {
+        } else if let mins = StrengthHistoryFormat.durationMinutes(start: dispStart, end: dispEnd) {
             heroStat("Duration", "\(mins)", unit: "min",
                      color: theme.ink, caption: "No heart rate this session.")
         }
@@ -323,11 +401,11 @@ struct WorkoutSessionDetailScreen: View {
             if volumeKg > 0 { detailStat("Volume", StrengthHistoryFormat.volume(volumeKg, system: system)) }
             detailStat("Sets", "\(setCount)")
             // Duration is the hero when there's no strain → don't repeat it as a secondary.
-            if route.strain != nil,
-               let mins = StrengthHistoryFormat.durationMinutes(start: route.startTs, end: route.endTs) {
+            if dispStrain != nil,
+               let mins = StrengthHistoryFormat.durationMinutes(start: dispStart, end: dispEnd) {
                 detailStat("Duration", StrengthHistoryFormat.durationText(mins))
             }
-            if let hr = route.avgHr { detailStat("Avg HR", "\(hr)") }
+            if let hr = dispAvgHr { detailStat("Avg HR", "\(hr)") }
         }
         ViewThatFits(in: .horizontal) {
             HStack(alignment: .top, spacing: 18) { cells; Spacer(minLength: 0) }
@@ -389,6 +467,10 @@ struct WorkoutSessionDetailScreen: View {
     private func load() async {
         let sets = await repo.sessionSets(sessionId: route.id)
         let exercises = await repo.allExercises()
+        let routines = await repo.routines()
+        fullSession = await repo.session(id: route.id)
+        allSets = sets
+        routineNames = Dictionary(routines.map { ($0.id, $0.name) }, uniquingKeysWith: { a, _ in a })
         let names = Dictionary(exercises.map { ($0.id, $0.name) }, uniquingKeysWith: { a, _ in a })
         exercisesByID = Dictionary(exercises.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
 

@@ -134,6 +134,12 @@ extension Repository {
         return (try? await store.recentSessions(limit: limit)) ?? []
     }
 
+    /// One full session row by id — for the edit sheet to seed every field (FER-556). nil if unknown.
+    func session(id: String) async -> StrengthSession? {
+        guard let store = await storeHandle() else { return nil }
+        return (try? await store.session(id: id)) ?? nil
+    }
+
     /// The logged sets of one session, in position order — the per-session breakdown (FER-504).
     func sessionSets(sessionId: String) async -> [SetEntry] {
         guard let store = await storeHandle() else { return [] }
@@ -157,6 +163,13 @@ extension Repository {
     func saveSession(_ session: StrengthSession, sets: [SetEntry]) async throws {
         guard let store = await storeHandle() else { return }
         try await store.saveSession(session, sets: sets)
+    }
+
+    /// Edit a saved session (sets / exercise / date / notes / routine) and recompute the affected PRs
+    /// exactly — for the exercises in the old sets ∪ the new sets (FER-556). Never touches strain/avgHr.
+    func updateSession(_ session: StrengthSession, sets: [SetEntry]) async throws {
+        guard let store = await storeHandle() else { return }
+        try await store.updateSession(session, sets: sets)
     }
 
     // MARK: - History (per exercise)
