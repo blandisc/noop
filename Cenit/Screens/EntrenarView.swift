@@ -87,12 +87,16 @@ private struct EntrenarLanding: View {
 
     /// Monday-first display order in the Calendar weekday convention.
     private let orderedWeekdays = [2, 3, 4, 5, 6, 7, 1]
+    /// Tighter section rhythm than the global `NoopMetrics.sectionGap` (28): the planner stacks 6 sections,
+    /// so the default rhythm left too much dead vertical space (FER-578). Local to Entrenar — the global
+    /// token is unchanged so other screens keep their breathing room.
+    private let sectionRhythm: CGFloat = 18
     private var todayWeekday: Int { Calendar.current.component(.weekday, from: Date()) }
     private var recovery: Double? { repo.today?.recovery }
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: sectionRhythm) {
                 header
                 if loaded {
                     if split.isEmpty {
@@ -107,7 +111,7 @@ private struct EntrenarLanding: View {
                     }
                 }
             }
-            .padding(.top, 20)
+            .padding(.top, 10)
             .padding(.horizontal, NoopMetrics.screenPadding)
             .padding(.bottom, NoopMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -225,7 +229,7 @@ private struct EntrenarLanding: View {
             .padding(.top, 13)
             Text("Tap a done day to see that session")
                 .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                .padding(.top, 11)
+                .padding(.top, 9)
         }
     }
 
@@ -280,17 +284,17 @@ private struct EntrenarLanding: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             if let rec = recovery {
-                Divider().overlay(theme.hairline).padding(.vertical, 14)
+                Divider().overlay(theme.hairline).padding(.vertical, 12)
                 HStack(alignment: .firstTextBaseline, spacing: 7) {
                     Circle().fill(theme.dataRecovery).frame(width: 8, height: 8)
                     Text(recoveryLine(rec)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            empezarButton.padding(.top, 15)
+            empezarButton.padding(.top, 12)
             Text("routine · intervals · breathe · live — you choose when you start")
                 .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                .frame(maxWidth: .infinity, alignment: .center).padding(.top, 7)
+                .frame(maxWidth: .infinity, alignment: .center).padding(.top, 6)
         }
     }
 

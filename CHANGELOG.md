@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Entrenar respira menos vertical / Train is tighter vertically.**
+  **ES** — La pantalla **Entrenar** se sentía más larga de lo necesario. Apretamos el ritmo entre secciones (de 28 a 18 pt) y afinamos el padding muerto (arriba, el divider y el botón de la tarjeta «Hoy», el pie de la semana). Mismo contenido y tarjetas, ~16 % menos de alto — menos scroll, mismo aire del Instrumento. No cambia ninguna otra pantalla.
+  **EN** — The **Train** screen felt taller than it needed to. We tightened the section rhythm (28 → 18 pt) and trimmed dead padding (top, the today card's divider and button, the week footer). Same content and cards, ~16% shorter — less scroll, same Instrumento breathing room. No other screen changes.
+  ([Cenit/Screens/EntrenarView.swift](Cenit/Screens/EntrenarView.swift))
+
 - **En Tendencias, tocar cualquier parte de un dato lo abre / In Trends, tapping anywhere on a number opens it.**
   **ES** — Antes, en Tendencias, solo el número abría su detalle; tocar la mini-curva (la parte más grande) no hacía nada. Ahora **todo el recuadro del dato** —etiqueta, número y mini-curva— abre su hoja de detalle.
   **EN** — Before, in Trends only the number opened its detail; tapping the mini-trend (the biggest part) did nothing. Now the **whole tile** — label, number and mini-trend — opens its detail sheet.
