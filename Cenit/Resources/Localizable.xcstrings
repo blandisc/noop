@@ -3,8 +3,18 @@
   "strings": {
     "For now": {
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "For now" } },
-        "es": { "stringUnit": { "state": "translated", "value": "De momento" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For now"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De momento"
+          }
+        }
       }
     },
     "vs previous": {
@@ -41436,6 +41446,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Segundos"
+          }
+        }
+      }
+    },
+    "%@ ago": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ago"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hace %@"
+          }
+        }
+      }
+    },
+    "Apple Health source": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Health"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Salud"
           }
         }
       }
