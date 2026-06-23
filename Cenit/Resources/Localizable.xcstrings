@@ -1,6 +1,48 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Data integrity" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Data integrity" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Integridad de datos" } }
+      }
+    },
+    "Heartbeats" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Heartbeats" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Latidos" } }
+      }
+    },
+    "Signals" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Signals" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Señales" } }
+      }
+    },
+    "Strap battery: %lld%%" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Strap battery: %lld%%" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Batería de la banda: %lld%%" } }
+      }
+    },
+    "Strap battery: %lld%%, charging" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Strap battery: %lld%%, charging" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Batería de la banda: %lld%%, cargando" } }
+      }
+    },
+    "on sync" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "on sync" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "al sincronizar" } }
+      }
+    },
     "Above your base" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Above your base" } },

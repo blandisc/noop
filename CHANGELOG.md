@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **«Latidos» muestra la batería de la banda y agrupa la integridad de datos / "Heartbeats" now shows strap battery and groups data integrity.**
+  **ES** — La carta que abre la píldora de pulso ahora se llama **«Latidos»** y muestra el **nivel de batería de tu banda** (con el mismo color por nivel del header de Hoy: verde, ámbar ≤20 %, rojo ≤10 %; se oculta si no hay dato). La lista de **Señales** se volvió plegable —tócala para esconderla y dejar la carta compacta— y la cobertura de 28 días, el guardado en iPhone/iCloud y **Verificar** quedaron juntos bajo un solo encabezado, **«Integridad de datos»**. Solo presentación: no cambia la captura ni lo que se guarda.
+  **EN** — The card behind the pulse pill is now called **"Heartbeats"** and shows your **strap's battery level** (same by-level color as Today's header: green, amber ≤20 %, red ≤10 %; hidden when unknown). The **Signals** list is now foldable — tap to collapse it and keep the card compact — and the 28-day coverage, iPhone/iCloud backup and **Verify** are grouped under one heading, **"Data integrity"**. Presentation only: capture and what's stored are unchanged.
+  ([Cenit/Screens/LiveView.swift](Cenit/Screens/LiveView.swift))
+
 - **Las pantallas de detalle estrenan titulares con tipografía editorial / Detail screens now lead with an editorial serif headline.**
   **ES** — Cada hoja de detalle (Recuperación, Sueño, Esfuerzo, Estrés, HRV, FC en reposo, SpO₂, Respiración, Temp. de piel, Pasos, VO₂ máx, Mapa muscular, Edad física/corporal…) y los grupos de Tendencias (Recuperación, Descanso y carga, Vitales, Actividad, Longevidad) ahora encabezan con **Instrument Serif**, la tipografía editorial del sistema «Instrumento diurno». Le da a cada pantalla una identidad más cálida y legible. Los números, veredictos y gráficas no cambian.
   **EN** — Every detail sheet (Recovery, Sleep, Strain, Stress, HRV, resting HR, SpO₂, respiration, skin temp, steps, VO₂ max, muscle map, physical/body age…) and the Trends groups (Recovery, Rest & load, Vitals, Activity, Longevity) now lead with **Instrument Serif**, the «Instrumento diurno» editorial face. It gives each screen a warmer, more legible identity. Numbers, verdicts and charts are unchanged.
