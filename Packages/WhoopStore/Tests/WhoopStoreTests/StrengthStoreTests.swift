@@ -273,6 +273,87 @@ final class StrengthStoreTests: XCTestCase {
         XCTAssertEqual(prsAfter.first { $0.metric == .maxWeight }?.valueKg, 62.5)
     }
 
+    // MARK: - Delete session + PR recompute (FER-527)
+
+    /// Two bench sessions: s1 holds the 62.5 kg PR, s2 a lighter 50 kg. Deleting s1 drops the maxWeight PR
+    /// to 50 (the second-best from what remains); deleting s2 too removes the PR entirely. The deleted
+    /// session's sets are gone, the surviving session's sets intact.
+    private func twoSessions(_ store: WhoopStore) async throws {
+        try await store.saveSession(StrengthSession(id: "s1", startTs: 1000), sets: [
+            SetEntry(id: "b", sessionId: "s1", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 62.5, reps: 8, done: true, ts: 1002)])
+        try await store.saveSession(StrengthSession(id: "s2", startTs: 2000), sets: [
+            SetEntry(id: "d", sessionId: "s2", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 50, reps: 5, done: true, ts: 2001)])
+    }
+
+    func testDeleteSessionRemovesItAndItsSets() async throws {
+        let store = try await WhoopStore.inMemory()
+        try await twoSessions(store)
+        try await store.deleteSession(id: "s1")
+        let sessions = try await store.recentSessions()
+        XCTAssertEqual(sessions.map(\.id), ["s2"])
+        let deletedSets = try await store.setEntries(sessionId: "s1")
+        XCTAssertTrue(deletedSets.isEmpty)
+        let keptSets = try await store.setEntries(sessionId: "s2")
+        XCTAssertEqual(keptSets.count, 1, "the other session's sets are untouched")
+    }
+
+    func testDeleteSessionDropsPRToSecondBest() async throws {
+        let store = try await WhoopStore.inMemory()
+        try await twoSessions(store)
+        var pr = try await store.personalRecords(exerciseId: "bench").first { $0.metric == .maxWeight }
+        XCTAssertEqual(pr?.valueKg, 62.5)
+        try await store.deleteSession(id: "s1")          // remove the session with the record
+        pr = try await store.personalRecords(exerciseId: "bench").first { $0.metric == .maxWeight }
+        XCTAssertEqual(pr?.valueKg, 50, "the record drops to the best of what remains")
+    }
+
+    func testDeleteOnlySessionRemovesPR() async throws {
+        let store = try await WhoopStore.inMemory()
+        try await store.saveSession(StrengthSession(id: "s1", startTs: 1000), sets: [
+            SetEntry(id: "b", sessionId: "s1", exerciseId: "squat", position: 0, kind: .work,
+                     weightKg: 100, reps: 5, done: true, ts: 1002)])
+        let before = try await store.personalRecords(exerciseId: "squat")
+        XCTAssertFalse(before.isEmpty)
+        try await store.deleteSession(id: "s1")
+        let after = try await store.personalRecords(exerciseId: "squat")
+        XCTAssertTrue(after.isEmpty, "no sessions left → the PR is removed, not left orphaned")
+    }
+
+    /// «Undo» = re-save the session; its PR comes back (saveSession re-derives records).
+    func testUndoRestoresSessionAndPR() async throws {
+        let store = try await WhoopStore.inMemory()
+        try await twoSessions(store)
+        let restored = StrengthSession(id: "s1", startTs: 1000)
+        let restoredSets = [SetEntry(id: "b", sessionId: "s1", exerciseId: "bench", position: 0, kind: .work,
+                                     weightKg: 62.5, reps: 8, done: true, ts: 1002)]
+        try await store.deleteSession(id: "s1")
+        try await store.saveSession(restored, sets: restoredSets)   // undo
+        let sessions = try await store.recentSessions().map(\.id).sorted()
+        XCTAssertEqual(sessions, ["s1", "s2"])
+        let pr = try await store.personalRecords(exerciseId: "bench").first { $0.metric == .maxWeight }
+        XCTAssertEqual(pr?.valueKg, 62.5, "the record returns with the restored session")
+    }
+
+    /// After a delete-recompute, a surviving heavy WARM-UP set must not become the record — only work
+    /// sets count (FER-527).
+    func testRecomputeIgnoresWarmupSets() async throws {
+        let store = try await WhoopStore.inMemory()
+        // s1: the record-holding work set (62.5). s2: a heavy warm-up (100) + a light work set (40).
+        try await store.saveSession(StrengthSession(id: "s1", startTs: 1000), sets: [
+            SetEntry(id: "b", sessionId: "s1", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 62.5, reps: 8, done: true, ts: 1002)])
+        try await store.saveSession(StrengthSession(id: "s2", startTs: 2000), sets: [
+            SetEntry(id: "w", sessionId: "s2", exerciseId: "bench", position: 0, kind: .warmup,
+                     weightKg: 100, reps: 3, done: true, ts: 2001),
+            SetEntry(id: "d", sessionId: "s2", exerciseId: "bench", position: 1, kind: .work,
+                     weightKg: 40, reps: 6, done: true, ts: 2002)])
+        try await store.deleteSession(id: "s1")
+        let pr = try await store.personalRecords(exerciseId: "bench").first { $0.metric == .maxWeight }
+        XCTAssertEqual(pr?.valueKg, 40, "the 100 kg warm-up is ignored; the record is the remaining work set")
+    }
+
     func testCustomExerciseRoundTrip() async throws {
         let store = try await WhoopStore.inMemory()
         let e = Exercise(id: "ex-1", name: "Jalón neutro", type: .weightReps, equipment: "cable",

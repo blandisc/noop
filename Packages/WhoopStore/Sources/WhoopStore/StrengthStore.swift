@@ -283,6 +283,19 @@ extension WhoopStore {
         }
     }
 
+    /// Delete a session and its sets, then recompute the affected exercises' PRs from what remains
+    /// (FER-527). All in one transaction. A record can DROP to the second-best (or be removed if it was
+    /// the only session for that exercise) — the PR stays honest. Touches no routine/routineExercise.
+    public func deleteSession(id: String) async throws {
+        try syncWrite { db in
+            let affected = try String.fetchAll(db, sql:
+                "SELECT DISTINCT exerciseId FROM setEntry WHERE sessionId = ?", arguments: [id])
+            try db.execute(sql: "DELETE FROM setEntry WHERE sessionId = ?", arguments: [id])
+            try db.execute(sql: "DELETE FROM strengthSession WHERE id = ?", arguments: [id])
+            for exerciseId in affected { try Self.recomputePR(db, exerciseId: exerciseId) }
+        }
+    }
+
     public func recentSessions(limit: Int = 200) async throws -> [StrengthSession] {
         try syncRead { db in
             try Row.fetchAll(db, sql: "SELECT * FROM strengthSession ORDER BY startTs DESC LIMIT ?",
@@ -396,31 +409,64 @@ extension WhoopStore {
 
     // MARK: - PR derivation
 
+    /// The 3 candidate PRs (best weight / reps / volume) from a set of *done work* sets for one exercise;
+    /// each is nil when no set qualifies. The single source of "what counts as a record" — shared by the
+    /// save path (`updatePersonalRecords`, upgrade-only) and the delete path (`recomputePR`, write-exact).
+    private static func bestPRs(_ work: [SetEntry], exerciseId: String)
+        -> (maxWeight: PersonalRecord?, maxReps: PersonalRecord?, maxVolume: PersonalRecord?) {
+        let maxWeight = work.compactMap { s in s.weightKg.map { (v: $0, ts: s.ts) } }.max { $0.v < $1.v }
+            .map { PersonalRecord(exerciseId: exerciseId, metric: .maxWeight, valueKg: $0.v, ts: $0.ts) }
+        let maxReps = work.compactMap { s in s.reps.map { (v: $0, ts: s.ts) } }.max { $0.v < $1.v }
+            .map { PersonalRecord(exerciseId: exerciseId, metric: .maxReps, reps: $0.v, ts: $0.ts) }
+        let maxVolume = work.compactMap { s -> (vol: Double, w: Double, reps: Int, ts: Int)? in
+                guard let w = s.weightKg, let r = s.reps else { return nil }
+                return (w * Double(r), w, r, s.ts)
+            }.max { $0.vol < $1.vol }
+            .map { PersonalRecord(exerciseId: exerciseId, metric: .maxVolume, valueKg: $0.w, reps: $0.reps, ts: $0.ts) }
+        return (maxWeight, maxReps, maxVolume)
+    }
+
     /// Update best-per-exercise PRs from a session's *done work* sets. Only upgrades an existing PR;
     /// never downgrades. (Estimated-1RM is FER-349's analytics, not stored here.)
     private static func updatePersonalRecords(_ db: Database, sets: [SetEntry]) throws {
         let work = sets.filter { $0.kind == .work && $0.done }
-        let byExercise = Dictionary(grouping: work, by: \.exerciseId)
-        for (exerciseId, exSets) in byExercise {
-            // maxWeight: heaviest single set
-            if let best = exSets.compactMap({ s in s.weightKg.map { ($0, s.ts) } }).max(by: { $0.0 < $1.0 }) {
-                try upsertPR(db, PersonalRecord(exerciseId: exerciseId, metric: .maxWeight,
-                                                valueKg: best.0, ts: best.1))
-            }
-            // maxReps: most reps at any load
-            if let best = exSets.compactMap({ s in s.reps.map { ($0, s.ts) } }).max(by: { $0.0 < $1.0 }) {
-                try upsertPR(db, PersonalRecord(exerciseId: exerciseId, metric: .maxReps,
-                                                reps: best.0, ts: best.1))
-            }
-            // maxVolume: best weight×reps in one set
-            if let best = exSets.compactMap({ s -> (Double, Double, Int, Int)? in
-                guard let w = s.weightKg, let reps = s.reps else { return nil }
-                return (w * Double(reps), w, reps, s.ts)
-            }).max(by: { $0.0 < $1.0 }) {
-                try upsertPR(db, PersonalRecord(exerciseId: exerciseId, metric: .maxVolume,
-                                                valueKg: best.1, reps: best.2, ts: best.3))
+        for (exerciseId, exSets) in Dictionary(grouping: work, by: \.exerciseId) {
+            let best = bestPRs(exSets, exerciseId: exerciseId)
+            for pr in [best.maxWeight, best.maxReps, best.maxVolume].compactMap({ $0 }) {
+                try upsertPR(db, pr)
             }
         }
+    }
+
+    /// Recompute the 3 PRs for one exercise from scratch over ALL its remaining done work sets (FER-527).
+    /// Unlike `upsertPR` (which only upgrades), this writes the exact recomputed best — even if it is now
+    /// LOWER — or deletes the PR row when no set qualifies. Used after a session is deleted, so the record
+    /// reflects only what's left.
+    private static func recomputePR(_ db: Database, exerciseId: String) throws {
+        let work = try Row.fetchAll(db, sql:
+            "SELECT * FROM setEntry WHERE exerciseId = ? AND kind = 'work' AND done = 1",
+            arguments: [exerciseId]).map(setEntry)
+        let best = bestPRs(work, exerciseId: exerciseId)
+
+        func writeOrDelete(_ metric: PRMetric, _ pr: PersonalRecord?) throws {
+            guard let pr else {
+                // The id format lives in PersonalRecord; derive it rather than hardcoding the string.
+                let id = PersonalRecord(exerciseId: exerciseId, metric: metric, ts: 0).id
+                try db.execute(sql: "DELETE FROM personalRecord WHERE id = ?", arguments: [id])
+                return
+            }
+            let args: [DatabaseValueConvertible?] = [pr.id, pr.exerciseId, pr.metric.rawValue,
+                                                     pr.valueKg, pr.reps, pr.ts]
+            try db.execute(sql: """
+                INSERT INTO personalRecord (id, exerciseId, metric, valueKg, reps, ts)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET valueKg = excluded.valueKg, reps = excluded.reps, ts = excluded.ts
+                """, arguments: StatementArguments(args))
+        }
+
+        try writeOrDelete(.maxWeight, best.maxWeight)
+        try writeOrDelete(.maxReps, best.maxReps)
+        try writeOrDelete(.maxVolume, best.maxVolume)
     }
 
     private static func upsertPR(_ db: Database, _ pr: PersonalRecord) throws {

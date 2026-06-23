@@ -9943,6 +9943,22 @@
         }
       }
     },
+    "Delete workout": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete workout"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Borrar entrenamiento"
+          }
+        }
+      }
+    },
     "Depleted": {
       "localizations": {
         "en": {
@@ -9972,6 +9988,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Se deriva de tu frecuencia cardíaca en reposo y tu HRV nocturnas — un proxy transparente de la carga autonómica, no una medida clínica de estrés."
+          }
+        }
+      }
+    },
+    "Deselect": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deselect"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quitar selección"
           }
         }
       }
@@ -11395,6 +11427,57 @@
         }
       }
     },
+    "Estimated · high confidence": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimated · high confidence"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimado · confianza alta"
+          }
+        }
+      }
+    },
+    "Estimated · low confidence": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimated · low confidence"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimado · confianza baja"
+          }
+        }
+      }
+    },
+    "Estimated · medium confidence": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimated · medium confidence"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimado · confianza media"
+          }
+        }
+      }
+    },
     "Every beat, every night, every day — woven into one quiet picture of you. Welcome to Cénit.": {
       "localizations": {
         "en": {
@@ -12363,6 +12446,22 @@
         }
       }
     },
+    "Fresh to train — pick anything.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fresh to train — pick anything."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fresco para entrenar: elige lo que quieras."
+          }
+        }
+      }
+    },
     "From": {
       "localizations": {
         "en": {
@@ -12409,6 +12508,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tomado de Apple Salud · editable"
+          }
+        }
+      }
+    },
+    "From your Apple Watch (HRV SDNN), a lower grade than your band.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From your Apple Watch (HRV SDNN), a lower grade than your band."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Viene de tu Apple Watch (HRV SDNN), con menor grado que tu banda."
           }
         }
       }
@@ -13328,6 +13444,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Frecuencia cardiaca %lld por minuto, zona %lld"
+          }
+        }
+      }
+    },
+    "Heart rate recorded; too short for an effort score.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heart rate recorded; too short for an effort score."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pulso registrado; sesión muy corta para un puntaje de esfuerzo."
           }
         }
       }
@@ -17240,6 +17373,38 @@
         }
       }
     },
+    "Mark all muscles as recovered?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark all muscles as recovered?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Marcar todos los músculos como recuperados?"
+          }
+        }
+      }
+    },
+    "Mark all recovered": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark all recovered"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marcar todo recuperado"
+          }
+        }
+      }
+    },
     "Mark it so you don't break the streak.": {
       "extractionState": "manual",
       "localizations": {
@@ -17247,6 +17412,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Márcalo para no romper la racha."
+          }
+        }
+      }
+    },
+    "Mark recovered": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark recovered"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marcar recuperado"
           }
         }
       }
@@ -17311,6 +17492,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Marcadores"
+          }
+        }
+      }
+    },
+    "Marks every muscle as recovered": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marks every muscle as recovered"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marca todos los músculos como recuperados"
           }
         }
       }
@@ -19042,23 +19239,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sin huecos"
-          }
-        }
-      }
-    },
-    "Heart rate recorded; too short for an effort score.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Heart rate recorded; too short for an effort score."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pulso registrado; sesión muy corta para un puntaje de esfuerzo."
           }
         }
       }
@@ -20910,6 +21090,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Abre el modo de botones grandes"
+          }
+        }
+      }
+    },
+    "Opens the exercise": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the exercise"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre el ejercicio"
           }
         }
       }
@@ -28720,6 +28916,22 @@
         }
       }
     },
+    "The map resets to fresh. Your workout history isn't deleted — logging a new workout loads that muscle again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The map resets to fresh. Your workout history isn't deleted — logging a new workout loads that muscle again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El mapa vuelve a fresco. No se borra tu historial de entrenamientos: al registrar un nuevo entreno, ese músculo se vuelve a cargar."
+          }
+        }
+      }
+    },
     "The metric": {
       "extractionState": "manual",
       "localizations": {
@@ -29304,6 +29516,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Esta lectura puede venir de Apple Salud. Conéctala desde Hoy para verla aquí."
+          }
+        }
+      }
+    },
+    "This recovery is ESTIMATED from your Apple Watch HRV (SDNN) and sleep on a night your band didn't record, compared with your own Apple-Health baseline. SDNN isn't the same measure as the band's HRV, so it's a lower-confidence proxy — read it as a guide, not a band reading. Not a diagnosis.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This recovery is ESTIMATED from your Apple Watch HRV (SDNN) and sleep on a night your band didn't record, compared with your own Apple-Health baseline. SDNN isn't the same measure as the band's HRV, so it's a lower-confidence proxy — read it as a guide, not a band reading. Not a diagnosis."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este recovery es ESTIMADO a partir del HRV (SDNN) y el sueño de tu Apple Watch en una noche que tu banda no registró, comparado con tu propia base de Apple Salud. El SDNN no es la misma medida que el HRV de la banda, así que es una estimación de menor confianza — tómalo como guía, no como una lectura de la banda. No es un diagnóstico."
           }
         }
       }
@@ -32655,6 +32884,22 @@
         }
       }
     },
+    "Workout deleted": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workout deleted"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entrenamiento borrado"
+          }
+        }
+      }
+    },
     "Workout saved": {
       "localizations": {
         "en": {
@@ -33011,6 +33256,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tienes la versión más reciente (%@)."
+          }
+        }
+      }
+    },
+    "You're recovered — everything's fresh.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You're recovered — everything's fresh."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estás recuperado: todo está fresco."
           }
         }
       }
@@ -39355,235 +39616,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "✓"
-          }
-        }
-      }
-    },
-    "Opens the exercise": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Opens the exercise"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abre el ejercicio"
-          }
-        }
-      }
-    },
-    "You're recovered — everything's fresh.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You're recovered — everything's fresh."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Estás recuperado: todo está fresco."
-          }
-        }
-      }
-    },
-    "Fresh to train — pick anything.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fresh to train — pick anything."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fresco para entrenar: elige lo que quieras."
-          }
-        }
-      }
-    },
-    "Mark all muscles as recovered?": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mark all muscles as recovered?"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "¿Marcar todos los músculos como recuperados?"
-          }
-        }
-      }
-    },
-    "Mark recovered": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mark recovered"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Marcar recuperado"
-          }
-        }
-      }
-    },
-    "The map resets to fresh. Your workout history isn't deleted — logging a new workout loads that muscle again.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The map resets to fresh. Your workout history isn't deleted — logging a new workout loads that muscle again."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "El mapa vuelve a fresco. No se borra tu historial de entrenamientos: al registrar un nuevo entreno, ese músculo se vuelve a cargar."
-          }
-        }
-      }
-    },
-    "Mark all recovered": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mark all recovered"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Marcar todo recuperado"
-          }
-        }
-      }
-    },
-    "Deselect": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Deselect"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Quitar selección"
-          }
-        }
-      }
-    },
-    "Marks every muscle as recovered": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Marks every muscle as recovered"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Marca todos los músculos como recuperados"
-          }
-        }
-      }
-    },
-    "Estimated · high confidence": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Estimated · high confidence"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Estimado · confianza alta"
-          }
-        }
-      }
-    },
-    "Estimated · medium confidence": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Estimated · medium confidence"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Estimado · confianza media"
-          }
-        }
-      }
-    },
-    "Estimated · low confidence": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Estimated · low confidence"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Estimado · confianza baja"
-          }
-        }
-      }
-    },
-    "From your Apple Watch (HRV SDNN), a lower grade than your band.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "From your Apple Watch (HRV SDNN), a lower grade than your band."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Viene de tu Apple Watch (HRV SDNN), con menor grado que tu banda."
-          }
-        }
-      }
-    },
-    "This recovery is ESTIMATED from your Apple Watch HRV (SDNN) and sleep on a night your band didn't record, compared with your own Apple-Health baseline. SDNN isn't the same measure as the band's HRV, so it's a lower-confidence proxy — read it as a guide, not a band reading. Not a diagnosis.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This recovery is ESTIMATED from your Apple Watch HRV (SDNN) and sleep on a night your band didn't record, compared with your own Apple-Health baseline. SDNN isn't the same measure as the band's HRV, so it's a lower-confidence proxy — read it as a guide, not a band reading. Not a diagnosis."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Este recovery es ESTIMADO a partir del HRV (SDNN) y el sueño de tu Apple Watch en una noche que tu banda no registró, comparado con tu propia base de Apple Salud. El SDNN no es la misma medida que el HRV de la banda, así que es una estimación de menor confianza — tómalo como guía, no como una lectura de la banda. No es un diagnóstico."
           }
         }
       }
