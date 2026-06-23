@@ -703,7 +703,9 @@ struct MetricDetailScreen: View {
 
     private var legacyHero: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(heroOverline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            // Serif in-screen title (FER-581). The "· 7-day average / · today" context the old overline
+            // carried now lives in `heroSecondary` below the numeral; the title is just the metric name.
+            InstrumentoScreenTitle(legacyHeroTitle, theme: theme)
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text(heroValue.map { fmt($0) } ?? "—")
                     .instrumentoHero(44)
@@ -766,16 +768,12 @@ struct MetricDetailScreen: View {
         return heroContext(today)
     }
 
-    private var heroOverline: LocalizedStringKey {
+    /// The serif in-screen title for the legacy hero (Steps / VO₂max) — the metric's short name. (FER-581)
+    private var legacyHeroTitle: LocalizedStringKey {
         switch spec.descriptor.key {
-        case "hrv":        return "Heart rate variability · 7-day average"
-        case "rhr":        return "Resting HR · 7-day average"
-        case "resp_rate":  return "Respiratory rate · 7-day average"
-        case "spo2":       return "Blood oxygen · 7-day average"
-        case "heart_rate": return "Heart rate · today"
-        case "steps":      return "Steps · today"
-        case "vo2max":     return "VO₂ Max · latest reading"
-        default:           return "7-day average"
+        case "steps":  return "Steps"
+        case "vo2max": return "VO₂ Max"
+        default:       return "Today"
         }
     }
 
@@ -1813,9 +1811,9 @@ struct MetricDetailScreen: View {
 
     private var narrativeHero: some View {
         VStack(alignment: .leading, spacing: 10) {
-            // Serif in-screen title + ⓘ (the «Instrumento» detail identity, FER-581). The plain-language
-            // reading that used to sit always-on below the hero now lives behind the ⓘ.
-            InstrumentoScreenTitle(narrativeHeroTitle, theme: theme, explanation: readingCopy(for: .header))
+            // Serif in-screen title (the «Instrumento» detail identity, FER-581). No ⓘ: the dueño chose to
+            // keep the plain-language reading always visible below the hero, so a disclosure is redundant.
+            InstrumentoScreenTitle(narrativeHeroTitle, theme: theme)
             if isIntraday {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(heroTodayValue.map { fmt($0) } ?? "—")
@@ -1845,6 +1843,14 @@ struct MetricDetailScreen: View {
                     if loaded { heroVerdictColumn }
                 }
                 if loaded { inlineBandSection }
+            }
+            // Plain-language reading, kept always visible below the hero (FER-216 readability + the dueño's
+            // choice in FER-581). The serif title carries the identity; this stays put.
+            if let reading = readingCopy(for: .header) {
+                Text(reading)
+                    .font(StrandFont.caption)
+                    .foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
