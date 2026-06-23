@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Tendencias muestra la mini-curva de cada dato, y un periodo que las mueve todas / Trends now shows each number's mini-trend, and one period that moves them all.**
+  **ES** — En **Tendencias**, cada dato (Sueño, Esfuerzo, Estrés, HRV, FC en reposo, SpO₂, Respiración, Temp. de piel y Pasos) ahora lleva una **mini-curva** debajo del número, para que veas de un vistazo si viene subiendo o bajando. Arriba hay un **selector de periodo (S / M / 3M / 6M / 1A / Todo)** que **re-encuadra todas las curvas a la vez** —incluida la de Recuperación y su «vs tu media»—. Edad física/corporal, VO₂ máx, Entrenamientos y Frecuencia no llevan curva (son números o medidas del momento, no series diarias). Si un dato aún no tiene suficiente historia, se muestra solo el número, sin curva inventada.
+  **EN** — In **Trends**, every number (Sleep, Strain, Stress, HRV, resting HR, SpO₂, Respiration, Skin temp and Steps) now carries a **mini-trend** under it, so you can see at a glance whether it's rising or falling. Up top there's a **period selector (W / M / 3M / 6M / 1Y / All)** that **re-windows all the curves at once** — including Recovery and its "vs your average". Physical/Body age, VO₂ max, Workouts and Heart Rate carry no curve (they're numbers or point-in-time readings, not daily series). If a number doesn't have enough history yet, it shows the number alone, no invented curve.
+  ([Cenit/Screens/CuerpoView.swift](Cenit/Screens/CuerpoView.swift))
+
 - **El editor de descanso entre series ya está completo en español / The rest-between-sets editor is now fully in Spanish.**
   **ES** — En el editor de descanso (el que usas tanto en la sesión de fuerza en vivo como al editar una rutina), unas etiquetas se habían quedado en inglés: **«Descanso entre series»**, el selector **«Por FC» / «Fijo»** y **«Segundos»**. Ahora se ven en español como el resto de la pantalla.
   **EN** — In the rest editor (used both in the live strength session and when editing a routine), a few labels had stayed in English: **"Rest between sets"**, the **"By HR" / "Fixed"** toggle, and **"Seconds"**. They now read in Spanish like the rest of the screen.
