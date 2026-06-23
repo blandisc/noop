@@ -84,7 +84,6 @@ struct RootTabView: View {
             NavigationStack(path: $trainStack) {
                 EntrenarView(
                     openRoutine: { id in trainStack.append(RoutineRoute(routineId: id)) },
-                    openLibrary: { trainStack.append(SecondaryScreen.library) },
                     openBreathe: { trainStack.append(SecondaryScreen.breathe) },
                     openIntervals: { trainStack.append(SecondaryScreen.intervals) },
                     openDiet: { trainStack.append(SecondaryScreen.dieta) },
