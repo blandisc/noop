@@ -29,6 +29,9 @@ struct EntrenarView: View {
     var openHistory: () -> Void
     /// Push the weekly plan editor (FER-533) — opened from «Tu plan · Editar» and the empty state.
     var openWeeklyPlan: () -> Void
+    /// Push «Mis rutinas» (the routine library) — the «Empezar» chooser's «Routine» falls back here on a
+    /// rest day, so a day with no assigned routine can still pick one to start or build a new one (FER-558).
+    var openRoutines: () -> Void
     /// Push a completed strength session's detail (from a «done» day in the week strip).
     var openWorkoutSession: (WorkoutSessionRoute) -> Void
 
@@ -36,7 +39,7 @@ struct EntrenarView: View {
         EntrenarLanding(openRoutine: openRoutine, openLibrary: openLibrary,
                         openBreathe: openBreathe, openIntervals: openIntervals, openDiet: openDiet,
                         openHistory: openHistory, openWeeklyPlan: openWeeklyPlan,
-                        openWorkoutSession: openWorkoutSession)
+                        openRoutines: openRoutines, openWorkoutSession: openWorkoutSession)
             .instrumentoTheme(.base)
     }
 }
@@ -54,6 +57,7 @@ private struct EntrenarLanding: View {
     var openDiet: () -> Void
     var openHistory: () -> Void
     var openWeeklyPlan: () -> Void
+    var openRoutines: () -> Void
     var openWorkoutSession: (WorkoutSessionRoute) -> Void
 
     @State private var loaded = false
@@ -471,7 +475,8 @@ private struct EntrenarLanding: View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Empezar").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             Text("What are you training?").font(StrandFont.title2).foregroundStyle(theme.ink).padding(.top, 2)
-            chooserOption("dumbbell", "Routine", subtitle: todayRoutine?.name, isDefault: true) { pick(.routine) }
+            chooserOption("dumbbell", "Routine", subtitle: todayRoutine?.name ?? String(localized: "Choose or build one"),
+                          isDefault: true) { pick(.routine) }
             chooserOption("timer", "Intervals", subtitle: nil) { pick(.intervals) }
             chooserOption("wind", "Breathe", subtitle: nil) { pick(.breathe) }
             chooserOption("dot.radiowaves.left.and.right", "Live", subtitle: nil) { pick(.live) }
@@ -512,7 +517,7 @@ private struct EntrenarLanding: View {
         guard let kind = pendingStart else { return }
         pendingStart = nil
         switch kind {
-        case .routine:   if let id = todayRoutineId { openRoutine(id) }
+        case .routine:   if let id = todayRoutineId { openRoutine(id) } else { openRoutines() }
         case .intervals: openIntervals()
         case .breathe:   openBreathe()
         case .live:      if model.activeWorkout == nil { model.startWorkout() }; showLive = true

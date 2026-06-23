@@ -87,6 +87,7 @@ struct RootTabView: View {
                     openDiet: { trainStack.append(SecondaryScreen.dieta) },
                     openHistory: { trainStack.append(SecondaryScreen.workoutHistory) },
                     openWeeklyPlan: { trainStack.append(SecondaryScreen.weeklyPlan) },
+                    openRoutines: { trainStack.append(SecondaryScreen.misRutinas) },
                     openWorkoutSession: { trainStack.append($0) }
                 )
                 .barReservation(barHeight)
