@@ -158,7 +158,7 @@ final class RepositoryMergeTests: XCTestCase {
         XCTAssertEqual(r.appleDays, ["2026-06-10", "2026-06-11"])  // all Apple-sourced
     }
 
-    // MARK: - FER-153 — Apple estimates are a side map, never folded into days/displayDays
+    // MARK: - FER-153 / FER-529 — Apple estimate is a side map keyed on `recovery == nil`, never folded in
 
     /// An Apple row with SDNN + sleep, for the estimate tests.
     private func appleRow(_ day: String, hrv: Double, sleep: Double = 420) -> DailyMetric {
@@ -167,16 +167,72 @@ final class RepositoryMergeTests: XCTestCase {
                     strain: nil, exerciseCount: nil)
     }
 
-    /// With ≥ seed Apple nights, every band-LESS night gets an estimate (score + confidence); a
-    /// band-covered day (in `strapDays`) gets none — the band wins.
-    func testEstimatesForBandlessDaysOnly() {
+    /// A band (on-device computed) row for a day, with an optional measured recovery — `nil` models the
+    /// cold-start night where the band is worn but its RMSSD baseline isn't seeded yet.
+    private func bandRow(_ day: String, recovery: Double?) -> DailyMetric {
+        DailyMetric(day: day, totalSleepMin: 420, efficiency: nil, deepMin: nil, remMin: nil,
+                    lightMin: nil, disturbances: nil, restingHr: 55, avgHrv: 42, recovery: recovery,
+                    strain: nil, exerciseCount: nil)
+    }
+
+    /// Mirrors `Repository.refresh`'s estimate wiring + the `repo.today` selector (Repository.swift:114),
+    /// so a test can pin what the user would SEE for a day without a DB: the band recovery wins; on `nil`
+    /// the Apple estimate fills in (band-less OR cold-start); with no estimate it stays «—».
+    private func surfaced(day: String, imported: [DailyMetric] = [], computed: [DailyMetric] = [],
+                          apple: [DailyMetric]) -> (value: Double?, estimated: Bool) {
+        let merged = Repository.mergeDaily(imported: imported, computed: computed, apple: apple)
+        let eligible = Set(merged.days.filter { $0.recovery == nil }.map(\.day))
+        let estimates = Repository.appleRecoveryEstimates(apple: apple, eligibleDays: eligible)
+        guard let row = merged.days.first(where: { $0.day == day }) else { return (nil, false) }
+        if row.recovery == nil, let est = estimates[day] { return (est.score, true) }
+        return (row.recovery, false)
+    }
+
+    /// Eligibility = days whose measured recovery is nil. With ≥ seed Apple nights those days get an
+    /// estimate (score + confidence); a day with a band recovery is NOT eligible → no estimate (band wins),
+    /// so `isRecoveryEstimated` never lies. (FER-529 keys on eligibility, not on strap coverage.)
+    func testEstimatesOnlyForEligibleDays() {
         let apple = (1...5).map { appleRow(String(format: "2026-06-%02d", $0), hrv: 50) }
-        let est = Repository.appleRecoveryEstimates(apple: apple, strapDays: ["2026-06-03"])
+        let est = Repository.appleRecoveryEstimates(
+            apple: apple, eligibleDays: ["2026-06-01", "2026-06-02", "2026-06-04", "2026-06-05"])
 
         XCTAssertEqual(Set(est.keys), ["2026-06-01", "2026-06-02", "2026-06-04", "2026-06-05"])
-        XCTAssertNil(est["2026-06-03"])                          // band wins → no estimate
+        XCTAssertNil(est["2026-06-03"])                          // not eligible (band recovery) → no estimate
         XCTAssertNotNil(est["2026-06-01"]?.score)
         XCTAssertEqual(est["2026-06-01"]?.confidence, .calibrating)   // few nights → low
+    }
+
+    /// FER-529 (the new behavior): during the band's cold-start — band worn (a computed row exists) but its
+    /// recovery is still nil because the RMSSD baseline isn't seeded — the Apple estimate surfaces instead
+    /// of «—», then switches cleanly to the band the moment the band can compute a recovery.
+    func testColdStartBandDaySurfacesEstimateThenSwitchesToBand() {
+        let apple = (1...5).map { appleRow(String(format: "2026-06-%02d", $0), hrv: 50) }
+        let day = "2026-06-05"
+
+        // Cold-start: band on the wrist on 06-05, recovery still nil.
+        let cold = surfaced(day: day, computed: [bandRow(day, recovery: nil)], apple: apple)
+        XCTAssertTrue(cold.estimated)                           // estimate surfaces (was «—» before FER-529)
+        XCTAssertNotNil(cold.value)
+
+        // Baseline ready: the band now has a recovery → clean switch, estimate gone (⌚ marker disappears).
+        let ready = surfaced(day: day, computed: [bandRow(day, recovery: 48)], apple: apple)
+        XCTAssertFalse(ready.estimated)
+        XCTAssertEqual(ready.value, 48)                         // band wins
+    }
+
+    /// Cold-start WITHOUT enough Apple history → no estimate available → the day stays «—» (no number).
+    func testColdStartWithoutAppleStaysDash() {
+        let r = surfaced(day: "2026-06-05", computed: [bandRow("2026-06-05", recovery: nil)], apple: [])
+        XCTAssertFalse(r.estimated)
+        XCTAssertNil(r.value)
+    }
+
+    /// A band-LESS Apple night still surfaces its estimate (FER-153 regression: no strap row that day).
+    func testBandlessNightStillSurfacesEstimate() {
+        let apple = (1...5).map { appleRow(String(format: "2026-06-%02d", $0), hrv: 50) }
+        let r = surfaced(day: "2026-06-03", apple: apple)      // no imported/computed → band-less
+        XCTAssertTrue(r.estimated)
+        XCTAssertNotNil(r.value)
     }
 
     /// The estimate is NEVER folded into the merged days — `mergeDaily` is the unchanged band/Apple merge,
@@ -189,12 +245,13 @@ final class RepositoryMergeTests: XCTestCase {
 
     /// whoopOnly path: the mode filter hands `apple == []`, so there is no estimate at all.
     func testNoEstimateWhenAppleEmpty() {
-        XCTAssertTrue(Repository.appleRecoveryEstimates(apple: [], strapDays: []).isEmpty)
+        XCTAssertTrue(Repository.appleRecoveryEstimates(apple: [], eligibleDays: ["2026-06-01"]).isEmpty)
     }
 
-    /// Cold-start: fewer than the seed of Apple HRV nights → no estimate (UI shows "—").
+    /// Below the seed of Apple HRV nights → no estimate even when the day is eligible (UI shows "—").
     func testNoEstimateBelowSeed() {
         let apple = (1...3).map { appleRow(String(format: "2026-06-%02d", $0), hrv: 50) }
-        XCTAssertTrue(Repository.appleRecoveryEstimates(apple: apple, strapDays: []).isEmpty)
+        let days: Set<String> = ["2026-06-01", "2026-06-02", "2026-06-03"]
+        XCTAssertTrue(Repository.appleRecoveryEstimates(apple: apple, eligibleDays: days).isEmpty)
     }
 }
