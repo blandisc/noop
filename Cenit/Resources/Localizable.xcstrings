@@ -9959,6 +9959,16 @@
         }
       }
     },
+    "View exercise detail": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver detalle del ejercicio"
+          }
+        }
+      }
+    },
     "Delete workout": {
       "localizations": {
         "en": {
