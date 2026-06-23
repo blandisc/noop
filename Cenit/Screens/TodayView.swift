@@ -2032,6 +2032,30 @@ struct TodayView: View {
 
         private var isEmpty: Bool { value == "—" }
 
+        /// El valor con los DÍGITOS al tamaño grande y las LETRAS de unidad inline (la «h»/«m» de «5h 31m»)
+        /// en chico — igual que el «ms» de HRV (FER-575 follow-up). Así un valor ancho como el de sueño
+        /// conserva sus dígitos al MISMO tamaño que «71»/«58» en vez de encoger toda la cadena por no caber
+        /// (el `minimumScaleFactor` solo encogía a sueño, rompiendo la paridad). Sin letras («71») = Text
+        /// normal. Las corridas se concatenan en un solo `Text`, así baseline-alinean como «58 ms».
+        private var valueText: Text {
+            var out = Text(verbatim: "")
+            var run = ""
+            var runIsLetter = false
+            func flush() {
+                guard !run.isEmpty else { return }
+                let f = runIsLetter ? StrandFont.caption : StrandFont.number(21, weight: .semibold)
+                out = out + Text(verbatim: run).font(f)
+                run = ""
+            }
+            for ch in value {
+                if !run.isEmpty && ch.isLetter != runIsLetter { flush() }
+                runIsLetter = ch.isLetter
+                run.append(ch)
+            }
+            flush()
+            return out
+        }
+
         var body: some View {
             VStack(alignment: .leading, spacing: NoopMetrics.space2) {
                 // FER-575: ícono + TÍTULO de la métrica (antes solo el ícono, con un chevron). El título da
@@ -2048,7 +2072,7 @@ struct TodayView: View {
                     Spacer(minLength: 0)
                 }
                 HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
-                    Text(value).font(StrandFont.number(21, weight: .semibold))
+                    valueText
                         .foregroundStyle(isEmpty ? theme.inkDim : color)
                         .lineLimit(1).minimumScaleFactor(0.6)
                     if let unit {
@@ -2168,10 +2192,11 @@ struct TodayView: View {
         return today.map { prior + [$0] } ?? prior
     }
 
-    /// Δ de sueño en lenguaje de tiempo: «18 min» bajo una hora, «1h 5m» a partir de una.
+    /// Δ de sueño en unidades de una letra: «18m» bajo una hora, «1h 5m» a partir de una (FER-575 follow-up:
+    /// «18 min» era más ancho que «+27» y el `minimumScaleFactor` encogía solo el delta de sueño).
     private func sleepDeltaText(_ minutes: Double) -> String {
         let m = Int(minutes.rounded())
-        return m >= 60 ? "\(m / 60)h \(m % 60)m" : "\(m) min"
+        return m >= 60 ? "\(m / 60)h \(m % 60)m" : "\(m)m"
     }
 
     /// El color del valor de Estrés por banda 0–3, en roles del tema (regla: color saturado solo en el
