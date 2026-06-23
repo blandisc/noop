@@ -40813,6 +40813,54 @@
         }
       }
     },
+    "day on your plan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "day on your plan"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "día cumpliendo tu plan"
+          }
+        }
+      }
+    },
+    "days on your plan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "days on your plan"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "días cumpliendo tu plan"
+          }
+        }
+      }
+    },
+    "See full history": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See full history"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver historial completo"
+          }
+        }
+      }
+    },
     "Recovery %lld. See details.": {
       "localizations": {
         "en": {

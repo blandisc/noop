@@ -97,4 +97,59 @@ final class WeeklySplitTests: XCTestCase {
                                           includesCurrentWeek: true),
             4, "current week already met extends the streak")
     }
+
+    // MARK: - Daily adherence streak
+
+    private func plan(_ training: Bool, _ trained: Bool) -> WeeklySplit.DayPlan {
+        WeeklySplit.DayPlan(isTrainingDay: training, trained: trained)
+    }
+
+    /// Each day classifies by whether it was a training day and whether a session completed.
+    func testDailyAdherenceClassifies() {
+        let states = WeeklySplit.dailyAdherence(days: [
+            plan(true, true),    // training + trained → met
+            plan(false, false),  // rest → met by resting
+            plan(true, false),   // training + skipped → missed
+        ], includesToday: false)
+        XCTAssertEqual(states, [.metTrained, .metRest, .missed])
+    }
+
+    /// Rest days are KEPT — they extend the streak, they never break it; a training day done counts too.
+    func testRestDaysExtendTheStreak() {
+        // Mon train✓, Tue rest, Wed train✓, Thu rest, Fri train✓, Sat train✓, Sun rest — a perfect week.
+        let week = [plan(true, true), plan(false, false), plan(true, true), plan(false, false),
+                    plan(true, true), plan(true, true), plan(false, false)]
+        let states = WeeklySplit.dailyAdherence(days: week, includesToday: false)
+        XCTAssertEqual(WeeklySplit.adherenceStreak(states), 7, "every day kept → 7-day streak")
+    }
+
+    /// A past training day with no session breaks the run; only the trailing kept days count.
+    func testMissedTrainingDayBreaks() {
+        // …, train✗ (missed), rest, train✓, rest  → only the trailing 3 days count.
+        let days = [plan(true, true), plan(true, false), plan(false, false), plan(true, true), plan(false, false)]
+        let states = WeeklySplit.dailyAdherence(days: days, includesToday: false)
+        XCTAssertEqual(WeeklySplit.adherenceStreak(states), 3, "the missed training day before them breaks it")
+    }
+
+    /// Today as a training day not yet trained is `pendingToday`: it neither breaks the streak nor adds to it.
+    func testPendingTodayDoesNotBreakOrCount() {
+        let days = [plan(false, false), plan(true, true), plan(true, false)]  // last = today, untrained
+        let states = WeeklySplit.dailyAdherence(days: days, includesToday: true)
+        XCTAssertEqual(states.last, .pendingToday)
+        XCTAssertEqual(WeeklySplit.adherenceStreak(states), 2, "pending today is skipped; the 2 kept days behind it stand")
+    }
+
+    /// Today already trained counts on top of the run.
+    func testTrainedTodayCounts() {
+        let days = [plan(false, false), plan(true, true), plan(true, true)]  // last = today, trained
+        let states = WeeklySplit.dailyAdherence(days: days, includesToday: true)
+        XCTAssertEqual(states.last, .metTrained)
+        XCTAssertEqual(WeeklySplit.adherenceStreak(states), 3)
+    }
+
+    /// Empty history → no streak, no crash.
+    func testDailyAdherenceEmpty() {
+        XCTAssertEqual(WeeklySplit.dailyAdherence(days: [], includesToday: true), [])
+        XCTAssertEqual(WeeklySplit.adherenceStreak([]), 0)
+    }
 }
