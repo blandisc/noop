@@ -29,8 +29,6 @@ struct EntrenarView: View {
     var openHistory: () -> Void
     /// Push the weekly plan editor (FER-533) — opened from «Tu plan · Editar» and the empty state.
     var openWeeklyPlan: () -> Void
-    /// Push «Mis rutinas» — routine + folder management (FER-534, moved off the landing).
-    var openRoutines: () -> Void
     /// Push a completed strength session's detail (from a «done» day in the week strip).
     var openWorkoutSession: (WorkoutSessionRoute) -> Void
 
@@ -38,7 +36,7 @@ struct EntrenarView: View {
         EntrenarLanding(openRoutine: openRoutine, openLibrary: openLibrary,
                         openBreathe: openBreathe, openIntervals: openIntervals, openDiet: openDiet,
                         openHistory: openHistory, openWeeklyPlan: openWeeklyPlan,
-                        openRoutines: openRoutines, openWorkoutSession: openWorkoutSession)
+                        openWorkoutSession: openWorkoutSession)
             .instrumentoTheme(.base)
     }
 }
@@ -56,7 +54,6 @@ private struct EntrenarLanding: View {
     var openDiet: () -> Void
     var openHistory: () -> Void
     var openWeeklyPlan: () -> Void
-    var openRoutines: () -> Void
     var openWorkoutSession: (WorkoutSessionRoute) -> Void
 
     @State private var loaded = false
@@ -108,7 +105,7 @@ private struct EntrenarLanding: View {
         // The «Empezar» chooser. Its choice is performed on dismiss so a push/live-sheet never races the
         // chooser's own dismissal.
         .sheet(isPresented: $showChooser, onDismiss: performPendingStart) {
-            choserSheet
+            chooserSheet
                 .presentationDetents([.height(360)])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(theme.paper)
@@ -327,7 +324,7 @@ private struct EntrenarLanding: View {
                 }
                 Divider().overlay(theme.hairline).padding(.top, 4)
                 HStack(spacing: 8) {
-                    planChip("Library", "book", action: openRoutines)
+                    planChip("Library", "book", action: openLibrary)
                     planChip("Import", "square.and.arrow.down") { showImport = true }
                     planChip("Diet", "fork.knife", tag: "for now", action: openDiet)
                 }
@@ -429,14 +426,14 @@ private struct EntrenarLanding: View {
 
     // MARK: - «Empezar» chooser
 
-    private var choserSheet: some View {
+    private var chooserSheet: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Empezar").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             Text("What are you training?").font(StrandFont.title2).foregroundStyle(theme.ink).padding(.top, 2)
-            choserOption("dumbbell", "Routine", subtitle: todayRoutine?.name, isDefault: true) { pick(.routine) }
-            choserOption("timer", "Intervals", subtitle: nil) { pick(.intervals) }
-            choserOption("wind", "Breathe", subtitle: nil) { pick(.breathe) }
-            choserOption("dot.radiowaves.left.and.right", "Live", subtitle: nil) { pick(.live) }
+            chooserOption("dumbbell", "Routine", subtitle: todayRoutine?.name, isDefault: true) { pick(.routine) }
+            chooserOption("timer", "Intervals", subtitle: nil) { pick(.intervals) }
+            chooserOption("wind", "Breathe", subtitle: nil) { pick(.breathe) }
+            chooserOption("dot.radiowaves.left.and.right", "Live", subtitle: nil) { pick(.live) }
             Spacer(minLength: 0)
         }
         .padding(NoopMetrics.screenPadding)
@@ -444,7 +441,7 @@ private struct EntrenarLanding: View {
         .background(theme.paper)
     }
 
-    private func choserOption(_ icon: String, _ title: LocalizedStringKey, subtitle: String?, isDefault: Bool = false,
+    private func chooserOption(_ icon: String, _ title: LocalizedStringKey, subtitle: String?, isDefault: Bool = false,
                               action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 13) {
