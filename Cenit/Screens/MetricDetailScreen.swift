@@ -33,6 +33,11 @@ struct MetricDetailScreen: View {
     /// When the metric is Apple-sourced and there's no reading + no permission, the empty state adds a
     /// quiet "Connect Apple Health" line. Only used by the sparse VO₂max empty state today. (FER-257)
     var appleConnectHint: Bool = false
+    /// True when TODAY's reading (the «Hoy» datum) came from Apple Health rather than the band — the
+    /// caller already resolves this per reading (`appleSource` in TodayView, `resolveMeasured.fromApple`
+    /// in CuerpoView). Drives the «Apple» provenance seal on the narrative vitals so a band-less Apple
+    /// reading never reads identical to a band one (FER-487). Never set for Heart Rate (band intraday).
+    var todayFromApple: Bool = false
 
     /// Loads the full daily series for this metric (oldest → newest), as `(day "yyyy-MM-dd", value)`.
     /// Injected so the screen stays DB-free and the caller controls the source (`displayDays` for BLE,
@@ -1431,7 +1436,15 @@ struct MetricDetailScreen: View {
 
     private var narrativeHero: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(narrativeHeroOverline).instrumentoOverline().foregroundStyle(metricHue)
+            HStack(spacing: NoopMetrics.space2) {
+                Text(narrativeHeroOverline).instrumentoOverline().foregroundStyle(metricHue)
+                // FER-487: seal a band-less Apple reading so today's datum never reads as a band one. The
+                // band is the expected source (no mark); only Apple gets a chip. Not on Heart Rate (intraday,
+                // band-only). Reuses the same `InlineFlagChip("Apple")` the Cuerpo tile shows.
+                if todayFromApple, !isIntraday {
+                    InlineFlagChip("Apple", color: theme.inkTertiary)
+                }
+            }
             if isIntraday {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(heroTodayValue.map { fmt($0) } ?? "—")

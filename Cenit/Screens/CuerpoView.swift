@@ -203,6 +203,8 @@ private struct CuerpoLanding: View {
                 appleConnectHint: spec.descriptor.key == "vo2max"
                     && health.auth != .authorized && health.auth != .unavailable
                     && latestAppleVO2max == nil,
+                // FER-487: seal today's datum «Apple» when it came from Apple Health, matching the tile.
+                todayFromApple: todayVitalFromApple(spec.descriptor.key),
                 seriesLoader: { vitalSeries(for: spec.descriptor.key) },
                 nightVitalsLoader: spec.blocks.contains(.nightVitals) ? { await loadNightVitals() } : nil,
                 whatMovesItLoader: spec.blocks.contains(.whatMovesIt)
@@ -1106,6 +1108,19 @@ private struct CuerpoLanding: View {
             if let v = pick(day) { return (v, true) }
         }
         return nil
+    }
+
+    /// FER-487: did TODAY's reading for a narrative vital come from Apple Health (not the band)? Mirrors
+    /// the per-tile `fromApple` resolution so the detail's «Apple» seal matches the tile that opened it.
+    /// Heart Rate (intraday, band-only), Steps and VO₂max are out of scope → never sealed here.
+    private func todayVitalFromApple(_ key: String) -> Bool {
+        switch key {
+        case "hrv":       return resolveMeasured { $0.avgHrv }?.fromApple == true
+        case "rhr":       return resolveMeasured { $0.restingHr.map(Double.init) }?.fromApple == true
+        case "spo2":      return resolveMeasured { $0.spo2Pct }?.fromApple == true
+        case "resp_rate": return resolveMeasured { $0.respRateBpm }?.fromApple == true
+        default:          return false
+        }
     }
 
     /// Today's step total from the Apple daily rows, within the freshness window (today/yesterday).

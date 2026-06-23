@@ -342,6 +342,8 @@ struct TodayView: View {
                     spec: spec,
                     depth: .full,
                     theme: theme,
+                    // FER-487: seal today's datum «Apple» when it came from Apple Health, matching the tile.
+                    todayFromApple: todayVitalFromApple(spec.descriptor.key),
                     seriesLoader: { vitalSeries(for: spec.descriptor.key) },
                     nightVitalsLoader: spec.blocks.contains(.nightVitals) ? { await loadNightVitals() } : nil,
                     whatMovesItLoader: spec.blocks.contains(.whatMovesIt)
@@ -2519,6 +2521,20 @@ struct TodayView: View {
 
     /// Thousands-grouped integer string (steps / calories).
     private func intString(_ v: Double) -> String { StrandFormat.groupedInt(v) }
+
+    /// FER-487: did TODAY's reading for a narrative vital come from Apple Health (not the band)? Mirrors
+    /// the per-reading `fromApple` resolution behind the Key Metrics source badge so the detail's «Apple»
+    /// seal matches the tile that opened it. From Hoy only hrv/rhr/spo2 open this detail; Heart Rate
+    /// (intraday, band-only) and Steps stay unsealed.
+    private func todayVitalFromApple(_ key: String) -> Bool {
+        switch key {
+        case "hrv":       return resolveMeasured { $0.avgHrv }?.fromApple == true
+        case "rhr":       return resolveMeasured { $0.restingHr.map(Double.init) }?.fromApple == true
+        case "spo2":      return resolveMeasured { $0.spo2Pct }?.fromApple == true
+        case "resp_rate": return resolveMeasured { $0.respRateBpm }?.fromApple == true
+        default:          return false
+        }
+    }
 
 }
 
