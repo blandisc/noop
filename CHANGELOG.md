@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **«Hoy» se lee más limpio: sincronización en una letra, pills con nombre y la fuente en un punto / "Today" reads cleaner: one-letter sync, named pills, and source as a dot.**
+  **ES** — En **Hoy**: la hora de sincronización del encabezado ahora usa unidades de una letra (**«hace 30 s» / «5 m» / «2 h» / «3 d»**, antes «5 min»). Las tres pills del vistazo (Recuperación, HRV, Sueño) ahora muestran su **nombre** junto al ícono, y el «±N vs media» ya no se corta. La etiqueta de fuente (antes la palabra **BANDA / APPLE / CALCULADO** en cada dato) se volvió un **punto de color**, con una sola **leyenda** al pie (● Banda · ● Apple Salud · ● Calculado) que aplica a las pills y a las tarjetas — así se libera espacio sin perder de dónde viene cada número.
+  **EN** — In **Today**: the header's sync time now uses one-letter units (**"hace 30 s" / "5 m" / "2 h" / "3 d"**, was "5 min"). The three glance pills (Recovery, HRV, Sleep) now show their **name** next to the icon, and "±N vs average" no longer gets clipped. The source tag (previously the word **BAND / APPLE / CALCULATED** on every number) became a **colored dot**, with a single **legend** at the foot (● Band · ● Apple Health · ● Calculated) covering both pills and tiles — freeing up space without losing where each number comes from.
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **Entrenar respira menos vertical / Train is tighter vertically.**
   **ES** — La pantalla **Entrenar** se sentía más larga de lo necesario. Apretamos el ritmo entre secciones (de 28 a 18 pt) y afinamos el padding muerto (arriba, el divider y el botón de la tarjeta «Hoy», el pie de la semana). Mismo contenido y tarjetas, ~16 % menos de alto — menos scroll, mismo aire del Instrumento. No cambia ninguna otra pantalla.
   **EN** — The **Train** screen felt taller than it needed to. We tightened the section rhythm (28 → 18 pt) and trimmed dead padding (top, the today card's divider and button, the week footer). Same content and cards, ~16% shorter — less scroll, same Instrumento breathing room. No other screen changes.

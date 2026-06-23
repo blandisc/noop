@@ -1655,14 +1655,19 @@ struct TodayView: View {
         @Environment(\.instrumentoTheme) private var theme
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-        /// Tiempo relativo COMPACTO: «hace 3 min», «hace 1 h», «hace 2 d» en vez de la forma larga
-        /// («hace 3 minutos»). `unitsStyle = .abbreviated`; instancia única reutilizada — configurar el
-        /// formateador en cada render es caro.
-        private static let relativeFormatter: RelativeDateTimeFormatter = {
-            let f = RelativeDateTimeFormatter()
-            f.unitsStyle = .abbreviated
-            return f
-        }()
+        /// Tiempo relativo en unidades de UNA letra (FER-575): «hace 30 s», «hace 5 m», «hace 2 h»,
+        /// «hace 3 d». El `RelativeDateTimeFormatter(.abbreviated)` daba «min» para minutos; el dueño
+        /// quiere «m». Construye solo el núcleo «30 s» (idéntico es/en: s/m/h/d) y lo envuelve en la
+        /// clave bilingüe «%@ ago» (es: «hace %@»). Escalones: <60 s → s; <60 m → m; <24 h → h; resto d.
+        private static func compactAgo(_ secondsAgo: Double) -> String {
+            let s = Int(secondsAgo.rounded())
+            let core: String
+            if s < 60 { core = "\(s) s" }
+            else if s < 3600 { core = "\(s / 60) m" }
+            else if s < 86_400 { core = "\(s / 3600) h" }
+            else { core = "\(s / 86_400) d" }
+            return String(localized: "\(core) ago")
+        }
 
         var body: some View {
             HStack(spacing: NoopMetrics.space1) {
@@ -1703,9 +1708,9 @@ struct TodayView: View {
                     .monospacedDigit()
             } else if let at = lastSyncedAt {
                 TimelineView(.periodic(from: .now, by: 60)) { context in
-                    // Acota a pasado (≤ −1 s) para que nunca diga «dentro de…» cuando la sync es ≈ ahora.
-                    let delta = Swift.min(at - context.date.timeIntervalSince1970, -1)
-                    Text(Self.relativeFormatter.localizedString(fromTimeInterval: delta))
+                    // Acota a ≥1 s en el pasado para que nunca diga «hace 0 s» / un futuro cuando ≈ ahora.
+                    let secondsAgo = Swift.max(context.date.timeIntervalSince1970 - at, 1)
+                    Text(verbatim: Self.compactAgo(secondsAgo)).monospacedDigit()
                 }
             } else {
                 Text("Last sync — never")
@@ -1922,9 +1927,32 @@ struct TodayView: View {
                     series: areaSeries(base, today: respR?.value) { $0.respRateBpm }
                 )) { metricDetail = .respiratory(respR?.value) }
             }
-            // FER-278: la leyenda de fuente «W Strap · Apple Salud» del pie se quitó. Ahora el strap es
-            // la fuente esperada (sin marca) y solo lo prestado de Apple Salud lleva ♥ en su tile, así
-            // que la leyenda explícita era redundante (y ya estaba oculta a VoiceOver).
+            // FER-575: leyenda única al pie DERECHO que define el punto de color de fuente de pills y
+            // tiles (banda / Apple / calculado). Reemplaza la palabra-badge por-dato de FER-552: cada
+            // dato solo lleva un punto y el significado se explica aquí una vez. (La de FER-278 «W Strap ·
+            // Apple Salud» se había quitado; vuelve en esta forma compacta.)
+            sourceLegend
+        }
+    }
+
+    /// Leyenda de fuente (FER-575): un renglón alineado a la derecha que mapea cada punto de color a su
+    /// fuente. Oculta a VoiceOver — cada pill/tile ya anuncia su fuente vía el `accessibilityLabel` del
+    /// punto (`SourceChip`), así que repetirla aquí sería ruido.
+    private var sourceLegend: some View {
+        HStack(spacing: NoopMetrics.gap) {
+            Spacer(minLength: 0)
+            legendDot(theme.dataRecovery, "Band")
+            legendDot(theme.dataSpO2, "Apple Health source")
+            legendDot(theme.inkTertiary, "Calculated")
+        }
+        .padding(.top, NoopMetrics.space1)
+        .accessibilityHidden(true)
+    }
+
+    private func legendDot(_ color: Color, _ label: LocalizedStringKey) -> some View {
+        HStack(spacing: NoopMetrics.space1) {
+            Circle().fill(color).frame(width: 6, height: 6)
+            Text(label).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
         }
     }
 
@@ -2004,14 +2032,18 @@ struct TodayView: View {
 
         var body: some View {
             VStack(alignment: .leading, spacing: NoopMetrics.space2) {
-                HStack(spacing: 0) {
+                // FER-575: ícono + TÍTULO de la métrica (antes solo el ícono, con un chevron). El título da
+                // contexto sin depender de reconocer el glifo; en tinta (color solo en el dato). El chevron
+                // se retiró: en pills de 3-por-fila competía por el ancho con el título (la pill sigue siendo
+                // un botón tappable, igual que los tiles, que tampoco lo llevan).
+                HStack(spacing: NoopMetrics.space1) {
                     Image(systemName: icon).font(.system(size: 12, weight: .medium))
                         .foregroundStyle(isEmpty ? theme.inkDim : color)
                         .accessibilityHidden(true)
-                    Spacer(minLength: NoopMetrics.space1)
-                    Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold))
-                        .foregroundStyle(theme.inkTertiary)
-                        .accessibilityHidden(true)
+                    Text(label).instrumentoOverline()
+                        .foregroundStyle(theme.inkSecondary)
+                        .lineLimit(1).minimumScaleFactor(0.6)
+                    Spacer(minLength: 0)
                 }
                 HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
                     Text(value).font(StrandFont.number(21, weight: .semibold))
@@ -2172,17 +2204,31 @@ struct TodayView: View {
     /// `fromApple` (ya filtrado por el modo activo) o, para los derivados, fijo. No toca el motor de fuentes.
     private enum MetricSource { case band, apple, calculated }
 
-    /// El chip de fuente (handoff «Hoy v2», opción A del dueño): BANDA (verde) · APPLE (azul) · CALCULADO
-    /// (tinta). Reusa `InlineFlagChip` (StrandDesign). El texto se localiza (es: «BANDA/APPLE/CALCULADO»).
+    /// Indicador de fuente como PUNTO de color (FER-575): banda (verde) · Apple (azul) · calculado (gris),
+    /// reusando los mismos colores que el chip-palabra anterior. Sustituir la palabra por un punto libera
+    /// el ancho que truncaba «+27 vs media»; su significado lo define la leyenda al pie de la sección.
+    /// Conserva la fuente para VoiceOver (etiqueta accesible) — la lee el `children: .combine` del padre.
     private struct SourceChip: View {
         let source: MetricSource
         @Environment(\.instrumentoTheme) private var theme
-        var body: some View {
+        private var dotColor: Color {
             switch source {
-            case .band:       InlineFlagChip("Band", color: theme.dataRecovery)
-            case .apple:      InlineFlagChip("Apple", color: theme.dataSpO2)
-            case .calculated: InlineFlagChip("Calculated", color: theme.inkTertiary)
+            case .band:       return theme.dataRecovery
+            case .apple:      return theme.dataSpO2
+            case .calculated: return theme.inkTertiary
             }
+        }
+        private var sourceName: LocalizedStringKey {
+            switch source {
+            case .band:       return "Band"
+            case .apple:      return "Apple Health source"
+            case .calculated: return "Calculated"
+            }
+        }
+        var body: some View {
+            Circle().fill(dotColor).frame(width: 7, height: 7)
+                .accessibilityElement()
+                .accessibilityLabel(sourceName)
         }
     }
 
