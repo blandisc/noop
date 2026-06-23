@@ -55,6 +55,36 @@ extension WhoopStore {
         try syncWrite { db in try db.execute(sql: "DELETE FROM customExercise WHERE id = ?", arguments: [id]) }
     }
 
+    // MARK: - Exercise type overrides (FER-541)
+
+    /// Override an exercise's measurement type (catalog or custom). Idempotent upsert on `exerciseId`.
+    public func setExerciseTypeOverride(_ exerciseId: String, type: ExerciseType, ts: Int) async throws {
+        try syncWrite { db in
+            try db.execute(sql: """
+                INSERT INTO exerciseTypeOverride (exerciseId, type, ts) VALUES (?, ?, ?)
+                ON CONFLICT(exerciseId) DO UPDATE SET type = excluded.type, ts = excluded.ts
+                """, arguments: [exerciseId, type.rawValue, ts])
+        }
+    }
+
+    /// Remove an exercise's type override → it reverts to its catalog/custom default.
+    public func clearExerciseTypeOverride(_ exerciseId: String) async throws {
+        try syncWrite { db in
+            try db.execute(sql: "DELETE FROM exerciseTypeOverride WHERE exerciseId = ?", arguments: [exerciseId])
+        }
+    }
+
+    /// All user type overrides, keyed by exercise id. The single source the resolver folds in.
+    public func exerciseTypeOverrides() async throws -> [String: ExerciseType] {
+        try syncRead { db in
+            var out: [String: ExerciseType] = [:]
+            for r in try Row.fetchAll(db, sql: "SELECT exerciseId, type FROM exerciseTypeOverride") {
+                if let t = ExerciseType(rawValue: r["type"]) { out[r["exerciseId"]] = t }
+            }
+            return out
+        }
+    }
+
     private static func exercise(_ r: Row) -> Exercise {
         Exercise(id: r["id"], name: r["name"],
                  type: ExerciseType(rawValue: r["type"]) ?? .weightReps,
@@ -567,5 +597,14 @@ extension WhoopStore {
             ON CONFLICT(id) DO UPDATE SET
                 valueKg = excluded.valueKg, reps = excluded.reps, ts = excluded.ts
             """, arguments: StatementArguments(args))
+    }
+}
+
+/// The single rule for an exercise's effective measurement type (FER-541): a **user override** wins,
+/// then a **custom** exercise's own type, then the **bundled catalog**'s. Pure so the precedence is
+/// unit-tested without a store; the app's resolver (`Repository`) loads the three inputs and applies it.
+public enum ExerciseTypeResolver {
+    public static func effectiveType(override: ExerciseType?, custom: ExerciseType?, catalog: ExerciseType?) -> ExerciseType? {
+        override ?? custom ?? catalog
     }
 }

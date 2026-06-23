@@ -62,7 +62,7 @@ final class MigrationTests: XCTestCase {
                               "\(table) keeps synced (not rebuilt)")
             }
         }
-        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 23)
+        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 24)
     }
 
     /// v23 (FER-531): the weekly-split table exists with `weekday` as its PRIMARY KEY (one routine per
@@ -97,6 +97,39 @@ final class MigrationTests: XCTestCase {
             XCTAssertEqual(try String.fetchOne(db, sql: "SELECT folderId FROM routine WHERE id = 'rt1'"), "f1")
             XCTAssertEqual(try String.fetchOne(db, sql: "SELECT name FROM routineFolder WHERE id = 'f1'"), "Empuje")
             XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM routineSchedule"), 0, "new split starts empty")
+        }
+    }
+
+    /// v24 (FER-541): the exercise-type-override table exists with `exerciseId` as its PRIMARY KEY (one
+    /// override per exercise), append-only — the prior strength tables still stand.
+    func testV24CreatesOverrideTableAppendOnly() async throws {
+        let store = try await WhoopStore.inMemory()   // migrated to v24
+        let tables = try await store.tableNames()
+        XCTAssertTrue(tables.contains("exerciseTypeOverride"), "v24 must create exerciseTypeOverride")
+        for prior in ["customExercise", "routine", "routineExercise", "setEntry", "routineSchedule"] {
+            XCTAssertTrue(tables.contains(prior), "v24 is append-only — \(prior) must survive")
+        }
+        let pk = try await store.primaryKeyColumns("exerciseTypeOverride")
+        XCTAssertEqual(pk, ["exerciseId"], "exerciseId is the PK → at most one override per exercise")
+        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 24)
+    }
+
+    /// v24 preserves existing data: seed a custom exercise at v23, migrate to v24, assert it survives and
+    /// the new override table starts empty (a brand-new table must not disturb prior data on upgrade).
+    func testV24PreservesExistingData() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = WhoopStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v23")
+        try await dbQueue.write { db in
+            try db.execute(sql: """
+                INSERT INTO customExercise (id, name, type, equipment, primaryMuscles, secondaryMuscles, cues)
+                VALUES ('cx1', 'Mi ejercicio', 'weightReps', 'barbell', '[]', '[]', '[]')
+                """)
+        }
+        try migrator.migrate(dbQueue)   // → v24
+        try await dbQueue.read { db in
+            XCTAssertEqual(try String.fetchOne(db, sql: "SELECT name FROM customExercise WHERE id = 'cx1'"), "Mi ejercicio")
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM exerciseTypeOverride"), 0, "new override table starts empty")
         }
     }
 

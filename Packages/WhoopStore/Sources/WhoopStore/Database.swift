@@ -562,6 +562,20 @@ extension WhoopStore {
                 t.column("routineId", .text).notNull()
             }
         }
+
+        // v24 (FER-541): the user can override an exercise's measurement type — including a catalog
+        // entry's (e.g. mark a "Plank" as time-based). The override is *user data*, so it lives here in
+        // the store, NOT in the read-only bundled catalog. One row per exercise (`exerciseId` PRIMARY KEY
+        // = at most one override; setting it is an idempotent upsert; reverting is a plain DELETE → back
+        // to the catalog/custom default). `exerciseId` is the catalog slug or the custom uuid — the same
+        // id every reader already uses. Append-only: a brand-new table, touches no prior migration.
+        migrator.registerMigration("v24") { db in
+            try db.create(table: "exerciseTypeOverride") { t in
+                t.column("exerciseId", .text).primaryKey()   // catalog slug or custom uuid
+                t.column("type", .text).notNull()            // weightReps | bodyweight | time | distance
+                t.column("ts", .integer).notNull()
+            }
+        }
         return migrator
     }
 }
