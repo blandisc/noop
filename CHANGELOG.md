@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **En Hoy, el número grande de HRV y FC en reposo ya coincide con su gráfica / On Today, the big HRV and resting-HR number now matches its own graph.**
+  **ES** — En la pantalla Hoy, al abrir HRV o FC en reposo, el número grande de arriba a veces no cuadraba con el último punto de su propia gráfica (p. ej. 56 arriba, 48 en la gráfica): el número venía del strap de ayer y la gráfica del dato de Apple Salud de hoy. Ahora el número grande usa **el mismo dato que el último punto de la gráfica** —tu lectura más reciente—, con el corazón de Apple Salud cuando viene de ahí. Número y gráfica siempre concuerdan.
+  **EN** — On the Today screen, opening HRV or resting HR, the big number up top sometimes didn't match the last point of its own graph (e.g. 56 up top, 48 on the graph): the number came from yesterday's strap while the graph showed today's Apple Health value. The big number now uses **the same data as the graph's last point** —your most recent reading—, with the Apple Health heart when it comes from there. Number and graph always agree.
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **Importar un plan: ahora reconoce nombres con viñetas o «4x8» pegados / Importing a plan now recognizes names with bullets or "4x8" stuck on.**
   **ES** — Si pegas un plan de IA «tal cual», con cada ejercicio como lista («- Press militar», «• Sentadilla») o con las series pegadas al nombre («Press de banca 4x8», «Sentadilla 3x10»), ahora casa solo igual. Antes esos nombres caían al mapeo manual. Lo que de verdad es ambiguo («press 3x5» → «press») sigue yendo al mapeo — nunca adivina mal. (`Packages/StrandImport/.../WorkoutProgram.swift`)
   **EN** — If you paste an AI plan as-is, with each exercise as a list ("- Military press", "• Squat") or with the sets stuck to the name ("Bench press 4x8", "Squat 3x10"), it now matches on its own. Those names used to fall to manual mapping. Anything genuinely ambiguous ("press 3x5" → "press") still goes to mapping — it never guesses wrong. (`Packages/StrandImport/.../WorkoutProgram.swift`)
