@@ -25,6 +25,12 @@ struct ExerciseDetailScreen: View {
     /// Which series the progress chart shows (FER-505).
     @State private var metric: ProgressMetric = .weight
     @State private var loaded = false
+    /// The effective measurement type to display — nil falls back to the passed-in (already resolved)
+    /// `exercise.type`; set when the user changes it so the header + control update live (FER-541).
+    @State private var shownType: ExerciseType?
+    /// Whether this exercise currently carries a user type override (→ show «revert to default»).
+    @State private var hasTypeOverride = false
+    private var effectiveType: ExerciseType { shownType ?? exercise.type }
 
     /// The metric the progress chart plots over time.
     private enum ProgressMetric: String, CaseIterable, Identifiable {
@@ -43,6 +49,7 @@ struct ExerciseDetailScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                 header
+                measurementSection
                 musclesSection
                 if !exercise.displayCues(localized: StrengthDisplay.localized).isEmpty { howToSection }
                 if loaded {
@@ -59,7 +66,9 @@ struct ExerciseDetailScreen: View {
         .task(id: exercise.id) {
             async let h = repo.exerciseHistory(exerciseId: exercise.id)
             async let p = repo.personalRecords(exerciseId: exercise.id)
+            async let ov = repo.exerciseTypeOverride(exercise.id)
             (history, prs) = await (h, p)
+            hasTypeOverride = await ov != nil
             loaded = true
         }
     }
@@ -68,11 +77,57 @@ struct ExerciseDetailScreen: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 3) {
-            (Text(StrengthDisplay.subtitle(exercise) + " · ") + Text(StrengthDisplay.typeLabel(exercise.type)))
+            (Text(StrengthDisplay.subtitle(exercise) + " · ") + Text(StrengthDisplay.typeLabel(effectiveType)))
                 .instrumentoOverline().foregroundStyle(theme.inkTertiary)
             Text(StrengthDisplay.name(exercise))
                 .font(StrandFont.title1).foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    // MARK: - Measurement type (FER-541) — let the user re-type any exercise, incl. a catalog one
+
+    private var measurementSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Measured by").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            HStack(spacing: 12) {
+                Menu {
+                    ForEach(ExerciseType.allCases, id: \.self) { t in
+                        Button { setType(t) } label: { Text(StrengthDisplay.typeLabel(t)) }
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Text(StrengthDisplay.typeLabel(effectiveType)).font(StrandFont.body).foregroundStyle(theme.ink)
+                        Image(systemName: "chevron.down").font(.system(size: 13)).foregroundStyle(theme.inkTertiary)
+                    }
+                }
+                Spacer(minLength: 8)
+                if hasTypeOverride {
+                    Button { revertType() } label: {
+                        Text("Revert to default").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .frame(minHeight: 36)
+        }
+    }
+
+    /// Override this exercise's measurement type (works for catalog and custom). The header + control
+    /// update immediately; downstream readers pick it up via the resolver on their next load.
+    private func setType(_ t: ExerciseType) {
+        shownType = t
+        hasTypeOverride = true
+        Task { await repo.setExerciseTypeOverride(exercise.id, type: t) }
+    }
+
+    /// Drop the override → re-resolve the catalog/custom default and show it.
+    private func revertType() {
+        hasTypeOverride = false
+        Task {
+            await repo.clearExerciseTypeOverride(exercise.id)
+            let resolved = await repo.resolvedExercise(exercise.id)
+            await MainActor.run { shownType = resolved?.type }
         }
     }
 

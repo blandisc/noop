@@ -230,13 +230,15 @@ private struct RutinaDeHoyContent: View {
         let target = routineId.flatMap { id in all.first { $0.id == id } } ?? all.first
         guard let r = target else { loaded = true; return }
         let exs = (try? await store.routineExercises(routineId: r.id)) ?? []
-        // Resolve names: bundled catalog first, then user-created exercises.
+        // Resolve names + type: bundled catalog first, then user-created exercises, then apply the user's
+        // measurement-type override (FER-541) so the guided session's Foco matches the override.
         let custom = (try? await store.customExercises()) ?? []
         let customByID = Dictionary(custom.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        let overrides = (try? await store.exerciseTypeOverrides()) ?? [:]
         routine = r
         var built: [PlanRow] = []
         for re in exs {
-            let ex = ExerciseCatalog.byID(re.exerciseId) ?? customByID[re.exerciseId]
+            let ex = (ExerciseCatalog.byID(re.exerciseId) ?? customByID[re.exerciseId])?.applying(overrides)
             // Recent work sets power the «la última vez» prefill in the guided session (FER-347).
             let last = (try? await store.lastWorkSets(exerciseId: re.exerciseId, limit: 4)) ?? []
             built.append(PlanRow(re: re, exercise: ex, lastSets: last))

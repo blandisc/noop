@@ -775,15 +775,13 @@ struct LiveStrengthSheet: View {
         run.restMode == .heartRate ? String(localized: "Rest · by HR") : restChipText(run.restSeconds)
     }
 
-    /// Resolve the full `Exercise` for a session run (catalog first, then user-created) and open its
+    /// Resolve the full `Exercise` for a session run (override > custom > catalog, FER-541) and open its
     /// Detail sheet. Dismissing it leaves the session untouched — the session lives in `AppModel`.
     private func openDetail(_ run: StrengthSessionModel.ExerciseRun) {
         Task {
-            var ex = ExerciseCatalog.byID(run.exerciseId)
-            if ex == nil {
-                ex = (await model.repo.allExercises()).first { $0.id == run.exerciseId }
+            if let ex = await model.repo.resolvedExercise(run.exerciseId) {
+                await MainActor.run { detailExercise = ex }
             }
-            if let ex { await MainActor.run { detailExercise = ex } }
         }
     }
 
