@@ -8,11 +8,11 @@ import StrandAnalytics
 //
 // The Train landing as a PLANNER in the light «Instrumento diurno» language (warm paper, color only on
 // the datum, hierarchy by space). The week is the spine: a recovery chip + a 7-day strip, today's
-// session behind a single «Empezar» door, the split («Tu plan»), and a consistency card — all resolved
+// session behind a single «Empezar» door, the split («Tu plan»), and a daily-streak strip up top — all resolved
 // from the weekly split (FER-531) and the completed-session history.
 //
 // Color appears ONLY on the recovery datum (the chip ring/numeral, the today-dot, the Today recovery
-// line, the consistency bars); everything else is ink on paper. «Empezar» is the one door to training:
+// line, the streak strip cells); everything else is ink on paper. «Empezar» is the one door to training:
 // it opens a session-type chooser (routine / intervals / breathe / live).
 //
 // Navigation is owned by the tab's `NavigationStack` in RootTabView; the landing pushes via the injected
@@ -65,7 +65,7 @@ private struct EntrenarLanding: View {
     @State private var exerciseCounts: [String: Int] = [:]
     /// The weekly split, `weekday → routineId` (Calendar convention, 1 = Sun … 7 = Sat). FER-531.
     @State private var split: [Int: String] = [:]
-    /// Completed strength sessions (newest first), for the strip's day states and the consistency streak.
+    /// Completed strength sessions (newest first), for the week strip's day states and the daily streak.
     @State private var sessions: [StrengthSession] = []
     /// Drives the «Empezar» session-type chooser.
     @State private var showChooser = false
@@ -87,27 +87,31 @@ private struct EntrenarLanding: View {
 
     /// Monday-first display order in the Calendar weekday convention.
     private let orderedWeekdays = [2, 3, 4, 5, 6, 7, 1]
+    /// Tighter section rhythm than the global `NoopMetrics.sectionGap` (28): the planner stacks 6 sections,
+    /// so the default rhythm left too much dead vertical space (FER-578). Local to Entrenar — the global
+    /// token is unchanged so other screens keep their breathing room.
+    private let sectionRhythm: CGFloat = 18
     private var todayWeekday: Int { Calendar.current.component(.weekday, from: Date()) }
     private var recovery: Double? { repo.today?.recovery }
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: sectionRhythm) {
                 header
                 if loaded {
                     if split.isEmpty {
                         emptyStateB
                     } else {
                         if model.strengthSession != nil { resumeRow }
+                        streakStrip
                         weekStrip
                         hoyCard
                         suggestionRow
                         tuPlan
-                        consistencia
                     }
                 }
             }
-            .padding(.top, 20)
+            .padding(.top, 10)
             .padding(.horizontal, NoopMetrics.screenPadding)
             .padding(.bottom, NoopMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -225,7 +229,7 @@ private struct EntrenarLanding: View {
             .padding(.top, 13)
             Text("Tap a done day to see that session")
                 .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                .padding(.top, 11)
+                .padding(.top, 9)
         }
     }
 
@@ -280,17 +284,17 @@ private struct EntrenarLanding: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             if let rec = recovery {
-                Divider().overlay(theme.hairline).padding(.vertical, 14)
+                Divider().overlay(theme.hairline).padding(.vertical, 12)
                 HStack(alignment: .firstTextBaseline, spacing: 7) {
                     Circle().fill(theme.dataRecovery).frame(width: 8, height: 8)
                     Text(recoveryLine(rec)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            empezarButton.padding(.top, 15)
+            empezarButton.padding(.top, 12)
             Text("routine · intervals · breathe · live — you choose when you start")
                 .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                .frame(maxWidth: .infinity, alignment: .center).padding(.top, 7)
+                .frame(maxWidth: .infinity, alignment: .center).padding(.top, 6)
         }
     }
 
@@ -305,6 +309,9 @@ private struct EntrenarLanding: View {
                     // A rest day doesn't push you: the door stays open but quiet (outline, not filled).
                     if todayRoutine != nil { s.fill(theme.ink) } else { s.strokeBorder(theme.hairlineStrong, lineWidth: 1) }
                 }
+                // The whole filled/outlined area is the tap target, not just the glyphs — the padding and
+                // background are decorative, so without this the hit-test collapses to the text bounds.
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -422,36 +429,45 @@ private struct EntrenarLanding: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - ⑥ Consistency
+    // MARK: - ⓪ Streak strip (FER-574) — «días cumpliendo el plan», above the week so it never gets lost
+    //
+    // A thin DAY-level strip (no card): the count + a row of cells, one per recent day. The streak is
+    // «days keeping your plan» — you trained on a training day OR rested on a rest day (`WeeklySplit`).
+    // A rest day is kept (faint green); only a missed training day breaks the run. Tapping opens history.
 
-    private var consistencia: some View {
+    private var streakStrip: some View {
         Button { openHistory() } label: {
-            card {
-                HStack(alignment: .bottom) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(streakWeeksText).font(StrandFont.title2).foregroundStyle(theme.ink)
-                        Text("active streak · see full history")
-                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    }
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .firstTextBaseline, spacing: 7) {
+                    Text("\(streakDays)").font(StrandFont.number(20, weight: .semibold)).foregroundStyle(theme.ink)
+                    Text(streakUnit).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     Spacer(minLength: 8)
-                    consistencyBars
+                    Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                }
+                HStack(spacing: 3) {
+                    ForEach(Array(streakStripStates.enumerated()), id: \.offset) { _, st in streakCell(st) }
                 }
             }
+            .padding(.horizontal, 2)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityHint(Text("See full history"))
     }
 
-    private var consistencyBars: some View {
-        let bars = weeklyVolumeBars
-        let peak = max(bars.max() ?? 1, 1)
-        return HStack(alignment: .bottom, spacing: 4) {
-            ForEach(Array(bars.enumerated()), id: \.offset) { _, v in
-                Capsule().fill(theme.dataRecovery)
-                    .opacity(0.35 + 0.6 * (Double(v) / Double(peak)))
-                    .frame(width: 7, height: max(6, 34 * CGFloat(v) / CGFloat(peak)))
+    @ViewBuilder
+    private func streakCell(_ state: WeeklySplit.DayAdherence) -> some View {
+        let shape = RoundedRectangle(cornerRadius: 4, style: .continuous)
+        Group {
+            switch state {
+            case .metTrained:   shape.fill(theme.dataRecovery)                 // trained → kept (strong)
+            case .metRest:      shape.fill(theme.dataRecovery).opacity(0.28)   // rested → kept (faint)
+            case .missed:       shape.fill(theme.hairlineStrong)               // skipped a training day
+            case .pendingToday: shape.fill(theme.paperHi).overlay(shape.strokeBorder(theme.ink, lineWidth: 1.2))  // today, awaiting
             }
         }
-        .frame(height: 34)
+        .frame(maxWidth: .infinity).frame(height: 18)
     }
 
     // MARK: - Resume (in-progress guided session)
@@ -611,20 +627,38 @@ private struct EntrenarLanding: View {
                                                strain: s.strain, avgHr: s.avgHr, routineName: name))
     }
 
-    /// Completed-session counts per week, oldest → newest, for the last 12 weeks (index 11 = this week).
-    private var weeklyCounts: [Int] {
-        var counts = Array(repeating: 0, count: 12)
+    /// Local day-starts with ≥1 completed session — the lookup the daily streak strip reads.
+    private var completedDayStarts: Set<Date> {
+        let cal = Calendar.current
+        var out = Set<Date>()
         for s in sessions where s.endTs != nil {
-            let date = Date(timeIntervalSince1970: TimeInterval(s.startTs))
-            let weeksAgo = (weekCalendar.dateComponents([.day], from: weekStart(date), to: thisWeekStart).day ?? 0) / 7
-            if weeksAgo >= 0 && weeksAgo < 12 { counts[11 - weeksAgo] += 1 }
+            out.insert(cal.startOfDay(for: Date(timeIntervalSince1970: TimeInterval(s.startTs))))
         }
-        return counts
+        return out
     }
-    private var weeklyVolumeBars: [Int] { Array(weeklyCounts.suffix(8)) }
-    private var streak: Int {
-        WeeklySplit.consistencyStreak(weeklyCompletedCounts: weeklyCounts, currentAssignedCount: split.count,
-                                      includesCurrentWeek: true)
+
+    /// «Días cumpliendo el plan» over a bounded trailing window (oldest → newest, last = today). A day is a
+    /// training day if the CURRENT split assigns its weekday, trained if a session completed that day. The
+    /// window only bounds the loop — the streak itself stops at the most recent missed training day.
+    private static let streakWindowDays = 120
+    private var adherenceStates: [WeeklySplit.DayAdherence] {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let done = completedDayStarts
+        var plans: [WeeklySplit.DayPlan] = []
+        plans.reserveCapacity(Self.streakWindowDays)
+        for offset in stride(from: Self.streakWindowDays - 1, through: 0, by: -1) {
+            guard let day = cal.date(byAdding: .day, value: -offset, to: today) else { continue }
+            let wd = cal.component(.weekday, from: day)
+            plans.append(.init(isTrainingDay: split[wd] != nil, trained: done.contains(day)))
+        }
+        return WeeklySplit.dailyAdherence(days: plans, includesToday: true)
+    }
+    private var streakDays: Int { WeeklySplit.adherenceStreak(adherenceStates) }
+    /// The strip shows the trailing fortnight; the count headline carries any longer run.
+    private var streakStripStates: [WeeklySplit.DayAdherence] { Array(adherenceStates.suffix(14)) }
+    private var streakUnit: String {
+        streakDays == 1 ? String(localized: "day on your plan") : String(localized: "days on your plan")
     }
 
     /// Header cadence line — how many days a week the split trains. One line, not the (long) list of
@@ -659,7 +693,6 @@ private struct EntrenarLanding: View {
         let done = planned.intersection(completedWeekdays).count
         return String(localized: "\(done) of \(planned.count) done")
     }
-    private var streakWeeksText: String { String(localized: "\(streak) weeks") }
 
     private func recoveryLine(_ rec: Double) -> String {
         switch TrainingRegulation.suggest(recovery: rec)?.reason {
