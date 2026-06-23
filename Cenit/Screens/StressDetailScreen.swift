@@ -283,21 +283,20 @@ struct StressDetailScreen: View {
                     valueRange: { _ in 0...3 },
                     valueFormat: { String(format: "%.1f", $0) },
                     bands: { stressBands(activeValue: $0) },
-                    bandColor: { bandColor(band(forValue: $0)) },
+                    bandColor: { bandColor(StressBand(score: $0)) },
                     yAxisValues: [0, 1, 2, 3],
                     accessibilityLabel: "Daily stress index, 0 to 3"
                 )
             ) {
                 emptyWell(text: "Not enough days in this range to draw a trend.")
             }
-            averageCaption   // handoff «Media · periodo · valor · Δ% vs previo» + rango (↓) (FER-587)
+            averageCaption(window)   // handoff «Media · periodo · valor · Δ% vs previo» + rango (↓) (FER-587)
         }
     }
 
     /// The handoff's period-average caption + range, under the trend (FER-587). Stress good direction is
-    /// DOWN (lower is calmer); shown on the 0–3 scale, no unit.
-    @ViewBuilder private var averageCaption: some View {
-        let window = MetricWindowMath.make(parsed, selected: range)
+    /// DOWN (lower is calmer); shown on the 0–3 scale, no unit. Reuses the `window` the trend already made.
+    @ViewBuilder private func averageCaption(_ window: MetricWindow) -> some View {
         if window.values.count > 1 {
             let s = ComparisonEngine.stat(window.values)
             DynamicAverageCaption(
@@ -317,11 +316,6 @@ struct StressDetailScreen: View {
             TrendBand(label: "Moderate", lower: 1, upper: 2, isActive: v >= 1 && v < 2),
             TrendBand(label: "High", lower: 2, upper: nil, isActive: v >= 2),
         ]
-    }
-
-    /// Map a 0–3 value to its band (mirrors the model's fixed 0–1 / 1–2 / 2–3 thresholds).
-    private func band(forValue v: Double) -> StressBand {
-        v < 1 ? .low : (v < 2 ? .medium : .high)
     }
 
     // MARK: - Level 2 · «Your patterns» — calm time + consistency, fused to plain lines
