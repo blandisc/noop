@@ -98,7 +98,7 @@ public enum WeeklySplit {
 
     // MARK: - Daily adherence streak («días cumpliendo el plan»)
     //
-    // A DAY-level streak the landing shows as a thin strip above the week (FER-…): unlike
+    // A DAY-level streak the landing shows as a thin strip above the week (FER-574): unlike
     // `consistencyStreak` (which counts WEEKS that met the plan), this counts consecutive DAYS in which
     // you did what the plan asked — train on a training day, OR simply rest on a rest day. A planned rest
     // day is "kept", so it never breaks the run; only a TRAINING day with no completed session does. This

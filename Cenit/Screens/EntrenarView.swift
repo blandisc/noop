@@ -8,11 +8,11 @@ import StrandAnalytics
 //
 // The Train landing as a PLANNER in the light «Instrumento diurno» language (warm paper, color only on
 // the datum, hierarchy by space). The week is the spine: a recovery chip + a 7-day strip, today's
-// session behind a single «Empezar» door, the split («Tu plan»), and a consistency card — all resolved
+// session behind a single «Empezar» door, the split («Tu plan»), and a daily-streak strip up top — all resolved
 // from the weekly split (FER-531) and the completed-session history.
 //
 // Color appears ONLY on the recovery datum (the chip ring/numeral, the today-dot, the Today recovery
-// line, the consistency bars); everything else is ink on paper. «Empezar» is the one door to training:
+// line, the streak strip cells); everything else is ink on paper. «Empezar» is the one door to training:
 // it opens a session-type chooser (routine / intervals / breathe / live).
 //
 // Navigation is owned by the tab's `NavigationStack` in RootTabView; the landing pushes via the injected
@@ -425,7 +425,7 @@ private struct EntrenarLanding: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - ⓪ Streak strip (FER-…) — «días cumpliendo el plan», above the week so it never gets lost
+    // MARK: - ⓪ Streak strip (FER-574) — «días cumpliendo el plan», above the week so it never gets lost
     //
     // A thin DAY-level strip (no card): the count + a row of cells, one per recent day. The streak is
     // «days keeping your plan» — you trained on a training day OR rested on a rest day (`WeeklySplit`).
