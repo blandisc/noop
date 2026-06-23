@@ -610,7 +610,7 @@ final class AppModel: ObservableObject {
         // spacing). "Si descansas bien" → no sleep-debt drag; the only downward pull is the acute
         // session strain. nil (→ the line is hidden) when there's no strain or fewer than ~2 weeks
         // of base — we never invent a number.
-        let recoverySeries = repo.daysBandRecovery.map(\.recovery)   // FER-153: band-only, never the Apple estimate
+        let recoverySeries = repo.days.map(\.recovery)
         let costTomorrowPct: Int? = record.strain.flatMap { strain in
             RecoveryForecast.compute(recovery: recoverySeries, sessionStrain: strain)
                 .map { Int($0.estimate.rounded()) }

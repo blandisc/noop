@@ -897,10 +897,7 @@ private struct PatronesLanding: View {
     // MARK: Load
 
     private func load() async {
-        // FER-153: band-MEASURED recovery only — the Coach's recovery correlations / trends / forecast are
-        // statistics over history, so an Apple ESTIMATE must not mix in (only `recovery` differs vs `repo.days`,
-        // on the estimated days; HRV/sleep/etc. are unchanged).
-        let days = repo.daysBandRecovery
+        let days = repo.days
         let todayKey = Repository.localDayKey(Date())
 
         // Close a due experiment first, so its verdict is ready to show and to promote its lever.

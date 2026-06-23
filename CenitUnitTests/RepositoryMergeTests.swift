@@ -158,61 +158,43 @@ final class RepositoryMergeTests: XCTestCase {
         XCTAssertEqual(r.appleDays, ["2026-06-10", "2026-06-11"])  // all Apple-sourced
     }
 
-    // MARK: - FER-153 — estimated recovery injected only on band-less Apple nights
+    // MARK: - FER-153 — Apple estimates are a side map, never folded into days/displayDays
 
-    /// An Apple row with SDNN + sleep, for the estimate injection tests.
+    /// An Apple row with SDNN + sleep, for the estimate tests.
     private func appleRow(_ day: String, hrv: Double, sleep: Double = 420) -> DailyMetric {
         DailyMetric(day: day, totalSleepMin: sleep, efficiency: nil, deepMin: nil, remMin: nil,
                     lightMin: nil, disturbances: nil, restingHr: 55, avgHrv: hrv, recovery: nil,
                     strain: nil, exerciseCount: nil)
     }
 
-    /// With ≥ seed Apple nights, every band-LESS night gets an estimated recovery + a confidence grade;
-    /// a band-covered day (in `strapDays`) keeps `recovery == nil` — the band wins.
-    func testEstimateInjectedOnlyOnBandlessDays() {
+    /// With ≥ seed Apple nights, every band-LESS night gets an estimate (score + confidence); a
+    /// band-covered day (in `strapDays`) gets none — the band wins.
+    func testEstimatesForBandlessDaysOnly() {
         let apple = (1...5).map { appleRow(String(format: "2026-06-%02d", $0), hrv: 50) }
-        let strapDays: Set<String> = ["2026-06-03"]   // the band covered this night
-        let e = Repository.injectAppleEstimate(apple: apple, strapDays: strapDays)
+        let est = Repository.appleRecoveryEstimates(apple: apple, strapDays: ["2026-06-03"])
 
-        XCTAssertFalse(e.estimatedDays.contains("2026-06-03"))                 // band wins → no estimate
-        XCTAssertEqual(e.estimatedDays, ["2026-06-01", "2026-06-02", "2026-06-04", "2026-06-05"])
-        // band-less rows carry a recovery; the band-covered row stays nil
-        XCTAssertNil(e.rows.first { $0.day == "2026-06-03" }?.recovery)
-        XCTAssertNotNil(e.rows.first { $0.day == "2026-06-01" }?.recovery)
-        XCTAssertEqual(e.confidence["2026-06-01"], .calibrating)              // few nights → low
-        XCTAssertNil(e.confidence["2026-06-03"])
+        XCTAssertEqual(Set(est.keys), ["2026-06-01", "2026-06-02", "2026-06-04", "2026-06-05"])
+        XCTAssertNil(est["2026-06-03"])                          // band wins → no estimate
+        XCTAssertNotNil(est["2026-06-01"]?.score)
+        XCTAssertEqual(est["2026-06-01"]?.confidence, .calibrating)   // few nights → low
+    }
+
+    /// The estimate is NEVER folded into the merged days — `mergeDaily` is the unchanged band/Apple merge,
+    /// so `days`/`displayDays` recovery stays band-measured (no recovery statistic over history sees it).
+    func testMergeDailyUnaffectedByEstimates() {
+        let apple = (1...5).map { appleRow(String(format: "2026-06-%02d", $0), hrv: 50) }
+        let r = Repository.mergeDaily(imported: [], computed: [], apple: apple)
+        XCTAssertTrue(r.days.allSatisfy { $0.recovery == nil })   // Apple rows carry no recovery into days
     }
 
     /// whoopOnly path: the mode filter hands `apple == []`, so there is no estimate at all.
     func testNoEstimateWhenAppleEmpty() {
-        let e = Repository.injectAppleEstimate(apple: [], strapDays: [])
-        XCTAssertTrue(e.rows.isEmpty && e.estimatedDays.isEmpty && e.confidence.isEmpty)
+        XCTAssertTrue(Repository.appleRecoveryEstimates(apple: [], strapDays: []).isEmpty)
     }
 
-    /// Cold-start: fewer than the seed of Apple HRV nights → no estimate, rows untouched (UI shows "—").
+    /// Cold-start: fewer than the seed of Apple HRV nights → no estimate (UI shows "—").
     func testNoEstimateBelowSeed() {
         let apple = (1...3).map { appleRow(String(format: "2026-06-%02d", $0), hrv: 50) }
-        let e = Repository.injectAppleEstimate(apple: apple, strapDays: [])
-        XCTAssertTrue(e.estimatedDays.isEmpty)
-        XCTAssertTrue(e.rows.allSatisfy { $0.recovery == nil })
-    }
-
-    /// `bandRecoveryOnly` nulls recovery exactly on the estimated days (band-measured only), leaving every
-    /// other field — and the band days' recovery — intact. This is what the multi-day recovery aggregators
-    /// (activityCosts, the Coach, the post-session forecast) read so an Apple estimate never enters a
-    /// statistic over history. (FER-153, the D1 fix.)
-    func testBandRecoveryOnlyNullsEstimatedDaysOnly() {
-        let bandDay = DailyMetric(day: "2026-06-01", totalSleepMin: 400, efficiency: nil, deepMin: nil,
-                                  remMin: nil, lightMin: nil, disturbances: nil, restingHr: 50,
-                                  avgHrv: 60, recovery: 72, strain: 10, exerciseCount: nil)
-        let estDay = DailyMetric(day: "2026-06-02", totalSleepMin: 410, efficiency: nil, deepMin: nil,
-                                 remMin: nil, lightMin: nil, disturbances: nil, restingHr: 55,
-                                 avgHrv: 48, recovery: 64, strain: nil, exerciseCount: nil)  // estimated
-        let out = Repository.bandRecoveryOnly([bandDay, estDay], estimatedDays: ["2026-06-02"])
-        XCTAssertEqual(out.first { $0.day == "2026-06-01" }?.recovery, 72)   // band day untouched
-        XCTAssertNil(out.first { $0.day == "2026-06-02" }?.recovery)         // estimate nulled
-        XCTAssertEqual(out.first { $0.day == "2026-06-02" }?.avgHrv, 48)     // other fields intact
-        // No estimated days → identity (same values).
-        XCTAssertEqual(Repository.bandRecoveryOnly([bandDay], estimatedDays: []).first?.recovery, 72)
+        XCTAssertTrue(Repository.appleRecoveryEstimates(apple: apple, strapDays: []).isEmpty)
     }
 }

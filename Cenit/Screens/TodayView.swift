@@ -412,7 +412,7 @@ struct TodayView: View {
             present = {
                 let key = Repository.localDayKey(Date())
                 recoveryDetail = RecoveryDetailItem(model: RecoveryDetailModel.build(
-                    days: repo.daysBandRecovery, today: repo.today,
+                    days: repo.days, today: repo.today,
                     todayKey: key,
                     appleHealthDays: repo.appleHealthDays,
                     loaded: repo.loaded, importedSleep: repo.importedSleep,

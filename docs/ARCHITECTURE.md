@@ -452,15 +452,15 @@ band win per night by interval overlap. No migration — the `sleepSession` tabl
 The **recovery** counterpart for a band-less night is an **estimate computed read-time** (FER-153), not a
 stored value: `Repository.refresh` runs `AppleRecoveryEstimator` over the `apple-health` daily rows and
 injects the score onto the band-less Apple rows (`injectAppleEstimate`) before `mergeDaily`, so the band
-wins wherever it has the night by the existing precedence. It writes only the `recovery` field, and only on
-Apple rows the band didn't cover — so the strap RMSSD baseline (which folds `avgHrv`, never `recovery`) is
-untouched. `isEstimated` is therefore **derived** (an Apple-surfaced day with a non-nil recovery is, by
-construction, the estimate — no other path writes recovery there); the confidence grade rides
-`DashboardData`, not a column. No migration. **Single-day** recovery reads (the ring, the verdict, the
-training gates) use `repo.days`/`today` and so show the estimate; every **multi-day recovery statistic**
-(the rest-day baseline in `activityCosts`, the Coach's recovery correlations/forecast in `InsightEngine`,
-the post-session forecast) instead reads `Repository.daysBandRecovery` — `days` with the estimate nulled —
-so an Apple estimate never enters a statistic over history (the same house rule the RMSSD baseline keeps).
+wins wherever it has the night by the existing precedence. The estimate is **deliberately kept out of
+`days`/`displayDays`** (`appleRecoveryEstimates` returns a `[day: estimate]` map on `DashboardData`, it is
+NOT folded into the merge) — so **every recovery statistic over history stays band-measured**: the recovery
+baseline, the rest-day baseline (`activityCosts`), the Coach's correlations/forecast (`InsightEngine`), the
+strain↔recovery driver (`WhatMovesStrainEngine`), the metric-explorer/compare sweeps, the AI-coach average —
+none can mix in an estimate, with no per-consumer carve-outs to maintain. The estimate surfaces for display
+on **`repo.today` only** (a single-day override: today's row gets the estimate when the band didn't cover the
+night), which is what the ring, the verdict and the recovery-detail hero read. `isEstimated` /
+`recoveryConfidence` are derived from the same map; no column, no migration.
 
 ---
 
