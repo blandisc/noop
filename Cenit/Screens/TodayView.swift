@@ -368,20 +368,20 @@ struct TodayView: View {
     private func metricSheet(for info: MetricInfo) -> some View {
         let appleCapable = ["sleep", "hrv", "rhr", "spo2", "steps"].contains(info.id)
         let notConnected = health.auth != .authorized && health.auth != .unavailable
-        // ¿El valor que se muestra vino de Apple Salud (no del strap)? Misma resolución por-lectura que
-        // los tiles de Hoy (`resolveMeasured`), nunca hardcodeada: HRV/FCrep/Sueño/SpO₂ pueden venir de
-        // cualquiera de las dos fuentes; los pasos son Apple-only. Strap-only (esfuerzo, FC, recuperación,
-        // estrés) → false. Sólo se badgea cuando hay valor.
+        // ¿El valor que se muestra vino de Apple Salud (no del strap)? MISMA resolución que el tile de Hoy,
+        // por métrica: HRV/FCrep/SpO₂ usan `latestFromDisplay` (el último de la gráfica, FER-546) y Sueño
+        // `resolveMeasured(todayOnly:)` — así el badge coincide con el valor mostrado. Los pasos son
+        // Apple-only. Strap-only (esfuerzo, FC, recuperación, estrés) → false. Sólo se badgea cuando hay valor.
         let fromApple: Bool = {
             switch info.id {
             case "steps": return true
-            case "hrv":   return resolveMeasured { $0.avgHrv }?.fromApple == true
-            case "rhr":   return resolveMeasured { $0.restingHr.map(Double.init) }?.fromApple == true
+            case "hrv":   return latestFromDisplay { $0.avgHrv }?.fromApple == true
+            case "rhr":   return latestFromDisplay { $0.restingHr.map(Double.init) }?.fromApple == true
             // Sueño es day-scoped (todayOnly, FER-341): la tarjeta muestra SÓLO el valor de hoy, así que el
             // badge de fuente debe resolverse igual. Sin todayOnly caía al strap de AYER (no-Apple) y el
             // corazón desaparecía dentro de la tarjeta aunque el número mostrado SÍ venía de Apple Salud.
             case "sleep": return resolveMeasured(todayOnly: true) { $0.totalSleepMin }?.fromApple == true
-            case "spo2":  return resolveMeasured { $0.spo2Pct }?.fromApple == true
+            case "spo2":  return latestFromDisplay { $0.spo2Pct }?.fromApple == true
             default:      return false
             }
         }()
@@ -1843,13 +1843,14 @@ struct TodayView: View {
     /// del héroe (no se duplica el número dominante). La tendencia 14d sigue accesible al tocar un tile
     /// (la hoja la trae). (FER-180)
     @ViewBuilder private var iosMetricsSection: some View {
-        // Señales medidas: hoy gana, si no el valor fresco (hoy/ayer) o Apple Salud, badgeado cuando
-        // viene de Apple para no pasarlo por una lectura del strap (misma lógica `resolveMeasured` que
-        // la lista previa). El esfuerzo es strap-only (Apple no lo computa); los pasos, Apple-only.
-        let hrvR    = resolveMeasured { $0.avgHrv }
-        let rhrR    = resolveMeasured { $0.restingHr.map(Double.init) }
+        // Señales medidas: el número del tile = el ÚLTIMO punto de su propia gráfica (`latestFromDisplay`
+        // sobre `displayDays`), badgeado por su fuente real, para que el número grande y la gráfica nunca
+        // discrepen (FER-546). Sueño sigue day-scoped (`resolveMeasured(todayOnly:)`, FER-341). El esfuerzo
+        // es strap-only (Apple no lo computa); los pasos, Apple-only.
+        let hrvR    = latestFromDisplay { $0.avgHrv }
+        let rhrR    = latestFromDisplay { $0.restingHr.map(Double.init) }
         let sleepR  = resolveMeasured(todayOnly: true) { $0.totalSleepMin }
-        let spo2R   = resolveMeasured { $0.spo2Pct }
+        let spo2R   = latestFromDisplay { $0.spo2Pct }
         let strainT = repo.today?.strain
         // Pasos: sólo Apple Salud; acota a la ventana de 14 días para no mostrar pasos rancios bajo un
         // tile de "hoy".
@@ -2487,6 +2488,19 @@ struct TodayView: View {
     /// Sleep minutes → "Xh Ym".
     private func sleepText(_ mins: Double) -> String {
         "\(Int(mins) / 60)h \(Int(mins) % 60)m"
+    }
+
+    /// FER-546: the value a measured tile (HRV / resting HR / SpO₂) shows MUST match the LAST point of its
+    /// own 14-day chart — both read `repo.displayDays` (the layered Apple-base + strap source `loadTrend`
+    /// plots) — so the big number and the graph never disagree. Returns the most recent `displayDays` row
+    /// within the chart's 14-day window that has a value, plus whether that day is Apple-sourced (so the tile
+    /// badges it right). Distinct from `resolveMeasured` (strap-first, capped at yesterday), which still feeds
+    /// the recovery / stress path — `latestFromDisplay` only governs the measured tiles + their summary sheet.
+    private func latestFromDisplay(_ pick: (DailyMetric) -> Double?) -> (value: Double, fromApple: Bool)? {
+        let cutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -13, to: Date()) ?? Date())
+        let candidates = repo.displayDays.filter { $0.day >= cutoff && pick($0) != nil }
+        guard let row = candidates.max(by: { $0.day < $1.day }), let v = pick(row) else { return nil }
+        return (v, repo.appleHealthDays.contains(row.day))
     }
 
     /// Resolve a measured signal (HRV / sleep / resting HR / SpO₂) for the Today tiles. Today's row

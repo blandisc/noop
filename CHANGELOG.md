@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **En Hoy, el número grande de HRV y FC en reposo ya coincide con su gráfica / On Today, the big HRV and resting-HR number now matches its own graph.**
+  **ES** — En la pantalla Hoy, al abrir HRV o FC en reposo, el número grande de arriba a veces no cuadraba con el último punto de su propia gráfica (p. ej. 56 arriba, 48 en la gráfica): el número venía del strap de ayer y la gráfica del dato de Apple Salud de hoy. Ahora el número grande usa **el mismo dato que el último punto de la gráfica** —tu lectura más reciente—, con el corazón de Apple Salud cuando viene de ahí. Número y gráfica siempre concuerdan.
+  **EN** — On the Today screen, opening HRV or resting HR, the big number up top sometimes didn't match the last point of its own graph (e.g. 56 up top, 48 on the graph): the number came from yesterday's strap while the graph showed today's Apple Health value. The big number now uses **the same data as the graph's last point** —your most recent reading—, with the Apple Health heart when it comes from there. Number and graph always agree.
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **El aviso temprano de enfermedad ya no se confunde con el HRV de tu Apple Watch / The early illness warning no longer gets confused by your Apple Watch HRV.**
   **ES** — El aviso de «tu cuerpo se ve exigido» (que vigila si tu HRV baja, tu pulso en reposo sube y tu temperatura sube juntos) armaba su «HRV normal» mezclando las dos reglas de HRV —la de tu banda y la de tu Apple Watch, que están en escalas distintas—. Igual que el arreglo de tu recuperación, ahora ese aviso compara tu HRV **solo contra tus noches de banda**, así no se dispara (ni se calla) por la diferencia de escala. El pulso en reposo y la respiración no cambian (son la misma medida en ambos).
   **EN** — The "your body looks strained" warning (which watches whether your HRV drops, resting HR rises and temperature rises together) built its "normal HRV" by mixing the two HRV rulers — your band's and your Apple Watch's, which sit on different scales. Like the recovery fix, that warning now compares your HRV **only against your band nights**, so it won't fire (or stay silent) because of the scale gap. Resting HR and respiration are unchanged (same measure on both).
