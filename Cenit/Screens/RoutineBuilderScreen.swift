@@ -3,17 +3,16 @@ import SwiftUI
 import StrandDesign
 import StrandTraining
 
-// RoutineBuilderScreen.swift — create and edit reusable routines (FER-346). The Train hub's «Mis
-// rutinas» list (`EntrenarView`, FER-343) opens this builder as a sheet — `.new` or `.edit(routine)`
-// — so it carries its own routine id (a value the hub's typed nav path can't, FER-171). The builder
-// adds exercises from the library (multi-add), reorders/deletes them, groups them into supersets, and
-// tunes each one in `RoutineExerciseEditor`. «Báscula de papel»: weights in ink, no color (no live
-// physiology here); hierarchy by space + hairlines, no card-in-card.
+// RoutineBuilderScreen.swift — create and edit reusable routines (FER-346, inline rewrite FER-561). The
+// Train hub opens this as a sheet (`.new` / `.edit(routine)`), carrying its own routine id. EVERYTHING is
+// edited on ONE screen (Hevy-style, FER-561): each exercise shows its set table inline — editable cells,
+// a warm-up «C» row, add/delete sets, rest, reorder/superset via its ⋯ menu — matching the live session's
+// logging table (LiveStrengthSheet, FER-497) so editing and training feel the same. «Báscula de papel»:
+// weights in ink, no color; a flat List + hairlines (no card-in-card), native swipe-to-delete on sets.
 
 // MARK: - Builder target
 
-/// What the builder sheet is editing: a fresh routine or an existing one. Driven by `EntrenarView`'s
-/// «Mis rutinas» (the routine list is FER-343's hub; this is just the create/edit target).
+/// What the builder sheet is editing: a fresh routine or an existing one.
 enum BuilderTarget: Identifiable {
     case new
     case edit(Routine)
@@ -24,20 +23,22 @@ enum BuilderTarget: Identifiable {
 // MARK: - Builder
 
 struct RoutineBuilderScreen: View {
-    /// nil → a fresh routine; otherwise the routine to edit (its exercises load on appear).
     let routine: Routine?
-    /// Called after a successful save so the caller can refresh its list.
     var onSaved: (() async -> Void)? = nil
 
     @Environment(\.instrumentoTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var repo: Repository
+    @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
+    private var system: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
 
     @State private var name: String = ""
     @State private var items: [BuilderItem] = []
     @State private var loaded = false
     @State private var showLibrary = false
-    @State private var editingIndex: Int? = nil
+    /// Which exercise's rest is being edited (drives the rest sheet); nil = none.
+    @State private var restEdit: RestEditWrap? = nil
+    @FocusState private var focusedCell: String?
 
     private let routineId: String
 
@@ -63,7 +64,10 @@ struct RoutineBuilderScreen: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { save() }.foregroundStyle(canSave ? theme.ink : theme.inkTertiary).disabled(!canSave)
                 }
-                if !items.isEmpty { ToolbarItem(placement: .topBarLeading) { EditButton().foregroundStyle(theme.inkSecondary) } }
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") { focusedCell = nil }.foregroundStyle(theme.ink)
+                }
             }
         }
         .task {
@@ -75,8 +79,8 @@ struct RoutineBuilderScreen: View {
             ExerciseLibraryScreen { picks in append(picks) }
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
-        .sheet(item: editorBinding) { wrap in
-            RoutineExerciseEditor(item: $items[wrap.index])
+        .sheet(item: $restEdit) { wrap in
+            restSheet(wrap.index)
                 .instrumentoTheme(theme).preferredColorScheme(.light)
         }
     }
@@ -102,39 +106,34 @@ struct RoutineBuilderScreen: View {
         }
     }
 
-    // MARK: - List
+    // MARK: - Inline list (matches the live session table, FER-497)
 
     private var listBody: some View {
+        // A flat List (not ScrollView) so each set row gets a real swipe-to-delete; styled down to the
+        // warm-paper language — no native separators / background, our own hairlines (FER-497 pattern).
         List {
-            Section { nameField.listRowInsets(EdgeInsets(top: 8, leading: NoopMetrics.screenPadding, bottom: 8, trailing: NoopMetrics.screenPadding)) }
-                .listRowBackground(Color.clear).listRowSeparator(.hidden)
-
-            Section {
-                ForEach(Array(items.enumerated()), id: \.element.id) { idx, item in
-                    exerciseRow(idx)
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                        .listRowInsets(EdgeInsets(top: 0, leading: NoopMetrics.screenPadding, bottom: 0, trailing: NoopMetrics.screenPadding))
+            nameField.plainRow(top: 8, bottom: 8)
+            ForEach(Array(items.enumerated()), id: \.element.id) { idx, _ in
+                if firstOfGroup(idx) {
+                    Text("Superset").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                        .plainRow(top: NoopMetrics.sectionGap, bottom: 2)
                 }
-                .onMove(perform: move)
-                .onDelete(perform: deleteRows)
-            }
-
-            Section {
-                VStack(alignment: .leading, spacing: 14) {
-                    HStack(spacing: 20) {
-                        Button { showLibrary = true } label: {
-                            Label("Add exercise", systemImage: "plus").font(StrandFont.body).foregroundStyle(theme.inkSecondary)
-                        }.buttonStyle(.plain)
-                    }
+                exerciseHeader(idx).plainRow(top: firstOfGroup(idx) || idx == 0 ? NoopMetrics.gap : NoopMetrics.sectionGap)
+                ForEach(Array(items[idx].re.sets.enumerated()), id: \.element.id) { si, _ in
+                    setRow(idx: idx, si: si).plainRow(top: 0, bottom: 0)
+                        .swipeActions(edge: .trailing) {
+                            Button(role: .destructive) { deleteSet(idx: idx, si: si) } label: { Label("Delete", systemImage: "trash") }
+                        }
                 }
-                .listRowInsets(EdgeInsets(top: 14, leading: NoopMetrics.screenPadding, bottom: 8, trailing: NoopMetrics.screenPadding))
+                addSetRow(idx).plainRow(top: 4)
+                if lastOfGroup(idx) { restRow(idx).plainRow(top: NoopMetrics.gap) }
             }
-            .listRowBackground(Color.clear).listRowSeparator(.hidden)
+            addExerciseRow.plainRow(top: NoopMetrics.sectionGap, bottom: NoopMetrics.screenPadding)
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
-        .environment(\.defaultMinListRowHeight, 0)
+        .background(theme.paper)
+        .environment(\.defaultMinListRowHeight, 1)
     }
 
     private var nameField: some View {
@@ -145,108 +144,205 @@ struct RoutineBuilderScreen: View {
         }
     }
 
-    @ViewBuilder
-    private func exerciseRow(_ idx: Int) -> some View {
+    // MARK: - Exercise header (name + ⋯ menu + rest chip + column header)
+
+    private func exerciseHeader(_ idx: Int) -> some View {
         let item = items[idx]
-        let grouped = inSuperset(idx)
-        let firstOfGroup = grouped && !sameGroup(idx, idx - 1)
-        VStack(alignment: .leading, spacing: 0) {
-            if firstOfGroup {
-                Text("Superset").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    .padding(.leading, grouped ? 13 : 0).padding(.top, 12).padding(.bottom, 2)
-            }
-            HStack(spacing: 11) {
-                if grouped {
-                    Rectangle().fill(theme.hairlineStrong).frame(width: 2)
-                        .padding(.vertical, sameGroup(idx, idx + 1) || sameGroup(idx, idx - 1) ? 0 : 8)
-                }
-                Button { editingIndex = idx } label: {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(StrengthDisplay.name(item.exercise)).font(StrandFont.body).foregroundStyle(theme.ink)
-                        Text(summary(item)).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+        return VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 1) {
+                    if item.exercise.type != .weightReps {
+                        Text(StrengthDisplay.subtitle(item.exercise)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
+                    Text(StrengthDisplay.name(item.exercise)).font(StrandFont.headline).foregroundStyle(theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .buttonStyle(.plain)
+                Spacer(minLength: 8)
                 Menu {
-                    Button { editingIndex = idx } label: { Label("Edit", systemImage: "slider.horizontal.3") }
+                    if idx > 0 { Button { moveUp(idx) } label: { Label("Move up", systemImage: "arrow.up") } }
+                    if idx < items.count - 1 { Button { moveDown(idx) } label: { Label("Move down", systemImage: "arrow.down") } }
+                    Button { addWarmup(idx) } label: { Label("Add warm-up set", systemImage: "flame") }
                     if idx < items.count - 1 && !sameGroup(idx, idx + 1) {
                         Button { supersetWithNext(idx) } label: { Label("Superset with next", systemImage: "link") }
                     }
-                    if grouped {
+                    if inSuperset(idx) {
                         Button { breakSuperset(idx) } label: { Label("Break superset", systemImage: "link.badge.plus") }
                     }
-                    Button(role: .destructive) { deleteRows(IndexSet(integer: idx)) } label: { Label("Remove", systemImage: "trash") }
+                    Button(role: .destructive) { deleteExercise(idx) } label: { Label("Remove", systemImage: "trash") }
                 } label: {
                     Image(systemName: "ellipsis").font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(theme.inkTertiary).frame(width: 32, height: 40).contentShape(Rectangle())
+                        .foregroundStyle(theme.inkTertiary).frame(width: 32, height: 36).contentShape(Rectangle())
                 }
             }
-            .padding(.vertical, 10)
-            Divider().overlay(theme.hairline.opacity(0.7)).padding(.leading, grouped ? 13 : 0)
+            columnHeader(item.exercise.type)
         }
     }
 
-    private func summary(_ item: BuilderItem) -> String {
-        let re = item.re
-        let system = UnitSystem(rawValue: unitSystemRaw) ?? .metric
-        let work = re.sets.filter { $0.kind == .work }
-        let count = work.isEmpty ? re.targetSets : work.count
-        var parts: [String] = ["\(count) set\(count == 1 ? "" : "s")"]
-        // Reps and weight collapse to a single value when uniform, else show first→last (the user's
-        // intended progression across the sets, e.g. "8–4 reps · 60–80 kg").
-        let reps = work.compactMap { $0.reps }
-        if let r = rangeText(reps, { "\($0)" }) {
-            parts.append("\(r) reps")
-        } else if let r = re.targetReps {
-            parts.append("\(r) rep\(r == 1 ? "" : "s")")
+    /// Quiet column header (SET · KG · REPS, gated by exercise type) with a hairline underline.
+    @ViewBuilder
+    private func columnHeader(_ type: ExerciseType) -> some View {
+        HStack(spacing: 10) {
+            Text("Set").instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 34, alignment: .leading)
+            Spacer(minLength: 0)
+            if showsWeight(type) {
+                Text(StrengthDisplay.weightUnit(system)).instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 76)
+            }
+            if showsReps(type) {
+                Text("Reps").instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 76)
+            }
         }
-        let weights = work.compactMap { $0.weightKg }.filter { $0 > 0 }
-        if let r = rangeText(weights, { StrengthDisplay.weightNumber($0, system: system) }) {
-            parts.append("\(r) \(StrengthDisplay.weightUnit(system))")
-        } else if let w = re.targetWeightKg, w > 0 {
-            parts.append(StrengthDisplay.weight(w, system: system))
+        .padding(.bottom, 4)
+        .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
+    }
+
+    // MARK: - A set row (editable cells; warm-up = «C»)
+
+    private func setRow(idx: Int, si: Int) -> some View {
+        let set = items[idx].re.sets[si]
+        let type = items[idx].exercise.type
+        return HStack(spacing: 10) {
+            Text(setLabel(idx: idx, si: si))
+                .font(set.kind == .warmup ? StrandFont.caption.weight(.semibold) : StrandFont.body)
+                .foregroundStyle(set.kind == .warmup ? theme.inkTertiary : theme.inkSecondary)
+                .monospacedDigit().frame(width: 34, alignment: .leading)
+            Spacer(minLength: 0)
+            if showsWeight(type) {
+                cellField(weightText(idx: idx, si: si), id: "\(set.id)-w", keyboard: .decimalPad)
+            }
+            if showsReps(type) {
+                cellField(repsText(idx: idx, si: si), id: "\(set.id)-r", keyboard: .numberPad)
+            }
         }
-        return parts.joined(separator: " · ")
+        .frame(minHeight: 46)
+        .overlay(alignment: .top) { Divider().overlay(theme.hairline) }
     }
 
-    /// Formatted "60" when all values are equal, "60–80" (first→last) when they differ, nil when empty.
-    private func rangeText<T: Equatable>(_ values: [T], _ fmt: (T) -> String) -> String? {
-        guard let first = values.first, let last = values.last else { return nil }
-        return values.allSatisfy { $0 == first } ? fmt(first) : "\(fmt(first))–\(fmt(last))"
+    /// «C» for a warm-up set; otherwise its position among the work sets (1-based, warm-ups don't count).
+    private func setLabel(idx: Int, si: Int) -> String {
+        if items[idx].re.sets[si].kind == .warmup { return String(localized: "C") }
+        let workIndex = items[idx].re.sets[0...si].filter { $0.kind == .work }.count
+        return "\(workIndex)"
     }
 
-    @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
-
-    // MARK: - Superset helpers
-
-    private func inSuperset(_ i: Int) -> Bool {
-        guard items.indices.contains(i), items[i].re.supersetGroup != nil else { return false }
-        return sameGroup(i, i - 1) || sameGroup(i, i + 1)
-    }
-    private func sameGroup(_ a: Int, _ b: Int) -> Bool {
-        guard items.indices.contains(a), items.indices.contains(b) else { return false }
-        guard let ga = items[a].re.supersetGroup, let gb = items[b].re.supersetGroup else { return false }
-        return ga == gb
-    }
-    private func supersetWithNext(_ i: Int) {
-        guard i < items.count - 1 else { return }
-        let group = items[i].re.supersetGroup ?? items[i + 1].re.supersetGroup ?? nextFreeGroup()
-        items[i].re.supersetGroup = group
-        items[i + 1].re.supersetGroup = group
-    }
-    private func breakSuperset(_ i: Int) {
-        guard let g = items[i].re.supersetGroup else { return }
-        items[i].re.supersetGroup = nil
-        // A group left with a single member is no longer a superset — clear it too.
-        let remaining = items.indices.filter { items[$0].re.supersetGroup == g }
-        if remaining.count == 1 { items[remaining[0]].re.supersetGroup = nil }
-    }
-    private func nextFreeGroup() -> Int {
-        (items.compactMap { $0.re.supersetGroup }.max() ?? 0) + 1
+    private func cellField(_ text: Binding<String>, id: String, keyboard: UIKeyboardType) -> some View {
+        TextField("—", text: text)
+            .keyboardType(keyboard)
+            .multilineTextAlignment(.center)
+            .font(StrandFont.bodyNumber)
+            .foregroundStyle(theme.ink)
+            .focused($focusedCell, equals: id)
+            .frame(width: 76, height: 34)
+            .background(theme.surface)
+            .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).strokeBorder(theme.hairline))
     }
 
-    // MARK: - Mutations
+    private func addSetRow(_ idx: Int) -> some View {
+        Button { addSet(idx) } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "plus")
+                Text("Add set")
+            }
+            .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+            .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Rest row (tappable → rest editor sheet; one per group)
+
+    private func restRow(_ idx: Int) -> some View {
+        Button { restEdit = RestEditWrap(index: idx) } label: {
+            HStack(spacing: 7) {
+                Image(systemName: "clock").font(.system(size: 13)).foregroundStyle(theme.inkTertiary)
+                Text(inSuperset(idx) ? "Rest after the round" : "Rest").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                Text(restLabel(items[idx].re)).font(StrandFont.subhead).foregroundStyle(theme.ink)
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+            }
+            .frame(minHeight: 40).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func restLabel(_ re: RoutineExercise) -> String {
+        re.restMode == .heartRate ? String(localized: "by HR") : "\(re.restSeconds) s"
+    }
+
+    private func restSheet(_ idx: Int) -> some View {
+        NavigationStack {
+            List {
+                RestEditor(restMode: $items[idx].re.restMode, restSeconds: $items[idx].re.restSeconds,
+                           hrRestReference: $items[idx].re.hrRestReference, hrRestValue: $items[idx].re.hrRestValue)
+                    .plainRow()
+            }
+            .listStyle(.plain).scrollContentBackground(.hidden)
+            .background(theme.paper.ignoresSafeArea())
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(theme.paper, for: .navigationBar)
+            .toolbar { ToolbarItem(placement: .confirmationAction) {
+                Button("Done") { restEdit = nil }.foregroundStyle(theme.ink) } }
+        }
+        .presentationDetents([.medium])
+    }
+
+    private var addExerciseRow: some View {
+        Button { showLibrary = true } label: {
+            Label("Add exercise", systemImage: "plus").font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Cell bindings
+
+    private func repsText(idx: Int, si: Int) -> Binding<String> {
+        Binding(get: { items[idx].re.sets[si].reps.map(String.init) ?? "" },
+                set: { items[idx].re.sets[si].reps = Int($0.filter(\.isNumber)) })
+    }
+
+    private func weightText(idx: Int, si: Int) -> Binding<String> {
+        Binding(
+            get: {
+                guard let kg = items[idx].re.sets[si].weightKg, kg > 0 else { return "" }
+                return StrengthDisplay.weightNumber(kg, system: system)
+            },
+            set: { raw in
+                let norm = raw.replacingOccurrences(of: ",", with: ".")
+                guard let v = Double(norm), v > 0 else { items[idx].re.sets[si].weightKg = nil; return }
+                items[idx].re.sets[si].weightKg = system == .imperial ? UnitFormatter.poundsToKg(v) : v
+            })
+    }
+
+    private func showsReps(_ t: ExerciseType) -> Bool { t == .weightReps || t == .bodyweight }
+    private func showsWeight(_ t: ExerciseType) -> Bool { t == .weightReps }
+
+    // MARK: - Set mutations
+
+    private func addSet(_ idx: Int) {
+        let work = items[idx].re.sets.last { $0.kind == .work }
+        let reps = work?.reps ?? (showsReps(items[idx].exercise.type) ? 8 : nil)
+        items[idx].re.sets.append(RoutineSet(position: items[idx].re.sets.count, kind: .work,
+                                             reps: reps, weightKg: work?.weightKg))
+    }
+
+    private func addWarmup(_ idx: Int) {
+        // Warm-up sets sit first; they don't count toward PR/volume and aren't logged in the session.
+        items[idx].re.sets.insert(RoutineSet(position: 0, kind: .warmup, reps: showsReps(items[idx].exercise.type) ? 10 : nil,
+                                             weightKg: nil), at: 0)
+        renumber(idx)
+    }
+
+    private func deleteSet(idx: Int, si: Int) {
+        guard items[idx].re.sets.count > 1 else { return }   // keep at least one set
+        withAnimation(.snappy) { items[idx].re.sets.remove(at: si) }
+        renumber(idx)
+    }
+
+    private func renumber(_ idx: Int) {
+        for i in items[idx].re.sets.indices { items[idx].re.sets[i].position = i }
+    }
+
+    // MARK: - Exercise mutations
 
     private func append(_ picks: [Exercise]) {
         for ex in picks {
@@ -258,8 +354,40 @@ struct RoutineBuilderScreen: View {
             items.append(BuilderItem(re: re, exercise: ex))
         }
     }
-    private func move(from: IndexSet, to: Int) { items.move(fromOffsets: from, toOffset: to) }
-    private func deleteRows(_ offsets: IndexSet) { items.remove(atOffsets: offsets) }
+
+    private func moveUp(_ idx: Int) { guard idx > 0 else { return }; withAnimation(.snappy) { items.swapAt(idx, idx - 1) } }
+    private func moveDown(_ idx: Int) { guard idx < items.count - 1 else { return }; withAnimation(.snappy) { items.swapAt(idx, idx + 1) } }
+    private func deleteExercise(_ idx: Int) { withAnimation(.snappy) { items.remove(at: idx) } }
+
+    // MARK: - Superset helpers (a group = consecutive exercises sharing supersetGroup)
+
+    private func inSuperset(_ i: Int) -> Bool {
+        guard items.indices.contains(i), items[i].re.supersetGroup != nil else { return false }
+        return sameGroup(i, i - 1) || sameGroup(i, i + 1)
+    }
+    private func sameGroup(_ a: Int, _ b: Int) -> Bool {
+        guard items.indices.contains(a), items.indices.contains(b),
+              let ga = items[a].re.supersetGroup, let gb = items[b].re.supersetGroup else { return false }
+        return ga == gb
+    }
+    /// First member of a superset group (shows the «Superset» header above it).
+    private func firstOfGroup(_ i: Int) -> Bool { inSuperset(i) && !sameGroup(i, i - 1) }
+    /// Last member of a group (shows the single group rest below it). Ungrouped exercises are their own last.
+    private func lastOfGroup(_ i: Int) -> Bool { !sameGroup(i, i + 1) }
+
+    private func supersetWithNext(_ i: Int) {
+        guard i < items.count - 1 else { return }
+        let group = items[i].re.supersetGroup ?? items[i + 1].re.supersetGroup ?? nextFreeGroup()
+        items[i].re.supersetGroup = group
+        items[i + 1].re.supersetGroup = group
+    }
+    private func breakSuperset(_ i: Int) {
+        guard let g = items[i].re.supersetGroup else { return }
+        items[i].re.supersetGroup = nil
+        let remaining = items.indices.filter { items[$0].re.supersetGroup == g }
+        if remaining.count == 1 { items[remaining[0]].re.supersetGroup = nil }
+    }
+    private func nextFreeGroup() -> Int { (items.compactMap { $0.re.supersetGroup }.max() ?? 0) + 1 }
 
     // MARK: - Load + save
 
@@ -287,11 +415,6 @@ struct RoutineBuilderScreen: View {
             dismiss()
         }
     }
-
-    // Identifiable wrapper so `.sheet(item:)` can edit a row by index.
-    private var editorBinding: Binding<EditorWrap?> {
-        Binding(get: { editingIndex.map(EditorWrap.init) }, set: { editingIndex = $0?.index })
-    }
 }
 
 private struct BuilderItem: Identifiable {
@@ -300,202 +423,13 @@ private struct BuilderItem: Identifiable {
     var id: String { re.id }
 }
 
-private struct EditorWrap: Identifiable { let index: Int; var id: Int { index } }
+/// Identifiable wrapper so the rest sheet can edit one exercise's rest by index.
+private struct RestEditWrap: Identifiable { let index: Int; var id: Int { index } }
 
-// MARK: - Per-exercise editor
-
-/// Tune one routine slot: the per-set scheme (each work set's own reps/weight, add/remove — FER-492),
-/// an auto warm-up ramp from % of the working weight (40/60/80, toggleable — warm-ups don't count
-/// toward PR or volume), and the rest rule (by heart rate, the strap differentiator, or a fixed timer).
-private struct RoutineExerciseEditor: View {
-    @Binding var item: BuilderItem
-
-    @Environment(\.instrumentoTheme) private var theme
-    @Environment(\.dismiss) private var dismiss
-    @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
-    private var system: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
-    @FocusState private var focusedCell: String?
-
-    private let warmupPresets: [Double] = [0.4, 0.6, 0.8]
-    private var showsReps: Bool { item.exercise.type == .weightReps || item.exercise.type == .bodyweight }
-    private var showsWeight: Bool { item.exercise.type == .weightReps }
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(StrengthDisplay.subtitle(item.exercise)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                        Text(StrengthDisplay.name(item.exercise)).font(StrandFont.title1).foregroundStyle(theme.ink)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .rowChrome(top: 20, bottom: 0)
-                }
-                seriesSection
-                if showsWeight { Section { warmup.rowChrome() } }
-                Section { rest.rowChrome() }
-            }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .environment(\.defaultMinListRowHeight, 0)
-            .background(theme.paper.ignoresSafeArea())
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(theme.paper, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }.foregroundStyle(theme.ink)
-                }
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("Done") { focusedCell = nil }.foregroundStyle(theme.ink)
-                }
-            }
-        }
-    }
-
-    // MARK: Series (per-set table)
-
-    @ViewBuilder
-    private var seriesSection: some View {
-        Section {
-            seriesHeader.rowChrome(top: 4, bottom: 4)
-            ForEach(Array(item.re.sets.enumerated()), id: \.element.id) { idx, _ in
-                setRow($item.re.sets[idx], index: idx).rowChrome(top: 0, bottom: 0)
-            }
-            .onDelete(perform: deleteSets)
-            Button { addSet() } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "plus")
-                    Text("Add set")
-                }
-                .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
-                .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .rowChrome(top: 0, bottom: 0)
-            Text("Swipe a set to delete it.")
-                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                .rowChrome(top: 8, bottom: 0)
-        } header: { EmptyView() }
-    }
-
-    private var seriesHeader: some View {
-        HStack(spacing: 10) {
-            Text("Set").instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 30, alignment: .leading)
-            Spacer(minLength: 0)
-            if showsWeight {
-                Text(StrengthDisplay.weightUnit(system)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    .frame(width: 80)
-            }
-            if showsReps {
-                Text("Reps").instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 80)
-            }
-        }
-    }
-
-    private func setRow(_ set: Binding<RoutineSet>, index: Int) -> some View {
-        HStack(spacing: 10) {
-            Text("\(index + 1)").font(StrandFont.body).foregroundStyle(theme.inkSecondary)
-                .monospacedDigit().frame(width: 30, alignment: .leading)
-            Spacer(minLength: 0)
-            if showsWeight {
-                cellField(weightText(set), placeholder: "—", id: "\(set.wrappedValue.id)-w", keyboard: .decimalPad)
-            }
-            if showsReps {
-                cellField(repsText(set), placeholder: "—", id: "\(set.wrappedValue.id)-r", keyboard: .numberPad)
-            }
-        }
-        .frame(minHeight: 46)
-        .overlay(alignment: .top) { Divider().overlay(theme.hairline) }
-    }
-
-    private func cellField(_ text: Binding<String>, placeholder: String, id: String, keyboard: UIKeyboardType) -> some View {
-        TextField(placeholder, text: text)
-            .keyboardType(keyboard)
-            .multilineTextAlignment(.center)
-            .font(StrandFont.bodyNumber)
-            .foregroundStyle(theme.ink)
-            .focused($focusedCell, equals: id)
-            .frame(width: 80, height: 34)
-            .background(theme.surface)
-            .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).strokeBorder(theme.hairline))
-    }
-
-    // MARK: Set mutations + cell bindings
-
-    private func addSet() {
-        let last = item.re.sets.last
-        item.re.sets.append(RoutineSet(position: item.re.sets.count, kind: .work,
-                                       reps: last?.reps ?? (showsReps ? 8 : nil), weightKg: last?.weightKg))
-    }
-
-    private func deleteSets(_ offsets: IndexSet) {
-        guard item.re.sets.count > offsets.count else { return }   // keep at least one set
-        item.re.sets.remove(atOffsets: offsets)
-        for i in item.re.sets.indices { item.re.sets[i].position = i }
-    }
-
-    private func repsText(_ set: Binding<RoutineSet>) -> Binding<String> {
-        Binding(get: { set.wrappedValue.reps.map(String.init) ?? "" },
-                set: { set.wrappedValue.reps = Int($0.filter(\.isNumber)) })
-    }
-
-    private func weightText(_ set: Binding<RoutineSet>) -> Binding<String> {
-        Binding(
-            get: {
-                guard let kg = set.wrappedValue.weightKg, kg > 0 else { return "" }
-                return StrengthDisplay.weightNumber(kg, system: system)
-            },
-            set: { raw in
-                let norm = raw.replacingOccurrences(of: ",", with: ".")
-                guard let v = Double(norm), v > 0 else { set.wrappedValue.weightKg = nil; return }
-                set.wrappedValue.weightKg = system == .imperial ? UnitFormatter.poundsToKg(v) : v
-            })
-    }
-
-    // MARK: Warm-up
-
-    private var warmup: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            Text("Warm-up · auto from %").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            HStack(spacing: 8) {
-                ForEach(warmupPresets, id: \.self) { p in warmupChip(p) }
-            }
-            Text("Ramp sets from the working weight. Warm-ups don't count toward PR or volume.")
-                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    private func warmupChip(_ p: Double) -> some View {
-        let on = item.re.warmupPercents.contains(p)
-        return Button {
-            if on { item.re.warmupPercents.removeAll { $0 == p } }
-            else { item.re.warmupPercents = (item.re.warmupPercents + [p]).sorted() }
-        } label: {
-            Text("\(Int(p * 100))%").font(StrandFont.subhead.weight(.semibold))
-                .foregroundStyle(on ? theme.ink : theme.inkTertiary)
-                .padding(.horizontal, 15).padding(.vertical, 7)
-                .overlay(Capsule(style: .continuous).strokeBorder(on ? theme.ink : theme.hairlineStrong, lineWidth: on ? 1.5 : 1))
-        }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: Rest
-
-    // The rest editor (mode + duration / HR target) is the shared `RestEditor` so the builder and the
-    // in-session rest editor (FER-540) stay identical.
-    private var rest: some View {
-        RestEditor(restMode: $item.re.restMode, restSeconds: $item.re.restSeconds,
-                   hrRestReference: $item.re.hrRestReference, hrRestValue: $item.re.hrRestValue)
-    }
-
-}
-
-// Shared list-row chrome for the editor: clear background, no system separator (rows draw their own
-// hairline), and the standard screen margin with tunable vertical insets — so a plain List reproduces
-// the «Instrumento» spacing without card chrome.
+// Shared list-row chrome: clear background, no system separator (rows draw their own hairline), standard
+// screen margin with tunable vertical insets — a plain List that reproduces «Instrumento» spacing.
 private extension View {
-    func rowChrome(top: CGFloat = 8, bottom: CGFloat = 8) -> some View {
+    func plainRow(top: CGFloat = 8, bottom: CGFloat = 8) -> some View {
         self
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
