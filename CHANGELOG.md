@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Toca un ejercicio en plena sesión para ver cómo se hace / Tap an exercise mid-session to see how it's done.**
+  **ES** — Durante un entrenamiento, ahora puedes **tocar el nombre de un ejercicio** (con el chevron ›) para abrir su **Detalle**: cómo se hace paso a paso, tu **tendencia** (peso máx / 1RM estimado / volumen) y tus récords. Al cerrarlo, tu sesión sigue exactamente igual —tus series, el cronómetro y el descanso no se pierden—.
+  **EN** — During a workout, you can now **tap an exercise's name** (with the › chevron) to open its **Detail**: step-by-step how-to, your **trend** (max weight / estimated 1RM / volume) and your records. Closing it leaves your session exactly as it was —your sets, the timer and the rest aren't lost—.
+  ([Cenit/Screens/LiveStrengthSheet.swift](Cenit/Screens/LiveStrengthSheet.swift))
+
 - **La plancha (y otros sostenes) ahora se miden por tiempo, no por repeticiones / Planks (and other holds) are now measured by time, not reps.**
   **ES** — La **plancha** y otros ejercicios isométricos (plancha lateral, apretones isométricos de pecho, isométricos de cuello, crucifijo) ahora se registran con un **cronómetro** en la sesión guiada, en vez de pedirte repeticiones. Es lo natural: un sostén se mide en segundos. Se revisaron uno por uno por su «cómo se hace» — los movimientos que solo *parecen* estáticos (como los «limpiaparabrisas» isométricos o el iron cross con mancuerna) siguen siendo por repeticiones.
   **EN** — The **plank** and other isometric exercises (side plank, isometric chest squeezes, isometric neck holds, crucifix) now log with a **timer** in the guided session, instead of asking for reps. It's the natural fit: a hold is measured in seconds. Each was reviewed by its "how-to" — movements that only *look* static (like isometric wipers or the dumbbell iron cross) stay rep-based.

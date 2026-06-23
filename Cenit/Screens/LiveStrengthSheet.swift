@@ -483,6 +483,9 @@ struct LiveStrengthSheet: View {
     /// previous value instead of falling to zero (the buffer is dropped on blur, reformatting the datum).
     @FocusState private var focusedCell: CellRef?
     @State private var cellBuffers: [CellRef: String] = [:]
+    /// The exercise whose detail sheet is open — set by tapping an exercise's name (FER-538). nil = closed.
+    /// Resolving the full `Exercise` (catalog + custom) is deferred to the tap so the session model stays lean.
+    @State private var detailExercise: Exercise?
 
     /// Identifies an editable inline cell: a weight or reps field at (exerciseIndex, setIndex).
     enum CellRef: Hashable { case weight(Int, Int), reps(Int, Int) }
@@ -530,6 +533,17 @@ struct LiveStrengthSheet: View {
                 .presentationDragIndicator(.visible)
                 .presentationBackground(theme.paper)
                 .preferredColorScheme(.light)
+        }
+        .sheet(item: $detailExercise) { ex in
+            NavigationStack {
+                ExerciseDetailScreen(exercise: ex)
+                    .toolbar { ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { detailExercise = nil }.foregroundStyle(theme.ink)
+                    } }
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbarBackground(theme.paper, for: .navigationBar)
+            }
+            .instrumentoTheme(theme).environmentObject(model.repo).preferredColorScheme(.light)
         }
         .alert("Finish workout?", isPresented: $confirmFinish) {
             Button("Finish", role: .destructive) { model.endStrengthSession(save: true) }
@@ -674,15 +688,38 @@ struct LiveStrengthSheet: View {
             VStack(alignment: .leading, spacing: 2) {
                 if run.type != .weightReps {
                     Text(typeWord(run.type)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                        .accessibilityHidden(true)
                 }
-                Text(run.name).font(StrandFont.headline).foregroundStyle(theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
+                // Tap the name → the exercise's Detail (how-to, trend, records) as a sheet (FER-538).
+                Button { openDetail(run) } label: {
+                    HStack(spacing: 8) {
+                        Text(run.name).font(StrandFont.headline).foregroundStyle(theme.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text(run.name))
+                .accessibilityHint(Text("View exercise detail"))
             }
             if !reflow { columnHeader(run.type) }
         }
         .padding(.top, first ? NoopMetrics.gap : NoopMetrics.sectionGap)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text(run.name))
+    }
+
+    /// Resolve the full `Exercise` for a session run (catalog first, then user-created) and open its
+    /// Detail sheet. Dismissing it leaves the session untouched — the session lives in `AppModel`.
+    private func openDetail(_ run: StrengthSessionModel.ExerciseRun) {
+        Task {
+            var ex = ExerciseCatalog.byID(run.exerciseId)
+            if ex == nil {
+                ex = (await model.repo.allExercises()).first { $0.id == run.exerciseId }
+            }
+            if let ex { await MainActor.run { detailExercise = ex } }
+        }
     }
 
     /// The quiet column header (overline). Hidden at accessibility sizes — each reflowed cell self-labels.
