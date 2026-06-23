@@ -36,6 +36,8 @@ private struct RutinaDeHoyContent: View {
     @State private var rows: [PlanRow] = []
     /// The exercise whose detail sheet is open (FER-517); nil = none.
     @State private var detailExercise: Exercise?
+    /// Drives the routine builder sheet for editing this routine (FER-557).
+    @State private var builderTarget: BuilderTarget?
 
     private var recovery: Double? { repo.today?.recovery }
     private var imperial: Bool { UnitSystem(rawValue: unitSystemRaw) == .imperial }
@@ -70,6 +72,23 @@ private struct RutinaDeHoyContent: View {
                     .toolbarBackground(theme.paper, for: .navigationBar)
             }
             .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        }
+        // Edit this routine (FER-557): a trailing «Edit» opens the existing builder; saving reloads the
+        // plan in place. Hidden with no resolved routine, or while a guided session is live (editing a
+        // routine under a running session is ambiguous).
+        .toolbar {
+            if loaded, let r = routine, model.strengthSession == nil {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Edit") { builderTarget = .edit(r) }
+                        .foregroundStyle(theme.ink)
+                        .accessibilityLabel(Text("Edit routine"))
+                        .accessibilityHint(Text("Opens the routine editor"))
+                }
+            }
+        }
+        .sheet(item: $builderTarget) { target in
+            RoutineBuilderScreen(routine: target.routine) { await load() }
+                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
         .task { await load() }
     }

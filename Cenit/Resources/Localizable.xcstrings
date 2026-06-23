@@ -40389,6 +40389,246 @@
           }
         }
       }
+    },
+    "1 day a week": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 day a week"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 día por semana"
+          }
+        }
+      }
+    },
+    "%lld days a week": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld days a week"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld días por semana"
+          }
+        }
+      }
+    },
+    "Recovery %lld. See details.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovery %lld. See details."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuperación %lld. Ver detalle."
+          }
+        }
+      }
+    },
+    "Recovery high for you · you can take on your full plan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovery high for you · you can take on your full plan."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuperación alta para ti · puedes con tu plan completo."
+          }
+        }
+      }
+    },
+    "Recovery in your range · train at your usual load.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovery in your range · train at your usual load."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuperación en tu rango · entrena con tu carga de siempre."
+          }
+        }
+      }
+    },
+    "Recovery low for you · maybe ease the volume today.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovery low for you · maybe ease the volume today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuperación baja para ti · quizá baja el volumen hoy."
+          }
+        }
+      }
+    },
+    "Today's load": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today's load"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carga de hoy"
+          }
+        }
+      }
+    },
+    "Your recovery is high for you. A good day to add weight or sets.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your recovery is high for you. A good day to add weight or sets."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu recuperación está alta para ti. Buen día para subir peso o sumar series."
+          }
+        }
+      }
+    },
+    "Your recovery is in your normal range. Train at your usual load.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your recovery is in your normal range. Train at your usual load."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu recuperación está en tu rango normal. Entrena con tu carga de siempre."
+          }
+        }
+      }
+    },
+    "Your recovery is low for you. Easing the volume or intensity helps today.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your recovery is low for you. Easing the volume or intensity helps today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu recuperación está baja para ti. Hoy conviene bajar el volumen o la intensidad."
+          }
+        }
+      }
+    },
+    "Opens the routine editor": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the routine editor"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre el editor de la rutina"
+          }
+        }
+      }
+    },
+    "Edit routine": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit routine"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Editar rutina"
+          }
+        }
+      }
+    },
+    "Resume": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resume"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reanudar"
+          }
+        }
+      }
+    },
+    "Workout in progress": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workout in progress"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entrenamiento en curso"
+          }
+        }
+      }
+    },
+    "Resume workout in progress": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resume workout in progress"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reanudar el entrenamiento en curso"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
