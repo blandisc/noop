@@ -40230,6 +40230,22 @@
         }
       }
     },
+    "Suggestions will appear here based on your recovery": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suggestions will appear here based on your recovery"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aquí aparecerán sugerencias según tu recuperación"
+          }
+        }
+      }
+    },
     "Edit": {
       "localizations": {
         "en": {
