@@ -43,6 +43,7 @@ struct WorkoutImportView: View {
     @State private var reconciler: WorkoutExerciseReconciler?   // built once at parse, reused at save
     @State private var unmatched: [String] = []
     @State private var resolution: [String: Exercise] = [:]
+    @State private var omitted: Set<String> = []   // normalized names the user chose not to import (FER-536)
     @State private var mappingTarget: MappingName?  // name being mapped → drives the library picker sheet
     @State private var createdCount = 0
 
@@ -161,7 +162,8 @@ struct WorkoutImportView: View {
                 }
             }
 
-            let remaining = unmatched.filter { resolution[norm($0)] == nil }.count
+            // A name is "settled" once it's matched OR omitted — both let you continue.
+            let remaining = unmatched.filter { resolution[norm($0)] == nil && !omitted.contains(norm($0)) }.count
             QuietButton(remaining == 0 ? "Continue" : "Resolve \(remaining) more to continue") {
                 phase = .confirm
             }
@@ -170,10 +172,20 @@ struct WorkoutImportView: View {
     }
 
     private func mappingRow(_ name: String) -> some View {
-        let resolved = resolution[norm(name)]
+        let key = norm(name)
+        let resolved = resolution[key]
+        let isOmitted = omitted.contains(key)
         return VStack(alignment: .leading, spacing: NoopMetrics.space2) {
-            Text(verbatim: name).font(StrandFont.body).foregroundStyle(theme.ink)
-            if let resolved {
+            Text(verbatim: name).font(StrandFont.body)
+                .foregroundStyle(isOmitted ? theme.inkTertiary : theme.ink)
+            if isOmitted {
+                HStack(spacing: NoopMetrics.space2) {
+                    Text("Omitted").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                    Spacer(minLength: NoopMetrics.space2)
+                    undoLink { omitted.remove(key) }
+                }
+                .accessibilityElement(children: .combine)
+            } else if let resolved {
                 HStack(spacing: NoopMetrics.space2) {
                     Image(systemName: "checkmark.circle.fill")
                         .font(StrandFont.subhead).foregroundStyle(theme.verdict)
@@ -181,8 +193,9 @@ struct WorkoutImportView: View {
                     Text("Matched · \(StrengthDisplay.name(resolved))")
                         .font(StrandFont.subhead).foregroundStyle(theme.verdict)
                     Spacer(minLength: NoopMetrics.space2)
+                    undoLink { resolution[key] = nil }
                     Button { mappingTarget = MappingName(name: name) } label: {
-                        Text("Change").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).underline()
+                        Text("Change mapping").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).underline()
                     }
                     .buttonStyle(.plain)
                 }
@@ -208,10 +221,19 @@ struct WorkoutImportView: View {
                 HStack(spacing: NoopMetrics.space2) {
                     chip("Match") { mappingTarget = MappingName(name: name) }
                     chip("Create new") { createNew(name) }
+                    chip("Omit") { omitted.insert(key) }
                 }
             }
         }
         .padding(.vertical, NoopMetrics.gap)
+    }
+
+    /// A small underlined «Undo» link — reverts a suggestion/omit so the row goes back to unmatched.
+    private func undoLink(_ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text("Undo").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).underline()
+        }
+        .buttonStyle(.plain)
     }
 
     private func chip(_ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
@@ -255,9 +277,11 @@ struct WorkoutImportView: View {
                 }
             }
             ForEach(Array(routine.exercises.enumerated()), id: \.offset) { _, ex in
-                Text(verbatim: exerciseLine(ex))
-                    .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                if !omitted.contains(norm(ex.name)) {   // omitted exercises aren't imported (FER-536)
+                    Text(verbatim: exerciseLine(ex))
+                        .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
         .padding(.vertical, NoopMetrics.gap)
@@ -320,13 +344,16 @@ struct WorkoutImportView: View {
     }
 
     private func resolve(_ name: String, with exercise: Exercise) {
-        resolution[norm(name)] = exercise
+        let key = norm(name)
+        resolution[key] = exercise
+        omitted.remove(key)        // resolving overrides a prior omit
         mappingTarget = nil
-        rememberAlias(name, exercise)
+        // The learned alias is persisted at save() (FER-536), not here, so Undo can revert cleanly.
     }
 
     /// «Create new» fast path: a user exercise from the LLM's name, with the type the plan declared.
-    /// Saved so the muscle map / library can see it; the user can flesh it out later in the library.
+    /// Saved so the muscle map / library can see it; the user can flesh it out later in the library. The
+    /// learned alias for the import name is persisted at save(), not here (FER-536).
     private func createNew(_ name: String) {
         let exercise = Exercise(id: UUID().uuidString, name: name, type: declaredType(name),
                                 equipment: nil, primaryMuscles: [], secondaryMuscles: [], cues: [])
@@ -334,15 +361,7 @@ struct WorkoutImportView: View {
             try? await repo.saveCustomExercise(exercise)
             catalog.append(exercise)   // keep the local catalog current without a full re-fetch
             resolution[norm(name)] = exercise
-            await repo.saveLearnedExerciseAlias(name: norm(name), exerciseId: exercise.id)
         }
-    }
-
-    /// Remember this mapping so the same imported name resolves on its own next time (FER-523).
-    private func rememberAlias(_ name: String, _ exercise: Exercise) {
-        let key = norm(name)
-        learnedAliases[key] = exercise.id
-        Task { await repo.saveLearnedExerciseAlias(name: key, exerciseId: exercise.id) }
     }
 
     // MARK: - Actions
@@ -388,16 +407,20 @@ struct WorkoutImportView: View {
     private func save(_ program: WorkoutProgram) {
         let reconciler = self.reconciler ?? WorkoutExerciseReconciler(known: catalog)
         let now = Int(Date().timeIntervalSince1970)
+        let omittedSnapshot = omitted
+        let resolutionSnapshot = resolution
         Task {
             var created = 0
             for (rIndex, routine) in program.routines.enumerated() {
                 let routineId = UUID().uuidString
                 var slots: [RoutineExercise] = []
-                for (position, ex) in routine.exercises.enumerated() {
-                    guard let exercise = reconciler.resolve(ex) ?? resolution[norm(ex.name)] else { continue }
+                for ex in routine.exercises {
+                    let key = norm(ex.name)
+                    if omittedSnapshot.contains(key) { continue }   // omitted → not imported (FER-536)
+                    guard let exercise = reconciler.resolve(ex) ?? resolutionSnapshot[key] else { continue }
                     let hasRest = ex.restSeconds != nil
                     slots.append(RoutineExercise(
-                        routineId: routineId, exerciseId: exercise.id, position: position,
+                        routineId: routineId, exerciseId: exercise.id, position: slots.count,
                         targetSets: ex.sets, targetReps: ex.reps, targetWeightKg: ex.weightKg,
                         warmupPercents: ex.warmupPercents,
                         restMode: hasRest ? .fixed : .heartRate, restSeconds: ex.restSeconds ?? 90,
@@ -410,6 +433,11 @@ struct WorkoutImportView: View {
                 try? await repo.saveRoutine(r, exercises: slots)
                 created += 1
             }
+            // Remember the confirmed mappings only now (FER-536) — so Undo before saving leaves no learned
+            // alias behind. Omitted names are never remembered.
+            for (key, ex) in resolutionSnapshot where !omittedSnapshot.contains(key) {
+                await repo.saveLearnedExerciseAlias(name: key, exerciseId: ex.id)
+            }
             createdCount = created
             phase = .done
         }
@@ -418,7 +446,8 @@ struct WorkoutImportView: View {
     // MARK: - Display
 
     private func programSummary(_ p: WorkoutProgram) -> LocalizedStringKey {
-        let exercises = p.routines.reduce(0) { $0 + $1.exercises.count }
+        // Count only what will actually be imported — omitted exercises don't count (FER-536).
+        let exercises = p.routines.reduce(0) { $0 + $1.exercises.filter { !omitted.contains(norm($0.name)) }.count }
         return "\(p.routines.count) routines · \(exercises) exercises"
     }
 
