@@ -60,6 +60,21 @@ extension Repository {
         try await store.saveCustomExercise(e)
     }
 
+    // MARK: - Learned exercise aliases (import matching memory — FER-523)
+
+    /// The user's learned import aliases (normalized name → exerciseId), for the import reconciler.
+    func learnedExerciseAliases() async -> [String: String] {
+        guard let store = await storeHandle() else { return [:] }
+        return (try? await store.learnedExerciseAliases()) ?? [:]
+    }
+
+    /// Remember an import mapping so the same name resolves on its own next time.
+    func saveLearnedExerciseAlias(name: String, exerciseId: String) async {
+        guard let store = await storeHandle() else { return }
+        try? await store.saveLearnedExerciseAlias(name: name, exerciseId: exerciseId,
+                                                  ts: Int(Date().timeIntervalSince1970))
+    }
+
     // MARK: - Sessions (the completed-workout history)
 
     /// Completed strength sessions, newest first — the «Mis entrenamientos» list (FER-504). Read-only.

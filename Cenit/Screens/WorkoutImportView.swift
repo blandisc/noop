@@ -39,6 +39,7 @@ struct WorkoutImportView: View {
     // Exercise reconciliation: the on-device catalog (seed + custom), the unmatched names that need a
     // decision, and the user's resolution per normalized name (an existing or just-created exercise).
     @State private var catalog: [Exercise] = []
+    @State private var learnedAliases: [String: String] = [:]   // remembered mappings (FER-523)
     @State private var reconciler: WorkoutExerciseReconciler?   // built once at parse, reused at save
     @State private var unmatched: [String] = []
     @State private var resolution: [String: Exercise] = [:]
@@ -65,7 +66,12 @@ struct WorkoutImportView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
-        .task { if catalog.isEmpty { catalog = await repo.allExercises() } }
+        .task {
+            if catalog.isEmpty {
+                catalog = await repo.allExercises()
+                learnedAliases = await repo.learnedExerciseAliases()   // FER-523: remembered mappings
+            }
+        }
         .fileImporter(isPresented: $showFileImporter, allowedContentTypes: [.json]) { handleImport($0) }
         .sheet(item: $mappingTarget) { target in
             NavigationStack {
@@ -182,6 +188,23 @@ struct WorkoutImportView: View {
                 }
                 .accessibilityElement(children: .combine)
             } else {
+                let suggestions = reconciler?.suggestions(for: name) ?? []
+                if !suggestions.isEmpty {
+                    Text("Did you mean…").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    ForEach(suggestions, id: \.id) { s in
+                        Button { resolve(name, with: s) } label: {
+                            HStack(spacing: NoopMetrics.space2) {
+                                Image(systemName: "sparkles").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                                Text(StrengthDisplay.name(s)).font(StrandFont.subhead).foregroundStyle(theme.ink)
+                                Spacer(minLength: NoopMetrics.space2)
+                                Text("Use").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                            }
+                            .padding(.vertical, NoopMetrics.space1).contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint(Text("Use \(StrengthDisplay.name(s)) for \(name)"))
+                    }
+                }
                 HStack(spacing: NoopMetrics.space2) {
                     chip("Match") { mappingTarget = MappingName(name: name) }
                     chip("Create new") { createNew(name) }
@@ -299,6 +322,7 @@ struct WorkoutImportView: View {
     private func resolve(_ name: String, with exercise: Exercise) {
         resolution[norm(name)] = exercise
         mappingTarget = nil
+        rememberAlias(name, exercise)
     }
 
     /// «Create new» fast path: a user exercise from the LLM's name, with the type the plan declared.
@@ -310,7 +334,15 @@ struct WorkoutImportView: View {
             try? await repo.saveCustomExercise(exercise)
             catalog.append(exercise)   // keep the local catalog current without a full re-fetch
             resolution[norm(name)] = exercise
+            await repo.saveLearnedExerciseAlias(name: norm(name), exerciseId: exercise.id)
         }
+    }
+
+    /// Remember this mapping so the same imported name resolves on its own next time (FER-523).
+    private func rememberAlias(_ name: String, _ exercise: Exercise) {
+        let key = norm(name)
+        learnedAliases[key] = exercise.id
+        Task { await repo.saveLearnedExerciseAlias(name: key, exerciseId: exercise.id) }
     }
 
     // MARK: - Actions
@@ -331,7 +363,7 @@ struct WorkoutImportView: View {
             let p = try importer.parse(data)
             program = p
             parseError = nil
-            let r = WorkoutExerciseReconciler(known: catalog)
+            let r = WorkoutExerciseReconciler(known: catalog, learned: learnedAliases)
             reconciler = r
             unmatched = r.unmatchedNames(in: p)
             resolution = [:]

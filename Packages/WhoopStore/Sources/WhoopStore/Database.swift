@@ -537,6 +537,17 @@ extension WhoopStore {
                         columns: "ts INTEGER NOT NULL, x REAL NOT NULL, y REAL NOT NULL, z REAL NOT NULL",
                         pk: "deviceId, ts", dataCols: ["ts", "x", "y", "z"])
         }
+
+        // FER-523: learned exercise aliases. When the user maps an imported exercise name to a catalog
+        // exercise, we remember it (normalized name → exerciseId) so the next import of that name matches
+        // on its own. PK on the normalized name = one mapping per name; re-mapping overwrites.
+        migrator.registerMigration("v22") { db in
+            try db.create(table: "learnedExerciseAlias") { t in
+                t.column("name", .text).primaryKey()        // normalized imported name
+                t.column("exerciseId", .text).notNull()     // catalog or custom exercise id
+                t.column("ts", .integer).notNull()
+            }
+        }
         return migrator
     }
 }
