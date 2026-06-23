@@ -40182,18 +40182,34 @@
         }
       }
     },
-    "Lighter day? Mobility · 20 min": {
+    "Lighter day? Recovery breathing": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lighter day? Mobility · 20 min"
+            "value": "Lighter day? Recovery breathing"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "¿Hoy no toca pesado? Movilidad · 20 min"
+            "value": "¿Día más suave? Respira para recuperar"
+          }
+        }
+      }
+    },
+    "Feeling good? Add intervals · 12 min": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feeling good? Add intervals · 12 min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Con energía? Suma intervalos · 12 min"
           }
         }
       }

@@ -74,4 +74,35 @@ final class TrainingRegulationTests: XCTestCase {
         XCTAssertTrue(TrainingRegulation.suggest(recovery: 80)!.isAdvisory)
         XCTAssertTrue(TrainingRegulation.suggest(recovery: nil, recoveryZ: -2.0)!.isAdvisory)
     }
+
+    // MARK: - Light alternative (FER-532) — the planner's «Sugerencia» row
+
+    func testLightAlternativeLowIsSofter() {
+        // Recovery below normal → a gentler option.
+        XCTAssertEqual(TrainingRegulation.lightAlternative(recovery: 20), .softer)
+        XCTAssertEqual(TrainingRegulation.lightAlternative(recovery: nil, recoveryZ: -0.6), .softer)
+    }
+
+    func testLightAlternativeHighIsOptionalLight() {
+        // Recovery above normal → an optional light add-on.
+        XCTAssertEqual(TrainingRegulation.lightAlternative(recovery: 80), .optionalLight)
+        XCTAssertEqual(TrainingRegulation.lightAlternative(recovery: nil, recoveryZ: 0.6), .optionalLight)
+    }
+
+    func testLightAlternativeMidIsNil() {
+        // Within the normal band there is nothing to suggest → the row hides.
+        XCTAssertNil(TrainingRegulation.lightAlternative(recovery: 50))
+        XCTAssertNil(TrainingRegulation.lightAlternative(recovery: nil, recoveryZ: 0.0))
+    }
+
+    func testLightAlternativeNoSignalIsNil() {
+        // No recovery signal → no row.
+        XCTAssertNil(TrainingRegulation.lightAlternative(recovery: nil, recoveryZ: nil))
+        XCTAssertNil(TrainingRegulation.lightAlternative(for: nil))
+    }
+
+    func testLightAlternativeZWinsOverScore() {
+        // High score but a low z → the z drives it → softer.
+        XCTAssertEqual(TrainingRegulation.lightAlternative(recovery: 90, recoveryZ: -1.0), .softer)
+    }
 }

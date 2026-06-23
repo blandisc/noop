@@ -279,22 +279,51 @@ private struct EntrenarLanding: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - ④ Suggestion (static placeholder — engine is FER-532)
+    // MARK: - ④ Suggestion (engine is FER-532 — TrainingRegulation.lightAlternative)
+    //
+    // A CONTEXTUAL lighter alternative, derived from today's recovery against your personal baseline
+    // (same input the recovery line uses). It appears ONLY when there is something to suggest — recovery
+    // below normal → a gentler option, above normal → an optional add-on — and HIDES within the normal
+    // band or with no signal. Always advisory: it never blocks training, «tú decides».
 
-    private var suggestionRow: some View {
-        Button { openBreathe() } label: {
-            HStack(spacing: 11) {
-                Image(systemName: "figure.cooldown").font(.system(size: 17)).foregroundStyle(theme.inkTertiary)
-                Text("Lighter day? Mobility · 20 min")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                Spacer(minLength: 8)
-                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkDim)
+    @ViewBuilder private var suggestionRow: some View {
+        if let alt = TrainingRegulation.lightAlternative(recovery: recovery) {
+            Button { suggestionAction(alt) } label: {
+                HStack(spacing: 11) {
+                    Image(systemName: suggestionIcon(alt)).font(.system(size: 17)).foregroundStyle(theme.inkTertiary)
+                    Text(suggestionLabel(alt))
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkDim)
+                }
+                .padding(.horizontal, 15).padding(.vertical, 13)
+                .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [3, 3])).foregroundStyle(theme.hairlineStrong))
             }
-            .padding(.horizontal, 15).padding(.vertical, 13)
-            .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [3, 3])).foregroundStyle(theme.hairlineStrong))
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
+    }
+
+    private func suggestionIcon(_ alt: TrainingRegulation.LightAlternative) -> String {
+        switch alt {
+        case .softer:        return "figure.cooldown"
+        case .optionalLight: return "figure.run"
+        }
+    }
+
+    private func suggestionLabel(_ alt: TrainingRegulation.LightAlternative) -> LocalizedStringKey {
+        switch alt {
+        case .softer:        return "Lighter day? Recovery breathing"
+        case .optionalLight: return "Feeling good? Add intervals · 12 min"
+        }
+    }
+
+    private func suggestionAction(_ alt: TrainingRegulation.LightAlternative) {
+        switch alt {
+        // TODO(FER-554): repuntar a la rutina de Movilidad cuando exista en el catálogo.
+        case .softer:        openBreathe()
+        case .optionalLight: openIntervals()
+        }
     }
 
     // MARK: - ⑤ Tu plan
