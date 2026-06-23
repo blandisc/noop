@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Duplica una rutina para crear una variante / Duplicate a routine to spin off a variant.**
+  **ES** — En **Entrenar → Mis rutinas**, mantén presionada una rutina y elige **«Duplicar»**: crea una copia independiente llamada «… (copia)» en la misma carpeta, con todos sus ejercicios, series, pesos y descansos. Edítala sin tocar la original — perfecto para armar una versión más pesada o un día B sin empezar de cero.
+  **EN** — In **Train → My routines**, long-press a routine and pick **"Duplicate"**: it makes an independent copy named "… (copy)" in the same folder, with all its exercises, sets, weights and rest. Edit it without touching the original — perfect for a heavier version or a B-day without starting from scratch.
+  ([Cenit/Screens/EntrenarView.swift](Cenit/Screens/EntrenarView.swift))
+
 - **El detalle de un vital ahora te dice cuándo el dato vino de Apple Salud / A vital's detail now tells you when the reading came from Apple Health.**
   **ES** — Al abrir el detalle de **HRV, FC en reposo, Frecuencia respiratoria o SpO₂**, si la lectura de **hoy** vino de tu **Apple Watch** (no de la banda), ahora aparece un sello **«Apple»** junto al número —igual que ya lo marca el tile que lo abre—. Con lectura de la banda no se marca nada (la banda es la fuente esperada). Así un dato de Apple **nunca** se ve idéntico a uno de la banda. La Frecuencia cardiaca, los Pasos y el VO₂max no cambian.
   **EN** — When you open the detail for **HRV, Resting HR, Respiratory rate or SpO₂**, if **today's** reading came from your **Apple Watch** (not the band), an **"Apple"** seal now sits next to the number —matching the tile that opened it—. A band reading shows no mark (the band is the expected source). So an Apple reading **never** reads identical to a band one. Heart Rate, Steps and VO₂max are unchanged.

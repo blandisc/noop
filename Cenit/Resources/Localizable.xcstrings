@@ -2449,6 +2449,22 @@
         }
       }
     },
+    "(copy)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(copy)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(copia)"
+          }
+        }
+      }
+    },
     "(untitled)": {
       "localizations": {
         "en": {
@@ -10656,6 +10672,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Quitarlo podría ayudarte."
+          }
+        }
+      }
+    },
+    "Duplicate": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duplicate"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duplicar"
           }
         }
       }
