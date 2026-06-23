@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **En Hoy, cada dato dice de dónde viene: banda, Apple o calculado / On Today, each number says where it comes from: band, Apple or calculated.**
+  **ES** — En la vista Métricas, cada pill y cada tile lleva ahora un chip con su **fuente real del día**: **BANDA** (tu strap), **APPLE** (Apple Salud) o **CALCULADO** (lo que Cénit deriva, como el Estrés). Es dinámico por-dato: en modo Combinado, si una noche no traías la banda, ese dato se marca **APPLE** sin mentir; en Solo Apple Salud nada dice «BANDA», y en Solo banda nada dice «APPLE». Cambiar de modo solo cambia lo que ves; nada se borra.
+  **EN** — In the Metrics view, each pill and tile now carries a chip with its **real source for the day**: **BAND** (your strap), **APPLE** (Apple Health) or **CALCULATED** (what Cénit derives, like Stress). It's dynamic per-datum: in Combined mode, if you didn't wear the band one night, that number is marked **APPLE** without lying; in Apple-Health-only nothing says "BAND", and in band-only nothing says "APPLE". Switching modes only changes what you see; nothing is deleted.
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **Nueva rutina de Movilidad para los días suaves / New Mobility routine for softer days.**
   **ES** — Cuando tu recuperación viene **baja**, la sugerencia de Entrenar ahora te lleva a una nueva rutina de **Movilidad y cardio ligero** (~20 min, solo peso corporal) en vez de a Respira. Al abrirla, el botón principal es **«Empezar»**: arranca la sesión guiada al momento, sin tener que guardarla antes; si la quieres conservar, **«Agregar a mis rutinas»** está como opción secundaria. Es un reinicio suave, sin equipo y sin promesas clínicas.
   **EN** — When your recovery is **low**, the Train suggestion now takes you to a new **Mobility & light cardio** routine (~20 min, bodyweight only) instead of Breathe. When it opens, the primary button is **«Start»**: it begins the guided session right away, with no need to save it first; if you want to keep it, **«Add to my routines»** stays as the secondary option. A gentle reset, no equipment, no clinical claims.
