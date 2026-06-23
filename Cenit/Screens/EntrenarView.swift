@@ -30,11 +30,13 @@ struct EntrenarView: View {
     var openDiet: () -> Void
     /// Push «Mis entrenamientos» (the completed-session history, FER-504).
     var openHistory: () -> Void
+    /// Push the weekly plan editor (FER-533). Temporary landing entry until F3 opens it from «Tu plan».
+    var openWeeklyPlan: () -> Void
 
     var body: some View {
         EntrenarLanding(openRoutine: openRoutine, openLibrary: openLibrary,
                         openBreathe: openBreathe, openIntervals: openIntervals, openDiet: openDiet,
-                        openHistory: openHistory)
+                        openHistory: openHistory, openWeeklyPlan: openWeeklyPlan)
             .instrumentoTheme(.base)
     }
 }
@@ -51,6 +53,7 @@ private struct EntrenarLanding: View {
     var openIntervals: () -> Void
     var openDiet: () -> Void
     var openHistory: () -> Void
+    var openWeeklyPlan: () -> Void
 
     @State private var loaded = false
     @State private var routines: [Routine] = []
@@ -498,6 +501,9 @@ private struct EntrenarLanding: View {
                     resumeStrengthRow
                     divider
                 }
+                // Temporary entry to the weekly plan editor (FER-533) until F3 opens it from «Tu plan».
+                toolRow("Weekly plan", "calendar", action: openWeeklyPlan)
+                divider
                 LiveWorkoutHubRow()
                 divider
                 toolRow("My workouts", "clock.arrow.circlepath", action: openHistory)
