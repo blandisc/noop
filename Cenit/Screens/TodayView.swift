@@ -354,7 +354,9 @@ struct TodayView: View {
                     intradayCurveLoader: spec.blocks.contains(.intradayCurve) ? { hrPoints } : nil,
                     hrMax: Double(model.profile.hrMax),
                     restingHR: resolveMeasured { $0.restingHr.map(Double.init) }?.value,
-                    todayKey: Repository.localDayKey(Date())
+                    todayKey: Repository.localDayKey(Date()),
+                    // FER-571: «Ver más en Tendencias» salta al tab Cuerpo (Tendencias) y cierra la hoja.
+                    onSeeTrends: { tabRouter.select(.body) }
                 )
             }
     }
@@ -1848,7 +1850,8 @@ struct TodayView: View {
         let recR    = repo.today?.recovery
         let respR   = latestFromDisplay { $0.respRateBpm }
 
-        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+        // FER-581: ritmo vertical un poco más apretado (gap→space2) para recortar el scroll de la página.
+        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
             // FER-550 (fiel al handoff): «Vistazo» — Recuperación / HRV / Sueño en 3 pills compactas (el
             // dato de un vistazo, sin mini-banda). El estado del día y la escala de 4 segmentos se retiraron
             // de aquí (el dial ya lleva la palabra del veredicto, FER-549) y el pulso vivo se mudó al header
@@ -1856,8 +1859,16 @@ struct TodayView: View {
             glanceRow(recovery: recR, hrv: hrvR, sleep: sleepR, base: base, positive: positiveDelta)
             // Overline de la sección: la rejilla de hoy. Cada tile trae su tendencia de 14 días como
             // mini-gráfica de área (FER-551) + su «vs media».
-            Text("Métricas de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                .padding(.top, NoopMetrics.space1)
+            // FER-581: el rótulo de la sección y la leyenda de fuente comparten renglón. El lado derecho
+            // del overline estaba vacío y la leyenda al pie sumaba un renglón (con su gap) que empujaba el
+            // scroll; subirla aquí recupera ese alto sin perder la explicación de los puntos.
+            HStack(spacing: NoopMetrics.space2) {
+                Text("Métricas de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    .lineLimit(1)
+                Spacer(minLength: NoopMetrics.space2)
+                sourceLegend
+            }
+            .padding(.top, NoopMetrics.space1)
             LazyVGrid(columns: tileGrid, alignment: .leading, spacing: NoopMetrics.gap) {
                 // Esfuerzo del día — carga del día, sin valencia (Δ en tinta neutra).
                 metricTile(TodayMetricTile(
@@ -1927,25 +1938,18 @@ struct TodayView: View {
                     series: areaSeries(base, today: respR?.value) { $0.respRateBpm }
                 )) { metricDetail = .respiratory(respR?.value) }
             }
-            // FER-575: leyenda única al pie DERECHO que define el punto de color de fuente de pills y
-            // tiles (banda / Apple / calculado). Reemplaza la palabra-badge por-dato de FER-552: cada
-            // dato solo lleva un punto y el significado se explica aquí una vez. (La de FER-278 «W Strap ·
-            // Apple Salud» se había quitado; vuelve en esta forma compacta.)
-            sourceLegend
         }
     }
 
-    /// Leyenda de fuente (FER-575): un renglón alineado a la derecha que mapea cada punto de color a su
-    /// fuente. Oculta a VoiceOver — cada pill/tile ya anuncia su fuente vía el `accessibilityLabel` del
-    /// punto (`SourceChip`), así que repetirla aquí sería ruido.
+    /// Leyenda de fuente (FER-575, reubicada en FER-581 al renglón del rótulo «Métricas de hoy»): mapea
+    /// cada punto de color a su fuente. Oculta a VoiceOver — cada pill/tile ya anuncia su fuente vía el
+    /// `accessibilityLabel` del punto (`SourceChip`), así que repetirla aquí sería ruido.
     private var sourceLegend: some View {
-        HStack(spacing: NoopMetrics.gap) {
-            Spacer(minLength: 0)
+        HStack(spacing: NoopMetrics.space2) {
             legendDot(theme.dataRecovery, "Band")
             legendDot(theme.dataSpO2, "Apple Health source")
             legendDot(theme.inkTertiary, "Calculated")
         }
-        .padding(.top, NoopMetrics.space1)
         .accessibilityHidden(true)
     }
 
@@ -1953,6 +1957,7 @@ struct TodayView: View {
         HStack(spacing: NoopMetrics.space1) {
             Circle().fill(color).frame(width: 6, height: 6)
             Text(label).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                .lineLimit(1).minimumScaleFactor(0.8)
         }
     }
 
@@ -2030,6 +2035,30 @@ struct TodayView: View {
 
         private var isEmpty: Bool { value == "—" }
 
+        /// El valor con los DÍGITOS al tamaño grande y las LETRAS de unidad inline (la «h»/«m» de «5h 31m»)
+        /// en chico — igual que el «ms» de HRV (FER-575 follow-up). Así un valor ancho como el de sueño
+        /// conserva sus dígitos al MISMO tamaño que «71»/«58» en vez de encoger toda la cadena por no caber
+        /// (el `minimumScaleFactor` solo encogía a sueño, rompiendo la paridad). Sin letras («71») = Text
+        /// normal. Las corridas se concatenan en un solo `Text`, así baseline-alinean como «58 ms».
+        private var valueText: Text {
+            var out = Text(verbatim: "")
+            var run = ""
+            var runIsLetter = false
+            func flush() {
+                guard !run.isEmpty else { return }
+                let f = runIsLetter ? StrandFont.caption : StrandFont.number(21, weight: .semibold)
+                out = out + Text(verbatim: run).font(f)
+                run = ""
+            }
+            for ch in value {
+                if !run.isEmpty && ch.isLetter != runIsLetter { flush() }
+                runIsLetter = ch.isLetter
+                run.append(ch)
+            }
+            flush()
+            return out
+        }
+
         var body: some View {
             VStack(alignment: .leading, spacing: NoopMetrics.space2) {
                 // FER-575: ícono + TÍTULO de la métrica (antes solo el ícono, con un chevron). El título da
@@ -2046,7 +2075,7 @@ struct TodayView: View {
                     Spacer(minLength: 0)
                 }
                 HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
-                    Text(value).font(StrandFont.number(21, weight: .semibold))
+                    valueText
                         .foregroundStyle(isEmpty ? theme.inkDim : color)
                         .lineLimit(1).minimumScaleFactor(0.6)
                     if let unit {
@@ -2166,10 +2195,11 @@ struct TodayView: View {
         return today.map { prior + [$0] } ?? prior
     }
 
-    /// Δ de sueño en lenguaje de tiempo: «18 min» bajo una hora, «1h 5m» a partir de una.
+    /// Δ de sueño en unidades de una letra: «18m» bajo una hora, «1h 5m» a partir de una (FER-575 follow-up:
+    /// «18 min» era más ancho que «+27» y el `minimumScaleFactor` encogía solo el delta de sueño).
     private func sleepDeltaText(_ minutes: Double) -> String {
         let m = Int(minutes.rounded())
-        return m >= 60 ? "\(m / 60)h \(m % 60)m" : "\(m) min"
+        return m >= 60 ? "\(m / 60)h \(m % 60)m" : "\(m)m"
     }
 
     /// El color del valor de Estrés por banda 0–3, en roles del tema (regla: color saturado solo en el
