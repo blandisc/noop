@@ -69,25 +69,6 @@ private enum CuerpoSheet: Identifiable {
     }
 }
 
-// MARK: - Press feedback for surface cards
-
-/// Press feedback for a card that paints its OWN `theme.surface` background inside the button label:
-/// `MetricRowButtonStyle` fills BEHIND the label, which an opaque surface would hide, so this overlays
-/// the tint ON TOP, clipped to the card's rounded shape. Same 5%-ink + easeOut(0.12) feel as the stats.
-private struct CardPressStyle: ButtonStyle {
-    var tint: Color
-    var radius: CGFloat = NoopMetrics.cardRadius
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .overlay {
-                RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .fill(tint)
-                    .opacity(configuration.isPressed ? 1 : 0)
-            }
-            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
-    }
-}
-
 // MARK: - Landing
 
 private struct CuerpoLanding: View {
@@ -603,9 +584,9 @@ private struct CuerpoLanding: View {
             .contentShape(Rectangle())
         }
         // Press feedback to match the stats: the hero draws its own `surface` background, so a fill
-        // BEHIND the label (MetricRowButtonStyle) wouldn't show — `CardPressStyle` overlays the tint on
-        // top, clipped to the same rounded shape. (FER-186 follow-up)
-        .buttonStyle(CardPressStyle(tint: theme.ink.opacity(0.05)))
+        // BEHIND the label (MetricRowButtonStyle) wouldn't show — `SurfacePressStyle` overlays the tint
+        // on top, clipped to the same rounded shape. (FER-186 follow-up)
+        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05)))
         .accessibilityElement(children: .combine)
     }
 
