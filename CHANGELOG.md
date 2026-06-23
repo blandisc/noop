@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La batería de tu banda va junto a la fecha en Hoy, y su icono ya no es un Apple Watch / Your band's battery sits next to the date on Today, and its icon is no longer an Apple Watch.**
+  **ES** — En «Hoy», la batería de tu banda se movió **junto a la fecha** (arriba a la izquierda), con un divisor entre ambas; la píldora de tu pulso queda sola a la derecha. Y en la carta de **Latidos**, la fila de la banda dejó de usar el icono del Apple Watch (confundía): ahora es un **icono de sensor** que transmite, sin marca. El color de la batería sigue por nivel (verde / ámbar / rojo).
+  **EN** — On «Hoy», your band's battery moved **next to the date** (top-left), with a divider between them; your pulse pill now sits alone on the right. And in the **Heartbeats** card, the band row no longer uses the Apple Watch icon (it was misleading): it's now a **sensor icon** that broadcasts, brand-agnostic. Battery color still follows the level (green / amber / red).
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift), [Cenit/Screens/LiveView.swift](Cenit/Screens/LiveView.swift))
+
 - **En el Daily Brief de Hoy, cada renglón abre el detalle de su señal / On Today's Daily Brief, each row opens its own signal's detail.**
   **ES** — Tocar un renglón del Daily Brief (p. ej. «Dormiste poco») abría siempre la misma hoja del «¿por qué?» del veredicto. Ahora cada renglón abre **su propio detalle**: Sueño → Sueño, HRV → HRV, FC en reposo → FC en reposo, Recuperación → Recuperación. (Las señales sin pantalla propia —temperatura de piel, carga— sí abren el «¿por qué?» del veredicto, que es su contexto.)
   **EN** — Tapping a Daily Brief row (e.g. "You slept little") always opened the same verdict "why" sheet. Now each row opens **its own detail**: Sleep → Sleep, HRV → HRV, resting HR → resting HR, Recovery → Recovery. (Signals without their own screen — skin temperature, load — still open the verdict "why", which is their context.)

@@ -265,7 +265,8 @@ struct LiveView: View {
     @ViewBuilder private var batteryRow: some View {
         if let pct = live.batteryPct {
             HStack(spacing: 9) {
-                Image(systemName: "applewatch").font(StrandFont.subhead)
+                // FER-590: la banda es un sensor BLE que transmite, no un Apple Watch — glifo agnóstico.
+                Image(systemName: "sensor.tag.radiowave.forward").font(StrandFont.subhead)
                     .foregroundStyle(theme.inkTertiary).frame(width: 20)
                 Text("Strap").font(StrandFont.subhead).foregroundStyle(theme.ink)
                 Spacer(minLength: 6)

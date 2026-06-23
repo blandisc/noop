@@ -765,28 +765,15 @@ struct TodayView: View {
         // la batería suelta arriba-derecha; aquí quedan juntas como «qué tan al día está tu instrumento».
         HStack(alignment: .center, spacing: NoopMetrics.space2) {
             utilityRow
-            Spacer(minLength: NoopMetrics.space2)
-            // FER-550: el header muestra la PÍLDORA DE PULSO (con su frescura ⟳, FER-549), que se mudó aquí
-            // desde el encabezado de «Métricas de hoy» (retirado en F2). El dial girando (FER-221) acompaña
-            // el sync.
-            // FER-583: la cápsula de pulso se mantiene SIEMPRE (en reposo y sincronizando); solo cambia su
-            // texto de frescura (⟳ hace 30 s → ⟳ Sincronizando… / N paquetes, con el glifo girando). Antes
-            // el sync REEMPLAZABA la cápsula por una línea suelta (sin bpm), lo que escondía el pulso y, como
-            // medía menos alto, hacía «saltar» el header. Sin strap visto no hay cápsula — solo fecha+batería.
-            if strapSeen || live.backfilling || live.draining {
-                pulsePill
-            }
+            // FER-590: la batería del strap va junto a la fecha (izquierda), con un divisor hairline entre
+            // ambas; la píldora de pulso queda sola a la derecha. El acento del glifo va POR NIVEL
+            // (`theme.batteryColor`: verde / ámbar ≤20% / rojo ≤10%); el «%» en tinta. Sin batería no se
+            // muestra ni el divisor.
             if let pct = live.batteryPct {
-                // Separador hairline entre sync y batería (handoff «Hoy · Estados»): una regla vertical
-                // `hairlineStrong` (= #D8D0BD del mock) en vez del punto «·» de antes — divide sin texto.
                 Rectangle().fill(theme.hairlineStrong)
                     .frame(width: 1, height: 11)
                     .accessibilityHidden(true)
                 HStack(spacing: 4) {
-                    // Acento POR NIVEL en el glifo de la batería: sana → verde del veredicto; ≤20% →
-                    // ámbar (`warning`); ≤10% → rojo (`critical`) — regla compartida `theme.batteryColor`.
-                    // El «%» se queda en tinta terciaria: el color vive solo en el dato (glifo), como en
-                    // los tiles.
                     Image(systemName: batteryIcon(pct: pct, charging: live.charging == true))
                         .font(StrandFont.overline)
                         .foregroundStyle(theme.batteryColor(forLevel: pct))
@@ -798,6 +785,12 @@ struct TodayView: View {
                 .accessibilityLabel(live.charging == true
                     ? Text("Batería del strap: \(Int(pct.rounded()))%, cargando")
                     : Text("Batería del strap: \(Int(pct.rounded()))%"))
+            }
+            Spacer(minLength: NoopMetrics.space2)
+            // La cápsula de pulso se mantiene SIEMPRE (reposo y sync); solo cambia su texto de frescura
+            // (⟳ hace 30 s → ⟳ Sincronizando… / N paquetes). Sin strap visto no hay cápsula. (FER-550/583)
+            if strapSeen || live.backfilling || live.draining {
+                pulsePill
             }
         }
         .accessibilityElement(children: .combine)
