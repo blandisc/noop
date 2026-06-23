@@ -242,6 +242,6 @@ struct ECGShape: Shape {
     .padding(24)
     .frame(width: 320, height: 320)
     .background(InstrumentoTheme.base.paper)
-    .preferredColorScheme(.dark)
+    .preferredColorScheme(.light)
 }
 #endif

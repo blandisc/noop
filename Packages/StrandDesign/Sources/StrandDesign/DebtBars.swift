@@ -184,6 +184,6 @@ public struct DebtBars: View {
     .padding(24)
     .frame(width: 340, height: 160)
     .background(InstrumentoTheme.base.paper)
-    .preferredColorScheme(.dark)
+    .preferredColorScheme(.light)
 }
 #endif
