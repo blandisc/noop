@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Cada tile de Hoy ahora trae tu tendencia de 14 días / Each Today tile now shows your 14-day trend.**
+  **ES** — En la rejilla de Métricas, cada tile (Esfuerzo, FC reposo, Oxígeno, Pasos, Estrés, Respiración) cambia la barrita de rango por una **mini-gráfica de área de 14 días** con tus valores reales, tintada por su color y con un punto en el día de hoy: ves de un vistazo si vienes subiendo o bajando. Se conserva tu «±N vs media» abajo. Si aún no hay suficientes días, dice «aún construyendo».
+  **EN** — In the Metrics grid, each tile (Strain, Resting HR, Blood Oxygen, Steps, Stress, Respiration) swaps the little range bar for a **14-day area mini-chart** of your real values, tinted in its color with a dot on today: you see at a glance whether you're trending up or down. Your "±N vs average" stays below it. If there aren't enough days yet, it says it's still building.
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **En Entrenar, la sugerencia se adapta a tu recuperación / In Train, the suggestion adapts to your recovery.**
   **ES** — La fila de **«Sugerencia»** del planificador ya no es fija: aparece **solo cuando hay algo que sugerir**, según tu recuperación de hoy frente a tu normal. Si vienes **bajo**, te ofrece una opción más suave (respiración de recuperación); si vienes **con energía**, una opción ligera **opcional** (intervalos). En un día normal, o si aún no hay dato, la fila simplemente no aparece. Sigue siendo una sugerencia: nunca bloquea, tú decides.
   **EN** — The planner's **«Suggestion»** row is no longer fixed: it shows up **only when there's something to suggest**, based on today's recovery against your normal. If you're **low**, it offers a gentler option (recovery breathing); if you're **feeling good**, an **optional** light option (intervals). On a normal day, or with no data yet, the row simply doesn't appear. It's still a suggestion: it never blocks, you decide.
