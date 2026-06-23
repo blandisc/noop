@@ -250,11 +250,13 @@ public struct WorkoutProgramImporter {
 public struct WorkoutExerciseReconciler {
     private let byNormalizedName: [String: Exercise]
     private let byId: [String: Exercise]
+    private let byAlias: [String: Exercise]
 
-    /// Build from the known exercises (catalog + custom). Indexes each exercise by its `id` (FER-521)
-    /// and by BOTH its English `name` and Spanish `nameES` (FER-501), so a plan matches by the catalog
-    /// id the LLM picked, or by name in either language. On a normalized-name collision the first wins —
-    /// deterministic, and the app passes the catalog sorted by name.
+    /// Build from the known exercises (catalog + custom). Indexes each exercise by its `id` (FER-521),
+    /// by BOTH its English `name` and Spanish `nameES` (FER-501), and by the curated synonym table
+    /// (FER-522) — so a plan matches by the id the LLM picked, by name in either language, or by a
+    /// common variant. On a normalized-name collision the first wins — deterministic, and the app
+    /// passes the catalog sorted by name.
     public init(known: [Exercise]) {
         var map: [String: Exercise] = [:]
         var ids: [String: Exercise] = [:]
@@ -265,8 +267,18 @@ public struct WorkoutExerciseReconciler {
                 if map[key] == nil { map[key] = ex }
             }
         }
+        // Curated synonyms (FER-522): normalize each alias with the same rule as names; keep only those
+        // pointing at a known exercise. A normalized alias that already names an exercise doesn't override
+        // it (name wins at resolve time anyway).
+        var aliases: [String: Exercise] = [:]
+        for (alias, id) in ExerciseAliases.all {
+            guard let ex = ids[id] else { continue }
+            let key = Self.normalize(alias)
+            if aliases[key] == nil { aliases[key] = ex }
+        }
         byNormalizedName = map
         byId = ids
+        byAlias = aliases
     }
 
     /// The catalog exercise whose name matches `name` after normalization, or nil if none does.
@@ -274,12 +286,14 @@ public struct WorkoutExerciseReconciler {
         byNormalizedName[Self.normalize(name)]
     }
 
-    /// Resolve an imported exercise to a known one: by its declared catalog `id` first (FER-521 — exact
-    /// and language-proof), then by normalized name (EN/ES). An unknown/invalid id is ignored, degrading
-    /// to the name match. Returns nil only when neither resolves (→ the user maps it).
+    /// Resolve an imported exercise to a known one, in cascade: by its declared catalog `id` first
+    /// (FER-521 — exact and language-proof), then by normalized name (EN/ES, FER-501), then by the
+    /// curated synonym table (FER-522). An unknown/invalid id is ignored, degrading to the name then the
+    /// alias. Returns nil only when none resolves (→ the user maps it).
     public func resolve(_ exercise: WorkoutExercise) -> Exercise? {
         if let id = exercise.id, let hit = byId[id] { return hit }
-        return match(exercise.name)
+        if let hit = match(exercise.name) { return hit }
+        return byAlias[Self.normalize(exercise.name)]
     }
 
     /// The unique exercise names across the program that DON'T resolve (by id or name), in first-seen

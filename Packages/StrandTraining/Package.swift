@@ -15,7 +15,8 @@ let package = Package(
             name: "StrandTraining",
             resources: [
                 .process("Resources/exercises.json"),
-                .process("Resources/exercises.es.json"),   // Spanish overlay (FER-501)
+                .process("Resources/exercises.es.json"),       // Spanish overlay (FER-501)
+                .process("Resources/exercise-aliases.json"),   // synonym table for import matching (FER-522)
             ]
         ),
         .testTarget(
