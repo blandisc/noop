@@ -2032,7 +2032,12 @@ struct TodayView: View {
                     Text("At your average").font(StrandFont.caption).foregroundStyle(c)
                         .lineLimit(1).minimumScaleFactor(0.6)
                 }
-            default:
+            case .building:
+                // Paridad con los tiles: aún sin ≥4 días de base para una media honesta.
+                Text("Still building your average").font(StrandFont.caption)
+                    .foregroundStyle(theme.inkTertiary).lineLimit(1).minimumScaleFactor(0.6)
+            case .none:
+                // Sin valor de hoy: el «—» del valor ya lo dice; el renglón vacío mantiene parejas las 3.
                 Text(verbatim: " ").font(StrandFont.caption)
             }
         }
