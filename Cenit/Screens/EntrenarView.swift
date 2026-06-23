@@ -229,13 +229,7 @@ private struct EntrenarLanding: View {
                     Text("Unfiled").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 14).padding(.bottom, 2)
-                        .padding(.horizontal, dropTarget == Self.unfiledDropID ? 10 : 0)
-                        .background(dropTarget == Self.unfiledDropID ? theme.surface : .clear,
-                                    in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .overlay { if dropTarget == Self.unfiledDropID {
-                            RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(theme.ink, lineWidth: 1.5) } }
-                        .animation(.snappy, value: dropTarget)
-                        .contentShape(Rectangle())
+                        .dropHighlight(dropTarget == Self.unfiledDropID, fill: theme.surface, stroke: theme.ink)
                         .dropDestination(for: String.self) { items, _ in handleDrop(onFolder: nil, items) }
                             isTargeted: { setDropTarget(Self.unfiledDropID, $0) }
                 }
@@ -279,12 +273,7 @@ private struct EntrenarLanding: View {
             }
         }
         .padding(.top, 12).padding(.bottom, 2)
-        .padding(.horizontal, targeted ? 10 : 0)
-        .background(targeted ? theme.surface : .clear, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay { if targeted {
-            RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(theme.ink, lineWidth: 1.5) } }
-        .animation(.snappy, value: targeted)
-        .contentShape(Rectangle())
+        .dropHighlight(targeted, fill: theme.surface, stroke: theme.ink)
         // Drag the header to reorder folders; drop a routine (or another folder) onto it (FER-526).
         .draggable("f:\(f.id)")
         .dropDestination(for: String.self) { items, _ in handleDrop(onFolder: f.id, items) }
@@ -390,7 +379,7 @@ private struct EntrenarLanding: View {
         order.removeAll { $0 == rid }
         guard let idx = order.firstIndex(of: target.id) else { return false }
         order.insert(rid, at: idx)
-        Task { try? await repo.reorderRoutines(order); await load() }
+        Task { try? await repo.reorderRoutines(order); await refreshFoldersAndRoutines() }
         return true
     }
 
@@ -400,7 +389,7 @@ private struct EntrenarLanding: View {
         order.removeAll { $0 == draggedId }
         guard let idx = order.firstIndex(of: targetId) else { return }
         order.insert(draggedId, at: idx)
-        Task { try? await repo.reorderFolders(order); await load() }
+        Task { try? await repo.reorderFolders(order); await refreshFoldersAndRoutines() }
     }
 
     // MARK: - Delete / undo (FER-491)
@@ -797,6 +786,20 @@ private struct SwipeToDeleteRow<Content: View>: View {
                 }
                 isOpen = open
             }
+    }
+}
+
+private extension View {
+    /// Highlight a drop target while a drag hovers over it (FER-526): a soft surface fill + ink outline.
+    @ViewBuilder
+    func dropHighlight(_ targeted: Bool, fill: Color, stroke: Color) -> some View {
+        self
+            .padding(.horizontal, targeted ? 10 : 0)
+            .background(targeted ? fill : .clear, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay { if targeted {
+                RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(stroke, lineWidth: 1.5) } }
+            .animation(.snappy, value: targeted)
+            .contentShape(Rectangle())
     }
 }
 #endif
