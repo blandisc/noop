@@ -76,6 +76,9 @@ struct LiveView: View {
     /// Measured content height → the sheet detent, so the sheet opens exactly as tall as the content
     /// instead of full-screen with empty space below (FER-196).
     @State private var sheetHeight: CGFloat = 0
+    /// Whether the Signals list is expanded. Starts open so the honest live-vs-on-sync story is visible
+    /// on first open; the user can fold it to keep the card compact (FER-586).
+    @State private var signalsExpanded = true
     /// Cached coverage classification. Depends only on `repo.days`/`appleHealthDays`, so it's
     /// recomputed via `.task(id: repo.refreshSeq)` rather than on every `body` pass — LiveView
     /// re-renders on each live-HR tick, and recomputing `Set(repo.days…)` per tick was wasteful (FER-319).
@@ -109,9 +112,9 @@ struct LiveView: View {
                     // (FER-195): keep the monitor mounted but paused (HR "—", flat ECG) instead of
                     // flashing the empty "Connect" state on every few-second duty-cycle drop.
                     hero
+                    batteryRow
                     signalsSection
-                    coverageStrip
-                    savedFooter
+                    integritySection
                 } else {
                     // No live connection: a single "Connect" CTA, not a management panel — no dead end.
                     disconnectedState
@@ -158,7 +161,7 @@ struct LiveView: View {
 
     private var header: some View {
         HStack(alignment: .center) {
-            Text("Live").font(StrandFont.title1).foregroundStyle(theme.ink)
+            Text("Heartbeats").font(StrandFont.title1).foregroundStyle(theme.ink)
             Spacer()
             connectionPill
         }
@@ -253,9 +256,93 @@ struct LiveView: View {
         return 6 + CGFloat(f) * 18
     }
 
+    // MARK: - Strap battery (reuses Today's by-level battery accent)
+
+    /// The strap's battery level, painted with the shared by-level accent — green / amber ≤20 % /
+    /// red ≤10 % (`theme.batteryColor`), the same rule as Today's header. Hidden when the level is
+    /// unknown so there's no ugly "—". Presentation-only: the value already arrives via
+    /// `model.getBattery()` into `live.batteryPct` (FER-586).
+    @ViewBuilder private var batteryRow: some View {
+        if let pct = live.batteryPct {
+            HStack(spacing: 9) {
+                Image(systemName: "applewatch").font(StrandFont.subhead)
+                    .foregroundStyle(theme.inkTertiary).frame(width: 20)
+                Text("Strap").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                Spacer(minLength: 6)
+                Image(systemName: batteryIcon(pct: pct, charging: live.charging == true))
+                    .font(StrandFont.subhead)
+                    .foregroundStyle(theme.batteryColor(forLevel: pct))
+                Text("\(Int(pct.rounded()))%")
+                    .font(StrandFont.captionNumber).monospacedDigit()
+                    .foregroundStyle(theme.ink)
+            }
+            .padding(.vertical, 8)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(live.charging == true
+                ? Text("Strap battery: \(Int(pct.rounded()))%, charging")
+                : Text("Strap battery: \(Int(pct.rounded()))%"))
+        }
+    }
+
+    /// SF Symbol for the battery level. Charging → `battery.100.bolt` (the only battery-with-bolt glyph
+    /// SF Symbols actually ships); the bolt says "charging" and the "%" carries the exact level. Same
+    /// logic as Today's header (`batteryIcon`).
+    private func batteryIcon(pct: Double, charging: Bool) -> String {
+        if charging { return "battery.100.bolt" }
+        switch pct {
+        case 75...:   return "battery.100"
+        case 50..<75: return "battery.75"
+        case 25..<50: return "battery.50"
+        default:      return "battery.25"
+        }
+    }
+
     // MARK: - Signals (the merge: live state + sync state + stored count, in two labelled groups)
 
+    /// The two signal groups, foldable behind a chevron header (FER-586). Content is unchanged — the
+    /// disclosure just lets the card collapse the list to keep the sheet compact.
     private var signalsSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            signalsDisclosureHeader
+            if signalsExpanded {
+                signalGroups.padding(.top, 4)
+            }
+        }
+    }
+
+    /// Tappable header: a rotating chevron + "Signals", with at-a-glance live / on-sync count chips so
+    /// the user sees what's inside even when folded.
+    private var signalsDisclosureHeader: some View {
+        Button {
+            withAnimation(.snappy) { signalsExpanded.toggle() }
+        } label: {
+            HStack(spacing: 9) {
+                Image(systemName: "chevron.right")
+                    .font(StrandFont.caption).fontWeight(.semibold)
+                    .foregroundStyle(theme.inkTertiary)
+                    .rotationEffect(.degrees(signalsExpanded ? 90 : 0))
+                Text("Signals").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                Spacer(minLength: 6)
+                signalCountChip(theme.dataRecovery, 2, "live")
+                signalCountChip(theme.inkTertiary, 3, "on sync")
+            }
+            .contentShape(Rectangle())
+            .padding(.vertical, 6)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("Signals"))
+        .accessibilityValue(signalsExpanded ? Text("Expanded") : Text("Collapsed"))
+    }
+
+    private func signalCountChip(_ color: Color, _ count: Int, _ label: LocalizedStringKey) -> some View {
+        HStack(spacing: 5) {
+            Circle().fill(color).frame(width: 6, height: 6)
+            Text("\(count)").font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
+            Text(label).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+        }
+    }
+
+    private var signalGroups: some View {
         let c = receipt?.counts
         let ago = live.lastSyncedAt.map { relativeAgo($0) }
         let bpm = String(localized: "bpm")   // unit localizes to "lpm" in Spanish (FER-196)
@@ -379,13 +466,22 @@ struct LiveView: View {
                         none: perDay.filter { $0 == .none }.count)
     }
 
+    /// «Data integrity» — one heading over the 28-day coverage strip AND the saved/Verify footer, which
+    /// used to sit apart. Pure regrouping: the coverage and footer logic is untouched (FER-586).
+    private var integritySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Data integrity").font(StrandFont.overline).tracking(StrandFont.overlineTracking)
+                .foregroundStyle(theme.inkTertiary)
+            coverageStrip
+            savedFooter
+        }
+    }
+
     @ViewBuilder private var coverageStrip: some View {
         let cov = coverageCache
         // Only show once at least one day has data — no alarming all-grey strip on first use.
         if cov.strap + cov.apple > 0 {
             VStack(alignment: .leading, spacing: 7) {
-                Text("Daily coverage").font(StrandFont.overline).tracking(StrandFont.overlineTracking)
-                    .foregroundStyle(theme.inkTertiary)
                 HStack(spacing: 3) {
                     ForEach(Array(cov.perDay.enumerated()), id: \.offset) { _, src in
                         RoundedRectangle(cornerRadius: 2)
