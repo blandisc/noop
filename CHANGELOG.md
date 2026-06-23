@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El detalle de Esfuerzo recupera su tendencia, con un solo bloque de Niveles / Strain's detail gets its trend back, with a single Levels block.**
+  **ES** — En el detalle de **Esfuerzo** quitamos una duplicación: tenías la tabla de **Niveles** y, encima, un explorador de niveles con su propia gráfica ocupando el lugar de la tendencia. Ahora hay **una sola tabla de Niveles** (Reposo/ligero 0–7 · Moderado 7–14 · Intenso 14–18 · Extremo 18–21, con el nivel de hoy resaltado) y la **tendencia vuelve a «Ve tu historial»**: la gráfica del periodo que elijas con **«Promedio · {periodo} · {valor} · {Δ%} vs periodo previo»** (neutral —el esfuerzo no tiene una dirección «buena»—) y qué lo mueve. Es la estructura del handoff.
+  **EN** — In **Strain's** detail we removed a duplication: you had the **Levels** table and, on top of it, a levels explorer with its own chart taking the trend's place. Now there's a **single Levels table** (Rest/Light 0–7 · Moderate 7–14 · Hard 14–18 · Extreme 18–21, today's level highlighted) and the **trend is back under "See your history"**: the chart for whichever period you pick with **"Average · {period} · {value} · {Δ%} vs previous"** (neutral — strain has no "good" direction) and what moves it. It's the handoff structure.
+  ([Cenit/Screens/StrainDetailScreen.swift](Cenit/Screens/StrainDetailScreen.swift))
+
 - **«Mis entrenamientos» se titula como las demás pantallas de detalle / "My workouts" is titled like the other detail screens.**
   **ES** — La pantalla de entrenamientos ahora encabeza con el **titular serif «Mis entrenamientos» dentro de la pantalla** (la misma identidad que Recuperación, Esfuerzo y los demás detalles), en vez del título pequeño en la barra. La barra superior queda limpia, con solo **Listo** y **+**; el conteo de sesiones y el resto del hero no cambian.
   **EN** — The workouts screen now leads with the **serif "My workouts" headline inside the screen** (the same identity as Recovery, Strain and the other detail screens), instead of the small title in the bar. The top bar is now clean, with just **Done** and **+**; the session count and the rest of the hero are unchanged.
