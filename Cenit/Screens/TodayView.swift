@@ -762,8 +762,16 @@ struct TodayView: View {
         HStack(alignment: .center, spacing: NoopMetrics.space2) {
             utilityRow
             Spacer(minLength: NoopMetrics.space2)
-            SyncInline(backfilling: live.backfilling || live.draining, chunks: live.syncChunksThisSession,
-                       lastSyncedAt: live.lastSyncedAt)
+            // FER-550: en reposo el header muestra la PÍLDORA DE PULSO (con su frescura ⟳ 2m, FER-549),
+            // que se mudó aquí desde el encabezado de «Métricas de hoy» (retirado en F2). Durante el sync
+            // cede al `SyncInline` para no perder el progreso de paquetes («Sincronizando… / N paquetes»);
+            // el dial girando (FER-221) acompaña. Sin strap visto, ni pulso ni sync — solo fecha + batería.
+            if live.backfilling || live.draining {
+                SyncInline(backfilling: live.backfilling || live.draining, chunks: live.syncChunksThisSession,
+                           lastSyncedAt: live.lastSyncedAt)
+            } else if strapSeen {
+                pulsePill
+            }
             if let pct = live.batteryPct {
                 // Separador hairline entre sync y batería (handoff «Hoy · Estados»): una regla vertical
                 // `hairlineStrong` (= #D8D0BD del mock) en vez del punto «·» de antes — divide sin texto.
@@ -1786,83 +1794,9 @@ struct TodayView: View {
         }
     }
 
-    /// Encabezado de «Métricas de hoy»: overline + fila de estado a la izquierda; píldora de pulso vivo
-    /// (si hay strap visto) + botón «i» a la derecha. Con veredicto, la fila es la palabra del nivel en su
-    /// color (title2); sin veredicto (FER-475) dice «Aún no hay lectura de hoy» (punto en hairline, tinta
-    /// secundaria) — el dueño pidió que el estado de «sin lectura» también viva aquí.
-    private var metricsHeader: some View {
-        let level = readiness.level
-        return HStack(alignment: .top, spacing: NoopMetrics.gap) {
-            VStack(alignment: .leading, spacing: NoopMetrics.space2) {
-                Text("Métricas de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                HStack(spacing: NoopMetrics.space2) {
-                    if level == .insufficient {
-                        Circle().fill(theme.hairlineStrong).frame(width: 9, height: 9)
-                        Text("Aún no hay lectura de hoy").font(StrandFont.headline)
-                            .foregroundStyle(theme.inkSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    } else {
-                        Circle().fill(verdictDataColor(level)).frame(width: 9, height: 9)
-                        Text(stateLabel(level)).font(StrandFont.title2).fontWeight(.semibold)
-                            .foregroundStyle(verdictDataColor(level))
-                    }
-                }
-                .accessibilityElement(children: .combine)
-            }
-            Spacer(minLength: NoopMetrics.space2)
-            if strapSeen { pulsePill }
-            infoStateButton
-        }
-        .accessibilityAddTraits(.isHeader)
-    }
-
-    /// El botón «i» del encabezado: círculo con borde `hairlineStrong` + glifo info en tinta terciaria.
-    /// Abre la hoja de estado (la explicación ya no vive en línea, para limpiar la pantalla — handoff).
-    private var infoStateButton: some View {
-        // FER-475 (fix): abre `WhyVerdictSheet` —la explicación RICA del estado (señales en σ + leyenda
-        // completa de 4 niveles + salvedad de noche corta)—, la misma hoja que abre el titular del Brief.
-        // Reemplaza la hoja de estado mínima que había quitado info (el dueño la pidió de vuelta completa).
-        Button { showWhyVerdict = true } label: {
-            Image(systemName: "info.circle")
-                .font(.system(size: 15))
-                .foregroundStyle(theme.inkTertiary)
-                .frame(width: 26, height: 26)
-                .overlay(Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1))
-                .frame(minWidth: 44, minHeight: 44)   // objetivo táctil HIG sin agrandar el círculo
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text("Por qué tu estado se lee así"))
-        .accessibilityHint(Text("Abre tus señales de hoy y qué significan"))
-    }
-
-    /// La escala de 4 segmentos (Desgastado · Exigido · Equilibrado · A punto). Solo el segmento del nivel
-    /// actual se enciende en su color; el resto en hairline. Sitúa el estado en el continuo sin pintar un
-    /// semáforo completo (color solo en el dato). Sin veredicto (`insufficient`) se muestra APAGADA —los 4
-    /// elementos en hairline, ninguno activo— por pedido del dueño (FER-475).
-    private var stateScale: some View {
-        let order: [ReadinessEngine.Level] = [.rundown, .strained, .balanced, .primed]
-        let current = readiness.level
-        return HStack(alignment: .top, spacing: NoopMetrics.space2) {
-            ForEach(order, id: \.self) { lvl in
-                let active = lvl == current
-                VStack(spacing: NoopMetrics.space1) {
-                    Capsule(style: .continuous)
-                        .fill(active ? verdictDataColor(lvl) : theme.hairline)
-                        .frame(height: 4)
-                    Text(stateLabel(lvl))
-                        .font(StrandFont.footnote)
-                        .fontWeight(active ? .semibold : .regular)
-                        .foregroundStyle(active ? verdictDataColor(lvl) : theme.inkTertiary)
-                        .lineLimit(1).minimumScaleFactor(0.8)
-                }
-                .frame(maxWidth: .infinity)
-            }
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("Escala de estado"))
-        .accessibilityValue(Text(stateLabel(current)))
-    }
+    // FER-550: `metricsHeader` (estado + escala) + `infoStateButton` se retiraron — el dial ya lleva la
+    // palabra del veredicto (FER-549) y el «¿por qué?» se abre tocándola; el pulso vivo se mudó al header
+    // de arriba (`headerBlock`). `stateLabel` se conserva: lo usa el numeral del dial.
 
     /// "Métricas de hoy" — la lectura intradía del día como rejilla 2×4 de 8 tiles (valor + Δ vs ayer),
     /// en el lenguaje «Instrumento diurno». Sustituye a la lista de tendencia 14d (FER-155/161): la
@@ -1896,13 +1830,22 @@ struct TodayView: View {
         // `positiveText` oscurece el verdict lo justo para pasar AA contra el papel de la hora. Se
         // resuelve UNA vez por render (su bisección OKLab no debe correr por-tile) y se pasa a cada tile.
         let positiveDelta = theme.positiveText
+        // FER-550: recuperación y respiración para el Vistazo / la rejilla de 6. Como los demás vitales,
+        // el número = el último punto de su gráfica (`latestFromDisplay`), badgeado por su fuente (FER-546);
+        // la recuperación de hoy sale de `repo.today` (el mismo dato que el dial).
+        let recR    = repo.today?.recovery
+        let respR   = latestFromDisplay { $0.respRateBpm }
 
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-            // Encabezado de estado (FER-467): overline + estado del día + pulso vivo + botón «i», y debajo
-            // la escala de 4 segmentos (oculta sin veredicto). El pulso vivo se trajo aquí desde el héroe
-            // (FER-282 lo tenía en la línea del veredicto). Rejilla fija 2×8 (2 columnas, 8 tiles), intacta.
-            metricsHeader
-            stateScale
+            // FER-550 (fiel al handoff): «Vistazo» — Recuperación / HRV / Sueño en 3 pills compactas (el
+            // dato de un vistazo, sin mini-banda). El estado del día y la escala de 4 segmentos se retiraron
+            // de aquí (el dial ya lleva la palabra del veredicto, FER-549) y el pulso vivo se mudó al header
+            // de arriba; el «¿por qué?» se alcanza tocando la palabra del dial.
+            glanceRow(recovery: recR, hrv: hrvR, sleep: sleepR, base: base, positive: positiveDelta)
+            // Overline de la sección: la rejilla de hoy. La gráfica de tendencia de 14 días (área) llega en
+            // F3 (FER-551); en F2 cada tile conserva su mini-banda de 7 días.
+            Text("Métricas de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                .padding(.top, NoopMetrics.space1)
             LazyVGrid(columns: tileGrid, alignment: .leading, spacing: NoopMetrics.gap) {
                 // Esfuerzo del día — carga del día, sin valencia (Δ en tinta neutra).
                 metricTile(TodayMetricTile(
@@ -1913,36 +1856,6 @@ struct TodayView: View {
                     context: tileContext(today: strainT, history: history(base) { $0.strain },
                                          betterHigher: nil, deadband: 0.3, positive: positiveDelta) { String(format: "%.1f", $0) }
                 )) { metricDetail = .strain(strainT) }
-                // Sueño — dormir más es mejor.
-                metricTile(TodayMetricTile(
-                    label: "Sleep",
-                    icon: "moon.fill",
-                    value: sleepR.map { sleepText($0.value) } ?? "—",
-                    valueColor: theme.dataSleep,
-                    fromApple: sleepR?.fromApple == true,
-                    context: tileContext(today: sleepR?.value, history: history(base) { $0.totalSleepMin },
-                                         betterHigher: true, deadband: 5, positive: positiveDelta) { sleepDeltaText($0) },
-                    // Sin sueño de hoy todavía → «Esta noche» en vez de la cifra de ayer (FER-341).
-                    placeholder: sleepR == nil ? "Esta noche" : nil
-                )) { metricDetail = .sleep(sleepR.map { Int($0.value.rounded()) }) }
-                // HRV — más alto es mejor.
-                metricTile(TodayMetricTile(
-                    label: "HRV",
-                    icon: "waveform.path.ecg",
-                    value: hrvR.map { "\(Int($0.value.rounded()))" } ?? "—", unit: String(localized: "ms"),
-                    valueColor: theme.dataHrv,
-                    fromApple: hrvR?.fromApple == true,
-                    context: tileContext(today: hrvR?.value, history: history(base) { $0.avgHrv },
-                                         betterHigher: true, deadband: 1, positive: positiveDelta) { "\(Int($0.rounded())) ms" }
-                )) { metricDetail = .hrv(hrvR?.value) }
-                // Frecuencia cardíaca — promedio continuo del día. Sin Δ: no se guarda un promedio diurno
-                // de "ayer" con qué comparar (decisión del dueño, FER-180).
-                metricTile(TodayMetricTile(
-                    label: "Heart Rate",
-                    icon: "heart.fill",
-                    value: hrTodayAvg.map { "\($0)" } ?? "—", unit: String(localized: "bpm"),
-                    valueColor: theme.dataHeart
-                )) { metricDetail = .heartRate(avgBpm: hrTodayAvg) }
                 // FC en reposo — más alta es PEOR.
                 metricTile(TodayMetricTile(
                     label: "Resting HR",
@@ -1983,6 +1896,16 @@ struct TodayView: View {
                     context: tileContext(today: stressT, history: stressHistory,
                                          betterHigher: false, deadband: 0.1, positive: positiveDelta) { String(format: "%.1f", $0) }
                 )) { metricDetail = .stress(stressT) }
+                // Respiración — «en rango» es lo normal; sin valencia simple (Δ en tinta neutra). FER-550.
+                metricTile(TodayMetricTile(
+                    label: "Respiration",
+                    icon: "lungs.fill",
+                    value: respR.map { String(format: "%.1f", $0.value) } ?? "—", unit: String(localized: "rpm"),
+                    valueColor: theme.dataSpO2,
+                    fromApple: respR?.fromApple == true,
+                    context: tileContext(today: respR?.value, history: history(base) { $0.respRateBpm },
+                                         betterHigher: nil, deadband: 0.5, positive: positiveDelta) { String(format: "%.1f", $0) }
+                )) { metricDetail = .respiratory(respR?.value) }
             }
             // FER-278: la leyenda de fuente «W Strap · Apple Salud» del pie se quitó. Ahora el strap es
             // la fuente esperada (sin marca) y solo lo prestado de Apple Salud lleva ♥ en su tile, así
@@ -1996,6 +1919,128 @@ struct TodayView: View {
     private var pulsePill: some View {
         LivePulsePill(liveBpm: liveBpm, isLiveHR: isLiveHR, lastSyncedAt: live.lastSyncedAt,
                       onTap: { showLiveMonitor = true })
+    }
+
+    // MARK: - Vistazo (FER-550)
+
+    /// El «Vistazo» del handoff: Recuperación · HRV · Sueño en 3 pills compactas (icono + chevron arriba,
+    /// valor en color de métrica, «±N vs media»), cada una tocable hacia su detalle. Reusa el mismo cálculo
+    /// de delta vs media de 7 días que los tiles (`tileContext`), sin la mini-banda.
+    @ViewBuilder
+    private func glanceRow(recovery: Double?, hrv: (value: Double, fromApple: Bool)?,
+                           sleep: (value: Double, fromApple: Bool)?, base: [DailyMetric], positive: Color) -> some View {
+        HStack(alignment: .top, spacing: NoopMetrics.gap) {
+            glancePill(label: "Recovery", icon: "heart.fill", color: theme.dataRecovery,
+                       value: recovery.map { "\(Int($0.rounded()))" } ?? "—", unit: nil,
+                       today: recovery, history: history(base) { $0.recovery },
+                       betterHigher: true, deadband: 2, positive: positive, format: { "\(Int($0.rounded()))" }) {
+                metricDetail = .recovery(score: recoveryScore,
+                                         calibrationNights: recoveryCalibration,
+                                         nightsNeeded: Baselines.minNightsSeed)
+            }
+            glancePill(label: "HRV", icon: "waveform.path.ecg", color: theme.dataHrv,
+                       value: hrv.map { "\(Int($0.value.rounded()))" } ?? "—", unit: String(localized: "ms"),
+                       today: hrv?.value, history: history(base) { $0.avgHrv },
+                       betterHigher: true, deadband: 1, positive: positive, format: { "\(Int($0.rounded()))" }) {
+                metricDetail = .hrv(hrv?.value)
+            }
+            glancePill(label: "Sleep", icon: "moon.fill", color: theme.dataSleep,
+                       value: sleep.map { sleepText($0.value) } ?? "—", unit: nil,
+                       today: sleep?.value, history: history(base) { $0.totalSleepMin },
+                       betterHigher: true, deadband: 5, positive: positive, format: { sleepDeltaText($0) }) {
+                metricDetail = .sleep(sleep.map { Int($0.value.rounded()) })
+            }
+        }
+    }
+
+    /// Una pill del Vistazo, envuelta en su `Button` tocable (mismo realce que los tiles). El delta vs media
+    /// se computa con `tileContext` (se ignora su banda) para no duplicar la lógica.
+    private func glancePill(label: LocalizedStringKey, icon: String, color: Color,
+                            value: String, unit: String?,
+                            today: Double?, history: [Double], betterHigher: Bool?, deadband: Double,
+                            positive: Color, format: @escaping (Double) -> String,
+                            onTap: @escaping () -> Void) -> some View {
+        let ctx = tileContext(today: today, history: history, betterHigher: betterHigher,
+                              deadband: deadband, positive: positive, format)
+        return Button(action: onTap) {
+            GlancePill(label: label, icon: icon, color: color, value: value, unit: unit, delta: ctx)
+        }
+        .buttonStyle(TileButtonStyle(liftBorder: theme.hairlineStrong))
+        .accessibilityHint(Text("Abre el detalle"))
+    }
+
+    /// Una pill compacta del Vistazo: icono + chevron arriba, valor grande en color de métrica, y «±N vs
+    /// media» (reusa las claves `vs avg` / `At your average` de los tiles → es «vs media» / «En tu media»).
+    private struct GlancePill: View {
+        let label: LocalizedStringKey
+        let icon: String
+        let color: Color
+        let value: String
+        var unit: String? = nil
+        let delta: TileContext?
+        @Environment(\.instrumentoTheme) private var theme
+
+        private var isEmpty: Bool { value == "—" }
+
+        var body: some View {
+            VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+                HStack(spacing: 0) {
+                    Image(systemName: icon).font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(isEmpty ? theme.inkDim : color)
+                        .accessibilityHidden(true)
+                    Spacer(minLength: NoopMetrics.space1)
+                    Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(theme.inkTertiary)
+                        .accessibilityHidden(true)
+                }
+                HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
+                    Text(value).font(StrandFont.number(21, weight: .semibold))
+                        .foregroundStyle(isEmpty ? theme.inkDim : color)
+                        .lineLimit(1).minimumScaleFactor(0.6)
+                    if let unit {
+                        Text(unit).font(StrandFont.caption).foregroundStyle(isEmpty ? theme.inkDim : theme.inkTertiary)
+                    }
+                }
+                deltaView
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, NoopMetrics.gap).padding(.vertical, NoopMetrics.space2)
+            .background {
+                RoundedRectangle(cornerRadius: NoopMetrics.tileRadius, style: .continuous)
+                    .fill(theme.surface)
+                    .shadow(color: theme.ink.opacity(0.05), radius: 1.5, x: 0, y: 1)
+            }
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.tileRadius, style: .continuous)
+                .strokeBorder(theme.hairline, lineWidth: 1))
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(Text(label))
+        }
+
+        /// «+N vs media» / «−N vs media» / «En tu media». Mientras no hay base (≥4 días) o no hay valor de
+        /// hoy, reserva el alto con un renglón vacío para que las 3 pills queden parejas.
+        @ViewBuilder private var deltaView: some View {
+            switch delta {
+            case let .ready(change, _):
+                switch change {
+                case let .above(magnitude, c, _):
+                    HStack(spacing: NoopMetrics.space1) { Text(verbatim: "+\(magnitude)"); Text("vs avg") }
+                        .font(StrandFont.caption).foregroundStyle(c).lineLimit(1).minimumScaleFactor(0.6)
+                case let .below(magnitude, c, _):
+                    HStack(spacing: NoopMetrics.space1) { Text(verbatim: "−\(magnitude)"); Text("vs avg") }
+                        .font(StrandFont.caption).foregroundStyle(c).lineLimit(1).minimumScaleFactor(0.6)
+                case let .equal(c):
+                    Text("At your average").font(StrandFont.caption).foregroundStyle(c)
+                        .lineLimit(1).minimumScaleFactor(0.6)
+                }
+            case .building:
+                // Paridad con los tiles: aún sin ≥4 días de base para una media honesta.
+                Text("Still building your average").font(StrandFont.caption)
+                    .foregroundStyle(theme.inkTertiary).lineLimit(1).minimumScaleFactor(0.6)
+            case .none:
+                // Sin valor de hoy: el «—» del valor ya lo dice; el renglón vacío mantiene parejas las 3.
+                Text(verbatim: " ").font(StrandFont.caption)
+            }
+        }
     }
 
     /// La rejilla de «Métricas de hoy»: dos columnas iguales → 8 tiles en 4 renglones de 2.
