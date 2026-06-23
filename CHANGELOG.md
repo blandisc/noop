@@ -24,6 +24,16 @@ approximate; Cénit is built from source — see the [README](README.md).
   **EN** — In **Today**: the header's sync time now uses one-letter units (**"hace 30 s" / "5 m" / "2 h" / "3 d"**, was "5 min"). The three glance pills (Recovery, HRV, Sleep) now show their **name** next to the icon, and "±N vs average" no longer gets clipped. The source tag (previously the word **BAND / APPLE / CALCULATED** on every number) became a **colored dot**, with a single **legend** at the foot (● Band · ● Apple Health · ● Calculated) covering both pills and tiles — freeing up space without losing where each number comes from.
   ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
 
+- **Entrenar respira menos vertical / Train is tighter vertically.**
+  **ES** — La pantalla **Entrenar** se sentía más larga de lo necesario. Apretamos el ritmo entre secciones (de 28 a 18 pt) y afinamos el padding muerto (arriba, el divider y el botón de la tarjeta «Hoy», el pie de la semana). Mismo contenido y tarjetas, ~16 % menos de alto — menos scroll, mismo aire del Instrumento. No cambia ninguna otra pantalla.
+  **EN** — The **Train** screen felt taller than it needed to. We tightened the section rhythm (28 → 18 pt) and trimmed dead padding (top, the today card's divider and button, the week footer). Same content and cards, ~16% shorter — less scroll, same Instrumento breathing room. No other screen changes.
+  ([Cenit/Screens/EntrenarView.swift](Cenit/Screens/EntrenarView.swift))
+
+- **En Tendencias, tocar cualquier parte de un dato lo abre / In Trends, tapping anywhere on a number opens it.**
+  **ES** — Antes, en Tendencias, solo el número abría su detalle; tocar la mini-curva (la parte más grande) no hacía nada. Ahora **todo el recuadro del dato** —etiqueta, número y mini-curva— abre su hoja de detalle.
+  **EN** — Before, in Trends only the number opened its detail; tapping the mini-trend (the biggest part) did nothing. Now the **whole tile** — label, number and mini-trend — opens its detail sheet.
+  ([Cenit/Screens/CuerpoView.swift](Cenit/Screens/CuerpoView.swift))
+
 - **La tendencia de duración del sueño ahora tiene periodo y dos vistas / The sleep-duration trend now has a period selector and two views.**
   **ES** — En el Detalle de Sueño, «Tendencia de duración» pasó de una vista fija de 14 noches a la misma mecánica que tus vitales: un **selector de periodo (S / M / 3M / 6M / 1A)** que re-encuadra la gráfica, y un toggle **Media móvil ⇄ Rangos**. En «Media móvil» ves tu promedio de 7 noches sobre la banda óptima de **7–9 h**, con el **promedio del periodo y su cambio vs el periodo anterior** (verde cuando duermes más). En «Rangos» ves en qué banda (corta / óptima / larga) caen tus noches y cuántas. El resto del Detalle de Sueño no cambia.
   **EN** — In the Sleep detail, "Duration trend" went from a fixed 14-night view to the same mechanic as your vitals: a **period selector (W / M / 3M / 6M / 1Y)** that re-windows the chart, and a **Moving average ⇄ Ranges** toggle. In "Moving average" you see your 7-night average over the optimal **7–9 h** band, with the **period average and its change vs the previous period** (green when you sleep more). In "Ranges" you see which band (short / optimal / long) your nights fall in and how many. The rest of the Sleep detail is unchanged.

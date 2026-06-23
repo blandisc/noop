@@ -462,6 +462,10 @@ private struct CuerpoLanding: View {
                               lineWidth: 1.6, showsArea: true, showsHead: false, showsScrub: false)
                         .frame(height: 16)
                         .padding(.top, 2)
+                        // Decorative only: `Sparkline` paints its own `contentShape`, which otherwise swallows
+                        // taps on the chart (the biggest part of the tile) so the row didn't open. Disabling
+                        // hit-testing hands EVERY tap in the tile to the Button below. (FER-566 follow-up)
+                        .allowsHitTesting(false)
                         .accessibilityHidden(true)
                 }
                 if let legend {
