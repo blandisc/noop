@@ -87,11 +87,13 @@ final class StrengthSessionModel: ObservableObject {
         let exerciseId: String
         let name: String
         let type: ExerciseType
-        let restSeconds: Int
+        /// The rest fields are editable mid-session (FER-540): the chip → `RestEditor` writes them, and
+        /// the next rest reads the new value. They start from the routine's `RoutineExercise`.
+        var restSeconds: Int
         /// How the rest is timed (FER-348/495): fixed countdown, or by heart-rate recovery to a target.
-        let restMode: RestMode
-        let hrRestReference: HRRestReference
-        let hrRestValue: Double
+        var restMode: RestMode
+        var hrRestReference: HRRestReference
+        var hrRestValue: Double
         /// Last time's top work set, for the «la última vez» reference + the suggested bump. nil = first time.
         let lastWeightKg: Double?
         let lastReps: Int?
@@ -355,6 +357,19 @@ final class StrengthSessionModel: ObservableObject {
     }
     func skipRest() { phase = .capturing; clearRest() }
 
+    /// Edit a run's rest configuration mid-session (FER-540). Applies to that exercise's *remaining*
+    /// rests (the next `startRest` reads `restSeconds`; `computeRestTarget` reads the mode/reference).
+    /// Does not retime a rest already counting down — that stays on the ±15 s nudge. Persisting to the
+    /// backing routine is the view's job (it owns the repo).
+    func updateRest(exercise ei: Int, mode: RestMode, seconds: Int,
+                    reference: HRRestReference, value: Double) {
+        guard runs.indices.contains(ei) else { return }
+        runs[ei].restMode = mode
+        runs[ei].restSeconds = seconds
+        runs[ei].hrRestReference = reference
+        runs[ei].hrRestValue = value
+    }
+
     /// Clear all rest state (the fixed countdown + the HR target), so a stale HR target never bleeds into
     /// the next rest or a non-resting phase.
     private func clearRest() {
@@ -486,6 +501,11 @@ struct LiveStrengthSheet: View {
     /// The exercise whose detail sheet is open — set by tapping an exercise's name (FER-538). nil = closed.
     /// Resolving the full `Exercise` (catalog + custom) is deferred to the tap so the session model stays lean.
     @State private var detailExercise: Exercise?
+    /// The exercise whose rest editor is open — set by tapping its rest chip (FER-540). nil = closed.
+    @State private var restEdit: RestEdit?
+
+    /// Identifies which exercise's rest is being edited; the editor sheet seeds itself from `runs[id]`.
+    struct RestEdit: Identifiable { let id: Int }
 
     /// Identifies an editable inline cell: a weight or reps field at (exerciseIndex, setIndex).
     enum CellRef: Hashable { case weight(Int, Int), reps(Int, Int) }
@@ -545,6 +565,27 @@ struct LiveStrengthSheet: View {
             }
             .instrumentoTheme(theme).environmentObject(model.repo).preferredColorScheme(.light)
         }
+        .sheet(item: $restEdit) { edit in
+            if session.runs.indices.contains(edit.id) {
+                let run = session.runs[edit.id]
+                NavigationStack {
+                    RestEditorSheet(mode: run.restMode, seconds: run.restSeconds,
+                                    reference: run.hrRestReference, value: run.hrRestValue,
+                                    persistsToRoutine: session.routineId != nil) { mode, seconds, ref, value in
+                        commitRest(ei: edit.id, mode: mode, seconds: seconds, reference: ref, value: value)
+                    }
+                    .navigationTitle(Text(run.name))
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar { ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") { restEdit = nil }.foregroundStyle(theme.inkSecondary)
+                    } }
+                    .toolbarBackground(theme.paper, for: .navigationBar)
+                }
+                .instrumentoTheme(theme).preferredColorScheme(.light)
+                .presentationDetents([.medium])
+                .presentationBackground(theme.paper)
+            }
+        }
         .alert("Finish workout?", isPresented: $confirmFinish) {
             Button("Finish", role: .destructive) { model.endStrengthSession(save: true) }
             Button("Keep going", role: .cancel) {}
@@ -571,7 +612,7 @@ struct LiveStrengthSheet: View {
         List {
             ForEach(Array(session.runs.enumerated()), id: \.element.id) { ei, run in
                 if !run.skipped {
-                    exerciseHeader(run, first: ei == firstActiveIndex)
+                    exerciseHeader(run, ei: ei, first: ei == firstActiveIndex)
                         .plainRow()
                     ForEach(Array(run.sets.enumerated()), id: \.element.id) { si, set in
                         setRow(ei: ei, si: si, run: run, set: set, last: si == run.sets.count - 1)
@@ -683,7 +724,7 @@ struct LiveStrengthSheet: View {
 
     /// One exercise's header: a type overline (for non-weight×reps), the name, and the column header.
     /// Grouped by whitespace + hairlines — a registration sheet, not a grid.
-    private func exerciseHeader(_ run: StrengthSessionModel.ExerciseRun, first: Bool) -> some View {
+    private func exerciseHeader(_ run: StrengthSessionModel.ExerciseRun, ei: Int, first: Bool) -> some View {
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
             VStack(alignment: .leading, spacing: 2) {
                 if run.type != .weightReps {
@@ -705,9 +746,33 @@ struct LiveStrengthSheet: View {
                 .accessibilityLabel(Text(run.name))
                 .accessibilityHint(Text("View exercise detail"))
             }
+            restChip(run, ei: ei)
             if !reflow { columnHeader(run.type) }
         }
         .padding(.top, first ? NoopMetrics.gap : NoopMetrics.sectionGap)
+    }
+
+    /// A quiet, tappable chip showing this exercise's rest — tap to edit it mid-session (FER-540).
+    private func restChip(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
+        Button { openRestEditor(ei: ei) } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "clock").font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
+                Text(restChipLabel(run)).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+            }
+            .padding(.horizontal, 9).padding(.vertical, 4)
+            .background(theme.surface, in: Capsule())
+            .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("Edit rest"))
+        .accessibilityValue(Text(restChipLabel(run)))
+    }
+
+    /// Mode-aware chip text: the fixed duration, or «by HR» when the rest is heart-rate driven.
+    private func restChipLabel(_ run: StrengthSessionModel.ExerciseRun) -> String {
+        run.restMode == .heartRate ? String(localized: "Rest · by HR") : restChipText(run.restSeconds)
     }
 
     /// Resolve the full `Exercise` for a session run (catalog first, then user-created) and open its
@@ -719,6 +784,34 @@ struct LiveStrengthSheet: View {
                 ex = (await model.repo.allExercises()).first { $0.id == run.exerciseId }
             }
             if let ex { await MainActor.run { detailExercise = ex } }
+        }
+    }
+
+    /// Open the rest editor for an exercise (FER-540).
+    private func openRestEditor(ei: Int) {
+        guard session.runs.indices.contains(ei) else { return }
+        restEdit = RestEdit(id: ei)
+    }
+
+    /// Apply an edited rest to the session (remaining rests of that exercise) and, when the session is
+    /// backed by a saved routine, persist it so next time the routine remembers it (FER-540).
+    private func commitRest(ei: Int, mode: RestMode, seconds: Int,
+                            reference: HRRestReference, value: Double) {
+        session.updateRest(exercise: ei, mode: mode, seconds: seconds, reference: reference, value: value)
+        guard session.runs.indices.contains(ei) else { return }
+        persistRestToRoutine(session.runs[ei])
+    }
+
+    /// Persist the run's edited rest to its backing `RoutineExercise` (matched by id) via a pinpoint
+    /// repo update — leaves the routine's other exercises and per-set rows untouched. No-op for a
+    /// freestyle session (no routine to write to).
+    private func persistRestToRoutine(_ run: StrengthSessionModel.ExerciseRun) {
+        guard let routineId = session.routineId else { return }
+        Task {
+            await model.repo.updateRoutineExerciseRest(
+                routineExerciseId: run.id, routineId: routineId,
+                mode: run.restMode, seconds: run.restSeconds,
+                reference: run.hrRestReference, value: run.hrRestValue)
         }
     }
 
@@ -1068,13 +1161,8 @@ struct LiveStrengthSheet: View {
                         Text(run.name).font(StrandFont.title1).foregroundStyle(theme.ink)
                             .fixedSize(horizontal: false, vertical: true)
                         Spacer(minLength: 8)
-                        Text(restChipText(run.restSeconds))
-                            .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                            .padding(.horizontal, 8).padding(.vertical, 3)
-                            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous)
-                                .strokeBorder(theme.hairline, lineWidth: 1))
-                            .accessibilityLabel(Text("Rest \(run.restSeconds) seconds"))
+                        // The same tappable rest chip as the inline header — edit rest mid-session (FER-540).
+                        restChip(run, ei: session.currentIndex)
                     }
                     if run.type == .weightReps { referenceLine(run) } else { setTypeLine(run) }
                 }

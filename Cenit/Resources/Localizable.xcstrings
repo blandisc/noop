@@ -9959,6 +9959,46 @@
         }
       }
     },
+    "Rest · by HR": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descanso · por FC"
+          }
+        }
+      }
+    },
+    "Saved to your routine.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se guarda en la rutina."
+          }
+        }
+      }
+    },
+    "This session only.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo esta sesión."
+          }
+        }
+      }
+    },
+    "Edit rest": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Editar descanso"
+          }
+        }
+      }
+    },
     "View exercise detail": {
       "localizations": {
         "es": {
