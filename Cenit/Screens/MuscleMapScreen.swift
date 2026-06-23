@@ -340,7 +340,7 @@ struct MuscleMapScreen: View {
 
     private func floatingLabel(_ m: MuscleFatigueMap.MuscleLoad) -> some View {
         HStack(spacing: 7) {
-            Circle().fill(loadByMuscle[m.muscle] != nil ? theme.muscleStateColor(m.relative) : theme.hairlineStrong)
+            Circle().fill(theme.muscleStateColor(m.relative))
                 .frame(width: 7, height: 7)
             Text(MuscleAtlas.name(m.muscle)).font(StrandFont.caption).fontWeight(.semibold).foregroundStyle(theme.paper)
             Text(stateSuffix(m.state)).font(StrandFont.caption).foregroundStyle(theme.paper.opacity(0.7))
@@ -357,14 +357,14 @@ struct MuscleMapScreen: View {
         let state = load?.state ?? .fresh
         return Button { selected = MuscleSelection(muscle: muscle) } label: {
             HStack(spacing: 10) {
-                Circle().fill(load != nil ? theme.muscleStateColor(relative) : theme.hairlineStrong)
+                Circle().fill(theme.muscleStateColor(relative))
                     .frame(width: 9, height: 9)
                 VStack(spacing: 5) {
                     HStack {
                         Text(MuscleAtlas.name(muscle)).font(StrandFont.body).fontWeight(.semibold).foregroundStyle(theme.ink)
                         Spacer()
                         Text(stateWord(state)).font(StrandFont.caption).fontWeight(.semibold)
-                            .foregroundStyle(load != nil ? stateColor(state) : theme.inkTertiary)
+                            .foregroundStyle(stateColor(state))
                     }
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
@@ -640,12 +640,12 @@ private struct BodyFiguresView: View {
     }
 
     private func color(for muscle: String) -> Color {
-        guard let m = loadByMuscle[muscle], maxLoad > 0 else { return theme.hairlineStrong.opacity(0.55) }
+        guard let m = loadByMuscle[muscle], maxLoad > 0 else { return theme.muscleStateColor(0) }
         return theme.muscleStateColor(m.relative)
     }
 
     private func stateText(_ muscle: String) -> LocalizedStringKey {
-        guard let m = loadByMuscle[muscle] else { return "untrained" }
+        guard let m = loadByMuscle[muscle] else { return "fresh" }
         switch m.state {
         case .fresh: return "fresh"
         case .moderate: return "moderate"
