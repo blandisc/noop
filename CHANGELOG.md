@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El historial de duración del sueño recupera el toggle Media móvil / Rangos / Sleep's duration history regains the Moving average / Ranges toggle.**
+  **ES** — En el Detalle de Sueño, la **Tendencia de duración** vuelve a ofrecer el toggle **Media móvil ⇄ Rangos** con su selector de periodo (S · M · 3M · 6M · 1A): «Media móvil» dibuja la media de 7 noches sobre la **banda óptima 7–9 h**, y «Rangos» clasifica tus noches (Corto / Suficiente / Óptimo / Extenso) marcando dónde caen. Bajo la gráfica sigues leyendo el promedio del periodo y su cambio vs el periodo previo. Sustituye la lista de niveles que se había colado ahí; el resto del Detalle de Sueño no cambia.
+  **EN** — In the Sleep detail, the **Duration trend** offers the **Moving average ⇄ Ranges** toggle again, with its period selector (W · M · 3M · 6M · 1Y): "Moving average" draws the 7-night average over the **optimal 7–9 h band**, and "Ranges" classifies your nights (Short / Adequate / Optimal / Extended), marking where they land. Below the chart you still read the period average and its change vs the previous period. It replaces the levels list that had slipped in there; the rest of the Sleep detail is unchanged.
+  ([Cenit/Screens/SleepDetailScreen.swift](Cenit/Screens/SleepDetailScreen.swift))
+
 - **El detalle de tus vitales vuelve a ser la pantalla completa / Your vitals' detail is the full screen again.**
   **ES** — HRV, FC en reposo, SpO₂, Respiración y Pasos volvieron a abrir su **pantalla de detalle rica** —la del handoff— con su rango normal, la gráfica «Tu historia» con promedio y cambio vs el periodo previo, consistencia, qué la mueve y vitales de la noche, según cada una. Tocar el dato en Tendencias abre el detalle directo, y en Hoy «Ver más» te lleva ahí (antes te dejaba en una vista resumida sin salida).
   **EN** — HRV, resting HR, SpO₂, Respiration and Steps open their **full rich detail screen** again — the handoff one — with your normal range, the "Your history" chart with average and change vs the previous period, consistency, what moves it and night vitals, as applies to each. Tapping the number in Trends opens the detail directly, and on Today "See more" takes you there (it used to leave you on a summarized view with no way forward).
