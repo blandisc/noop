@@ -43,7 +43,8 @@ final class Repository: ObservableObject {
         var days: [DailyMetric] = []
         /// Display-only twin of `days`: strap-covered days whose measured fields are nil back-fill from
         /// the Apple Health row the merge overwrote (FER-149). The dashboard sparklines/trends read
-        /// these so a partial-connection day shows Apple's HRV instead of a gap; `days` stays strap-only.
+        /// these so a partial-connection day shows Apple's HRV instead of a gap; the recovery baseline
+        /// reads `days` (excluding `appleHealthDays`, FER-519), not `displayDays`.
         var displayDays: [DailyMetric] = []
         var sleeps: [CachedSleepSession] = []
         var appleSleeps: [CachedSleepSession] = []   // FER-486: Apple Health sleep sessions with a real stage timeline (band-uncovered nights), for the Detalle de Sueño hypnogram
@@ -70,8 +71,10 @@ final class Repository: ObservableObject {
     }
     @Published private(set) var dashboard = DashboardData()
 
-    /// Daily metrics (recovery/strain/sleep/HRV/RHR…), oldest→newest. Strap-only HRV/RHR — the
-    /// recovery baseline and `ownNights` read this, so Apple Health never leaks into the calibration.
+    /// Daily metrics (recovery/strain/sleep/HRV/RHR…), oldest→newest. Includes Apple-only rows (band-less
+    /// nights surfaced from Apple Health). The recovery baseline reads this but EXCLUDES `appleHealthDays`
+    /// before folding (FER-519, via `IntelligenceEngine.strapOnlyHistory`), so Apple's SDNN never enters
+    /// the band's RMSSD baseline; only the capped `foldApplePrior` seeds RHR/resp (same physical metric).
     var days: [DailyMetric] { dashboard.days }
     /// Display-only daily rows: `days`, but strap-covered days with nil measured fields back-fill from
     /// Apple Health (FER-149). The dashboard sparklines/trends read these; analytics read `days`.
@@ -280,13 +283,14 @@ final class Repository: ObservableObject {
     /// Apple Health. Also returns the days whose surfaced row stayed Apple Health (strap-uncovered),
     /// for source badging.
     ///
-    /// `displayDays` (FER-149) is a display-only twin of `days`: a strap-covered day whose measured
-    /// fields are nil (a partial-connection day — IntelligenceEngine wrote a `daily` with HRV/recovery
-    /// nil) back-fills those nils from the Apple Health row this merge overwrote, so the HRV
-    /// sparkline/trend shows Apple's value instead of a gap. `days` and `appleDays` stay strap-only and
-    /// byte-for-byte unchanged: `ownNights` and the recovery baseline read `repo.days`/`appleHealthDays`,
-    /// so Apple HRV never leaks into the calibration (it's folded separately and capped in
-    /// IntelligenceEngine). The strap value always wins when present — only genuine gaps fill.
+    /// `days` includes Apple-only rows (the base layer below): a band-less night surfaces Apple's
+    /// HRV/sleep, and `appleDays` is the SET of those days. The recovery baseline reads `repo.days` but
+    /// EXCLUDES `appleHealthDays` before folding HRV/RHR/resp (FER-519, `IntelligenceEngine.strapOnlyHistory`),
+    /// so Apple's SDNN never enters the band's RMSSD baseline — only the capped `foldApplePrior` seeds
+    /// RHR/resp (same physical metric). `displayDays` (FER-149) is a display-only twin of `days`: a
+    /// strap-covered day whose measured fields are nil (a partial-connection day) back-fills those nils
+    /// from the Apple Health row this merge overwrote, so the HRV sparkline/trend shows Apple's value
+    /// instead of a gap. The strap value always wins when present — only genuine gaps fill.
     static func mergeDaily(imported: [DailyMetric], computed: [DailyMetric],
                            apple: [DailyMetric]) -> (days: [DailyMetric], appleDays: Set<String>,
                                                      displayDays: [DailyMetric]) {

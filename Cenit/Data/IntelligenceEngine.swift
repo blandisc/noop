@@ -76,6 +76,10 @@ final class IntelligenceEngine: ObservableObject {
         // mid-run) can't mutate this array out from under the ~21-await pass — every night is scored
         // against the SAME baseline the run started with, so the scores can't drift. (FER-177 / #78)
         let hist = repo.days
+        // FER-519: snapshot the Apple-only day set CONTIGUOUSLY with `hist` (same published `dashboard`
+        // value, no await in between) — the baseline fold excludes these days so Apple's SDNN never enters
+        // the band's RMSSD histogram. Splitting this read across an await would reintroduce the FER-177 race.
+        let appleOnlyDays = repo.appleHealthDays
         // FER-484: snapshot the mode alongside the other inputs. In appleHealthOnly the strap is excluded
         // from reads, so there are no strap nights to score — skip the pass (Apple-sourced recovery is F4).
         // Capture is untouched. In whoopOnly the pass runs but the Apple prior below is gated off.
@@ -110,8 +114,12 @@ final class IntelligenceEngine: ObservableObject {
         // harvest them to SEED the baseline and re-score in pass 2. foldHistory winsorizes outliers;
         // repo.days is published oldest→newest, so the replay order is already chronological. `hist` is
         // the up-front snapshot taken above (so a concurrent refresh can't drift the baseline). (#78)
-        let hrvBase1 = Baselines.foldHistory(hist.map { $0.avgHrv }, cfg: hrvCfg)
-        let rhrBase1 = Baselines.foldHistory(hist.map { $0.restingHr.map(Double.init) }, cfg: rhrCfg)
+        // FER-519: fold the STRAP-ONLY slice — Apple-only nights carry SDNN, not the band's RMSSD, so they
+        // must not enter the HRV/RHR/resp baselines (the capped `foldApplePrior` below is the only Apple
+        // path, RHR/resp only). `filter` preserves chronological order.
+        let strapHist = Self.strapOnlyHistory(hist, appleHealthDays: appleOnlyDays)
+        let hrvBase1 = Baselines.foldHistory(strapHist.map { $0.avgHrv }, cfg: hrvCfg)
+        let rhrBase1 = Baselines.foldHistory(strapHist.map { $0.restingHr.map(Double.init) }, cfg: rhrCfg)
         let baselines1 = AnalyticsEngine.ProfileBaselines(hrv: hrvBase1, restingHR: rhrBase1)
         let skinOffset = skinTempOffsetC  // captured as a value for the detached analyze task
 
@@ -190,7 +198,7 @@ final class IntelligenceEngine: ObservableObject {
         var histRhrByDay: [String: Double?] = [:]
         var histRespByDay: [String: Double?] = [:]
         var histEffByDay: [String: Double?] = [:]
-        for d in hist {
+        for d in strapHist {   // FER-519: strap-only — Apple-only days are excluded from the baseline fold
             histHrvByDay[d.day] = d.avgHrv
             histRhrByDay[d.day] = d.restingHr.map(Double.init)
             histRespByDay[d.day] = d.respRateBpm
@@ -201,31 +209,31 @@ final class IntelligenceEngine: ObservableObject {
         for (day, v) in nightlyRespByDay where histRespByDay[day] == nil { histRespByDay[day] = v }
         for (day, v) in nightlyEffByDay where histEffByDay[day] == nil { histEffByDay[day] = v }
 
-        // ── FER-60: Apple Health prior — the LOWEST-precedence seed. A brand-new strap user has no
-        // imported history and a handful of on-device nightlies isn't enough to clear
-        // Baselines.minNightsSeed, so recovery stays null for the first nights. Folding Apple Health's
-        // HRV / resting-HR / respiration UNDER both strap layers (same `== nil` idiom: fill only days
-        // NEITHER strap source covered) seeds the baseline so recovery lights up from night 1. Capped
-        // to applePriorMaxNights so the seed lands PROVISIONAL, not trusted — FER-13's confidence
-        // shrinkage then damps the SDNN(Apple)-vs-RMSSD(WHOOP) scale gap, which the 14-night EWMA
-        // finishes correcting as real strap nights arrive. Strap (imported + on-device) ALWAYS wins.
-        // (efficiency/skin-temp are NOT seeded: Apple writes efficiency = nil and carries no skin temp,
-        // so those terms keep their honest population-center cold-start.)
-        // FER-484: the Apple prior only seeds the baseline when Apple Health is in use; whoopOnly gates it
-        // off so no Apple HRV (SDNN) reaches the RMSSD baseline.
+        // ── FER-60 / FER-519: Apple Health prior — the LOWEST-precedence seed, for RESTING-HR and
+        // RESPIRATION ONLY. A brand-new strap user has no imported history and a handful of on-device
+        // nightlies isn't enough to clear Baselines.minNightsSeed, so recovery stays null for the first
+        // nights. Folding Apple's resting-HR / respiration UNDER both strap layers (same `== nil` idiom:
+        // fill only days NEITHER strap source covered) seeds those baselines, capped to applePriorMaxNights
+        // so the seed lands PROVISIONAL, not trusted. RHR and respiration are the SAME physical quantity
+        // across sources (bpm, breaths/min), so this is an honest cold-start prior. Strap ALWAYS wins.
+        // FER-519: HRV is NOT seeded from Apple. Apple's HRV is SDNN; the band's is RMSSD — different
+        // constructs with no published conversion and a scale gap of UNCERTAIN direction (Shaffer &
+        // Ginsberg 2017; Task Force 1996), so SDNN must never enter the RMSSD baseline. Apple's HRV path
+        // is the SEPARATE SDNN-vs-own-SDNN estimator (AppleRecoveryEstimator, FER-153), not this prior.
+        // (efficiency/skin-temp are NOT seeded either: Apple writes efficiency = nil and carries no skin
+        // temp, so those terms keep their honest population-center cold-start.)
+        // FER-484: the Apple prior only applies when Apple Health is in use; whoopOnly gates it off.
         let appleRows = mode.usesAppleHealth ? ((try? await store.dailyMetrics(deviceId: "apple-health",
                                                        from: AnalyticsEngine.dayString(now - 90 * 86_400, tzOffsetSeconds: tzOffset),
                                                        to: AnalyticsEngine.dayString(now, tzOffsetSeconds: tzOffset))) ?? []) : []
         let priorDays = Self.applePriorDays(appleRows, maxNights: Self.applePriorMaxNights)
-        var appleHrvByDay: [String: Double?] = [:]
         var appleRhrByDay: [String: Double?] = [:]
         var appleRespByDay: [String: Double?] = [:]
         for r in appleRows {
-            appleHrvByDay[r.day]  = r.avgHrv
             appleRhrByDay[r.day]  = r.restingHr.map(Double.init)
             appleRespByDay[r.day] = r.respRateBpm
         }
-        histHrvByDay  = Self.foldApplePrior(into: histHrvByDay,  apple: appleHrvByDay,  priorDays: priorDays)
+        // FER-519: no foldApplePrior for HRV — Apple SDNN never seeds the RMSSD baseline.
         histRhrByDay  = Self.foldApplePrior(into: histRhrByDay,  apple: appleRhrByDay,  priorDays: priorDays)
         histRespByDay = Self.foldApplePrior(into: histRespByDay, apple: appleRespByDay, priorDays: priorDays)
 
@@ -356,6 +364,21 @@ final class IntelligenceEngine: ObservableObject {
     private func recomputeSkinTempDev(_ nightly: Double?, _ base: BaselineState?) -> Double? {
         guard let v = nightly, let b = base, b.usable else { return nil }
         return (Baselines.deviation(v, state: b).delta * 100.0).rounded() / 100.0
+    }
+
+    // MARK: - Baseline source filter (FER-519)
+
+    /// The strap-only slice of the merged daily history — the rows that feed the recovery baseline,
+    /// EXCLUDING Apple-only days (band-less nights whose `avgHrv` is Apple SDNN, not the band's RMSSD).
+    /// Folding Apple SDNN into the RMSSD baseline mixes two different HRV constructs with no published
+    /// conversion (Shaffer & Ginsberg 2017, Front Public Health 5:258; Task Force 1996, Circulation
+    /// 93:1043); the capped `foldApplePrior` is the only sanctioned Apple→baseline path, and only for
+    /// resting-HR / respiration (same physical metric across sources). `appleHealthDays` is the set
+    /// `mergeDaily` returns for the days surfaced from Apple Health. Pure (no store/actor state) for
+    /// testing; `appleHealthDays == []` (e.g. whoopOnly, or a strap-only user) is the identity.
+    nonisolated static func strapOnlyHistory(_ hist: [DailyMetric],
+                                             appleHealthDays: Set<String>) -> [DailyMetric] {
+        appleHealthDays.isEmpty ? hist : hist.filter { !appleHealthDays.contains($0.day) }
     }
 
     // MARK: - Apple Health baseline prior (FER-60)
