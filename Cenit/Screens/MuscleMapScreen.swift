@@ -48,6 +48,13 @@ struct MuscleMapScreen: View {
     /// on the same muscle (or on the peek card) opens the full detail. `nil` = no peek; the figure falls
     /// back to highlighting the most-loaded muscle.
     @State private var peeked: String? = nil
+    /// Manual recovery reset (FER-525): epoch seconds. Work sets before this are ignored, so the map reads
+    /// «all fresh» as if the user had rested — without deleting any history. 0 = never reset.
+    @AppStorage("muscleRecoveryResetAt") private var recoveryResetAt: Double = 0
+    /// Whether the user has ANY logged work set in the window — separates «no data yet» (onboarding empty
+    /// state) from «all recovered» (the green map). (FER-525)
+    @State private var hasHistory = false
+    @State private var showResetConfirm = false
 
     private static let trendDays = 84
 
@@ -78,12 +85,12 @@ struct MuscleMapScreen: View {
             VStack(alignment: .leading, spacing: NoopMetrics.gap) {
                 header
                 if loaded {
-                    if loads.isEmpty {
+                    if loads.isEmpty && !hasHistory {
                         emptyState
                     } else {
                         hero
                         figures
-                        ranking
+                        if !loads.isEmpty { ranking }
                         method
                         lensFooter
                     }
@@ -148,6 +155,7 @@ struct MuscleMapScreen: View {
     /// The lead line, honest about the recovery band (or its absence).
     private var heroLead: LocalizedStringKey {
         if recommendation.gatedBySystemic { return "Your recovery is low today." }
+        if loads.isEmpty { return "You're recovered — everything's fresh." }
         if recommendation.readyMuscles.isEmpty { return "Everything you train is still loaded." }
         guard let r = recovery else { return "Fresh to train today:" }
         if r >= MuscleFatigueMap.recoveryYellowMax { return "Your recovery is clear — fresh to train:" }
@@ -157,6 +165,9 @@ struct MuscleMapScreen: View {
     @ViewBuilder private var heroAnswer: some View {
         if recommendation.gatedBySystemic {
             Text("Take it easy — recover first.")
+                .font(StrandFont.title2).foregroundStyle(theme.ink)
+        } else if loads.isEmpty {
+            Text("Fresh to train — pick anything.")
                 .font(StrandFont.title2).foregroundStyle(theme.ink)
         } else if recommendation.readyMuscles.isEmpty {
             Text("Give it a day or train light.")
@@ -319,6 +330,9 @@ struct MuscleMapScreen: View {
                 Text("Tap a muscle to see its load")
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     .padding(.top, 10)
+                if !loads.isEmpty {
+                    markRecoveredButton.padding(.top, 12)
+                }
             }
         }
         .padding(EdgeInsets(top: 16, leading: 10, bottom: 12, trailing: 10))
@@ -326,6 +340,12 @@ struct MuscleMapScreen: View {
         .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
             .strokeBorder(theme.hairline, lineWidth: 1))
+        .confirmationDialog("Mark all muscles as recovered?", isPresented: $showResetConfirm, titleVisibility: .visible) {
+            Button("Mark recovered") { markAllRecovered() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("The map resets to fresh. Your workout history isn't deleted — logging a new workout loads that muscle again.")
+        }
     }
 
     /// First tap on a muscle peeks it (highlight + mini indicator); a second tap on the same muscle
@@ -393,13 +413,35 @@ struct MuscleMapScreen: View {
             Button { withAnimation(StrandMotion.interactive) { peeked = nil } } label: {
                 HStack(spacing: 3) {
                     Image(systemName: "arrow.uturn.backward").font(.system(size: 11, weight: .semibold))
-                    Text("Reset").font(StrandFont.caption)
+                    Text("Deselect").font(StrandFont.caption)
                 }
                 .foregroundStyle(theme.inkSecondary)
             }
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 4)
+    }
+
+    /// «Mark all recovered» — sets the recovery-reset point so the map reads all-fresh, without deleting
+    /// any workout history. (FER-525)
+    private var markRecoveredButton: some View {
+        Button { showResetConfirm = true } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.counterclockwise").font(.system(size: 12, weight: .semibold))
+                Text("Mark all recovered").font(StrandFont.caption)
+            }
+            .foregroundStyle(theme.inkSecondary)
+            .padding(.horizontal, 14).padding(.vertical, 8)
+            .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint(Text("Marks every muscle as recovered"))
+    }
+
+    private func markAllRecovered() {
+        recoveryResetAt = Date().timeIntervalSince1970
+        withAnimation(StrandMotion.interactive) { peeked = nil }
+        Task { await load() }
     }
 
     private func stateWord(_ s: MuscleFatigueMap.LoadState) -> LocalizedStringKey {
@@ -555,12 +597,14 @@ struct MuscleMapScreen: View {
             loaded = true; return
         }
         let rawSets = await repo.recentWorkSets(sinceTs: Int(since.timeIntervalSince1970))
+        hasHistory = !rawSets.isEmpty
+        let resetTs = Int(recoveryResetAt)
         let exercises = await repo.allExercises()
         let byId = Dictionary(exercises.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
 
         var ev: [MuscleFatigueMap.MuscleSetEvent] = []
         var hits: [String: [String: MuscleHit]] = [:]
-        for set in rawSets {
+        for set in rawSets where set.startTs >= resetTs {
             guard let ex = byId[set.exerciseId] else { continue }
             let setDay = cal.startOfDay(for: Date(timeIntervalSince1970: TimeInterval(set.startTs)))
             let daysAgo = cal.dateComponents([.day], from: setDay, to: startToday).day ?? 0
