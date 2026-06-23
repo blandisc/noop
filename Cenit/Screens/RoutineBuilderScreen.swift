@@ -182,7 +182,7 @@ struct RoutineBuilderScreen: View {
     @ViewBuilder
     private func columnHeader(_ type: ExerciseType) -> some View {
         HStack(spacing: 10) {
-            Text("Set").instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 34, alignment: .leading)
+            Text("SET").instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 34, alignment: .leading)
             Spacer(minLength: 0)
             if showsWeight(type) {
                 Text(StrengthDisplay.weightUnit(system)).instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 76)
@@ -334,7 +334,7 @@ struct RoutineBuilderScreen: View {
 
     private func deleteSet(idx: Int, si: Int) {
         guard items[idx].re.sets.count > 1 else { return }   // keep at least one set
-        withAnimation(.snappy) { items[idx].re.sets.remove(at: si) }
+        withAnimation(.snappy) { _ = items[idx].re.sets.remove(at: si) }
         renumber(idx)
     }
 
@@ -357,7 +357,7 @@ struct RoutineBuilderScreen: View {
 
     private func moveUp(_ idx: Int) { guard idx > 0 else { return }; withAnimation(.snappy) { items.swapAt(idx, idx - 1) } }
     private func moveDown(_ idx: Int) { guard idx < items.count - 1 else { return }; withAnimation(.snappy) { items.swapAt(idx, idx + 1) } }
-    private func deleteExercise(_ idx: Int) { withAnimation(.snappy) { items.remove(at: idx) } }
+    private func deleteExercise(_ idx: Int) { withAnimation(.snappy) { _ = items.remove(at: idx) } }
 
     // MARK: - Superset helpers (a group = consecutive exercises sharing supersetGroup)
 
