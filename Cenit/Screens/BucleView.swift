@@ -70,6 +70,8 @@ private struct PatronesLanding: View {
     @State private var showAnota = false
     /// «Diseña tu propio experimento» builder. FER-468.
     @State private var showDisena = false
+    /// «Relaciona dos métricas tú mismo» (§5) → the Compare overlay, the same screen as Cuerpo. FER (Patrones v2).
+    @State private var showCompare = false
     /// Generic info explainer (the ⓘ on a section). FER-312.
     @State private var info: BucleInfo? = nil
     /// The running experiment whose detail sheet is open (racha + effect chart). FER-462/2b.
@@ -83,29 +85,23 @@ private struct PatronesLanding: View {
         !loaded || usableNights < Self.calibrationTarget
     }
 
-    /// Nights still needed before the first findings (cold-start copy). ≥1 while genuinely cold.
-    private var nightsRemaining: Int { max(0, Self.calibrationTarget - usableNights) }
-
-    /// Section rhythm: tighter when an experiment occupies the screen (handoff «comprimido»).
-    private var sectionGap: CGFloat { running != nil ? 18 : NoopMetrics.sectionGap }
-
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: sectionGap) {
+            // One narrative ordered by the six goals (Patrones v2). §1 is the serif revelation hero;
+            // §2–§6 are numbered sections each opened by a hairline + numbered dot. The hero swaps to the
+            // calibrating state until there's enough history; §6 (the archive) hides while it's empty.
+            VStack(alignment: .leading, spacing: 0) {
                 header
                 if genuineColdStart {
-                    coldStartHero
-                    coldStartAnota
-                    loQueVerasSection
+                    calibratingHero
                 } else {
                     heroSection
-                    enPruebaSection
-                    anotaSection
-                    loQueFuncionaSection
-                    relacionesSection
-                    disenaSection
-                    expedienteSection
                 }
+                correlacionesSection   // §2 · Correlaciones que no veías
+                pruebaSection          // §3 · Pon a prueba algo nuevo
+                confirmadoSection      // §4 · Confirmado · funciona en ti
+                aportaSection          // §5 · Aporta lo tuyo
+                expedienteSection      // §6 · Tu expediente
             }
             .padding(.horizontal, NoopMetrics.screenPadding)
             .padding(.top, 14)
@@ -158,6 +154,13 @@ private struct PatronesLanding: View {
             .instrumentoTheme(theme)
             .environmentObject(repo)
         }
+        .sheet(isPresented: $showCompare) {
+            // §5 «Relaciona dos métricas tú mismo» reuses the Compare overlay (same as Cuerpo): the theme
+            // is injected at the root (it doesn't cross the `.sheet` boundary) and `repo` is re-supplied.
+            CompareView()
+                .instrumentoTheme(theme)
+                .environmentObject(repo)
+        }
     }
 
     // MARK: Header
@@ -187,79 +190,79 @@ private struct PatronesLanding: View {
         let f = DateFormatter(); f.locale = .current; f.dateFormat = "EEE d MMM"; return f
     }()
 
-    // MARK: Hallazgo hero (never empty — plan C, over the existing engine)
+    // MARK: §1 · Lo que no sabías de ti (the revelation hero — never empty)
     //
-    // Leads with the single most relevant finding (the engine already ranks by significance × effect ×
-    // recency). A behavior lever renders as «Tu palanca más fuerte» with a «Probar 1 semana» CTA; any
-    // other finding renders with its datum + «Ver por qué». When nothing has surfaced yet (history is
-    // sufficient but no finding cleared the bar), a quiet «sigo observando» keeps the hero non-empty.
+    // The screen's lead: the single strongest passive revelation, in serif, framed «sin que lo anotaras».
+    // Prefers a fresh finding, then any non-behavior finding, then the top insight; a behavior lever is
+    // only the fallback (when nothing passive has surfaced), and keeps its own framing. When the engine
+    // has nothing yet (history sufficient, no finding cleared the bar), a quiet «sigo observando» shows.
 
     /// The freshest non-behavior finding still within the «new» window — an anomaly/trend/correlation
-    /// that just surfaced from your data. It leads the hero with the «Nuevo» badge. Behavior levers are
-    /// excluded: the «sin que anotaras» framing is for findings that emerge without you logging. FER-466.
+    /// that just surfaced from your data, so the hero can lead with it. FER-466.
     private var heroNewFinding: Insight? {
         insights.first { $0.kind != .behavior && newInsightKeys.contains(InsightFreshness.key(for: $0)) }
     }
 
-    /// The lead finding: a fresh finding if there is one, else the top-ranked insight.
-    private var heroInsight: Insight? { heroNewFinding ?? insights.first }
-
-    @ViewBuilder private var heroSection: some View {
-        if let hero = heroInsight {
-            if heroNewFinding == hero {
-                findingHero(hero, isNew: true)
-            } else if hero.kind == .behavior, hero.lever != nil {
-                leverHero(hero)
-            } else {
-                findingHero(hero, isNew: false)
-            }
-        } else {
-            observingHero
-        }
+    /// The lead finding: a fresh finding, else the top non-behavior finding, else the top-ranked insight.
+    private var heroInsight: Insight? {
+        heroNewFinding ?? insights.first { $0.kind != .behavior } ?? insights.first
     }
 
-    private func leverHero(_ insight: Insight) -> some View {
+    private var heroSection: some View {
+        Group {
+            if let hero = heroInsight {
+                if hero.kind == .behavior, hero.lever != nil {
+                    leverHero(hero)
+                } else {
+                    revelationHero(hero)
+                }
+            } else {
+                observingHero
+            }
+        }
+        .padding(.top, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// A passive revelation: «Lo que no sabías de ti» overline (spark, green) → serif headline → the
+    /// signed datum + «sin que lo anotaras» → «Ver por qué».
+    private func revelationHero(_ insight: Insight) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 7) {
-                Image(systemName: "arrow.up").font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(theme.inkTertiary)
-                Text("Your strongest lever").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Image(systemName: "sparkles").font(.system(size: 13, weight: .semibold))
+                Text("What you didn't know about yourself").instrumentoOverline()
             }
-            Text(heroLeverHeadline(insight))
-                .font(.system(size: 27, weight: .semibold)).tracking(-0.4)
-                .lineSpacing(2)
+            .foregroundStyle(theme.dataRecovery)
+            Text(insight.title)
+                .font(StrandFont.serif(28)).lineSpacing(1)
                 .foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 13)
-            heroDatumRow(insight, context: String(localized: "\(insight.evidence.n) nights measured"))
-                .padding(.top, 15)
-            heroActions(insight, canProbar: running == nil && insight.confidence != .proven)
-                .padding(.top, 18)
+                .padding(.top, 11)
+            heroDatumRow(insight, context: String(localized: "without you logging it · \(insight.evidence.n) days"))
+                .padding(.top, 12)
+            heroActions(insight, canProbar: false).padding(.top, 14)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func findingHero(_ insight: Insight, isNew: Bool) -> some View {
+    /// The behavior-lever fallback hero — its own framing (it came from your logging, not «sin anotar»),
+    /// serif headline, with a «Probar 1 semana» CTA when an experiment can start.
+    private func leverHero(_ insight: Insight) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            if isNew {
-                HStack(spacing: 7) {
-                    Image(systemName: "sparkles").font(.system(size: 12, weight: .semibold))
-                    Text("New · we noticed it without you logging").instrumentoOverline()
-                }
-                .foregroundStyle(theme.dataRecovery)
-            } else {
-                Text(BucleFormat.kindLabel(insight.kind)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            HStack(spacing: 7) {
+                Image(systemName: "arrow.up").font(.system(size: 12, weight: .semibold))
+                Text("Your strongest lever").instrumentoOverline()
             }
-            Text(insight.title)
-                .font(.system(size: 27, weight: .semibold)).tracking(-0.4)
-                .lineSpacing(2)
+            .foregroundStyle(theme.inkTertiary)
+            Text(heroLeverHeadline(insight))
+                .font(StrandFont.serif(28)).lineSpacing(1)
                 .foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 13)
-            heroDatumRow(insight, context: String(localized: "\(insight.datum.metric) · seen in \(insight.evidence.n) days"))
-                .padding(.top, 15)
-            heroActions(insight, canProbar: false)
-                .padding(.top, 18)
+                .padding(.top, 11)
+            heroDatumRow(insight, context: String(localized: "\(insight.evidence.n) nights measured"))
+                .padding(.top, 12)
+            heroActions(insight, canProbar: running == nil && insight.confidence != .proven)
+                .padding(.top, 14)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -311,26 +314,28 @@ private struct PatronesLanding: View {
         }
     }
 
-    /// History is sufficient but no finding has cleared the bar yet — keep the hero non-empty with a
-    /// quiet observing state that routes to the journal (which creates the candidates).
+    /// History is sufficient but no finding has cleared the bar yet — keep the hero non-empty.
     private var observingHero: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Still watching").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            HStack(spacing: 7) {
+                Image(systemName: "binoculars").font(.system(size: 12, weight: .semibold))
+                Text("Still watching").instrumentoOverline()
+            }
+            .foregroundStyle(theme.inkTertiary)
             Text("No clear pattern in your body yet.")
-                .font(.system(size: 26, weight: .semibold)).tracking(-0.3)
+                .font(StrandFont.serif(27))
                 .foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 12)
+                .padding(.top, 11)
             Text("I'm still reviewing your nights. Log your days so I find what moves you sooner.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 14)
+                .padding(.top, 12)
         }
     }
 
-    /// A natural-language headline for the strongest lever: «<habit> raises/lowers <metric>.» The habit
-    /// name is data (its localized label); the sentence template is localized per direction × metric so
-    /// the metric word reads naturally in each language. FER-472.
+    /// A natural-language headline for a lever: «<habit> raises/lowers <metric>.» The habit name is data
+    /// (its localized label); the sentence template is localized per direction × metric. FER-472.
     private func heroLeverHeadline(_ insight: Insight) -> String {
         let name = BucleFormat.behaviorName(insight)
         let up = insight.datum.value >= 0
@@ -348,290 +353,20 @@ private struct PatronesLanding: View {
         }
     }
 
-    // MARK: En prueba · tu racha (running experiment / verdict, FER-307 + FER-462)
-    //
-    // The cycle's «Prueba» beat. A running journal experiment shows its racha — the consecutive nights
-    // kept (the «arco») + your best run — and the marked daily check-in that keeps it alive. Diet (no
-    // Sí/No log) falls back to the plain progress module. The verdict module is unchanged.
+    // MARK: §2 · Correlaciones que no veías (passive findings)
 
-    @ViewBuilder private var enPruebaSection: some View {
-        if let p = running {
-            if p.supportsStreak {
-                experimentStreakSection(p)
+    private var correlacionesSection: some View {
+        section(2, "Correlations you couldn't see") {
+            let rels = correlationInsights
+            if rels.isEmpty {
+                emptyBox("I haven't found clear links yet. They'll show up here as soon as I see them.")
             } else {
-                experimentProgressSection(p)
-            }
-        } else if let fin = finished {
-            experimentVerdictSection(fin)
-        }
-    }
-
-    /// The racha module: streak number + «arco» + best run + the marked daily check-in.
-    private func experimentStreakSection(_ p: ExperimentProgress) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("On trial · your streak").instrumentoOverline().foregroundStyle(theme.dataRecovery)
-                Spacer()
-                HStack(spacing: 4) {
-                    Image(systemName: "flame").font(.system(size: 11, weight: .medium))
-                    Text("Best: \(p.streakBest)").font(StrandFont.captionNumber)
-                }
-                .foregroundStyle(theme.inkTertiary)
-            }
-            .padding(.top, 18)
-            .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5).padding(.top, -2) }
-
-            Button { experimentDetail = ExperimentItem(row: p.row) } label: {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(BucleFormat.behaviorLabel(p.row.behavior))
-                        .font(StrandFont.title2).foregroundStyle(theme.ink).padding(.top, 11)
-                    HStack(alignment: .firstTextBaseline, spacing: 7) {
-                        Text("\(p.streakCurrent)").font(StrandFont.number(34)).foregroundStyle(theme.ink)
-                        Text(p.streakCurrent == 1 ? String(localized: "night in a row")
-                                                  : String(localized: "nights in a row"))
-                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                        Spacer(minLength: 8)
-                        HStack(spacing: 3) {
-                            Text("See detail").font(StrandFont.footnote)
-                            Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold))
-                        }
-                        .foregroundStyle(theme.inkTertiary)
+                VStack(spacing: 0) {
+                    ForEach(Array(rels.enumerated()), id: \.offset) { _, insight in
+                        relationRow(insight)
                     }
-                    .padding(.top, 8)
-                    StreakArc(filled: p.streakCurrent, total: p.row.windowDays, theme: theme)
-                        .padding(.top, 12)
                 }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-
-            Text("Kept **\(p.adherent) of \(p.elapsedDay)** days.")
-                .font(StrandFont.body).foregroundStyle(theme.inkSecondary).monospacedDigit().padding(.top, 14)
-
-            if p.pendingCheckIn {
-                checkInBox(p).padding(.top, 14)
-            }
-
-            Text("Verdict on \(p.verdictDate)")
-                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).padding(.top, 14)
-
-            cancelButton(p.row).padding(.top, 16)
-        }
-    }
-
-    /// The marked daily check-in: today is within the window and unlogged, so a tap writes the answer
-    /// to the journal (extending or breaking the racha) and the box disappears on the next load.
-    private func checkInBox(_ p: ExperimentProgress) -> some View {
-        // The journal QUESTION is data; show its localized short label, never the raw English key (FER-472).
-        let question = p.row.behavior.isEmpty ? String(localized: "Did you keep it today?")
-                                              : BucleFormat.behaviorLabel(p.row.behavior)
-        return VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 6) {
-                Circle().fill(theme.dataRecovery).frame(width: 8, height: 8)
-                Text("Pending today · Day \(p.elapsedDay)").instrumentoOverline().foregroundStyle(theme.dataRecovery)
-            }
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text(question).font(StrandFont.headline).foregroundStyle(theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 8)
-                checkInToggle("Yes", answeredYes: true, behavior: p.row.behavior)
-                checkInToggle("No", answeredYes: false, behavior: p.row.behavior)
-            }
-            .padding(.top, 11)
-            Text("Mark it so you don't break the streak.")
-                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).padding(.top, 8)
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .stroke(theme.dataRecovery, lineWidth: 1.5))
-    }
-
-    private func checkInToggle(_ label: LocalizedStringKey, answeredYes: Bool, behavior: String) -> some View {
-        Button {
-            Task {
-                await repo.saveJournalAnswer(day: Repository.localDayKey(Date()),
-                                             question: behavior, answeredYes: answeredYes)
-                await load()
-            }
-        } label: {
-            Text(label).font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
-                .frame(minWidth: 30)
-                .padding(.horizontal, 15).padding(.vertical, 7)
-                .overlay(Capsule().stroke(theme.hairlineStrong, lineWidth: 1))
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(label)
-    }
-
-    /// The plain progress module (diet, which has no Sí/No check-in): day N of M + adherence count.
-    private func experimentProgressSection(_ p: ExperimentProgress) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("On trial").instrumentoOverline().foregroundStyle(theme.dataRecovery)
-                .padding(.top, 18)
-                .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5).padding(.top, -2) }
-            Text(BucleFormat.behaviorLabel(p.row.behavior))
-                .font(StrandFont.title2).foregroundStyle(theme.ink).padding(.top, 11)
-            Text("on trial against your \(p.row.outcome)")
-                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).padding(.top, 3)
-
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("Day \(p.elapsedDay)").font(.system(size: 30, weight: .semibold)).monospacedDigit()
-                    .lineLimit(1).minimumScaleFactor(0.6)
-                    .foregroundStyle(theme.ink)
-                Text("of \(p.row.windowDays)").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
-            }
-            .padding(.top, 16)
-
-            ProgressView(value: Double(p.elapsedDay), total: Double(p.row.windowDays))
-                .tint(theme.dataRecovery).padding(.top, 12)
-
-            Text("Kept **\(p.adherent) of \(p.elapsedDay)** days.")
-                .font(StrandFont.body).foregroundStyle(theme.inkSecondary).monospacedDigit().padding(.top, 16)
-            Text("Verdict on \(p.verdictDate)")
-                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).padding(.top, 6)
-
-            cancelButton(p.row).padding(.top, 18)
-        }
-    }
-
-    private func cancelButton(_ row: ExperimentRow) -> some View {
-        Button { Task { await repo.cancelExperiment(row); await load() } } label: {
-            Text("Cancel experiment").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func experimentVerdictSection(_ exp: ExperimentRow) -> some View {
-        let v = Verdict(rawValue: exp.result ?? "") ?? .insufficient
-        return VStack(alignment: .leading, spacing: 0) {
-            Text("Your experiment").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                .padding(.top, 18)
-                .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5).padding(.top, -2) }
-            Text(BucleFormat.verdictHeadline(v))
-                .font(.system(size: v == .sustained ? 26 : 24, weight: .semibold))
-                .foregroundStyle(theme.ink).fixedSize(horizontal: false, vertical: true).padding(.top, 11)
-
-            // Color only on a sustained effect — a confirmed measured value.
-            if v == .sustained, let delta = exp.effectDelta {
-                HStack(alignment: .firstTextBaseline, spacing: 9) {
-                    Text(BucleFormat.signedDelta(delta, unit: outcomeUnit(exp.outcome)))
-                        .font(.system(size: 40, weight: .semibold)).monospacedDigit()
-                        .lineLimit(1).minimumScaleFactor(0.6)
-                        .foregroundStyle(theme.dataRecovery)
-                    Text(exp.outcome).font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
-                }
-                .padding(.top, 12)
-            }
-
-            Text(BucleFormat.verdictReading(v, behavior: BucleFormat.behaviorLabel(exp.behavior),
-                                            outcome: exp.outcome, adherent: exp.nWith ?? 0,
-                                            window: exp.windowDays))
-                .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true).padding(.top, 14)
-
-            Button {
-                dismissedExperimentId = exp.id
-                finished = nil
-            } label: {
-                HStack(spacing: 5) {
-                    Text("Done").font(StrandFont.headline).foregroundStyle(theme.ink)
-                    Image(systemName: "checkmark").font(.system(size: 14)).foregroundStyle(theme.ink)
-                }
-            }
-            .buttonStyle(.plain).padding(.top, 18)
-        }
-    }
-
-    // MARK: Anota tu día
-
-    private var anotaSection: some View {
-        VStack(alignment: .leading, spacing: 11) {
-            Text(running != nil ? String(localized: "Log the rest of your day") : String(localized: "Log your day"))
-                .instrumentoOverline().foregroundStyle(theme.ink)
-            Button { showAnota = true } label: {
-                HStack(spacing: 13) {
-                    Image(systemName: "square.and.pencil").font(.system(size: 20)).foregroundStyle(theme.inkSecondary)
-                    VStack(alignment: .leading, spacing: 7) {
-                        Text(journalAnswered > 0 ? String(localized: "\(journalAnswered) of \(journalTotal) logged today") : String(localized: "Mark what happened today"))
-                            .font(StrandFont.headline).foregroundStyle(theme.ink).monospacedDigit()
-                        if journalAnswered > 0 {
-                            HStack(spacing: 5) {
-                                ForEach(0..<max(journalTotal, 1), id: \.self) { i in
-                                    Capsule().fill(i < journalAnswered ? theme.ink : theme.hairline)
-                                        .frame(width: 22, height: 5)
-                                }
-                            }
-                        } else {
-                            Text("The more I know about your habits, the more patterns I find")
-                                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
-                    Spacer()
-                    Image(systemName: "chevron.right").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
-                }
-                .padding(16)
-                .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                    .stroke(theme.hairlineStrong, lineWidth: 1))
-            }
-            .buttonStyle(.plain)
-        }
-    }
-
-    // MARK: Lo que funciona en ti (palancas curadas)
-
-    @ViewBuilder private var loQueFuncionaSection: some View {
-        let levers = curatedLevers
-        if !levers.isEmpty {
-            VStack(alignment: .leading, spacing: 0) {
-                sectionLabel("What works for you",
-                             trailing: behaviorInsights.count > levers.count ? String(localized: "See all") : nil,
-                             info: .loQueFunciona) { showEfectos = true }
-                ForEach(Array(levers.enumerated()), id: \.offset) { _, insight in
-                    leverRow(insight)
-                }
-            }
-        }
-    }
-
-    private func leverRow(_ insight: Insight) -> some View {
-        let good = BucleFormat.isGood(insight)
-        return Button { detail = InsightItem(insight: insight) } label: {
-            HStack(spacing: 13) {
-                Image(systemName: insight.datum.value < 0 ? "arrow.down" : "arrow.up")
-                    .font(.system(size: 18, weight: .semibold)).foregroundStyle(theme.dataRecovery)
-                    .frame(width: 22)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(BucleFormat.behaviorName(insight)).font(StrandFont.body).foregroundStyle(theme.ink)
-                    Text("\(insight.evidence.n) nights measured")
-                        .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                }
-                Spacer(minLength: 8)
-                Text(BucleFormat.signedDelta(insight.datum.value, unit: insight.datum.unit))
-                    .font(StrandFont.number(16, weight: .semibold))
-                    .foregroundStyle(good ? theme.positiveText : theme.critical)
-            }
-            .padding(.vertical, 14)
-            .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: Cómo se relacionan tus métricas (correlaciones)
-
-    @ViewBuilder private var relacionesSection: some View {
-        let rels = correlationInsights
-        if !rels.isEmpty {
-            VStack(alignment: .leading, spacing: 0) {
-                Text("How your metrics relate").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    .padding(.bottom, 2)
-                ForEach(Array(rels.enumerated()), id: \.offset) { _, insight in
-                    relationRow(insight)
-                }
+                .padding(.top, 4)
             }
         }
     }
@@ -651,83 +386,472 @@ private struct PatronesLanding: View {
                 Spacer(minLength: 8)
                 Image(systemName: "chevron.right").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
             }
-            .padding(.vertical, 14)
+            .padding(.vertical, 13)
             .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
 
-    // MARK: ¿Quieres probar algo? (free experiment builder, FER-468)
+    // MARK: §3 · Pon a prueba algo nuevo (the running experiment + builder)
+    //
+    // The «Prueba» beat. A running journal experiment shows a compact card — chip, title, 7-segment streak
+    // bar, the inline Sí/No check-in (or its «registrado» record once marked) — tappable into the racha +
+    // effect-chart detail. With nothing running, a «Sugerido para ti» card (seeded from a candidate lever)
+    // or, on a verdict, the result card. A dashed «Diseña un experimento» row always closes the section.
 
-    /// The free-experiment entry — shown only when nothing is in flight (MVP one-at-a-time). Opens the
-    /// builder where you pick a habit + metric + window, not bound to a detected lever.
-    @ViewBuilder private var disenaSection: some View {
-        if running == nil {
-            VStack(alignment: .leading, spacing: 11) {
-                Text("Want to try something?").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Button { showDisena = true } label: {
-                    HStack(spacing: 13) {
-                        Image(systemName: "flask").font(.system(size: 20)).foregroundStyle(theme.inkSecondary)
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text("Design your own experiment").font(StrandFont.headline).foregroundStyle(theme.ink)
-                            Text("Pick a habit and measure it for a week")
-                                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        Spacer()
-                        Image(systemName: "plus").font(.system(size: 16, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-                    }
-                    .padding(16)
-                    .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                        .stroke(theme.hairlineStrong, lineWidth: 1))
-                }
-                .buttonStyle(.plain)
+    private var pruebaSection: some View {
+        section(3, "Put something new to the test") {
+            Text(pruebaIntro)
+                .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 8)
+            if let p = running {
+                if p.supportsStreak { streakCard(p) } else { dietProgressCard(p) }
+            } else if let fin = finished {
+                verdictCard(fin)
+            } else if let s = suggestedLever {
+                suggestedCard(s)
+            }
+            disenaRow
+        }
+    }
+
+    private var pruebaIntro: LocalizedStringKey {
+        if genuineColdStart { return "You don't have to wait — an experiment speeds up what I learn about you." }
+        if running != nil { return "Turn a hunch into a correlation of your own." }
+        return "You don't have any experiment running right now."
+    }
+
+    /// The running journal experiment, as the compact card (Option A): tappable into the racha + effect
+    /// detail via the footer row.
+    private func streakCard(_ p: ExperimentProgress) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                recChip(String(localized: "On trial · \(p.streakCurrent)/\(p.row.windowDays)"))
+                Spacer()
+                Text("Verdict \(p.verdictDate)")
+                    .font(StrandFont.number(11, weight: .regular)).foregroundStyle(theme.inkTertiary)
+            }
+            Text(BucleFormat.behaviorLabel(p.row.behavior))
+                .font(StrandFont.title2).foregroundStyle(theme.ink).padding(.top, 10)
+            streakBar(filled: min(p.streakCurrent, p.row.windowDays), total: p.row.windowDays)
+                .padding(.top, 11)
+            if p.pendingCheckIn {
+                checkInRow(p).padding(.top, 13)
+            } else if let yes = p.markedYesToday {
+                markedRecord(yes: yes, behavior: p.row.behavior).padding(.top, 13)
+            }
+            detailFooter(p.row, leading: String(localized: "Best streak \(p.streakBest) · see effect chart"))
+        }
+        .pruebaCard(theme, border: theme.dataRecovery)
+    }
+
+    /// Diet (no Sí/No log) keeps a plain progress card — day N of M + adherence — also tappable to detail.
+    private func dietProgressCard(_ p: ExperimentProgress) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                recChip(String(localized: "On trial · \(p.elapsedDay)/\(p.row.windowDays)"))
+                Spacer()
+                Text("Verdict \(p.verdictDate)")
+                    .font(StrandFont.number(11, weight: .regular)).foregroundStyle(theme.inkTertiary)
+            }
+            Text(BucleFormat.behaviorLabel(p.row.behavior))
+                .font(StrandFont.title2).foregroundStyle(theme.ink).padding(.top, 10)
+            ProgressView(value: Double(p.elapsedDay), total: Double(p.row.windowDays))
+                .tint(theme.dataRecovery).padding(.top, 12)
+            Text("Kept **\(p.adherent) of \(p.elapsedDay)** days.")
+                .font(StrandFont.body).foregroundStyle(theme.inkSecondary).monospacedDigit().padding(.top, 12)
+            detailFooter(p.row, leading: String(localized: "See effect chart"))
+        }
+        .pruebaCard(theme, border: theme.dataRecovery)
+    }
+
+    /// 7-segment streak bar — one segment per window day, filled green for the current streak.
+    private func streakBar(filled: Int, total: Int) -> some View {
+        HStack(spacing: 4) {
+            ForEach(0..<max(total, 1), id: \.self) { i in
+                Capsule().fill(i < filled ? theme.dataRecovery : theme.hairline).frame(height: 7)
+            }
+        }
+        .accessibilityLabel("\(filled) of \(total)")
+    }
+
+    /// The inline daily check-in (today within the window, unmarked): a tap writes the answer and reloads.
+    private func checkInRow(_ p: ExperimentProgress) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text("Did you keep it today?").font(StrandFont.subhead).foregroundStyle(theme.ink)
+            Spacer(minLength: 8)
+            HStack(spacing: 7) {
+                checkInToggle("Yes", answeredYes: true, behavior: p.row.behavior)
+                checkInToggle("No", answeredYes: false, behavior: p.row.behavior)
             }
         }
     }
 
-    // MARK: Tu expediente (explorador por métrica)
+    private func checkInToggle(_ label: LocalizedStringKey, answeredYes: Bool, behavior: String) -> some View {
+        Button {
+            Task {
+                await repo.saveJournalAnswer(day: Repository.localDayKey(Date()),
+                                             question: behavior, answeredYes: answeredYes)
+                await load()
+            }
+        } label: {
+            Text(label).font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
+                .frame(minWidth: 30)
+                .padding(.horizontal, 15).padding(.vertical, 7)
+                .overlay(Capsule().stroke(theme.hairlineStrong, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+    }
+
+    /// The «check-in marcado» record (State 4): today's answer is in, with an inline Deshacer that clears it.
+    private func markedRecord(yes: Bool, behavior: String) -> some View {
+        HStack(spacing: 9) {
+            Image(systemName: yes ? "checkmark.circle" : "circle.slash")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(yes ? theme.dataRecovery : theme.inkTertiary)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(yes ? String(localized: "Kept today · logged") : String(localized: "Missed today · logged"))
+                    .font(StrandFont.subhead).foregroundStyle(theme.ink)
+                Text("You can still change it").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            }
+            Spacer(minLength: 8)
+            Button {
+                Task {
+                    await repo.clearJournalAnswer(day: Repository.localDayKey(Date()), question: behavior)
+                    await load()
+                }
+            } label: {
+                Text("Undo").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).underline()
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(yes ? theme.dataRecovery.opacity(0.08) : theme.paperLo,
+                    in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .stroke(yes ? theme.dataRecovery.opacity(0.25) : theme.hairline, lineWidth: 1))
+    }
+
+    /// The card footer (Option A) — a quiet tappable row into the experiment's racha + effect-chart detail.
+    private func detailFooter(_ row: ExperimentRow, leading: String) -> some View {
+        Button { experimentDetail = ExperimentItem(row: row) } label: {
+            HStack(spacing: 6) {
+                Text(leading).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                Spacer()
+                Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(theme.inkTertiary)
+            }
+            .padding(.top, 12)
+            .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// The experiment verdict (State 3): a result card. «Funcionó» graduates to §4 (the engine already
+    /// auto-promotes the lever) with a Repeat; «sin efecto» offers a one-more-week or discard.
+    private func verdictCard(_ exp: ExperimentRow) -> some View {
+        let v = Verdict(rawValue: exp.result ?? "") ?? .insufficient
+        let worked = v == .sustained
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 8) {
+                Image(systemName: worked ? "checkmark.circle" : "minus.circle")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(worked ? theme.dataRecovery : theme.inkTertiary)
+                Text(worked ? String(localized: "Verdict · it worked") : String(localized: "Verdict · no clear effect"))
+                    .instrumentoOverline().foregroundStyle(worked ? theme.dataRecovery : theme.inkTertiary)
+            }
+            Text(BucleFormat.behaviorLabel(exp.behavior))
+                .font(StrandFont.title2).foregroundStyle(theme.ink).padding(.top, 11)
+            if worked {
+                Text(BucleFormat.verdictHeadline(v))
+                    .font(StrandFont.serifVerdict).foregroundStyle(theme.ink)
+                    .fixedSize(horizontal: false, vertical: true).padding(.top, 6)
+                verdictStats(exp).padding(.top, 13)
+                HStack(spacing: 9) {
+                    Button { dismissVerdict(exp) } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "checkmark").font(.system(size: 14, weight: .semibold))
+                            Text("Save to Confirmed").font(StrandFont.headline)
+                        }
+                        .foregroundStyle(theme.paper)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 11)
+                        .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    quietButton("Repeat") { restartExperiment(exp) }
+                }
+                .padding(.top, 15)
+            } else {
+                Text(BucleFormat.verdictReading(v, behavior: BucleFormat.behaviorLabel(exp.behavior),
+                                                outcome: exp.outcome, adherent: exp.nWith ?? 0,
+                                                window: exp.windowDays))
+                    .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true).padding(.top, 8)
+                HStack(spacing: 9) {
+                    Button { restartExperiment(exp) } label: {
+                        Text("Try 1 more week").font(StrandFont.headline).foregroundStyle(theme.ink)
+                            .frame(maxWidth: .infinity).padding(.vertical, 11)
+                            .background(theme.paperLo, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+                                .stroke(theme.hairlineStrong, lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                    Button { dismissVerdict(exp) } label: {
+                        Text("Discard").font(StrandFont.headline).foregroundStyle(theme.inkTertiary)
+                            .padding(.horizontal, 14).padding(.vertical, 11)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.top, 14)
+            }
+        }
+        .pruebaCard(theme, border: worked ? theme.dataRecovery : theme.hairlineStrong,
+                    fill: worked ? theme.dataRecovery.opacity(0.05) : theme.surface)
+    }
+
+    /// The «funcionó» stat row — effect (colored), days kept, confidence.
+    private func verdictStats(_ exp: ExperimentRow) -> some View {
+        HStack(spacing: 16) {
+            verdictStat(String(localized: "Effect"),
+                        BucleFormat.signedDelta(exp.effectDelta ?? 0, unit: outcomeUnit(exp.outcome)),
+                        color: theme.dataRecovery)
+            Rectangle().fill(theme.hairline).frame(width: 1, height: 34)
+            verdictStat(String(localized: "Kept"), "\(exp.nWith ?? 0)/\(exp.windowDays)", color: theme.ink)
+            Rectangle().fill(theme.hairline).frame(width: 1, height: 34)
+            verdictStat(String(localized: "Confidence"), String(localized: "High"), color: theme.ink, big: false)
+        }
+    }
+
+    private func verdictStat(_ label: String, _ value: String, color: Color, big: Bool = true) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            Text(value)
+                .font(big ? StrandFont.number(22, weight: .semibold) : StrandFont.headline)
+                .foregroundStyle(color)
+                .padding(.top, big ? 0 : 3)
+        }
+    }
+
+    /// «Sugerido para ti» (State 2) — a candidate lever offered as a one-tap experiment to start.
+    private func suggestedCard(_ insight: Insight) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                recChip(String(localized: "Suggested for you"))
+                Spacer()
+                Image(systemName: "sparkles").font(.system(size: 15)).foregroundStyle(theme.dataRecovery)
+            }
+            Text(BucleFormat.behaviorName(insight))
+                .font(StrandFont.title2).foregroundStyle(theme.ink).padding(.top, 10)
+            Text("I spotted a hunch in your data. Try it 7 nights and I'll tell you if it's real for you.")
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true).padding(.top, 6)
+            HStack {
+                Spacer()
+                Button { startLever = InsightItem(insight: insight) } label: {
+                    Text("Start trial").font(StrandFont.headline).foregroundStyle(theme.paper)
+                        .padding(.horizontal, 16).padding(.vertical, 9)
+                        .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.top, 13)
+        }
+        .pruebaCard(theme, border: theme.hairlineStrong)
+    }
+
+    /// The dashed «Diseña un experimento» / «Diseña uno tú mismo» row — opens the free builder.
+    private var disenaRow: some View {
+        Button { showDisena = true } label: {
+            HStack(spacing: 11) {
+                Image(systemName: "flask").font(.system(size: 18)).foregroundStyle(theme.inkSecondary).frame(width: 18)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(running != nil ? String(localized: "Design an experiment") : String(localized: "Design one yourself"))
+                        .font(StrandFont.body).foregroundStyle(theme.ink)
+                    Text("Pick a habit and measure it for a week")
+                        .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "plus").font(.system(size: 16, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+            }
+            .padding(.horizontal, 14).padding(.vertical, 13)
+            .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
+                .stroke(theme.hairlineStrong, style: StrokeStyle(lineWidth: 1, dash: [4])))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 11)
+    }
+
+    private var suggestedLever: Insight? {
+        insights.first { $0.kind == .behavior && $0.lever != nil && $0.confidence != .proven }
+    }
+
+    private func restartExperiment(_ exp: ExperimentRow) {
+        Task {
+            dismissedExperimentId = exp.id
+            _ = await repo.startExperiment(behavior: exp.behavior, outcome: exp.outcome,
+                                           expectedSign: exp.expectedSign, windowDays: exp.windowDays)
+            await load()
+        }
+    }
+
+    private func dismissVerdict(_ exp: ExperimentRow) {
+        dismissedExperimentId = exp.id
+        finished = nil
+    }
+
+    /// A quiet bordered secondary button (paperLo fill) for the verdict actions.
+    private func quietButton(_ label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(label).font(StrandFont.headline).foregroundStyle(theme.inkSecondary)
+                .padding(.horizontal, 16).padding(.vertical, 11)
+                .background(theme.paperLo, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+                    .stroke(theme.hairlineStrong, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: §4 · Confirmado · funciona en ti (proven levers)
+
+    private var confirmadoSection: some View {
+        let levers = curatedLevers
+        return section(4, "Confirmed · works for you",
+                       trailing: behaviorInsights.count > levers.count ? String(localized: "See all") : nil,
+                       trailingAction: { showEfectos = true }) {
+            if levers.isEmpty {
+                emptyBox("Nothing proven yet — your experiments will land here.")
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(Array(levers.enumerated()), id: \.offset) { _, insight in
+                        confirmadoRow(insight)
+                    }
+                }
+                .padding(.top, 4)
+            }
+        }
+    }
+
+    private func confirmadoRow(_ insight: Insight) -> some View {
+        let good = BucleFormat.isGood(insight)
+        return Button { detail = InsightItem(insight: insight) } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "checkmark").font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(theme.dataRecovery).frame(width: 18)
+                Text(heroLeverHeadline(insight)).font(StrandFont.body).foregroundStyle(theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 8)
+                Text(BucleFormat.signedDelta(insight.datum.value, unit: insight.datum.unit))
+                    .font(StrandFont.number(15, weight: .semibold))
+                    .foregroundStyle(good ? theme.positiveText : theme.critical)
+            }
+            .padding(.vertical, 13)
+            .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: §5 · Aporta lo tuyo (journal + relate-two-metrics)
+
+    private var aportaSection: some View {
+        section(5, "Add your own") {
+            anotaRow.padding(.top, 11)
+            relacionaRow.padding(.top, 10)
+        }
+    }
+
+    private var anotaRow: some View {
+        Button { showAnota = true } label: {
+            HStack(spacing: 13) {
+                Image(systemName: "square.and.pencil").font(.system(size: 20)).foregroundStyle(theme.inkSecondary)
+                VStack(alignment: .leading, spacing: 7) {
+                    Text("Log your day").font(StrandFont.headline).foregroundStyle(theme.ink)
+                    if journalAnswered > 0 {
+                        HStack(spacing: 5) {
+                            ForEach(0..<max(journalTotal, 1), id: \.self) { i in
+                                Capsule().fill(i < journalAnswered ? theme.ink : theme.hairline)
+                                    .frame(width: 22, height: 5)
+                            }
+                        }
+                    } else {
+                        Text("The more you log, the more patterns I find")
+                            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
+            }
+            .surfaceRow(theme)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var relacionaRow: some View {
+        Button { showCompare = true } label: {
+            HStack(spacing: 13) {
+                Image(systemName: "chart.xyaxis.line").font(.system(size: 20)).foregroundStyle(theme.inkSecondary)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Relate two metrics yourself").font(StrandFont.headline).foregroundStyle(theme.ink)
+                    Text("Feel like something affects you? Put it to the test")
+                        .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
+            }
+            .surfaceRow(theme)
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: §6 · Tu expediente (the archive)
 
     @ViewBuilder private var expedienteSection: some View {
         if !behaviorInsights.isEmpty {
-            VStack(alignment: .leading, spacing: 11) {
-                HStack(spacing: 6) {
-                    Text("Your record").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    Button { info = .efectos } label: {
-                        Image(systemName: "info.circle").font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("How this section works")
-                }
+            section(6, "Your record · everything found", info: .efectos) {
                 Button { showEfectos = true } label: {
-                    VStack(alignment: .leading, spacing: 14) {
+                    VStack(alignment: .leading, spacing: 0) {
                         HStack(spacing: 13) {
-                            Image(systemName: "chart.bar").font(.system(size: 20)).foregroundStyle(theme.inkSecondary)
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text("Explore by metric").font(StrandFont.headline).foregroundStyle(theme.ink)
-                                Text("How each habit moves you, across your whole history")
+                            Image(systemName: "tablecells").font(.system(size: 20)).foregroundStyle(theme.inkSecondary)
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                                    Text("\(behaviorInsights.count)")
+                                        .font(StrandFont.number(20, weight: .semibold)).foregroundStyle(theme.ink)
+                                    Text("effects measured").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                                }
+                                Text("Every habit, lever and experiment, archived")
                                     .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                             Spacer()
                             Image(systemName: "chevron.right").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
                         }
+                        .padding(16)
+                        Rectangle().fill(theme.hairline).frame(height: 0.5)
                         HStack(spacing: 7) {
                             ForEach(expedienteChips, id: \.self) { chip in
                                 Text(chip).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
                                     .padding(.horizontal, 11).padding(.vertical, 4)
-                                    .overlay(Capsule().stroke(theme.hairlineStrong, lineWidth: 1))
+                                    .background(theme.paperLo, in: Capsule())
                             }
                         }
+                        .padding(.horizontal, 16).padding(.vertical, 12)
                     }
-                    .padding(16)
                     .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
                         .stroke(theme.hairlineStrong, lineWidth: 1))
                 }
                 .buttonStyle(.plain)
+                .padding(.top, 11)
             }
         }
     }
@@ -739,27 +863,38 @@ private struct PatronesLanding: View {
         return InsightEngine.Outcome.allCases.map(\.label).filter { present.contains($0) }
     }
 
-    // MARK: Cold start
+    // MARK: §1 · Calibrating hero (cold start)
 
-    private var coldStartHero: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("Still gathering signal").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text("Your body will start teaching you things soon.")
-                .font(.system(size: 26, weight: .semibold)).tracking(-0.3)
-                .lineSpacing(2)
+    private var calibratingHero: some View {
+        let pct = Int((Double(min(usableNights, Self.calibrationTarget)) / Double(Self.calibrationTarget) * 100).rounded())
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 7) {
+                Image(systemName: "clock").font(.system(size: 13, weight: .semibold))
+                Text("Still watching").instrumentoOverline()
+            }
+            .foregroundStyle(theme.inkTertiary)
+            Text("I'm still learning how your body works.")
+                .font(StrandFont.serif(27))
                 .foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 12)
-            Text("\(min(usableNights, Self.calibrationTarget)) of \(Self.calibrationTarget) nights")
-                .font(StrandFont.captionNumber).foregroundStyle(theme.ink).padding(.top, 18)
-            calibrationBar.padding(.top, 10)
-            Text(nightsRemaining == 1
-                 ? String(localized: "1 more night with the band for your first patterns: what recovers you, what drains you, and what's worth testing.")
-                 : String(localized: "\(nightsRemaining) more nights with the band for your first patterns: what recovers you, what drains you, and what's worth testing."))
+                .padding(.top, 11)
+            Text("I need about two weeks of data to reveal your first pattern with confidence.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 16)
+                .padding(.top, 10)
+            VStack(spacing: 6) {
+                HStack {
+                    Text("\(min(usableNights, Self.calibrationTarget)) of \(Self.calibrationTarget) days")
+                        .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    Spacer()
+                    Text(verbatim: "\(pct)%").font(StrandFont.number(11, weight: .regular)).foregroundStyle(theme.inkTertiary)
+                }
+                calibrationBar
+            }
+            .padding(.top, 14)
         }
+        .padding(.top, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// A thin paper progress bar for the calibration count (matches the handoff's full-width rule).
@@ -768,90 +903,79 @@ private struct PatronesLanding: View {
             let frac = min(1, max(0, Double(usableNights) / Double(Self.calibrationTarget)))
             ZStack(alignment: .leading) {
                 Capsule().fill(theme.hairline)
-                Capsule().fill(theme.dataRecovery).frame(width: max(6, geo.size.width * CGFloat(frac)))
+                Capsule().fill(theme.inkTertiary).frame(width: max(6, geo.size.width * CGFloat(frac)))
             }
         }
-        .frame(height: 6)
+        .frame(height: 7)
         .accessibilityLabel("\(usableNights) of \(Self.calibrationTarget) nights")
     }
 
-    private var coldStartAnota: some View {
-        VStack(alignment: .leading, spacing: 11) {
-            Text("Get ahead").instrumentoOverline().foregroundStyle(theme.ink)
-                .padding(.top, 18)
-                .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5).padding(.top, -2) }
-            Button { showAnota = true } label: {
-                HStack(spacing: 13) {
-                    Image(systemName: "square.and.pencil").font(.system(size: 20)).foregroundStyle(theme.inkSecondary)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Start by logging your day").font(StrandFont.headline).foregroundStyle(theme.ink)
-                        Text("The sooner you log, the sooner I find patterns")
-                            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    Spacer()
-                    Image(systemName: "chevron.right").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
-                }
-                .padding(16)
-                .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                    .stroke(theme.hairlineStrong, lineWidth: 1))
-            }
-            .buttonStyle(.plain)
-        }
-    }
+    // MARK: Section scaffold
 
-    /// «Lo que verás aquí» — the three things Patrones will surface once there's enough history. Quiet
-    /// (gray) so it reads as a promise, not data.
-    private var loQueVerasSection: some View {
+    /// A numbered section: a top hairline, a numbered dot + overline label (with optional ⓘ and a trailing
+    /// link), then the content. The shared rhythm for §2–§6.
+    private func section<Content: View>(_ n: Int, _ title: LocalizedStringKey,
+                                        info infoItem: BucleInfo? = nil,
+                                        trailing: String? = nil,
+                                        trailingAction: (() -> Void)? = nil,
+                                        @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("What you'll see here").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                .padding(.bottom, 2)
-            comingRow("sparkles", "Findings your data reveals on its own")
-            comingRow("arrow.up", "What works for you, already proven")
-            comingRow("flask", "Experiments to test a change")
-        }
-    }
-
-    private func comingRow(_ symbol: String, _ text: LocalizedStringKey) -> some View {
-        HStack(spacing: 13) {
-            Image(systemName: symbol).font(.system(size: 18)).foregroundStyle(theme.hairlineStrong)
-                .frame(width: 22)
-            Text(text).font(StrandFont.body).foregroundStyle(theme.inkTertiary)
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 0)
-        }
-        .padding(.vertical, 14)
-        .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
-    }
-
-    // MARK: Shared bits
-
-    private func sectionLabel(_ title: LocalizedStringKey, trailing: String?,
-                              info infoItem: BucleInfo? = nil,
-                              action: @escaping () -> Void) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Text(title).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            if let infoItem {
-                Button { info = infoItem } label: {
-                    Image(systemName: "info.circle").font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("How this section works")
-            }
-            Spacer()
-            if let trailing {
-                Button(action: action) {
-                    HStack(spacing: 2) {
-                        Text(trailing).font(StrandFont.footnote)
-                        Image(systemName: "chevron.right").font(.system(size: 11))
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                numberDot(n)
+                Text(title).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                if let infoItem {
+                    Button { info = infoItem } label: {
+                        Image(systemName: "info.circle").font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
                     }
-                    .foregroundStyle(theme.inkTertiary)
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("How this section works")
                 }
-                .buttonStyle(.plain)
+                Spacer()
+                if let trailing, let trailingAction {
+                    Button(action: trailingAction) {
+                        HStack(spacing: 2) {
+                            Text(trailing).font(StrandFont.footnote)
+                            Image(systemName: "chevron.right").font(.system(size: 11))
+                        }
+                        .foregroundStyle(theme.inkTertiary)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
+            content()
         }
-        .padding(.bottom, 2)
+        .padding(.top, 18)
+        .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func numberDot(_ n: Int) -> some View {
+        Text("\(n)")
+            .font(.system(size: 10, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+            .frame(width: 18, height: 18)
+            .background(Circle().fill(theme.paperLo))
+            .overlay(Circle().stroke(theme.hairlineStrong, lineWidth: 1))
+    }
+
+    private func recChip(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 9, weight: .semibold)).textCase(.uppercase).tracking(0.5)
+            .foregroundStyle(theme.dataRecovery)
+            .padding(.horizontal, 9).padding(.vertical, 3)
+            .background(theme.dataRecovery.opacity(0.12), in: Capsule())
+    }
+
+    /// An honest, dashed empty box for a section with no data yet (calibrating / pre-finding).
+    private func emptyBox(_ text: LocalizedStringKey) -> some View {
+        Text(text)
+            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity)
+            .padding(16)
+            .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
+                .stroke(theme.hairlineStrong, style: StrokeStyle(lineWidth: 1, dash: [4])))
+            .padding(.top, 11)
     }
 
     // MARK: Derived collections
@@ -967,6 +1091,29 @@ private struct PatronesLanding: View {
 
 }
 
+// MARK: - §3 card / surface-row chrome (Patrones v2)
+
+private extension View {
+    /// The §3 experiment card: surface fill, 1px colored border, rounded, with the section's top spacing.
+    func pruebaCard(_ theme: InstrumentoTheme, border: Color, fill: Color? = nil) -> some View {
+        self.padding(15)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(fill ?? theme.surface,
+                        in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                .stroke(border, lineWidth: 1))
+            .padding(.top, 11)
+    }
+
+    /// A §5 surface row: surface fill, hairline border, rounded.
+    func surfaceRow(_ theme: InstrumentoTheme) -> some View {
+        self.padding(14)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                .stroke(theme.hairlineStrong, lineWidth: 1))
+    }
+}
+
 // MARK: - Experiment display model + data (FER-462 / 2b)
 
 /// Running-experiment display model (computed once per refresh) — progress + the racha. Internal so the
@@ -981,6 +1128,8 @@ struct ExperimentProgress {
     let streakBest: Int
     /// Today is within the window and not yet recorded → show the marked daily check-in.
     let pendingCheckIn: Bool
+    /// Today's check-in answer once given (nil = not yet answered) → the «registrado» record. FER (Patrones v2).
+    let markedYesToday: Bool?
     /// The racha / «arco» / check-in apply (journal behaviors). Diet falls back to plain progress.
     let supportsStreak: Bool
 }
@@ -1004,8 +1153,10 @@ extension Repository {
 
         let isDiet = row.behavior == JournalCatalogStore.dietBehaviorKey
         var current = 0, best = 0, pending = false
+        var markedYes: Bool? = nil
         if !isDiet {
-            let answeredToday = (await nativeJournalAnswers(day: today))[row.behavior] != nil
+            let todayAnswer = (await nativeJournalAnswers(day: today))[row.behavior]
+            let answeredToday = todayAnswer != nil
             // Eligible = the window's calendar days up to today; drop a still-pending today so an unmarked
             // today reads as «not broken yet», not as a miss.
             var eligible = ExperimentDates.dayKeys(from: row.startDay, to: today)
@@ -1015,10 +1166,12 @@ extension Repository {
             best = s.best
             let withinWindow = Repository.experimentEndDay(row).map { today < $0 } ?? true
             pending = withinWindow && !answeredToday
+            // Today already answered while still inside the window → show the «registrado» record.
+            if withinWindow, let yes = todayAnswer { markedYes = yes }
         }
         return ExperimentProgress(row: row, elapsedDay: elapsed, adherent: adherentSet.count,
                                   verdictDate: verdictDate, streakCurrent: current, streakBest: best,
-                                  pendingCheckIn: pending, supportsStreak: !isDiet)
+                                  pendingCheckIn: pending, markedYesToday: markedYes, supportsStreak: !isDiet)
     }
 
     /// The effect-chart data: the outcome over the experiment window vs the mean of the days before it.
