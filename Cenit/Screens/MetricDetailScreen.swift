@@ -703,7 +703,9 @@ struct MetricDetailScreen: View {
 
     private var legacyHero: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(heroOverline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            // Serif in-screen title (FER-581). The "· 7-day average / · today" context the old overline
+            // carried now lives in `heroSecondary` below the numeral; the title is just the metric name.
+            InstrumentoScreenTitle(legacyHeroTitle, theme: theme)
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text(heroValue.map { fmt($0) } ?? "—")
                     .instrumentoHero(44)
@@ -766,16 +768,12 @@ struct MetricDetailScreen: View {
         return heroContext(today)
     }
 
-    private var heroOverline: LocalizedStringKey {
+    /// The serif in-screen title for the legacy hero (Steps / VO₂max) — the metric's short name. (FER-581)
+    private var legacyHeroTitle: LocalizedStringKey {
         switch spec.descriptor.key {
-        case "hrv":        return "Heart rate variability · 7-day average"
-        case "rhr":        return "Resting HR · 7-day average"
-        case "resp_rate":  return "Respiratory rate · 7-day average"
-        case "spo2":       return "Blood oxygen · 7-day average"
-        case "heart_rate": return "Heart rate · today"
-        case "steps":      return "Steps · today"
-        case "vo2max":     return "VO₂ Max · latest reading"
-        default:           return "7-day average"
+        case "steps":  return "Steps"
+        case "vo2max": return "VO₂ Max"
+        default:       return "Today"
         }
     }
 
@@ -1813,15 +1811,9 @@ struct MetricDetailScreen: View {
 
     private var narrativeHero: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: NoopMetrics.space2) {
-                Text(narrativeHeroOverline).instrumentoOverline().foregroundStyle(metricHue)
-                // FER-487: seal a band-less Apple reading so today's datum never reads as a band one. The
-                // band is the expected source (no mark); only Apple gets a chip. Not on Heart Rate (intraday,
-                // band-only). Reuses the same `InlineFlagChip("Apple")` the Cuerpo tile shows.
-                if todayFromApple, !isIntraday {
-                    InlineFlagChip("Apple", color: theme.inkTertiary)
-                }
-            }
+            // Serif in-screen title (the «Instrumento» detail identity, FER-581). No ⓘ: the dueño chose to
+            // keep the plain-language reading always visible below the hero, so a disclosure is redundant.
+            InstrumentoScreenTitle(narrativeHeroTitle, theme: theme)
             if isIntraday {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(heroTodayValue.map { fmt($0) } ?? "—")
@@ -1843,12 +1835,17 @@ struct MetricDetailScreen: View {
                         if heroTodayValue != nil, !unit.isEmpty {
                             Text(unit).font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
                         }
+                        // FER-487: seal a band-less Apple reading next to the datum (the band is the expected
+                        // source, so only Apple gets a chip). Moved here from the old overline. (FER-581)
+                        if todayFromApple { InlineFlagChip("Apple", color: theme.inkTertiary) }
                     }
                     Spacer(minLength: 8)
                     if loaded { heroVerdictColumn }
                 }
                 if loaded { inlineBandSection }
             }
+            // Plain-language reading, kept always visible below the hero (FER-216 readability + the dueño's
+            // choice in FER-581). The serif title carries the identity; this stays put.
             if let reading = readingCopy(for: .header) {
                 Text(reading)
                     .font(StrandFont.caption)
@@ -1859,14 +1856,15 @@ struct MetricDetailScreen: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// "{Metric} · today" — the warm `warning`-tinted overline of the Hoy section. (Detalle de Vital)
-    private var narrativeHeroOverline: LocalizedStringKey {
+    /// The serif in-screen title — the metric's SHORT name (matching the Cuerpo tile labels), not the
+    /// "{metric} · today" overline it replaces. (FER-581)
+    private var narrativeHeroTitle: LocalizedStringKey {
         switch spec.descriptor.key {
-        case "hrv":        return "HRV · today"
-        case "rhr":        return "Resting HR · today"
-        case "resp_rate":  return "Respiratory rate · today"
-        case "spo2":       return "Blood oxygen · today"
-        case "heart_rate": return "Heart rate · today"
+        case "hrv":        return "HRV"
+        case "rhr":        return "Resting HR"
+        case "resp_rate":  return "Respiratory"
+        case "spo2":       return "Blood Oxygen"
+        case "heart_rate": return "Heart Rate"
         default:           return "Today"
         }
     }

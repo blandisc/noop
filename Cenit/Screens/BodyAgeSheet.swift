@@ -30,7 +30,7 @@ struct BodyAgeSheet: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
-                Text("Body age").font(StrandFont.title2).foregroundStyle(theme.ink)
+                Text("Body age").font(StrandFont.serif(23)).foregroundStyle(theme.ink)   // serif title (FER-581)
                 if let r = result { withData(r) } else { emptyState }
             }
             .padding(20)

@@ -16,12 +16,11 @@ import StrandAnalytics
 // it opens a session-type chooser (routine / intervals / breathe / live).
 //
 // Navigation is owned by the tab's `NavigationStack` in RootTabView; the landing pushes via the injected
-// closures (routine, library, breathe, intervals, history, the weekly-plan editor F2, «Mis rutinas», and
-// a completed session's detail). The guided session sheet is hosted here so it survives tab switches.
+// closures (routine, breathe, intervals, history, the weekly-plan editor F2, «Mis rutinas», and a
+// completed session's detail). «Nueva rutina» and the guided session are local sheets hosted here.
 
 struct EntrenarView: View {
     var openRoutine: (String) -> Void
-    var openLibrary: () -> Void
     var openBreathe: () -> Void
     var openIntervals: () -> Void
     var openDiet: () -> Void
@@ -36,7 +35,7 @@ struct EntrenarView: View {
     var openWorkoutSession: (WorkoutSessionRoute) -> Void
 
     var body: some View {
-        EntrenarLanding(openRoutine: openRoutine, openLibrary: openLibrary,
+        EntrenarLanding(openRoutine: openRoutine,
                         openBreathe: openBreathe, openIntervals: openIntervals, openDiet: openDiet,
                         openHistory: openHistory, openWeeklyPlan: openWeeklyPlan,
                         openRoutines: openRoutines, openWorkoutSession: openWorkoutSession)
@@ -51,7 +50,6 @@ private struct EntrenarLanding: View {
     @Environment(\.instrumentoTheme) private var theme
 
     var openRoutine: (String) -> Void
-    var openLibrary: () -> Void
     var openBreathe: () -> Void
     var openIntervals: () -> Void
     var openDiet: () -> Void
@@ -75,6 +73,10 @@ private struct EntrenarLanding: View {
     @State private var showLive = false
     /// «Import plan» (FER-496) from «Tu plan»'s footer.
     @State private var showImport = false
+    /// Drives the routine builder on a blank routine (the «Nueva rutina» chip, FER-585).
+    @State private var showNewRoutine = false
+    /// Whether «Tu plan» is expanded. Collapsed each visit (not persisted) so the landing stays short.
+    @State private var planExpanded = false
     /// Drives the templates sheet opened straight on the mobility routine from the ④ «softer» suggestion (FER-554).
     @State private var showMobilityTemplate = false
     /// «Empezar» from the mobility template stashes its (name, slots) here; the session starts on the sheet's
@@ -129,6 +131,12 @@ private struct EntrenarLanding: View {
         // «Import plan» (FER-496) from «Tu plan».
         .sheet(isPresented: $showImport) {
             WorkoutImportView { await load() }
+                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        }
+        // «Nueva rutina» from «Tu plan» — the routine builder on a blank routine (FER-585). Reloads the
+        // landing on save so the new routine shows up in the plan/library.
+        .sheet(isPresented: $showNewRoutine) {
+            RoutineBuilderScreen(routine: nil) { await load() }
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
         // The ④ «softer» suggestion (FER-554) opens the templates sheet straight on the mobility routine.
@@ -379,40 +387,74 @@ private struct EntrenarLanding: View {
         }
     }
 
-    // MARK: - ⑤ Tu plan
+    // MARK: - ⑤ Tu plan — a collapsible disclosure (FER-585)
+    //
+    // The day list folds away behind the «Tu plan» header (collapsed by default each visit), so the
+    // landing stays short. The header is the toggle: collapsed it shows the day count («4 días»), expanded
+    // it reveals the day rows and an «Editar» action next to the chevron. The Library/Import/Diet chips
+    // live in their OWN row BELOW the disclosure — always visible in both states, the quick actions the
+    // user reaches most. «Nueva rutina» replaces «Biblioteca»: it opens the routine builder on a blank
+    // routine (a sheet, like «Importar»).
 
     private var tuPlan: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("Your plan").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Spacer()
+            planHeader
+            if planExpanded {
+                card {
+                    ForEach(Array(planRows.enumerated()), id: \.offset) { idx, row in
+                        if idx > 0 { Divider().overlay(theme.hairline) }
+                        Button { openRoutine(row.routineId) } label: {
+                            HStack(spacing: 10) {
+                                Text(row.name).font(StrandFont.body).foregroundStyle(theme.ink)
+                                Spacer(minLength: 8)
+                                Text(row.days).font(StrandFont.mono).foregroundStyle(theme.inkTertiary)
+                            }
+                            .frame(minHeight: 44).contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+            HStack(spacing: 8) {
+                planChip("New routine", "plus") { showNewRoutine = true }
+                planChip("Import", "square.and.arrow.down") { showImport = true }
+                planChip("Diet", "fork.knife", tag: "for now", action: openDiet)
+            }
+            .padding(.top, 2)
+        }
+    }
+
+    /// The «Tu plan» disclosure header. The whole row toggles the day list; «Editar» (only when expanded)
+    /// is a distinct button that captures its own tap, the rest of the row toggles (same Button-inside-
+    /// tap-area idiom as the week strip's day tokens).
+    private var planHeader: some View {
+        HStack {
+            Text("Your plan").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Spacer(minLength: 8)
+            if planExpanded {
                 Button { openWeeklyPlan() } label: {
                     Text("Edit").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 }
                 .buttonStyle(.plain)
+            } else {
+                Text(planDaysText).font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
             }
-            card {
-                ForEach(Array(planRows.enumerated()), id: \.offset) { idx, row in
-                    if idx > 0 { Divider().overlay(theme.hairline) }
-                    Button { openRoutine(row.routineId) } label: {
-                        HStack(spacing: 10) {
-                            Text(row.name).font(StrandFont.body).foregroundStyle(theme.ink)
-                            Spacer(minLength: 8)
-                            Text(row.days).font(StrandFont.mono).foregroundStyle(theme.inkTertiary)
-                        }
-                        .frame(minHeight: 44).contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                }
-                Divider().overlay(theme.hairline).padding(.top, 4)
-                HStack(spacing: 8) {
-                    planChip("Library", "book", action: openLibrary)
-                    planChip("Import", "square.and.arrow.down") { showImport = true }
-                    planChip("Diet", "fork.knife", tag: "for now", action: openDiet)
-                }
-                .padding(.top, 12)
-            }
+            Image(systemName: "chevron.down")
+                .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                .rotationEffect(.degrees(planExpanded ? 180 : 0))
         }
+        .contentShape(Rectangle())
+        .onTapGesture { withAnimation(.easeInOut(duration: 0.22)) { planExpanded.toggle() } }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint(Text(planExpanded ? "Collapse your plan" : "Expand your plan"))
+    }
+
+    /// Collapsed-header hint: how many days the split trains. Mirrors the cadence idiom (`cadenceText`).
+    private var planDaysText: String {
+        let n = split.keys.count
+        return n == 1 ? String(localized: "1 day") : String(localized: "\(n) days")
     }
 
     private func planChip(_ title: LocalizedStringKey, _ icon: String, tag: LocalizedStringKey? = nil,

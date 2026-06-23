@@ -65,12 +65,18 @@ struct StrainDetailScreen: View {
                         blockDivider
                         curveBlock
                     }
-                    // Zones are FIXED reference (no user data invented), so they show even on a brand-new
-                    // empty screen — the hero's "—" reading is honest about the missing score.
+                    // The F6c level instrument (line + tappable levels + «N de tus últimos M días»)
+                    // replaces the old static zones once there's history to count; with no history it
+                    // falls back to the FIXED zones reference, honest about the missing score. (FER-572)
                     blockDivider
-                    zonesBlock
-                    // Level 3 · «See your history»: trend + what moves your strain, collapsed by default.
-                    if model.series.count >= 2 || model.hasData {
+                    if model.series.count >= 2 {
+                        levelsBlock
+                    } else {
+                        zonesBlock
+                    }
+                    // Level 3 · «See your history»: what moves your strain, collapsed by default. The trend
+                    // chart folded in here moved up into the level instrument above. (FER-572)
+                    if model.hasData {
                         blockDivider
                         historySection
                     }
@@ -101,12 +107,11 @@ struct StrainDetailScreen: View {
 
     private var hero: some View {
         let v = model.today
-        return InfoAccordion(
-            title: "Day Strain",
-            explanation: "Day Strain is your cardiovascular load on a 0–21 scale. Each second your heart rate is recorded, it's placed in an intensity zone (1–5); higher zones weigh more, and the total is compressed logarithmically so 21 is a theoretical maximum — a full day at peak intensity. (Edwards 1993; Banister 1991)",
-            accessibilityLabel: "Information about day strain",
-            theme: theme
-        ) {
+        // Serif in-screen title + ⓘ (the «Instrumento» detail identity, FER-581). Explanation stays behind
+        // the ⓘ exactly as the old InfoAccordion had it.
+        return VStack(alignment: .leading, spacing: 6) {
+            InstrumentoScreenTitle("Day Strain", theme: theme,
+                explanation: "Day Strain is your cardiovascular load on a 0–21 scale. Each second your heart rate is recorded, it's placed in an intensity zone (1–5); higher zones weigh more, and the total is compressed logarithmically so 21 is a theoretical maximum — a full day at peak intensity. (Edwards 1993; Banister 1991)")
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(v.map { fmt($0) } ?? "—")
@@ -220,48 +225,26 @@ struct StrainDetailScreen: View {
         .background(band.isActive ? theme.dataStrain.opacity(0.10) : Color.clear)
     }
 
-    // MARK: - 4. Tendencia 14d (+ Prom/Mín/Máx)
+    // MARK: - 4. Niveles (línea + niveles tocables + «N de tus últimos M días») — patrón F6c
 
-    private var trendBlock: some View {
+    /// The F6c level instrument: a RAW-value line over the period you pick, the active level's band shaded,
+    /// a «{level} · N de tus últimos M días» phrase and a TAPPABLE levels list (Rest / Light / Moderate /
+    /// Hard / Extreme, 0–21). Reuses F6a (`MetricLevels.strain`) + the shared `MetricLevelsExplorer`. It
+    /// supersedes both the static zones block and the old 7-day-average trend, which it folds into one. (FER-572)
+    private var levelsBlock: some View {
         let window = MetricWindowMath.make(parsed, selected: range)
-        let stat = ComparisonEngine.stat(window.values)
-        // Compare the selected window against the equally-long window before it, not always the calendar
-        // month. `.all` has no previous period, so no chip. (FER-264)
-        let comparison = window.range.periodComparison(of: model.series)
-        return InfoAccordion(
-            title: "Trend",
-            explanation: "The line is your 7-day moving average over the period you pick. The percentage compares this period's average with the previous period of the same length. Average, Lowest and Highest come from the range you selected.",
-            accessibilityLabel: "Information about the trend",
-            theme: theme
-        ) {
-            VStack(alignment: .leading, spacing: 10) {
-                MetricTrendChart(
-                    range: $range,
-                    window: window,
-                    theme: theme,
-                    style: .init(
-                        smoothing: 7,
-                        gradient: chartGradient,
-                        valueRange: { chartRange($0) },
-                        valueFormat: { fmt($0) },
-                        accessibilityLabel: "Day strain, 7-day moving average"
-                    )
-                ) {
-                    emptyWell(text: "Not enough days in this range to draw a trend.")
-                }
-                if window.values.count > 1 {
-                    TrendStatSummary(
-                        average: fmt(stat.mean),
-                        pctChange: comparison?.pctChange,
-                        polarity: .neutral,
-                        period: window.range.comparisonPeriod ?? .month,
-                        rangeLow: fmt(stat.min),
-                        rangeHigh: fmt(stat.max),
-                        theme: theme
-                    )
-                }
-            }
-        }
+        return MetricLevelsExplorer(
+            theme: theme,
+            range: $range,
+            window: window,
+            levels: MetricLevels.levels(for: .strain),
+            todayValue: model.today,
+            hue: theme.dataStrain,
+            unit: "",
+            valueFormat: { String(Int($0.rounded())) },
+            domain: 0...21,
+            accessibilityLabel: "Day strain by level"
+        )
     }
 
     // MARK: - 4.5 Qué mueve tu esfuerzo (correlación direccional, gated — FER-239)
@@ -319,15 +302,9 @@ struct StrainDetailScreen: View {
 
     @ViewBuilder private var historySection: some View {
         VStack(alignment: .leading, spacing: historyExpanded ? 22 : 0) {
-            historyDisclosureHeader(caption: "14-day trend · what moves it")
+            historyDisclosureHeader(caption: "What moves it")
             if historyExpanded {
-                if model.series.count >= 2 {
-                    trendBlock
-                }
-                if model.hasData {
-                    if model.series.count >= 2 { blockDivider }
-                    whatMovesBlock
-                }
+                whatMovesBlock
             }
         }
     }
@@ -416,15 +393,6 @@ struct StrainDetailScreen: View {
     private func fmt(_ v: Double) -> String { String(format: "%.1f", v) }
 
     // MARK: - Chart axis
-
-    /// Auto-fit the chart's axis to the smoothed line, clamped to the 0–21 strain scale.
-    private func chartRange(_ smoothed: [Double]) -> ClosedRange<Double> {
-        let lo = smoothed.min() ?? 0
-        let hi = smoothed.max() ?? 21
-        if hi <= lo { return Swift.max(0, lo - 1)...Swift.min(21, hi + 1) }
-        let pad = (hi - lo) * 0.15
-        return Swift.max(0, lo - pad)...Swift.min(21, hi + pad)
-    }
 
     /// Locale-aware hour label for the intraday curve's x-axis (12/24h per region).
     private static let hourFormatter: DateFormatter = {

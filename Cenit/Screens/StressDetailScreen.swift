@@ -55,10 +55,6 @@ struct StressDetailScreen: View {
     /// `date` straight from here (no string re-parsing). Built in `.task`. (FER-216 lesson)
     @State private var parsed: [(day: String, date: Date?, value: Double)] = []
     @State private var methodExpanded = false
-    /// Level-3 disclosure: the daily trend (over the fixed Low/Mod/High bands) + the «mapa del día» live
-    /// under «See your history», collapsed on open. The only new state the re-sequencing adds. (Detalles
-    /// escalonados)
-    @State private var historyExpanded = false
     /// Detected cross-day «moment of day» patterns (loaded in `.task`). Empty → no line. (FER-378)
     @State private var patterns: [StressTimeOfDayPatterns.Pattern] = []
     /// Detected cross-day «by calendar-event» patterns (loaded in `.task`). Empty → no line. (FER-388)
@@ -91,11 +87,12 @@ struct StressDetailScreen: View {
                     // former «Normal range» block is gone from the daily scroll — those Low/Mod/High
                     // bands are already drawn behind the trend line as its legend (one dispersion read).
                     patternsBlock(model)
-                    // Level 3 · «See your history»: the daily trend over the fixed bands (the mapa del día
-                    // moved up to Level 1.5).
+                    // The F6c level instrument (line + tappable levels + «N de tus últimos M días») over the
+                    // fixed Low / Medium / High levels (0–3). Surfaced as a visible block — it folds in the
+                    // old L3 trend, whose bands were already this metric's levels. (FER-572)
                     if model.fullTrend.count >= 2 {
                         blockDivider
-                        historySection(model)
+                        levelsBlock(model)
                     }
                     blockDivider
                     methodDisclosure(model)
@@ -127,12 +124,11 @@ struct StressDetailScreen: View {
     // MARK: - 1. Hero — el valor de HOY en color de banda (+ palabra de banda + lectura)
 
     private func hero(_ model: StressModel) -> some View {
-        InfoAccordion(
-            title: "Stress",
-            explanation: "Your autonomic load for the day: how activated your body is. We take today's resting heart rate and HRV, compare each with your own 30-day baseline as a z-score, and map the combined shift onto a 0–3 scale through a logistic curve (0 calm · 1.5 your baseline · 3 highly activated). It's an estimate, not a diagnosis.",
-            accessibilityLabel: "Information about stress",
-            theme: theme
-        ) {
+        // Serif in-screen title + ⓘ (the «Instrumento» detail identity, FER-581). Explanation stays behind
+        // the ⓘ exactly as the old InfoAccordion had it.
+        VStack(alignment: .leading, spacing: 14) {
+            InstrumentoScreenTitle("Stress", theme: theme,
+                explanation: "Your autonomic load for the day: how activated your body is. We take today's resting heart rate and HRV, compare each with your own 30-day baseline as a z-score, and map the combined shift onto a 0–3 scale through a logistic curve (0 calm · 1.5 your baseline · 3 highly activated). It's an estimate, not a diagnosis.")
             VStack(alignment: .leading, spacing: 14) {
                 // When the reading isn't today's (fell back to yesterday at the midnight boundary), date
                 // it so it's never passed off as today's. (FER-397)
@@ -262,69 +258,28 @@ struct StressDetailScreen: View {
         .accessibilityHidden(true)
     }
 
-    // MARK: - 2. Selector de periodo + Tendencia (línea diaria 0–3 sobre las bandas)
+    // MARK: - 2. Niveles (línea + niveles tocables + «N de tus últimos M días») — patrón F6c
 
-    private func trendBlock(_ model: StressModel) -> some View {
+    /// The F6c level instrument: the daily 0–3 line over the period you pick, the active level's band
+    /// shaded, a «{level} · N de tus últimos M días» phrase and a TAPPABLE levels list (Low / Medium /
+    /// High, 0–3). Reuses F6a (`MetricLevels.stress`) + the shared `MetricLevelsExplorer`. It supersedes
+    /// the old L3 trend block, whose fixed Low/Mod/High bands were already this metric's levels. The hue is
+    /// `warning` (the «elevated» stress tone) — stress has no single good direction, so the instrument
+    /// reads in one neutral-but-activated colour rather than recolouring per band. (FER-572)
+    private func levelsBlock(_ model: StressModel) -> some View {
         let window = MetricWindowMath.make(parsed, selected: range)
-        let stat = ComparisonEngine.stat(window.values)
-        let pairs = seriesPairs(model)
-        // Compare the selected window against the equally-long window before it, not always the calendar
-        // month. `.all` has no previous period, so no chip. (FER-264)
-        let comparison = window.range.periodComparison(of: pairs)
-        return InfoAccordion(
-            title: "Trend",
-            explanation: "Each point is your daily stress index. The bands behind it are the fixed Low / Moderate / High zones (0–1 / 1–2 / 2–3). The percentage compares this period's average with the previous period of the same length; Average, Lowest and Highest come from the range you selected. What matters isn't a single day — it's several days in a row drifting into a higher band.",
-            accessibilityLabel: "Information about the stress trend",
-            theme: theme
-        ) {
-            VStack(alignment: .leading, spacing: 10) {
-                // The daily 0–3 line over the three fixed band zones (Low / Moderate / High), drawn by
-                // `TrendChart`'s native bands (FER-244) with explicit Y ticks at 0/1/2/3. Raw daily values,
-                // not a moving average — the stress signal is read day to day.
-                MetricTrendChart(
-                    range: $range,
-                    window: window,
-                    theme: theme,
-                    style: .init(
-                        gradient: Gradient(colors: [theme.inkSecondary.opacity(0.5), theme.inkSecondary]),
-                        showsArea: false,
-                        valueRange: { _ in 0...3 },
-                        valueFormat: { String(format: "%.1f", $0) },
-                        bands: { stressBands(activeValue: $0) },
-                        bandColor: { bandColor(band(forValue: $0)) },
-                        yAxisValues: [0, 1, 2, 3],
-                        accessibilityLabel: "Daily stress index, 0 to 3"
-                    )
-                ) {
-                    emptyWell(text: "Not enough days in this range to draw a trend.")
-                }
-                if window.values.count > 1 {
-                    TrendStatSummary(
-                        average: fmt(stat.mean),
-                        pctChange: comparison?.pctChange,
-                        polarity: .lowerIsBetter,
-                        period: window.range.comparisonPeriod ?? .month,
-                        rangeLow: fmt(stat.min),
-                        rangeHigh: fmt(stat.max),
-                        theme: theme
-                    )
-                }
-            }
-        }
-    }
-
-    /// The three fixed stress zones as `TrendBand`s, with the one holding `activeValue` shaded as the bracket.
-    private func stressBands(activeValue v: Double) -> [TrendBand] {
-        [
-            TrendBand(label: "Low", lower: nil, upper: 1, isActive: v < 1),
-            TrendBand(label: "Moderate", lower: 1, upper: 2, isActive: v >= 1 && v < 2),
-            TrendBand(label: "High", lower: 2, upper: nil, isActive: v >= 2),
-        ]
-    }
-
-    /// Map a 0–3 value to its band (mirrors the model's fixed 0–1 / 1–2 / 2–3 thresholds).
-    private func band(forValue v: Double) -> StressBand {
-        v < 1 ? .low : (v < 2 ? .medium : .high)
+        return MetricLevelsExplorer(
+            theme: theme,
+            range: $range,
+            window: window,
+            levels: MetricLevels.levels(for: .stress),
+            todayValue: model.score,
+            hue: theme.warning,
+            unit: "",
+            valueFormat: { String(format: "%.1f", $0) },
+            domain: 0...3,
+            accessibilityLabel: "Daily stress index by level"
+        )
     }
 
     // MARK: - Level 2 · «Your patterns» — calm time + consistency, fused to plain lines
@@ -424,47 +379,6 @@ struct StressDetailScreen: View {
         case 8..<15: return String(localized: "Steady")
         default:     return String(localized: "Variable")
         }
-    }
-
-    // MARK: - Level 3 · «See your history» — the daily trend over the bands
-    //
-    // The analyst's view, one tap down. An in-place disclosure (NOT a navigation push). Holds just the
-    // period-selector trend (the daily 0–3 line over the fixed Low/Mod/High bands + its legend). The
-    // «mapa del día» (StressDayMapBlock) used to live here too, but FER-433 promoted it to Level 1.5.
-
-    @ViewBuilder
-    private func historySection(_ model: StressModel) -> some View {
-        VStack(alignment: .leading, spacing: historyExpanded ? 22 : 0) {
-            historyDisclosureHeader(caption: "trend · bands")
-            if historyExpanded, model.fullTrend.count >= 2 {
-                trendBlock(model)
-            }
-        }
-    }
-
-    /// The «See your history» row: a tappable header toggling the Level-3 disclosure in place. The
-    /// chevron rotates with the house interactive spring. Shared shape across the four detail screens.
-    private func historyDisclosureHeader(caption: LocalizedStringKey) -> some View {
-        Button {
-            withAnimation(StrandMotion.interactive) { historyExpanded.toggle() }
-        } label: {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("See your history").instrumentoOverline().foregroundStyle(theme.ink)
-                    Text(caption).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                }
-                Spacer(minLength: 8)
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(theme.inkTertiary)
-                    .rotationEffect(.degrees(historyExpanded ? 0 : -90))
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
-        .accessibilityValue(Text(historyExpanded ? "expanded" : "collapsed"))
     }
 
     // MARK: - Qué lo mueve — RHR / HRV de hoy vs tu base
@@ -583,12 +497,6 @@ struct StressDetailScreen: View {
     }
 
     // MARK: - Series + format
-
-    /// The full daily proxy series as `(day "yyyy-MM-dd", value)`, oldest→newest — for `ComparisonEngine`
-    /// (which keys by day). Derived from `fullTrend`'s parsed dates.
-    private func seriesPairs(_ model: StressModel) -> [(day: String, value: Double)] {
-        model.fullTrend.map { (Self.dayParser.string(from: $0.date), $0.value) }
-    }
 
     /// Format a 0–3 stress value at one decimal (the index's precision).
     private func fmt(_ v: Double) -> String { String(format: "%.1f", v) }
