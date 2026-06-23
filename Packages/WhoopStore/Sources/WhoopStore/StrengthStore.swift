@@ -386,6 +386,51 @@ extension WhoopStore {
         }
     }
 
+    /// Edit a saved session: replace its row + sets, then recompute PRs *exactly* for every exercise
+    /// touched — the ones in the old sets ∪ the ones in the new sets (FER-556). All in one transaction.
+    /// Unlike `saveSession` (whose `updatePersonalRecords` only *upgrades* a record), editing can LOWER a
+    /// value (a corrected weight) or REASSIGN an exercise, so the affected PRs must be recomputed from
+    /// scratch over what remains — exactly like the delete path — or they'd keep a record the edit erased.
+    /// The session's `strain`/`avgHr`/`deviceId` (the strap's captured truth) ride through unchanged: the
+    /// edit UI never sends different values, and the upsert writes whatever the passed `session` carries.
+    public func updateSession(_ session: StrengthSession, sets: [SetEntry]) async throws {
+        try syncWrite { db in
+            // The exercises that had sets BEFORE the edit — they may lose a record (a set removed or
+            // reassigned away), so they must be recomputed even if no new set mentions them.
+            let oldExercises = try String.fetchAll(db, sql:
+                "SELECT DISTINCT exerciseId FROM setEntry WHERE sessionId = ?", arguments: [session.id])
+
+            let sArgs: [DatabaseValueConvertible?] = [
+                session.id, session.routineId, session.startTs, session.endTs,
+                session.deviceId, session.strain, session.avgHr, session.notes
+            ]
+            try db.execute(sql: """
+                INSERT INTO strengthSession (id, routineId, startTs, endTs, deviceId, strain, avgHr, notes)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    routineId = excluded.routineId, startTs = excluded.startTs, endTs = excluded.endTs,
+                    deviceId = excluded.deviceId, strain = excluded.strain, avgHr = excluded.avgHr,
+                    notes = excluded.notes
+                """, arguments: StatementArguments(sArgs))
+
+            try db.execute(sql: "DELETE FROM setEntry WHERE sessionId = ?", arguments: [session.id])
+            for s in sets {
+                let args: [DatabaseValueConvertible?] = [
+                    s.id, s.sessionId, s.exerciseId, s.position, s.kind.rawValue,
+                    s.weightKg, s.reps, s.timeS, s.distanceM, s.done ? 1 : 0, s.ts
+                ]
+                try db.execute(sql: """
+                    INSERT INTO setEntry
+                        (id, sessionId, exerciseId, position, kind, weightKg, reps, timeS, distanceM, done, ts)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, arguments: StatementArguments(args))
+            }
+
+            let affected = Set(oldExercises).union(sets.map(\.exerciseId))
+            for exerciseId in affected { try Self.recomputePR(db, exerciseId: exerciseId) }
+        }
+    }
+
     /// Delete a session and its sets, then recompute the affected exercises' PRs from what remains
     /// (FER-527). All in one transaction. A record can DROP to the second-best (or be removed if it was
     /// the only session for that exercise) — the PR stays honest. Touches no routine/routineExercise.
@@ -403,6 +448,15 @@ extension WhoopStore {
         try syncRead { db in
             try Row.fetchAll(db, sql: "SELECT * FROM strengthSession ORDER BY startTs DESC LIMIT ?",
                              arguments: [limit]).map(Self.session)
+        }
+    }
+
+    /// One session by id — the full row (incl. notes/deviceId/routineId the list route doesn't carry),
+    /// for the edit sheet to seed its working copy (FER-556). nil when the id is unknown.
+    public func session(id: String) async throws -> StrengthSession? {
+        try syncRead { db in
+            try Row.fetchOne(db, sql: "SELECT * FROM strengthSession WHERE id = ?",
+                             arguments: [id]).map(Self.session)
         }
     }
 

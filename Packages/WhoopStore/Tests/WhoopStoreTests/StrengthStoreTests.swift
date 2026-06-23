@@ -463,6 +463,94 @@ final class StrengthStoreTests: XCTestCase {
         XCTAssertEqual(pr?.valueKg, 40, "the 100 kg warm-up is ignored; the record is the remaining work set")
     }
 
+    // MARK: - Edit session + exact PR recompute (FER-556)
+
+    /// Lowering a set's weight in an edit must DROP the maxWeight PR (unlike a plain re-save, which only
+    /// upgrades). Here the 62.5 kg record is corrected down to 55 kg → the PR follows down to 55.
+    func testEditLoweringWeightDropsPR() async throws {
+        let store = try await WhoopStore.inMemory()
+        let session = StrengthSession(id: "s1", startTs: 1000)
+        try await store.saveSession(session, sets: [
+            SetEntry(id: "b", sessionId: "s1", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 62.5, reps: 8, done: true, ts: 1002)])
+        let before = try await store.personalRecords(exerciseId: "bench").first { $0.metric == .maxWeight }
+        XCTAssertEqual(before?.valueKg, 62.5)
+
+        try await store.updateSession(session, sets: [
+            SetEntry(id: "b", sessionId: "s1", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 55, reps: 8, done: true, ts: 1002)])   // corrected down
+        let after = try await store.personalRecords(exerciseId: "bench").first { $0.metric == .maxWeight }
+        XCTAssertEqual(after?.valueKg, 55,
+                       "editing a record down must lower the PR, not keep the stale higher one")
+    }
+
+    /// Reassigning a set to a different exercise must recompute BOTH exercises' PRs: the old one loses its
+    /// record (no sets left → removed), the new one gains it.
+    func testEditReassigningExerciseMovesPR() async throws {
+        let store = try await WhoopStore.inMemory()
+        let session = StrengthSession(id: "s1", startTs: 1000)
+        try await store.saveSession(session, sets: [
+            SetEntry(id: "b", sessionId: "s1", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 80, reps: 5, done: true, ts: 1002)])
+        let benchBefore = try await store.personalRecords(exerciseId: "bench")
+        XCTAssertFalse(benchBefore.isEmpty)
+
+        // Same set id, reassigned from bench → incline.
+        try await store.updateSession(session, sets: [
+            SetEntry(id: "b", sessionId: "s1", exerciseId: "incline", position: 0, kind: .work,
+                     weightKg: 80, reps: 5, done: true, ts: 1002)])
+
+        let benchAfter = try await store.personalRecords(exerciseId: "bench")
+        XCTAssertTrue(benchAfter.isEmpty,
+                      "the old exercise loses its record when its only set is reassigned away")
+        let inclinePR = try await store.personalRecords(exerciseId: "incline").first { $0.metric == .maxWeight }
+        XCTAssertEqual(inclinePR?.valueKg, 80, "the new exercise gains the record")
+    }
+
+    /// Editing the date moves `startTs` (which `saveSession`'s upsert deliberately does NOT touch), and
+    /// never alters the strap's captured `strain`/`avgHr` — those ride through unchanged.
+    func testEditMovesDateAndPreservesCapturedHR() async throws {
+        let store = try await WhoopStore.inMemory()
+        let original = StrengthSession(id: "s1", startTs: 1000, endTs: 4000,
+                                       deviceId: "whoop", strain: 12.4, avgHr: 128)
+        try await store.saveSession(original, sets: [
+            SetEntry(id: "b", sessionId: "s1", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 60, reps: 8, done: true, ts: 1002)])
+
+        // Shift the day forward by 1h, preserving duration; sets unchanged.
+        var moved = original
+        moved.startTs = 4600; moved.endTs = 7600
+        try await store.updateSession(moved, sets: [
+            SetEntry(id: "b", sessionId: "s1", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 60, reps: 8, done: true, ts: 1002)])
+
+        let back = try await store.recentSessions().first { $0.id == "s1" }
+        XCTAssertEqual(back?.startTs, 4600, "the edited start time persists")
+        XCTAssertEqual(back?.endTs, 7600)
+        XCTAssertEqual(back?.strain, 12.4, "captured strain is untouched by an edit")
+        XCTAssertEqual(back?.avgHr, 128, "captured HR is untouched by an edit")
+    }
+
+    /// Removing a set in an edit deletes its row (no orphan) and the other session is never touched.
+    func testEditRemovingSetDeletesRow() async throws {
+        let store = try await WhoopStore.inMemory()
+        let session = StrengthSession(id: "s1", startTs: 1000)
+        try await store.saveSession(session, sets: [
+            SetEntry(id: "a", sessionId: "s1", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 60, reps: 8, done: true, ts: 1001),
+            SetEntry(id: "b", sessionId: "s1", exerciseId: "bench", position: 1, kind: .work,
+                     weightKg: 62.5, reps: 6, done: true, ts: 1002)])
+
+        try await store.updateSession(session, sets: [
+            SetEntry(id: "a", sessionId: "s1", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 60, reps: 8, done: true, ts: 1001)])   // dropped set "b"
+
+        let back = try await store.setEntries(sessionId: "s1")
+        XCTAssertEqual(back.map(\.id), ["a"], "the removed set leaves no orphan row")
+        let pr = try await store.personalRecords(exerciseId: "bench").first { $0.metric == .maxWeight }
+        XCTAssertEqual(pr?.valueKg, 60, "the PR recomputes to the best of what remains")
+    }
+
     func testCustomExerciseRoundTrip() async throws {
         let store = try await WhoopStore.inMemory()
         let e = Exercise(id: "ex-1", name: "Jalón neutro", type: .weightReps, equipment: "cable",

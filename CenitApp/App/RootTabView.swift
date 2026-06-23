@@ -54,6 +54,9 @@ struct RootTabView: View {
     @State private var coachStack = NavigationPath()
     @State private var trainStack = NavigationPath()
     @State private var settingsStack = NavigationPath()
+    /// Bridges the workout-history list and the session detail (siblings in `trainStack`) so a delete or
+    /// edit in the detail surfaces «Undo» / a reload on the list (FER-556).
+    @StateObject private var workoutHistory = WorkoutHistoryCoordinator()
     /// Measured height of the «Barra de instrumento» (its button row, above the
     /// home-indicator bleed). Each tab reserves exactly this much at its bottom so
     /// the last component clears the bar — see `barReservation`. Starts 0 and is
@@ -101,6 +104,7 @@ struct RootTabView: View {
                     trainChrome(WorkoutSessionDetailScreen(route: route))
                 }
             }
+            .environmentObject(workoutHistory)
             .toolbar(.hidden, for: .tabBar)
             .tabItem { Label("Train", systemImage: "figure.strengthtraining.functional") }
             .tag(Tab.train)

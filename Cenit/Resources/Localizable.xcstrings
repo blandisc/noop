@@ -3786,6 +3786,22 @@
         }
       }
     },
+    "A workout needs at least one set.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A workout needs at least one set."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un entrenamiento necesita al menos una serie."
+          }
+        }
+      }
+    },
     "ALL": {
       "localizations": {
         "en": {
@@ -4282,6 +4298,22 @@
         }
       }
     },
+    "Add a note (optional)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a note (optional)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agrega una nota (opcional)"
+          }
+        }
+      }
+    },
     "Add a workout": {
       "localizations": {
         "es": {
@@ -4414,6 +4446,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lastre"
+          }
+        }
+      }
+    },
+    "Adds a set to this exercise": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adds a set to this exercise"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agrega una serie a este ejercicio"
           }
         }
       }
@@ -7519,6 +7567,22 @@
         }
       }
     },
+    "Check the weight and reps.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check the weight and reps."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revisa el peso y las repeticiones."
+          }
+        }
+      }
+    },
     "Check your sync": {
       "extractionState": "manual",
       "localizations": {
@@ -7584,6 +7648,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Elegir calendarios"
+          }
+        }
+      }
+    },
+    "Choose exercise": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose exercise"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elegir ejercicio"
           }
         }
       }
@@ -9006,6 +9086,22 @@
         }
       }
     },
+    "Couldn't save the workout. Try again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't save the workout. Try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo guardar el entrenamiento. Inténtalo de nuevo."
+          }
+        }
+      }
+    },
     "Couldn't snapshot the database just now — will retry.": {
       "extractionState": "manual",
       "localizations": {
@@ -9975,6 +10071,150 @@
         }
       }
     },
+    "Delete this workout?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this workout?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Borrar este entrenamiento?"
+          }
+        }
+      }
+    },
+    "Discard changes": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard changes"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descartar cambios"
+          }
+        }
+      }
+    },
+    "Discard changes?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard changes?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Descartar cambios?"
+          }
+        }
+      }
+    },
+    "Edit workout": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit workout"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Editar entrenamiento"
+          }
+        }
+      }
+    },
+    "Effort and heart rate are measured by your band. They can't be edited.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Effort and heart rate are measured by your band. They can't be edited."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El esfuerzo y la frecuencia cardiaca los mide tu banda. No se editan."
+          }
+        }
+      }
+    },
+    "From your body": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From your body"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Del cuerpo"
+          }
+        }
+      }
+    },
+    "Keep editing": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep editing"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seguir editando"
+          }
+        }
+      }
+    },
+    "Lighter day? Mobility · 20 min": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lighter day? Mobility · 20 min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Hoy no toca pesado? Movilidad · 20 min"
+          }
+        }
+      }
+    },
+    "More options": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More options"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Más opciones"
+          }
+        }
+      }
+    },
     "Muscles": {
       "localizations": {
         "es": {
@@ -9995,6 +10235,22 @@
         }
       }
     },
+    "No routine": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No routine"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin rutina"
+          }
+        }
+      }
+    },
     "Primary at full ink · assisting at half": {
       "localizations": {
         "es": {
@@ -10011,6 +10267,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "Aún sin registrar"
+          }
+        }
+      }
+    },
+    "Set %lld, %@ by %lld reps, editable": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set %lld, %@ by %lld reps, editable"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Serie %lld, %@ por %lld repeticiones, editable"
+          }
+        }
+      }
+    },
+    "This removes the workout from your history.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This removes the workout from your history."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta acción quita el entrenamiento de tu historial."
+          }
+        }
+      }
+    },
+    "When": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuándo"
           }
         }
       }
