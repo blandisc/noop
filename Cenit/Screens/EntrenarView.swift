@@ -4,39 +4,39 @@ import StrandDesign
 import StrandTraining
 import StrandAnalytics
 
-// MARK: - Entrenar (the Train tab root) — FER-343
+// MARK: - Entrenar (the Train tab root) — «Entrenar v2 · La Semana» (FER-534, épico FER-530)
 //
-// The redesigned «Entrenar» hub in the light «Instrumento diurno» language (warm paper, color only on
-// the datum, hierarchy by space). It replaces the interim list of rows (FER-342) with a real hub: a
-// «Hoy» card carrying the day's routine + a recovery band, the «Mis rutinas» list, and the
-// Respira / Intervalos / En-vivo tools. The door to the strength tracker (FER-39 epic).
+// The Train landing as a PLANNER in the light «Instrumento diurno» language (warm paper, color only on
+// the datum, hierarchy by space). The week is the spine: a recovery chip + a 7-day strip, today's
+// session behind a single «Empezar» door, the split («Tu plan»), and a consistency card — all resolved
+// from the weekly split (FER-531) and the completed-session history.
 //
-// Navigation, like Cuerpo/Ajustes, is owned by the tab's `NavigationStack` in RootTabView: the hub
-// pushes «Rutina de hoy» / Respira / Intervalos via the injected closures, so the screen stays
-// decoupled from the private route types. En vivo opens its own sheet (the recorder lives in AppModel).
+// Color appears ONLY on the recovery datum (the chip ring/numeral, the today-dot, the Today recovery
+// line, the consistency bars); everything else is ink on paper. «Empezar» is the one door to training:
+// it opens a session-type chooser (routine / intervals / breathe / live).
 //
-// Out of scope here (each its own issue): the routine builder (FER-346) and the guided session
-// (FER-347). Their entry points show an honest «coming soon» note rather than a dead action.
+// Navigation is owned by the tab's `NavigationStack` in RootTabView; the landing pushes via the injected
+// closures (routine, library, breathe, intervals, history, the weekly-plan editor F2, «Mis rutinas», and
+// a completed session's detail). The guided session sheet is hosted here so it survives tab switches.
 
-/// Theme wrapper: anchors `\.instrumentoTheme` to the single warm day paper (`.base`), then hands to
-/// `EntrenarLanding`, which reads the resolved theme. (FER-398 retired the by-the-hour tint.)
 struct EntrenarView: View {
-    /// Push «Rutina de hoy» for a given routine id (the tab's NavigationStack owns the path).
     var openRoutine: (String) -> Void
-    /// Push the exercise library (browse) onto the tab's NavigationStack.
     var openLibrary: () -> Void
     var openBreathe: () -> Void
     var openIntervals: () -> Void
     var openDiet: () -> Void
     /// Push «Mis entrenamientos» (the completed-session history, FER-504).
     var openHistory: () -> Void
-    /// Push the weekly plan editor (FER-533). Temporary landing entry until F3 opens it from «Tu plan».
+    /// Push the weekly plan editor (FER-533) — opened from «Tu plan · Editar» and the empty state.
     var openWeeklyPlan: () -> Void
+    /// Push a completed strength session's detail (from a «done» day in the week strip).
+    var openWorkoutSession: (WorkoutSessionRoute) -> Void
 
     var body: some View {
         EntrenarLanding(openRoutine: openRoutine, openLibrary: openLibrary,
                         openBreathe: openBreathe, openIntervals: openIntervals, openDiet: openDiet,
-                        openHistory: openHistory, openWeeklyPlan: openWeeklyPlan)
+                        openHistory: openHistory, openWeeklyPlan: openWeeklyPlan,
+                        openWorkoutSession: openWorkoutSession)
             .instrumentoTheme(.base)
     }
 }
@@ -54,54 +54,47 @@ private struct EntrenarLanding: View {
     var openDiet: () -> Void
     var openHistory: () -> Void
     var openWeeklyPlan: () -> Void
+    var openWorkoutSession: (WorkoutSessionRoute) -> Void
 
     @State private var loaded = false
     @State private var routines: [Routine] = []
     @State private var exerciseCounts: [String: Int] = [:]
-    /// Drives the routine builder sheet (FER-346): `.new` or `.edit(routine)`.
-    @State private var builderTarget: BuilderTarget? = nil
-    /// Drives the «start from a template» sheet (FER-386).
-    @State private var showTemplates = false
-    /// Drives the «import an LLM-generated plan» sheet (FER-496).
+    /// The weekly split, `weekday → routineId` (Calendar convention, 1 = Sun … 7 = Sat). FER-531.
+    @State private var split: [Int: String] = [:]
+    /// Completed strength sessions (newest first), for the strip's day states and the consistency streak.
+    @State private var sessions: [StrengthSession] = []
+    /// Drives the «Empezar» session-type chooser.
+    @State private var showChooser = false
+    /// What the chooser picked — performed on its dismiss, so we never stack two sheets.
+    @State private var pendingStart: StartKind? = nil
+    /// Drives the live-workout sheet (the chooser's «En vivo»).
+    @State private var showLive = false
+    /// «Import plan» (FER-496) from «Tu plan»'s footer.
     @State private var showImport = false
-    /// Which routine row is currently swiped open — only one at a time. FER-491.
-    @State private var swipedRoutineId: String? = nil
-    /// A just-deleted routine + its exercises, kept in memory so «Undo» can restore it. FER-491.
-    @State private var pendingUndo: DeletedRoutine? = nil
-    /// User-created folders for «Mis rutinas» (FER-494); empty = the flat list, as before.
-    @State private var folders: [RoutineFolder] = []
-    /// Drives the «new folder» name alert; `pendingMove` (if set) moves that routine into the new folder.
-    @State private var showNewFolder = false
-    @State private var newFolderName = ""
-    @State private var pendingMove: Routine? = nil
-    /// The folder being renamed (drives the rename alert) + its draft name.
-    @State private var renameFolder: RoutineFolder? = nil
-    @State private var renameText = ""
-    /// Which drop target is currently highlighted while dragging (FER-526). A folder id, or the
-    /// `unfiledDropID` sentinel for the «Sin carpeta» section.
-    @State private var dropTarget: String? = nil
-    private static let unfiledDropID = "__unfiled__"
 
-    /// Today's recovery (0–100), nil until a score exists. Drives whether the band shows.
+    private enum StartKind { case routine, intervals, breathe, live }
+
+    /// Monday-first display order in the Calendar weekday convention.
+    private let orderedWeekdays = [2, 3, 4, 5, 6, 7, 1]
+    private var todayWeekday: Int { Calendar.current.component(.weekday, from: Date()) }
     private var recovery: Double? { repo.today?.recovery }
-    /// «Today's» pick: with no scheduler yet (W3·bucle), the most recent/ordered routine stands in.
-    private var todayRoutine: Routine? { routines.first }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                 header
-
                 if loaded {
-                    if let today = todayRoutine {
-                        hoyCard(today)
-                        misRutinas
+                    if split.isEmpty {
+                        emptyStateB
                     } else {
-                        emptyHoy
+                        if model.strengthSession != nil { resumeRow }
+                        weekStrip
+                        hoyCard
+                        suggestionRow
+                        tuPlan
+                        consistencia
                     }
                 }
-
-                herramientas
             }
             .padding(.top, 20)
             .padding(.horizontal, NoopMetrics.screenPadding)
@@ -109,33 +102,32 @@ private struct EntrenarLanding: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
-        // «Undo» toast after a swipe-delete (FER-491): floats above the hub, auto-dismisses in ~4s.
-        .overlay(alignment: .bottom) {
-            if let d = pendingUndo { undoBanner(d) }
+        // The «Empezar» chooser. Its choice is performed on dismiss so a push/live-sheet never races the
+        // chooser's own dismissal.
+        .sheet(isPresented: $showChooser, onDismiss: performPendingStart) {
+            chooserSheet
+                .presentationDetents([.height(360)])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(theme.paper)
+                .preferredColorScheme(.light)
         }
-        // Confirm the delete with a haptic; stay silent on the undo (id → nil).
-        .sensoryFeedback(trigger: pendingUndo?.id) { _, new in new != nil ? .warning : nil }
-        .sheet(item: $builderTarget) { target in
-            RoutineBuilderScreen(routine: target.routine) { await load() }
-                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
-        }
-        // «Start from a template» (FER-386): a `.sheet` like the builder, reloading the hub on add.
-        .sheet(isPresented: $showTemplates) {
-            StarterTemplatesSheet { await load() }
-                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
-        }
-        // «Import plan» (FER-496): bring in an LLM-generated program. A `.sheet` like the builder,
-        // reloading the hub when it creates routines.
+        // «Import plan» (FER-496) from «Tu plan».
         .sheet(isPresented: $showImport) {
             WorkoutImportView { await load() }
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
-        // The guided strength session (FER-347). Hosted here at the hub root so it survives pushing
-        // «Rutina de hoy» / switching tabs; the session itself lives in AppModel, so swiping the sheet
-        // down only hides it (the «Resume» row below re-opens). A `.sheet` — no nested NavigationStack.
+        // Live workout (the chooser's «En vivo»).
+        .sheet(isPresented: $showLive) {
+            LiveWorkoutSheet(theme: theme)
+                .environmentObject(model)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(theme.paper)
+                .preferredColorScheme(.light)
+        }
+        // The guided strength session (FER-347), hosted at the landing root so it survives tab switches;
+        // the session lives in AppModel, so swiping the sheet down only hides it (the «Resume» row re-opens).
         .sheet(isPresented: $model.strengthSheetPresented, onDismiss: {
-            // Swiping the summary away ends the session (FER-409); a mid-session swipe keeps it (the
-            // «Resume» row re-opens). Only the post-finish receipt carries a `summary`.
             if model.strengthSession?.summary != nil { model.closeStrengthSummary() }
         }) {
             if let session = model.strengthSession {
@@ -148,423 +140,452 @@ private struct EntrenarLanding: View {
                     .preferredColorScheme(.light)
             }
         }
-        // New folder (FER-494): name it, then optionally drop a pending routine into it.
-        .alert("New folder", isPresented: $showNewFolder) {
-            TextField("Folder name", text: $newFolderName)
-            Button("Cancel", role: .cancel) { newFolderName = ""; pendingMove = nil }
-            Button("Create") { createFolder() }
-        }
-        // Rename folder.
-        .alert("Rename folder", isPresented: Binding(get: { renameFolder != nil },
-                                                     set: { if !$0 { renameFolder = nil } })) {
-            TextField("Folder name", text: $renameText)
-            Button("Cancel", role: .cancel) { renameFolder = nil }
-            Button("Save") { commitRename() }
-        }
         .task { await load() }
     }
 
-    // MARK: - Header
+    // MARK: - ① Header + recovery chip
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Train").font(StrandFont.title1).foregroundStyle(theme.ink)
-            Text("Your plan for today, your routines, and your tools.")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    // MARK: - «Hoy» card
-
-    private func hoyCard(_ routine: Routine) -> some View {
-        Button { openRoutine(routine.id) } label: {
-            VStack(alignment: .leading, spacing: 0) {
-                Text("Today").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Text(routine.name)
-                    .font(StrandFont.title2).foregroundStyle(theme.ink)
-                    .padding(.top, 3)
-                Text(exerciseCountText(exerciseCounts[routine.id] ?? 0))
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    .padding(.top, 2)
-
-                if let rec = recovery {
-                    Divider().overlay(theme.hairline).padding(.vertical, 14)
-                    RecoveryBand(recovery: rec)
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 5) {
+                HStack(spacing: 8) {
+                    DumbbellGlyph().frame(width: 22, height: 22).foregroundStyle(theme.ink)
+                    Text("Train").font(StrandFont.title1).foregroundStyle(theme.ink)
                 }
-
-                HStack(spacing: 6) {
-                    Text("View routine").font(StrandFont.headline).foregroundStyle(theme.ink)
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-                }
-                .padding(.top, 16)
-            }
-            .padding(NoopMetrics.cardPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                .strokeBorder(theme.hairline, lineWidth: 1))
-        }
-        .buttonStyle(.plain)
-        .accessibilityHint(Text("Opens today's routine"))
-    }
-
-    // MARK: - «Mis rutinas»
-
-    /// Routines bucketed by folder id (`nil` = «Sin carpeta»), grouped once per render.
-    private var routinesByFolder: [String?: [Routine]] { Dictionary(grouping: routines, by: \.folderId) }
-
-    private var misRutinas: some View {
-        let byFolder = routinesByFolder
-        let unfiled = byFolder[nil] ?? []
-        return VStack(alignment: .leading, spacing: 6) {
-            Text("My routines").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            VStack(alignment: .leading, spacing: 0) {
-                // A section per folder (FER-494), then the unfiled routines. With no folders this is
-                // just the flat list, as before — the «Sin carpeta» header only appears alongside folders.
-                ForEach(folders) { folder in
-                    let rs = byFolder[folder.id] ?? []
-                    folderHeader(folder, count: rs.count)
-                    routineList(rs)
-                }
-                if !folders.isEmpty && !unfiled.isEmpty {
-                    Text("Unfiled").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 14).padding(.bottom, 2)
-                        .dropHighlight(dropTarget == Self.unfiledDropID, fill: theme.surface, stroke: theme.ink)
-                        .dropDestination(for: String.self) { items, _ in handleDrop(onFolder: nil, items) }
-                            isTargeted: { setDropTarget(Self.unfiledDropID, $0) }
-                }
-                routineList(unfiled)
-
-                divider
-                actionRow("plus", "New routine") { builderTarget = .new }
-                divider
-                actionRow("folder.badge.plus", "New folder") { startNewFolder(moving: nil) }
-                divider
-                actionRow("square.stack.3d.up", "Start from a template") { showTemplates = true }
-                    .accessibilityHint(Text("Copy a starter routine into My routines"))
-            }
-        }
-    }
-
-    /// The rows for one group of routines, each separated by a hairline.
-    @ViewBuilder
-    private func routineList(_ rs: [Routine]) -> some View {
-        ForEach(rs) { r in
-            routineRow(r)
-            if r.id != rs.last?.id { divider }
-        }
-    }
-
-    /// A folder section header: a folder glyph, its name + routine count, and a «⋯» menu to rename or
-    /// delete it (deleting keeps its routines, they fall to «Sin carpeta»).
-    private func folderHeader(_ f: RoutineFolder, count: Int) -> some View {
-        let targeted = dropTarget == f.id
-        return HStack(spacing: 9) {
-            Image(systemName: "folder").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
-            Text(f.name).font(StrandFont.body).foregroundStyle(theme.ink)
-            Text("· \(count)").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            Spacer(minLength: 0)
-            Menu {
-                Button { startRename(f) } label: { Label("Rename folder", systemImage: "pencil") }
-                Button(role: .destructive) { deleteFolder(f) } label: { Label("Delete folder", systemImage: "trash") }
-            } label: {
-                Image(systemName: "ellipsis").font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(theme.inkTertiary).frame(width: 32, height: 40).contentShape(Rectangle())
-            }
-        }
-        .padding(.top, 12).padding(.bottom, 2)
-        .dropHighlight(targeted, fill: theme.surface, stroke: theme.ink)
-        // Drag the header to reorder folders; drop a routine (or another folder) onto it (FER-526).
-        .draggable("f:\(f.id)")
-        .dropDestination(for: String.self) { items, _ in handleDrop(onFolder: f.id, items) }
-            isTargeted: { setDropTarget(f.id, $0) }
-    }
-
-    private func actionRow(_ symbol: String, _ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                Image(systemName: symbol).frame(width: 30)
-                    .font(.system(size: 17)).foregroundStyle(theme.inkSecondary)
-                Text(title).font(StrandFont.body).foregroundStyle(theme.inkSecondary)
-                Spacer(minLength: 0)
-            }
-            .frame(minHeight: 44).contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-
-    // The routine's actions, shared by the long-press contextMenu and the visible ⋯ menu (FER-535).
-    @ViewBuilder
-    private func routineActions(_ r: Routine) -> some View {
-        Button { builderTarget = .edit(r) } label: { Label("Edit routine", systemImage: "slider.horizontal.3") }
-        Button { duplicate(r) } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
-        Menu {
-            ForEach(folders) { f in
-                Button { move(r, to: f.id) } label: {
-                    Label(f.name, systemImage: r.folderId == f.id ? "checkmark" : "folder")
+                if let summary = splitSummary {
+                    Text(summary).instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 }
             }
-            if r.folderId != nil {
-                Button { move(r, to: nil) } label: { Label("Remove from folder", systemImage: "folder.badge.minus") }
-            }
-            Divider()
-            Button { startNewFolder(moving: r) } label: { Label("New folder…", systemImage: "folder.badge.plus") }
-        } label: { Label("Move to…", systemImage: "folder") }
-        Button(role: .destructive) { delete(r) } label: { Label("Delete routine", systemImage: "trash") }
-    }
-
-    private func routineRow(_ r: Routine) -> some View {
-        SwipeToDeleteRow(
-            isOpen: Binding(get: { swipedRoutineId == r.id },
-                            set: { swipedRoutineId = $0 ? r.id : nil }),
-            onDelete: { delete(r) }
-        ) {
-            HStack(spacing: 8) {
-                // Tap the name area to open the routine; the ⋯ menu is a separate trailing control
-                // (so tapping it never opens the routine). Long-press still shows the same menu. (FER-535)
-                Button { openRoutine(r.id) } label: {
-                    HStack(spacing: 12) {
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(r.name).font(StrandFont.body).foregroundStyle(theme.ink)
-                            Text(exerciseCountText(exerciseCounts[r.id] ?? 0))
-                                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                        }
-                        Spacer(minLength: 8)
-                    }
-                    .frame(minHeight: 48).contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .contextMenu { routineActions(r) }
-
-                Menu { routineActions(r) } label: {
-                    Image(systemName: "ellipsis").font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(theme.inkTertiary).frame(width: 32, height: 48).contentShape(Rectangle())
-                }
-            }
-        }
-        // Drag a routine to move it into a folder (drop on a folder header) or reorder it (drop on a row).
-        // Long-press-drag is distinct from the FER-491 horizontal swipe and the tap-to-open. (FER-526)
-        .draggable("r:\(r.id)")
-        .dropDestination(for: String.self) { items, _ in handleDrop(onRoutine: r, items) }
-    }
-
-    // MARK: - Drag & drop (FER-526)
-
-    /// Parse a drag payload «r:<id>» / «f:<id>».
-    private func dragID(_ s: String, _ prefix: Character) -> String? {
-        guard let first = s.first, first == prefix, s.dropFirst().first == ":" else { return nil }
-        return String(s.dropFirst(2))
-    }
-
-    private func setDropTarget(_ id: String, _ targeted: Bool) {
-        if targeted { dropTarget = id } else if dropTarget == id { dropTarget = nil }
-    }
-
-    /// The full displayed routine order: folders in order → each folder's routines → «Sin carpeta» last.
-    private func flattenedRoutineIds() -> [String] {
-        let byFolder = routinesByFolder
-        var ids = folders.flatMap { (byFolder[$0.id] ?? []).map(\.id) }
-        ids += (byFolder[nil] ?? []).map(\.id)
-        return ids
-    }
-
-    /// Drop onto a folder header (or «Sin carpeta» with `folderId == nil`): a routine moves there; a folder
-    /// reorders before this one.
-    private func handleDrop(onFolder folderId: String?, _ items: [String]) -> Bool {
-        dropTarget = nil
-        guard let item = items.first else { return false }
-        if let rid = dragID(item, "r") {
-            if let r = routines.first(where: { $0.id == rid }) { move(r, to: folderId) }
-            return true
-        }
-        if let fid = dragID(item, "f"), let targetFolderId = folderId {
-            reorderFolder(fid, before: targetFolderId)
-            return true
-        }
-        return false
-    }
-
-    /// Drop a routine onto another routine row → reorder it just before the target in the global order.
-    private func handleDrop(onRoutine target: Routine, _ items: [String]) -> Bool {
-        guard let item = items.first, let rid = dragID(item, "r"), rid != target.id else { return false }
-        var order = flattenedRoutineIds()
-        order.removeAll { $0 == rid }
-        guard let idx = order.firstIndex(of: target.id) else { return false }
-        order.insert(rid, at: idx)
-        Task { try? await repo.reorderRoutines(order); await refreshFoldersAndRoutines() }
-        return true
-    }
-
-    private func reorderFolder(_ draggedId: String, before targetId: String) {
-        guard draggedId != targetId else { return }
-        var order = folders.map(\.id)
-        order.removeAll { $0 == draggedId }
-        guard let idx = order.firstIndex(of: targetId) else { return }
-        order.insert(draggedId, at: idx)
-        Task { try? await repo.reorderFolders(order); await refreshFoldersAndRoutines() }
-    }
-
-    // MARK: - Delete / undo (FER-491)
-
-    /// One just-deleted routine kept in memory so the «Undo» toast can restore it intact.
-    private struct DeletedRoutine: Identifiable {
-        let id = UUID()
-        let routine: Routine
-        let exercises: [RoutineExercise]
-    }
-
-    /// Read the routine's exercises (so an undo can restore them), delete it, reload, then show «Undo».
-    private func delete(_ r: Routine) {
-        swipedRoutineId = nil
-        Task {
-            let exercises = await repo.routineExercises(routineId: r.id)
-            try? await repo.deleteRoutine(id: r.id)
-            await load()
-            withAnimation { pendingUndo = DeletedRoutine(routine: r, exercises: exercises) }
-        }
-    }
-
-    private func undoDelete(_ d: DeletedRoutine) {
-        Task {
-            try? await repo.saveRoutine(d.routine, exercises: d.exercises)
-            await load()
-            withAnimation { pendingUndo = nil }
-        }
-    }
-
-    /// The dark «Routine deleted · Undo» toast (Apple Mail pattern). Auto-dismisses after ~4s.
-    private func undoBanner(_ d: DeletedRoutine) -> some View {
-        HStack(spacing: 12) {
-            Text("Routine deleted").font(StrandFont.subhead).foregroundStyle(theme.surface)
             Spacer(minLength: 8)
-            Button { undoDelete(d) } label: {
-                Text("Undo").font(StrandFont.headline).foregroundStyle(theme.surface)
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.horizontal, 18).padding(.vertical, 14)
-        .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .padding(.horizontal, NoopMetrics.screenPadding)
-        .padding(.bottom, 8)
-        .transition(.move(edge: .bottom).combined(with: .opacity))
-        .task(id: d.id) {
-            try? await Task.sleep(nanoseconds: 4_000_000_000)
-            withAnimation { if pendingUndo?.id == d.id { pendingUndo = nil } }
+            if let rec = recovery { recoveryChip(rec) }   // hidden while calibrating (no score)
         }
     }
 
-    // MARK: - Empty state (no routines yet → CTA, FER-343 criterion)
-
-    private var emptyHoy: some View {
-        VStack(spacing: 14) {
-            Image(systemName: "dumbbell")
-                .font(.system(size: 38, weight: .regular)).foregroundStyle(theme.inkTertiary)
-                .accessibilityHidden(true)
-            Text("No routines yet")
-                .font(StrandFont.title2).foregroundStyle(theme.ink).multilineTextAlignment(.center)
-            Text("Create your first routine, or start from a template.")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
-            VStack(spacing: 8) {
-                QuietButton("New routine") { builderTarget = .new }
-                Button { showTemplates = true } label: {
-                    Text("Start from a template")
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                }
-                .buttonStyle(.plain)
-                Button { openLibrary() } label: {
-                    Text("Browse the exercise library")
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                }
-                .buttonStyle(.plain)
+    /// The recovery chip: a small 240° arc (the `dataRecovery` gradient, no bloom/bead) + the numeral.
+    /// Tapping opens the recovery detail. The single glanceable point of color in the header.
+    private func recoveryChip(_ rec: Double) -> some View {
+        Button { tabRouter.select(.today) } label: {
+            HStack(spacing: 7) {
+                RecoveryChipRing(score: rec).frame(width: 22, height: 22)
+                Text("\(Int(rec.rounded()))")
+                    .font(StrandFont.number(17, weight: .semibold)).foregroundStyle(theme.ink)
             }
-            .padding(.top, 4)
+            .padding(.leading, 8).padding(.trailing, 11).padding(.vertical, 5)
+            .background(theme.surface, in: Capsule())
+            .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("Recovery \(Int(rec.rounded())). Open details."))
+    }
+
+    // MARK: - ② Week strip
+
+    private var weekStrip: some View {
+        let states = WeeklySplit.weekStates(split: split, completedWeekdays: completedWeekdays,
+                                            todayWeekday: todayWeekday, orderedWeekdays: orderedWeekdays)
+        return card {
+            HStack {
+                Text("Your week").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Spacer()
+                Text(weekProgressText).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+            }
+            HStack(spacing: 6) {
+                ForEach(states, id: \.weekday) { st in dayToken(st) }
+            }
+            .padding(.top, 13)
+            Text("Tap a done day to see that session")
+                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                .padding(.top, 11)
+        }
+    }
+
+    private func dayToken(_ st: WeeklySplit.DayStatus) -> some View {
+        let initial = split[st.weekday].flatMap { routinesById[$0]?.name }.map { String($0.prefix(1)).uppercased() } ?? ""
+        return VStack(spacing: 6) {
+            Text(weekdayLetter(st.weekday)).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            tokenBody(st, initial: initial)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 28)
-        .padding(.horizontal, 18)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-            .strokeBorder(theme.hairline, lineWidth: 1))
+        .contentShape(Rectangle())
+        .onTapGesture { if st.state == .done { openSession(st.weekday) } }
     }
 
-    // MARK: - Tools
+    @ViewBuilder
+    private func tokenBody(_ st: WeeklySplit.DayStatus, initial: String) -> some View {
+        let shape = RoundedRectangle(cornerRadius: 11, style: .continuous)
+        ZStack {
+            switch st.state {
+            case .done:
+                shape.fill(theme.ink)
+                Image(systemName: "checkmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(theme.paper)
+            case .today:
+                shape.fill(theme.paperHi).overlay(shape.strokeBorder(theme.ink, lineWidth: 1.5))
+                Text(initial).font(StrandFont.title2).foregroundStyle(theme.ink)
+                Circle().fill(theme.dataRecovery).frame(width: 6, height: 6)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing).padding(5)
+            case .upcoming:
+                shape.strokeBorder(theme.hairlineStrong, lineWidth: 1)
+                Text(initial).font(StrandFont.title2).foregroundStyle(theme.inkSecondary)
+            case .rest:
+                shape.strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [3, 3])).foregroundStyle(theme.hairlineStrong)
+                Text("—").font(StrandFont.body).foregroundStyle(theme.inkDim)
+            }
+        }
+        .frame(height: 46)
+    }
 
-    private var herramientas: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Tools").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            VStack(alignment: .leading, spacing: 0) {
-                if model.strengthSession != nil {
-                    resumeStrengthRow
-                    divider
+    // MARK: - ③ Today + «Empezar» (the single door)
+
+    private var hoyCard: some View {
+        card {
+            Text(hoyOverline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            if let r = todayRoutine {
+                Text(r.name).font(StrandFont.title2).foregroundStyle(theme.ink).padding(.top, 3)
+                Text(exerciseCountText(exerciseCounts[r.id] ?? 0))
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary).padding(.top, 2)
+            } else {
+                Text("Rest").font(StrandFont.title2).foregroundStyle(theme.inkSecondary).padding(.top, 3)
+                Text("Your plan doesn't schedule today. A good day to recover.")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary).padding(.top, 2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if let rec = recovery {
+                Divider().overlay(theme.hairline).padding(.vertical, 14)
+                HStack(alignment: .firstTextBaseline, spacing: 7) {
+                    Circle().fill(theme.dataRecovery).frame(width: 8, height: 8)
+                    Text(recoveryLine(rec)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                // Temporary entry to the weekly plan editor (FER-533) until F3 opens it from «Tu plan».
-                toolRow("Weekly plan", "calendar", action: openWeeklyPlan)
-                divider
-                LiveWorkoutHubRow()
-                divider
-                toolRow("My workouts", "clock.arrow.circlepath", action: openHistory)
-                divider
-                toolRow("Exercise library", "book", action: openLibrary)
-                divider
-                toolRow("Import plan", "square.and.arrow.down", action: { showImport = true })
-                divider
-                toolRow("Breathe", "wind", action: openBreathe)
-                divider
-                toolRow("Intervals", "timer", action: openIntervals)
-                divider
-                toolRow("Diet", "fork.knife", action: openDiet)
+            }
+            empezarButton.padding(.top, 15)
+            Text("routine · intervals · breathe · live — you choose when you start")
+                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                .frame(maxWidth: .infinity, alignment: .center).padding(.top, 7)
+        }
+    }
+
+    private var empezarButton: some View {
+        Button { showChooser = true } label: {
+            Text("Empezar")
+                .font(StrandFont.headline)
+                .foregroundStyle(todayRoutine != nil ? theme.paperHi : theme.ink)
+                .frame(maxWidth: .infinity).padding(.vertical, 15)
+                .background {
+                    let s = RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    // A rest day doesn't push you: the door stays open but quiet (outline, not filled).
+                    if todayRoutine != nil { s.fill(theme.ink) } else { s.strokeBorder(theme.hairlineStrong, lineWidth: 1) }
+                }
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - ④ Suggestion (static placeholder — engine is FER-532)
+
+    private var suggestionRow: some View {
+        Button { openBreathe() } label: {
+            HStack(spacing: 11) {
+                Image(systemName: "figure.cooldown").font(.system(size: 17)).foregroundStyle(theme.inkTertiary)
+                Text("Lighter day? Mobility · 20 min")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkDim)
+            }
+            .padding(.horizontal, 15).padding(.vertical, 13)
+            .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [3, 3])).foregroundStyle(theme.hairlineStrong))
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - ⑤ Tu plan
+
+    private var tuPlan: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("Your plan").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Spacer()
+                Button { openWeeklyPlan() } label: {
+                    Text("Edit").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                }
+                .buttonStyle(.plain)
+            }
+            card {
+                ForEach(Array(planRows.enumerated()), id: \.offset) { idx, row in
+                    if idx > 0 { Divider().overlay(theme.hairline) }
+                    Button { openRoutine(row.routineId) } label: {
+                        HStack(spacing: 10) {
+                            Text(row.name).font(StrandFont.body).foregroundStyle(theme.ink)
+                            Spacer(minLength: 8)
+                            Text(row.days).font(StrandFont.mono).foregroundStyle(theme.inkTertiary)
+                        }
+                        .frame(minHeight: 44).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+                Divider().overlay(theme.hairline).padding(.top, 4)
+                HStack(spacing: 8) {
+                    planChip("Library", "book", action: openLibrary)
+                    planChip("Import", "square.and.arrow.down") { showImport = true }
+                    planChip("Diet", "fork.knife", tag: "for now", action: openDiet)
+                }
+                .padding(.top, 12)
             }
         }
     }
 
-    /// «Resume» the in-progress guided session (FER-347) — shown only while a session runs but its sheet
-    /// is dismissed, so the durable session is always one tap away from the hub.
-    private var resumeStrengthRow: some View {
+    private func planChip(_ title: LocalizedStringKey, _ icon: String, tag: LocalizedStringKey? = nil,
+                          action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: icon).font(.system(size: 12)).foregroundStyle(theme.inkSecondary)
+                Text(title).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                if let tag { Text(tag).font(StrandFont.footnote).foregroundStyle(theme.inkDim) }
+            }
+            .padding(.horizontal, 11).padding(.vertical, 6)
+            .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - ⑥ Consistency
+
+    private var consistencia: some View {
+        Button { openHistory() } label: {
+            card {
+                HStack(alignment: .bottom) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(streakWeeksText).font(StrandFont.title2).foregroundStyle(theme.ink)
+                        Text("active streak · see full history")
+                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    }
+                    Spacer(minLength: 8)
+                    consistencyBars
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var consistencyBars: some View {
+        let bars = weeklyVolumeBars
+        let peak = max(bars.max() ?? 1, 1)
+        return HStack(alignment: .bottom, spacing: 4) {
+            ForEach(Array(bars.enumerated()), id: \.offset) { _, v in
+                Capsule().fill(theme.dataRecovery)
+                    .opacity(0.35 + 0.6 * (Double(v) / Double(peak)))
+                    .frame(width: 7, height: max(6, 34 * CGFloat(v) / CGFloat(peak)))
+            }
+        }
+        .frame(height: 34)
+    }
+
+    // MARK: - Resume (in-progress guided session)
+
+    private var resumeRow: some View {
         Button { model.resumeStrengthSession() } label: {
             HStack(spacing: 12) {
                 Image(systemName: "figure.strengthtraining.functional").frame(width: 30)
                     .font(.system(size: 17)).foregroundStyle(theme.dataStrain)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Workout in progress").font(StrandFont.body).foregroundStyle(theme.ink)
-                    Text(model.strengthSession?.routineName ?? "")
-                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    Text(model.strengthSession?.routineName ?? "").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
                 Spacer(minLength: 8)
                 Text("Resume").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
-            .frame(minHeight: 48).contentShape(Rectangle())
+            .padding(.horizontal, 15).padding(.vertical, 13)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("Resume workout in progress"))
     }
 
-    private func toolRow(_ title: LocalizedStringKey, _ icon: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                Image(systemName: icon).frame(width: 30)
-                    .font(.system(size: 19)).foregroundStyle(theme.inkSecondary)
-                Text(title).font(StrandFont.body).foregroundStyle(theme.ink)
-                Spacer(minLength: 8)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+    // MARK: - Empty state B (no split yet → build the week)
+
+    private var emptyStateB: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "calendar.badge.plus")
+                .font(.system(size: 36, weight: .regular)).foregroundStyle(theme.inkTertiary).accessibilityHidden(true)
+            Text("No plan yet").font(StrandFont.title2).foregroundStyle(theme.ink).multilineTextAlignment(.center)
+            Text("Build your week to see today and your progress.")
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+            Button { openWeeklyPlan() } label: {
+                Text("Build my week").font(StrandFont.headline).foregroundStyle(theme.paperHi)
+                    .frame(maxWidth: .infinity).padding(.vertical, 15)
+                    .background(theme.ink, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
             }
-            .frame(minHeight: 48).contentShape(Rectangle())
+            .buttonStyle(.plain).padding(.top, 4)
         }
-        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity).padding(.vertical, 30).padding(.horizontal, 18)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
     }
 
-    // MARK: - Bits
+    // MARK: - «Empezar» chooser
 
-    private var divider: some View { Divider().overlay(theme.hairline) }
+    private var chooserSheet: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Empezar").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("What are you training?").font(StrandFont.title2).foregroundStyle(theme.ink).padding(.top, 2)
+            chooserOption("dumbbell", "Routine", subtitle: todayRoutine?.name, isDefault: true) { pick(.routine) }
+            chooserOption("timer", "Intervals", subtitle: nil) { pick(.intervals) }
+            chooserOption("wind", "Breathe", subtitle: nil) { pick(.breathe) }
+            chooserOption("dot.radiowaves.left.and.right", "Live", subtitle: nil) { pick(.live) }
+            Spacer(minLength: 0)
+        }
+        .padding(NoopMetrics.screenPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.paper)
+    }
 
-    private func exerciseCountText(_ n: Int) -> String {
-        String(localized: "\(n) exercises")
+    private func chooserOption(_ icon: String, _ title: LocalizedStringKey, subtitle: String?, isDefault: Bool = false,
+                              action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 13) {
+                Image(systemName: icon).font(.system(size: 20)).foregroundStyle(theme.inkSecondary).frame(width: 26)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(title).font(StrandFont.headline).foregroundStyle(theme.ink)
+                    if let subtitle { Text(subtitle).font(StrandFont.caption).foregroundStyle(theme.inkTertiary) }
+                }
+                Spacer(minLength: 8)
+                if isDefault {
+                    Text("Default").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                        .padding(.horizontal, 8).padding(.vertical, 2)
+                        .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                } else {
+                    Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkDim)
+                }
+            }
+            .padding(.vertical, 14).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .overlay(alignment: .top) { Divider().overlay(theme.hairline) }
+    }
+
+    private func pick(_ kind: StartKind) { pendingStart = kind; showChooser = false }
+
+    private func performPendingStart() {
+        guard let kind = pendingStart else { return }
+        pendingStart = nil
+        switch kind {
+        case .routine:   if let id = todayRoutineId { openRoutine(id) }
+        case .intervals: openIntervals()
+        case .breathe:   openBreathe()
+        case .live:      if model.activeWorkout == nil { model.startWorkout() }; showLive = true
+        }
+    }
+
+    // MARK: - Card shell + bits
+
+    private func card<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 0, content: content)
+            .padding(NoopMetrics.cardPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+    }
+
+    private func exerciseCountText(_ n: Int) -> String { String(localized: "\(n) exercises") }
+
+    /// Localized short weekday letter (respects locale), single character.
+    private func weekdayLetter(_ wd: Int) -> String {
+        let s = Calendar.current.veryShortWeekdaySymbols[(wd - 1) % 7]
+        return s.uppercased()
+    }
+
+    // MARK: - Derived
+
+    private var routinesById: [String: Routine] { Dictionary(routines.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a }) }
+    private var todayRoutineId: String? { WeeklySplit.todayRoutineId(split: split, todayWeekday: todayWeekday) }
+    private var todayRoutine: Routine? { todayRoutineId.flatMap { routinesById[$0] } }
+
+    /// A Monday-anchored calendar for bucketing sessions into weeks.
+    private var weekCalendar: Calendar { var c = Calendar.current; c.firstWeekday = 2; return c }
+    private func weekStart(_ date: Date) -> Date { weekCalendar.dateInterval(of: .weekOfYear, for: date)?.start ?? date }
+    private var thisWeekStart: Date { weekStart(Date()) }
+
+    /// Completed sessions of THIS week, keyed by local weekday (the most recent per day).
+    private var completedThisWeek: [Int: StrengthSession] {
+        var out: [Int: StrengthSession] = [:]
+        for s in sessions where s.endTs != nil {
+            let date = Date(timeIntervalSince1970: TimeInterval(s.startTs))
+            guard weekStart(date) == thisWeekStart else { continue }
+            let wd = Calendar.current.component(.weekday, from: date)
+            if out[wd] == nil { out[wd] = s }   // sessions are newest-first → first seen is the latest
+        }
+        return out
+    }
+    private var completedWeekdays: Set<Int> { Set(completedThisWeek.keys) }
+
+    private func openSession(_ weekday: Int) {
+        guard let s = completedThisWeek[weekday] else { return }
+        let name = s.routineId.flatMap { routinesById[$0]?.name } ?? String(localized: "Workout")
+        openWorkoutSession(WorkoutSessionRoute(id: s.id, startTs: s.startTs, endTs: s.endTs,
+                                               strain: s.strain, avgHr: s.avgHr, routineName: name))
+    }
+
+    /// Completed-session counts per week, oldest → newest, for the last 12 weeks (index 11 = this week).
+    private var weeklyCounts: [Int] {
+        var counts = Array(repeating: 0, count: 12)
+        for s in sessions where s.endTs != nil {
+            let date = Date(timeIntervalSince1970: TimeInterval(s.startTs))
+            let weeksAgo = (weekCalendar.dateComponents([.day], from: weekStart(date), to: thisWeekStart).day ?? 0) / 7
+            if weeksAgo >= 0 && weeksAgo < 12 { counts[11 - weeksAgo] += 1 }
+        }
+        return counts
+    }
+    private var weeklyVolumeBars: [Int] { Array(weeklyCounts.suffix(8)) }
+    private var streak: Int {
+        WeeklySplit.consistencyStreak(weeklyCompletedCounts: weeklyCounts, currentAssignedCount: split.count,
+                                      includesCurrentWeek: true)
+    }
+
+    /// Distinct routine names in the split (in week order), for the header overline.
+    private var splitSummary: String? {
+        var seen = Set<String>(); var names: [String] = []
+        for wd in orderedWeekdays {
+            guard let id = split[wd], let n = routinesById[id]?.name, !seen.contains(id) else { continue }
+            seen.insert(id); names.append(n)
+        }
+        return names.isEmpty ? nil : names.joined(separator: " · ")
+    }
+
+    /// One row per distinct routine in the split: its name + the weekdays it's assigned to.
+    private var planRows: [(routineId: String, name: String, days: String)] {
+        var order: [String] = []; var daysOf: [String: [Int]] = [:]
+        for wd in orderedWeekdays {
+            guard let id = split[wd] else { continue }
+            if daysOf[id] == nil { order.append(id) }
+            daysOf[id, default: []].append(wd)
+        }
+        return order.compactMap { id in
+            guard let n = routinesById[id]?.name else { return nil }
+            let days = (daysOf[id] ?? []).map(weekdayLetter).joined(separator: " · ")
+            return (id, n, days)
+        }
+    }
+
+    private var hoyOverline: String {
+        let day = Calendar.current.standaloneWeekdaySymbols[(todayWeekday - 1) % 7]
+        return String(localized: "Today · \(day)")
+    }
+    private var weekProgressText: String {
+        let planned = Set(split.keys)
+        let done = planned.intersection(completedWeekdays).count
+        return String(localized: "\(done) of \(planned.count) done")
+    }
+    private var streakWeeksText: String { String(localized: "\(streak) weeks") }
+
+    private func recoveryLine(_ rec: Double) -> String {
+        let n = Int(rec.rounded())
+        switch TrainingRegulation.suggest(recovery: rec)?.reason {
+        case .recoveryHigh: return String(localized: "Recovered \(n) · you can take on your full plan.")
+        case .recoveryLow:  return String(localized: "Recovered \(n) · maybe ease the volume today.")
+        default:            return String(localized: "Recovered \(n) · keep your usual load.")
+        }
     }
 
     // MARK: - Data
@@ -573,140 +594,79 @@ private struct EntrenarLanding: View {
         guard let store = await repo.storeHandle() else { loaded = true; return }
         let rs = (try? await store.routines()) ?? []
         var counts: [String: Int] = [:]
-        for r in rs {
-            counts[r.id] = (try? await store.routineExercises(routineId: r.id))?.count ?? 0
-        }
+        for r in rs { counts[r.id] = (try? await store.routineExercises(routineId: r.id))?.count ?? 0 }
+        let sched = (try? await store.routineSchedule()) ?? []
         routines = rs
         exerciseCounts = counts
-        folders = (try? await store.routineFolders()) ?? []
+        split = Dictionary(sched.map { ($0.weekday, $0.routineId) }, uniquingKeysWith: { a, _ in a })
+        sessions = (try? await store.recentSessions(limit: 200)) ?? []
         loaded = true
     }
+}
 
-    /// Light reload for folder operations: routines + folders only. Exercise counts are unaffected by
-    /// renaming/moving/deleting a folder (the routine set is unchanged), so the N+1 count rescan is skipped.
-    private func refreshFoldersAndRoutines() async {
-        guard let store = await repo.storeHandle() else { return }
-        routines = (try? await store.routines()) ?? []
-        folders = (try? await store.routineFolders()) ?? []
-    }
+// MARK: - Recovery chip ring (FER-534)
 
-    // MARK: - Folders (FER-494)
+/// A small 240° recovery arc in the `dataRecovery` token — no bloom, no bead (the full `RecoveryRing` is
+/// geometry-heavy for a 22pt chip). The fraction of the arc filled reads as the score; the caller draws
+/// the numeral beside it. Single-token color (not the multi-stop ring gradient) so the chip stays
+/// token-pure at 22pt, where the gradient nuance wouldn't read anyway.
+private struct RecoveryChipRing: View {
+    @Environment(\.instrumentoTheme) private var theme
+    let score: Double   // 0…100
 
-    private func startNewFolder(moving r: Routine?) {
-        pendingMove = r
-        newFolderName = ""
-        showNewFolder = true
-    }
-
-    /// Create the folder, then (if invoked from a routine's «Move to…») drop that routine into it.
-    private func createFolder() {
-        let name = newFolderName.trimmingCharacters(in: .whitespaces)
-        let toMove = pendingMove
-        newFolderName = ""; pendingMove = nil
-        guard !name.isEmpty else { return }
-        Task {
-            guard let store = await repo.storeHandle() else { return }
-            let folder = RoutineFolder(name: name, sortOrder: folders.count)
-            try? await store.saveFolder(folder)
-            if let toMove { try? await store.setRoutineFolder(routineId: toMove.id, folderId: folder.id) }
-            await refreshFoldersAndRoutines()
+    var body: some View {
+        let frac = max(0, min(1, score / 100))
+        ZStack {
+            Circle().trim(from: 0, to: 0.75)
+                .stroke(theme.hairline, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                .rotationEffect(.degrees(135))
+            Circle().trim(from: 0, to: 0.75 * frac)
+                .stroke(theme.dataRecovery, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                .rotationEffect(.degrees(135))
         }
     }
+}
 
-    private func startRename(_ f: RoutineFolder) {
-        renameText = f.name
-        renameFolder = f
-    }
+// MARK: - Dumbbell glyph (header + tab)
 
-    private func commitRename() {
-        guard let f = renameFolder else { return }
-        let name = renameText.trimmingCharacters(in: .whitespaces)
-        renameFolder = nil
-        guard !name.isEmpty else { return }
-        Task {
-            guard let store = await repo.storeHandle() else { return }
-            try? await store.saveFolder(RoutineFolder(id: f.id, name: name, sortOrder: f.sortOrder))
-            await refreshFoldersAndRoutines()
-        }
-    }
-
-    /// Delete a folder; its routines stay (they fall to «Sin carpeta»).
-    private func deleteFolder(_ f: RoutineFolder) {
-        Task {
-            guard let store = await repo.storeHandle() else { return }
-            try? await store.deleteFolder(id: f.id)
-            await refreshFoldersAndRoutines()
-        }
-    }
-
-    private func move(_ r: Routine, to folderId: String?) {
-        Task {
-            guard let store = await repo.storeHandle() else { return }
-            try? await store.setRoutineFolder(routineId: r.id, folderId: folderId)
-            await refreshFoldersAndRoutines()
-        }
-    }
-
-    // MARK: - Duplicate (FER-528)
-
-    /// Deep-copy a routine into an independent «(copy)» in the same folder — fresh ids on the routine, its
-    /// exercises and their per-set rows (FER-492), so editing the copy never touches the original. The
-    /// `exerciseId` reference is kept (it points at the catalog, not at a copy).
-    private func duplicate(_ r: Routine) {
-        Task {
-            let exercises = await repo.routineExercises(routineId: r.id)
-            let now = Int(Date().timeIntervalSince1970)
-            let newId = UUID().uuidString
-            let copy = Routine(id: newId, name: "\(r.name) \(String(localized: "(copy)"))",
-                               tag: r.tag, folderId: r.folderId, createdTs: now, updatedTs: now,
-                               sortOrder: r.sortOrder)
-            let copiedExercises = exercises.map { ex -> RoutineExercise in
-                var c = ex
-                c.id = UUID().uuidString
-                c.routineId = newId
-                c.sets = ex.sets.map { var s = $0; s.id = UUID().uuidString; return s }
-                return c
+/// The line-dumbbell wordmark glyph. `currentColor`; viewBox 0 0 24 24.
+private struct DumbbellGlyph: View {
+    var body: some View {
+        GeometryReader { geo in
+            let s = min(geo.size.width, geo.size.height) / 24
+            Path { p in
+                func v(_ x: CGFloat, _ y0: CGFloat, _ y1: CGFloat) { p.move(to: CGPoint(x: x * s, y: y0 * s)); p.addLine(to: CGPoint(x: x * s, y: y1 * s)) }
+                v(5, 9, 15); v(8, 7, 17); v(16, 7, 17); v(19, 9, 15)
+                p.move(to: CGPoint(x: 8 * s, y: 12 * s)); p.addLine(to: CGPoint(x: 16 * s, y: 12 * s))
             }
-            try? await repo.saveRoutine(copy, exercises: copiedExercises)
-            await load()
+            .stroke(style: StrokeStyle(lineWidth: 1.9, lineCap: .round, lineJoin: .round))
         }
     }
 }
 
 // MARK: - Recovery band (the «sube / mantén / baja» autoregulation suggestion — FER-349)
 
-/// The recovery band: an OPT-IN "push / hold / ease" suggestion shown before a session, driven by the
-/// cited `TrainingRegulation` rule (StrandAnalytics) rather than ad-hoc cuts. It maps today's recovery
-/// to the app's canonical recovery bands and carries a fixed "suggestion · you decide" label — it
-/// never gates training. It **never appears without a recovery score** (the rule returns nil and the
-/// caller hides the slot — no invented advice).
+/// The recovery band: an OPT-IN "push / hold / ease" suggestion driven by the cited `TrainingRegulation`
+/// rule (StrandAnalytics). Kept as a reusable component (the «La Semana» landing now shows a compact
+/// recovery line instead). It never appears without a recovery score.
 struct RecoveryBand: View {
     @Environment(\.instrumentoTheme) private var theme
     let recovery: Double
 
-    /// The cited rule. The score-only path uses the canonical recovery bands; a personal z is preferred
-    /// when a caller has it (not plumbed here yet).
-    private var suggestion: TrainingRegulation.Suggestion? {
-        TrainingRegulation.suggest(recovery: recovery)
-    }
+    private var suggestion: TrainingRegulation.Suggestion? { TrainingRegulation.suggest(recovery: recovery) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Recovery band").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             if let s = suggestion {
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    Text(word(s.adjustment))
-                        .font(StrandFont.title2).foregroundStyle(color(s.adjustment))
-                    Text(detail(s.reason))
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    Text(word(s.adjustment)).font(StrandFont.title2).foregroundStyle(color(s.adjustment))
+                    Text(detail(s.reason)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 HStack(spacing: 5) {
-                    Image(systemName: "info.circle")
-                        .font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
-                        .accessibilityHidden(true)
-                    Text("Suggestion · you decide")
-                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    Image(systemName: "info.circle").font(.system(size: 12)).foregroundStyle(theme.inkTertiary).accessibilityHidden(true)
+                    Text("Suggestion · you decide").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
                 .padding(.top, 4)
             }
@@ -715,21 +675,11 @@ struct RecoveryBand: View {
     }
 
     private func word(_ a: TrainingRegulation.Adjustment) -> LocalizedStringKey {
-        switch a {
-        case .dialUp:   return "Push"
-        case .hold:     return "Hold"
-        case .dialBack: return "Ease"
-        }
+        switch a { case .dialUp: return "Push"; case .hold: return "Hold"; case .dialBack: return "Ease" }
     }
-
     private func color(_ a: TrainingRegulation.Adjustment) -> Color {
-        switch a {
-        case .dialUp:   return theme.verdict   // recovered — push (green)
-        case .hold:     return theme.ink       // within your normal — no color
-        case .dialBack: return theme.warning   // under-recovered — ease off (amber)
-        }
+        switch a { case .dialUp: return theme.verdict; case .hold: return theme.ink; case .dialBack: return theme.warning }
     }
-
     private func detail(_ reason: TrainingRegulation.Reason) -> String {
         let n = Int(recovery.rounded())
         switch reason {
@@ -742,8 +692,7 @@ struct RecoveryBand: View {
 
 // MARK: - Honest «coming soon» sheet (for builder/guided start — FER-346 / FER-347)
 
-/// A quiet Instrumento sheet that names what's coming, instead of a dead button. Used by the routine
-/// builder entry points until FER-346 ships.
+/// A quiet Instrumento sheet that names what's coming, instead of a dead button.
 struct TrainingSoonSheet: View {
     @Environment(\.instrumentoTheme) private var theme
     let overline: LocalizedStringKey
@@ -756,93 +705,13 @@ struct TrainingSoonSheet: View {
                 Text(overline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Text(title).font(StrandFont.title1).foregroundStyle(theme.ink)
             }
-            Text(message)
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            Text(message).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
         .padding(NoopMetrics.screenPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(theme.paper.ignoresSafeArea())
-    }
-}
-
-// MARK: - Swipe-to-delete row (FER-491)
-
-/// A row that slides left under a horizontal drag to reveal a destructive «Delete» button, while
-/// keeping the «Instrumento» look (the row sits on warm paper — no `List` chrome). A full-swipe past a
-/// threshold deletes directly; a half-swipe parks the button open; opening another row (or deleting)
-/// closes it via the `isOpen` binding. The wrapped content keeps its own tap + context menu — the drag
-/// only engages once the finger moves horizontally, so a tap or long-press still reaches the content.
-private struct SwipeToDeleteRow<Content: View>: View {
-    @Environment(\.instrumentoTheme) private var theme
-    @Binding var isOpen: Bool
-    let onDelete: () -> Void
-    @ViewBuilder var content: Content
-
-    @State private var offset: CGFloat = 0
-
-    private let revealWidth: CGFloat = 96
-    private let fullSwipeThreshold: CGFloat = 200
-
-    var body: some View {
-        ZStack(alignment: .trailing) {
-            Button(action: onDelete) {
-                Image(systemName: "trash")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(theme.surface)
-                    .frame(width: revealWidth)
-                    .frame(maxHeight: .infinity)
-                    .background(theme.critical)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text("Delete routine"))
-
-            content
-                .background(theme.paper)
-                .offset(x: offset)
-                .highPriorityGesture(drag)
-        }
-        .clipped()
-        .onChange(of: isOpen) { _, open in
-            if !open { withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) { offset = 0 } }
-        }
-    }
-
-    private var drag: some Gesture {
-        DragGesture(minimumDistance: 18)
-            .onChanged { v in
-                guard abs(v.translation.width) > abs(v.translation.height) else { return }
-                let base: CGFloat = isOpen ? -revealWidth : 0
-                offset = min(0, base + v.translation.width)
-            }
-            .onEnded { v in
-                let dx = v.translation.width
-                if !isOpen && -v.predictedEndTranslation.width > fullSwipeThreshold {
-                    onDelete()
-                    return
-                }
-                let open = isOpen ? !(dx > revealWidth * 0.5) : (-dx > revealWidth * 0.5)
-                withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
-                    offset = open ? -revealWidth : 0
-                }
-                isOpen = open
-            }
-    }
-}
-
-private extension View {
-    /// Highlight a drop target while a drag hovers over it (FER-526): a soft surface fill + ink outline.
-    @ViewBuilder
-    func dropHighlight(_ targeted: Bool, fill: Color, stroke: Color) -> some View {
-        self
-            .padding(.horizontal, targeted ? 10 : 0)
-            .background(targeted ? fill : .clear, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay { if targeted {
-                RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(stroke, lineWidth: 1.5) } }
-            .animation(.snappy, value: targeted)
-            .contentShape(Rectangle())
     }
 }
 #endif
