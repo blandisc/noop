@@ -9959,6 +9959,26 @@
         }
       }
     },
+    "Measured by": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medir por"
+          }
+        }
+      }
+    },
+    "Revert to default": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revertir al predeterminado"
+          }
+        }
+      }
+    },
     "Rest · by HR": {
       "localizations": {
         "es": {
