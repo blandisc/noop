@@ -362,7 +362,7 @@ struct WorkoutImportView: View {
                 let routineId = UUID().uuidString
                 var slots: [RoutineExercise] = []
                 for (position, ex) in routine.exercises.enumerated() {
-                    guard let exercise = reconciler.match(ex.name) ?? resolution[norm(ex.name)] else { continue }
+                    guard let exercise = reconciler.resolve(ex) ?? resolution[norm(ex.name)] else { continue }
                     let hasRest = ex.restSeconds != nil
                     slots.append(RoutineExercise(
                         routineId: routineId, exerciseId: exercise.id, position: position,
