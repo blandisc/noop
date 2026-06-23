@@ -88,7 +88,8 @@ struct SkinTempDetailScreen: View {
     private var hero: some View {
         let v = model.today
         return VStack(alignment: .leading, spacing: 10) {
-            Text("Skin temperature · last night").instrumentoOverline().foregroundStyle(theme.dataStrain)
+            // Serif in-screen title (FER-581). No ⓘ — the reading below stays always visible.
+            InstrumentoScreenTitle("Skin temp", theme: theme)
             HStack(alignment: .top) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(v.map { fmt($0) } ?? "—")

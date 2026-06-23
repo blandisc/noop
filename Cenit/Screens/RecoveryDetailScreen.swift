@@ -103,13 +103,11 @@ struct RecoveryDetailScreen: View {
     // MARK: - 1. Hero — el score en color de banda (+ dirección fundida: mini-sparkline 14 d + flecha)
 
     private var hero: some View {
-        InfoAccordion(
-            title: "Recovery",
-            explanation: heroExplanation,
-            accessibilityLabel: "Information about recovery",
-            theme: theme
-        ) {
-            let spark = heroSpark
+        let spark = heroSpark
+        // Serif in-screen title + ⓘ (the «Instrumento» detail identity, FER-581). Replaces the InfoAccordion
+        // wrapper; the explanation stays behind the ⓘ exactly as before — only the title turns serif.
+        return VStack(alignment: .leading, spacing: 10) {
+            InstrumentoScreenTitle("Recovery", theme: theme, explanation: heroExplanation)
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     HStack(alignment: .firstTextBaseline, spacing: 4) {

@@ -71,8 +71,8 @@ struct FitnessAgeDetailView: View {
     }
 
     private func overline(estimate: Bool) -> some View {
-        HStack(spacing: 7) {
-            Text("Physical age").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+        HStack(alignment: .firstTextBaseline, spacing: 7) {
+            Text("Physical age").font(StrandFont.serif(23)).foregroundStyle(theme.ink)   // serif title (FER-581)
             if estimate { InlineFlagChip("Estimate", color: theme.warning) }
         }
     }

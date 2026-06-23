@@ -103,7 +103,8 @@ struct SleepDetailScreen: View {
     private func hero(_ night: SleepDetailModel.Night) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Sleep").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                // Serif in-screen title (FER-581). Keeps Sleep's own ⓘ that reveals «what we measure».
+                Text("Sleep").font(StrandFont.serif(23)).foregroundStyle(theme.ink)
                 Spacer(minLength: 8)
                 Button {
                     withAnimation(StrandMotion.interactive) { heroInfoOpen.toggle() }

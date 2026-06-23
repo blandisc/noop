@@ -122,7 +122,7 @@ struct MuscleMapScreen: View {
         VStack(alignment: .leading, spacing: 3) {
             Text("Muscle map").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             Text("What to train today")
-                .font(StrandFont.title1).foregroundStyle(theme.ink)
+                .font(StrandFont.serif(23)).foregroundStyle(theme.ink)   // serif in-screen title (FER-581)
         }
     }
 

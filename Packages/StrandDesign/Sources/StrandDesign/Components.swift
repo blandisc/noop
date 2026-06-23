@@ -121,3 +121,54 @@ public struct SourceBadge: View {
             .overlay(Capsule().strokeBorder(tint.opacity(0.30), lineWidth: 1))
     }
 }
+
+// MARK: - In-screen serif title + ⓘ (FER-581 · «Instrumento» detail-screen identity)
+
+/// The detail-screen headline: an `Instrument Serif` title (the handoff reserves serif for in-screen
+/// headlines, never numbers or tab names) with an optional ⓘ that toggles an inline plain-language
+/// explanation. One source of truth so every detail sheet titles identically. The numeral, range bar
+/// and blocks live BELOW this, unchanged. (FER-581)
+public struct InstrumentoScreenTitle: View {
+    let title: LocalizedStringKey
+    var size: CGFloat
+    var theme: InstrumentoTheme
+    var explanation: LocalizedStringKey?
+    @State private var open = false
+
+    public init(_ title: LocalizedStringKey, size: CGFloat = 23,
+                theme: InstrumentoTheme, explanation: LocalizedStringKey? = nil) {
+        self.title = title
+        self.size = size
+        self.theme = theme
+        self.explanation = explanation
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(title)
+                    .font(StrandFont.serif(size))
+                    .foregroundStyle(theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                if explanation != nil {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) { open.toggle() }
+                    } label: {
+                        Image(systemName: "info.circle")
+                            .font(.system(size: 14))
+                            .foregroundStyle(theme.inkTertiary)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text("What this means"))
+                }
+            }
+            if open, let explanation {
+                Text(explanation)
+                    .font(StrandFont.caption)
+                    .foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}

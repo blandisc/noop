@@ -101,12 +101,11 @@ struct StrainDetailScreen: View {
 
     private var hero: some View {
         let v = model.today
-        return InfoAccordion(
-            title: "Day Strain",
-            explanation: "Day Strain is your cardiovascular load on a 0–21 scale. Each second your heart rate is recorded, it's placed in an intensity zone (1–5); higher zones weigh more, and the total is compressed logarithmically so 21 is a theoretical maximum — a full day at peak intensity. (Edwards 1993; Banister 1991)",
-            accessibilityLabel: "Information about day strain",
-            theme: theme
-        ) {
+        // Serif in-screen title + ⓘ (the «Instrumento» detail identity, FER-581). Explanation stays behind
+        // the ⓘ exactly as the old InfoAccordion had it.
+        return VStack(alignment: .leading, spacing: 6) {
+            InstrumentoScreenTitle("Day Strain", theme: theme,
+                explanation: "Day Strain is your cardiovascular load on a 0–21 scale. Each second your heart rate is recorded, it's placed in an intensity zone (1–5); higher zones weigh more, and the total is compressed logarithmically so 21 is a theoretical maximum — a full day at peak intensity. (Edwards 1993; Banister 1991)")
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(v.map { fmt($0) } ?? "—")
