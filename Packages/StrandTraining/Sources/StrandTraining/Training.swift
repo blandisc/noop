@@ -56,6 +56,23 @@ public struct Routine: Codable, Sendable, Identifiable, Equatable {
     }
 }
 
+/// One day of the weekly split (FER-531): which routine is planned for a given weekday. `weekday`
+/// uses `Calendar.component(.weekday)`'s convention (1 = Sunday … 7 = Saturday) — the same numbering
+/// the rest of StrandAnalytics already uses — so there is at most one routine per day (`weekday` is the
+/// identity). A weekday with no row is a rest day. There is no foreign key to `routine`: when a routine
+/// is deleted the app clears its schedule rows (mirroring how deleting a folder NULLs `folderId`), and a
+/// dangling `routineId` derives to a rest day honestly rather than crashing.
+public struct RoutineSchedule: Codable, Sendable, Identifiable, Equatable {
+    public var weekday: Int        // 1…7 (Calendar weekday convention: 1 = Sunday, 2 = Monday, … 7 = Saturday)
+    public var routineId: String
+    /// Exactly one routine per weekday → the weekday is the row's identity.
+    public var id: Int { weekday }
+
+    public init(weekday: Int, routineId: String) {
+        self.weekday = weekday; self.routineId = routineId
+    }
+}
+
 /// One planned set inside a `RoutineExercise` — the per-set prescription the user builds (FER-492).
 /// Mirrors `SetEntry`'s grain (the *performed* set) so the plan and the log line up: a relational row
 /// with identity (it reorders and deletes), not a value buried in an array. The guided session (FER-347)

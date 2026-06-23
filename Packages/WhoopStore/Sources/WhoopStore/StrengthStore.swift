@@ -218,6 +218,36 @@ extension WhoopStore {
         }
     }
 
+    // MARK: - Weekly split (FER-531)
+
+    /// The full weekly split: every assigned day → its routine. A weekday with no row is a rest day.
+    public func routineSchedule() async throws -> [RoutineSchedule] {
+        try syncRead { db in
+            try Row.fetchAll(db, sql: "SELECT * FROM routineSchedule ORDER BY weekday ASC").map {
+                RoutineSchedule(weekday: $0["weekday"], routineId: $0["routineId"])
+            }
+        }
+    }
+
+    /// Assign a routine to a weekday (1…7) — an idempotent upsert keyed on `weekday`, so re-assigning a
+    /// day overwrites rather than duplicating.
+    public func setRoutineSchedule(weekday: Int, routineId: String) async throws {
+        try syncWrite { db in
+            try db.execute(sql: """
+                INSERT INTO routineSchedule (weekday, routineId)
+                VALUES (?, ?)
+                ON CONFLICT(weekday) DO UPDATE SET routineId = excluded.routineId
+                """, arguments: [weekday, routineId])
+        }
+    }
+
+    /// Clear a weekday back to a rest day (no routine planned).
+    public func clearRoutineSchedule(weekday: Int) async throws {
+        try syncWrite { db in
+            try db.execute(sql: "DELETE FROM routineSchedule WHERE weekday = ?", arguments: [weekday])
+        }
+    }
+
     public func routineExercises(routineId: String) async throws -> [RoutineExercise] {
         try syncRead { db in
             var result = try Row.fetchAll(db, sql:
@@ -252,6 +282,9 @@ extension WhoopStore {
                     (SELECT id FROM routineExercise WHERE routineId = ?)
                 """, arguments: [id])
             try db.execute(sql: "DELETE FROM routineExercise WHERE routineId = ?", arguments: [id])
+            // Clear any weekly-split rows pointing at this routine, so a deleted routine leaves no
+            // dangling day in the split (FER-531). Same transaction as the routine delete.
+            try db.execute(sql: "DELETE FROM routineSchedule WHERE routineId = ?", arguments: [id])
             try db.execute(sql: "DELETE FROM routine WHERE id = ?", arguments: [id])
         }
     }

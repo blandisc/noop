@@ -100,6 +100,44 @@ final class StrengthStoreTests: XCTestCase {
         XCTAssertEqual(back.first?.folderId, "f1")
     }
 
+    // MARK: - Weekly split (FER-531)
+
+    /// The split round-trips, re-assigning a day overwrites (PK on `weekday`), and clearing a day
+    /// removes it (back to a rest day).
+    func testWeeklySplitRoundTripUpsertAndClear() async throws {
+        let store = try await WhoopStore.inMemory()
+        let initial = try await store.routineSchedule()
+        XCTAssertTrue(initial.isEmpty, "starts empty → «no plan yet»")
+
+        try await store.setRoutineSchedule(weekday: 2, routineId: "push")    // Monday
+        try await store.setRoutineSchedule(weekday: 5, routineId: "pull")    // Thursday
+        var split = try await store.routineSchedule()
+        XCTAssertEqual(split.map { [$0.weekday: $0.routineId] }, [[2: "push"], [5: "pull"]])
+
+        // Re-assigning Monday overwrites, it does not duplicate (one routine per day).
+        try await store.setRoutineSchedule(weekday: 2, routineId: "legs")
+        split = try await store.routineSchedule()
+        XCTAssertEqual(split.count, 2)
+        XCTAssertEqual(split.first { $0.weekday == 2 }?.routineId, "legs")
+
+        // Clearing a day drops it back to a rest day.
+        try await store.clearRoutineSchedule(weekday: 5)
+        split = try await store.routineSchedule()
+        XCTAssertEqual(split.map(\.weekday), [2])
+    }
+
+    /// **Invariant:** deleting a routine clears any split rows pointing at it — no dangling day survives.
+    func testDeleteRoutineClearsItsSchedule() async throws {
+        let store = try await WhoopStore.inMemory()
+        try await store.saveRoutine(Routine(id: "push", name: "Empuje", createdTs: 0, updatedTs: 0), exercises: [])
+        try await store.setRoutineSchedule(weekday: 2, routineId: "push")
+        try await store.setRoutineSchedule(weekday: 5, routineId: "push")
+
+        try await store.deleteRoutine(id: "push")
+        let afterDelete = try await store.routineSchedule()
+        XCTAssertTrue(afterDelete.isEmpty, "deleting the routine leaves no split row")
+    }
+
     // MARK: - Reorder (FER-526)
 
     /// `reorderFolders` persists the given order (sortOrder = index), and `routineFolders()` returns it.

@@ -62,7 +62,42 @@ final class MigrationTests: XCTestCase {
                               "\(table) keeps synced (not rebuilt)")
             }
         }
-        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 22)
+        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 23)
+    }
+
+    /// v23 (FER-531): the weekly-split table exists with `weekday` as its PRIMARY KEY (one routine per
+    /// day), and the migration is append-only — the prior routine/folder tables still stand.
+    func testV23CreatesWeeklySplitTableWithWeekdayPK() async throws {
+        let store = try await WhoopStore.inMemory()   // migrated to v23
+        let tables = try await store.tableNames()
+        XCTAssertTrue(tables.contains("routineSchedule"), "v23 must create routineSchedule")
+        for prior in ["routine", "routineFolder", "routineExercise", "learnedExerciseAlias"] {
+            XCTAssertTrue(tables.contains(prior), "v23 is append-only — \(prior) must survive")
+        }
+        let pk = try await store.primaryKeyColumns("routineSchedule")
+        XCTAssertEqual(pk, ["weekday"], "weekday is the PK → at most one routine per day")
+    }
+
+    /// v23 preserves existing data: seed a routine + folder at v22, migrate to v23, and assert the rows
+    /// survive intact (the split is a brand-new table — it must not disturb prior data on upgrade).
+    func testV23PreservesExistingRoutineRows() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = WhoopStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v22")
+        try await dbQueue.write { db in
+            try db.execute(sql: "INSERT INTO routineFolder (id, name, sortOrder) VALUES ('f1', 'Empuje', 0)")
+            try db.execute(sql: """
+                INSERT INTO routine (id, name, folderId, createdTs, updatedTs, sortOrder)
+                VALUES ('rt1', 'Torso', 'f1', 0, 0, 0)
+                """)
+        }
+        try migrator.migrate(dbQueue)   // → v23
+        try await dbQueue.read { db in
+            XCTAssertEqual(try String.fetchOne(db, sql: "SELECT name FROM routine WHERE id = 'rt1'"), "Torso")
+            XCTAssertEqual(try String.fetchOne(db, sql: "SELECT folderId FROM routine WHERE id = 'rt1'"), "f1")
+            XCTAssertEqual(try String.fetchOne(db, sql: "SELECT name FROM routineFolder WHERE id = 'f1'"), "Empuje")
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM routineSchedule"), 0, "new split starts empty")
+        }
     }
 
     /// v22 (FER-523) adds the learned-exercise-alias table; the CRUD round-trips and re-mapping a name
