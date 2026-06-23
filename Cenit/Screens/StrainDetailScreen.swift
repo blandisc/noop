@@ -71,6 +71,7 @@ struct StrainDetailScreen: View {
                     blockDivider
                     if model.series.count >= 2 {
                         levelsBlock
+                        averageCaption   // handoff «Media · periodo · valor · Δ% vs previo» + rango (FER-587)
                     } else {
                         zonesBlock
                     }
@@ -231,6 +232,22 @@ struct StrainDetailScreen: View {
     /// a «{level} · N de tus últimos M días» phrase and a TAPPABLE levels list (Rest / Light / Moderate /
     /// Hard / Extreme, 0–21). Reuses F6a (`MetricLevels.strain`) + the shared `MetricLevelsExplorer`. It
     /// supersedes both the static zones block and the old 7-day-average trend, which it folds into one. (FER-572)
+    /// The handoff's period-average caption + range, under the levels explorer (FER-587, option ii).
+    /// Effort is NEUTRAL (no good direction → no colour on the Δ); shown on the 0–21 scale, no unit.
+    @ViewBuilder private var averageCaption: some View {
+        let window = MetricWindowMath.make(parsed, selected: range)
+        if window.values.count > 1 {
+            let s = ComparisonEngine.stat(window.values)
+            DynamicAverageCaption(
+                windowName: range.name,
+                average: fmt(s.mean),
+                pctChange: range.periodComparison(of: model.series)?.pctChange,
+                polarity: .neutral,
+                rangeText: "\(fmt(s.min))–\(fmt(s.max))",
+                theme: theme)
+        }
+    }
+
     private var levelsBlock: some View {
         let window = MetricWindowMath.make(parsed, selected: range)
         return MetricLevelsExplorer(
