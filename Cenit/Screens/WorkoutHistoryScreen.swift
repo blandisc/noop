@@ -307,6 +307,7 @@ struct WorkoutSessionDetailScreen: View {
                     Button(role: .destructive) { showDeleteConfirm = true } label: {
                         Label("Delete workout", systemImage: "trash")
                     }
+                    .disabled(fullSession == nil)   // both actions wait for the full row to load
                 } label: {
                     Image(systemName: "ellipsis.circle").foregroundStyle(theme.ink)
                 }

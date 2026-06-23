@@ -283,7 +283,7 @@ struct WorkoutEditSheet: View {
             set: { raw in
                 buffers[ref] = raw
                 guard let v = Self.parseDouble(raw) else { return }
-                if ref.field == .weight { groups[ref.g].sets[ref.s].weightKg = max(0, storedKg(v)) }
+                if ref.field == .weight { groups[ref.g].sets[ref.s].weightKg = max(0, storedKg(fromDisplay: v)) }
                 else { groups[ref.g].sets[ref.s].reps = max(0, Int(v.rounded())) }
             })
         return TextField("", text: text)
@@ -416,7 +416,6 @@ struct WorkoutEditSheet: View {
     private func storedKg(fromDisplay shown: Double) -> Double {
         system == .imperial ? UnitFormatter.poundsToKg(shown) : shown
     }
-    private func storedKg(_ shown: Double) -> Double { storedKg(fromDisplay: shown) }
 
     private func formatCell(_ v: Double, isInt: Bool) -> String {
         if isInt { return "\(Int(v.rounded()))" }
