@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Nueva rutina de Movilidad para los días suaves / New Mobility routine for softer days.**
+  **ES** — Cuando tu recuperación viene **baja**, la sugerencia de Entrenar ahora te lleva a una nueva rutina de **Movilidad y cardio ligero** (~20 min, solo peso corporal) en vez de a Respira. La rutina vive en el catálogo de plantillas como cualquier otra: la previsualizas, la copias a «Mis rutinas» y la editas a tu gusto. Es un reinicio suave, sin equipo y sin promesas clínicas.
+  **EN** — When your recovery is **low**, the Train suggestion now takes you to a new **Mobility & light cardio** routine (~20 min, bodyweight only) instead of Breathe. It lives in the templates catalog like any other: preview it, copy it into «My routines», and edit it to taste. A gentle reset, no equipment, no clinical claims.
+  ([Packages/StrandTraining/.../StarterTemplates.swift](Packages/StrandTraining/Sources/StrandTraining/StarterTemplates.swift), [Cenit/Screens/EntrenarView.swift](Cenit/Screens/EntrenarView.swift), [Cenit/Screens/StarterTemplatesSheet.swift](Cenit/Screens/StarterTemplatesSheet.swift))
+
 - **En Entrenar, la sugerencia se adapta a tu recuperación / In Train, the suggestion adapts to your recovery.**
   **ES** — La fila de **«Sugerencia»** del planificador ya no es fija: aparece **solo cuando hay algo que sugerir**, según tu recuperación de hoy frente a tu normal. Si vienes **bajo**, te ofrece una opción más suave (respiración de recuperación); si vienes **con energía**, una opción ligera **opcional** (intervalos). En un día normal, o si aún no hay dato, la fila simplemente no aparece. Sigue siendo una sugerencia: nunca bloquea, tú decides.
   **EN** — The planner's **«Suggestion»** row is no longer fixed: it shows up **only when there's something to suggest**, based on today's recovery against your normal. If you're **low**, it offers a gentler option (recovery breathing); if you're **feeling good**, an **optional** light option (intervals). On a normal day, or with no data yet, the row simply doesn't appear. It's still a suggestion: it never blocks, you decide.
