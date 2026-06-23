@@ -158,4 +158,27 @@ final class QueryPlanTests: XCTestCase {
             "SELECT MAX(ts) FROM hrSample WHERE deviceId = ?", arguments: ["d"])
         assertIndexed(plan, table: "hrSample")
     }
+
+    // v21 (FER-513): the 1 Hz tables are now WITHOUT ROWID — the PK *is* the table. The range reads must
+    // still seek through it, not full-scan. rrInterval is the risky one (3-column PK (deviceId, ts, rrMs)).
+
+    func testRRIntervalsRangeReadUsesPrimaryKey() async throws {
+        let store = try await WhoopStore.inMemory()
+        let plan = try await store.queryPlanForTest("""
+            SELECT ts, rrMs FROM rrInterval
+            WHERE deviceId = ? AND ts >= ? AND ts <= ?
+            ORDER BY ts ASC, rrMs ASC LIMIT ?
+            """, arguments: [1, 0, 9_999_999_999, 100])
+        assertIndexed(plan, table: "rrInterval")
+    }
+
+    func testGravitySamplesRangeReadUsesPrimaryKey() async throws {
+        let store = try await WhoopStore.inMemory()
+        let plan = try await store.queryPlanForTest("""
+            SELECT ts, x, y, z FROM gravitySample
+            WHERE deviceId = ? AND ts >= ? AND ts <= ?
+            ORDER BY ts ASC LIMIT ?
+            """, arguments: [1, 0, 9_999_999_999, 100])
+        assertIndexed(plan, table: "gravitySample")
+    }
 }

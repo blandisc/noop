@@ -1,6 +1,10 @@
 import Foundation
 import GRDB
 
+/// Thrown inside the v21 migration when a rebuilt table's row count doesn't match the original — a
+/// hard stop that forces GRDB to ROLLBACK the whole migration (zero-loss belt; see `registerMigration("v21")`).
+enum MigrationError: Error { case rowCountMismatch(table: String, old: Int, new: Int) }
+
 extension WhoopStore {
     /// The schema migrator. v1 creates decoded-stream tables (durable) + the raw outbox.
     static func makeMigrator() -> DatabaseMigrator {
@@ -454,6 +458,84 @@ extension WhoopStore {
         // VACUUM cannot run inside a migration transaction.
         migrator.registerMigration("v20") { db in
             try db.execute(sql: "DELETE FROM spo2Sample")
+        }
+
+        // v21 (FER-513): shrink the five 1 Hz sample tables ~60% with ZERO data loss by rebuilding them
+        // as WITHOUT ROWID + an integer `deviceId` surrogate. A rowid table with a composite PK keeps a
+        // second `sqlite_autoindex` copy of (deviceId, ts[, rrMs]) + rowid on EVERY row (~46% of the DB);
+        // WITHOUT ROWID makes the PK the table itself (no autoindex), and the int surrogate replaces the
+        // repeated "my-whoop" TEXT. `deviceId` is a SOURCE PARTITION, not hardware, so the mapping lives
+        // in its own `deviceIdMap` (NOT `device`): writes/tests insert sample rows for ids that never have
+        // a `device` row, so tying the surrogate to `device.rowid` would JOIN-drop them (data loss).
+        //
+        // Atomicity: the whole body runs in GRDB's single `.immediate` migration transaction — a crash
+        // mid-way ROLLBACKs fully (grdb_migrations never records v21) and retries clean from v20. Each old
+        // table is DROPped only after its rebuilt copy passed a row-count assert, in the SAME commit, so
+        // there is never a persisted half-state. `synced` (dead since v5) is dropped from the rebuilt
+        // tables. STRICT makes a downgraded (pre-v21) binary fail loudly instead of writing TEXT into the
+        // INTEGER deviceId. Append-only: no prior migration is touched. spo2Sample/event/battery/stepSample
+        // keep TEXT deviceId + rowid (empty / marginal — out of scope). The one-time VACUUM that returns the
+        // freed pages runs post-launch (AppModel.compactDatabaseAfterRebuildIfNeeded) — VACUUM can't run in
+        // a migration transaction.
+        migrator.registerMigration("v21") { db in
+            try db.execute(sql: """
+                CREATE TABLE deviceIdMap (
+                    deviceId TEXT PRIMARY KEY NOT NULL,
+                    intId INTEGER NOT NULL UNIQUE
+                )
+                """)
+            // Number the DISTINCT source partitions actually present across the five tables, densely and
+            // deterministically. Today there is exactly one ("my-whoop"); the UNION handles N losslessly.
+            try db.execute(sql: """
+                INSERT OR IGNORE INTO deviceIdMap (deviceId, intId)
+                SELECT d, ROW_NUMBER() OVER (ORDER BY d) FROM (
+                    SELECT deviceId AS d FROM hrSample
+                    UNION SELECT deviceId FROM rrInterval
+                    UNION SELECT deviceId FROM skinTempSample
+                    UNION SELECT deviceId FROM respSample
+                    UNION SELECT deviceId FROM gravitySample
+                )
+                """)
+            // Floor: guarantee the live strap partition maps even on a fresh install (all tables empty).
+            try db.execute(sql: """
+                INSERT OR IGNORE INTO deviceIdMap (deviceId, intId)
+                VALUES ('my-whoop', (SELECT COALESCE(MAX(intId), 0) + 1 FROM deviceIdMap))
+                """)
+
+            // Rebuild one table: CREATE _new (STRICT, WITHOUT ROWID, int deviceId, no `synced`) →
+            // INSERT…SELECT translating deviceId via the map → assert row counts match → DROP old → RENAME.
+            func rebuild(_ table: String, columns: String, pk: String, dataCols: [String]) throws {
+                let copyList = dataCols.joined(separator: ", ")
+                let selectList = dataCols.map { "t.\($0)" }.joined(separator: ", ")
+                try db.execute(sql: """
+                    CREATE TABLE \(table)_new (
+                        deviceId INTEGER NOT NULL, \(columns),
+                        PRIMARY KEY (\(pk))
+                    ) STRICT, WITHOUT ROWID
+                    """)
+                try db.execute(sql: """
+                    INSERT INTO \(table)_new (deviceId, \(copyList))
+                    SELECT m.intId, \(selectList)
+                    FROM \(table) t JOIN deviceIdMap m ON m.deviceId = t.deviceId
+                    """)
+                let old = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM \(table)") ?? 0
+                let new = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM \(table)_new") ?? -1
+                guard old == new else { throw MigrationError.rowCountMismatch(table: table, old: old, new: new) }
+                try db.execute(sql: "DROP TABLE \(table)")
+                try db.execute(sql: "ALTER TABLE \(table)_new RENAME TO \(table)")
+            }
+
+            try rebuild("hrSample", columns: "ts INTEGER NOT NULL, bpm INTEGER NOT NULL",
+                        pk: "deviceId, ts", dataCols: ["ts", "bpm"])
+            try rebuild("rrInterval", columns: "ts INTEGER NOT NULL, rrMs INTEGER NOT NULL",
+                        pk: "deviceId, ts, rrMs", dataCols: ["ts", "rrMs"])
+            try rebuild("skinTempSample", columns: "ts INTEGER NOT NULL, raw INTEGER NOT NULL",
+                        pk: "deviceId, ts", dataCols: ["ts", "raw"])
+            try rebuild("respSample", columns: "ts INTEGER NOT NULL, raw INTEGER NOT NULL",
+                        pk: "deviceId, ts", dataCols: ["ts", "raw"])
+            try rebuild("gravitySample",
+                        columns: "ts INTEGER NOT NULL, x REAL NOT NULL, y REAL NOT NULL, z REAL NOT NULL",
+                        pk: "deviceId, ts", dataCols: ["ts", "x", "y", "z"])
         }
         return migrator
     }

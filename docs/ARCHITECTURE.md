@@ -358,12 +358,26 @@ UI doesn't re-render on every beat.
 
 ## 7. Storage model (WhoopStore / SQLite)
 
-GRDB drives a migrator (`WhoopStoreInfo.schemaVersion`, currently `16`). The schema groups into four
+GRDB drives a migrator (`WhoopStoreInfo.schemaVersion`, currently `21`). The schema groups into four
 concerns:
 
 **Durable decoded streams** — natural key `(deviceId, ts)`, one row per sample:
 `hrSample`, `rrInterval`, `event`, `battery`, plus the type-47 biometrics `spo2Sample`,
 `skinTempSample`, `respSample`, `gravitySample`.
+- The five 1 Hz tables (`hrSample`, `rrInterval`, `skinTempSample`, `respSample`, `gravitySample`)
+  are **`WITHOUT ROWID` + `STRICT`** with an **integer `deviceId` surrogate** as of **v21 (FER-513)**.
+  A rowid table with a composite PK keeps a second `sqlite_autoindex` copy of the key + rowid on every
+  row (~46% of the DB); `WITHOUT ROWID` makes the natural PK *be* the table (no autoindex), and the int
+  surrogate replaces the repeated `"my-whoop"` TEXT — together ~−60% on these tables, zero data loss.
+  The dead `synced` column (v5) is dropped from these five. `event`/`battery`/`stepSample`/`spo2Sample`
+  keep TEXT `deviceId` + rowid (marginal / empty — out of scope). `spo2Sample` is decoded but no longer
+  written (**v20, FER-511**) and its rows were purged; it survives empty for downgrade-safe reads.
+- The surrogate map is **`deviceIdMap(deviceId TEXT PK, intId INTEGER UNIQUE)`** — distinct from
+  `device` (hardware): writes/tests insert sample rows for source partitions that never have a `device`
+  row, so binding the surrogate to `device.rowid` would JOIN-drop them. `WhoopStore` translates at the
+  actor boundary via a `[String: Int64]` cache (`resolvedDeviceId`), so the public read/write API still
+  takes `deviceId: String`. The write path creates the mapping on demand (never throws on an unknown id
+  → the Backfiller, which acks+trims history even when `insert` fails, can't lose acked data).
 
 **Metric caches** — the rolled-up shapes the screens read:
 - `dailyMetric` — one row per `(deviceId, day)`: `recovery`, `strain`, sleep stage minutes,
@@ -395,7 +409,11 @@ watermarks such as `strap_trim`.
 
 `deviceId` is the per-source partition key. The app uses `"my-whoop"` for the strap and
 `"apple-health"` for imported Apple Health, so per-source pages and cross-source "consensus" views
-read the same tables filtered by source.
+read the same tables filtered by source. On the five v21 `WITHOUT ROWID` sample tables the stored
+`deviceId` is the integer surrogate from `deviceIdMap`; everywhere else it is still the TEXT partition
+key. A one-time VACUUM after the v21 rebuild (and after the v20 spo2 purge) returns the freed pages to
+the OS — each runs once per install, gated by a `cursors` flag (`rebuildVacuumV1Done` / `spo2VacuumV1Done`),
+off the launch path; `auto_vacuum=INCREMENTAL` (FER-511) keeps later deletes reclaimable.
 
 ### Day-key convention (local civil day)
 

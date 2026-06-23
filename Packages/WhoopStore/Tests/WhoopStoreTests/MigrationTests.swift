@@ -1,6 +1,7 @@
 import XCTest
 import GRDB
 import StrandTraining
+import WhoopProtocol
 @testable import WhoopStore
 
 final class MigrationTests: XCTestCase {
@@ -33,15 +34,147 @@ final class MigrationTests: XCTestCase {
         XCTAssertEqual(cols, ["deviceId", "ts", "rrMs"])
     }
 
-    /// v5 adds a `synced` column to all 8 decoded tables.
+    /// v5 added `synced` to 8 decoded tables; v21 (FER-513) drops it from the 5 rebuilt 1 Hz tables but
+    /// leaves it on event/battery/spo2Sample (not rebuilt). Drives the migrator to see both states.
     func testV5AddsSyncedColumnToDecodedTables() async throws {
-        let store = try await WhoopStore.inMemory()
-        for table in ["hrSample", "rrInterval", "event", "battery",
-                      "spo2Sample", "skinTempSample", "respSample", "gravitySample"] {
-            let cols = try await store.columnNamesForTest(table: table)
-            XCTAssertTrue(cols.contains("synced"), "\(table) missing synced column")
+        let dbQueue = try DatabaseQueue()
+        let migrator = WhoopStore.makeMigrator()
+
+        // At v20, all 8 v5 tables still carry `synced`.
+        try migrator.migrate(dbQueue, upTo: "v20")
+        try await dbQueue.read { db in
+            for table in ["hrSample", "rrInterval", "event", "battery",
+                          "spo2Sample", "skinTempSample", "respSample", "gravitySample"] {
+                XCTAssertTrue(try db.columns(in: table).map(\.name).contains("synced"),
+                              "\(table) missing synced at v20")
+            }
         }
-        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 20)
+
+        // After v21, the 5 rebuilt tables drop `synced`; the non-rebuilt v5 tables keep it.
+        try migrator.migrate(dbQueue)
+        try await dbQueue.read { db in
+            for table in ["hrSample", "rrInterval", "skinTempSample", "respSample", "gravitySample"] {
+                XCTAssertFalse(try db.columns(in: table).map(\.name).contains("synced"),
+                               "\(table) should drop synced at v21")
+            }
+            for table in ["event", "battery", "spo2Sample"] {
+                XCTAssertTrue(try db.columns(in: table).map(\.name).contains("synced"),
+                              "\(table) keeps synced (not rebuilt)")
+            }
+        }
+        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 21)
+    }
+
+    /// v21 (FER-513) rebuilds the five 1 Hz tables as WITHOUT ROWID + integer `deviceId`, with ZERO data
+    /// loss: seed at v20 (TEXT deviceId), migrate to v21, assert structure + preserved counts + the int
+    /// surrogate + preserved natural PKs.
+    func testV21RebuildsWithoutRowidIntDeviceIdNoLoss() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = WhoopStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v20")
+        try await dbQueue.write { db in
+            try db.execute(sql: "INSERT INTO hrSample (deviceId, ts, bpm) VALUES ('my-whoop',1,60),('my-whoop',2,61)")
+            try db.execute(sql: "INSERT INTO rrInterval (deviceId, ts, rrMs) VALUES ('my-whoop',1,800),('my-whoop',1,820)")
+            try db.execute(sql: "INSERT INTO skinTempSample (deviceId, ts, raw) VALUES ('my-whoop',1,900)")
+            try db.execute(sql: "INSERT INTO respSample (deviceId, ts, raw) VALUES ('my-whoop',1,3000)")
+            try db.execute(sql: "INSERT INTO gravitySample (deviceId, ts, x, y, z) VALUES ('my-whoop',1,0.1,0.2,0.3)")
+        }
+
+        try migrator.migrate(dbQueue)   // → v21
+
+        try await dbQueue.read { db in
+            for t in ["hrSample", "rrInterval", "skinTempSample", "respSample", "gravitySample"] {
+                let sql = try String.fetchOne(db, sql: "SELECT sql FROM sqlite_master WHERE name = ?", arguments: [t]) ?? ""
+                XCTAssertTrue(sql.contains("WITHOUT ROWID"), "\(t) must be WITHOUT ROWID — sql: \(sql)")
+                XCTAssertThrowsError(try Int.fetchOne(db, sql: "SELECT rowid FROM \(t)"), "\(t) must have no rowid")
+            }
+            // Zero loss: counts preserved exactly.
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM hrSample"), 2)
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM rrInterval"), 2)
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM skinTempSample"), 1)
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM respSample"), 1)
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM gravitySample"), 1)
+            // deviceId is now an INTEGER, mapped via deviceIdMap.
+            let myId = try Int64.fetchOne(db, sql: "SELECT intId FROM deviceIdMap WHERE deviceId = 'my-whoop'")
+            XCTAssertNotNil(myId)
+            XCTAssertEqual(try Int64.fetchOne(db, sql: "SELECT deviceId FROM hrSample LIMIT 1"), myId)
+            // Natural PKs preserved → ON CONFLICT DO NOTHING still dedupes.
+            XCTAssertEqual(try db.primaryKey("hrSample").columns, ["deviceId", "ts"])
+            XCTAssertEqual(try db.primaryKey("rrInterval").columns, ["deviceId", "ts", "rrMs"])
+        }
+    }
+
+    /// Post-v21 the public String-keyed API round-trips through the integer surrogate, and the WRITE
+    /// path maps a never-seen deviceId ON DEMAND (no `upsertDevice` first) — so the Backfiller, which
+    /// acks+trims history even if `insert` fails, can never lose acked data to a missing mapping.
+    func testV21StringApiRoundTripAndOnDemandMapping() async throws {
+        let store = try await WhoopStore.inMemory()   // migrated to v21
+        _ = try await store.insert(
+            Streams(hr: [HRSample(ts: 1, bpm: 60), HRSample(ts: 2, bpm: 61)],
+                    rr: [RRInterval(ts: 1, rrMs: 800)],
+                    gravity: [GravitySample(ts: 1, x: 0.1, y: 0.2, z: 0.3)]),
+            deviceId: "dev1")   // never registered via upsertDevice
+        let hr = try await store.hrSamples(deviceId: "dev1", from: 0, to: 10, limit: 100)
+        XCTAssertEqual(hr, [HRSample(ts: 1, bpm: 60), HRSample(ts: 2, bpm: 61)])
+        let grav = try await store.gravitySamples(deviceId: "dev1", from: 0, to: 10, limit: 100)
+        XCTAssertEqual(grav, [GravitySample(ts: 1, x: 0.1, y: 0.2, z: 0.3)])
+        // A different, also-unseen deviceId is isolated (its own surrogate; reads empty).
+        let other = try await store.hrSamples(deviceId: "dev2", from: 0, to: 10, limit: 100)
+        XCTAssertTrue(other.isEmpty)
+    }
+
+    /// Atomicity: if v21 fails mid-way (here: a needed table is missing so its INSERT…SELECT throws after
+    /// earlier tables were already rebuilt in the same transaction), GRDB ROLLBACKs the WHOLE migration —
+    /// `grdb_migrations` never records v21, the already-touched tables revert to their v20 shape, and
+    /// `deviceIdMap` is gone. Proves the irreversible rebuild is all-or-nothing.
+    func testV21IsAtomicOnFailure() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = WhoopStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v20")
+        try await dbQueue.write { db in
+            try db.execute(sql: "INSERT INTO hrSample (deviceId, ts, bpm) VALUES ('my-whoop', 1, 60)")
+            // Sabotage: drop a table v21 rebuilds AFTER hrSample, so its INSERT…SELECT throws mid-migration.
+            try db.execute(sql: "DROP TABLE gravitySample")
+        }
+
+        XCTAssertThrowsError(try migrator.migrate(dbQueue), "v21 must fail when gravitySample is missing")
+
+        try await dbQueue.read { db in
+            // hrSample reverted to its v20 shape: still a rowid table, still has `synced`, row intact.
+            XCTAssertNoThrow(try Int.fetchOne(db, sql: "SELECT rowid FROM hrSample"), "hrSample must still be a rowid table")
+            XCTAssertTrue(try db.columns(in: "hrSample").map(\.name).contains("synced"), "hrSample `synced` must survive the rollback")
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM hrSample"), 1)
+            // deviceIdMap was created inside the rolled-back transaction → must not exist.
+            XCTAssertNil(try Int.fetchOne(db, sql: "SELECT 1 FROM sqlite_master WHERE name = 'deviceIdMap'"))
+            // v21 not recorded; v20 is.
+            let applied = try String.fetchAll(db, sql: "SELECT identifier FROM grdb_migrations")
+            XCTAssertFalse(applied.contains("v21"), "grdb_migrations must not record a rolled-back v21")
+            XCTAssertTrue(applied.contains("v20"))
+        }
+    }
+
+    /// After v21 (WITHOUT ROWID + int deviceId) + a VACUUM, the file SHRINKS materially — the structural
+    /// win the issue exists for. Bloat hr on a real file, migrate, vacuum, assert page_count drops.
+    func testV21PlusVacuumShrinksFile() async throws {
+        let path = NSTemporaryDirectory() + "whoopstore-v21vac-\(UUID().uuidString).sqlite"
+        defer { try? FileManager.default.removeItem(atPath: path) }
+        let dbQueue = try DatabaseQueue(path: path)
+        let migrator = WhoopStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v20")
+        try await dbQueue.write { db in
+            for i in 0..<20_000 {
+                try db.execute(sql: "INSERT INTO hrSample (deviceId, ts, bpm) VALUES (?,?,?)",
+                               arguments: ["my-whoop", i, 60])
+            }
+        }
+        let before = try await dbQueue.read { db in try Int.fetchOne(db, sql: "PRAGMA page_count") ?? 0 }
+
+        try migrator.migrate(dbQueue)   // → v21 rebuilds hrSample WITHOUT ROWID + int deviceId
+        try await dbQueue.writeWithoutTransaction { db in try db.execute(sql: "VACUUM") }
+
+        let after = try await dbQueue.read { db in try Int.fetchOne(db, sql: "PRAGMA page_count") ?? 0 }
+        XCTAssertLessThan(after, before * 2 / 3,
+                          "WITHOUT ROWID + int deviceId + VACUUM must shrink the file (page_count before=\(before) after=\(after))")
     }
 
     /// v20 (FER-511) DELETEs the write-only `spo2Sample` rows and KEEPS the (now-empty) table. Append-only:
