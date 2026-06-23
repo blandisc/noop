@@ -75,6 +75,8 @@ private struct EntrenarLanding: View {
     @State private var showLive = false
     /// «Import plan» (FER-496) from «Tu plan»'s footer.
     @State private var showImport = false
+    /// Drives the templates sheet opened straight on the mobility routine from the ④ «softer» suggestion (FER-554).
+    @State private var showMobilityTemplate = false
     /// Drives the Recovery Detail sheet opened from the recovery chip (FER-557).
     @State private var recoveryDetail: RecoveryDetailItem? = nil
 
@@ -120,6 +122,12 @@ private struct EntrenarLanding: View {
         // «Import plan» (FER-496) from «Tu plan».
         .sheet(isPresented: $showImport) {
             WorkoutImportView { await load() }
+                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        }
+        // The ④ «softer» suggestion (FER-554) opens the templates sheet straight on the mobility routine —
+        // selectable/startable like any other template. Theme doesn't cross the sheet boundary (FER-190).
+        .sheet(isPresented: $showMobilityTemplate) {
+            StarterTemplatesSheet(initialSelection: StarterTemplates.byID("mobility")) { await load() }
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
         // Live workout (the chooser's «En vivo»).
@@ -343,15 +351,14 @@ private struct EntrenarLanding: View {
 
     private func suggestionLabel(_ alt: TrainingRegulation.LightAlternative) -> LocalizedStringKey {
         switch alt {
-        case .softer:        return "Lighter day? Recovery breathing"
+        case .softer:        return "Lighter day? Mobility · 20 min"
         case .optionalLight: return "Feeling good? Add intervals · 12 min"
         }
     }
 
     private func suggestionAction(_ alt: TrainingRegulation.LightAlternative) {
         switch alt {
-        // TODO(FER-554): repuntar a la rutina de Movilidad cuando exista en el catálogo.
-        case .softer:        openBreathe()
+        case .softer:        showMobilityTemplate = true
         case .optionalLight: openIntervals()
         }
     }

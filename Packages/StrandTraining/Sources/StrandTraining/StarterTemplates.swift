@@ -20,6 +20,7 @@ public struct StarterTemplate: Identifiable, Sendable, Equatable {
         case fullBody
         case upperLower
         case home
+        case mobility
     }
 
     /// One planned slot: a catalog exercise id with its target sets/reps and fixed rest (seconds).
@@ -130,6 +131,18 @@ public enum StarterTemplates {
             .init("Mountain_Climbers", sets: 3, reps: 20, rest: 45),
             .init("Crunches", sets: 3, reps: 15, rest: 45),
             .init("Plank", sets: 3, reps: 30, rest: 45),
+        ]),
+
+        // — Mobility & light cardio — the «softer day» the planner suggests on low recovery (FER-554).
+        // Bodyweight only: warm the shoulders, mobilize hips/spine, a touch of light cardio, then cool
+        // down. ~20 min. Not a clinical protocol — a gentle reset, never a substitute for real rest.
+        StarterTemplate(id: "mobility", group: .mobility, slots: [
+            .init("Arm_Circles", sets: 2, reps: 20, rest: 20),
+            .init("Worlds_Greatest_Stretch", sets: 2, reps: 8, rest: 30),
+            .init("Cat_Stretch", sets: 2, reps: 10, rest: 20),
+            .init("Bodyweight_Walking_Lunge", sets: 3, reps: 12, rest: 30),
+            .init("Mountain_Climbers", sets: 3, reps: 20, rest: 30),
+            .init("Childs_Pose", sets: 2, reps: 30, rest: 20),
         ]),
     ]
 

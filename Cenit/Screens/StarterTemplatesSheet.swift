@@ -26,6 +26,13 @@ struct StarterTemplatesSheet: View {
     @State private var selected: StarterTemplate?
     @State private var saving = false
 
+    /// `initialSelection` opens the sheet straight on a template's preview (the planner's «softer»
+    /// suggestion lands here on the mobility routine — FER-554); nil opens the grouped list.
+    init(initialSelection: StarterTemplate? = nil, onAdded: @escaping () async -> Void) {
+        self.onAdded = onAdded
+        _selected = State(initialValue: initialSelection)
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
@@ -208,6 +215,7 @@ struct StarterTemplatesSheet: View {
         case .fullBody:     return "Full body"
         case .upperLower:   return "Upper / Lower"
         case .home:         return "At home"
+        case .mobility:     return "Mobility"
         }
     }
 
@@ -222,6 +230,7 @@ struct StarterTemplatesSheet: View {
         case "upper":     return "Upper body"
         case "lower":     return "Lower body"
         case "home":      return "At home"
+        case "mobility":  return "Mobility & light cardio"
         default:          return "Routine"
         }
     }
@@ -235,6 +244,7 @@ struct StarterTemplatesSheet: View {
         case "upper":     return "chest, back, arms"
         case "lower":     return "full legs"
         case "home":      return "no equipment"
+        case "mobility":  return "a gentle 20-minute reset"
         default:          return "strength"
         }
     }

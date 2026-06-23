@@ -40965,6 +40965,74 @@
           }
         }
       }
+    },
+    "Lighter day? Mobility · 20 min": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lighter day? Mobility · 20 min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Hoy más suave? Movilidad · 20 min"
+          }
+        }
+      }
+    },
+    "Mobility": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mobility"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Movilidad"
+          }
+        }
+      }
+    },
+    "Mobility & light cardio": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mobility & light cardio"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Movilidad y cardio ligero"
+          }
+        }
+      }
+    },
+    "a gentle 20-minute reset": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "a gentle 20-minute reset"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "un reinicio suave de 20 min"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

@@ -59,6 +59,19 @@ final class StarterTemplatesTests: XCTestCase {
         }
     }
 
+    func testMobilityTemplateIsOfferedForTheSofterDay() {
+        // FER-554: the planner's ④ «softer» suggestion routes here, so the template must exist, sit in
+        // its own group, and carry the curated mobility / light-cardio slots (all bodyweight).
+        let t = StarterTemplates.byID("mobility")
+        XCTAssertNotNil(t, "the mobility template must exist for the planner's softer suggestion")
+        XCTAssertEqual(t?.group, .mobility)
+        XCTAssertEqual(t?.slots.map(\.exerciseId), [
+            "Arm_Circles", "Worlds_Greatest_Stretch", "Cat_Stretch",
+            "Bodyweight_Walking_Lunge", "Mountain_Climbers", "Childs_Pose",
+        ])
+        XCTAssertEqual(StarterTemplates.inGroup(.mobility).map(\.id), ["mobility"])
+    }
+
     func testMakeRoutineMakesAnIndependentCopyEachTime() {
         // Two copies of the same template must be distinct routines (different ids) — a copy, not a
         // live link — so editing one never touches the other or the template.
