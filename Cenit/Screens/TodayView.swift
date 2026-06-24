@@ -139,6 +139,10 @@ struct TodayView: View {
     /// cuando llega el veredicto matutino.
     @State private var didAutoLandMetrics = false
 
+    /// Arma el latido del punto «Ahora» del Daily Brief (FER-549/handoff): al aparecer pasa a `true` con una
+    /// animación `repeatForever`, de modo que el halo concéntrico pulse. Estático bajo Reduce Motion.
+    @State private var briefDotPulse = false
+
     // THE single grid definition — every tile group reuses it so margins line up.
     private let grid = [GridItem(.adaptive(minimum: 168), spacing: NoopMetrics.gap)]
 
@@ -550,6 +554,9 @@ struct TodayView: View {
                     HealthAlertBanner()
                     dialHeader
                 }
+                // Caption «toca para saber por qué» bajo el dial (handoff): SOLO en la vista Brief con
+                // veredicto. En los demás estados/página la página 1 ya trae su copy honesto.
+                if (pagerPage ?? 0) == 0, heroState == .verdict { whyCaption }
                 // Gap FLEXIBLE dial→pager: el sobrante vertical se reparte por igual ARRIBA y abajo del
                 // pager (este `Spacer` + el de abajo), así la rejilla de métricas baja a ocupar la pantalla
                 // en vez de quedar pegada al dial con todo el aire desperdiciado al fondo. El dial sigue
@@ -1002,38 +1009,66 @@ struct TodayView: View {
     /// tocables (FER-475) y el bloque atenuado «Más tarde hoy».
     private func dailyBriefView(_ brief: DailyBrief) -> some View {
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-            briefHeader(now: true)
-            Button { showWhyVerdict = true } label: {
-                HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space2) {
-                    Text(brief.titular)
-                        // §2 «Instrumento»: el veredicto va en serif (Instrument Serif, Regular 400).
-                        // Sin `.semibold` — la cara es solo Regular y forzar peso sintetiza un falso-bold.
-                        .font(StrandFont.serifVerdict)
-                        .foregroundStyle(theme.ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Image(systemName: "info.circle").font(.system(size: 15))
-                        .foregroundStyle(theme.inkTertiary)
-                    Spacer(minLength: 0)
+            // El Daily Brief vive en una TARJETA `surface` (handoff): envuelve SOLO las filas pobladas —
+            // encabezado + titular + porqué + viñetas—. «Más tarde hoy» queda FUERA, debajo, sobre el papel.
+            // Mismo fondo/borde/sombra que los tiles de Métricas (surface + hairline + sombra sutil).
+            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+                briefHeader(now: true)
+                Button { showWhyVerdict = true } label: {
+                    HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space2) {
+                        Text(brief.titular)
+                            // §2 «Instrumento»: el veredicto va en serif (Instrument Serif, Regular 400).
+                            // Sin `.semibold` — la cara es solo Regular y forzar peso sintetiza un falso-bold.
+                            .font(StrandFont.serifVerdict)
+                            .foregroundStyle(theme.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Image(systemName: "info.circle").font(.system(size: 15))
+                            .foregroundStyle(theme.inkTertiary)
+                        Spacer(minLength: 0)
+                    }
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
                 }
-                .frame(minHeight: 44)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityHint(Text("Abre por qué el veredicto se lee así"))
+                .buttonStyle(.plain)
+                .accessibilityHint(Text("Abre por qué el veredicto se lee así"))
 
-            Text(brief.why).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
+                Text(brief.why).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
 
-            VStack(spacing: 0) {
-                ForEach(Array(brief.bullets.enumerated()), id: \.offset) { i, b in
-                    briefBulletRow(b, showTopHairline: i > 0)
+                VStack(spacing: 0) {
+                    ForEach(Array(brief.bullets.enumerated()), id: \.offset) { i, b in
+                        briefBulletRow(b, showTopHairline: i > 0)
+                    }
                 }
+                .padding(.top, NoopMetrics.space1)
             }
-            .padding(.top, NoopMetrics.space1)
+            .padding(NoopMetrics.cardPadding)
+            .background {
+                RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                    .fill(theme.surface)
+                    .shadow(color: theme.ink.opacity(0.05), radius: 1.5, x: 0, y: 1)
+            }
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                .strokeBorder(theme.hairline, lineWidth: 1))
 
             laterTodaySection
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Caption «toca para saber por qué» bajo el dial (handoff, SOLO en la vista Brief con veredicto).
+    /// Toca → el mismo «¿Por qué?» (`WhyVerdictSheet`) que la palabra del dial.
+    private var whyCaption: some View {
+        Button { showWhyVerdict = true } label: {
+            Text("toca para saber por qué")
+                .font(StrandFont.caption)
+                .foregroundStyle(theme.inkTertiary)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.top, NoopMetrics.space2)
+        .accessibilityHint(Text("Abre por qué el veredicto se lee así"))
     }
 
     /// El encabezado de la página 1 (FER-475): overline «DAILY BRIEF» · punto · «AHORA» (verde, con
@@ -1042,7 +1077,10 @@ struct TodayView: View {
         VStack(alignment: .leading, spacing: NoopMetrics.space2) {
             HStack(spacing: NoopMetrics.space2) {
                 Text("Daily Brief").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Circle().fill(theme.hairlineStrong).frame(width: 3, height: 3)
+                Spacer(minLength: 0)
+                // FER-549/handoff: el estado va a la DERECHA (space-between) y el punto «Ahora» PULSA (halo)
+                // cuando hay veredicto; estático en espera o bajo Reduce Motion.
+                nowDot(now: now)
                 Text(now ? "Ahora" : "En espera").instrumentoOverline()
                     .foregroundStyle(now ? theme.verdict : theme.inkTertiary)
             }
@@ -1050,6 +1088,29 @@ struct TodayView: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isHeader)
+    }
+
+    /// El punto «Ahora» del Daily Brief: un círculo en el color de estado (verde con veredicto, tinta en
+    /// espera). Con veredicto y sin Reduce Motion, un halo concéntrico late detrás (handoff); el latido se
+    /// arma con `briefDotPulse` (`repeatForever`) al aparecer.
+    @ViewBuilder private func nowDot(now: Bool) -> some View {
+        let c = now ? theme.verdict : theme.inkTertiary
+        ZStack {
+            if now && !reduceMotion {
+                Circle().fill(c)
+                    .scaleEffect(briefDotPulse ? 2.4 : 1)
+                    .opacity(briefDotPulse ? 0 : 0.30)
+            }
+            Circle().fill(c)
+        }
+        .frame(width: 6, height: 6)
+        .onAppear {
+            guard now, !reduceMotion else { return }
+            withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: false)) {
+                briefDotPulse = true
+            }
+        }
+        .accessibilityHidden(true)
     }
 
     /// La línea de continuidad «Ayer cerraste en …» (FER-475): el nivel del veredicto de ayer en su color.
@@ -1301,18 +1362,11 @@ struct TodayView: View {
                 // (MetricInfoSheet), igual que las demás métricas de Hoy (FER-232).
                 Group {
                     if let score {
-                        VStack(spacing: NoopMetrics.space1) {
-                            Text("\(score)").instrumentoHero(60)
-                                .foregroundStyle(numColor)
-                            // FER-274: el «/100» lleva un chevron EN LÍNEA como pista de que el numeral es
-                            // tocable — sin un tercer renglón que descentre el número del dial (FER-270).
-                            HStack(spacing: NoopMetrics.space1) {
-                                Text("/100").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
-                                Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
-                                    .foregroundStyle(theme.inkTertiary)
-                                    .accessibilityHidden(true)
-                            }
-                        }
+                        // FER-549/handoff: solo el numeral limpio en el centro del dial — sin el «/100» (su
+                        // denominador descentraba el número y el handoff lo muestra sin él). El número sigue
+                        // tocable (abre el resumen de Recuperación), solo pierde la pista en línea.
+                        Text("\(score)").instrumentoHero(60)
+                            .foregroundStyle(numColor)
                     } else {
                         Text("—").instrumentoHero(60).foregroundStyle(theme.inkTertiary)
                     }
