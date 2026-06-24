@@ -22,6 +22,11 @@ final class TabRouter: ObservableObject {
     /// Entrenar's own prefetched slots instead of duplicating the load (FER-613).
     @Published var startTodaySession = false
 
+    /// One-shot: after landing on «Patrones», open the detail of a specific insight by its
+    /// `InsightFreshness.key`. Consumed (reset to nil) by `BucleView`. Lets the Daily Brief's «La conexión
+    /// de hoy» line open the matching correlation's detail in Patrones (FER-614).
+    @Published var openInsightKey: String? = nil
+
     func select(_ tab: Tab) { requested = tab }
 
     /// Switch to «Cuerpo» and ask it to open the fatigue map (the strength summary's muscle chips).
@@ -29,5 +34,8 @@ final class TabRouter: ObservableObject {
 
     /// Switch to «Entrenar» and ask it to start today's session (the Daily Brief's «Empezar»).
     func startTodayTraining() { startTodaySession = true; requested = .train }
+
+    /// Switch to «Patrones» and ask it to open the insight matching `key` (the Daily Brief's «Ver patrón»).
+    func openInsight(key: String) { openInsightKey = key; requested = .coach }
 }
 #endif
