@@ -118,7 +118,7 @@ private struct AjustesLanding: View {
 
                 footer
             }
-            .padding(.top, 20)
+            .padding(.top, NoopMetrics.screenTop)   // shared titled-tab top inset
             .padding(.horizontal, NoopMetrics.screenPadding)
             .padding(.bottom, NoopMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -151,11 +151,12 @@ private struct AjustesLanding: View {
     // MARK: - Header (A6: gear icon + title, privacy chip)
 
     private var header: some View {
+        // The shared titled-tab wordmark (FER-605): same lockup, size and baseline as «Patrones» /
+        // «Tendencias» / «Entrenar», so Ajustes lines up with them as you swipe between tabs. The privacy
+        // chip rides below as a quiet subline (the lockup's trailing slot stays empty).
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 10) {
-                Image(systemName: "gearshape.fill")
-                    .font(.system(size: 22, weight: .regular)).foregroundStyle(theme.inkSecondary)
-                Text("Settings").font(StrandFont.title1).foregroundStyle(theme.ink)
+            InstrumentoTabHeader("Settings") {
+                Image(systemName: "gearshape").font(.system(size: 20)).foregroundStyle(theme.ink)
             }
             privacyChip
         }

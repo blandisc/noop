@@ -117,7 +117,7 @@ private struct EntrenarLanding: View {
                     }
                 }
             }
-            .padding(.top, 14)   // same top inset as «Patrones»/«Tendencias» so the headers align across tabs
+            .padding(.top, NoopMetrics.screenTop)   // shared titled-tab top inset
             .padding(.horizontal, NoopMetrics.screenPadding)
             .padding(.bottom, NoopMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)

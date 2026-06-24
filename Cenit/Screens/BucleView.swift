@@ -107,7 +107,7 @@ private struct PatronesLanding: View {
                 if hasContributed { resetFooter }
             }
             .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.top, 14)
+            .padding(.top, NoopMetrics.screenTop)   // shared titled-tab top inset
             .padding(.bottom, NoopMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }

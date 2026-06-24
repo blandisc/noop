@@ -13,6 +13,10 @@ public enum NoopMetrics {
     public static let gap: CGFloat = 12          // gap between cards
     public static let sectionGap: CGFloat = 28   // gap between sections
     public static let screenPadding: CGFloat = 24
+    /// Top inset of a titled tab landing — the same distance from the safe area for «Patrones»,
+    /// «Tendencias», «Entrenar» and «Ajustes» so their `InstrumentoTabHeader` lines up as you swipe
+    /// between tabs. «Hoy» is exempt: it's the dial dashboard and keeps its tighter `space2` rhythm.
+    public static let screenTop: CGFloat = 14
 
     // MARK: Fine spacing ramp (FER-206)
     // Named steps below `gap` (plus a compact section rhythm and two control radii) so
