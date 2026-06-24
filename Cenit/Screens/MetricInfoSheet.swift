@@ -1,5 +1,6 @@
 import SwiftUI
 import StrandDesign
+import StrandAnalytics
 
 // MARK: - MetricInfo
 
@@ -25,6 +26,12 @@ struct MetricInfo: Identifiable {
     var method: Method? = nil
     var disclaimer: LocalizedStringKey? = nil
     var calibration: Calibration? = nil
+
+    /// When set, the summary sheet renders the F6 levels instrument (`MetricLevelsExplorer`: a tappable
+    /// levels list + range selector + chart over the active band) instead of the static 14-day trend +
+    /// bands table, and its foot link reads «Ver más en Tendencias». Drives the per-metric levels from
+    /// `MetricLevels` (FER-570). nil → the classic summary, untouched. Pilot: resting HR only. (FER-607)
+    var levelsMetric: MetricLevels.FixedMetric? = nil
 
     /// A semantic tint for the header numeral, resolved against the «Instrumento» theme by the sheet.
     /// `metric` = the metric's own data hue; `neutral` = quiet ink (used for the "—" no-data state);
@@ -166,7 +173,8 @@ extension MetricInfo {
             unit: lpm,
             headerTint: value == nil ? .neutral : .metric,
             bands: bands,
-            note: "Measured overnight from your strap; when the strap isn't worn, Cénit uses Apple Health's resting heart rate instead."
+            note: "Measured overnight from your strap; when the strap isn't worn, Cénit uses Apple Health's resting heart rate instead.",
+            levelsMetric: .restingHR
         )
     }
 
@@ -536,6 +544,11 @@ struct MetricInfoSheet: View {
     /// Steps). (FER-251)
     var onSeeMore: (() -> Void)? = nil
 
+    /// Full-history series for the levels instrument (FER-607): `(day, value)` per day with NO 14-day
+    /// cutoff, so the range selector (S/M/3M/6M/1A/Todo) can re-window. Supplied only for metrics whose
+    /// `info.levelsMetric != nil`; nil otherwise. Loaded lazily on appear.
+    var levelsSeriesLoader: (() async -> [(day: String, value: Double)])? = nil
+
     @State private var strainCurve: [TrendPoint] = []
     @State private var strainLoading = false
     @State private var heartRateCurve: [TrendPoint] = []
@@ -552,6 +565,11 @@ struct MetricInfoSheet: View {
     /// The plain-language explanation (`info.headline`) is hidden behind the header's ⓘ; collapsed each
     /// time the sheet opens so the card reads clean (number first), one tap from the "why". (FER-243)
     @State private var headlineExpanded = false
+
+    /// Range selection + loaded full-history series for the levels instrument (FER-607). Only used when
+    /// `info.levelsMetric != nil`; the explorer re-windows the series by `levelsRange`.
+    @State private var levelsRange: ExploreRange = .month
+    @State private var levelsSeries: [(day: String, value: Double)] = []
 
     // MARK: Colour resolution (against the live theme)
 
@@ -607,21 +625,28 @@ struct MetricInfoSheet: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .transition(.opacity.combined(with: .move(edge: .top)))
                 }
-                if trendLoader != nil { trendSection }
-                // Day Strain's intraday "How today added up" curve sits in the SAME middle slot as
-                // the 14-day trend on every other metric — after the headline, before the reference
-                // bands — so chart placement reads consistently across all sheets. (strain has no
-                // trendLoader, so the two never both appear.)
-                if info.id == "strain" { strainSection }
-                // Heart Rate's 24h curve sits in the same middle slot (it has no 14-day trendLoader,
-                // so the two never both appear). (FER-137)
-                if info.id == "heart_rate" { heartRateSection }
-                if let calibration = info.calibration { calibrationCard(calibration) }
-                if let weights = info.weights {
-                    weightsBlock(weights, note: info.weightsNote, dimmed: info.calibration != nil)
-                }
-                if !info.bands.isEmpty {
-                    bandsTable
+                if info.levelsMetric != nil {
+                    // FER-607: the F6 levels instrument (selector + tappable levels + chart over the
+                    // active band) replaces the static 14-day trend + bands table for migrated metrics.
+                    // Pilot: resting HR. Every other metric stays on the classic summary below.
+                    levelsBlock
+                } else {
+                    if trendLoader != nil { trendSection }
+                    // Day Strain's intraday "How today added up" curve sits in the SAME middle slot as
+                    // the 14-day trend on every other metric — after the headline, before the reference
+                    // bands — so chart placement reads consistently across all sheets. (strain has no
+                    // trendLoader, so the two never both appear.)
+                    if info.id == "strain" { strainSection }
+                    // Heart Rate's 24h curve sits in the same middle slot (it has no 14-day trendLoader,
+                    // so the two never both appear). (FER-137)
+                    if info.id == "heart_rate" { heartRateSection }
+                    if let calibration = info.calibration { calibrationCard(calibration) }
+                    if let weights = info.weights {
+                        weightsBlock(weights, note: info.weightsNote, dimmed: info.calibration != nil)
+                    }
+                    if !info.bands.isEmpty {
+                        bandsTable
+                    }
                 }
                 if let method = info.method { methodDisclosure(method) }
                 if appleConnectHint {
@@ -670,13 +695,20 @@ struct MetricInfoSheet: View {
             trendData = await loader()
             trendLoading = false
         }
+        .task {
+            // Full-history series for the levels instrument (FER-607) — no 14-day cutoff, so the range
+            // selector can re-window. Supplied only when `info.levelsMetric != nil`.
+            guard let loader = levelsSeriesLoader else { return }
+            levelsSeries = await loader()
+        }
     }
 
     /// Sheets with a trend chart (or the strain accumulation curve) are sized to their content so the
     /// chart is never cut off. Falls back to `.large` until the first layout pass measures the height.
     /// Short, band-only sheets stay at `.medium`. (FER-112 follow-up, extended for trend charts)
     private var strainDetents: Set<PresentationDetent> {
-        guard info.id == "strain" || info.id == "heart_rate" || trendLoader != nil else { return [.medium] }
+        guard info.id == "strain" || info.id == "heart_rate" || trendLoader != nil
+                || info.levelsMetric != nil else { return [.medium] }
         return contentHeight > 0 ? [.height(contentHeight)] : [.large]
     }
 
@@ -686,21 +718,22 @@ struct MetricInfoSheet: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: NoopMetrics.space2) {
             HStack(alignment: .firstTextBaseline) {
-                Text(info.name)
-                    .instrumentoOverline()
-                    .foregroundStyle(theme.inkTertiary)
-                Spacer()
-                // ⓘ reveals the plain-language explanation in-place (collapsed by default). Quiet ink
-                // when closed; the metric hue when open, signalling state. (FER-243)
-                Button {
-                    withAnimation(StrandMotion.interactive) { headlineExpanded.toggle() }
-                } label: {
-                    Image(systemName: "info.circle")
-                        .font(.system(size: 15))
-                        .foregroundStyle(headlineExpanded ? metricHue : theme.inkTertiary)
+                if info.levelsMetric != nil {
+                    // FER-607 (migrated metric): the title leads in serif (headline role only), with the
+                    // ⓘ beside it and the source chip trailing — the handoff header.
+                    Text(info.name)
+                        .font(StrandFont.serif(23))
+                        .foregroundStyle(theme.ink)
+                    infoButton
+                    Spacer()
+                    sourceChip
+                } else {
+                    Text(info.name)
+                        .instrumentoOverline()
+                        .foregroundStyle(theme.inkTertiary)
+                    Spacer()
+                    infoButton
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text(headlineExpanded ? "Hide explanation" : "Show explanation"))
             }
             HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
                 Text(info.displayValue)
@@ -713,6 +746,38 @@ struct MetricInfoSheet: View {
                 }
             }
         }
+    }
+
+    /// The ⓘ that toggles the plain-language explanation in place: quiet ink when closed, the metric hue
+    /// when open. Extracted so the serif (migrated) and overline (classic) headers share it. (FER-243)
+    private var infoButton: some View {
+        Button {
+            withAnimation(StrandMotion.interactive) { headlineExpanded.toggle() }
+        } label: {
+            Image(systemName: "info.circle")
+                .font(.system(size: 15))
+                .foregroundStyle(headlineExpanded ? metricHue : theme.inkTertiary)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(headlineExpanded ? "Hide explanation" : "Show explanation"))
+    }
+
+    /// FER-607: a quiet source chip in the migrated-metric header — «APPLE» (heart hue) when the shown
+    /// reading came from Apple Health, «BANDA» (the metric hue) when it came from the strap. Reuses the
+    /// same `appleSource` signal the foot line resolves per reading, so it never lies about provenance.
+    private var sourceChip: some View {
+        let tint = appleSource ? theme.dataHeart : metricHue
+        return Text(appleSource ? "APPLE" : "BANDA")
+            .font(StrandFont.caption)
+            .foregroundStyle(tint)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 2)
+            .overlay(
+                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                    .strokeBorder(tint.opacity(0.4), lineWidth: 0.5)
+            )
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(Text(appleSource ? "Source · Apple Health" : "Source · band"))
     }
 
     /// Quiet "this can come from Apple Health" line for an Apple-sourced metric that isn't connected
@@ -749,6 +814,31 @@ struct MetricInfoSheet: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text("Source · Apple Health"))
+    }
+
+    /// The F6 levels instrument for a migrated metric (FER-607): the shared `MetricLevelsExplorer` — a
+    /// range selector, a «{level} · N de tus últimos M días» phrase, the trend drawn over the active
+    /// band, and a tappable levels list — fed by the full-history series (re-windowed by `levelsRange`)
+    /// and the per-metric thresholds from `MetricLevels` (FER-570). `todayValue` is the same number the
+    /// header shows (`info.displayValue`), so the highlighted level matches the hero numeral.
+    @ViewBuilder private var levelsBlock: some View {
+        if let metric = info.levelsMetric {
+            let parsed: MetricWindowMath.Parsed = levelsSeries.map {
+                (day: $0.day, date: Repository.parseDayKey($0.day), value: $0.value)
+            }
+            let window = MetricWindowMath.make(parsed, selected: levelsRange)
+            MetricLevelsExplorer(
+                theme: theme,
+                range: $levelsRange,
+                window: window,
+                levels: MetricLevels.levels(for: metric),
+                todayValue: Double(info.displayValue),
+                hue: metricHue,
+                unit: info.unit ?? "",
+                valueFormat: { "\(Int($0.rounded()))" },
+                accessibilityLabel: info.name
+            )
+        }
     }
 
     private var bandsTable: some View {
@@ -1266,24 +1356,47 @@ struct MetricInfoSheet: View {
     /// Trailing "Ver más" link at the foot of the sheet: drills from this summary into the metric's rich
     /// Detalle. Tinted with the metric hue (the one place colour lives on an action here) so it reads as
     /// tappable and ties to the metric. Right-aligned. (FER-251)
-    private func seeMoreLink(_ action: @escaping () -> Void) -> some View {
-        HStack {
-            Spacer(minLength: 0)
+    @ViewBuilder private func seeMoreLink(_ action: @escaping () -> Void) -> some View {
+        if info.levelsMetric != nil {
+            // FER-607: full-width «Ver más en Tendencias» with the trend-line glyph and an ink hairline
+            // border — drills into the same rich detail Cuerpo opens (the handoff foot button).
             Button(action: action) {
-                HStack(spacing: 4) {
-                    Text("See more")
+                HStack(spacing: 7) {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .font(.system(size: 14, weight: .medium))
+                    Text("Ver más en Tendencias")
                         .font(StrandFont.subhead.weight(.medium))
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .semibold))
                 }
-                .foregroundStyle(metricHue)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 9)
-                .background(metricHue.opacity(0.10), in: Capsule())
+                .foregroundStyle(theme.ink)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 13)
+                .overlay(
+                    RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+                        .strokeBorder(theme.ink, lineWidth: 1.5)
+                )
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(Text("See more"))
+            .accessibilityLabel(Text("Ver más en Tendencias"))
             .accessibilityHint(Text("Opens the full detail"))
+        } else {
+            HStack {
+                Spacer(minLength: 0)
+                Button(action: action) {
+                    HStack(spacing: 4) {
+                        Text("See more")
+                            .font(StrandFont.subhead.weight(.medium))
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .semibold))
+                    }
+                    .foregroundStyle(metricHue)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 9)
+                    .background(metricHue.opacity(0.10), in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("See more"))
+                .accessibilityHint(Text("Opens the full detail"))
+            }
         }
     }
 }
