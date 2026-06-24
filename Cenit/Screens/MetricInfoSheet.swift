@@ -852,6 +852,7 @@ struct MetricInfoSheet: View {
                 hue: metricHue,
                 unit: info.unit ?? "",
                 valueFormat: { "\(Int($0.rounded()))" },
+                nightly: BandSummaryCopy.isNightly(metricID: info.id),
                 accessibilityLabel: info.name
             )
         }
