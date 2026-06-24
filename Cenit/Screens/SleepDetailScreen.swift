@@ -17,9 +17,11 @@ import Foundation
 // FER-162) y SIN `NavigationStack` anidado (un stack anidado cruzando el path de la tab crasheaba SwiftUI,
 // FER-171).
 //
-// Las 8 secciones (orden exacto): 1) Hero · 2) Anoche (hipnograma + etapas en %) · 3) Regularidad del
-// horario (destacado, `SleepRegularity`) · 4) Anoche vs lo típico (por etapa, en %) · 5) Tendencia de
-// duración (`TrendChart` 30d + deuda) · 6) Métricas de la noche (grid) · 7) Ver el método · 8) Footer.
+// Un SOLO scroll plano, como el frame del handoff «Detalle · Sueño» (FER-604, épico FER-591): cada
+// sección visible de inmediato, sin strip condensado ni disclosure «Ver tu historial». Orden exacto:
+// 1) Hero (horas + regularidad) · 2) Anoche (hipnograma + etapas en %) · 3) Anoche vs lo típico (por
+// etapa, en %) · 4) Métricas de la noche (grid) · 5) Tendencia de duración (selector + Media/Rangos +
+// banda 7–9 h) · 6) Deuda semanal · 7) Cómo se calcula · 8) Footer.
 //
 // La ciencia por métrica está documentada en `sleep-detail-science` (memoria): regularidad = SD del
 // punto medio (Windred 2024) > duración; etapas en % aproximadas (Miller 2020); una sola suficiencia +
@@ -39,9 +41,6 @@ struct SleepDetailScreen: View {
     @State private var showStages = false
     /// Whether the hero's in-place "what we measure" note is open (the ⓘ by the «Sleep» overline).
     @State private var heroInfoOpen = false
-    /// Level-3 disclosure: duration trend + weekly debt + the night sub-metrics live under «See your
-    /// history», collapsed on open. The only new state the re-sequencing adds. (Detalles escalonados)
-    @State private var historyExpanded = false
     /// The duration trend's period window + chart mode, mirroring the vitals' Detalle (FER-573). The series
     /// is parsed to dates ONCE in `onAppear` (the model is immutable per presentation).
     @State private var range: ExploreRange = .month
@@ -55,13 +54,16 @@ struct SleepDetailScreen: View {
             // (FER-227)
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                 if let night = model.night {
-                    // Level 1 · the answer: the hero's double datum (hours + regularity) + the hypnogram.
+                    // The handoff «Detalle · Sueño» is ONE flat scroll — every section visible at once,
+                    // no condensed strip and no «See your history» disclosure (FER-604, épico FER-591).
+                    // The order mirrors the frame: answer → last night → vs typical → tonight's metrics →
+                    // duration trend → weekly debt → method.
                     hero(night)
                     lastNightBlock(night)
-                    // Level 2 · «Your patterns»: how well + stages + debt, fused to plain lines.
-                    patternsBlock(night)
-                    // Level 3 · «See your history»: duration trend + weekly debt + the night sub-metrics.
-                    historySection(night)
+                    stagesVsTypicalBlock(night)
+                    nightMetricsBlock(night)
+                    durationTrendBlock
+                    weeklyDebtBlock
                     methodDisclosure
                     sourceFooter
                 } else {
@@ -407,7 +409,7 @@ struct SleepDetailScreen: View {
             : head + Text(", \(delta.text) points below typical")
     }
 
-    // MARK: - 4. Anoche vs lo típico (por etapa, en %) — en «See your history»
+    // MARK: - 3. Anoche vs lo típico (por etapa, en %)
 
     @ViewBuilder
     private func stagesVsTypicalBlock(_ night: SleepDetailModel.Night) -> some View {
@@ -482,125 +484,7 @@ struct SleepDetailScreen: View {
         return head + Text(", typical \(Int(typicalPct.rounded()))%")
     }
 
-    // MARK: - Level 2 · «Your patterns» — how well + stages + debt, fused to plain lines
-    //
-    // The re-sequencing (Detalles escalonados) folds the three redundant "did I sleep well?" framings —
-    // Performance, Efficiency, the vs-typical stages and the debt line — into one condensed strip. The
-    // jargon stays in the ⓘ; the face is plain language. No new math: every value comes straight from
-    // the model (performance %, efficiency %, the typical-stage means, the weekly debt). The full
-    // vs-typical bars and the duration/debt charts live one level down in «See your history».
-
-    @ViewBuilder
-    private func patternsBlock(_ night: SleepDetailModel.Night) -> some View {
-        DetailBlock("Your patterns", theme: theme) {
-            VStack(alignment: .leading, spacing: 12) {
-                patternLine(label: "How well", value: howWellText(), note: nil)
-                if let stages = stagesVsTypicalText(night) {
-                    patternLine(label: "Stages", value: stages, note: nil)
-                }
-                if let debt = model.weeklyDebtMinutes, debt >= 15 {
-                    patternLine(label: "Sleep debt",
-                                value: hoursMinutes(debt),
-                                valueColor: theme.warning,
-                                note: "behind this week")
-                }
-            }
-        }
-    }
-
-    /// "95% of your need" — performance leads «How well» with the share of your need you slept.
-    /// Efficiency is no longer fused here; it lives once, as a sub-metric tile in «See your history» (#3).
-    private func howWellText() -> String {
-        guard let p = model.performancePct else { return "—" }
-        return String(localized: "\(Int(min(100, p).rounded()))% of your need")
-    }
-
-    /// A one-phrase read of last night's stage mix vs your typical — "Deep & REM where you usually are"
-    /// when both are within a few points, else names the one that's notably off. nil when there's no
-    /// personal typical yet. Reads the SAME percentages the vs-typical bars draw (no new math).
-    private func stagesVsTypicalText(_ night: SleepDetailModel.Night) -> String? {
-        let s = night.stages
-        guard s.total > 0, model.typicalDeepPct != nil || model.typicalRemPct != nil else { return nil }
-        func diff(_ minutes: Double, _ typical: Double?) -> Double? {
-            guard let typical else { return nil }
-            return (minutes / s.total * 100) - typical
-        }
-        let deepDelta = diff(s.deep, model.typicalDeepPct)
-        let remDelta = diff(s.rem, model.typicalRemPct)
-        let near = 4.0
-        let deepOff = (deepDelta.map { abs($0) > near }) ?? false
-        let remOff = (remDelta.map { abs($0) > near }) ?? false
-        if !deepOff && !remOff { return String(localized: "Deep & REM where you usually are") }
-        if deepOff, let d = deepDelta {
-            return d > 0 ? String(localized: "More deep sleep than usual")
-                         : String(localized: "Less deep sleep than usual")
-        }
-        if let r = remDelta {
-            return r > 0 ? String(localized: "More REM than usual")
-                         : String(localized: "Less REM than usual")
-        }
-        return String(localized: "Deep & REM where you usually are")
-    }
-
-    /// One «Your patterns» line: a quiet overline label, a plain value (the datum), an optional note.
-    private func patternLine(label: LocalizedStringKey, value: String,
-                             valueColor: Color? = nil, note: LocalizedStringKey?) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Spacer(minLength: 8)
-            Text(value).font(StrandFont.bodyNumber).foregroundStyle(valueColor ?? theme.ink)
-            if let note {
-                Text(note).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            }
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    // MARK: - Level 3 · «See your history» — duration trend + weekly debt + night sub-metrics
-    //
-    // The analyst's view, one tap down. An in-place disclosure (NOT a navigation push). Holds the
-    // duration trend (with its bands), the weekly-debt bars, the full vs-typical stage bars, and the
-    // four night sub-metric tiles (each still opens its `MetricInfoSheet` on tap). (Detalles escalonados)
-
-    @ViewBuilder
-    private func historySection(_ night: SleepDetailModel.Night) -> some View {
-        VStack(alignment: .leading, spacing: historyExpanded ? NoopMetrics.sectionGap : 0) {
-            historyDisclosureHeader(caption: "trends · debt · sub-metrics")
-            if historyExpanded {
-                stagesVsTypicalBlock(night)
-                durationTrendBlock
-                weeklyDebtBlock
-                nightMetricsBlock(night)
-            }
-        }
-    }
-
-    /// The «See your history» row: a tappable header toggling the Level-3 disclosure in place. The
-    /// chevron rotates with the house interactive spring. Shared shape across the four detail screens.
-    private func historyDisclosureHeader(caption: LocalizedStringKey) -> some View {
-        Button {
-            withAnimation(StrandMotion.interactive) { historyExpanded.toggle() }
-        } label: {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("See your history").instrumentoOverline().foregroundStyle(theme.ink)
-                    Text(caption).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                }
-                Spacer(minLength: 8)
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(theme.inkTertiary)
-                    .rotationEffect(.degrees(historyExpanded ? 0 : -90))
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
-        .accessibilityValue(Text(historyExpanded ? "expanded" : "collapsed"))
-    }
-
-    // MARK: - Tendencia de duración (selector de periodo + Media móvil ⇄ Rangos) — en «See your history»
+    // MARK: - Tendencia de duración (selector de periodo + Media móvil ⇄ Rangos)
     //
     // The unified scaffold (FER-573): a period selector (W/M/3M/6M/1Y) + a «Media móvil ⇄ Rangos» toggle,
     // mirroring the vitals' Detalle. «Media móvil» = 7-day MA with the optimal 7–9 h band + the dynamic
