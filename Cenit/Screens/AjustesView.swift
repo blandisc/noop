@@ -51,6 +51,29 @@ private enum ProfileWheel: String, Identifiable {
     var id: String { rawValue }
 }
 
+// MARK: - Content-fitted sheet
+
+/// Sizes a sheet to its content height (so a short form doesn't open as a giant half-empty card),
+/// with `.large` as a fallback when the content is taller than the fitted height (e.g. big Dynamic
+/// Type). Same measure-then-detent pattern as `MuscleDetailView`: the content must hug its height
+/// (no `maxHeight: .infinity`, no trailing `Spacer`) for the measured size to reflect the content.
+private struct FittedSheet: ViewModifier {
+    @State private var height: CGFloat = 320
+    func body(content: Content) -> some View {
+        content
+            .background(GeometryReader { proxy in
+                Color.clear
+                    .onAppear { height = proxy.size.height }
+                    .onChange(of: proxy.size.height) { _, h in height = h }
+            })
+            .presentationDetents([.height(height), .large])
+            .presentationDragIndicator(.visible)
+    }
+}
+private extension View {
+    func fittedSheet() -> some View { modifier(FittedSheet()) }
+}
+
 // MARK: - Landing
 
 private struct AjustesLanding: View {
@@ -459,13 +482,11 @@ private struct ProfileWheelSheet: View {
 
             wheelBody
                 .frame(maxWidth: .infinity)
-
-            Spacer(minLength: 0)
         }
         .padding(NoopMetrics.screenPadding)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(theme.paper.ignoresSafeArea())
-        .presentationDetents([.medium])
+        .fittedSheet()
     }
 
     private var title: LocalizedStringKey {
@@ -587,13 +608,11 @@ private struct MaxHRSheet: View {
                     .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-
-            Spacer(minLength: 0)
         }
         .padding(NoopMetrics.screenPadding)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(theme.paper.ignoresSafeArea())
-        .presentationDetents([.medium])
+        .fittedSheet()
         .onAppear { manual = profile.hrMaxOverride > 0 }
     }
 }
@@ -645,12 +664,11 @@ private struct AdvancedSheet: View {
                     .padding(.top, 2)
                 }
             }
-
-            Spacer(minLength: 0)
         }
         .padding(NoopMetrics.screenPadding)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(theme.paper.ignoresSafeArea())
+        .fittedSheet()
     }
 
     private func exportPuffinCaptures() {
@@ -701,11 +719,11 @@ private struct UnidadesSheet: View {
                     .labelsHidden().pickerStyle(.segmented).fixedSize()
                 }
             }
-            Spacer(minLength: 0)
         }
         .padding(NoopMetrics.screenPadding)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(theme.paper.ignoresSafeArea())
+        .fittedSheet()
     }
 }
 
@@ -760,6 +778,8 @@ private struct StrapLogSheet: View {
         .padding(NoopMetrics.screenPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(theme.paper.ignoresSafeArea())
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
     }
 
     private func strapLogText() -> String {
