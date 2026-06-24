@@ -179,7 +179,7 @@ private struct CuerpoLanding: View {
                 footerActions
             }
             .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.top, 14)   // same top inset as «Patrones»/«Train» so the headers align across tabs
+            .padding(.top, NoopMetrics.screenTop)   // shared titled-tab top inset
             .padding(.bottom, NoopMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
