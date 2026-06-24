@@ -117,7 +117,7 @@ private struct EntrenarLanding: View {
                     }
                 }
             }
-            .padding(.top, 10)
+            .padding(.top, 14)   // same top inset as «Patrones»/«Tendencias» so the headers align across tabs
             .padding(.horizontal, NoopMetrics.screenPadding)
             .padding(.bottom, NoopMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -183,16 +183,13 @@ private struct EntrenarLanding: View {
     // MARK: - Header + recovery chip
 
     private var header: some View {
-        // One-piece wordmark row — same lockup, size and baseline as «Tendencias»/«Patrones» so the three
-        // tab titles match. Glyph = the dock's tab icon; trailing = the recovery chip. (FER-557)
-        HStack(alignment: .center) {
-            HStack(spacing: 9) {
-                Image(systemName: "figure.strengthtraining.functional")
-                    .font(.system(size: 19)).frame(width: 22, height: 22).foregroundStyle(theme.ink)
-                Text("Train").font(.system(size: 21, weight: .semibold)).tracking(-0.3).foregroundStyle(theme.ink)
-            }
-            .accessibilityElement(children: .combine).accessibilityLabel(Text("Train"))
-            Spacer(minLength: 8)
+        // Shared wordmark row — same lockup, size and baseline as «Tendencias»/«Patrones» so the three
+        // tab titles align as you swipe. Glyph = the dock's tab icon; the recovery chip rides the trailing
+        // slot, which is anchored to the title's height so it never pushes the title down.
+        InstrumentoTabHeader("Train") {
+            Image(systemName: "figure.strengthtraining.functional")
+                .font(.system(size: 20)).foregroundStyle(theme.ink)
+        } trailing: {
             if let rec = recovery { recoveryChip(rec) }   // hidden while calibrating (no score)
         }
     }
