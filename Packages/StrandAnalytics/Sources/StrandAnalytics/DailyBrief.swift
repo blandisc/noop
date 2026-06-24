@@ -275,3 +275,74 @@ public enum DailyBriefEngine {
         return joined.prefix(1).uppercased() + joined.dropFirst()
     }
 }
+
+// MARK: - Bloque «Hoy en tu plan» — el puente con Entrenar (FER-613)
+//
+// La fase 1 del «Daily Brief inteligente» (épico FER-612): al pie del brief, conecta cuerpo ↔ entrenamiento
+// reusando motores ya probados (`WeeklySplit` para la rutina/racha, `TrainingRegulation` para el ajuste de
+// ritmo). NO es matemática nueva. Igual que el resto del motor: la DECISIÓN (estado/ritmo) + el copy variable
+// (la línea de ritmo, derivada de la banda de recuperación) viven aquí, puros y testeables; el copy estático
+// (overline, «Empezar», «Hoy descansas», la pluralización «día/días») y el color/botón los pone la UI.
+
+extension DailyBrief {
+    /// El contenido del bloque «Hoy en tu plan». `DailyBriefEngine.trainingBlock` devuelve `nil` cuando no
+    /// hay split configurado (el bloque se omite sin dejar hueco).
+    public struct TrainingBlock: Sendable, Equatable {
+        /// Hoy es día de entreno (con rutina asignada) o de descanso (el split no asigna rutina hoy).
+        public enum State: Sendable, Equatable { case training, rest }
+        /// El ajuste de ritmo del día — espejo de `TrainingRegulation.Adjustment`; la UI lo mapea a color.
+        public enum Pace: Sendable, Equatable { case up, hold, down }
+
+        public let state: State
+        /// El nombre de la rutina de hoy (solo `.training`; `nil` en descanso).
+        public let routineName: String?
+        /// La racha de días cumpliendo el plan. Es el MISMO valor que muestra Entrenar (misma fuente,
+        /// `WeeklySplit.adherenceStreak` vía el helper compartido `TrainingStreak`).
+        public let streakDays: Int
+        /// El ajuste de ritmo de hoy (solo `.training` y solo si hay recuperación). `nil` mientras no hay
+        /// lectura — el bloque degrada con gracia y omite la línea de ritmo.
+        public let pace: Pace?
+        /// La línea es-MX del ajuste (derivada de la banda de recuperación). `nil` cuando no hay `pace`.
+        public let paceCopy: String?
+
+        public init(state: State, routineName: String?, streakDays: Int, pace: Pace?, paceCopy: String?) {
+            self.state = state; self.routineName = routineName
+            self.streakDays = streakDays; self.pace = pace; self.paceCopy = paceCopy
+        }
+    }
+}
+
+extension DailyBriefEngine {
+
+    /// Arma el bloque «Hoy en tu plan», o `nil` si no hay split (el bloque se omite). Puro y determinista.
+    /// - Parameters:
+    ///   - hasSplit: el usuario tiene al menos un día asignado en su semana. Sin split → `nil`.
+    ///   - todayRoutineName: la rutina de hoy (`WeeklySplit.todayRoutineId` resuelta a nombre), o `nil` si
+    ///     hoy es descanso.
+    ///   - streakDays: la racha de días cumpliendo el plan (`WeeklySplit.adherenceStreak`, calculada en la
+    ///     capa de app porque depende del calendario local).
+    ///   - recovery: la recuperación 0–100 de hoy (`nil` mientras no hay lectura → sin línea de ritmo).
+    public static func trainingBlock(hasSplit: Bool,
+                                     todayRoutineName: String?,
+                                     streakDays: Int,
+                                     recovery: Double?) -> DailyBrief.TrainingBlock? {
+        guard hasSplit else { return nil }
+        guard let name = todayRoutineName else {
+            // Día de descanso: el split existe pero no asigna rutina hoy.
+            return DailyBrief.TrainingBlock(state: .rest, routineName: nil, streakDays: streakDays,
+                                            pace: nil, paceCopy: nil)
+        }
+        var pace: DailyBrief.TrainingBlock.Pace?
+        var paceCopy: String?
+        // El ajuste de ritmo es advisory (no instrucción clínica): solo cuando hay recuperación de hoy.
+        if let rec = recovery, let s = TrainingRegulation.suggest(recovery: rec) {
+            switch s.adjustment {
+            case .dialUp:   pace = .up;   paceCopy = "Recuperación alta para ti · puedes con todo el plan"
+            case .hold:     pace = .hold; paceCopy = "Recuperación en tu rango · entrena a tu carga de siempre"
+            case .dialBack: pace = .down; paceCopy = "Recuperación baja para ti · quizá baja el volumen hoy"
+            }
+        }
+        return DailyBrief.TrainingBlock(state: .training, routineName: name, streakDays: streakDays,
+                                        pace: pace, paceCopy: paceCopy)
+    }
+}

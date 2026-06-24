@@ -123,4 +123,58 @@ final class DailyBriefEngineTests: XCTestCase {
         XCTAssertEqual(b.bullets.count, 2)
         XCTAssertEqual(Set(b.bullets.map(\.kind)), [.recovery, .hrv])
     }
+
+    // MARK: - Bloque «Hoy en tu plan» (FER-613)
+
+    /// Sin split configurado el bloque se omite por completo (la UI no deja hueco).
+    func testTrainingBlockNoSplitReturnsNil() {
+        XCTAssertNil(DailyBriefEngine.trainingBlock(hasSplit: false, todayRoutineName: nil,
+                                                    streakDays: 0, recovery: 80))
+    }
+
+    /// Con split pero sin rutina hoy → estado de descanso, sin ritmo. La racha viaja para el copy «N días».
+    func testTrainingBlockRestDay() {
+        let tb = DailyBriefEngine.trainingBlock(hasSplit: true, todayRoutineName: nil,
+                                                streakDays: 5, recovery: 80)!
+        XCTAssertEqual(tb.state, .rest)
+        XCTAssertNil(tb.routineName)
+        XCTAssertNil(tb.pace)
+        XCTAssertNil(tb.paceCopy)
+        XCTAssertEqual(tb.streakDays, 5)
+    }
+
+    /// Día de entreno con recuperación alta (≥ greenCut) → ritmo «sube» + su línea.
+    func testTrainingBlockTrainingDayDialUp() {
+        let tb = DailyBriefEngine.trainingBlock(hasSplit: true, todayRoutineName: "Empuje",
+                                                streakDays: 4, recovery: 80)!
+        XCTAssertEqual(tb.state, .training)
+        XCTAssertEqual(tb.routineName, "Empuje")
+        XCTAssertEqual(tb.streakDays, 4)
+        XCTAssertEqual(tb.pace, .up)
+        XCTAssertNotNil(tb.paceCopy)
+    }
+
+    /// Recuperación en banda media (entre redCut y greenCut) → ritmo «mantén».
+    func testTrainingBlockTrainingDayHold() {
+        let tb = DailyBriefEngine.trainingBlock(hasSplit: true, todayRoutineName: "Pierna",
+                                                streakDays: 1, recovery: 50)!
+        XCTAssertEqual(tb.pace, .hold)
+    }
+
+    /// Recuperación baja (< redCut) → ritmo «baja».
+    func testTrainingBlockTrainingDayDialBack() {
+        let tb = DailyBriefEngine.trainingBlock(hasSplit: true, todayRoutineName: "Pierna",
+                                                streakDays: 2, recovery: 20)!
+        XCTAssertEqual(tb.pace, .down)
+    }
+
+    /// Día de entreno SIN recuperación aún → el bloque sale igual (rutina + racha) pero sin línea de ritmo.
+    func testTrainingBlockTrainingDayNoRecoveryDegradesGracefully() {
+        let tb = DailyBriefEngine.trainingBlock(hasSplit: true, todayRoutineName: "Empuje",
+                                                streakDays: 4, recovery: nil)!
+        XCTAssertEqual(tb.state, .training)
+        XCTAssertEqual(tb.routineName, "Empuje")
+        XCTAssertNil(tb.pace)
+        XCTAssertNil(tb.paceCopy)
+    }
 }

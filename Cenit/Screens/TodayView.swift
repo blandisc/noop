@@ -1,6 +1,7 @@
 import SwiftUI
 import StrandDesign
 import StrandAnalytics
+import StrandTraining
 import WhoopStore
 import Foundation
 
@@ -106,6 +107,12 @@ struct TodayView: View {
     // Today's stress (0–3 autonomic proxy) for the «Estrés» tile — the same transparent model
     // StressView builds, computed once per load from `repo.displayDays` + the stored "stress" series. (FER-180)
     @State private var stress: StressModel? = nil
+
+    // «Hoy en tu plan» — el bloque puente con Entrenar al pie del brief (FER-613). Cargados en `loadAll`
+    // desde el store: si hay split, la rutina de hoy (nil = descanso) y la racha COMPARTIDA con Entrenar.
+    @State private var hasSplit = false
+    @State private var todayRoutineName: String? = nil
+    @State private var trainingStreak = 0
 
     // Support sheet (donate + contact) — always reachable from the home toolbar.
     @State private var showingSupport = false
@@ -1005,6 +1012,14 @@ struct TodayView: View {
                                      sleepMinutes: sleepMin)
     }
 
+    /// El bloque «Hoy en tu plan» (FER-613): puente con Entrenar al pie del brief. `nil` sin split (se omite).
+    private var trainingBlock: DailyBrief.TrainingBlock? {
+        DailyBriefEngine.trainingBlock(hasSplit: hasSplit,
+                                       todayRoutineName: todayRoutineName,
+                                       streakDays: trainingStreak,
+                                       recovery: repo.today?.recovery)
+    }
+
     /// El Daily Brief renderizado: titular en TINTA (el color vive en el dato, no en la palabra) que
     /// abre el porqué (`WhyVerdictSheet`, como antes la palabra del veredicto), el porqué, las viñetas
     /// tocables (FER-475) y el bloque atenuado «Más tarde hoy».
@@ -1054,9 +1069,101 @@ struct TodayView: View {
             .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
                 .strokeBorder(theme.hairline, lineWidth: 1))
 
+            if let tb = trainingBlock { trainingBlockView(tb) }
+
             laterTodaySection
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: - Bloque «Hoy en tu plan» (FER-613)
+
+    /// El bloque puente con Entrenar al pie del brief: su propia tarjeta `surface`, fiel al preview aprobado.
+    /// Día de entreno → rutina + chip de racha + línea de ritmo (color por `pace`) + «Empezar»; descanso →
+    /// «Hoy descansas». El color del ritmo (verde sube / ámbar baja) es el único dato con color, como el resto
+    /// del «Instrumento». «Empezar» enruta a Entrenar y arranca la sesión vía `TabRouter` (reusa el prefetch).
+    private func trainingBlockView(_ tb: DailyBrief.TrainingBlock) -> some View {
+        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+            Text("Hoy en tu plan").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            switch tb.state {
+            case .training:
+                HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space2) {
+                    Text(tb.routineName ?? "").font(StrandFont.title2).foregroundStyle(theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                    streakChip(tb.streakDays)
+                    Spacer(minLength: 0)
+                }
+                if let copy = tb.paceCopy {
+                    HStack(spacing: NoopMetrics.space2) {
+                        Image(systemName: paceGlyph(tb.pace)).font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(paceColor(tb.pace))
+                        Text(copy).font(StrandFont.subhead).foregroundStyle(paceColor(tb.pace))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+                Button { tabRouter.startTodayTraining() } label: {
+                    Text("Empezar").font(StrandFont.headline).foregroundStyle(theme.paperHi)
+                        .frame(maxWidth: .infinity).padding(.vertical, 14)
+                        .background(theme.ink, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .padding(.top, NoopMetrics.space1)
+                .accessibilityHint(Text("Abre Entrenar y arranca la sesión de hoy"))
+            case .rest:
+                HStack(spacing: NoopMetrics.gap) {
+                    Image(systemName: "moon.fill").font(.system(size: 16)).foregroundStyle(theme.inkSecondary)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Hoy descansas").font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
+                        Text("tu split no asigna rutina hoy").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .accessibilityElement(children: .combine)
+            }
+        }
+        .padding(NoopMetrics.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                .fill(theme.surface)
+                .shadow(color: theme.ink.opacity(0.05), radius: 1.5, x: 0, y: 1)
+        }
+        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+            .strokeBorder(theme.hairline, lineWidth: 1))
+    }
+
+    /// El chip de racha: glifo de llama + «racha N días» (singular «día» en 1). Mismo número que Entrenar.
+    private func streakChip(_ days: Int) -> some View {
+        let unit = days == 1 ? "día" : "días"
+        return HStack(spacing: 4) {
+            Image(systemName: "flame.fill").font(.system(size: 11)).foregroundStyle(theme.warning)
+            Text("racha \(days) \(unit)").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+        }
+        .padding(.horizontal, NoopMetrics.space2).padding(.vertical, 2)
+        .background(theme.paper, in: Capsule())
+        .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 0.5))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text("Racha de \(days) \(unit) en tu plan"))
+    }
+
+    /// El color del ajuste de ritmo: verde «sube», ámbar «baja», tinta secundaria «mantén» — color en el dato.
+    private func paceColor(_ pace: DailyBrief.TrainingBlock.Pace?) -> Color {
+        switch pace {
+        case .up:   return theme.verdict
+        case .down: return theme.warning
+        case .hold, .none: return theme.inkSecondary
+        }
+    }
+
+    /// El glifo del ajuste de ritmo (flecha diagonal arriba/abajo; horizontal en «mantén»).
+    private func paceGlyph(_ pace: DailyBrief.TrainingBlock.Pace?) -> String {
+        switch pace {
+        case .up:   return "arrow.up.right"
+        case .down: return "arrow.down.right"
+        case .hold, .none: return "arrow.right"
+        }
     }
 
     /// Caption «toca para saber por qué» bajo el dial (handoff, SOLO en la vista Brief con veredicto).
@@ -1134,7 +1241,8 @@ struct TodayView: View {
             Text("Más tarde hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             VStack(spacing: NoopMetrics.space2) {
                 teaserCard(time: "13:00", title: "Tu comida de hoy")
-                teaserCard(time: "18:30", title: "Tu entrenamiento de hoy")
+                // El teaser «Tu entrenamiento de hoy» se retiró: el bloque real «Hoy en tu plan» lo reemplaza
+                // (FER-613) — un placeholder «PRONTO» justo encima del bloque vivo era contradictorio.
             }
             .opacity(0.5)
             .allowsHitTesting(false)
@@ -2598,6 +2706,22 @@ struct TodayView: View {
         // FER-149) so a strap-partial night still derives, and anchors "today" to the local day so a
         // UTC-bucketed "tomorrow" row (FER-226) can't blank the tile.
         stress = StressModel(days: repo.displayDays, stored: await stressRows, todayKey: Repository.localDayKey(Date()))
+        await loadTrainingPlan()
+    }
+
+    /// Carga los insumos del bloque «Hoy en tu plan» (FER-613): el split, la rutina de hoy y la racha de
+    /// días cumpliendo el plan — esta última vía el helper compartido `TrainingStreak`, así sale EXACTAMENTE
+    /// igual que la que muestra Entrenar. Lee del mismo store que `EntrenarView.load()`.
+    private func loadTrainingPlan() async {
+        guard let store = await repo.storeHandle() else { return }
+        let sched = (try? await store.routineSchedule()) ?? []
+        let split = Dictionary(sched.map { ($0.weekday, $0.routineId) }, uniquingKeysWith: { a, _ in a })
+        let byId = Dictionary((await repo.routines()).map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        let sessions = await repo.recentSessions(limit: 200)
+        let tid = WeeklySplit.todayRoutineId(split: split, todayWeekday: Calendar.current.component(.weekday, from: Date()))
+        hasSplit = !split.isEmpty
+        todayRoutineName = tid.flatMap { byId[$0]?.name }
+        trainingStreak = TrainingStreak.streak(sessions: sessions, split: split)
     }
 
     // MARK: - 14-day trend loader (all platforms)
