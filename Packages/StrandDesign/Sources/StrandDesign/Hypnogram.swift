@@ -85,18 +85,20 @@ public struct Hypnogram: View {
     private let rowCount = 4
 
     public var body: some View {
-        HStack(spacing: 12) {
+        HStack(alignment: .top, spacing: 12) {
             if showsStageAxis { axis }
+            VStack(spacing: 6) {
             GeometryReader { geo in
                 ZStack {
-                    // faint baselines per stage row
+                    // faint dotted anchor per stage row — a quiet guide, not a grid of rules
                     ForEach(0..<rowCount, id: \.self) { rank in
                         let y = rowY(rank, in: geo.size.height)
                         Path { p in
                             p.move(to: CGPoint(x: 0, y: y))
                             p.addLine(to: CGPoint(x: geo.size.width, y: y))
                         }
-                        .stroke(InstrumentoTheme.base.hairline.opacity(0.4), lineWidth: 1)
+                        .stroke(InstrumentoTheme.base.hairline.opacity(0.5),
+                                style: StrokeStyle(lineWidth: 1, dash: [1, 5]))
                     }
 
                     // connecting risers
@@ -159,7 +161,41 @@ public struct Hypnogram: View {
                                 hoverIndex: $hoverIndex, locate: intervalIndex)
             }
             .frame(height: height)
+            timeAxis
+            }
         }
+    }
+
+    // MARK: Time axis
+    //
+    // Five evenly spaced ticks across the night's span, labelled in real wall
+    // clock when `nightStart` is known, otherwise elapsed H:MM. Anchors the
+    // trace in time — the night is no longer floating.
+    private var timeAxis: some View {
+        GeometryReader { geo in
+            ForEach(0..<5, id: \.self) { i in
+                let frac = CGFloat(i) / 4
+                let x = frac * geo.size.width
+                let label = timeLabel(origin + Double(frac) * span)
+                // tick mark sits at the exact fractional x
+                Rectangle()
+                    .fill(InstrumentoTheme.base.hairlineStrong)
+                    .frame(width: 1, height: 4)
+                    .position(x: x, y: 2)
+                // label in a fixed-width box, edge-aligned at the extremes so it
+                // reads inward from the plot edge instead of clipping it
+                let boxW: CGFloat = 60
+                let align: Alignment = i == 0 ? .leading : (i == 4 ? .trailing : .center)
+                let boxCenter: CGFloat = i == 0 ? x + boxW / 2 : (i == 4 ? x - boxW / 2 : x)
+                Text(label)
+                    .font(StrandFont.footnote)
+                    .foregroundStyle(InstrumentoTheme.base.inkTertiary)
+                    .lineLimit(1)
+                    .frame(width: boxW, alignment: align)
+                    .position(x: boxCenter, y: 12)
+            }
+        }
+        .frame(height: 18)
     }
 
     /// The interval whose horizontal span contains a local x, or the nearest.
@@ -185,11 +221,13 @@ public struct Hypnogram: View {
             ForEach(stagesTopToBottom, id: \.self) { stage in
                 Text(stage.label)
                     .font(StrandFont.footnote)
-                    .foregroundStyle(InstrumentoTheme.base.inkTertiary)
-                    .frame(maxHeight: .infinity, alignment: .center)
+                    .foregroundStyle(InstrumentoTheme.base.inkSecondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.9)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
             }
         }
-        .frame(width: 44, height: height)
+        .frame(width: 78, height: height)
     }
 
     private var stagesTopToBottom: [SleepStage] {
@@ -207,7 +245,7 @@ public struct Hypnogram: View {
     private func bandRect(for interval: SleepInterval, in size: CGSize) -> CGRect {
         let x0 = CGFloat((interval.start - origin) / span) * size.width
         let x1 = CGFloat((interval.end - origin) / span) * size.width
-        let thickness: CGFloat = 10
+        let thickness: CGFloat = 15
         let y = rowY(interval.stage.bandRank, in: size.height)
         return CGRect(x: x0, y: y - thickness / 2, width: max(2, x1 - x0), height: thickness)
     }
@@ -224,7 +262,7 @@ public struct Hypnogram: View {
                 p.addLine(to: CGPoint(x: x, y: yb))
             }
         }
-        .stroke(InstrumentoTheme.base.inkTertiary.opacity(0.5), lineWidth: 2)
+        .stroke(InstrumentoTheme.base.hairlineStrong, lineWidth: 1.5)
     }
 }
 
