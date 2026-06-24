@@ -168,6 +168,7 @@
       }
     },
     "See more in Trends": {
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -42970,6 +42971,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "Altura en centímetros"
+          }
+        }
+      }
+    },
+    "BAND": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BAND"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BANDA"
+          }
+        }
+      }
+    },
+    "APPLE": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "APPLE"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "APPLE"
+          }
+        }
+      }
+    },
+    "Source · band": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source · band"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fuente · banda"
           }
         }
       }

@@ -767,7 +767,7 @@ struct MetricInfoSheet: View {
     /// same `appleSource` signal the foot line resolves per reading, so it never lies about provenance.
     private var sourceChip: some View {
         let tint = appleSource ? theme.dataHeart : metricHue
-        return Text(appleSource ? "APPLE" : "BANDA")
+        return Text(appleSource ? "APPLE" : "BAND")
             .font(StrandFont.caption)
             .foregroundStyle(tint)
             .padding(.horizontal, 7)
@@ -1364,7 +1364,7 @@ struct MetricInfoSheet: View {
                 HStack(spacing: 7) {
                     Image(systemName: "chart.line.uptrend.xyaxis")
                         .font(.system(size: 14, weight: .medium))
-                    Text("Ver más en Tendencias")
+                    Text("See more in Trends")
                         .font(StrandFont.subhead.weight(.medium))
                 }
                 .foregroundStyle(theme.ink)
@@ -1376,7 +1376,7 @@ struct MetricInfoSheet: View {
                 )
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(Text("Ver más en Tendencias"))
+            .accessibilityLabel(Text("See more in Trends"))
             .accessibilityHint(Text("Opens the full detail"))
         } else {
             HStack {
