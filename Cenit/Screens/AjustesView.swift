@@ -18,6 +18,11 @@ import WhoopStore
 // pinned to `.dark` (a light tab can't host a dark screen without breaking the status bar — same
 // bridge Cuerpo/Today use). Those go light in FER-338 / FER-69 / FER-67.
 //
+// Pulir pass (handoff «Pulir App Cenit»): profile steppers → wheels; HR-max auto/manual sheet;
+// WHOOP 5/MG experimental moved off «Tu banda» into a new «Avanzado» sheet; the lower list grouped
+// with overlines + subtitles; a privacy chip + gear icon in the header; Disconnect demoted to a text
+// link behind a confirmation. Pure presentation — no store/state contracts change.
+//
 // Explore · Compare · Workouts are NOT here: they already open from Cuerpo's footer; the old «Más»
 // duplicate is gone.
 
@@ -37,6 +42,12 @@ struct AjustesView: View {
 /// in its own issue (Datos y fuentes → FER-338, Automatizaciones → FER-69, Acerca de y soporte → FER-67).
 private enum AjustesDarkScreen: String, Identifiable {
     case dataSources, automations, support
+    var id: String { rawValue }
+}
+
+/// Which profile value the wheel sheet is editing (A1).
+private enum ProfileWheel: String, Identifiable {
+    case age, weight, height
     var id: String { rawValue }
 }
 
@@ -67,22 +78,22 @@ private struct AjustesLanding: View {
     // Sheet drivers.
     @State private var showUnits = false
     @State private var showLog = false
+    @State private var showAdvanced = false
+    @State private var showMaxHR = false
+    @State private var profileWheel: ProfileWheel? = nil
     @State private var darkScreen: AjustesDarkScreen? = nil
+    @State private var confirmDisconnect = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Settings").font(StrandFont.title1).foregroundStyle(theme.ink)
-                    Text("Your numbers, your strap, and how Cénit works. All on this iPhone.")
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .padding(.bottom, -8)
+                header
 
                 profileSection
                 strapSection
                 moreSection
+
+                footer
             }
             .padding(.top, 20)
             .padding(.horizontal, NoopMetrics.screenPadding)
@@ -96,23 +107,68 @@ private struct AjustesLanding: View {
         .sheet(isPresented: $showLog) {
             StrapLogSheet().instrumentoTheme(theme).environmentObject(live)
         }
+        .sheet(isPresented: $showAdvanced) {
+            AdvancedSheet().instrumentoTheme(theme).environmentObject(live).environmentObject(model)
+        }
+        .sheet(isPresented: $showMaxHR) {
+            MaxHRSheet().instrumentoTheme(theme).environmentObject(profile)
+        }
+        .sheet(item: $profileWheel) { wheel in
+            ProfileWheelSheet(wheel: wheel).instrumentoTheme(theme).environmentObject(profile)
+        }
         .sheet(item: $darkScreen) { screen in darkSheet(screen) }
+        .confirmationDialog("Disconnect strap?", isPresented: $confirmDisconnect, titleVisibility: .visible) {
+            Button("Disconnect", role: .destructive) { model.disconnect() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("It will stop streaming until you re-scan. Your saved data isn't touched.")
+        }
     }
 
-    // MARK: - Profile
+    // MARK: - Header (A6: gear icon + title, privacy chip)
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Image(systemName: "gearshape.fill")
+                    .font(.system(size: 22, weight: .regular)).foregroundStyle(theme.inkSecondary)
+                Text("Settings").font(StrandFont.title1).foregroundStyle(theme.ink)
+            }
+            privacyChip
+        }
+        .padding(.bottom, -8)
+    }
+
+    /// «En este iPhone · sin cuenta · sin nube» — the offline promise, made visible (A6).
+    private var privacyChip: some View {
+        Text("On this iPhone · no account · no cloud")
+            .font(StrandFont.caption).foregroundStyle(theme.positiveText)
+            .padding(.horizontal, 10).padding(.vertical, 5)
+            .background(
+                Capsule(style: .continuous).fill(theme.dataRecovery.opacity(0.12))
+            )
+            .accessibilityLabel("Everything stays on this iPhone. No account, no cloud.")
+    }
+
+    // MARK: - Footer (A6: the offline promise, restated)
+
+    private var footer: some View {
+        Text("Cénit \(appVersion) · everything is computed on your iPhone · no account · no server")
+            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.top, 8)
+    }
+
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+    }
+
+    // MARK: - Profile (A1: steppers → wheels; A2: HR-max → sheet)
 
     private var profileSection: some View {
         section("Profile") {
-            formRow("Age") {
-                HStack(spacing: 12) {
-                    Text("\(profile.age)")
-                        .font(StrandFont.bodyNumber).foregroundStyle(theme.ink)
-                        .frame(minWidth: 28, alignment: .trailing)
-                    Stepper("Age", value: $profile.age, in: 13...100)
-                        .labelsHidden().tint(theme.inkSecondary)
-                        .accessibilityLabel("Age, \(profile.age) years")
-                }
-            }
+            valueRow("Age", value: "\(profile.age)",
+                     a11y: "Age, \(profile.age) years") { profileWheel = .age }
             divider
             formRow("Sex") {
                 Picker("Sex", selection: $profile.sex) {
@@ -124,95 +180,32 @@ private struct AjustesLanding: View {
                 .accessibilityLabel("Sex")
             }
             divider
-            formRow("Weight") {
-                if unitSystem == .imperial { poundsField(weightKg: $profile.weightKg) }
-                else { measureField(value: $profile.weightKg, unit: "kg", range: 30...250, step: 0.5,
-                                    format: "%.1f", accessibility: "Weight in kilograms") }
-            }
+            valueRow("Weight", value: weightDisplay,
+                     a11y: "Weight, \(weightDisplay)") { profileWheel = .weight }
             divider
-            formRow("Height") {
-                if unitSystem == .imperial { feetInchesField(heightCm: $profile.heightCm) }
-                else { measureField(value: $profile.heightCm, unit: "cm", range: 120...230, step: 1,
-                                    format: "%.0f", accessibility: "Height in centimetres") }
-            }
+            valueRow("Height", value: heightDisplay,
+                     a11y: "Height, \(heightDisplay)") { profileWheel = .height }
             divider
-            formRow("Max heart rate") {
-                VStack(alignment: .trailing, spacing: 4) {
-                    HStack(spacing: 8) { hrMaxField
-                        Text("bpm").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    }
-                    Text(profile.hrMaxOverride > 0 ? "Manual override"
-                         : "Auto · \(profile.hrMax) bpm (Tanaka)")
-                        .font(StrandFont.footnote)
-                        .foregroundStyle(profile.hrMaxOverride > 0 ? theme.dataRecovery : theme.inkTertiary)
-                }
-            }
+            valueRow("Max heart rate", value: maxHRDisplay,
+                     a11y: "Maximum heart rate, \(maxHRDisplay)") { showMaxHR = true }
         }
     }
 
-    /// Numeric weight/height field: tabular value + small +/- stepper.
-    private func measureField(value: Binding<Double>, unit: String, range: ClosedRange<Double>,
-                              step: Double, format: String, accessibility: String) -> some View {
-        HStack(spacing: 10) {
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(String(format: format, value.wrappedValue))
-                    .font(StrandFont.bodyNumber).foregroundStyle(theme.ink)
-                    .frame(minWidth: 48, alignment: .trailing)
-                Text(unit).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            }
-            Stepper(accessibility, value: value, in: range, step: step)
-                .labelsHidden().tint(theme.inkSecondary).accessibilityLabel(accessibility)
-        }
+    private var weightDisplay: String {
+        unitSystem == .imperial
+            ? "\(Int(UnitFormatter.kgToPounds(profile.weightKg).rounded())) lb"
+            : String(format: "%.1f kg", profile.weightKg)
+    }
+    private var heightDisplay: String {
+        UnitFormatter.heightFromCentimeters(profile.heightCm, system: unitSystem)
+    }
+    private var maxHRDisplay: String {
+        profile.hrMaxOverride > 0
+            ? "\(profile.hrMaxOverride) bpm"
+            : String(localized: "Auto · \(profile.hrMax) bpm")
     }
 
-    /// Imperial weight entry: shows pounds, steps in 1-lb increments, writes the kg equivalent back.
-    private func poundsField(weightKg: Binding<Double>) -> some View {
-        let lb = Binding<Double>(
-            get: { UnitFormatter.kgToPounds(weightKg.wrappedValue) },
-            set: { weightKg.wrappedValue = $0 / UnitFormatter.poundsPerKilogram })
-        return HStack(spacing: 10) {
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(String(format: "%.0f", lb.wrappedValue))
-                    .font(StrandFont.bodyNumber).foregroundStyle(theme.ink)
-                    .frame(minWidth: 48, alignment: .trailing)
-                Text("lb").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            }
-            Stepper("Weight in pounds", value: lb, in: 66...551, step: 1)
-                .labelsHidden().tint(theme.inkSecondary)
-                .accessibilityLabel("Weight, \(Int(lb.wrappedValue.rounded())) pounds")
-        }
-    }
-
-    /// Imperial height entry: shows feet′ inches″, steps in whole inches, writes the cm equivalent back.
-    private func feetInchesField(heightCm: Binding<Double>) -> some View {
-        let inches = Binding<Double>(
-            get: { UnitFormatter.cmToInches(heightCm.wrappedValue).rounded() },
-            set: { heightCm.wrappedValue = $0 * UnitFormatter.centimetersPerInch })
-        let parts = UnitFormatter.cmToFeetInches(heightCm.wrappedValue)
-        return HStack(spacing: 10) {
-            Text("\(parts.feet)′ \(parts.inches)″")
-                .font(StrandFont.bodyNumber).foregroundStyle(theme.ink)
-                .frame(minWidth: 56, alignment: .trailing)
-            Stepper("Height in inches", value: inches, in: 47...91, step: 1)
-                .labelsHidden().tint(theme.inkSecondary)
-                .accessibilityLabel("Height, \(parts.feet) feet \(parts.inches) inches")
-        }
-    }
-
-    /// HR-max override: 0 = auto. Compact tabular value + stepper.
-    private var hrMaxField: some View {
-        HStack(spacing: 10) {
-            Text(profile.hrMaxOverride > 0 ? "\(profile.hrMaxOverride)" : "Auto")
-                .font(StrandFont.bodyNumber)
-                .foregroundStyle(profile.hrMaxOverride > 0 ? theme.ink : theme.inkTertiary)
-                .frame(minWidth: 44, alignment: .trailing)
-            Stepper("Max heart rate override", value: $profile.hrMaxOverride, in: 0...230, step: 1)
-                .labelsHidden().tint(theme.inkSecondary)
-                .accessibilityLabel("Max heart rate override, \(profile.hrMaxOverride == 0 ? "automatic" : "\(profile.hrMaxOverride) \(String(localized: "bpm"))")")
-        }
-    }
-
-    // MARK: - Your strap
+    // MARK: - Your strap (A4: status + action + log only; A7: disconnect demoted)
 
     private var strapSection: some View {
         section("Your strap") {
@@ -231,13 +224,11 @@ private struct AjustesLanding: View {
             Text(strapStatusDetail).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            HStack(spacing: 10) {
+            HStack(spacing: 16) {
                 QuietButton("Re-scan") { model.scan() }
-                Button { model.disconnect() } label: {
-                    Text("Disconnect").font(StrandFont.headline)
-                        .foregroundStyle((!live.connected && !live.bonded) ? theme.inkTertiary : theme.critical)
-                        .padding(.horizontal, 18).padding(.vertical, 10)
-                        .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                Button { confirmDisconnect = true } label: {
+                    Text("Disconnect").font(StrandFont.subhead)
+                        .foregroundStyle((!live.connected && !live.bonded) ? theme.inkDim : theme.inkTertiary)
                 }
                 .buttonStyle(.plain)
                 .disabled(!live.connected && !live.bonded)
@@ -247,55 +238,40 @@ private struct AjustesLanding: View {
 
             divider
             navRow("Strap log") { showLog = true }
-            divider
-            experimentalRows
         }
     }
 
-    /// Opt-in WHOOP 5/MG probes — kept on the root (one toggle), per the approved preview; the
-    /// frame-capture toggle + export sit just under it (they only matter to a 5/MG owner).
-    @ViewBuilder private var experimentalRows: some View {
-        Toggle(isOn: $puffinExperiments) {
-            Text("WHOOP 5/MG protocol probes").font(StrandFont.body).foregroundStyle(theme.ink)
-        }
-        .toggleStyle(.instrumento).padding(.vertical, 4)
-        Text("On a 5/MG connection Cénit sends a probe after the handshake and logs what comes back. No effect on WHOOP 4.0.")
-            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            .fixedSize(horizontal: false, vertical: true)
-
-        Toggle(isOn: $puffinCapture) {
-            Text("Record 5/MG frames to a file").font(StrandFont.body).foregroundStyle(theme.ink)
-        }
-        .toggleStyle(.instrumento).padding(.vertical, 4)
-        if live.puffinCaptureCount > 0 {
-            HStack(spacing: 10) {
-                Text("\(live.puffinCaptureCount) frame\(live.puffinCaptureCount == 1 ? "" : "s") captured this session.")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                Spacer(minLength: 0)
-                QuietButton("Export…") { exportPuffinCaptures() }
-            }
-            .padding(.top, 2)
-        }
-    }
-
-    private func exportPuffinCaptures() {
-        model.ble.flushPuffinCaptures()
-        guard let src = live.puffinCaptureURL else { return }
-        FileExport.exportFile(at: src)
-    }
-
-    // MARK: - More (drill rows)
+    // MARK: - More (A5: grouped drill rows with overlines + subtitles)
 
     private var moreSection: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            navRow("Units & format") { showUnits = true }
-            divider
-            navRow("Data & sources") { darkScreen = .dataSources }
-            divider
-            navRow("Automations") { darkScreen = .automations }
-            divider
-            navRow("About & support") { darkScreen = .support }
+        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            section("App") {
+                navRow("Units & format", subtitle: unitsSubtitle) { showUnits = true }
+                divider
+                navRow("Automations", subtitle: Text("Zone alerts, reminders")) { darkScreen = .automations }
+            }
+            section("Data") {
+                navRow("Data & sources", subtitle: Text("WHOOP · Apple Health · backup")) { darkScreen = .dataSources }
+            }
+            section("More") {
+                navRow("Advanced", subtitle: Text("WHOOP 5/MG probes, frames")) { showAdvanced = true }
+                divider
+                navRow("About & support",
+                       subtitle: Text("Version \(appVersion) · help · licenses")) { darkScreen = .support }
+            }
         }
+    }
+
+    /// Live units summary, e.g. «Metric · °C» (A5).
+    private var unitsSubtitle: Text {
+        let sys = Text(unitSystem == .metric ? "Metric" : "Imperial")
+        let temp: String
+        switch temperatureRaw {
+        case TemperatureUnit.celsius.rawValue:    temp = "°C"
+        case TemperatureUnit.fahrenheit.rawValue: temp = "°F"
+        default:                                  temp = "°C/°F"
+        }
+        return sys + Text(verbatim: " · \(temp)")
     }
 
     // MARK: - Strap status helpers (mirror SettingsView)
@@ -320,6 +296,7 @@ private struct AjustesLanding: View {
         if live.bonded { return String(localized: "Previously paired but not currently connected. Re-scan to reconnect.") }
         return String(localized: "No strap connected. Put your WHOOP nearby and tap Re-scan to pair.")
     }
+
     // MARK: - Section scaffolding (Instrumento: overline + rows on paper, no card-in-card)
 
     @ViewBuilder
@@ -344,19 +321,45 @@ private struct AjustesLanding: View {
         .frame(minHeight: 36)
     }
 
-    /// A quiet drill row: ink label + chevron, whole row tappable, opens a sheet.
-    private func navRow(_ label: LocalizedStringKey, open: @escaping () -> Void) -> some View {
+    /// A label-left / value + chevron row that opens a wheel sheet (A1/A2).
+    private func valueRow(_ label: LocalizedStringKey, value: String, a11y: String,
+                          open: @escaping () -> Void) -> some View {
         Button(action: open) {
             HStack(spacing: 12) {
                 Text(label).font(StrandFont.body).foregroundStyle(theme.ink)
                 Spacer(minLength: 8)
+                Text(value).font(StrandFont.bodyNumber).foregroundStyle(theme.ink)
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
-            .frame(minHeight: 40)
+            .frame(minHeight: 44)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(a11y)
+        .accessibilityHint("Opens a picker")
+    }
+
+    /// A quiet drill row: ink label (+ optional subtitle) + chevron, whole row tappable.
+    private func navRow(_ label: LocalizedStringKey, subtitle: Text? = nil,
+                        open: @escaping () -> Void) -> some View {
+        Button(action: open) {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(label).font(StrandFont.body).foregroundStyle(theme.ink)
+                    if let subtitle {
+                        subtitle.font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    }
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+            }
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
     }
 
     // MARK: - Sibling sheet (DataSources is light · Automations / Support still dark, pinned to .dark)
@@ -431,6 +434,229 @@ private struct AjustesLanding: View {
             .environmentObject(autoBackup)
             .preferredColorScheme(.light)
         }
+    }
+}
+
+// MARK: - Profile wheel (A1: a focused wheel for Age / Weight / Height)
+
+/// «Editar perfil» — a single value behind a `Picker(.wheel)`, honouring the imperial display
+/// preference (the wheel itself shows lb / ft·in and writes the SI equivalent back). Replaces the
+/// per-row steppers on the landing. Stored data is unchanged; only how it's entered.
+private struct ProfileWheelSheet: View {
+    let wheel: ProfileWheel
+    @Environment(\.instrumentoTheme) private var theme
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var profile: ProfileStore
+    @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
+    private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Profile").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text(title).font(StrandFont.title1).foregroundStyle(theme.ink)
+            }
+
+            wheelBody
+                .frame(maxWidth: .infinity)
+
+            Spacer(minLength: 0)
+        }
+        .padding(NoopMetrics.screenPadding)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(theme.paper.ignoresSafeArea())
+        .presentationDetents([.medium])
+    }
+
+    private var title: LocalizedStringKey {
+        switch wheel {
+        case .age: return "Age"
+        case .weight: return "Weight"
+        case .height: return "Height"
+        }
+    }
+
+    @ViewBuilder private var wheelBody: some View {
+        switch wheel {
+        case .age:
+            Picker("Age", selection: $profile.age) {
+                ForEach(13...100, id: \.self) { Text("\($0)").tag($0) }
+            }
+            .pickerStyle(.wheel).labelsHidden().tint(theme.ink)
+        case .weight:
+            if unitSystem == .imperial {
+                let pounds = Binding<Double>(
+                    get: { UnitFormatter.kgToPounds(profile.weightKg) },
+                    set: { profile.weightKg = UnitFormatter.poundsToKg($0) })
+                let opts = Array(stride(from: 66.0, through: 551.0, by: 1))
+                let lb = snapped(pounds, options: opts)
+                Picker("Weight in pounds", selection: lb) {
+                    ForEach(opts, id: \.self) { Text("\(Int($0)) lb").tag($0) }
+                }
+                .pickerStyle(.wheel).labelsHidden().tint(theme.ink)
+            } else {
+                let opts = Array(stride(from: 30.0, through: 250.0, by: 0.5))
+                let kg = snapped($profile.weightKg, options: opts)
+                Picker("Weight in kilograms", selection: kg) {
+                    ForEach(opts, id: \.self) { Text(String(format: "%.1f kg", $0)).tag($0) }
+                }
+                .pickerStyle(.wheel).labelsHidden().tint(theme.ink)
+            }
+        case .height:
+            if unitSystem == .imperial {
+                let inchesValue = Binding<Double>(
+                    get: { UnitFormatter.cmToInches(profile.heightCm).rounded() },
+                    set: { profile.heightCm = $0 * UnitFormatter.centimetersPerInch })
+                let opts = Array(stride(from: 47.0, through: 91.0, by: 1))
+                let inches = snapped(inchesValue, options: opts)
+                Picker("Height in inches", selection: inches) {
+                    ForEach(opts, id: \.self) { v -> Text in
+                        let ft = Int(v) / 12, inch = Int(v) % 12
+                        return Text("\(ft)′ \(inch)″")
+                    }
+                }
+                .pickerStyle(.wheel).labelsHidden().tint(theme.ink)
+            } else {
+                let opts = Array(stride(from: 120.0, through: 230.0, by: 1))
+                let cm = snapped($profile.heightCm, options: opts)
+                Picker("Height in centimetres", selection: cm) {
+                    ForEach(opts, id: \.self) { Text("\(Int($0)) cm").tag($0) }
+                }
+                .pickerStyle(.wheel).labelsHidden().tint(theme.ink)
+            }
+        }
+    }
+
+    /// A wheel-safe binding: the selection always lands on a tag in `options` (snaps the stored value
+    /// to the nearest grid point), so the picker never shows an empty selection for an off-grid value.
+    private func snapped(_ base: Binding<Double>, options: [Double]) -> Binding<Double> {
+        Binding(
+            get: { options.min(by: { abs($0 - base.wrappedValue) < abs($1 - base.wrappedValue) }) ?? base.wrappedValue },
+            set: { base.wrappedValue = $0 })
+    }
+}
+
+// MARK: - Max heart rate (A2: auto / manual)
+
+/// «FC máxima» — a focused sheet over `profile.hrMaxOverride` (0 = auto). The segmented control is pure
+/// UI sugar on that one value: Auto shows the Tanaka estimate large; Manual reveals a wheel writing the
+/// override (and notes it's anulando the auto estimate).
+private struct MaxHRSheet: View {
+    @Environment(\.instrumentoTheme) private var theme
+    @EnvironmentObject private var profile: ProfileStore
+    /// Local mode toggle. Drives the override: Auto → 0; Manual → keep/seed a concrete bpm.
+    @State private var manual = false
+
+    /// The Tanaka auto estimate (208 − 0.7·age), shown in Auto and referenced in Manual.
+    private var autoBpm: Int { Int((208 - 0.7 * Double(profile.age)).rounded()) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Profile").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("Max heart rate").font(StrandFont.title1).foregroundStyle(theme.ink)
+            }
+
+            Picker("Mode", selection: $manual) {
+                Text("Automatic").tag(false)
+                Text("Manual").tag(true)
+            }
+            .pickerStyle(.segmented)
+            .onChange(of: manual) { _, isManual in
+                if isManual { if profile.hrMaxOverride == 0 { profile.hrMaxOverride = autoBpm } }
+                else { profile.hrMaxOverride = 0 }
+            }
+
+            if manual {
+                Picker("Maximum heart rate", selection: $profile.hrMaxOverride) {
+                    ForEach(100...230, id: \.self) { Text("\($0)").tag($0) }
+                }
+                .pickerStyle(.wheel).labelsHidden().tint(theme.ink)
+                .frame(maxWidth: .infinity)
+                Text("Overriding the automatic estimate (\(autoBpm)).")
+                    .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+            } else {
+                VStack(alignment: .center, spacing: 4) {
+                    Text("\(autoBpm)")
+                        .font(StrandFont.number(48)).foregroundStyle(theme.ink)
+                    Text("bpm · Tanaka").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 24)
+                Text("Estimated from your age (208 − 0.7 × age). Set it manually if you know your true max.")
+                    .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(NoopMetrics.screenPadding)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(theme.paper.ignoresSafeArea())
+        .presentationDetents([.medium])
+        .onAppear { manual = profile.hrMaxOverride > 0 }
+    }
+}
+
+// MARK: - Advanced (A3: WHOOP 5/MG experimental, moved off «Tu banda»)
+
+/// «Avanzado» — the opt-in WHOOP 5/MG protocol probes + raw-frame capture (off by default), moved out
+/// of «Tu banda» where they only mattered to a 5/MG owner. The frame Export… button lives here now,
+/// shown only when there are captured frames this session (HARD criterion: don't lose Export).
+private struct AdvancedSheet: View {
+    @Environment(\.instrumentoTheme) private var theme
+    @EnvironmentObject private var live: LiveState
+    @EnvironmentObject private var model: AppModel
+    @AppStorage(PuffinExperiment.defaultsKey) private var puffinExperiments = false
+    @AppStorage(PuffinFrameRecorder.enabledKey) private var puffinCapture = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Advanced").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("WHOOP 5/MG probes").font(StrandFont.title1).foregroundStyle(theme.ink)
+            }
+            Text("Experimental tools for the newer WHOOP 5 and MG straps. They have no effect on a WHOOP 4.0.")
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            VStack(alignment: .leading, spacing: 12) {
+                Toggle(isOn: $puffinExperiments) {
+                    Text("WHOOP 5/MG protocol probes").font(StrandFont.body).foregroundStyle(theme.ink)
+                }
+                .toggleStyle(.instrumento)
+                Text("On a 5/MG connection Cénit sends a probe after the handshake and logs what comes back. No effect on WHOOP 4.0.")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Divider().overlay(theme.hairline)
+
+                Toggle(isOn: $puffinCapture) {
+                    Text("Record 5/MG frames to a file").font(StrandFont.body).foregroundStyle(theme.ink)
+                }
+                .toggleStyle(.instrumento)
+                if live.puffinCaptureCount > 0 {
+                    HStack(spacing: 10) {
+                        Text("\(live.puffinCaptureCount) frame\(live.puffinCaptureCount == 1 ? "" : "s") captured this session.")
+                            .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                        Spacer(minLength: 0)
+                        QuietButton("Export…") { exportPuffinCaptures() }
+                    }
+                    .padding(.top, 2)
+                }
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(NoopMetrics.screenPadding)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(theme.paper.ignoresSafeArea())
+    }
+
+    private func exportPuffinCaptures() {
+        model.ble.flushPuffinCaptures()
+        guard let src = live.puffinCaptureURL else { return }
+        FileExport.exportFile(at: src)
     }
 }
 
