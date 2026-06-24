@@ -59,7 +59,9 @@ public struct Hypnogram: View {
     @Environment(\.instrumentoFlat) private var flat
 
     private static let clockFormatter: DateFormatter = {
-        let f = DateFormatter(); f.dateFormat = "HH:mm"; return f
+        // Locale-aware short time ("2:26 a. m." in es-MX, "2:26 AM" in en) so the
+        // axis reads like the rest of the app — same as Apple Health's sleep chart.
+        let f = DateFormatter(); f.timeStyle = .short; f.dateStyle = .none; return f
     }()
 
     /// Format a seconds-from-origin offset either as wall-clock (if nightStart
@@ -90,19 +92,19 @@ public struct Hypnogram: View {
             VStack(spacing: 6) {
             GeometryReader { geo in
                 ZStack {
-                    // faint dotted anchor per stage row — a quiet guide, not a grid of rules
+                    // faint anchor per stage row — a quiet guide, not a grid of rules
                     ForEach(0..<rowCount, id: \.self) { rank in
                         let y = rowY(rank, in: geo.size.height)
                         Path { p in
                             p.move(to: CGPoint(x: 0, y: y))
                             p.addLine(to: CGPoint(x: geo.size.width, y: y))
                         }
-                        .stroke(InstrumentoTheme.base.hairline.opacity(0.5),
-                                style: StrokeStyle(lineWidth: 1, dash: [1, 5]))
+                        .stroke(InstrumentoTheme.base.hairline.opacity(0.6), lineWidth: 1)
                     }
 
-                    // connecting risers
-                    risers(in: geo.size)
+                    // No connecting risers — Apple Health's sleep chart leaves the
+                    // filled bars to carry the night; the vertical staircase only
+                    // added a picket-fence that competed with the data (FER-610).
 
                     // stage bands
                     ForEach(Array(intervals.enumerated()), id: \.element.id) { idx, interval in
@@ -196,6 +198,10 @@ public struct Hypnogram: View {
             }
         }
         .frame(height: 18)
+        // The first/last ticks are onset/wake — surface that to VoiceOver as one
+        // phrase (the screen no longer draws a separate time row).
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Asleep \(timeLabel(origin)), awake \(timeLabel(origin + span))"))
     }
 
     /// The interval whose horizontal span contains a local x, or the nearest.
@@ -245,25 +251,11 @@ public struct Hypnogram: View {
     private func bandRect(for interval: SleepInterval, in size: CGSize) -> CGRect {
         let x0 = CGFloat((interval.start - origin) / span) * size.width
         let x1 = CGFloat((interval.end - origin) / span) * size.width
-        let thickness: CGFloat = 15
+        let thickness: CGFloat = 22
         let y = rowY(interval.stage.bandRank, in: size.height)
         return CGRect(x: x0, y: y - thickness / 2, width: max(2, x1 - x0), height: thickness)
     }
 
-    private func risers(in size: CGSize) -> some View {
-        Path { p in
-            for i in 0..<(intervals.count - (intervals.isEmpty ? 0 : 1)) {
-                let a = intervals[i]
-                let b = intervals[i + 1]
-                let x = CGFloat((b.start - origin) / span) * size.width
-                let ya = rowY(a.stage.bandRank, in: size.height)
-                let yb = rowY(b.stage.bandRank, in: size.height)
-                p.move(to: CGPoint(x: x, y: ya))
-                p.addLine(to: CGPoint(x: x, y: yb))
-            }
-        }
-        .stroke(InstrumentoTheme.base.hairlineStrong, lineWidth: 1.5)
-    }
 }
 
 // MARK: - Scrub gesture (touch on iOS, pointer on macOS) — FER-234

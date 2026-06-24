@@ -289,21 +289,13 @@ struct SleepDetailScreen: View {
         DetailBlock("Last night", theme: theme) {
             VStack(alignment: .leading, spacing: 14) {
                 if model.intervals.count >= 2 {
+                    // The hypnogram owns its own time axis now (onset→wake ticks across the
+                    // bottom, Apple-Health style) — no separate clock row here (FER-610).
                     Hypnogram(intervals: model.intervals,
-                              height: 150,
+                              height: 176,
                               showsStageAxis: true,
                               showsScrub: true,   // finger-drag scrub → stage + clock range + duration (FER-234)
                               nightStart: night.onsetDate)
-                    // Anchor the trace: onset on the left, wake on the right, under the plotted timeline
-                    // (the leading inset matches the hypnogram's stage-axis column). (#7)
-                    HStack {
-                        Text(night.onsetText).font(StrandFont.captionNumber).foregroundStyle(theme.inkTertiary)
-                        Spacer()
-                        Text(night.wakeText).font(StrandFont.captionNumber).foregroundStyle(theme.inkTertiary)
-                    }
-                    .padding(.leading, 56)
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel(Text("Asleep \(night.onsetText), awake \(night.wakeText)"))
                 } else {
                     // Apple Health / no per-epoch timeline → proportional stacked bar.
                     stageBar(s)
@@ -1069,13 +1061,7 @@ struct SleepDetailModel {
         let stages: Stages
 
         var onsetDate: Date { Date(timeIntervalSince1970: TimeInterval(startTs)) }
-        var onsetText: String { Self.timeFmt.string(from: Date(timeIntervalSince1970: TimeInterval(startTs))) }
-        var wakeText: String { Self.timeFmt.string(from: Date(timeIntervalSince1970: TimeInterval(endTs))) }
         var dateLabel: String { Self.dateFmt.string(from: Date(timeIntervalSince1970: TimeInterval(startTs))) }
-
-        private static let timeFmt: DateFormatter = {
-            let f = DateFormatter(); f.dateFormat = "H:mm"; return f
-        }()
         private static let dateFmt: DateFormatter = {
             let f = DateFormatter(); f.dateFormat = "EEE d MMM"; return f
         }()
