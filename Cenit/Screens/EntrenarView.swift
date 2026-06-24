@@ -111,7 +111,8 @@ private struct EntrenarLanding: View {
                         if model.strengthSession != nil { resumeRow }
                         hoyCard          // ① hero «Hoy» — first now (F10)
                         suggestionRow    // ② contextual lighter/heavier nudge
-                        weekStrip        // ③ week + streak in one card
+                        weekStrip        // ③ week progress in one card
+                        streakStrip      // ③′ the daily-adherence streak graph
                         tuPlan           // ④ plan, collapsible, single «Editar» (F5)
                         dietFooter       // ⑤ Diet as a quiet footer link (F10)
                     }
@@ -186,7 +187,9 @@ private struct EntrenarLanding: View {
         // Shared wordmark row — same lockup, size and baseline as «Tendencias»/«Patrones» so the three
         // tab titles align as you swipe. Glyph = the dock's tab icon; the recovery chip rides the trailing
         // slot, which is anchored to the title's height so it never pushes the title down.
-        InstrumentoTabHeader("Train") {
+        // `String(localized:)` so the wordmark follows the app language — the header takes a plain String,
+        // which `Text` would render verbatim, leaving «Train» in English even in Spanish. (es → «Entrenar».)
+        InstrumentoTabHeader(String(localized: "Train")) {
             Image(systemName: "figure.strengthtraining.functional")
                 .font(.system(size: 20)).foregroundStyle(theme.ink)
         } trailing: {
@@ -380,15 +383,57 @@ private struct EntrenarLanding: View {
         }
     }
 
-    /// Progress («2 of 4») plus the streak («· streak 12 days»). Built as a single `Text` so the chevron
-    /// sits flush after it.
+    /// This week's progress («2 of 4»). The streak lives in its own `streakStrip` graph below, so it's no
+    /// longer folded in here. Built as `Text` so the chevron sits flush after it.
     private var weekSummary: Text {
-        var t = Text("\(weekDoneCount) of \(weekPlannedCount)")
-        if streakDays > 0 {
-            let s = streakDays == 1 ? Text("streak 1 day") : Text("streak \(streakDays) days")
-            t = t + Text(verbatim: " · ") + s
+        Text("\(weekDoneCount) of \(weekPlannedCount)")
+    }
+
+    // MARK: - ③′ Streak strip (the daily-adherence graph)
+    //
+    // A thin DAY-level strip (no card): the count + a row of cells, one per recent day. The streak is
+    // «days keeping your plan» — you trained on a training day OR rested on a rest day (`WeeklySplit`).
+    // A rest day is kept (faint green); only a missed training day breaks the run. Tapping opens history.
+
+    private var streakStrip: some View {
+        Button { openHistory() } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .firstTextBaseline, spacing: 7) {
+                    Text("\(streakDays)").font(StrandFont.number(20, weight: .semibold)).foregroundStyle(theme.ink)
+                    Text(streakUnit).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                }
+                HStack(spacing: 3) {
+                    ForEach(Array(streakStripStates.enumerated()), id: \.offset) { _, st in streakCell(st) }
+                }
+            }
+            .padding(.horizontal, 2)
+            .contentShape(Rectangle())
         }
-        return t
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityHint(Text("See full history"))
+    }
+
+    @ViewBuilder
+    private func streakCell(_ state: WeeklySplit.DayAdherence) -> some View {
+        let shape = RoundedRectangle(cornerRadius: 4, style: .continuous)
+        Group {
+            switch state {
+            case .metTrained:   shape.fill(theme.dataRecovery)                 // trained → kept (strong)
+            case .metRest:      shape.fill(theme.dataRecovery).opacity(0.28)   // rested → kept (faint)
+            case .missed:       shape.fill(theme.hairlineStrong)               // skipped a training day
+            case .pendingToday: shape.fill(theme.paperHi).overlay(shape.strokeBorder(theme.ink, lineWidth: 1.2))  // today, awaiting
+            }
+        }
+        .frame(maxWidth: .infinity).frame(height: 18)
+    }
+
+    /// The strip shows the trailing fortnight; the count headline carries any longer run.
+    private var streakStripStates: [WeeklySplit.DayAdherence] { Array(adherenceStates.suffix(14)) }
+    private var streakUnit: String {
+        streakDays == 1 ? String(localized: "day on your plan") : String(localized: "days on your plan")
     }
 
     private func dayToken(_ st: WeeklySplit.DayStatus) -> some View {
