@@ -42618,6 +42618,38 @@
           }
         }
       }
+    },
+    "Manage routines": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage routines"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestionar rutinas"
+          }
+        }
+      }
+    },
+    "Go to My routines": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Go to My routines"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ir a Mis rutinas"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

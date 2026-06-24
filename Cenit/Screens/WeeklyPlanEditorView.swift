@@ -18,10 +18,7 @@ struct WeeklyPlanEditorView: View {
     @EnvironmentObject var repo: Repository
     @Environment(\.instrumentoTheme) private var theme
 
-    /// The one «Build» entry that navigates rather than presenting a sheet: push the exercise library
-    /// onto the Entrenar stack (owned by RootTabView).
-    var openLibrary: () -> Void
-    /// Push «Mis rutinas» — routine + folder management (FER-534).
+    /// Push «Mis rutinas» — the single home for create / import / templates / library + folders (F4).
     var openRoutines: () -> Void
 
     @State private var loaded = false
@@ -29,9 +26,6 @@ struct WeeklyPlanEditorView: View {
     @State private var folders: [RoutineFolder] = []
     /// The split as `weekday → routineId` (Calendar weekday convention, 1 = Sun … 7 = Sat).
     @State private var schedule: [Int: String] = [:]
-    @State private var builderTarget: BuilderTarget? = nil
-    @State private var showTemplates = false
-    @State private var showImport = false
 
     /// Monday-first display order in the Calendar weekday convention (2 = Mon … 1 = Sun).
     private let weekdays = [2, 3, 4, 5, 6, 7, 1]
@@ -53,7 +47,7 @@ struct WeeklyPlanEditorView: View {
                         emptyState
                     } else {
                         weekSection
-                        buildSection
+                        manageSection
                     }
                 }
             }
@@ -63,20 +57,6 @@ struct WeeklyPlanEditorView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
-        // Builder / templates / import are self-contained sheets, exactly as the Entrenar landing presents
-        // them; the theme doesn't cross the sheet boundary (FER-162), so it's injected explicitly.
-        .sheet(item: $builderTarget) { target in
-            RoutineBuilderScreen(routine: target.routine) { await load() }
-                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
-        }
-        .sheet(isPresented: $showTemplates) {
-            StarterTemplatesSheet { await load() }
-                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
-        }
-        .sheet(isPresented: $showImport) {
-            WorkoutImportView { await load() }
-                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
-        }
         .task { await load() }
     }
 
@@ -162,38 +142,27 @@ struct WeeklyPlanEditorView: View {
         }
     }
 
-    // MARK: - Build (the relocated routine tools)
+    // MARK: - Manage (single link to the routine home — F4/F5)
+    //
+    // Create / import / templates / library all live in «Mis rutinas» now; the editor only assigns a
+    // routine to each day and links there.
 
-    private var buildSection: some View {
+    private var manageSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Build").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            VStack(spacing: 0) {
-                buildRow("My routines", "list.bullet", action: openRoutines)
-                divider
-                buildRow("New routine", "plus") { builderTarget = .new }
-                divider
-                buildRow("Start from a template", "square.stack.3d.up") { showTemplates = true }
-                divider
-                buildRow("Import plan", "square.and.arrow.down") { showImport = true }
-                divider
-                buildRow("Exercise library", "book", action: openLibrary)
+            Text("Routines").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Button(action: openRoutines) {
+                HStack(spacing: 12) {
+                    Image(systemName: "list.bullet").frame(width: 30)
+                        .font(.system(size: 18)).foregroundStyle(theme.inkSecondary)
+                    Text("Manage routines").font(StrandFont.body).foregroundStyle(theme.ink)
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                }
+                .frame(minHeight: 48).contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
         }
-    }
-
-    private func buildRow(_ title: LocalizedStringKey, _ icon: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                Image(systemName: icon).frame(width: 30)
-                    .font(.system(size: 18)).foregroundStyle(theme.inkSecondary)
-                Text(title).font(StrandFont.body).foregroundStyle(theme.ink)
-                Spacer(minLength: 8)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-            }
-            .frame(minHeight: 48).contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: - Empty state (no routines yet → can't assign)
@@ -208,25 +177,12 @@ struct WeeklyPlanEditorView: View {
             Text("You need at least one routine to plan your week.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
-            VStack(spacing: 8) {
-                QuietButton("New routine") { builderTarget = .new }
-                Button { showTemplates = true } label: {
-                    Text("Start from a template")
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                }
-                .buttonStyle(.plain)
-                Button { showImport = true } label: {
-                    Text("Import plan")
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                }
-                .buttonStyle(.plain)
-                Button(action: openLibrary) {
-                    Text("Browse the exercise library")
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                }
-                .buttonStyle(.plain)
+            Button { openRoutines() } label: {
+                Text("Go to My routines").font(StrandFont.headline).foregroundStyle(theme.paperHi)
+                    .frame(maxWidth: .infinity).padding(.vertical, 15)
+                    .background(theme.ink, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
             }
-            .padding(.top, 4)
+            .buttonStyle(.plain).padding(.top, 4)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 28)

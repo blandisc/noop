@@ -290,8 +290,7 @@ struct RootTabView: View {
         case .workoutHistory: WorkoutHistoryScreen()
         case .breathe:      BreathingView()
         case .intervals:    IntervalTimerView()
-        case .weeklyPlan:   WeeklyPlanEditorView(openLibrary: { trainStack.append(SecondaryScreen.library) },
-                                                 openRoutines: { trainStack.append(SecondaryScreen.misRutinas) })
+        case .weeklyPlan:   WeeklyPlanEditorView(openRoutines: { trainStack.append(SecondaryScreen.misRutinas) })
         case .misRutinas:   MisRutinasScreen(openRoutine: { id in trainStack.append(RoutineRoute(routineId: id)) },
                                              openLibrary: { trainStack.append(SecondaryScreen.library) })
         case .routineToday: RutinaDeHoyScreen(routineId: nil)
