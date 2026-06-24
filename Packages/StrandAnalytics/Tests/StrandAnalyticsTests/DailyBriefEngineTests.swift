@@ -177,4 +177,62 @@ final class DailyBriefEngineTests: XCTestCase {
         XCTAssertNil(tb.pace)
         XCTAssertNil(tb.paceCopy)
     }
+
+    // MARK: - «La conexión de hoy» (FER-614)
+
+    /// Construye un Insight de correlación sintético (como los que emite InsightEngine para el par A·B).
+    private func corr(_ metric: String, r: Double, significant: Bool, relevance: Double = 1) -> Insight {
+        Insight(kind: .correlation, title: "", reading: "",
+                datum: InsightDatum(value: r, unit: "r", metric: metric),
+                evidence: InsightEvidence(n: 28, pValue: 0.01, pAdjusted: 0.02, effectSize: r, significant: significant),
+                confidence: significant ? .candidate : .medium, relevance: relevance)
+    }
+
+    /// Sin insights → no hay conexión.
+    func testConnectionEmptyReturnsNil() {
+        XCTAssertNil(DailyBriefEngine.connection(insights: []))
+    }
+
+    /// Una correlación NO significativa no sube al brief (hedge honesto).
+    func testConnectionNonSignificantReturnsNil() {
+        XCTAssertNil(DailyBriefEngine.connection(insights: [corr("HRV·Recuperación", r: 0.2, significant: false)]))
+    }
+
+    /// Correlación directa (r≥0): nombra las dos señales, dirección «van de la mano», sin jerga (sin r/n).
+    func testConnectionDirectNamesBothSignals() {
+        let c = DailyBriefEngine.connection(insights: [corr("Sueño·Recuperación", r: 0.45, significant: true)])!
+        XCTAssertEqual(c.text, "Tu Sueño y tu Recuperación van de la mano")
+        XCTAssertEqual(c.insight.datum.metric, "Sueño·Recuperación")
+        XCTAssertFalse(c.text.contains("r="))
+        XCTAssertFalse(c.text.contains("n="))
+    }
+
+    /// Correlación inversa (r<0): dirección «se mueven al revés».
+    func testConnectionInversePhrasing() {
+        let c = DailyBriefEngine.connection(insights: [corr("FC en reposo·Recuperación", r: -0.4, significant: true)])!
+        XCTAssertEqual(c.text, "Tu FC en reposo y tu Recuperación se mueven al revés")
+    }
+
+    /// Elige la PRIMERA correlación significativa (la lista ya viene rankeada), saltando las no significativas
+    /// y los insights que no son correlación.
+    func testConnectionPicksFirstSignificantCorrelation() {
+        let behavior = Insight(kind: .behavior, title: "", reading: "",
+                               datum: InsightDatum(value: 8, unit: "pts", metric: "Recuperación"),
+                               evidence: InsightEvidence(n: 20, pValue: 0.01, pAdjusted: 0.02, effectSize: 0.6, significant: true),
+                               confidence: .candidate, relevance: 3)
+        let insights = [behavior,
+                        corr("HRV·Recuperación", r: 0.1, significant: false),
+                        corr("Sueño·Recuperación", r: 0.5, significant: true)]
+        let c = DailyBriefEngine.connection(insights: insights)!
+        XCTAssertEqual(c.insight.datum.metric, "Sueño·Recuperación")
+    }
+
+    /// `connectionText` solo aplica a correlaciones.
+    func testConnectionTextNonCorrelationReturnsNil() {
+        let trend = Insight(kind: .trend, title: "", reading: "",
+                            datum: InsightDatum(value: 5, unit: "pts", metric: "Recuperación"),
+                            evidence: InsightEvidence(n: 14, pValue: nil, pAdjusted: nil, effectSize: nil, significant: false),
+                            confidence: .medium, relevance: 1)
+        XCTAssertNil(DailyBriefEngine.connectionText(for: trend))
+    }
 }

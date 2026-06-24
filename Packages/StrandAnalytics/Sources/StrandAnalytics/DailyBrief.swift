@@ -346,3 +346,45 @@ extension DailyBriefEngine {
                                         pace: pace, paceCopy: paceCopy)
     }
 }
+
+// MARK: - «La conexión de hoy» — la correlación más relevante en una frase (FER-614)
+//
+// La fase 2 del «Daily Brief inteligente» (épico FER-612): un renglón que cruza dos señales. NO es
+// matemática nueva — consume los `Insight` que `InsightEngine` ya rankeó (con FDR/efecto), elige a lo más UNA
+// correlación significativa (la más relevante, que ya viene primero en la lista) y la traduce a una frase
+// es-MX SIN jerga (sin r ni n). El detalle a fondo vive en Patrones: la UI lleva el `Insight` elegido para
+// hacer deep-link. Hedge honesto: sin correlación significativa, no hay conexión (la UI omite el renglón).
+
+extension DailyBrief {
+    /// La «conexión de hoy»: una correlación significativa entre dos señales, lista para el renglón del brief.
+    public struct Connection: Sendable, Equatable {
+        /// La frase es-MX, sin jerga estadística (p. ej. «Tu Sueño y tu Recuperación van de la mano»).
+        public let text: String
+        /// La correlación elegida — la UI la usa para abrir su detalle/patrón en Patrones (deep-link).
+        public let insight: Insight
+
+        public init(text: String, insight: Insight) { self.text = text; self.insight = insight }
+    }
+}
+
+extension DailyBriefEngine {
+
+    /// Elige la «conexión de hoy» de la lista YA rankeada por `InsightEngine.generate` (significativas primero,
+    /// luego por efecto): la primera correlación significativa. `nil` si no hay ninguna sólida — nunca inventa.
+    public static func connection(insights: [Insight]) -> DailyBrief.Connection? {
+        guard let top = insights.first(where: { $0.kind == .correlation && $0.evidence.significant }),
+              let text = connectionText(for: top) else { return nil }
+        return DailyBrief.Connection(text: text, insight: top)
+    }
+
+    /// Traduce una correlación a una frase es-MX que nombra las dos señales y la dirección, sin jerga. Devuelve
+    /// `nil` si el insight no es una correlación o si su `metric` no trae las dos señales («A·B»). La dirección
+    /// sale del signo de `effectSize` (r): r≥0 → «van de la mano»; r<0 → «se mueven al revés».
+    static func connectionText(for insight: Insight) -> String? {
+        guard insight.kind == .correlation else { return nil }
+        let parts = insight.datum.metric.split(separator: "·").map(String.init)
+        guard parts.count == 2 else { return nil }
+        let direct = (insight.evidence.effectSize ?? 0) >= 0
+        return "Tu \(parts[0]) y tu \(parts[1]) \(direct ? "van de la mano" : "se mueven al revés")"
+    }
+}
