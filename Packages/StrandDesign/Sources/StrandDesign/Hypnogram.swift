@@ -87,7 +87,7 @@ public struct Hypnogram: View {
     private let rowCount = 4
 
     public var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 8) {
             if showsStageAxis { axis }
             VStack(spacing: 6) {
             GeometryReader { geo in
@@ -233,7 +233,7 @@ public struct Hypnogram: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
             }
         }
-        .frame(width: 78, height: height)
+        .frame(width: 60, height: height)
     }
 
     private var stagesTopToBottom: [SleepStage] {
