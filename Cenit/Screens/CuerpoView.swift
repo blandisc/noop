@@ -350,11 +350,12 @@ private struct CuerpoLanding: View {
         .accessibilityLabel("Tendencias")
     }
 
-    /// Today as «JUE 12 JUN» (es-MX, uppercased by the header) — same treatment as «Patrones».
+    /// Today as «THU 12 JUN» / «JUE 12 JUN» — follows the app language (`.current`), uppercased by the
+    /// header. Same treatment as «Patrones» (FER-472): the date localizes with the rest of the screen.
     private static var dateLabel: String { dateHeader.string(from: Date()) }
 
     private static let dateHeader: DateFormatter = {
-        let f = DateFormatter(); f.locale = Locale(identifier: "es_MX"); f.dateFormat = "EEE d MMM"; return f
+        let f = DateFormatter(); f.locale = .current; f.dateFormat = "EEE d MMM"; return f
     }()
 
     // MARK: - Period selector (FER-566) — re-windows every sparkline on the landing
@@ -507,7 +508,7 @@ private struct CuerpoLanding: View {
             .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
                 .strokeBorder(theme.hairline, lineWidth: 1))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05)))
         .accessibilityHint("Opens the muscle map.")
     }
 
@@ -855,7 +856,7 @@ private struct CuerpoLanding: View {
                 }
                 .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(ControlPressStyle())
         }
     }
 
@@ -918,7 +919,7 @@ private struct CuerpoLanding: View {
             .frame(maxWidth: .infinity)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05)))
         .accessibilityElement(children: .combine)
         .accessibilityHint("Opens the per-sport detail.")
     }

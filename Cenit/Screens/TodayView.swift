@@ -405,8 +405,8 @@ struct TodayView: View {
         resolveMeasured { $0.restingHr.map(Double.init) }?.value ?? StrainScorer.defaultRestingHR
     }
 
-    /// The "Ver más" hand-off for a metric: returns nil when there's no rich detail destination yet
-    /// (SpO₂ / Heart Rate → no link shown). Otherwise returns a closure that defers presenting
+    /// The "Ver más" hand-off for a metric: returns nil only for metrics without a rich detail
+    /// destination (the `default` case). Otherwise returns a closure that defers presenting
     /// the rich detail until the summary dismisses (`pendingSeeMore` + `metricDetail = nil`). The detail
     /// reuses the SAME static factories / specs Cuerpo uses, so it's identical from both tabs. (FER-251)
     private func seeMoreAction(for id: String) -> (() -> Void)? {
