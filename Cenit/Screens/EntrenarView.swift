@@ -87,6 +87,9 @@ private struct EntrenarLanding: View {
     @State private var pendingMobility: (name: String, slots: [StrengthSessionModel.PlanSlot])? = nil
     /// Drives the Recovery Detail sheet opened from the recovery chip (FER-557).
     @State private var recoveryDetail: RecoveryDetailItem? = nil
+    /// The Daily Brief's «Empezar» arrived (via `TabRouter`) before this view finished loading its
+    /// prefetched slots — start today's session as soon as `load()` completes (FER-613).
+    @State private var startWhenLoaded = false
 
     private enum StartKind { case routine, intervals, breathe, live }
     /// What the rest sheet can launch. `mobility` is a one-off guided session (not saved to the plan).
@@ -179,6 +182,21 @@ private struct EntrenarLanding: View {
             }
         }
         .task { await load() }
+        // The Daily Brief's «Hoy en tu plan» → «Empezar» lands here via TabRouter: start today's session
+        // reusing the slots this view prefetched on load (FER-613). Consumed once; if we're not loaded yet,
+        // defer until `load()` finishes.
+        .onAppear { if tabRouter.startTodaySession { consumeBriefStart() } }
+        .onChange(of: tabRouter.startTodaySession) { _, requested in
+            if requested { consumeBriefStart() }
+        }
+    }
+
+    /// Consume the one-shot start request from the Daily Brief. Reuses `startToday()` (the same path as the
+    /// hero «Empezar», so the prefetched slots and the «empty routine → edit» / «rest → sheet» fallbacks all
+    /// hold). Defers until loaded so the prefetch is ready.
+    private func consumeBriefStart() {
+        tabRouter.startTodaySession = false
+        if loaded { startToday() } else { startWhenLoaded = true }
     }
 
     // MARK: - Header + recovery chip
@@ -809,32 +827,10 @@ private struct EntrenarLanding: View {
                                                strain: s.strain, avgHr: s.avgHr, routineName: name))
     }
 
-    /// Local day-starts with ≥1 completed session — the lookup the daily streak reads.
-    private var completedDayStarts: Set<Date> {
-        let cal = Calendar.current
-        var out = Set<Date>()
-        for s in sessions where s.endTs != nil {
-            out.insert(cal.startOfDay(for: Date(timeIntervalSince1970: TimeInterval(s.startTs))))
-        }
-        return out
-    }
-
-    /// «Días cumpliendo el plan» over a bounded trailing window (oldest → newest, last = today). A day is a
-    /// training day if the CURRENT split assigns its weekday, trained if a session completed that day. The
-    /// window only bounds the loop — the streak itself stops at the most recent missed training day.
-    private static let streakWindowDays = 120
+    /// «Días cumpliendo el plan» — delega en el helper compartido `TrainingStreak` para que el número sea
+    /// EXACTAMENTE el mismo que muestra el bloque «Hoy en tu plan» del Daily Brief (FER-613).
     private var adherenceStates: [WeeklySplit.DayAdherence] {
-        let cal = Calendar.current
-        let today = cal.startOfDay(for: Date())
-        let done = completedDayStarts
-        var plans: [WeeklySplit.DayPlan] = []
-        plans.reserveCapacity(Self.streakWindowDays)
-        for offset in stride(from: Self.streakWindowDays - 1, through: 0, by: -1) {
-            guard let day = cal.date(byAdding: .day, value: -offset, to: today) else { continue }
-            let wd = cal.component(.weekday, from: day)
-            plans.append(.init(isTrainingDay: split[wd] != nil, trained: done.contains(day)))
-        }
-        return WeeklySplit.dailyAdherence(days: plans, includesToday: true)
+        TrainingStreak.adherenceStates(sessions: sessions, split: split)
     }
     private var streakDays: Int { WeeklySplit.adherenceStreak(adherenceStates) }
 
@@ -896,6 +892,8 @@ private struct EntrenarLanding: View {
         todaySlots = slots
         sessions = (try? await store.recentSessions(limit: 200)) ?? []
         loaded = true
+        // A «Empezar» from the Daily Brief that arrived before the prefetch finished now has its slots (FER-613).
+        if startWhenLoaded { startWhenLoaded = false; startToday() }
     }
 }
 
