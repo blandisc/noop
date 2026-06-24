@@ -880,51 +880,6 @@ private struct RecoveryChipRing: View {
     }
 }
 
-// MARK: - Recovery band (the «sube / mantén / baja» autoregulation suggestion — FER-349)
-
-/// The recovery band: an OPT-IN "push / hold / ease" suggestion driven by the cited `TrainingRegulation`
-/// rule (StrandAnalytics). Kept as a reusable component (the landing shows a compact recovery line
-/// instead). It never appears without a recovery score.
-struct RecoveryBand: View {
-    @Environment(\.instrumentoTheme) private var theme
-    let recovery: Double
-
-    private var suggestion: TrainingRegulation.Suggestion? { TrainingRegulation.suggest(recovery: recovery) }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Today's load").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            if let s = suggestion {
-                HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    Text(word(s.adjustment)).font(StrandFont.title2).foregroundStyle(color(s.adjustment))
-                    Text(detail(s.reason)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                HStack(spacing: 5) {
-                    Image(systemName: "info.circle").font(.system(size: 12)).foregroundStyle(theme.inkTertiary).accessibilityHidden(true)
-                    Text("Suggestion · you decide").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                }
-                .padding(.top, 4)
-            }
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    private func word(_ a: TrainingRegulation.Adjustment) -> LocalizedStringKey {
-        switch a { case .dialUp: return "Push"; case .hold: return "Hold"; case .dialBack: return "Ease" }
-    }
-    private func color(_ a: TrainingRegulation.Adjustment) -> Color {
-        switch a { case .dialUp: return theme.verdict; case .hold: return theme.ink; case .dialBack: return theme.warning }
-    }
-    private func detail(_ reason: TrainingRegulation.Reason) -> String {
-        switch reason {
-        case .recoveryHigh:  return String(localized: "Your recovery is high for you. A good day to add weight or sets.")
-        case .withinNormal:  return String(localized: "Your recovery is in your normal range. Train at your usual load.")
-        case .recoveryLow:   return String(localized: "Your recovery is low for you. Easing the volume or intensity helps today.")
-        }
-    }
-}
-
 // MARK: - Honest «coming soon» sheet (for builder/guided start — FER-346 / FER-347)
 
 /// A quiet Instrumento sheet that names what's coming, instead of a dead button.
