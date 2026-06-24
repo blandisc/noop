@@ -32,6 +32,12 @@ public enum StrandFont {
     /// Title2 22 / Semibold (relative to `.title2`, 22pt at default).
     public static let title2 = Font.system(.title2, weight: .semibold)
 
+    /// Tab/landing wordmark title 21 / Semibold — «Patrones», «Tendencias», «Train». FIXED (not
+    /// Dynamic Type): it's chrome paired with a 22×22 glyph, so the three tab headers must stay the
+    /// same size to align as you swipe between tabs. Pair with `.tracking(-0.3)` (or use
+    /// `InstrumentoTabHeader`, which bakes both in).
+    public static let tabTitle = Font.system(size: 21, weight: .semibold)
+
     /// Headline 17 / Semibold (relative to `.headline`, 17pt semibold at default).
     public static let headline = Font.system(.headline)
 

@@ -179,7 +179,7 @@ private struct CuerpoLanding: View {
                 footerActions
             }
             .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.top, 20)
+            .padding(.top, 14)   // same top inset as «Patrones»/«Train» so the headers align across tabs
             .padding(.bottom, NoopMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -333,21 +333,14 @@ private struct CuerpoLanding: View {
     /// Wordmark header (matching «Patrones»): the curve-with-nodes glyph + «Tendencias» on the left,
     /// today's date in mono on the right. Replaces the old stacked «Body» + subhead-date block.
     private var titleBlock: some View {
-        HStack(alignment: .center) {
-            HStack(spacing: 9) {
-                TendenciasGlyph(color: theme.ink).frame(width: 22, height: 22)
-                Text("Tendencias")
-                    .font(.system(size: 21, weight: .semibold)).tracking(-0.3)
-                    .foregroundStyle(theme.ink)
-            }
-            Spacer()
+        InstrumentoTabHeader("Tendencias") {
+            TendenciasGlyph(color: theme.ink)
+        } trailing: {
             Text(Self.dateLabel)
                 .font(StrandFont.number(11, weight: .regular)).foregroundStyle(theme.inkTertiary)
                 .textCase(.uppercase)
         }
         .padding(.bottom, 6)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Tendencias")
     }
 
     /// Today as «THU 12 JUN» / «JUE 12 JUN» — follows the app language (`.current`), uppercased by the

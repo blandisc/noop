@@ -181,21 +181,14 @@ private struct PatronesLanding: View {
     // MARK: Header
 
     private var header: some View {
-        HStack(alignment: .center) {
-            HStack(spacing: 9) {
-                PatronesGlyph(color: theme.ink).frame(width: 22, height: 22)
-                Text("Patrones")
-                    .font(.system(size: 21, weight: .semibold)).tracking(-0.3)
-                    .foregroundStyle(theme.ink)
-            }
-            Spacer()
+        InstrumentoTabHeader("Patrones") {
+            PatronesGlyph(color: theme.ink)
+        } trailing: {
             Text(Self.dateLabel)
                 .font(StrandFont.number(11, weight: .regular)).foregroundStyle(theme.inkTertiary)
                 .textCase(.uppercase)
         }
         .padding(.bottom, 6)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Patrones")
     }
 
     /// Today as «JUE 12 JUN» — follows the app language (es → «JUE», en → «THU»). FER-472.
