@@ -3,15 +3,16 @@ import SwiftUI
 import StrandDesign
 import StrandTraining
 
-// MARK: - «Rutina de hoy» — the pre-start plan screen (FER-343)
+// MARK: - «Rutina de hoy» — a routine's plan, as a deep-link (FER-343)
 //
-// The screen that precedes a session: the routine's plan (exercises + target scheme + rest rule) and
-// the recovery band slot (hidden when there is no recovery score — never invents advice). Pushed from
-// the Entrenar hub in the light «Instrumento» language.
+// Reached from «Tu plan» (tap a routine) and DEBUG screenshot-nav — NOT the «Empezar» happy path anymore
+// (the landing starts today's session in one tap, FER-«Pulir» F1). So this is now a «view this routine's
+// plan» screen: exercises + target scheme + rest rule, with a «Start workout» for that routine. The
+// recovery band that used to live here is gone (F6) — the autoregulation line shows on the landing hero
+// and the running session header, not duplicated here.
 //
 // The guided, set-by-set session is FER-347: «Empezar» builds the routine's plan (with each exercise's
-// «la última vez» prefill) and opens the guided session sheet (owned by AppModel). The band's RULE is
-// W3·bucle / FER-349; this screen only renders the shared `RecoveryBand` container.
+// «la última vez» prefill) and opens the guided session sheet (owned by AppModel).
 
 struct RutinaDeHoyScreen: View {
     /// Which routine to show; nil = today's pick (the most recent), used by DEBUG screenshot-nav.
@@ -39,17 +40,12 @@ private struct RutinaDeHoyContent: View {
     /// Drives the routine builder sheet for editing this routine (FER-557).
     @State private var builderTarget: BuilderTarget?
 
-    private var recovery: Double? { repo.today?.recovery }
     private var imperial: Bool { UnitSystem(rawValue: unitSystemRaw) == .imperial }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                 header
-
-                if let rec = recovery {
-                    bandCard(rec)
-                }
 
                 if loaded {
                     plan
@@ -102,17 +98,6 @@ private struct RutinaDeHoyContent: View {
                 .font(StrandFont.title1).foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
         }
-    }
-
-    // MARK: - Recovery band slot (hidden without recovery)
-
-    private func bandCard(_ rec: Double) -> some View {
-        RecoveryBand(recovery: rec)
-            .padding(NoopMetrics.cardPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                .strokeBorder(theme.hairline, lineWidth: 1))
     }
 
     // MARK: - The plan

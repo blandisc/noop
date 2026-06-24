@@ -673,6 +673,16 @@ struct LiveStrengthSheet: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Finish workout"))
             }
+            // The autoregulation line that «Rutina de hoy» used to carry (F6): now that the session starts
+            // in one tap, the «push / hold / ease» implication of today's recovery rides here instead of a
+            // duplicated band. Quiet, one line, hidden while calibrating. The cited rule is `TrainingRegulation`.
+            if let rec = recovery {
+                HStack(alignment: .firstTextBaseline, spacing: 7) {
+                    Circle().fill(theme.dataRecovery).frame(width: 7, height: 7)
+                    Text(recoveryLine(rec)).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
             sessionCounters
         }
         .padding(.horizontal, NoopMetrics.screenPadding)
@@ -717,6 +727,19 @@ struct LiveStrengthSheet: View {
         session.runs.filter { !$0.skipped }.reduce(0.0) { acc, run in
             guard run.type == .weightReps || run.type == .bodyweight else { return acc }
             return acc + run.sets.filter(\.done).reduce(0.0) { $0 + $1.weightKg * Double($1.reps) }
+        }
+    }
+
+    /// Today's recovery score (nil while calibrating) — drives the header's autoregulation line (F2/F6).
+    private var recovery: Double? { model.repo.today?.recovery }
+
+    /// The compact «push / hold / ease» implication of today's recovery, same copy as the landing hero
+    /// (cited rule: `TrainingRegulation`, StrandAnalytics). Reused strings — no new catalog keys.
+    private func recoveryLine(_ rec: Double) -> String {
+        switch TrainingRegulation.suggest(recovery: rec)?.reason {
+        case .recoveryHigh: return String(localized: "Recovery high for you · you can take on your full plan.")
+        case .recoveryLow:  return String(localized: "Recovery low for you · maybe ease the volume today.")
+        default:            return String(localized: "Recovery in your range · train at your usual load.")
         }
     }
 
