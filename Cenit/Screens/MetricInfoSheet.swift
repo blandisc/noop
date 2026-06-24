@@ -880,8 +880,10 @@ struct MetricInfoSheet: View {
     /// The levels for the explorer: `MetricLevels`' fixed thresholds (FER-570) for a `levelsMetric`, or —
     /// for HRV — the user's PERSONAL band from their own baseline. HRV is log-normal, so the cut points
     /// come from `Baselines.normalRange` (which back-transforms `exp(lnBaseline ± σ)` to ms: a
-    /// multiplicative band, not a raw linear ±SD), exactly the construction FER-571 used. nil for HRV
-    /// until there's at least one valid night. (FER-619 · Plews 2013)
+    /// multiplicative band, not a raw linear ±SD), over the SAME production baseline engine the recovery
+    /// score uses (`foldHistory` + `hrvCfg`, logDomain). The band *structure* (below/inBase/above,
+    /// guard `nValid >= 1`) mirrors FER-571. nil for HRV until there's at least one valid night.
+    /// (FER-619 · Plews 2013)
     private var resolvedLevels: [MetricLevels.Level]? {
         if let metric = info.levelsMetric { return MetricLevels.levels(for: metric) }
         guard info.levelsRelative else { return nil }
