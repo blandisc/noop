@@ -567,9 +567,11 @@ struct MetricInfoSheet: View {
     @State private var headlineExpanded = false
 
     /// Range selection + loaded full-history series for the levels instrument (FER-607). Only used when
-    /// `info.levelsMetric != nil`; the explorer re-windows the series by `levelsRange`.
+    /// `info.levelsMetric != nil`; the explorer re-windows the series by `levelsRange`. Each `day` is
+    /// parsed to a `Date` exactly ONCE on load (not per render) — the same memoization the detail screens
+    /// use, since the explorer re-windows on every range/level tap.
     @State private var levelsRange: ExploreRange = .month
-    @State private var levelsSeries: [(day: String, value: Double)] = []
+    @State private var levelsParsed: MetricWindowMath.Parsed = []
 
     // MARK: Colour resolution (against the live theme)
 
@@ -697,9 +699,12 @@ struct MetricInfoSheet: View {
         }
         .task {
             // Full-history series for the levels instrument (FER-607) — no 14-day cutoff, so the range
-            // selector can re-window. Supplied only when `info.levelsMetric != nil`.
+            // selector can re-window. Parse each day to a `Date` ONCE here, not per render. Supplied only
+            // when `info.levelsMetric != nil`.
             guard let loader = levelsSeriesLoader else { return }
-            levelsSeries = await loader()
+            levelsParsed = await loader().map {
+                (day: $0.day, date: Repository.parseDayKey($0.day), value: $0.value)
+            }
         }
     }
 
@@ -823,10 +828,7 @@ struct MetricInfoSheet: View {
     /// header shows (`info.displayValue`), so the highlighted level matches the hero numeral.
     @ViewBuilder private var levelsBlock: some View {
         if let metric = info.levelsMetric {
-            let parsed: MetricWindowMath.Parsed = levelsSeries.map {
-                (day: $0.day, date: Repository.parseDayKey($0.day), value: $0.value)
-            }
-            let window = MetricWindowMath.make(parsed, selected: levelsRange)
+            let window = MetricWindowMath.make(levelsParsed, selected: levelsRange)
             MetricLevelsExplorer(
                 theme: theme,
                 range: $levelsRange,
