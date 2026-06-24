@@ -40,6 +40,7 @@ struct BucleView: View {
 
 private struct PatronesLanding: View {
     @EnvironmentObject var repo: Repository
+    @EnvironmentObject var tabRouter: TabRouter
     @Environment(\.instrumentoTheme) private var theme
 
     // Loaded once per refresh (never recomputed per render).
@@ -60,6 +61,10 @@ private struct PatronesLanding: View {
     /// The completed experiment the user has acknowledged — so its verdict card stops showing. Local,
     /// per-device; the «probado» promotion in «Lo que funciona» is the durable record either way.
     @AppStorage("fer307.dismissedExperimentId") private var dismissedExperimentId = ""
+
+    /// A deep-link from the Daily Brief's «La conexión de hoy» that arrived before this view loaded its
+    /// insights — open the matching detail as soon as `load()` finishes (FER-614).
+    @State private var pendingInsightKey: String? = nil
 
     // Sheets.
     /// One lever/finding detail sheet — fed by the hero, «Lo que funciona» and the correlations.
@@ -113,6 +118,10 @@ private struct PatronesLanding: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .task(id: repo.refreshSeq) { await load() }
+        // Deep-link from the Daily Brief's «La conexión de hoy» → open the matching correlation's detail
+        // here (FER-614). If we haven't loaded the insights yet, defer until `load()` finishes.
+        .onAppear { openInsightFromRouter(tabRouter.openInsightKey) }
+        .onChange(of: tabRouter.openInsightKey) { _, key in openInsightFromRouter(key) }
         .sheet(item: $detail) { item in
             PalancaDetailSheet(insight: item.insight, theme: theme,
                                canStartExperiment: canStartExperiment(item.insight)) {
@@ -1068,6 +1077,19 @@ private struct PatronesLanding: View {
         InsightEngine.Outcome(label: metric)?.unit ?? "pts"
     }
 
+    /// Open the detail of the insight whose `InsightFreshness.key` matches the Daily Brief deep-link (FER-614).
+    /// If the insights aren't loaded yet, stash the key and resolve it when `load()` finishes. Consumes the
+    /// one-shot once resolved (so a tab re-appearance doesn't re-open it).
+    private func openInsightFromRouter(_ key: String?) {
+        guard let key else { return }
+        if loaded {
+            detail = insights.first { InsightFreshness.key(for: $0) == key }.map { InsightItem(insight: $0) }
+            tabRouter.openInsightKey = nil
+        } else {
+            pendingInsightKey = key
+        }
+    }
+
     // MARK: Load
 
     private func load() async {
@@ -1077,33 +1099,15 @@ private struct PatronesLanding: View {
         // Close a due experiment first, so its verdict is ready to show and to promote its lever.
         await repo.closeDueExperiment(today: todayKey)
 
-        async let entriesTask = repo.journalEntries()
         async let importedTask = repo.importedJournalEntries()
         async let answersTask = repo.nativeJournalAnswers(day: todayKey)
 
-        let entries = await entriesTask
         let imported = await importedTask
         let todayAnswers = await answersTask
 
-        var behaviors: [String: Set<String>] = [:]
-        for e in entries where e.answeredYes { behaviors[e.question, default: []].insert(e.day) }
-
-        // Diet adherence as a Coach behavior (FER-385): «Seguí mi dieta» = days the plan was followed
-        // (adherence ≥ threshold), restricted to the days actually tracked (its eligible universe).
-        var eligibleDaysByBehavior: [String: Set<String>] = [:]
-        if let from = days.map(\.day).min() {
-            let dietByDay = await repo.dietAdherenceByDay(from: from, to: todayKey)
-            let dietKey = JournalCatalogStore.dietBehaviorKey
-            if !dietByDay.isEmpty, behaviors[dietKey] == nil {
-                behaviors[dietKey] = DietAdherence.adherentDays(percentByDay: dietByDay)
-                eligibleDaysByBehavior[dietKey] = Set(dietByDay.keys)
-            }
-        }
-
-        let inputs = InsightEngine.Inputs(days: days, behaviors: behaviors,
-                                          eligibleDaysByBehavior: eligibleDaysByBehavior, referenceDay: todayKey)
-        let proven = await repo.provenLevers()
-        let generated = InsightEngine.promoteProven(InsightEngine.generate(inputs), provenLevers: proven)
+        // Hallazgos rankeados: la MISMA fuente que «La conexión de hoy» del Daily Brief (FER-614), vía el
+        // loader compartido, para que la correlación del brief y la de Patrones coincidan (misma familia FDR).
+        let generated = await InsightsProvider.generate(repo: repo, today: todayKey)
 
         // Freshness (FER-466): stamp first-seen per finding, decay after ~48 h. The hero leads with a
         // fresh non-behavior finding as «Nuevo». Persisted in UserDefaults — no engine/DB change.
@@ -1136,6 +1140,12 @@ private struct PatronesLanding: View {
             self.running = runVM
             self.finished = latestFinished
             self.loaded = true
+            // A Daily Brief deep-link that arrived before the insights loaded now resolves (FER-614).
+            if let key = pendingInsightKey {
+                pendingInsightKey = nil
+                detail = generated.first { InsightFreshness.key(for: $0) == key }.map { InsightItem(insight: $0) }
+                tabRouter.openInsightKey = nil
+            }
         }
     }
 

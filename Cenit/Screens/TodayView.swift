@@ -114,6 +114,10 @@ struct TodayView: View {
     @State private var todayRoutineName: String? = nil
     @State private var trainingStreak = 0
 
+    // «La conexión de hoy» — la correlación más relevante del día (FER-614). Cargados en `loadAll` vía el
+    // loader compartido `InsightsProvider`, así la conexión del brief == la que muestra Patrones (mismo FDR).
+    @State private var insights: [Insight] = []
+
     // Support sheet (donate + contact) — always reachable from the home toolbar.
     @State private var showingSupport = false
 
@@ -1020,6 +1024,12 @@ struct TodayView: View {
                                        recovery: repo.today?.recovery)
     }
 
+    /// «La conexión de hoy» (FER-614): la correlación significativa más relevante, o `nil` (la UI omite el
+    /// renglón). Misma fuente que Patrones, así el deep-link abre exactamente ese patrón.
+    private var connection: DailyBrief.Connection? {
+        DailyBriefEngine.connection(insights: insights)
+    }
+
     /// El Daily Brief renderizado: titular en TINTA (el color vive en el dato, no en la palabra) que
     /// abre el porqué (`WhyVerdictSheet`, como antes la palabra del veredicto), el porqué, las viñetas
     /// tocables (FER-475) y el bloque atenuado «Más tarde hoy».
@@ -1053,6 +1063,8 @@ struct TodayView: View {
                 Text(brief.why).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
 
+                if let conn = connection { connectionLineView(conn) }
+
                 VStack(spacing: 0) {
                     ForEach(Array(brief.bullets.enumerated()), id: \.offset) { i, b in
                         briefBulletRow(b, showTopHairline: i > 0)
@@ -1074,6 +1086,42 @@ struct TodayView: View {
             laterTodaySection
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: - «La conexión de hoy» (FER-614)
+
+    /// El renglón «La conexión de hoy» dentro de la card del brief: acento verde a la izquierda, la frase sin
+    /// jerga y «Ver patrón». Toca → abre el detalle de esa correlación en Patrones vía `TabRouter` (deep-link
+    /// por la `InsightFreshness.key` del insight, la misma identidad que usa Patrones).
+    private func connectionLineView(_ conn: DailyBrief.Connection) -> some View {
+        Button {
+            tabRouter.openInsight(key: InsightFreshness.key(for: conn.insight))
+        } label: {
+            VStack(alignment: .leading, spacing: NoopMetrics.space1) {
+                Text("La conexión de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space2) {
+                    Text(conn.text).font(StrandFont.subhead).foregroundStyle(theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: NoopMetrics.space2)
+                    HStack(spacing: 2) {
+                        Text("Ver patrón").font(StrandFont.caption)
+                        Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold))
+                    }
+                    .foregroundStyle(theme.verdict)
+                    .fixedSize()
+                }
+            }
+            .padding(.leading, NoopMetrics.gap)
+            .padding(.trailing, NoopMetrics.space2)
+            .padding(.vertical, NoopMetrics.space2)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.paper)
+            .overlay(alignment: .leading) { Rectangle().fill(theme.verdict).frame(width: 2.5) }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.top, NoopMetrics.space2)
+        .accessibilityHint(Text("Abre este patrón en Patrones"))
     }
 
     // MARK: - Bloque «Hoy en tu plan» (FER-613)
@@ -2707,6 +2755,8 @@ struct TodayView: View {
         // UTC-bucketed "tomorrow" row (FER-226) can't blank the tile.
         stress = StressModel(days: repo.displayDays, stored: await stressRows, todayKey: Repository.localDayKey(Date()))
         await loadTrainingPlan()
+        // «La conexión de hoy» (FER-614): los hallazgos rankeados, misma fuente que Patrones.
+        insights = await InsightsProvider.generate(repo: repo, today: Repository.localDayKey(Date()))
     }
 
     /// Carga los insumos del bloque «Hoy en tu plan» (FER-613): el split, la rutina de hoy y la racha de
