@@ -42650,6 +42650,329 @@
           }
         }
       }
+    },
+    "On this iPhone · no account · no cloud": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On this iPhone · no account · no cloud"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En este iPhone · sin cuenta · sin nube"
+          }
+        }
+      }
+    },
+    "Cénit %@ · everything is computed on your iPhone · no account · no server": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cénit %@ · everything is computed on your iPhone · no account · no server"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cénit %@ · todo se calcula en tu iPhone · sin cuenta · sin servidor"
+          }
+        }
+      }
+    },
+    "Auto · %lld bpm": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto · %lld bpm"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto · %lld lpm"
+          }
+        }
+      }
+    },
+    "Zone alerts, reminders": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zone alerts, reminders"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avisos de zona, recordatorios"
+          }
+        }
+      }
+    },
+    "WHOOP · Apple Health · backup": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WHOOP · Apple Health · backup"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WHOOP · Apple Health · copia"
+          }
+        }
+      }
+    },
+    "WHOOP 5/MG probes, frames": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WHOOP 5/MG probes, frames"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sondas WHOOP 5/MG, tramas"
+          }
+        }
+      }
+    },
+    "Version %@ · help · licenses": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version %@ · help · licenses"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versión %@ · ayuda · licencias"
+          }
+        }
+      }
+    },
+    "Disconnect strap?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disconnect strap?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Desconectar la banda?"
+          }
+        }
+      }
+    },
+    "It will stop streaming until you re-scan. Your saved data isn't touched.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It will stop streaming until you re-scan. Your saved data isn't touched."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dejará de transmitir hasta que vuelvas a escanear. Tus datos guardados no se tocan."
+          }
+        }
+      }
+    },
+    "Mode": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mode"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modo"
+          }
+        }
+      }
+    },
+    "Maximum heart rate": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maximum heart rate"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frecuencia cardiaca máxima"
+          }
+        }
+      }
+    },
+    "Overriding the automatic estimate (%lld).": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overriding the automatic estimate (%lld)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anulando el cálculo automático (%lld)."
+          }
+        }
+      }
+    },
+    "bpm · Tanaka": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bpm · Tanaka"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lpm · Tanaka"
+          }
+        }
+      }
+    },
+    "Estimated from your age (208 − 0.7 × age). Set it manually if you know your true max.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimated from your age (208 − 0.7 × age). Set it manually if you know your true max."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimada a partir de tu edad (208 − 0.7 × edad). Ponla manualmente si conoces tu máximo real."
+          }
+        }
+      }
+    },
+    "WHOOP 5/MG probes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WHOOP 5/MG probes"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sondas WHOOP 5/MG"
+          }
+        }
+      }
+    },
+    "Experimental tools for the newer WHOOP 5 and MG straps. They have no effect on a WHOOP 4.0.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Experimental tools for the newer WHOOP 5 and MG straps. They have no effect on a WHOOP 4.0."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Herramientas experimentales para las bandas WHOOP 5 y MG nuevas. No afectan a la WHOOP 4.0."
+          }
+        }
+      }
+    },
+    "Advanced": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Advanced"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avanzado"
+          }
+        }
+      }
+    },
+    "Weight in kilograms": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weight in kilograms"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peso en kilogramos"
+          }
+        }
+      }
+    },
+    "Height in centimetres": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Height in centimetres"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Altura en centímetros"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
