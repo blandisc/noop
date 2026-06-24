@@ -1012,7 +1012,7 @@ struct TodayView: View {
             // El Daily Brief vive en una TARJETA `surface` (handoff): envuelve SOLO las filas pobladas —
             // encabezado + titular + porqué + viñetas—. «Más tarde hoy» queda FUERA, debajo, sobre el papel.
             // Mismo fondo/borde/sombra que los tiles de Métricas (surface + hairline + sombra sutil).
-            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            VStack(alignment: .leading, spacing: NoopMetrics.space2) {
                 briefHeader(now: true)
                 Button { showWhyVerdict = true } label: {
                     HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space2) {
@@ -1026,7 +1026,9 @@ struct TodayView: View {
                             .foregroundStyle(theme.inkTertiary)
                         Spacer(minLength: 0)
                     }
-                    .frame(minHeight: 44)
+                    // FER-608 polish: sin `minHeight: 44` — el titular en serif grande ya da un blanco
+                    // táctil cómodo y el `minHeight` le metía aire muerto arriba/abajo dentro de la card.
+                    // El mismo «¿Por qué?» sigue accesible desde la palabra del dial y la caption.
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -1091,25 +1093,24 @@ struct TodayView: View {
     }
 
     /// El punto «Ahora» del Daily Brief: un círculo en el color de estado (verde con veredicto, tinta en
-    /// espera). Con veredicto y sin Reduce Motion, un halo concéntrico late detrás (handoff); el latido se
-    /// arma con `briefDotPulse` (`repeatForever`) al aparecer.
+    /// espera). Con veredicto, un halo concéntrico RESPIRA detrás con el MISMO token que el punto «ahora»
+    /// del dial (`StrandMotion.breathe`), para que los dos indicadores de «en vivo» pulsen igual; estático
+    /// bajo Reduce Motion. El latido se arma con `briefDotPulse` al aparecer (lo anima el `.animation` por
+    /// cambio de valor, no un `withAnimation`).
     @ViewBuilder private func nowDot(now: Bool) -> some View {
         let c = now ? theme.verdict : theme.inkTertiary
         ZStack {
-            if now && !reduceMotion {
+            if now {
                 Circle().fill(c)
-                    .scaleEffect(briefDotPulse ? 2.4 : 1)
-                    .opacity(briefDotPulse ? 0 : 0.30)
+                    .frame(width: 14, height: 14)
+                    .scaleEffect(briefDotPulse ? 1.3 : 0.92)
+                    .opacity(briefDotPulse ? 0.05 : 0.20)
+                    .animation(reduceMotion ? nil : StrandMotion.breathe, value: briefDotPulse)
             }
-            Circle().fill(c)
+            Circle().fill(c).frame(width: 6, height: 6)
         }
         .frame(width: 6, height: 6)
-        .onAppear {
-            guard now, !reduceMotion else { return }
-            withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: false)) {
-                briefDotPulse = true
-            }
-        }
+        .onAppear { if now && !reduceMotion { briefDotPulse = true } }
         .accessibilityHidden(true)
     }
 
@@ -1342,8 +1343,8 @@ struct TodayView: View {
     /// el MISMO color de nivel, así nunca se contradicen (a diferencia del caso que evitó FER-206: número
     /// en color de banda ≠ color de nivel de la palabra). Sin palabra (`insufficient`) el número se queda
     /// en tinta. Calibrando → «N/4» en tinta (progreso, no dato). Espera/base Apple → em-dash «—» en tinta.
-    /// Numeral 60 con el denominador («/100» o «/seed») apilado pequeño y centrado debajo (FER-202), y la
-    /// palabra del nivel apilada bajo él (FER-549).
+    /// Numeral 60 limpio (sin «/100», FER-608) con la palabra del nivel apilada bajo él (FER-549); solo
+    /// el modo calibrando conserva un denominador («/seed») por ser progreso, no dato.
     @ViewBuilder private func heroNumeral(_ s: HeroState) -> some View {
         switch s {
         case .verdict:
@@ -1357,9 +1358,9 @@ struct TodayView: View {
             let numColor = isSyncing ? theme.inkTertiary
                 : (hasWord ? verdictDataColor(lvl) : heroNumeralInk)
             VStack(spacing: NoopMetrics.space2) {
-                // Concéntrico (FER-169/202): el NÚMERO queda centrado en el eje del dial, con el «/100»
-                // apilado pequeño y centrado DEBAJO. El número abre la hoja RESUMIDA de recuperación
-                // (MetricInfoSheet), igual que las demás métricas de Hoy (FER-232).
+                // Concéntrico (FER-169): el NÚMERO queda centrado en el eje del dial (limpio, sin «/100»
+                // desde FER-608). El número abre la hoja RESUMIDA de recuperación (MetricInfoSheet), igual
+                // que las demás métricas de Hoy (FER-232).
                 Group {
                     if let score {
                         // FER-549/handoff: solo el numeral limpio en el centro del dial — sin el «/100» (su
