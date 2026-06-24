@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Hoy, HRV abre con tus niveles personales / Today, HRV opens with your personal levels.**
+  **ES** — **HRV** completa la familia: abre la hoja de niveles en «Hoy», pero como la HRV no tiene un «bueno/malo» universal, sus niveles son **personales** —Bajo tu base · En tu base · Sobre tu base— calculados de tu propia base (con la misma matemática log que usa tu recuperación, banda multiplicativa en ms). Si aún no tienes suficientes noches para una base, lo dice con honestidad en vez de inventar niveles. Solo presentación.
+  **EN** — **HRV** rounds out the family: it opens the levels sheet in "Today", but since HRV has no universal good/bad, its levels are **personal** — Below your base · In your base · Above your base — computed from your own baseline (the same log-aware math your recovery uses, a multiplicative band in ms). If you don't have enough nights for a baseline yet, it says so honestly instead of faking levels. Presentation only.
+  ([Cenit/Screens/MetricInfoSheet.swift](Cenit/Screens/MetricInfoSheet.swift), [Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **Hoy, Esfuerzo y Estrés abren con niveles / Today, Strain and Stress open with levels.**
   **ES** — Siguiendo a las demás, **Esfuerzo** y **Estrés** abren la hoja de niveles en «Hoy»: tu valor sobre la banda activa, niveles tocables (Esfuerzo: Reposo · Ligero · Moderado · Intenso · Extremo; Estrés: Bajo · Medio · Alto) y «Ver más en Tendencias». La curva de hoy del Esfuerzo y el mapa del día del Estrés siguen viviendo en su detalle completo (en Tendencias). El día en curso del Esfuerzo (que aún suma) no cuenta para los niveles. Solo presentación.
   **EN** — Following the others, **Strain** and **Stress** now open the levels sheet in "Today": your value over the active band, tappable levels (Strain: Rest · Light · Moderate · Hard · Extreme; Stress: Low · Medium · High) and "See more in Trends". Strain's today curve and Stress's day map still live in their full detail (in Trends). Strain's still-accumulating day doesn't count toward the levels. Presentation only.

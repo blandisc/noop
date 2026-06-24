@@ -43025,6 +43025,23 @@
           }
         }
       }
+    },
+    "Your levels come from your own baseline — a few more nights and they'll appear.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your levels come from your own baseline — a few more nights and they'll appear."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus niveles salen de tu propia base — con unas noches más aparecen."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

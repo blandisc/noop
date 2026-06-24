@@ -35,8 +35,17 @@ struct MetricInfo: Identifiable {
 
     /// The raw today value (in the metric's own domain) that highlights the active level — passed
     /// explicitly instead of parsing `displayValue`, which is formatted for several metrics (SpO₂ «97%»,
-    /// Sleep «7h 18m», Steps «8,240»). Set alongside `levelsMetric`. (FER-617)
+    /// Sleep «7h 18m», Steps «8,240»). Set alongside `levelsMetric` (or `levelsRelative`). (FER-617)
     var levelsTodayValue: Double? = nil
+
+    /// HRV has no honest universal cut, so its levels are PERSONAL — below / in your base / above,
+    /// derived from the user's own baseline rather than a fixed table. Set true on the HRV factory; the
+    /// sheet builds the band from the loaded series via `Baselines`. (FER-619 · Plews 2013)
+    var levelsRelative: Bool = false
+
+    /// Whether this metric shows the F6 levels instrument at all — a fixed table (`levelsMetric`) or a
+    /// personal band (`levelsRelative`). Gates the body, header, foot link and detent. (FER-619)
+    var usesLevels: Bool { levelsMetric != nil || levelsRelative }
 
     /// A semantic tint for the header numeral, resolved against the «Instrumento» theme by the sheet.
     /// `metric` = the metric's own data hue; `neutral` = quiet ink (used for the "—" no-data state);
@@ -158,7 +167,9 @@ extension MetricInfo {
             method: Method(
                 prose: "We take the intervals between your heartbeats overnight, drop any outside 300–2000 ms and any that deviate more than 20% from their neighbours (ectopic beats). If at least 20 clean beats remain, we compute RMSSD.",
                 citation: "RMSSD (Task Force, 1996); ectopic rejection by Malik's rule. HRV is about 60% of your recovery score."
-            )
+            ),
+            levelsTodayValue: value,
+            levelsRelative: true
         )
     }
 
@@ -564,7 +575,7 @@ struct MetricInfoSheet: View {
 
     /// Full-history series for the levels instrument (FER-607): `(day, value)` per day with NO 14-day
     /// cutoff, so the range selector (S/M/3M/6M/1A/Todo) can re-window. Supplied only for metrics whose
-    /// `info.levelsMetric != nil`; nil otherwise. Loaded lazily on appear.
+    /// `info.usesLevels`; nil otherwise. Loaded lazily on appear.
     var levelsSeriesLoader: (() async -> [(day: String, value: Double)])? = nil
 
     @State private var strainCurve: [TrendPoint] = []
@@ -585,7 +596,7 @@ struct MetricInfoSheet: View {
     @State private var headlineExpanded = false
 
     /// Range selection + loaded full-history series for the levels instrument (FER-607). Only used when
-    /// `info.levelsMetric != nil`; the explorer re-windows the series by `levelsRange`. Each `day` is
+    /// `info.usesLevels`; the explorer re-windows the series by `levelsRange`. Each `day` is
     /// parsed to a `Date` exactly ONCE on load (not per render) — the same memoization the detail screens
     /// use, since the explorer re-windows on every range/level tap.
     @State private var levelsRange: ExploreRange = .month
@@ -645,7 +656,7 @@ struct MetricInfoSheet: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .transition(.opacity.combined(with: .move(edge: .top)))
                 }
-                if info.levelsMetric != nil {
+                if info.usesLevels {
                     // FER-607: the F6 levels instrument (selector + tappable levels + chart over the
                     // active band) replaces the static 14-day trend + bands table for migrated metrics.
                     // Pilot: resting HR. Every other metric stays on the classic summary below.
@@ -718,7 +729,7 @@ struct MetricInfoSheet: View {
         .task {
             // Full-history series for the levels instrument (FER-607) — no 14-day cutoff, so the range
             // selector can re-window. Parse each day to a `Date` ONCE here, not per render. Supplied only
-            // when `info.levelsMetric != nil`.
+            // when `info.usesLevels`.
             guard let loader = levelsSeriesLoader else { return }
             levelsParsed = await loader().map {
                 (day: $0.day, date: Repository.parseDayKey($0.day), value: $0.value)
@@ -731,7 +742,7 @@ struct MetricInfoSheet: View {
     /// Short, band-only sheets stay at `.medium`. (FER-112 follow-up, extended for trend charts)
     private var strainDetents: Set<PresentationDetent> {
         guard info.id == "strain" || info.id == "heart_rate" || trendLoader != nil
-                || info.levelsMetric != nil else { return [.medium] }
+                || info.usesLevels else { return [.medium] }
         return contentHeight > 0 ? [.height(contentHeight)] : [.large]
     }
 
@@ -741,7 +752,7 @@ struct MetricInfoSheet: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: NoopMetrics.space2) {
             HStack(alignment: .firstTextBaseline) {
-                if info.levelsMetric != nil {
+                if info.usesLevels {
                     // FER-607 (migrated metric): the title leads in serif (headline role only), with the
                     // ⓘ beside it and the source chip trailing — the handoff header.
                     Text(info.name)
@@ -845,13 +856,13 @@ struct MetricInfoSheet: View {
     /// and the per-metric thresholds from `MetricLevels` (FER-570). `todayValue` is the same number the
     /// header shows (`info.displayValue`), so the highlighted level matches the hero numeral.
     @ViewBuilder private var levelsBlock: some View {
-        if let metric = info.levelsMetric {
+        if let levels = resolvedLevels {
             let window = MetricWindowMath.make(levelsParsed, selected: levelsRange)
             MetricLevelsExplorer(
                 theme: theme,
                 range: $levelsRange,
                 window: window,
-                levels: MetricLevels.levels(for: metric),
+                levels: levels,
                 todayValue: info.levelsTodayValue,
                 hue: metricHue,
                 unit: info.unit ?? "",
@@ -859,7 +870,29 @@ struct MetricInfoSheet: View {
                 nightly: BandSummaryCopy.isNightly(metricID: info.id),
                 accessibilityLabel: info.name
             )
+        } else if info.levelsRelative {
+            // HRV with no personal baseline yet — an honest note, not an empty levels list.
+            emptyWell(icon: "waveform.path.ecg",
+                      text: "Your levels come from your own baseline — a few more nights and they'll appear.")
         }
+    }
+
+    /// The levels for the explorer: `MetricLevels`' fixed thresholds (FER-570) for a `levelsMetric`, or —
+    /// for HRV — the user's PERSONAL band from their own baseline. HRV is log-normal, so the cut points
+    /// come from `Baselines.normalRange` (which back-transforms `exp(lnBaseline ± σ)` to ms: a
+    /// multiplicative band, not a raw linear ±SD), exactly the construction FER-571 used. nil for HRV
+    /// until there's at least one valid night. (FER-619 · Plews 2013)
+    private var resolvedLevels: [MetricLevels.Level]? {
+        if let metric = info.levelsMetric { return MetricLevels.levels(for: metric) }
+        guard info.levelsRelative else { return nil }
+        let state = Baselines.foldHistory(levelsParsed.map { Optional($0.value) }, cfg: Baselines.hrvCfg)
+        guard state.nValid >= 1 else { return nil }
+        let band = Baselines.normalRange(state)
+        return [
+            MetricLevels.Level(key: "below",  lower: nil,             upper: band.lowerBound),
+            MetricLevels.Level(key: "inBase", lower: band.lowerBound, upper: band.upperBound),
+            MetricLevels.Level(key: "above",  lower: band.upperBound, upper: nil),
+        ]
     }
 
     private var bandsTable: some View {
@@ -1378,7 +1411,7 @@ struct MetricInfoSheet: View {
     /// Detalle. Tinted with the metric hue (the one place colour lives on an action here) so it reads as
     /// tappable and ties to the metric. Right-aligned. (FER-251)
     @ViewBuilder private func seeMoreLink(_ action: @escaping () -> Void) -> some View {
-        if info.levelsMetric != nil {
+        if info.usesLevels {
             // FER-607: full-width «Ver más en Tendencias» with the trend-line glyph and an ink hairline
             // border — drills into the same rich detail Cuerpo opens (the handoff foot button).
             Button(action: action) {
