@@ -1283,7 +1283,8 @@ struct TodayView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)
-        .padding(.top, NoopMetrics.space2)
+        // Sin padding superior propio: el `Spacer(minLength: space2)` que precede a los dots ya da esa
+        // separación. Sumar aquí otro `space2` duplicaba el gap (8 + 8) y empujaba ~8pt de scroll fantasma.
         .animation(reduceMotion ? nil : StrandMotion.interactive, value: pagerPage)
     }
 
