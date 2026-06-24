@@ -2776,11 +2776,23 @@ struct TodayView: View {
     private func levelsSeriesLoader(for id: String) -> (() async -> [(day: String, value: Double)])? {
         let pick: (DailyMetric) -> Double?
         switch id {
-        case "rhr": pick = { $0.restingHr.map(Double.init) }
-        default:    return nil
+        case "rhr":       pick = { $0.restingHr.map(Double.init) }
+        case "spo2":      pick = { $0.spo2Pct }
+        case "resp_rate": pick = { $0.respRateBpm }
+        case "sleep":     pick = { $0.totalSleepMin }
+        case "steps":     pick = { $0.steps.map(Double.init) }
+        default:          return nil
         }
+        // Steps' latest point is today, still accumulating — drop it so the levels count completed days
+        // only (same guard `bandSummary` uses, FER-264). Nightly metrics (rhr/spo2/sleep/resp) are already
+        // complete each morning, so they keep every point.
+        let dropInProgressToday = (id == "steps")
         return {
-            repo.displayDays.compactMap { row in pick(row).map { (day: row.day, value: $0) } }
+            var series = repo.displayDays.compactMap { row in pick(row).map { (day: row.day, value: $0) } }
+            if dropInProgressToday, series.count > 1, series.last?.day == Repository.localDayKey(Date()) {
+                series.removeLast()
+            }
+            return series
         }
     }
 

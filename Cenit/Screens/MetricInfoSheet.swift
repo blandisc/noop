@@ -33,6 +33,11 @@ struct MetricInfo: Identifiable {
     /// `MetricLevels` (FER-570). nil → the classic summary, untouched. Pilot: resting HR only. (FER-607)
     var levelsMetric: MetricLevels.FixedMetric? = nil
 
+    /// The raw today value (in the metric's own domain) that highlights the active level — passed
+    /// explicitly instead of parsing `displayValue`, which is formatted for several metrics (SpO₂ «97%»,
+    /// Sleep «7h 18m», Steps «8,240»). Set alongside `levelsMetric`. (FER-617)
+    var levelsTodayValue: Double? = nil
+
     /// A semantic tint for the header numeral, resolved against the «Instrumento» theme by the sheet.
     /// `metric` = the metric's own data hue; `neutral` = quiet ink (used for the "—" no-data state);
     /// `good`/`warn`/`bad` = the verdict/warning/critical roles (recovery's banded score). (FER-162)
@@ -127,7 +132,9 @@ extension MetricInfo {
             unit: nil,
             headerTint: totalMinutes == nil ? .neutral : .metric,
             bands: bands,
-            note: nil
+            note: nil,
+            levelsMetric: .sleep,
+            levelsTodayValue: totalMinutes.map(Double.init)
         )
     }
 
@@ -174,7 +181,8 @@ extension MetricInfo {
             headerTint: value == nil ? .neutral : .metric,
             bands: bands,
             note: "Measured overnight from your strap; when the strap isn't worn, Cénit uses Apple Health's resting heart rate instead.",
-            levelsMetric: .restingHR
+            levelsMetric: .restingHR,
+            levelsTodayValue: value.map(Double.init)
         )
     }
 
@@ -206,7 +214,9 @@ extension MetricInfo {
             method: Method(
                 prose: "We count your breaths across the night from the slow rise and fall in your heart-rate signal (respiratory sinus arrhythmia) and report the nightly mean.",
                 citation: "Respiration from RSA in the overnight inter-beat intervals; reported as the nightly mean."
-            )
+            ),
+            levelsMetric: .respiration,
+            levelsTodayValue: value
         )
     }
 
@@ -326,7 +336,9 @@ extension MetricInfo {
             note: "Blood oxygen comes from Apple Health. Wrist-based sensors have lower accuracy than medical pulse oximeters — treat values as a trend, not a clinical reading.",
             method: Method(
                 prose: "Cénit reads your blood oxygen from Apple Health — your strap senses it optically at the wrist, but Cénit doesn't turn that into a percentage on its own. A healthy adult typically sits at 95–100%; readings below 90% are considered low (hypoxemia). Isolated low nights are usually noise — altitude, a cold, or how the sensor sat. A sustained run of low nights is what's worth a look with a finger pulse oximeter.",
-                citation: "Wrist optical sensors are less accurate than medical pulse oximeters — read this as a trend, not a clinical measurement. NOOP is not a medical device.")
+                citation: "Wrist optical sensors are less accurate than medical pulse oximeters — read this as a trend, not a clinical measurement. NOOP is not a medical device."),
+            levelsMetric: .bloodOxygen,
+            levelsTodayValue: value
         )
     }
 
@@ -375,7 +387,9 @@ extension MetricInfo {
             note: "Steps come from Apple Health.",
             method: Method(
                 prose: "Steps come from Apple Health. The detail reads each day's total and smooths it into a 7-day trend, so weekday/weekend swings don't drown out the direction you're heading. Research links roughly 7,000–9,000 steps a day with lower mortality, with the benefit leveling off beyond that — there is nothing magic about exactly 10,000.",
-                citation: "Paluch et al. 2022, Lancet Public Health.")
+                citation: "Paluch et al. 2022, Lancet Public Health."),
+            levelsMetric: .steps,
+            levelsTodayValue: value.map(Double.init)
         )
     }
 
@@ -834,10 +848,11 @@ struct MetricInfoSheet: View {
                 range: $levelsRange,
                 window: window,
                 levels: MetricLevels.levels(for: metric),
-                todayValue: Double(info.displayValue),
+                todayValue: info.levelsTodayValue,
                 hue: metricHue,
                 unit: info.unit ?? "",
                 valueFormat: { "\(Int($0.rounded()))" },
+                nightly: BandSummaryCopy.isNightly(metricID: info.id),
                 accessibilityLabel: info.name
             )
         }
