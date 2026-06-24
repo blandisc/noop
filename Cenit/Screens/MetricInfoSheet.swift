@@ -530,7 +530,9 @@ extension MetricInfo {
                 citation: "A composite of z-scores through a logistic curve. HRV via RMSSD (Task Force, 1996)."
             ),
             disclaimer: disclaimer,
-            calibration: nil
+            calibration: nil,
+            levelsMetric: .recovery,
+            levelsTodayValue: score.map(Double.init)
         )
     }
 }
@@ -659,7 +661,6 @@ struct MetricInfoSheet: View {
                 if info.usesLevels {
                     // FER-607: the F6 levels instrument (selector + tappable levels + chart over the
                     // active band) replaces the static 14-day trend + bands table for migrated metrics.
-                    // Pilot: resting HR. Every other metric stays on the classic summary below.
                     levelsBlock
                 } else {
                     if trendLoader != nil { trendSection }
@@ -671,13 +672,16 @@ struct MetricInfoSheet: View {
                     // Heart Rate's 24h curve sits in the same middle slot (it has no 14-day trendLoader,
                     // so the two never both appear). (FER-137)
                     if info.id == "heart_rate" { heartRateSection }
-                    if let calibration = info.calibration { calibrationCard(calibration) }
-                    if let weights = info.weights {
-                        weightsBlock(weights, note: info.weightsNote, dimmed: info.calibration != nil)
-                    }
                     if !info.bands.isEmpty {
                         bandsTable
                     }
+                }
+                // Recovery's calibration card + weight breakdown ride alongside BOTH layouts — only
+                // Recovery sets them, so they stay invisible on every other metric. With the levels
+                // instrument they sit just below it («qué explica tu recuperación»). (FER-620)
+                if let calibration = info.calibration { calibrationCard(calibration) }
+                if let weights = info.weights {
+                    weightsBlock(weights, note: info.weightsNote, dimmed: info.calibration != nil)
                 }
                 if let method = info.method { methodDisclosure(method) }
                 if appleConnectHint {

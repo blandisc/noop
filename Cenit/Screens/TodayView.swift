@@ -2831,6 +2831,7 @@ struct TodayView: View {
         }
         let pick: (DailyMetric) -> Double?
         switch id {
+        case "recovery":  pick = { $0.recovery }
         case "rhr":       pick = { $0.restingHr.map(Double.init) }
         case "hrv":       pick = { $0.avgHrv }
         case "spo2":      pick = { $0.spo2Pct }
