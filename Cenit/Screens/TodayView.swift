@@ -399,7 +399,8 @@ struct TodayView: View {
             strainCurveLoader: info.id == "strain" ? { await loadStrainCurve() } : nil,
             heartRateCurveLoader: info.id == "heart_rate" ? { hrPoints } : nil,
             trendLoader: trendLoader(for: info.id),
-            onSeeMore: seeMoreAction(for: info.id)
+            onSeeMore: seeMoreAction(for: info.id),
+            levelsSeriesLoader: levelsSeriesLoader(for: info.id)
         )
     }
 
@@ -2642,6 +2643,21 @@ struct TodayView: View {
         default:         return nil   // strain (own intraday curve) and anything else: no 14-day trend
         }
         return { await self.loadTrend(pick: pick) }
+    }
+
+    /// Full-history `(day, value)` series for a migrated metric's levels instrument (FER-607) — the SAME
+    /// `displayDays` source as the 14-day trend but with NO cutoff, so `MetricInfoSheet`'s range selector
+    /// can re-window across S/M/3M/6M/1A/Todo. Supplied only for migrated metrics (pilot: resting HR);
+    /// every other metric returns nil and keeps the classic 14-day summary.
+    private func levelsSeriesLoader(for id: String) -> (() async -> [(day: String, value: Double)])? {
+        let pick: (DailyMetric) -> Double?
+        switch id {
+        case "rhr": pick = { $0.restingHr.map(Double.init) }
+        default:    return nil
+        }
+        return {
+            repo.displayDays.compactMap { row in pick(row).map { (day: row.day, value: $0) } }
+        }
     }
 
     /// Trailing-window slice of the derived 0–3 stress proxy the tile already computed
