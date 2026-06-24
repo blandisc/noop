@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Hoy, Recuperación abre con niveles — completa las nueve / Today, Recovery opens with levels — completing all nine.**
+  **ES** — **Recuperación** se une a las demás y cierra la familia: abre la hoja de niveles en «Hoy» —Agotado · Bajo · Moderado · A punto · Pleno, tocables— con selector de periodo, gráfica y «Ver más en Tendencias», y **conserva** debajo su desglose de «qué explica tu recuperación» (HRV, FC, Sueño…). Mientras calibra (sin suficientes noches), mantiene su tarjeta de calibración en vez de inventar niveles. Con esto, las nueve métricas clave de «Hoy» abren con el mismo instrumento. Solo presentación.
+  **EN** — **Recovery** joins the rest, completing the family: it opens the levels sheet in "Today" — Depleted · Low · Moderate · Primed · Peak, tappable — with a range picker, chart and "See more in Trends", and **keeps** its "what explains your recovery" breakdown (HRV, RHR, Sleep…) below. While calibrating (not enough nights), it keeps its calibration card instead of faking levels. With this, all nine key "Today" metrics open with the same instrument. Presentation only.
+  ([Cenit/Screens/MetricInfoSheet.swift](Cenit/Screens/MetricInfoSheet.swift), [Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **Hoy, HRV abre con tus niveles personales / Today, HRV opens with your personal levels.**
   **ES** — **HRV** completa la familia: abre la hoja de niveles en «Hoy», pero como la HRV no tiene un «bueno/malo» universal, sus niveles son **personales** —Bajo tu base · En tu base · Sobre tu base— calculados de tu propia base (con la misma matemática log que usa tu recuperación, banda multiplicativa en ms). Si aún no tienes suficientes noches para una base, lo dice con honestidad en vez de inventar niveles. Solo presentación.
   **EN** — **HRV** rounds out the family: it opens the levels sheet in "Today", but since HRV has no universal good/bad, its levels are **personal** — Below your base · In your base · Above your base — computed from your own baseline (the same log-aware math your recovery uses, a multiplicative band in ms). If you don't have enough nights for a baseline yet, it says so honestly instead of faking levels. Presentation only.
