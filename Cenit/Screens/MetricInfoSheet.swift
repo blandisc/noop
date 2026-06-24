@@ -99,7 +99,9 @@ extension MetricInfo {
             unit: nil,
             headerTint: value == nil ? .neutral : .metric,
             bands: bands,
-            note: nil
+            note: nil,
+            levelsMetric: .strain,
+            levelsTodayValue: value
         )
     }
 
@@ -428,7 +430,9 @@ extension MetricInfo {
             method: Method(
                 prose: "We take today's resting heart rate and HRV and express each as how far it sits from your 30-day average (a z-score). A resting HR above your norm and an HRV below it both add to the load; the two are summed and squashed onto a 0–3 scale where 0 is calm, 1.5 is your baseline, and 3 is highly activated.",
                 citation: "Combined resting-HR / HRV z-score through a logistic curve; HRV via RMSSD (Task Force, 1996)."
-            )
+            ),
+            levelsMetric: .stress,
+            levelsTodayValue: score
         )
     }
 

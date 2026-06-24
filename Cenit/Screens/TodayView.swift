@@ -2774,6 +2774,11 @@ struct TodayView: View {
     /// can re-window across S/M/3M/6M/1A/Todo. Supplied only for migrated metrics (pilot: resting HR);
     /// every other metric returns nil and keeps the classic 14-day summary.
     private func levelsSeriesLoader(for id: String) -> (() async -> [(day: String, value: Double)])? {
+        // Stress isn't a stored `DailyMetric` field — its daily 0–3 series lives in `StressModel.fullTrend`
+        // (the same source as its trend). Map each point's date to a day key for the levels math. (FER-621)
+        if id == "stress" {
+            return { (self.stress?.fullTrend ?? []).map { (day: Repository.localDayKey($0.date), value: $0.value) } }
+        }
         let pick: (DailyMetric) -> Double?
         switch id {
         case "rhr":       pick = { $0.restingHr.map(Double.init) }
@@ -2781,12 +2786,13 @@ struct TodayView: View {
         case "resp_rate": pick = { $0.respRateBpm }
         case "sleep":     pick = { $0.totalSleepMin }
         case "steps":     pick = { $0.steps.map(Double.init) }
+        case "strain":    pick = { $0.strain }
         default:          return nil
         }
-        // Steps' latest point is today, still accumulating — drop it so the levels count completed days
-        // only (same guard `bandSummary` uses, FER-264). Nightly metrics (rhr/spo2/sleep/resp) are already
-        // complete each morning, so they keep every point.
-        let dropInProgressToday = (id == "steps")
+        // Steps and Day Strain accumulate through the day — drop today's still-in-progress point so the
+        // levels count completed days only (same guard `bandSummary` uses, FER-264). Nightly metrics
+        // (rhr/spo2/sleep/resp) are already complete each morning, so they keep every point.
+        let dropInProgressToday = (id == "steps" || id == "strain")
         return {
             var series = repo.displayDays.compactMap { row in pick(row).map { (day: row.day, value: $0) } }
             if dropInProgressToday, series.count > 1, series.last?.day == Repository.localDayKey(Date()) {
