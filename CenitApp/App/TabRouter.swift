@@ -27,6 +27,11 @@ final class TabRouter: ObservableObject {
     /// de hoy» line open the matching correlation's detail in Patrones (FER-614).
     @Published var openInsightKey: String? = nil
 
+    /// One-shot: after landing on «Patrones», open the running experiment's detail sheet (day N · racha ·
+    /// effect · the daily check-in when pending). Consumed (reset to false) by `BucleView`. Lets the Daily
+    /// Brief's «La conexión de hoy» experiment line open the check-in / detail in Patrones (FER-615).
+    @Published var openRunningExperiment = false
+
     func select(_ tab: Tab) { requested = tab }
 
     /// Switch to «Cuerpo» and ask it to open the fatigue map (the strength summary's muscle chips).
@@ -37,5 +42,9 @@ final class TabRouter: ObservableObject {
 
     /// Switch to «Patrones» and ask it to open the insight matching `key` (the Daily Brief's «Ver patrón»).
     func openInsight(key: String) { openInsightKey = key; requested = .coach }
+
+    /// Switch to «Patrones» and ask it to open the running experiment's detail/check-in (the Daily Brief's
+    /// «Registra check-in» / «Ver experimento»).
+    func openExperiment() { openRunningExperiment = true; requested = .coach }
 }
 #endif

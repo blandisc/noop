@@ -388,3 +388,84 @@ extension DailyBriefEngine {
         return "Tu \(parts[0]) y tu \(parts[1]) \(direct ? "van de la mano" : "se mueven al revés")"
     }
 }
+
+// MARK: - «La conexión de hoy» gana una 2ª fuente: el experimento N-of-1 (FER-615)
+//
+// La fase 3 del «Daily Brief inteligente» (épico FER-612): el MISMO renglón «La conexión de hoy» puede venir
+// ahora de dos lados —la correlación detectada (F2) o el experimento N-of-1 en curso (FER-307/462)—. NO es
+// matemática nueva: el experimento ya lo arma Patrones (estado/racha/check-in derivados del historial); aquí
+// solo se DECIDE cuál de las dos fuentes muestra el renglón y se traduce el experimento a una frase es-MX. El
+// motor queda puro: recibe el experimento como un input plano (etiquetas ya resueltas), nunca lee la DB.
+
+extension DailyBrief {
+    /// La fuente del renglón «La conexión de hoy»: la correlación detectada (F2) o el experimento en curso (F3).
+    /// La UI las renderiza igual (acento + frase + CTA), pero el deep-link difiere: la correlación abre su patrón,
+    /// el experimento abre el check-in/detalle del experimento en Patrones.
+    public enum DayConnection: Sendable, Equatable {
+        case correlation(Connection)
+        case experiment(ExperimentLine)
+    }
+
+    /// El renglón del experimento N-of-1 en curso dentro del brief: su estado en una frase + si toca check-in hoy.
+    public struct ExperimentLine: Sendable, Equatable {
+        /// La frase es-MX del estado (p. ej. «Vas en el día 3 de “Meditación → Recuperación”»).
+        public let text: String
+        /// Hoy toca registrar el check-in (dentro de la ventana, sin marcar). La UI lo mapea al copy del CTA:
+        /// `true` → «Registra check-in»; `false` → «Ver experimento».
+        public let pendingCheckIn: Bool
+
+        public init(text: String, pendingCheckIn: Bool) {
+            self.text = text; self.pendingCheckIn = pendingCheckIn
+        }
+    }
+}
+
+extension DailyBriefEngine {
+
+    /// El experimento N-of-1 en curso, como input plano para el renglón del brief (etiquetas ya resueltas en la
+    /// capa de app — el motor no toca DB ni catálogo). Espejo de lo que muestra Patrones (FER-462).
+    public struct ActiveExperiment: Sendable, Equatable {
+        /// La etiqueta es-MX del comportamiento (p. ej. «Meditación»).
+        public let behaviorLabel: String
+        /// La etiqueta es-MX del resultado/outcome (p. ej. «Recuperación»).
+        public let outcomeLabel: String
+        /// El día en curso dentro de la ventana, 1-based (el `elapsedDay` de Patrones).
+        public let dayNumber: Int
+        /// Hoy toca check-in (dentro de ventana, sin marcar) — el `pendingCheckIn` de Patrones.
+        public let pendingCheckIn: Bool
+
+        public init(behaviorLabel: String, outcomeLabel: String, dayNumber: Int, pendingCheckIn: Bool) {
+            self.behaviorLabel = behaviorLabel; self.outcomeLabel = outcomeLabel
+            self.dayNumber = dayNumber; self.pendingCheckIn = pendingCheckIn
+        }
+    }
+
+    /// Elige la fuente del renglón «La conexión de hoy» entre la correlación (F2) y el experimento en curso (F3),
+    /// con una regla de prioridad **determinista y documentada**:
+    ///
+    /// 1. **Check-in pendiente hoy** → gana el experimento (la acción del día es lo que más puede pesar).
+    /// 2. Si no, **gana la correlación significativa** (la conexión de mayor relevancia, ya rankeada — F2).
+    /// 3. Si no hay correlación, **el experimento activo** (su estado día/título, sin check-in pendiente).
+    /// 4. Sin nada → `nil` (la UI omite el renglón).
+    ///
+    /// `experiment` es `nil` cuando no hay experimento en curso → cae al comportamiento puro de F2.
+    public static func dayConnection(insights: [Insight],
+                                     experiment: ActiveExperiment?) -> DailyBrief.DayConnection? {
+        let corr = connection(insights: insights)
+        guard let exp = experiment else {
+            return corr.map(DailyBrief.DayConnection.correlation)
+        }
+        let line = experimentLine(exp)
+        if exp.pendingCheckIn { return .experiment(line) }   // 1
+        if let corr { return .correlation(corr) }            // 2
+        return .experiment(line)                             // 3
+    }
+
+    /// Traduce el experimento en curso a su renglón es-MX. El título cruza comportamiento → resultado, como en
+    /// Patrones; la cifra es el día en curso (sin jerga estadística).
+    static func experimentLine(_ exp: ActiveExperiment) -> DailyBrief.ExperimentLine {
+        let title = "\(exp.behaviorLabel) → \(exp.outcomeLabel)"
+        return DailyBrief.ExperimentLine(text: "Vas en el día \(exp.dayNumber) de “\(title)”",
+                                         pendingCheckIn: exp.pendingCheckIn)
+    }
+}
