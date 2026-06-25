@@ -118,6 +118,10 @@ struct TodayView: View {
     // loader compartido `InsightsProvider`, así la conexión del brief == la que muestra Patrones (mismo FDR).
     @State private var insights: [Insight] = []
 
+    // El experimento N-of-1 en curso, espejo de Patrones (FER-615): la 2ª fuente del renglón «La conexión de
+    // hoy». Cargado en `loadAll` desde `Repository` (activeExperiment + experimentProgress); `nil` sin experimento.
+    @State private var activeExperiment: DailyBriefEngine.ActiveExperiment? = nil
+
     // Support sheet (donate + contact) — always reachable from the home toolbar.
     @State private var showingSupport = false
 
@@ -1024,10 +1028,11 @@ struct TodayView: View {
                                        recovery: repo.today?.recovery)
     }
 
-    /// «La conexión de hoy» (FER-614): la correlación significativa más relevante, o `nil` (la UI omite el
-    /// renglón). Misma fuente que Patrones, así el deep-link abre exactamente ese patrón.
-    private var connection: DailyBrief.Connection? {
-        DailyBriefEngine.connection(insights: insights)
+    /// «La conexión de hoy» (FER-614/615): la correlación significativa más relevante O el experimento N-of-1
+    /// en curso, elegido por la regla de prioridad determinista (`dayConnection`), o `nil` (la UI omite el
+    /// renglón). Misma fuente que Patrones, así el deep-link abre exactamente ese patrón / experimento.
+    private var dayConnection: DailyBrief.DayConnection? {
+        DailyBriefEngine.dayConnection(insights: insights, experiment: activeExperiment)
     }
 
     /// El Daily Brief renderizado: titular en TINTA (el color vive en el dato, no en la palabra) que
@@ -1063,7 +1068,7 @@ struct TodayView: View {
                 Text(brief.why).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
 
-                if let conn = connection { connectionLineView(conn) }
+                if let conn = dayConnection { dayConnectionView(conn) }
 
                 VStack(spacing: 0) {
                     ForEach(Array(brief.bullets.enumerated()), id: \.offset) { i, b in
@@ -1088,23 +1093,43 @@ struct TodayView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    // MARK: - «La conexión de hoy» (FER-614)
+    // MARK: - «La conexión de hoy» (FER-614 correlación · FER-615 experimento)
 
-    /// El renglón «La conexión de hoy» dentro de la card del brief: acento verde a la izquierda, la frase sin
-    /// jerga y «Ver patrón». Toca → abre el detalle de esa correlación en Patrones vía `TabRouter` (deep-link
-    /// por la `InsightFreshness.key` del insight, la misma identidad que usa Patrones).
-    private func connectionLineView(_ conn: DailyBrief.Connection) -> some View {
-        Button {
-            tabRouter.openInsight(key: InsightFreshness.key(for: conn.insight))
-        } label: {
+    /// El renglón «La conexión de hoy»: despacha entre la correlación detectada (F2) y el experimento N-of-1 en
+    /// curso (F3), ya elegidos por la regla de prioridad del motor. Ambos comparten el mismo chrome (overline +
+    /// acento + frase + CTA); solo cambian la frase, el copy del CTA y el destino del deep-link.
+    @ViewBuilder
+    private func dayConnectionView(_ conn: DailyBrief.DayConnection) -> some View {
+        switch conn {
+        case .correlation(let c):
+            connectionLineView(text: c.text, cta: "Ver patrón",
+                               hint: "Abre este patrón en Patrones") {
+                tabRouter.openInsight(key: InsightFreshness.key(for: c.insight))
+            }
+        case .experiment(let line):
+            connectionLineView(text: line.text,
+                               cta: line.pendingCheckIn ? "Registra check-in" : "Ver experimento",
+                               hint: line.pendingCheckIn
+                                   ? "Abre tu experimento en Patrones para registrar el check-in de hoy"
+                                   : "Abre tu experimento en Patrones") {
+                tabRouter.select(.coach)
+            }
+        }
+    }
+
+    /// El chrome compartido del renglón «La conexión de hoy»: acento verde a la izquierda, la frase sin jerga y
+    /// el CTA con chevron. Toca → `action` (deep-link a Patrones, distinto por fuente).
+    private func connectionLineView(text: String, cta: LocalizedStringKey, hint: String,
+                                    action: @escaping () -> Void) -> some View {
+        Button(action: action) {
             VStack(alignment: .leading, spacing: NoopMetrics.space1) {
                 Text("La conexión de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space2) {
-                    Text(conn.text).font(StrandFont.subhead).foregroundStyle(theme.ink)
+                    Text(text).font(StrandFont.subhead).foregroundStyle(theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: NoopMetrics.space2)
                     HStack(spacing: 2) {
-                        Text("Ver patrón").font(StrandFont.caption)
+                        Text(cta).font(StrandFont.caption)
                         Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold))
                     }
                     .foregroundStyle(theme.verdict)
@@ -1121,7 +1146,7 @@ struct TodayView: View {
         }
         .buttonStyle(.plain)
         .padding(.top, NoopMetrics.space2)
-        .accessibilityHint(Text("Abre este patrón en Patrones"))
+        .accessibilityHint(Text(hint))
     }
 
     // MARK: - Bloque «Hoy en tu plan» (FER-613)
@@ -2757,6 +2782,24 @@ struct TodayView: View {
         await loadTrainingPlan()
         // «La conexión de hoy» (FER-614): los hallazgos rankeados, misma fuente que Patrones.
         insights = await InsightsProvider.generate(repo: repo, today: Repository.localDayKey(Date()))
+        // El experimento N-of-1 en curso (FER-615): la 2ª fuente del mismo renglón.
+        await loadActiveExperiment()
+    }
+
+    /// Carga el experimento N-of-1 en curso como input plano para el motor (FER-615), espejo de `BucleView`:
+    /// cierra primero el experimento cuya ventana ya venció (idempotente) para no mostrar uno rancio, lee el
+    /// `activeExperiment` + su `experimentProgress` (día/check-in derivados del historial, sin migración) y
+    /// resuelve las etiquetas es-MX con el mismo `BucleFormat` que Patrones. `nil` sin experimento en curso.
+    private func loadActiveExperiment() async {
+        let todayKey = Repository.localDayKey(Date())
+        await repo.closeDueExperiment(today: todayKey)
+        guard let row = await repo.activeExperiment() else { activeExperiment = nil; return }
+        let progress = await repo.experimentProgress(row, today: todayKey)
+        activeExperiment = DailyBriefEngine.ActiveExperiment(
+            behaviorLabel: BucleFormat.behaviorLabel(row.behavior),
+            outcomeLabel: row.outcome,
+            dayNumber: progress.elapsedDay,
+            pendingCheckIn: progress.pendingCheckIn)
     }
 
     /// Carga los insumos del bloque «Hoy en tu plan» (FER-613): el split, la rutina de hoy y la racha de

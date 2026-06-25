@@ -235,4 +235,56 @@ final class DailyBriefEngineTests: XCTestCase {
                             confidence: .medium, relevance: 1)
         XCTAssertNil(DailyBriefEngine.connectionText(for: trend))
     }
+
+    // MARK: - «La conexión de hoy» con experimento (FER-615)
+
+    private func exp(pending: Bool, day: Int = 3) -> DailyBriefEngine.ActiveExperiment {
+        DailyBriefEngine.ActiveExperiment(behaviorLabel: "Meditación", outcomeLabel: "Recuperación",
+                                          dayNumber: day, pendingCheckIn: pending)
+    }
+
+    /// El renglón del experimento: título cruzado + el día en curso, sin jerga.
+    func testExperimentLineText() {
+        let line = DailyBriefEngine.experimentLine(exp(pending: true))
+        XCTAssertEqual(line.text, "Vas en el día 3 de “Meditación → Recuperación”")
+        XCTAssertTrue(line.pendingCheckIn)
+    }
+
+    /// Sin experimento → cae a la correlación de F2 (mismo comportamiento).
+    func testDayConnectionNoExperimentFallsToCorrelation() {
+        let c = DailyBriefEngine.dayConnection(
+            insights: [corr("Sueño·Recuperación", r: 0.45, significant: true)], experiment: nil)
+        guard case .correlation(let conn)? = c else { return XCTFail("esperaba correlación") }
+        XCTAssertEqual(conn.text, "Tu Sueño y tu Recuperación van de la mano")
+    }
+
+    /// Sin experimento ni correlación → nil (se omite el renglón).
+    func testDayConnectionEmptyReturnsNil() {
+        XCTAssertNil(DailyBriefEngine.dayConnection(insights: [], experiment: nil))
+    }
+
+    /// Prioridad 1: con check-in pendiente hoy, el experimento gana aunque haya correlación significativa.
+    func testDayConnectionPendingCheckInWinsOverCorrelation() {
+        let c = DailyBriefEngine.dayConnection(
+            insights: [corr("Sueño·Recuperación", r: 0.5, significant: true)], experiment: exp(pending: true))
+        guard case .experiment(let line)? = c else { return XCTFail("esperaba experimento") }
+        XCTAssertTrue(line.pendingCheckIn)
+    }
+
+    /// Prioridad 2: sin check-in pendiente, gana la correlación significativa (mayor relevancia, F2).
+    func testDayConnectionCorrelationWinsWhenNoPendingCheckIn() {
+        let c = DailyBriefEngine.dayConnection(
+            insights: [corr("Sueño·Recuperación", r: 0.5, significant: true)], experiment: exp(pending: false))
+        guard case .correlation(let conn)? = c else { return XCTFail("esperaba correlación") }
+        XCTAssertEqual(conn.insight.datum.metric, "Sueño·Recuperación")
+    }
+
+    /// Prioridad 3: sin check-in pendiente y sin correlación significativa, gana el estado del experimento.
+    func testDayConnectionExperimentShownWhenNoCorrelation() {
+        let c = DailyBriefEngine.dayConnection(
+            insights: [corr("HRV·Recuperación", r: 0.1, significant: false)], experiment: exp(pending: false))
+        guard case .experiment(let line)? = c else { return XCTFail("esperaba experimento") }
+        XCTAssertFalse(line.pendingCheckIn)
+        XCTAssertEqual(line.text, "Vas en el día 3 de “Meditación → Recuperación”")
+    }
 }
