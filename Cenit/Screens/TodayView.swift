@@ -1112,7 +1112,7 @@ struct TodayView: View {
                                hint: line.pendingCheckIn
                                    ? "Abre tu experimento en Patrones para registrar el check-in de hoy"
                                    : "Abre tu experimento en Patrones") {
-                tabRouter.select(.coach)
+                tabRouter.openExperiment()
             }
         }
     }

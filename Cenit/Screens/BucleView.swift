@@ -66,6 +66,10 @@ private struct PatronesLanding: View {
     /// insights — open the matching detail as soon as `load()` finishes (FER-614).
     @State private var pendingInsightKey: String? = nil
 
+    /// A deep-link from the Daily Brief's experiment line that arrived before this view loaded the running
+    /// experiment — open its detail/check-in as soon as `load()` finishes (FER-615).
+    @State private var pendingOpenExperiment = false
+
     // Sheets.
     /// One lever/finding detail sheet — fed by the hero, «Lo que funciona» and the correlations.
     @State private var detail: InsightItem? = nil
@@ -122,6 +126,10 @@ private struct PatronesLanding: View {
         // here (FER-614). If we haven't loaded the insights yet, defer until `load()` finishes.
         .onAppear { openInsightFromRouter(tabRouter.openInsightKey) }
         .onChange(of: tabRouter.openInsightKey) { _, key in openInsightFromRouter(key) }
+        // Deep-link from the Daily Brief's experiment line → open the running experiment's detail/check-in
+        // here (FER-615). If we haven't loaded the running experiment yet, defer until `load()` finishes.
+        .onAppear { openExperimentFromRouter(tabRouter.openRunningExperiment) }
+        .onChange(of: tabRouter.openRunningExperiment) { _, on in openExperimentFromRouter(on) }
         .sheet(item: $detail) { item in
             PalancaDetailSheet(insight: item.insight, theme: theme,
                                canStartExperiment: canStartExperiment(item.insight)) {
@@ -1090,6 +1098,18 @@ private struct PatronesLanding: View {
         }
     }
 
+    /// Open the running experiment's detail/check-in for the Daily Brief deep-link (FER-615). If the running
+    /// experiment isn't loaded yet, defer until `load()` finishes; if there's none, the request is dropped.
+    private func openExperimentFromRouter(_ on: Bool) {
+        guard on else { return }
+        if loaded {
+            if let run = running { experimentDetail = ExperimentItem(row: run.row) }
+            tabRouter.openRunningExperiment = false
+        } else {
+            pendingOpenExperiment = true
+        }
+    }
+
     // MARK: Load
 
     private func load() async {
@@ -1145,6 +1165,12 @@ private struct PatronesLanding: View {
                 pendingInsightKey = nil
                 detail = generated.first { InsightFreshness.key(for: $0) == key }.map { InsightItem(insight: $0) }
                 tabRouter.openInsightKey = nil
+            }
+            // Likewise the experiment deep-link (FER-615): open the running experiment's detail/check-in.
+            if pendingOpenExperiment {
+                pendingOpenExperiment = false
+                if let run = runVM { experimentDetail = ExperimentItem(row: run.row) }
+                tabRouter.openRunningExperiment = false
             }
         }
     }
