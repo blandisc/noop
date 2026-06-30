@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **FC en reposo del Daily Brief ancla la comparación a tu base personal / Resting HR in Daily Brief anchors comparison to your personal baseline.**
+  **ES** — Las viñetas de frecuencia cardíaca en reposo del Daily Brief ya no dicen «Tu pulso en reposo bajó / subió» (ambiguo: ¿vs ayer?). Ahora dicen «Tu pulso en reposo está por debajo de tu base — señal de recuperación» o «…por encima de tu base — tu cuerpo sigue activo», dejando claro que la comparación es contra tu media personal de 30 días.
+  **EN** — The resting heart rate bullet in the Daily Brief no longer says "Your resting pulse dropped / rose" (ambiguous: vs yesterday?). It now says "Your resting pulse is below your baseline — a recovery signal" or "…above your baseline — your body is still active", making clear the comparison is against your 30-day personal average.
+  ([Packages/StrandAnalytics/Sources/StrandAnalytics/DailyBrief.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/DailyBrief.swift))
+
 - **Sueño muestra «6h», «7h 30m» en vez de «360», «450» / Sleep shows «6h», «7h 30m» instead of «360», «450».**
   **ES** — Los umbrales de nivel (Corto · Suficiente · Óptimo · Extenso) y el eje Y de la gráfica en **Detalle de Sueño** ahora muestran la duración en formato **horas/minutos** (p. ej. «< 6h», «7h – 8h 30m», «> 8h 30m») en vez de los minutos crudos internos. El resto de métricas no cambia.
   **EN** — The level thresholds (Short · Sufficient · Optimal · Extensive) and the chart Y-axis in **Sleep Detail** now display duration in **h/m format** (e.g. «< 6h», «7h – 8h 30m», «> 8h 30m») instead of raw internal minutes. All other metrics are unaffected.
