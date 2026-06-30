@@ -870,7 +870,9 @@ struct MetricInfoSheet: View {
                 todayValue: info.levelsTodayValue,
                 hue: metricHue,
                 unit: info.unit ?? "",
-                valueFormat: { "\(Int($0.rounded()))" },
+                valueFormat: info.id == "sleep"
+                    ? { mins in let h = Int(mins) / 60; let m = Int(mins) % 60; return m == 0 ? "\(h)h" : "\(h)h \(m)m" }
+                    : { "\(Int($0.rounded()))" },
                 nightly: BandSummaryCopy.isNightly(metricID: info.id),
                 accessibilityLabel: info.name
             )

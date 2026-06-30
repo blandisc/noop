@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Sueño muestra «6h», «7h 30m» en vez de «360», «450» / Sleep shows «6h», «7h 30m» instead of «360», «450».**
+  **ES** — Los umbrales de nivel (Corto · Suficiente · Óptimo · Extenso) y el eje Y de la gráfica en **Detalle de Sueño** ahora muestran la duración en formato **horas/minutos** (p. ej. «< 6h», «7h – 8h 30m», «> 8h 30m») en vez de los minutos crudos internos. El resto de métricas no cambia.
+  **EN** — The level thresholds (Short · Sufficient · Optimal · Extensive) and the chart Y-axis in **Sleep Detail** now display duration in **h/m format** (e.g. «< 6h», «7h – 8h 30m», «> 8h 30m») instead of raw internal minutes. All other metrics are unaffected.
+  ([Cenit/Screens/MetricInfoSheet.swift](Cenit/Screens/MetricInfoSheet.swift))
+
 - **«La conexión de hoy» ahora también empuja tu experimento / "Today's connection" now also nudges your experiment.**
   **ES** — El renglón **«La conexión de hoy»** del Daily Brief gana una segunda fuente: tu **experimento N-of-1 en curso**. Cuando tienes uno corriendo, la línea puede mostrar su estado en una frase — p. ej. «Vas en el día 3 de "Meditación → Recuperación"» — y, si hoy te toca, te invita a **registrar tu check-in** con un toque que abre tu experimento en **Patrones**. La prioridad es clara: si hoy tienes check-in pendiente, eso gana; si no, gana la correlación más relevante; y si no hay correlación, se muestra el estado del experimento. Sin experimento en curso, la línea sigue igual que antes (la correlación, o nada). Tercera pieza del Daily Brief inteligente.
   **EN** — The Daily Brief's **"Today's connection"** line gains a second source: your **running N-of-1 experiment**. When one is in flight, the line can show its status in a sentence — e.g. "You're on day 3 of 'Meditation → Recovery'" — and, when today calls for it, nudges you to **log your check-in** with one tap that opens your experiment in **Patterns**. The priority is clear: a check-in due today wins; otherwise the most relevant correlation wins; and if there's no correlation, the experiment's status shows. With no experiment running, the line behaves exactly as before (the correlation, or nothing). Third piece of the smarter Daily Brief.
