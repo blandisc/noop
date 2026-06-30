@@ -218,7 +218,7 @@ public enum DailyBriefEngine {
         let good = flag == .good
         switch kind {
         case .hrv:      return good ? "Tu HRV viene alta" : "Tu HRV bajó"
-        case .rhr:      return good ? "Tu pulso en reposo bajó" : "Tu pulso en reposo subió"
+        case .rhr:      return good ? "Tu pulso en reposo está por debajo de tu base — señal de recuperación" : "Tu pulso en reposo está por encima de tu base — tu cuerpo sigue activo"
         case .respRate: return good ? "Tu respiración va estable" : "Tu respiración subió"
         case .skinTemp: return good ? "Tu temperatura va normal" : "Tu temperatura subió"
         case .acwr:     return good ? "Tu carga va en balance" : "Tu carga viene alta"
