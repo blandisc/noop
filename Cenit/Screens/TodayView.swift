@@ -182,6 +182,10 @@ struct TodayView: View {
     /// El nivel del veredicto de AYER, memoizado (FER-475): da continuidad en la página 1 «en espera»
     /// («Ayer cerraste en Equilibrado») cuando aún no hay lectura de hoy. `nil`/insufficient → no se muestra.
     @State private var memoYesterdayLevel: ReadinessEngine.Level?
+    /// La viñeta de HRV estimada (día sin banda) memoizada (FER-623): su cálculo corre un `ReadinessEngine.
+    /// evaluate` sobre la historia enmascarada a Apple, así que —como el veredicto (FER-172)— se siembra UNA
+    /// vez por `refreshSeq` en `recomputeDerived`, nunca por frame. `nil` si hoy no es estimado o calibra.
+    @State private var memoAppleHrvEstimated: DailyBrief.HrvEstimatedBullet?
 
     /// Los tres conteos de noches que el héroe/veredicto leen, agrupados para sembrarlos de una sola
     /// pasada sobre `repo.days` (antes cada propiedad remapeaba la historia por su cuenta).
@@ -213,17 +217,30 @@ struct TodayView: View {
     /// Siembra el veredicto + los conteos UNA vez por refresh. La llama el `.task(id: repo.refreshSeq)`
     /// (vía `loadAll()`), antes de cualquier `await`, así que el body deja de recalcular en cada frame.
     private func recomputeDerived() {
-        memoReadiness = ReadinessEngine.evaluate(days: repo.days, today: Repository.localDayKey(Date()))
+        // FER-623: el veredicto mide la HRV solo contra la base de BANDA (RMSSD), vía `bandDays`. Solo-banda → no-op.
+        let band = bandDays
+        memoReadiness = ReadinessEngine.evaluate(days: band, today: Repository.localDayKey(Date()))
         memoCounts = computeHrvCounts()
         // FER-475: el veredicto de ayer, para la línea de continuidad de la página 1 «en espera». Una vez
         // por refresh (no por frame), junto al de hoy.
         let yKey = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date())
-        memoYesterdayLevel = ReadinessEngine.evaluate(days: repo.days, today: yKey).level
+        memoYesterdayLevel = ReadinessEngine.evaluate(days: band, today: yKey).level
+        // FER-623: la viñeta de HRV estimada (día sin banda) también se siembra aquí, no por frame.
+        memoAppleHrvEstimated = computeAppleHrvEstimated()
         #if DEBUG
         // FER-172: prueba de que el veredicto se recalcula UNA vez por refresh. En scroll/animación/
         // ticks de HR esta línea NO debe reaparecer; solo sale una vez por `seq`. Compila fuera en release.
         print("[FER-172] readiness recomputed · seq=\(repo.refreshSeq) · days=\(repo.days.count)")
         #endif
+    }
+
+    /// FER-623: `repo.days` con la HRV de Apple (SDNN) enmascarada, para medir el veredicto solo contra la
+    /// base de BANDA (RMSSD) — igual que Recuperación (FER-519): la σ de «HRV vs tu base» no se contamina
+    /// mezclando dos métricas sin conversión. Lee `days` + `appleHealthDays` en una sola expresión síncrona
+    /// (mismo dashboard publicado, sin await en medio) para no reintroducir la carrera FER-177. Una sola
+    /// fuente de verdad: `recomputeDerived` y el fallback en frío de `readiness` la comparten (deben coincidir).
+    private var bandDays: [DailyMetric] {
+        HrvSourceLens.mask(repo.days, keep: .band, appleDays: repo.appleHealthDays)
     }
 
     /// Los conteos memoizados; cae a un cálculo en línea solo el primer frame (memo aún nil).
@@ -1017,7 +1034,22 @@ struct TodayView: View {
         return DailyBriefEngine.make(readiness: readiness,
                                      recovery: repo.today?.recovery,
                                      recoveryBaseline: recoveryBaseline,
-                                     sleepMinutes: sleepMin)
+                                     sleepMinutes: sleepMin,
+                                     hrvEstimated: memoAppleHrvEstimated)
+    }
+
+    /// FER-623: la viñeta de HRV ESTIMADA para un día sin banda. El veredicto mide solo contra la base de
+    /// banda (RMSSD), así que un día Apple-only no trae señal de HRV. Aquí se clasifica la SDNN de hoy
+    /// contra la PROPIA base SDNN reusando `ReadinessEngine` sobre la historia enmascarada a Apple — el
+    /// mismo z-score/banding/cold-start del motor, sin matemática nueva. `nil` si hoy NO es estimado (día de
+    /// banda → el veredicto ya trae su HRV) o si la base SDNN aún no madura (el motor calla < minBaseline).
+    /// Se siembra en `recomputeDerived` (memo `memoAppleHrvEstimated`), no por frame — corre un `evaluate`.
+    private func computeAppleHrvEstimated() -> DailyBrief.HrvEstimatedBullet? {
+        guard repo.isRecoveryEstimated(Repository.localDayKey(Date())) else { return nil }
+        let appleDays = HrvSourceLens.mask(repo.days, keep: .apple, appleDays: repo.appleHealthDays)
+        let r = ReadinessEngine.evaluate(days: appleDays, today: Repository.localDayKey(Date()))
+        guard let hrv = r.signals.first(where: { $0.key == "hrv" }), let z = hrv.z else { return nil }
+        return DailyBrief.HrvEstimatedBullet(z: z, flag: hrv.flag)
     }
 
     /// El bloque «Hoy en tu plan» (FER-613): puente con Entrenar al pie del brief. `nil` sin split (se omite).
@@ -1355,7 +1387,15 @@ struct TodayView: View {
                     .foregroundStyle(flagColor(b.flag))
                     .frame(width: 22)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(b.lead).font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
+                    HStack(spacing: NoopMetrics.space2) {
+                        Text(b.lead).font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
+                        // FER-623: cuando la HRV de hoy es un estimado de Apple Salud (SDNN, día sin banda),
+                        // se sella «estimado» — espejo del mismo glifo/criterio que el sello del veredicto, así
+                        // nunca se ve idéntica a una lectura de banda. Token-only; reusa la frase localizada.
+                        if b.kind == .hrv, repo.isRecoveryEstimated(Repository.localDayKey(Date())) {
+                            briefEstimatedBadge
+                        }
+                    }
                     Text(b.sub).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -1394,6 +1434,20 @@ struct TodayView: View {
         case .skinTemp, .acwr:
             showWhyVerdict = true   // sin detalle de métrica propio → el porqué del veredicto
         }
+    }
+
+    /// FER-623: el sello «estimado» de la viñeta de HRV cuando hoy salió de Apple Salud (SDNN, día sin
+    /// banda). Mismo glifo `applewatch` + confianza que el sello del veredicto (`estimatedTodayMarker`),
+    /// en chico junto al encabezado de la viñeta. Token-only, reusa la frase localizada del Detalle.
+    private var briefEstimatedBadge: some View {
+        HStack(spacing: 3) {
+            Image(systemName: "applewatch").font(.system(size: 9, weight: .semibold))
+                .accessibilityHidden(true)
+            Text(RecoveryDetailScreen.confidenceLabel(repo.recoveryConfidence(Repository.localDayKey(Date()))))
+                .font(StrandFont.footnote)
+        }
+        .foregroundStyle(theme.inkTertiary)
+        .accessibilityLabel(Text("HRV estimada de Apple Salud"))
     }
 
     /// SF Symbol por tema de viñeta (la presentación vive en la app, no en el motor puro).
@@ -2710,7 +2764,8 @@ struct TodayView: View {
     /// Memoizado en `memoReadiness` (FER-172): cae a un cálculo en línea solo si el memo aún es nil
     /// (el primer body antes de que `.task` lo siembre), nunca en el camino caliente de cada render.
     private var readiness: ReadinessEngine.Readiness {
-        memoReadiness ?? ReadinessEngine.evaluate(days: repo.days, today: Repository.localDayKey(Date()))
+        // FER-623: mismo `bandDays` que `recomputeDerived`, para que el fallback en frío coincida con el memo.
+        memoReadiness ?? ReadinessEngine.evaluate(days: bandDays, today: Repository.localDayKey(Date()))
     }
 
     /// True only when the strap is worn AND streaming live HR — gates the beating animation so a
@@ -2778,7 +2833,8 @@ struct TodayView: View {
         // signal yet — the tile then placeholders "—"). Reads `displayDays` (Apple-health fallback,
         // FER-149) so a strap-partial night still derives, and anchors "today" to the local day so a
         // UTC-bucketed "tomorrow" row (FER-226) can't blank the tile.
-        stress = StressModel(days: repo.displayDays, stored: await stressRows, todayKey: Repository.localDayKey(Date()))
+        stress = StressModel(days: repo.displayDays, stored: await stressRows,
+                             todayKey: Repository.localDayKey(Date()), appleDays: repo.appleHealthDays)
         await loadTrainingPlan()
         // «La conexión de hoy» (FER-614): los hallazgos rankeados, misma fuente que Patrones.
         insights = await InsightsProvider.generate(repo: repo, today: Repository.localDayKey(Date()))

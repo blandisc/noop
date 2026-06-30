@@ -1029,7 +1029,8 @@ private struct CuerpoLanding: View {
         // displayDays = Apple-health fallback (FER-149); local todayKey ignores a UTC "tomorrow" row (FER-226).
         let stored = await stressRows
         stressSeries = stored   // for the Stress stat's sparkline (FER-566)
-        let stress = StressModel(days: repo.displayDays, stored: stored, todayKey: Repository.localDayKey(Date()))
+        let stress = StressModel(days: repo.displayDays, stored: stored,
+                                 todayKey: Repository.localDayKey(Date()), appleDays: repo.appleHealthDays)
         stressModel = stress
 
         fitnessAge = computeFitnessAge()

@@ -52,6 +52,20 @@ public struct DailyBrief: Sendable, Equatable {
     public enum BulletKind: String, Sendable, Equatable, CaseIterable {
         case sleep, recovery, hrv, rhr, respRate, skinTemp, acwr
     }
+
+    /// La viñeta de HRV ESTIMADA para un día sin banda (FER-623): la HRV de hoy vino de Apple Salud (SDNN),
+    /// así que el veredicto —que mide solo contra la base de banda (RMSSD)— no trae señal de HRV. En su lugar
+    /// el día se clasifica contra su PROPIA base SDNN (el mismo patrón `AppleRecoveryEstimator`) y se inyecta
+    /// aquí, marcada «estimado» por la UI. `nil` cuando hoy es de banda o la base SDNN aún no es usable
+    /// (cold-start: no se inventa σ). El z (σ, crudo, sobre la base = `+`) y el flag los calcula la capa de
+    /// app reusando `ReadinessEngine` sobre la historia enmascarada a Apple — cero matemática nueva.
+    public struct HrvEstimatedBullet: Sendable, Equatable {
+        /// La desviación de la SDNN de hoy contra la propia base SDNN, en σ (sobre la base = `+`).
+        public let z: Double
+        /// La valencia, de `ReadinessEngine.Flag` (la UI la mapea a color con la misma fuente que el veredicto).
+        public let flag: ReadinessEngine.Flag
+        public init(z: Double, flag: ReadinessEngine.Flag) { self.z = z; self.flag = flag }
+    }
 }
 
 /// El motor del Daily Brief. Puro y determinista: misma entrada → misma salida.
@@ -63,13 +77,17 @@ public enum DailyBriefEngine {
     ///   - recovery: la recuperación 0–100 de hoy (nil mientras calibra).
     ///   - recoveryBaseline: la media reciente de recuperación, para la viñeta «vs tu base».
     ///   - sleepMinutes: el sueño de anoche en minutos (nil si aún no hay lectura).
+    ///   - hrvEstimated: la viñeta de HRV estimada vs base SDNN para un día sin banda (FER-623); `nil` si hoy
+    ///     es de banda (el veredicto ya trae su señal de HRV) o si la base SDNN aún no es usable (cold-start).
     public static func make(readiness: ReadinessEngine.Readiness,
                             recovery: Double?,
                             recoveryBaseline: Double?,
-                            sleepMinutes: Double?) -> DailyBrief? {
+                            sleepMinutes: Double?,
+                            hrvEstimated: DailyBrief.HrvEstimatedBullet? = nil) -> DailyBrief? {
         guard readiness.level != .insufficient else { return nil }
         let bullets = selectBullets(readiness: readiness, recovery: recovery,
-                                    recoveryBaseline: recoveryBaseline, sleepMinutes: sleepMinutes)
+                                    recoveryBaseline: recoveryBaseline, sleepMinutes: sleepMinutes,
+                                    hrvEstimated: hrvEstimated)
         // Piso de 2 (FER-470): si el día no da para ≥2 viñetas (sin sueño, sin señales del cuerpo, solo
         // la recuperación), NO mostramos un brief de una sola línea — devolvemos nil y la página 1 cae al
         // copy honesto del veredicto. Así el brief siempre trae 2–3 viñetas. Caso escaso (mañana temprano
@@ -99,7 +117,8 @@ public enum DailyBriefEngine {
     static func selectBullets(readiness: ReadinessEngine.Readiness,
                               recovery: Double?,
                               recoveryBaseline: Double?,
-                              sleepMinutes: Double?) -> [DailyBrief.Bullet] {
+                              sleepMinutes: Double?,
+                              hrvEstimated: DailyBrief.HrvEstimatedBullet? = nil) -> [DailyBrief.Bullet] {
         var bullets: [DailyBrief.Bullet] = []
         if let mins = sleepMinutes {
             let b = sleepBullet(mins)
@@ -118,6 +137,15 @@ public enum DailyBriefEngine {
             pool.append(Candidate(kind: kind, flag: s.flag,
                                   lead: signalLead(kind: kind, flag: s.flag),
                                   sub: s.value ?? s.detail))
+        }
+        // FER-623: un día sin banda no produce señal de HRV en el veredicto (su SDNN se enmascaró de la base
+        // de banda). Si la capa de app calculó la HRV estimada contra la propia base SDNN, entra como viñeta
+        // de HRV — pero solo si el veredicto no trajo ya una (nunca dos viñetas de HRV). La UI la marca
+        // «estimado». Reusa el MISMO copy/σ que una señal de banda; la fuente (SDNN) la señala el sello.
+        if let est = hrvEstimated, !pool.contains(where: { $0.kind == .hrv }) {
+            pool.append(Candidate(kind: .hrv, flag: est.flag,
+                                  lead: signalLead(kind: .hrv, flag: est.flag),
+                                  sub: String(format: "%+.1fσ", est.z)))
         }
         // Orden estable: peor flag primero; a igual flag, prioridad fija de tipo.
         let ordered = pool.enumerated().sorted { a, b in
@@ -214,10 +242,14 @@ public enum DailyBriefEngine {
     /// El lead interpretivo de una señal del cuerpo, por tipo y valencia. El `sub` lo lleva la cifra σ
     /// de la propia señal. La dirección («subió/bajó») la decide el flag: para cada señal, `.good` es la
     /// dirección sana y `.watch`/`.bad` la que pide atención.
+    ///
+    /// FER-623: la HRV se ancla a «vs tu base» (sin verbo de cambio temporal). El σ siempre es relativo a la
+    /// base personal, no a ayer; decir «bajó» sugería una comparación día-a-día que confundía («dice alta
+    /// pero bajó vs ayer»). «sobre/bajo tu base» dice exactamente contra qué se mide.
     static func signalLead(kind: DailyBrief.BulletKind, flag: ReadinessEngine.Flag) -> String {
         let good = flag == .good
         switch kind {
-        case .hrv:      return good ? "Tu HRV viene alta" : "Tu HRV bajó"
+        case .hrv:      return good ? "Tu HRV está sobre tu base" : "Tu HRV está bajo tu base"
         case .rhr:      return good ? "Tu pulso en reposo está por debajo de tu base — señal de recuperación" : "Tu pulso en reposo está por encima de tu base — tu cuerpo sigue activo"
         case .respRate: return good ? "Tu respiración va estable" : "Tu respiración subió"
         case .skinTemp: return good ? "Tu temperatura va normal" : "Tu temperatura subió"
