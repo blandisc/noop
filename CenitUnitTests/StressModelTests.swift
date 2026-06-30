@@ -105,4 +105,43 @@ final class StressModelTests: XCTestCase {
         XCTAssertEqual(model?.anchorIsToday, true)
         XCTAssertEqual(model?.anchorDayKey, "2026-06-17")
     }
+
+    // MARK: - FER-623 — HRV baseline split by source (RMSSD band vs SDNN Apple)
+
+    /// Solo-banda identity: an empty `appleDays` set leaves every reading on the single (RMSSD) base, so
+    /// the score and HRV delta are bit-for-bit the default-parameter behavior — a strap-only user unchanged.
+    func testSoloBandaIdentity() {
+        var days = baseline()
+        days.append(dm("2026-06-17", rhr: 58, hrv: 38))
+        let withParam = StressModel(days: days, stored: [], todayKey: "2026-06-17", appleDays: [])
+        let noParam   = StressModel(days: days, stored: [], todayKey: "2026-06-17")
+        XCTAssertEqual(withParam?.score ?? -1, noParam?.score ?? -2, accuracy: 1e-9)
+        XCTAssertEqual(withParam?.hrvDelta ?? .nan, noParam?.hrvDelta ?? .nan, accuracy: 1e-9)
+    }
+
+    /// An Apple night (SDNN) in the baseline must NOT enter the band's RMSSD base. Marking a high-HRV
+    /// outlier night as Apple lowers the band mean, so today (a band night) reads less far below it —
+    /// proving the night was excluded from the band base (FER-519 policy, no SDNN→RMSSD mixing).
+    func testAppleNightExcludedFromBandBase() {
+        var days = (1...9).map { i in dm(String(format: "2026-06-%02d", i), rhr: 58 + i % 4, hrv: 48 + Double(i % 5)) }
+        days.append(dm("2026-06-10", rhr: 60, hrv: 90))   // an "SDNN" outlier night (~1.8× the RMSSD band)
+        days.append(dm("2026-06-17", rhr: 58, hrv: 50))   // today: a band night
+        let mixed = StressModel(days: days, stored: [], todayKey: "2026-06-17", appleDays: [])
+        let clean = StressModel(days: days, stored: [], todayKey: "2026-06-17", appleDays: ["2026-06-10"])
+        XCTAssertNotNil(mixed); XCTAssertNotNil(clean)
+        // Excluding the outlier lowers the band mean → today's delta (today − mean) is higher (less negative).
+        XCTAssertGreaterThan(clean!.hrvDelta!, mixed!.hrvDelta!)
+    }
+
+    /// Today is an Apple-only day with no prior Apple nights → no SDNN base behind it. The HRV term drops
+    /// (no σ invented) and stress derives from resting-HR alone; the band RMSSD base is never touched.
+    func testAppleOnlyAnchorWithoutSdnnBaseFallsToHeartRate() {
+        var days = baseline()                              // all band (RMSSD) nights
+        days.append(dm("2026-06-17", rhr: 64, hrv: 80))   // today: Apple-only, high SDNN, but no SDNN base
+        let model = StressModel(days: days, stored: [], todayKey: "2026-06-17", appleDays: ["2026-06-17"])
+        XCTAssertNotNil(model)
+        XCTAssertNil(model?.hrvDelta, "no SDNN base behind today → the HRV term drops, no invented σ")
+        XCTAssertNotNil(model?.rhrDelta, "resting-HR still drives stress (one merged base, same metric)")
+        XCTAssertEqual(model?.hrvToday, 80, "the raw HRV number still shows; only its baseline comparison is withheld")
+    }
 }

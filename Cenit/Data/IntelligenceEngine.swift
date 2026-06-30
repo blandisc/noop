@@ -376,6 +376,10 @@ final class IntelligenceEngine: ObservableObject {
     /// resting-HR / respiration (same physical metric across sources). `appleHealthDays` is the set
     /// `mergeDaily` returns for the days surfaced from Apple Health. Pure (no store/actor state) for
     /// testing; `appleHealthDays == []` (e.g. whoopOnly, or a strap-only user) is the identity.
+    ///
+    /// Sibling: `HrvSourceLens.mask` (StrandAnalytics, FER-623) is the COLUMN variant — it nils only
+    /// `avgHrv` and keeps RHR/resp, for consumers (verdict/brief σ, StressModel) that still want the
+    /// Apple night's other signals. This one drops the WHOLE row (recovery has nothing band-side to keep).
     nonisolated static func strapOnlyHistory(_ hist: [DailyMetric],
                                              appleHealthDays: Set<String>) -> [DailyMetric] {
         appleHealthDays.isEmpty ? hist : hist.filter { !appleHealthDays.contains($0.day) }
