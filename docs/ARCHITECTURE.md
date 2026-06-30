@@ -503,6 +503,14 @@ night), which is what the ring, the verdict and the recovery-detail hero read. `
   with the strap's RMSSD; SDNN is a different construct (total vs vagal variability) and ultra-short/all-day,
   so the result is labelled «estimado» with a `ScoreConfidence` grade, never equated to a band recovery
   (Task Force 1996; Shaffer & Ginsberg 2017). Pure + DB-free; surfaced read-time (see §8), not persisted.
+- **`HrvSourceLens`** (FER-623) keeps an HRV baseline pure by source — the same RMSSD-vs-SDNN discipline
+  FER-519/FER-543 gave Recovery and the illness sentinel, now extended to the **verdict / Daily Brief σ**
+  and **`StressModel`**. `mask(_:keep:appleDays:)` (pure; `appleDays` is app knowledge passed in) nils
+  `avgHrv` on the rows of the other source before a consumer folds them, so the verdict scores HRV against
+  the band (RMSSD) baseline only; the brief adds an **estimated** SDNN bullet on a band-less day, and
+  `StressModel` z-scores each reading against the baseline of its own source. The **z-score is the common
+  currency** across sources; raw ms are never compared between them. `keep: .band, appleDays: []` is the
+  identity (a strap-only user is unchanged).
 - **`StrainScorer`** integrates the day's HR window into a `0–21` cardiovascular load (Tanaka HRmax
   from age unless overridden).
 - **`WorkoutDetector`** segments exercise bouts from HR + motion.

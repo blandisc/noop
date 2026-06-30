@@ -124,6 +124,42 @@ final class DailyBriefEngineTests: XCTestCase {
         XCTAssertEqual(Set(b.bullets.map(\.kind)), [.recovery, .hrv])
     }
 
+    // MARK: viñeta de HRV estimada vs base SDNN (FER-623)
+
+    /// El parámetro `hrvEstimated` es aditivo: omitirlo produce el MISMO brief que antes (default nil).
+    func testHrvEstimatedDefaultsToNilAndIsAdditive() {
+        let r = readiness(.balanced, signals: [sig("rhr", .good)])
+        let withDefault = DailyBriefEngine.make(readiness: r, recovery: 70, recoveryBaseline: 60, sleepMinutes: nil)
+        let explicitNil = DailyBriefEngine.make(readiness: r, recovery: 70, recoveryBaseline: 60,
+                                                sleepMinutes: nil, hrvEstimated: nil)
+        XCTAssertEqual(withDefault, explicitNil)
+    }
+
+    /// Día sin banda: el veredicto no trae señal de HRV (su SDNN se enmascaró). La viñeta estimada se inyecta
+    /// como viñeta de HRV con su σ y flag — así el día Apple-only SÍ muestra su HRV, clasificada vs base SDNN.
+    func testHrvEstimatedInjectedWhenNoBandSignal() {
+        let r = readiness(.balanced, signals: [sig("rhr", .good)])   // sin señal de hrv
+        let est = DailyBrief.HrvEstimatedBullet(z: 0.9, flag: .good)
+        let b = DailyBriefEngine.make(readiness: r, recovery: 70, recoveryBaseline: 60,
+                                      sleepMinutes: nil, hrvEstimated: est)!
+        let hrv = b.bullets.first { $0.kind == .hrv }
+        XCTAssertNotNil(hrv, "el día sin banda debe mostrar su HRV estimada")
+        XCTAssertEqual(hrv?.flag, .good)
+        XCTAssertEqual(hrv?.sub, "+0.9σ")
+    }
+
+    /// Nunca dos viñetas de HRV: si el veredicto YA trae una señal de banda, la estimada se ignora (un día
+    /// es de una sola fuente — banda o Apple, no ambas).
+    func testHrvEstimatedIgnoredWhenBandSignalPresent() {
+        let r = readiness(.strained, signals: [sig("hrv", .bad, value: "-1.2σ")])
+        let est = DailyBrief.HrvEstimatedBullet(z: 0.9, flag: .good)
+        let b = DailyBriefEngine.make(readiness: r, recovery: 60, recoveryBaseline: 60,
+                                      sleepMinutes: nil, hrvEstimated: est)!
+        let hrvBullets = b.bullets.filter { $0.kind == .hrv }
+        XCTAssertEqual(hrvBullets.count, 1)
+        XCTAssertEqual(hrvBullets.first?.flag, .bad)   // ganó la de banda, no la estimada
+    }
+
     // MARK: - Bloque «Hoy en tu plan» (FER-613)
 
     /// Sin split configurado el bloque se omite por completo (la UI no deja hueco).
