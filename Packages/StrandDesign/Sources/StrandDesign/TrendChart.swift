@@ -422,10 +422,13 @@ public struct TrendChart: View {
             // Explicit ticks at the band thresholds when bands are present (the grid lines double as the
             // soft "neighbour" hints); automatic ticks otherwise. (FER-244)
             if let yv = yAxisValues {
-                AxisMarks(position: .leading, values: yv) { _ in
+                AxisMarks(position: .leading, values: yv) { value in
                     AxisGridLine().foregroundStyle(gridLineColor.opacity(0.4))
-                    AxisValueLabel().foregroundStyle(axisLabelColor)
-                        .font(StrandFont.footnote)
+                    AxisValueLabel {
+                        if let v = value.as(Double.self) { Text(valueFormat(v)) }
+                    }
+                    .foregroundStyle(axisLabelColor)
+                    .font(StrandFont.footnote)
                 }
             } else {
                 AxisMarks(position: .leading, values: .automatic(desiredCount: yTickCount)) { _ in
