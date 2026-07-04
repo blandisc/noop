@@ -162,7 +162,7 @@ private struct WhyVerdictSheetPreview: View {
                 signal(StrandPalette.accent, "HRV", "sobre tu base — bien recuperado")
                 signal(InstrumentoTheme.base.inkTertiary, "FC en reposo", "en tu rango normal")
                 signal(InstrumentoTheme.base.inkTertiary, "Respiración", "normal")
-                signal(StrandPalette.statusWarning, "Carga de entrenamiento", "alta · 1.6 agudo:crónico — mayor riesgo de lesión")
+                signal(StrandPalette.statusWarning, "Carga de entrenamiento", "alta · 1.6 agudo:crónico — baja el ritmo si hay fatiga")
             }
 
             Divider().overlay(InstrumentoTheme.base.hairline).padding(.vertical, 14)

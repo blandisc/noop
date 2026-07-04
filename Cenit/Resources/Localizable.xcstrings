@@ -41977,19 +41977,19 @@
         }
       }
     },
-    "spiking (acute:chronic %@) — higher injury risk": {
+    "spiking (acute:chronic %@) — ease off if fatigued": {
       "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "spiking (acute:chronic %@) — higher injury risk"
+            "value": "spiking (acute:chronic %@) — ease off if fatigued"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "disparada (aguda:crónica %@) — mayor riesgo de lesión"
+            "value": "disparada (aguda:crónica %@) — baja el ritmo si hay fatiga"
           }
         }
       }
