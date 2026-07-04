@@ -25,6 +25,9 @@ struct MetricInfo: Identifiable {
     /// against the band-only baseline (the same slice the persisted score folds — FER-519/FER-629).
     /// nil hides the block (calibrating, no band reading today, or any non-recovery metric).
     var impact: RecoveryImpact.Result? = nil
+    /// FER-642 · «Vs ayer»: the day-over-day recovery change + top movers, shown as one compact line under
+    /// the level attribution. nil hides it (no band yesterday, calibrating, or any non-recovery metric).
+    var change: RecoveryChange.Result? = nil
     var method: Method? = nil
     var disclaimer: LocalizedStringKey? = nil
     var calibration: Calibration? = nil
@@ -469,7 +472,8 @@ extension MetricInfo {
     /// header numeral is tinted by the WHOOP recovery band (green ≥67 · yellow 34–67 · red <34),
     /// mirroring TodayView's `recoveryDataColor`. (FER-108 / FER-162)
     static func recovery(score: Int?, calibrationNights: Int?, nightsNeeded: Int,
-                         impact: RecoveryImpact.Result? = nil) -> MetricInfo {
+                         impact: RecoveryImpact.Result? = nil,
+                         change: RecoveryChange.Result? = nil) -> MetricInfo {
         let disclaimer: LocalizedStringKey = "It's an estimate, not a diagnosis."
 
         if let done = calibrationNights {
@@ -508,6 +512,7 @@ extension MetricInfo {
             bands: [],
             note: nil,
             impact: impact,
+            change: change,
             method: Method(
                 prose: "Each signal becomes a score of how far above or below your personal average it sits (a z-score, in σ). They're averaged with fixed weights — HRV 60%, resting heart rate 20%, sleep 15%, skin temperature 10%, respiration 5% — and mapped onto a 0–100 scale, calibrated so a typical day lands near 58. If a signal is missing on a given night, its weight is shared among the others.",
                 citation: "A composite of z-scores through a logistic curve. HRV via RMSSD (Task Force, 1996)."
@@ -1337,7 +1342,7 @@ struct MetricInfoSheet: View {
     /// under "How it's calculated".
     private func impactBlock(_ impact: RecoveryImpact.Result) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("What moved it today")
+            Text("Today, vs your normal")
                 .instrumentoOverline()
                 .foregroundStyle(theme.inkTertiary)
             impactHeadline(impact)
@@ -1348,10 +1353,76 @@ struct MetricInfoSheet: View {
                 ForEach(impact.signals) { impactRow($0) }
             }
             impactLegend
+            if let change = info.change {
+                Divider().overlay(theme.hairline)
+                changeLine(change)
+            }
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    /// FER-642 · «Vs ayer»: one compact line — «Vs ayer: subiste N pts — tu HRV y tu sueño mejoraron.» —
+    /// naming the day-over-day delta and the 1–2 signals that moved most. Adapts to up / down / flat and
+    /// to how many movers there are.
+    @ViewBuilder private func changeLine(_ change: RecoveryChange.Result) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            changeLead(change)
+                .font(StrandFont.caption)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// The compact «Vs ayer» sentence, built from fragments so it localizes: a delta lead in its direction
+    /// color + a movers tail. The movers phrase groups by whether they improved. (FER-642)
+    private func changeLead(_ change: RecoveryChange.Result) -> Text {
+        let n = abs(change.deltaScore)
+        let lead: Text
+        if change.deltaScore > 0 {
+            lead = Text("Vs yesterday: up \(n) pts").foregroundColor(theme.verdict)
+        } else if change.deltaScore < 0 {
+            lead = Text("Vs yesterday: down \(n) pts").foregroundColor(theme.critical)
+        } else {
+            lead = Text("Vs yesterday: no change")
+        }
+        guard let tail = Self.moversTail(change.movers) else { return lead + Text(verbatim: ".") }
+        return lead + Text(" — ") + Text(verbatim: tail)
+    }
+
+    /// The movers tail with correct verb agreement (D1/CSO#2): a SINGLE localized sentence per grammatical
+    /// case, so English and es-MX each conjugate correctly. One mover → singular («tu HRV mejoró»); two
+    /// movers in the SAME direction → conjoined plural («tu HRV y tu sueño mejoraron»); two in OPPOSITE
+    /// directions → name only the leader in singular («tu HRV mejoró»), never one verb over both. nil when
+    /// there are no movers (the lead stands alone). (FER-642)
+    private static func moversTail(_ movers: [RecoveryChange.Change]) -> String? {
+        guard let first = movers.first else { return nil }
+        let n1 = labelString(first.key)
+        // One mover, or two that disagree → speak only to the leader, singular.
+        let bothSameDirection = movers.count == 2 && (movers[0].improved == movers[1].improved)
+        if !bothSameDirection {
+            return first.improved
+                ? String(localized: "your \(n1) improved.")
+                : String(localized: "your \(n1) eased off.")
+        }
+        let n2 = labelString(movers[1].key)
+        return first.improved
+            ? String(localized: "your \(n1) and your \(n2) improved.")
+            : String(localized: "your \(n1) and your \(n2) eased off.")
+    }
+
+    /// The signal's display name as a localized String (for interpolation into the movers-tail sentence).
+    private static func labelString(_ key: String) -> String {
+        switch key {
+        case "hrv":      return String(localized: "HRV")
+        case "rhr":      return String(localized: "Resting HR")
+        case "sleep":    return String(localized: "Sleep")
+        case "skinTemp": return String(localized: "Skin temp")
+        case "respRate": return String(localized: "Respiration")
+        default:         return key
+        }
     }
 
     /// The plain-language headline names the signal with the LARGEST contribution to today's score
@@ -1362,43 +1433,54 @@ struct MetricInfoSheet: View {
             return Text("All your signals sat near your base today.")
         }
         let tail: LocalizedStringKey = top.contribution < 0
-            ? ", is what pulled your recovery down the most today."
-            : ", is what lifted your recovery the most today."
+            ? ", is what holds your recovery back most today."
+            : ", is what holds your recovery up most today."
         return Text("Your ")
             + Text(Self.impactLabel(top.key)).foregroundColor(impactColor(impactFlag(top))).fontWeight(.semibold)
-            + Text(verbatim: ", ")
-            + Text(RecoveryDetailScreen.driverWord(key: top.key, flag: impactFlag(top)))
+            + Text(Self.positionPhrase(top))
             + Text(tail)
     }
 
-    /// One signal: name + state word (in its flag color) leading, the impact phrase trailing, and the
-    /// divergent vs-your-base bar below. VoiceOver reads the combined row as
-    /// «HRV, suprimida, la bajó mucho» (criterion 6).
+    /// One signal: overline label · position-vs-base word (flag hue) · `· N%` weight, and the divergent
+    /// contribution bar below. IDENTICAL to the Detalle's `levelSignalRow` (FER-642). VoiceOver reads the
+    /// combined row.
     private func impactRow(_ s: RecoveryImpact.Signal) -> some View {
         let flag = impactFlag(s)
         let color = flag == .neutral ? theme.inkSecondary : impactColor(flag)
         return VStack(alignment: .leading, spacing: 6) {
-            let impact = Self.impactWords(s.contribution)
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(Self.impactLabel(s.key)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Text(RecoveryDetailScreen.driverWord(key: s.key, flag: flag))
-                    .font(StrandFont.caption)
-                    .foregroundStyle(color)
                 Spacer(minLength: 8)
-                if let glyph = impact.glyph {
-                    Text(verbatim: glyph)
-                        .font(StrandFont.footnote)
-                        .foregroundStyle(color)
-                        .accessibilityHidden(true)
-                }
-                Text(impact.phrase)
-                    .font(StrandFont.caption)
-                    .foregroundStyle(theme.inkSecondary)
+                Text(Self.baseBandWord(s))
+                    .font(StrandFont.captionNumber)
+                    .foregroundStyle(color)
+                Text(verbatim: "· \(Int((s.weight * 100).rounded()))%")
+                    .font(StrandFont.captionNumber)
+                    .foregroundStyle(theme.inkTertiary)
             }
             impactBar(contribution: s.contribution, color: color)
                 .accessibilityHidden(true)
         }
         .accessibilityElement(children: .combine)
+    }
+
+    /// The position-vs-base word from the RAW deviation (+ = the metric itself sits above your average),
+    /// so the word is honest about where the value is; the row color (oriented flag) carries the valence.
+    /// |z| < 1 reads «In your base». Shared vocabulary with the Detalle. (FER-642)
+    private static func baseBandWord(_ s: RecoveryImpact.Signal) -> LocalizedStringKey {
+        if s.z >= 1 { return "Above your base" }
+        if s.z <= -1 { return "Below your base" }
+        return "In your base"
+    }
+
+    /// The headline's inline position clause, «, above your base, » etc., with a «well» qualifier past 1σ.
+    /// Matches `baseBandWord`. (FER-642)
+    private static func positionPhrase(_ s: RecoveryImpact.Signal) -> LocalizedStringKey {
+        let above = s.z >= 0
+        let strong = abs(s.z) >= 1.0
+        return strong
+            ? (above ? ", well above your base, " : ", well below your base, ")
+            : (above ? ", above your base, "      : ", below your base, ")
     }
 
     /// The divergent «vs your base» bar: a center base tick, a capsule extending left (it pulled the
@@ -1427,11 +1509,11 @@ struct MetricInfoSheet: View {
     /// The axis legend: «◀ te la bajó · tu base · te la subió ▶» — decorative, hidden from VoiceOver.
     private var impactLegend: some View {
         HStack {
-            Text("◀ pulled it down").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            Text("◀ holds it back").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
             Spacer()
             Text("your base").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
             Spacer()
-            Text("lifted it ▶").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            Text("holds it up ▶").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
         }
         .accessibilityHidden(true)
     }
@@ -1456,19 +1538,6 @@ struct MetricInfoSheet: View {
 
     /// flag → theme color, shared with the Detalle's driver rows so both surfaces color states alike.
     private func impactColor(_ flag: ReadinessEngine.Flag) -> Color { flag.color(theme) }
-
-    /// The impact phrase + its ▼/▲ glyph, bucketed once on the signed contribution («la bajó mucho /
-    /// la bajó / la bajó algo / apenas la movió / la subió»). The glyph is decorative (hidden from
-    /// VoiceOver); nil in the near-zero bucket.
-    private static func impactWords(_ c: Double) -> (phrase: LocalizedStringKey, glyph: String?) {
-        switch c {
-        case ..<(-0.9):                 return ("pulled it down hard", "▼")
-        case ..<(-0.35):                return ("pulled it down", "▼")
-        case ..<(-impactBarely):        return ("pulled it down a bit", "▼")
-        case ..<impactBarely:           return ("barely moved it", nil)
-        default:                        return ("lifted it", "▲")
-        }
-    }
 
     /// Progressive disclosure: the technical "how" lives one tap down, collapsed by default.
     private func methodDisclosure(_ method: MetricInfo.Method) -> some View {

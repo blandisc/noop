@@ -46,6 +46,9 @@ public enum RecoveryImpact {
         /// real driver (the |z·w| ranking the FER-628/FER-632 headline requires, NOT |z|).
         public let signals: [Signal]
         public var top: Signal? { signals.first }
+        /// The present signal for a key, or nil if it wasn't a term today (missing reading / ungated
+        /// baseline). Used by `RecoveryChange` to diff a signal's contribution day-over-day. (FER-642)
+        public func signal(_ key: String) -> Signal? { signals.first { $0.key == key } }
         /// Σ contribution — the composite z the score squashed through its logistic.
         public var compositeZ: Double { signals.reduce(0) { $0 + $1.contribution } }
         public init(signals: [Signal]) { self.signals = signals }
