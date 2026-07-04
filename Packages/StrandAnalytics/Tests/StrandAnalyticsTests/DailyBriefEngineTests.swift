@@ -145,7 +145,8 @@ final class DailyBriefEngineTests: XCTestCase {
     }
 
     /// Día sin banda: el veredicto no trae señal de HRV (su SDNN se enmascaró). La viñeta estimada se inyecta
-    /// como viñeta de HRV con su σ y flag — así el día Apple-only SÍ muestra su HRV, clasificada vs base SDNN.
+    /// como viñeta de HRV con su copy y flag — así el día Apple-only SÍ muestra su HRV, clasificada vs base
+    /// SDNN. El sub es la interpretación en palabras, ya no la cifra σ (FER-637).
     func testHrvEstimatedInjectedWhenNoBandSignal() {
         let r = readiness(.balanced, signals: [sig("rhr", .good)])   // sin señal de hrv
         let est = DailyBrief.HrvEstimatedBullet(z: 0.9, flag: .good)
@@ -154,7 +155,77 @@ final class DailyBriefEngineTests: XCTestCase {
         let hrv = b.bullets.first { $0.kind == .hrv }
         XCTAssertNotNil(hrv, "el día sin banda debe mostrar su HRV estimada")
         XCTAssertEqual(hrv?.flag, .good)
-        XCTAssertEqual(hrv?.sub, "+0.9σ")
+        XCTAssertEqual(hrv?.sub, "buena señal")
+    }
+
+    // MARK: copy sin jerga — σ y guiones largos fuera (FER-637)
+
+    /// Ninguna string visible del brief lleva «σ» ni «—»: el sub es interpretación en palabras (o una
+    /// cifra legible como °C/ratio), nunca notación estadística; el lead no empaca dos ideas con guion.
+    /// Barre los 4 niveles × 4 flags con todas las señales presentes, más la viñeta estimada.
+    func testNoSigmaNorEmDashInVisibleCopy() {
+        var covered = 0
+        for level in [ReadinessEngine.Level.primed, .balanced, .strained, .rundown] {
+            for flag in [ReadinessEngine.Flag.good, .neutral, .watch, .bad] {
+                let r = readiness(level, signals: [sig("hrv", flag), sig("rhr", flag),
+                                                   sig("respRate", flag),
+                                                   sig("skinTemp", flag, value: "+0.6 °C"),
+                                                   sig("acwr", flag, value: "1.2")])
+                guard let b = DailyBriefEngine.make(readiness: r, recovery: 61, recoveryBaseline: 55,
+                                                    sleepMinutes: 529) else { continue }
+                covered += 1
+                for s in [b.titular, b.why] + b.bullets.flatMap({ [$0.lead, $0.sub] }) {
+                    XCTAssertFalse(s.contains("σ"), "σ visible en: «\(s)»")
+                    XCTAssertFalse(s.contains("—"), "guion largo visible en: «\(s)»")
+                }
+            }
+        }
+        XCTAssertEqual(covered, 16, "el barrido debe producir brief en los 16 casos")
+        // La viñeta estimada tampoco trae σ.
+        let est = DailyBrief.HrvEstimatedBullet(z: -1.4, flag: .bad)
+        let b = DailyBriefEngine.make(readiness: readiness(.strained, signals: [sig("rhr", .watch)]),
+                                      recovery: 40, recoveryBaseline: 55, sleepMinutes: nil,
+                                      hrvEstimated: est)!
+        let hrv = b.bullets.first { $0.kind == .hrv }!
+        XCTAssertFalse(hrv.sub.contains("σ"))
+        XCTAssertEqual(hrv.sub, "tu cuerpo pide calma")
+    }
+
+    /// La viñeta de Recuperación habla el vocabulario de zonas del Detalle («en Moderado»), nunca «base»
+    /// — ese concepto no existe en la pantalla de Recuperación (FER-637).
+    func testRecoveryBulletSpeaksZonesNotBase() {
+        let up = DailyBriefEngine.recoveryCandidate(recovery: 61, baseline: 52)
+        XCTAssertEqual(up.sub, "en Moderado, mejor que tus últimos días")
+        let down = DailyBriefEngine.recoveryCandidate(recovery: 40, baseline: 55)
+        XCTAssertEqual(down.sub, "en Bajo, por debajo de tus últimos días")
+        let flat = DailyBriefEngine.recoveryCandidate(recovery: 55, baseline: 56)
+        XCTAssertEqual(flat.sub, "en Moderado, como tus últimos días")
+        let noBase = DailyBriefEngine.recoveryCandidate(recovery: 91, baseline: nil)
+        XCTAssertEqual(noBase.sub, "en Pico")
+        for c in [up, down, flat, noBase] {
+            XCTAssertFalse(c.sub.localizedCaseInsensitiveContains("base"),
+                           "la viñeta de recuperación no habla de «base»: «\(c.sub)»")
+        }
+    }
+
+    /// Los nombres de zona coinciden con el Detalle (`MetricLevels.recovery`) en toda la partición 0–100.
+    /// FER-638: la zona 70–88 es «Alto» — «A punto» quedó exclusivo del veredicto del dial.
+    func testRecoveryZoneNamesMatchDetail() {
+        XCTAssertEqual(DailyBriefEngine.recoveryZoneName(10), "Agotado")
+        XCTAssertEqual(DailyBriefEngine.recoveryZoneName(25), "Bajo")     // borde: cae al nivel superior
+        XCTAssertEqual(DailyBriefEngine.recoveryZoneName(61), "Moderado")
+        XCTAssertEqual(DailyBriefEngine.recoveryZoneName(75), "Alto")
+        XCTAssertEqual(DailyBriefEngine.recoveryZoneName(88), "Pico")
+    }
+
+    /// El copy aprobado de FC en reposo (FER-637): el hecho en el lead, la interpretación en el sub.
+    func testRhrApprovedCopy() {
+        XCTAssertEqual(DailyBriefEngine.signalLead(kind: .rhr, flag: .good),
+                       "Tu pulso en reposo está bajo tu base")
+        XCTAssertEqual(DailyBriefEngine.signalSub(kind: .rhr, flag: .good), "señal de recuperación")
+        XCTAssertEqual(DailyBriefEngine.signalLead(kind: .rhr, flag: .bad),
+                       "Tu pulso en reposo está sobre tu base")
+        XCTAssertEqual(DailyBriefEngine.signalSub(kind: .rhr, flag: .bad), "tu cuerpo sigue activo")
     }
 
     /// Nunca dos viñetas de HRV: si el veredicto YA trae una señal de banda, la estimada se ignora (un día

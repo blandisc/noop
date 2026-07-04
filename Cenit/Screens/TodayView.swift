@@ -240,7 +240,7 @@ struct TodayView: View {
     /// (mismo dashboard publicado, sin await en medio) para no reintroducir la carrera FER-177. Una sola
     /// fuente de verdad: `recomputeDerived` y el fallback en frío de `readiness` la comparten (deben coincidir).
     private var bandDays: [DailyMetric] {
-        HrvSourceLens.mask(repo.days, keep: .band, appleDays: repo.appleHealthDays)
+        SourceLens.maskHrv(repo.days, keep: .band, appleDays: repo.appleHealthDays)
     }
 
     /// Los conteos memoizados; cae a un cálculo en línea solo el primer frame (memo aún nil).
@@ -1060,7 +1060,7 @@ struct TodayView: View {
     /// Se siembra en `recomputeDerived` (memo `memoAppleHrvEstimated`), no por frame — corre un `evaluate`.
     private func computeAppleHrvEstimated() -> DailyBrief.HrvEstimatedBullet? {
         guard repo.isRecoveryEstimated(Repository.localDayKey(Date())) else { return nil }
-        let appleDays = HrvSourceLens.mask(repo.days, keep: .apple, appleDays: repo.appleHealthDays)
+        let appleDays = SourceLens.maskHrv(repo.days, keep: .apple, appleDays: repo.appleHealthDays)
         let r = ReadinessEngine.evaluate(days: appleDays, today: Repository.localDayKey(Date()))
         guard let hrv = r.signals.first(where: { $0.key == "hrv" }), let z = hrv.z else { return nil }
         return DailyBrief.HrvEstimatedBullet(z: z, flag: hrv.flag)

@@ -11,10 +11,12 @@ import WhoopStore
 /// on a 5%-weight signal (respiration) cannot outrank a moderate z on the 60% driver (HRV).
 ///
 /// Baseline purity (FER-519 / FER-629): every fold runs on the BAND-ONLY slice — Apple-only days are
-/// dropped whole-row before folding, the same `strapOnlyHistory` policy the persisted score uses, so
-/// these contributions and the score can never tell two different stories about the same night. An
-/// Apple-only "today" therefore returns nil (that day's recovery is the separate SDNN estimate, and a
-/// band-baseline decomposition of it would be dishonest).
+/// dropped WHOLE-ROW before folding, the same `strapOnlyHistory` policy the persisted score uses, so
+/// these contributions and the score can never tell two different stories about the same night. This is
+/// deliberately the whole-row drop, NOT `SourceLens.maskForBaseline` (the column mask): the mask keeps
+/// the Apple night's `efficiency`, which would let it into the sleep-term baseline and diverge from the
+/// score, which excludes it. An Apple-only "today" therefore returns nil (that day's recovery is the
+/// separate SDNN estimate, and a band-baseline decomposition of it would be dishonest).
 ///
 /// Pure and deterministic — no store, no clock, no state. Not medical advice.
 public enum RecoveryImpact {
