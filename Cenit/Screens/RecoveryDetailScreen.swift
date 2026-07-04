@@ -28,6 +28,20 @@ import Foundation
 // readiness nunca cuentan dos historias distintas), la calibración de `RecoveryScorer.calibrationNights`,
 // y las estadísticas de `ComparisonEngine`. No crea matemática nueva (el pronóstico es FER-188).
 
+extension ReadinessEngine.Flag {
+    /// The one flag → «Instrumento» color mapping, shared by every recovery surface (the Detalle's
+    /// driver rows and the summary's «Qué la movió hoy», FER-628): good → verdict, neutral → quiet
+    /// ink, watch → warning, bad → critical.
+    func color(_ theme: InstrumentoTheme) -> Color {
+        switch self {
+        case .good:    return theme.verdict
+        case .neutral: return theme.inkSecondary
+        case .watch:   return theme.warning
+        case .bad:     return theme.critical
+        }
+    }
+}
+
 /// Light «Instrumento» Detalle de Recuperación. Built once from a `RecoveryDetailModel` (the caller injects
 /// the model so the screen stays DB-free), themed explicitly for the sheet boundary.
 struct RecoveryDetailScreen: View {
@@ -418,15 +432,8 @@ struct RecoveryDetailScreen: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// The flag → theme color: good → verdict, neutral → quiet ink, watch → warning, bad → critical.
-    private func flagColor(_ flag: ReadinessEngine.Flag) -> Color {
-        switch flag {
-        case .good:    return theme.verdict
-        case .neutral: return theme.inkSecondary
-        case .watch:   return theme.warning
-        case .bad:     return theme.critical
-        }
-    }
+    /// The flag → theme color (shared with the recovery summary's «Qué la movió hoy» rows, FER-628).
+    private func flagColor(_ flag: ReadinessEngine.Flag) -> Color { flag.color(theme) }
 
     /// The band word for a z-scored driver read-out (FER-637): where the row used to show `±N.Nσ`. The
     /// direction comes from the RAW z (above base = `+`, same convention as the bar); |z| < 1 reads «at
@@ -440,8 +447,9 @@ struct RecoveryDetailScreen: View {
 
     /// A short es-MX state word per driver and flag (the source strings are English; es/de live in the
     /// String Catalog). Phrased per metric so each reads naturally ("HRV above your base", "Resting HR
-    /// running high"). Neutral always means "in your normal range" for that signal.
-    private static func driverWord(key: String, flag: ReadinessEngine.Flag) -> LocalizedStringKey {
+    /// running high"). Neutral always means "in your normal range" for that signal. Shared with the
+    /// recovery summary's «Qué la movió hoy» rows (FER-628), so both surfaces speak the same words.
+    static func driverWord(key: String, flag: ReadinessEngine.Flag) -> LocalizedStringKey {
         switch (key, flag) {
         case ("hrv", .good):       return "above your base"
         case ("hrv", .watch):      return "a touch low"
