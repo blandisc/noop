@@ -948,34 +948,29 @@ private extension DailyMetric {
     /// change. recovery/strain stay strap-only in practice because Apple rows carry them as nil. This is
     /// display-only and is never fed to the recovery baseline (`repo.days` keeps the un-filled row).
     func fillingNils(from other: DailyMetric) -> DailyMetric {
-        DailyMetric(
-            day: day,
-            totalSleepMin: totalSleepMin ?? other.totalSleepMin,
-            efficiency: efficiency ?? other.efficiency,
-            deepMin: deepMin ?? other.deepMin,
-            remMin: remMin ?? other.remMin,
-            lightMin: lightMin ?? other.lightMin,
-            disturbances: disturbances ?? other.disturbances,
-            restingHr: restingHr ?? other.restingHr,
-            avgHrv: avgHrv ?? other.avgHrv,
-            recovery: recovery ?? other.recovery,
-            strain: strain ?? other.strain,
-            exerciseCount: exerciseCount ?? other.exerciseCount,
-            spo2Pct: spo2Pct ?? other.spo2Pct,
-            skinTempDevC: skinTempDevC ?? other.skinTempDevC,
-            respRateBpm: respRateBpm ?? other.respRateBpm,
-            steps: steps ?? other.steps,
-            activeKcalEst: activeKcalEst ?? other.activeKcalEst)
+        with(
+            totalSleepMin: .set(totalSleepMin ?? other.totalSleepMin),
+            efficiency: .set(efficiency ?? other.efficiency),
+            deepMin: .set(deepMin ?? other.deepMin),
+            remMin: .set(remMin ?? other.remMin),
+            lightMin: .set(lightMin ?? other.lightMin),
+            disturbances: .set(disturbances ?? other.disturbances),
+            restingHr: .set(restingHr ?? other.restingHr),
+            avgHrv: .set(avgHrv ?? other.avgHrv),
+            recovery: .set(recovery ?? other.recovery),
+            strain: .set(strain ?? other.strain),
+            exerciseCount: .set(exerciseCount ?? other.exerciseCount),
+            spo2Pct: .set(spo2Pct ?? other.spo2Pct),
+            skinTempDevC: .set(skinTempDevC ?? other.skinTempDevC),
+            respRateBpm: .set(respRateBpm ?? other.respRateBpm),
+            steps: .set(steps ?? other.steps),
+            activeKcalEst: .set(activeKcalEst ?? other.activeKcalEst))
     }
 
     /// A copy with `recovery` substituted (the struct has no `copy()`). Used by `repo.today` to surface the
     /// Apple-Health estimated recovery on today's single row when the band didn't cover the night (FER-153)
     /// — every other field is carried verbatim, so the row's HRV/sleep stay Apple's own.
     func withRecovery(_ r: Double?) -> DailyMetric {
-        DailyMetric(day: day, totalSleepMin: totalSleepMin, efficiency: efficiency, deepMin: deepMin,
-                    remMin: remMin, lightMin: lightMin, disturbances: disturbances, restingHr: restingHr,
-                    avgHrv: avgHrv, recovery: r, strain: strain, exerciseCount: exerciseCount,
-                    spo2Pct: spo2Pct, skinTempDevC: skinTempDevC, respRateBpm: respRateBpm,
-                    steps: steps, activeKcalEst: activeKcalEst)
+        with(recovery: .set(r))
     }
 }
