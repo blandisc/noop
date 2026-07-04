@@ -242,7 +242,10 @@ struct MetricLevelsExplorer: View {
         switch key {
         // Recovery
         case "depleted":   return "Depleted"
-        case "primed":     return "Primed"
+        // FER-638: the 70–88 recovery zone is «Alto» (key "High", es «Alto»), NOT «A punto» — that word
+        // belongs to the dial's verdict (level `primed`, key "Primed"). Same-word collision confused a 61
+        // («A punto» on the dial, «Moderado» here). The internal level key stays "primed".
+        case "primed":     return "High"
         case "peak":       return "Peak"
         // Strain
         case "rest":       return "Rest"

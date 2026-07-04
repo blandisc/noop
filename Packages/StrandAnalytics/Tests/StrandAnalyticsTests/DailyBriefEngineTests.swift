@@ -209,11 +209,12 @@ final class DailyBriefEngineTests: XCTestCase {
     }
 
     /// Los nombres de zona coinciden con el Detalle (`MetricLevels.recovery`) en toda la partición 0–100.
+    /// FER-638: la zona 70–88 es «Alto» — «A punto» quedó exclusivo del veredicto del dial.
     func testRecoveryZoneNamesMatchDetail() {
         XCTAssertEqual(DailyBriefEngine.recoveryZoneName(10), "Agotado")
         XCTAssertEqual(DailyBriefEngine.recoveryZoneName(25), "Bajo")     // borde: cae al nivel superior
         XCTAssertEqual(DailyBriefEngine.recoveryZoneName(61), "Moderado")
-        XCTAssertEqual(DailyBriefEngine.recoveryZoneName(75), "A punto")
+        XCTAssertEqual(DailyBriefEngine.recoveryZoneName(75), "Alto")
         XCTAssertEqual(DailyBriefEngine.recoveryZoneName(88), "Pico")
     }
 
