@@ -155,7 +155,7 @@ private struct AjustesLanding: View {
         // «Tendencias» / «Entrenar», so Ajustes lines up with them as you swipe between tabs. The privacy
         // chip rides below as a quiet subline (the lockup's trailing slot stays empty).
         VStack(alignment: .leading, spacing: 10) {
-            InstrumentoTabHeader("Settings") {
+            InstrumentoTabHeader("Ajustes") {
                 Image(systemName: "gearshape").font(.system(size: 20)).foregroundStyle(theme.ink)
             }
             privacyChip
