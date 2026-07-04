@@ -137,6 +137,15 @@ public enum VitalityEngine {
             self.deltaYears = deltaYears; self.bandYears = bandYears
             self.contributions = contributions; self.factorsUsed = factorsUsed
         }
+
+        /// True when the reading was computed WITHOUT one of the two HEAVIEST factors — nocturnal HRV
+        /// (0.110) or resting HR (0.100) — e.g. an Apple-Health-only user whose band-sourced HRV/RHR are
+        /// masked (FER-640/643). The score and ±band are unchanged; the presentation layer reads this
+        /// only to flag the number as a partial estimate (honest confidence, not a math change).
+        public var isPartialEstimate: Bool {
+            let keys = Set(contributions.map(\.key))
+            return !keys.contains("hrv") || !keys.contains("rhr")
+        }
     }
 
     /// Minimum distinct factors before we'll show a number (honesty gate).

@@ -248,4 +248,29 @@ final class VitalityEngineTests: XCTestCase {
         XCTAssertLessThan(varied, 1.0)
         XCTAssertGreaterThan(varied, 0.0)
     }
+
+    // MARK: - isPartialEstimate flags a reading missing one of the two heaviest factors (HRV/RHR)
+
+    func testPartialEstimateWhenHRVOrRHRMissing() {
+        // Full six factors (HRV + RHR both present) → NOT partial.
+        let full = VitalityEngine.Inputs(chronoAge: 40, restingHR: 60, vo2max: 42, expectedVO2max: 45,
+                                         sleepHours: 6.0, sleepConsistency: 0.5, rmssd: 30, rmssdNorm: 33,
+                                         steps: 6000)
+        XCTAssertFalse(VitalityEngine.compute(full)!.isPartialEstimate)
+
+        // Apple-Health-only shape: band-sourced HRV *and* RHR masked → both missing → partial.
+        let appleOnly = VitalityEngine.Inputs(chronoAge: 40, vo2max: 42, expectedVO2max: 45,
+                                              sleepHours: 6.0, sleepConsistency: 0.5, steps: 6000)
+        XCTAssertTrue(VitalityEngine.compute(appleOnly)!.isPartialEstimate)
+
+        // Only HRV gated out (RHR present) → still partial.
+        let noHRV = VitalityEngine.Inputs(chronoAge: 40, restingHR: 60, sleepHours: 6.0,
+                                          sleepConsistency: 0.5, steps: 6000)
+        XCTAssertTrue(VitalityEngine.compute(noHRV)!.isPartialEstimate)
+
+        // Only RHR missing (HRV present) → still partial.
+        let noRHR = VitalityEngine.Inputs(chronoAge: 40, sleepHours: 6.0, sleepConsistency: 0.5,
+                                          rmssd: 30, rmssdNorm: 33, steps: 6000)
+        XCTAssertTrue(VitalityEngine.compute(noRHR)!.isPartialEstimate)
+    }
 }

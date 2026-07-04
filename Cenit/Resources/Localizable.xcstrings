@@ -25600,7 +25600,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recuperación baja"
+            "value": "La recuperación está baja"
           }
         }
       }
@@ -43617,6 +43617,142 @@
           "stringUnit": {
             "state": "translated",
             "value": "✓"
+          }
+        }
+      }
+    },
+    "If a signal is missing on a given night, its weight is shared among the others.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If a signal is missing on a given night, its weight is shared among the others."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si falta alguna señal esa noche, su peso se reparte entre las demás."
+          }
+        }
+      }
+    },
+    "Each signal becomes a score of how far above or below your personal average it sits; they're averaged with the weights above and mapped onto a 0–100 scale, calibrated so a typical day lands near 58.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Each signal becomes a score of how far above or below your personal average it sits; they're averaged with the weights above and mapped onto a 0–100 scale, calibrated so a typical day lands near 58."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada señal se vuelve un puntaje de qué tan arriba o abajo está de tu promedio personal; se promedian con los pesos de arriba y se ajustan a una escala 0–100, calibrada para que un día típico caiga cerca de 58."
+          }
+        }
+      }
+    },
+    "a touch below baseline": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "a touch below baseline"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "un poco por debajo de la línea base"
+          }
+        }
+      }
+    },
+    "Partial estimate": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partial estimate"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimación parcial"
+          }
+        }
+      }
+    },
+    "Partial estimate. ": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partial estimate. "
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimación parcial. "
+          }
+        }
+      }
+    },
+    "Worked out without HRV or resting heart rate — the two heaviest signals. The number still holds, with less precision.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Worked out without HRV or resting heart rate — the two heaviest signals. The number still holds, with less precision."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calculada sin HRV ni FC en reposo — las dos señales de mayor peso. El número sigue valiendo, con menos precisión."
+          }
+        }
+      }
+    },
+    "Worked out without HRV — one of the heaviest signals. The number still holds, with less precision.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Worked out without HRV — one of the heaviest signals. The number still holds, with less precision."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calculada sin HRV — una de las señales de mayor peso. El número sigue valiendo, con menos precisión."
+          }
+        }
+      }
+    },
+    "Worked out without resting heart rate — one of the heaviest signals. The number still holds, with less precision.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Worked out without resting heart rate — one of the heaviest signals. The number still holds, with less precision."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calculada sin FC en reposo — una de las señales de mayor peso. El número sigue valiendo, con menos precisión."
           }
         }
       }

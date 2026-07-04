@@ -819,8 +819,11 @@ private struct CuerpoLanding: View {
     private var bodyAgeStat: some View {
         let r = vitalityResult
         let color = r.map { BodyAgeSheet.tint(forDelta: $0.deltaYears, theme: theme) } ?? theme.inkTertiary
+        // «Estimate» chip when a heaviest factor (HRV/RHR) is missing — same mechanism as Physical age
+        // (FER-643), so the two longevity stats read consistently.
         return statColumn("Body age", value: r.map { "\(Int($0.bodyAge.rounded()))" },
-                          color: color, legend: r == nil ? nil : "vs your \(model.profile.age)") {
+                          color: color, legend: r == nil ? nil : "vs your \(model.profile.age)",
+                          estimate: r?.isPartialEstimate == true) {
             showBodyAge = true
         }
     }
