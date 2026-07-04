@@ -191,7 +191,7 @@ public enum ReadinessEngine {
             higherIsBetter: true,
             goodText: String(localized: "above your baseline — well recovered", bundle: .main),
             neutralText: String(localized: "in your normal range", bundle: .main),
-            watchText: String(localized: "a touch below baseline", bundle: .main),
+            watchText: String(localized: "slightly below your usual", bundle: .main),
             badText: String(localized: "suppressed — a sign of autonomic fatigue", bundle: .main))
         if let s = hrvSignal { signals.append(s) }
 

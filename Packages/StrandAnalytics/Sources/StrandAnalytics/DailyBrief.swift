@@ -253,7 +253,15 @@ public enum DailyBriefEngine {
     static func signalLead(kind: DailyBrief.BulletKind, flag: ReadinessEngine.Flag) -> String {
         let good = flag == .good
         switch kind {
-        case .hrv:      return good ? "Tu HRV está sobre tu base" : "Tu HRV está bajo tu base"
+        // FER-627: `.watch` (−1.0…−0.5σ) es el «cambio que vale la pena atender» (SWC), NO estar fuera de la
+        // base — reservamos «bajo tu base» para `.bad` (<−1σ), que sí coincide con «Debajo de tu base» del
+        // Detalle. Así el Brief deja de contradecir a la hoja de Detalle (que a −0.9σ dice «En tu base»).
+        case .hrv:
+            switch flag {
+            case .good:  return "Tu HRV está sobre tu base"
+            case .watch: return "Tu HRV va a la baja"
+            default:     return "Tu HRV está bajo tu base"
+            }
         case .rhr:      return good ? "Tu pulso en reposo está por debajo de tu base — señal de recuperación" : "Tu pulso en reposo está por encima de tu base — tu cuerpo sigue activo"
         case .respRate: return good ? "Tu respiración va estable" : "Tu respiración subió"
         case .skinTemp: return good ? "Tu temperatura va normal" : "Tu temperatura subió"

@@ -35994,19 +35994,19 @@
         }
       }
     },
-    "a touch below baseline": {
+    "slightly below your usual": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "a touch below baseline"
+            "value": "slightly below your usual"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "un poco por debajo de la línea base"
+            "value": "un poco por debajo de lo habitual"
           }
         }
       }
