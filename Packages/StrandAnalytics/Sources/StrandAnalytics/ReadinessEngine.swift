@@ -74,7 +74,7 @@ public enum ReadinessEngine {
         case rampingDown   // < 0.8  — backing off, room to build
         case sweetSpot     // 0.8–1.3 — the productive band
         case buildingFast  // 1.3–1.5 — ramping hard, watch fatigue
-        case spiking       // ≥ 1.5  — higher injury risk
+        case spiking       // ≥ 1.5  — load well above your usual; a context signal, not an injury claim
 
         /// Short, glanceable label for the verdict row. Localized against the host app catalog.
         public var shortLabel: String {
@@ -368,7 +368,7 @@ public enum ReadinessEngine {
                 detail: String(localized: "building fast (acute:chronic \(pct)) — watch fatigue", bundle: .main), flag: band.flag, value: value)
         case .spiking:
             return Signal(key: "acwr", label: label,
-                detail: String(localized: "spiking (acute:chronic \(pct)) — higher injury risk", bundle: .main), flag: band.flag, value: value)
+                detail: String(localized: "spiking (acute:chronic \(pct)) — ease off if fatigued", bundle: .main), flag: band.flag, value: value)
         }
     }
 
