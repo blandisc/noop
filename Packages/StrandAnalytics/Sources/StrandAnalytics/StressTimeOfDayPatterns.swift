@@ -147,12 +147,14 @@ public enum StressTimeOfDayPatterns {
     }
 
     /// The dominant peak hour when the daily peaks cluster: the hour whose ±1h window holds a strict
-    /// majority of the peaks. Returns nil when too scattered to call a pattern.
+    /// majority of the peaks. Returns nil when too scattered to call a pattern. The ±1h window is
+    /// measured on the 24-hour clock (circular), so 23:00 and 00:00 are 1 hour apart, not 23 — a
+    /// cluster that wraps around midnight is still detected.
     static func dominantPeakHour(_ hours: [Int]) -> Int? {
         guard !hours.isEmpty else { return nil }
         var best = (hour: hours[0], count: 0)
         for h in Set(hours) {
-            let count = hours.filter { abs($0 - h) <= 1 }.count
+            let count = hours.filter { let d = abs($0 - h); return min(d, 24 - d) <= 1 }.count
             if count > best.count { best = (hour: h, count: count) }
         }
         return best.count * 2 > hours.count ? best.hour : nil
