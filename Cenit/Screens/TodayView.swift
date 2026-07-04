@@ -2924,9 +2924,11 @@ struct TodayView: View {
     /// every other metric returns nil and keeps the classic 14-day summary.
     private func levelsSeriesLoader(for id: String) -> (() async -> [(day: String, value: Double)])? {
         // Stress isn't a stored `DailyMetric` field — its daily 0–3 series lives in `StressModel.fullTrend`
-        // (the same source as its trend). Map each point's date to a day key for the levels math. (FER-621)
+        // (the same source as its trend). Map each point's date to a day key for the levels math. The
+        // dates are UTC-midnight anchored (`parseDayKey`), so the key must be read back in UTC —
+        // `localDayKey` shifted every point one day back west of UTC (FER-630). (FER-621)
         if id == "stress" {
-            return { (self.stress?.fullTrend ?? []).map { (day: Repository.localDayKey($0.date), value: $0.value) } }
+            return { (self.stress?.fullTrend ?? []).map { (day: Repository.utcDayKey($0.date), value: $0.value) } }
         }
         let pick: (DailyMetric) -> Double?
         switch id {
@@ -2940,17 +2942,27 @@ struct TodayView: View {
         case "strain":    pick = { $0.strain }
         default:          return nil
         }
-        // Steps and Day Strain accumulate through the day — drop today's still-in-progress point so the
-        // levels count completed days only (same guard `bandSummary` uses, FER-264). Nightly metrics
-        // (rhr/spo2/sleep/resp) are already complete each morning, so they keep every point.
-        let dropInProgressToday = (id == "steps" || id == "strain")
         return {
-            var series = repo.displayDays.compactMap { row in pick(row).map { (day: row.day, value: $0) } }
-            if dropInProgressToday, series.count > 1, series.last?.day == Repository.localDayKey(Date()) {
-                series.removeLast()
-            }
-            return series
+            Self.levelsSeries(id: id, rows: repo.displayDays,
+                              todayKey: Repository.localDayKey(Date()), pick: pick)
         }
+    }
+
+    /// The full-history levels series for a metric, from the layered daily rows. Pure, so the
+    /// series↔current-day contract is pinned by `TrendCurrentDayTests` (FER-630).
+    ///
+    /// Steps accumulate through the day and their sheet has no in-progress hero over this series, so
+    /// today's partial point is dropped — the levels count completed days only (same guard
+    /// `bandSummary` uses, FER-264 / FER-471). Day Strain KEEPS today: its sheet's hero shows the
+    /// in-progress score, so a line ending yesterday contradicted it (FER-630). Nightly metrics
+    /// (rhr/spo2/sleep/resp) are already complete each morning, so they keep every point.
+    nonisolated static func levelsSeries(id: String, rows: [DailyMetric], todayKey: String,
+                                         pick: (DailyMetric) -> Double?) -> [(day: String, value: Double)] {
+        var series = rows.compactMap { row in pick(row).map { (day: row.day, value: $0) } }
+        if id == "steps", series.count > 1, series.last?.day == todayKey {
+            series.removeLast()
+        }
+        return series
     }
 
     /// Trailing-window slice of the derived 0–3 stress proxy the tile already computed
