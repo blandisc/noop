@@ -110,6 +110,14 @@ struct MetricDetailSpec: Identifiable {
 
     var id: String { descriptor.id }
 
+    /// Whether metric `id`'s CURRENT calendar day is still accumulating — a running daily total, so the
+    /// trend / levels series drops today's partial point and reads only completed days. THE single source
+    /// of the "who drops today" policy, shared by the rich detail (its `currentDayIncomplete`, set from
+    /// here) and Today's levels-series loader (`TodayView.levelsSeries`, FER-630), so the two can't
+    /// diverge. Only steps accumulates; a vital's "today" is last night's finished measurement.
+    /// (FER-264 / FER-471)
+    static func accumulatesToday(_ id: String) -> Bool { id == "steps" }
+
     // MARK: - Factories (wrap + reuse the MetricInfo factories — no copy duplicated here)
 
     /// HRV detail. Full block set (it's the protagonist vital): selector, chart+band, normal range,
@@ -203,7 +211,7 @@ struct MetricDetailSpec: Identifiable {
             hero: .latest,
             baselineCfg: nil,
             populationRange: nil,
-            currentDayIncomplete: true   // today is a running total, not a finished day (FER-264)
+            currentDayIncomplete: Self.accumulatesToday("steps")   // running total, not a finished day (FER-264)
         )
     }
 

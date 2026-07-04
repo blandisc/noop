@@ -55,28 +55,42 @@ final class TrendCurrentDayTests: XCTestCase {
     func testStrainLevelsSeriesKeepsInProgressToday() {
         var days = baseline()
         days.append(dm("2026-06-27", strain: 1.9))
-        let series = TodayView.levelsSeries(id: "strain", rows: days, todayKey: "2026-06-27",
-                                            pick: { $0.strain })
+        let series = TodayView.levelsSeries(rows: days, todayKey: "2026-06-27",
+                                            dropsIncompleteToday: false, pick: { $0.strain })
         XCTAssertEqual(series.last?.day, "2026-06-27")
         XCTAssertEqual(series.last?.value, 1.9)
     }
 
-    /// Steps still DROP today's in-progress point (FER-264 / FER-471 — deliberate, its sheet has no
-    /// in-progress hero over this series). The FER-630 fix must not widen to steps.
-    func testStepsLevelsSeriesDropsInProgressToday() {
+    /// A running daily total (steps) still DROPS today's in-progress point (FER-264 / FER-471 —
+    /// deliberate, its sheet has no in-progress hero over this series). The FER-630 fix must not widen
+    /// the drop to non-accumulating metrics.
+    func testRunningTotalLevelsSeriesDropsInProgressToday() {
         var days = baseline()
         days.append(dm("2026-06-27", hrv: 50))
-        let series = TodayView.levelsSeries(id: "steps", rows: days, todayKey: "2026-06-27",
-                                            pick: { $0.avgHrv })
+        let series = TodayView.levelsSeries(rows: days, todayKey: "2026-06-27",
+                                            dropsIncompleteToday: true, pick: { $0.avgHrv })
         XCTAssertEqual(series.last?.day, "2026-06-10",
-                       "steps must keep dropping the in-progress day")
+                       "a running total must keep dropping the in-progress day")
+    }
+
+    /// The «who drops today» policy has a single source: `MetricDetailSpec.accumulatesToday`. Only steps
+    /// accumulates; the rich detail's `currentDayIncomplete` reads from the same predicate, so the
+    /// resumen and rich sheets can't diverge (FER-630 altitude).
+    func testAccumulatesTodaySingleSource() {
+        XCTAssertTrue(MetricDetailSpec.accumulatesToday("steps"))
+        for id in ["strain", "stress", "hrv", "rhr", "spo2", "sleep", "recovery", "resp_rate"] {
+            XCTAssertFalse(MetricDetailSpec.accumulatesToday(id), "\(id) is not a running daily total")
+        }
+        XCTAssertEqual(MetricDetailSpec.steps(1234).currentDayIncomplete,
+                       MetricDetailSpec.accumulatesToday("steps"),
+                       "the steps spec must derive currentDayIncomplete from the shared predicate")
     }
 
     /// A metric whose newest row is NOT today (no data yet) keeps its honest last point — no invented
     /// today point.
     func testLevelsSeriesWithoutTodayRowEndsOnNewestRealDay() {
-        let series = TodayView.levelsSeries(id: "strain", rows: baseline(), todayKey: "2026-06-27",
-                                            pick: { $0.strain })
+        let series = TodayView.levelsSeries(rows: baseline(), todayKey: "2026-06-27",
+                                            dropsIncompleteToday: false, pick: { $0.strain })
         XCTAssertEqual(series.last?.day, "2026-06-10")
     }
 

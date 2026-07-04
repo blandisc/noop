@@ -2942,24 +2942,26 @@ struct TodayView: View {
         case "strain":    pick = { $0.strain }
         default:          return nil
         }
+        // Drop today's partial point ONLY for a running daily total (steps) — the same "who drops today"
+        // policy the rich detail reads, from the single source so the two can't diverge (FER-630). Day
+        // Strain KEEPS today: its sheet's hero shows the in-progress score, so a line ending yesterday
+        // contradicted it. Nightly metrics (rhr/spo2/sleep/resp) are complete each morning anyway.
+        let dropsIncompleteToday = MetricDetailSpec.accumulatesToday(id)
         return {
-            Self.levelsSeries(id: id, rows: repo.displayDays,
-                              todayKey: Repository.localDayKey(Date()), pick: pick)
+            Self.levelsSeries(rows: repo.displayDays, todayKey: Repository.localDayKey(Date()),
+                              dropsIncompleteToday: dropsIncompleteToday, pick: pick)
         }
     }
 
     /// The full-history levels series for a metric, from the layered daily rows. Pure, so the
-    /// series↔current-day contract is pinned by `TrendCurrentDayTests` (FER-630).
-    ///
-    /// Steps accumulate through the day and their sheet has no in-progress hero over this series, so
-    /// today's partial point is dropped — the levels count completed days only (same guard
-    /// `bandSummary` uses, FER-264 / FER-471). Day Strain KEEPS today: its sheet's hero shows the
-    /// in-progress score, so a line ending yesterday contradicted it (FER-630). Nightly metrics
-    /// (rhr/spo2/sleep/resp) are already complete each morning, so they keep every point.
-    nonisolated static func levelsSeries(id: String, rows: [DailyMetric], todayKey: String,
+    /// series↔current-day contract is pinned by `TrendCurrentDayTests` (FER-630). `dropsIncompleteToday`
+    /// removes today's still-accumulating partial point (running totals only — see
+    /// `MetricDetailSpec.accumulatesToday`); every other metric keeps every point.
+    nonisolated static func levelsSeries(rows: [DailyMetric], todayKey: String,
+                                         dropsIncompleteToday: Bool,
                                          pick: (DailyMetric) -> Double?) -> [(day: String, value: Double)] {
         var series = rows.compactMap { row in pick(row).map { (day: row.day, value: $0) } }
-        if id == "steps", series.count > 1, series.last?.day == todayKey {
+        if dropsIncompleteToday, series.count > 1, series.last?.day == todayKey {
             series.removeLast()
         }
         return series
