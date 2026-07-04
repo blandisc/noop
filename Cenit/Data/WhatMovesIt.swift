@@ -32,18 +32,30 @@ enum WhatMovesItEngine {
     /// when the metric carries no pairs or none clear the gate → the block stays hidden.
     static func findings(forMetricKey key: String,
                          days: [DailyMetric],
+                         appleDays: Set<String> = [],
                          gate: CorrelationEngine.TrendGate = .default) -> [WhatMovesItFinding] {
         // Only the two recovery vitals carry this block (FER-209 scope).
         let primary: (DailyMetric) -> Double?
+        let sourced: [DailyMetric]
         switch key {
-        case "hrv": primary = { $0.avgHrv }
-        case "rhr": primary = { $0.restingHr.map(Double.init) }
-        default:    return []
+        case "hrv":
+            primary = { $0.avgHrv }
+            // HRV is band-anchored (RMSSD); Apple reports SDNN — different instruments, no published
+            // conversion. Nil the Apple-day HRV so those nights drop from the correlation instead of
+            // mixing scales (FER-644; the same lens Today/InsightsProvider already use). `appleDays == []`
+            // (a strap-only user) is the identity, so a band user's findings are unchanged.
+            sourced = SourceLens.maskHrv(days, keep: .band, appleDays: appleDays)
+        case "rhr":
+            // Resting HR is the same physical metric across sources (bpm↔bpm) — no source lens.
+            primary = { $0.restingHr.map(Double.init) }
+            sourced = days
+        default:
+            return []
         }
 
-        let metric = series(days, primary)
-        let sleep  = series(days) { $0.totalSleepMin }
-        let strain = series(days) { $0.strain }
+        let metric = series(sourced, primary)
+        let sleep  = series(sourced) { $0.totalSleepMin }
+        let strain = series(sourced) { $0.strain }
 
         var out: [WhatMovesItFinding] = []
         // Same-night sleep duration vs the vital (Pearson is symmetric, so order is irrelevant).

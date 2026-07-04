@@ -3082,7 +3082,7 @@ struct TodayView: View {
     /// The gated, directional "Qué la mueve" findings (FER-209), computed from the user's own history.
     /// Empty → the detail hides the block.
     private func whatMovesItFindings(for key: String) -> [WhatMovesItFinding] {
-        WhatMovesItEngine.findings(forMetricKey: key, days: repo.displayDays)
+        WhatMovesItEngine.findings(forMetricKey: key, days: repo.displayDays, appleDays: repo.appleHealthDays)
     }
 
     /// Last night's companion vitals (respiration + resting HR) for the detail's "Vitales de la noche".
