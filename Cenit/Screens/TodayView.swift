@@ -590,9 +590,11 @@ struct TodayView: View {
                     HealthAlertBanner()
                     dialHeader
                 }
-                // Caption «toca para saber por qué» bajo el dial (handoff): SOLO en la vista Brief con
-                // veredicto. En los demás estados/página la página 1 ya trae su copy honesto.
-                if (pagerPage ?? 0) == 0, heroState == .verdict { whyCaption }
+                // Caption «toca para saber por qué» bajo el dial (handoff): en AMBAS páginas del pager
+                // mientras haya veredicto (Brief y «Métricas de hoy»), ya que vive bajo el dial —fijo—, no
+                // dentro de una página. Solo se oculta cuando no hay lectura de hoy (la página 1 del Brief
+                // trae su copy honesto).
+                if heroState == .verdict { whyCaption }
                 // Gap FLEXIBLE dial→pager: el sobrante vertical se reparte por igual ARRIBA y abajo del
                 // pager (este `Spacer` + el de abajo), así la rejilla de métricas baja a ocupar la pantalla
                 // en vez de quedar pegada al dial con todo el aire desperdiciado al fondo. El dial sigue
@@ -1311,8 +1313,8 @@ struct TodayView: View {
         }
     }
 
-    /// Caption «toca para saber por qué» bajo el dial (handoff, SOLO en la vista Brief con veredicto).
-    /// Toca → el mismo «¿Por qué?» (`WhyVerdictSheet`) que la palabra del dial.
+    /// Caption «toca para saber por qué» bajo el dial (handoff): visible en ambas páginas del pager
+    /// mientras haya veredicto. Toca → el mismo «¿Por qué?» (`WhyVerdictSheet`) que la palabra del dial.
     private var whyCaption: some View {
         Button { showWhyVerdict = true } label: {
             Text("toca para saber por qué")
@@ -2395,7 +2397,11 @@ struct TodayView: View {
                     if !isEmpty { SourceChip(source: source) }   // FER-552: fuente real del dato
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            // `maxHeight: .infinity` (contenido anclado arriba) para que las 3 pills del Vistazo queden del
+            // MISMO alto: cada una llena el alto de la más alta que impone el `HStack`, en vez de tomar su
+            // alto intrínseco —que difería porque el valor ancho de Sueño («5h 31m») encoge un pelo con el
+            // `minimumScaleFactor` y dejaba esa pill más baja que Recuperación/HRV.
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .padding(.horizontal, NoopMetrics.gap).padding(.vertical, NoopMetrics.space2)
             .background {
                 RoundedRectangle(cornerRadius: NoopMetrics.tileRadius, style: .continuous)
