@@ -493,6 +493,21 @@ It projects the **recovery composite directly** rather than forecasting HRV and 
 
 ---
 
+## `RecoveryChange` — «qué cambió vs ayer» day-over-day attribution
+
+Source: `RecoveryChange.swift` (FER-642). **Live.** Surfaced in the unified «qué mueve tu recuperación» experience (Recovery summary + detail). Answers a narrow question — *how did the recovery score move since yesterday, and which one or two signals moved with it?* — as a **day-over-day change read-out**, never a causal explanation.
+
+It is the companion to `RecoveryImpact`. Where `RecoveryImpact` decomposes **today's LEVEL** (each present signal's share of today's composite z vs your personal base — an *exact, additive* decomposition of the score), this engine decomposes the **CHANGE**:
+
+- `deltaScore = todayScore − yesterdayScore`, over the **displayed** scores. This part is **exact** — the engine invents no score, so the headline always equals «today shown − yesterday shown», rounded to whole points.
+- **Movers** — for each signal present in *both* days' impacts, the day-over-day move in its own oriented contribution to the composite (`contribution = orientedZ × weight`, taken as a difference of two `RecoveryImpact` results). Ranked by `|Δcontribution|` descending; the top **1–2** are shown. The move is oriented so «+» always means «moved the way that helps recovery», driving the ▲/▼ glyph and the «mejoró/empeoró» word. Sleep is scored on **efficiency %** (the quantity the sleep term reads), not duration, so the «ayer → hoy» read-out matches what actually moved the score. Different units (ms vs bpm vs %) never compete on raw magnitude — they compete in the score's own contribution currency.
+
+> **Honest caveat — the mover ranking is a co-movement attribution heuristic, not an exact Δscore decomposition.** Ranking signals by their change-in-contribution surfaces *which signal moved alongside the score* between the two days; it is **not** an exact algebraic split of `deltaScore` into per-signal parts (the composite is a renormalized weighted mean squashed through a logistic, so the day-over-day Δscore is not the plain sum of per-signal Δcontributions). Contrast `RecoveryImpact`, which *is* an exact additive decomposition of a single day's level. The copy therefore says «cambió» / «subió» / «bajó», **never** «causó» — a signal that moved with the score is described, not a cause of it.
+
+**Gates & purity.** «vs ayer» means literally the previous **calendar** day: `compute` returns `nil` (and the whole block hides) when yesterday's band row, either day's displayed score, or either day's `RecoveryImpact` is missing — it never invents a change or reaches past yesterday. Both impacts are computed **band-only** (the same whole-row Apple-day drop `RecoveryImpact` uses, FER-519 / FER-629), so a day-over-day story never mixes an Apple-only night into a band day. Signals whose contribution didn't actually move (`|Δcontribution| ≤ 1e-9`) are dropped. Pure and deterministic — no store, no clock, no state. APPROXIMATE; no clinical claim.
+
+---
+
 ## Interactive engines (wired into screens)
 
 These are the **live** data-interrogation engines, used by `InsightsView`, `CompareView`, and `MetricExplorerView`.
