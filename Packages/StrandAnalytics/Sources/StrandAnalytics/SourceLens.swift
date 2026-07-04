@@ -62,10 +62,7 @@ public enum SourceLens {
     ///   - appleDays: the day-keys surfaced from Apple Health (`repo.appleHealthDays`), i.e. the SDNN rows.
     public static func maskHrv(_ days: [DailyMetric], keep: Source,
                                appleDays: Set<String>) -> [DailyMetric] {
-        // Fast path: a strap-only user (no Apple days) keeping the band source is the identity — return
-        // the array untouched so an existing user's verdict/stress output is bit-for-bit unchanged.
-        if keep == .band && appleDays.isEmpty { return days }
-        return days.map { keeps($0.day, keep: keep, appleDays: appleDays) ? $0 : $0.hrvMasked() }
+        mask(days, keep: keep, appleDays: appleDays) { $0.hrvMasked() }
     }
 
     /// Return `days` with EVERY cross-source column — `avgHrv`, `restingHr`, `respRateBpm`, and the sleep
@@ -77,8 +74,17 @@ public enum SourceLens {
     /// `keep: .band, appleDays: []` returns `days` verbatim (identity — a strap-only user is unchanged).
     public static func maskForBaseline(_ days: [DailyMetric], keep: Source,
                                        appleDays: Set<String>) -> [DailyMetric] {
+        mask(days, keep: keep, appleDays: appleDays) { $0.crossSourceMasked() }
+    }
+
+    /// Shared body for both lenses: the identity fast-path plus the positional map. `blank` is the only thing
+    /// that differs — `hrvMasked` (HRV only) vs `crossSourceMasked` (every cross-source column).
+    /// Fast path: a strap-only user (no Apple days) keeping the band source is the identity — the array is
+    /// returned untouched so an existing user's output is bit-for-bit unchanged.
+    private static func mask(_ days: [DailyMetric], keep: Source, appleDays: Set<String>,
+                             blank: (DailyMetric) -> DailyMetric) -> [DailyMetric] {
         if keep == .band && appleDays.isEmpty { return days }
-        return days.map { keeps($0.day, keep: keep, appleDays: appleDays) ? $0 : $0.crossSourceMasked() }
+        return days.map { keeps($0.day, keep: keep, appleDays: appleDays) ? $0 : blank($0) }
     }
 }
 
