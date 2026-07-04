@@ -92,11 +92,7 @@ private extension DailyMetric {
     /// Rebuild the row with `avgHrv` nilled, every other column intact (the struct is immutable and has
     /// no `copy()`). A masked day reads as a "missing HRV night" to a fold — skip-and-hold, not a zero.
     func hrvMasked() -> DailyMetric {
-        DailyMetric(day: day, totalSleepMin: totalSleepMin, efficiency: efficiency, deepMin: deepMin,
-                    remMin: remMin, lightMin: lightMin, disturbances: disturbances, restingHr: restingHr,
-                    avgHrv: nil, recovery: recovery, strain: strain, exerciseCount: exerciseCount,
-                    spo2Pct: spo2Pct, skinTempDevC: skinTempDevC, respRateBpm: respRateBpm,
-                    steps: steps, activeKcalEst: activeKcalEst)
+        with(avgHrv: .set(nil))
     }
 
     /// Rebuild the row with every CROSS-SOURCE column nilled — `avgHrv`, `restingHr`, `respRateBpm`, and the
@@ -105,10 +101,7 @@ private extension DailyMetric {
     /// the baseline is built from the kept source only. Duration survives because it's comparable across
     /// sources (it feeds the engine's short-night confidence honestly); the STAGES don't (measured offsets).
     func crossSourceMasked() -> DailyMetric {
-        DailyMetric(day: day, totalSleepMin: totalSleepMin, efficiency: efficiency, deepMin: nil,
-                    remMin: nil, lightMin: nil, disturbances: disturbances, restingHr: nil,
-                    avgHrv: nil, recovery: recovery, strain: strain, exerciseCount: exerciseCount,
-                    spo2Pct: spo2Pct, skinTempDevC: skinTempDevC, respRateBpm: nil,
-                    steps: steps, activeKcalEst: activeKcalEst)
+        with(deepMin: .set(nil), remMin: .set(nil), lightMin: .set(nil),
+             restingHr: .set(nil), avgHrv: .set(nil), respRateBpm: .set(nil))
     }
 }

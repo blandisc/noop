@@ -418,10 +418,6 @@ private extension DailyMetric {
     /// Rebuild the immutable DailyMetric with a substituted recovery + skin-temp deviation
     /// (the struct has no `copy()`). (#78)
     func with(recovery r: Double?, skinTempDevC sd: Double?) -> DailyMetric {
-        DailyMetric(day: day, totalSleepMin: totalSleepMin, efficiency: efficiency, deepMin: deepMin,
-                    remMin: remMin, lightMin: lightMin, disturbances: disturbances, restingHr: restingHr,
-                    avgHrv: avgHrv, recovery: r, strain: strain, exerciseCount: exerciseCount,
-                    spo2Pct: spo2Pct, skinTempDevC: sd, respRateBpm: respRateBpm,
-                    steps: steps, activeKcalEst: activeKcalEst)
+        with(recovery: .set(r), skinTempDevC: .set(sd))
     }
 }
