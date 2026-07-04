@@ -842,19 +842,21 @@ final class AppModel: ObservableObject {
         let previous = healthAlert
         guard behavior.illnessWatch, days.count >= 14 else { healthAlert = nil; return }
         func mean(_ vals: [Double]) -> Double? { vals.isEmpty ? nil : vals.reduce(0, +) / Double(vals.count) }
-        // FER-543: the HRV term scores against a STRAP-ONLY history — Apple-only nights carry SDNN, not the
-        // band's RMSSD, so mixing them into the illness HRV baseline contaminates it the same way FER-519
-        // fixed for the recovery baseline (RMSSD↔SDNN aren't interchangeable, no published conversion;
-        // Shaffer & Ginsberg 2017). RHR / respiration are the same physical metric across sources, and Apple
-        // writes no skin temp, so those three terms keep the full history. `appleHealthDays == []` ⇒ identity
-        // (whoopOnly / a strap-only user → no change).
+        // FER-543 / FER-641: the HRV and resting-HR terms score against a STRAP-ONLY history. Apple-only
+        // nights carry SDNN, not the band's RMSSD (not interchangeable, no published conversion; Shaffer &
+        // Ginsberg 2017), AND their resting HR is read from awake sedentary samples excluding sleep — so it
+        // sits a systematic ~10–13 bpm above the band's sleep-nadir RHR (Fenland Study; Gonzales et al. 2023,
+        // PLoS One 18(5):e0285272). Mixing either into the illness baseline contaminates it the same way
+        // FER-519 fixed for recovery. Respiration IS the same physical metric across sources (both measured
+        // during sleep, breaths/min) and Apple writes no skin temp, so those two terms keep the full history.
+        // `appleHealthDays == []` ⇒ identity (whoopOnly / a strap-only user → no change).
         let strapDays = IntelligenceEngine.strapOnlyHistory(days, appleHealthDays: repo.appleHealthDays)
 
         // Each anomaly fires by z-score ≥2σ against the baseline's OWN dispersion (robust σ via
         // IllnessWatch), not a fixed offset — so the same absolute Δ trips a stable user but not a
         // volatile one. The flag string still reports the human-readable Δ. `src` is the per-term history
-        // (`days` for all but HRV, which passes `strapDays`): recent = last ~2 nights (a single night if one
-        // is missing), base = the ~28 nights ending 3 days ago.
+        // (`days` for respiration/skin-temp; `strapDays` for HRV and resting HR): recent = last ~2 nights (a
+        // single night if one is missing), base = the ~28 nights ending 3 days ago.
         var flags: [String] = []
         func anomaly(_ kp: (DailyMetric) -> Double?, higherIsWorse: Bool,
                      from src: [DailyMetric] = days) -> (r: Double, b: Double)? {
@@ -865,7 +867,7 @@ final class AppModel: ObservableObject {
                   dev.z >= IllnessWatch.zThreshold else { return nil }
             return (r, dev.baseMean)
         }
-        if let a = anomaly({ $0.restingHr.map(Double.init) }, higherIsWorse: true) {
+        if let a = anomaly({ $0.restingHr.map(Double.init) }, higherIsWorse: true, from: strapDays) {
             flags.append(String(localized: "resting HR +\(Int((a.r - a.b).rounded())) bpm"))
         }
         if let a = anomaly({ $0.avgHrv }, higherIsWorse: false, from: strapDays), a.b > 0 {
