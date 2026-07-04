@@ -146,37 +146,40 @@ final class IntelligenceBaselinePriorTests: XCTestCase {
                              "without the fix, Apple SDNN drags the RMSSD center upward — the bug")
     }
 
-    func testRhrPriorStaysCappedAfterAppleOnlyDaysAreExcluded() {
-        // The cap-bypass half of the bug: when Apple-only days sit in `hist`, they're already PRESENT in
-        // histRhrByDay (non-nil), so foldApplePrior's `== nil` gate skips them → ALL of them enter,
-        // uncapped. Excluding them first (strapOnlyHistory) restores the FER-60 cap for RHR/resp.
-        let strapNight = dm("2026-06-20", rhr: 50)
-        let appleOnlyNights = (1...10).map { dm(String(format: "2026-06-%02d", $0), rhr: 60) }
+    func testRespPriorStaysCappedAfterAppleOnlyDaysAreExcluded() {
+        // FER-634: RHR is no longer seeded from Apple (band sleep-nadir vs Apple awake differ ~10–13 bpm);
+        // RESPIRATION is the sole remaining metric that keeps the Apple prior (breaths/min during sleep,
+        // same metric across sources). The cap-bypass half of the bug still applies to resp: when Apple-only
+        // days sit in `hist`, they're already PRESENT in histRespByDay (non-nil), so foldApplePrior's
+        // `== nil` gate skips them → ALL of them enter, uncapped. Excluding them first (strapOnlyHistory)
+        // restores the FER-60 cap for respiration.
+        let strapNight = dm("2026-06-20", resp: 14)
+        let appleOnlyNights = (1...10).map { dm(String(format: "2026-06-%02d", $0), resp: 16) }
         let hist = appleOnlyNights + [strapNight]
         let appleOnly = Set(appleOnlyNights.map(\.day))
 
-        // BUGGY (no exclusion): every Apple RHR day is present in the strap dict → foldApplePrior adds
+        // BUGGY (no exclusion): every Apple resp day is present in the strap dict → foldApplePrior adds
         // nothing → all 11 days enter the baseline, the 7-night cap bypassed.
-        var buggyRhr: [String: Double?] = [:]
-        for d in hist { buggyRhr[d.day] = d.restingHr.map(Double.init) }
-        let appleRhr = Dictionary(uniqueKeysWithValues: appleOnlyNights.map { ($0.day, Optional(Double($0.restingHr!))) })
+        var buggyResp: [String: Double?] = [:]
+        for d in hist { buggyResp[d.day] = d.respRateBpm }
+        let appleResp = Dictionary(uniqueKeysWithValues: appleOnlyNights.map { ($0.day, Optional($0.respRateBpm!)) })
         let priorDays = IntelligenceEngine.applePriorDays(appleOnlyNights, maxNights: IntelligenceEngine.applePriorMaxNights)
         // applePriorDays gates on avgHrv; these rows have no HRV, so the prior set is empty — but they're
-        // all already present in buggyRhr regardless, which is exactly the leak.
-        let buggyFolded = IntelligenceEngine.foldApplePrior(into: buggyRhr, apple: appleRhr, priorDays: priorDays)
-        XCTAssertEqual(buggyFolded.count, 11, "without the fix, all Apple-only RHR days leak in uncapped")
+        // all already present in buggyResp regardless, which is exactly the leak.
+        let buggyFolded = IntelligenceEngine.foldApplePrior(into: buggyResp, apple: appleResp, priorDays: priorDays)
+        XCTAssertEqual(buggyFolded.count, 11, "without the fix, all Apple-only resp days leak in uncapped")
 
         // FIXED: exclude Apple-only days first, then the capped prior governs how many re-enter.
         let strap = IntelligenceEngine.strapOnlyHistory(hist, appleHealthDays: appleOnly)
-        var fixedRhr: [String: Double?] = [:]
-        for d in strap { fixedRhr[d.day] = d.restingHr.map(Double.init) }
-        XCTAssertEqual(fixedRhr.count, 1, "only the strap night seeds RHR before the prior")
-        // With a usable-HRV prior set capped to 7, at most 7 Apple days could re-enter (here the prior
-        // set is HRV-gated; the invariant is that the strap dict no longer pre-contains the Apple days).
+        var fixedResp: [String: Double?] = [:]
+        for d in strap { fixedResp[d.day] = d.respRateBpm }
+        XCTAssertEqual(fixedResp.count, 1, "only the strap night seeds resp before the prior")
+        // With the prior set capped to 7, at most 7 Apple days could re-enter (here the prior set is
+        // HRV-gated; the invariant is that the strap dict no longer pre-contains the Apple days).
         let cappedPrior = Set(appleOnlyNights.suffix(IntelligenceEngine.applePriorMaxNights).map(\.day))
-        let fixedFolded = IntelligenceEngine.foldApplePrior(into: fixedRhr, apple: appleRhr, priorDays: cappedPrior)
+        let fixedFolded = IntelligenceEngine.foldApplePrior(into: fixedResp, apple: appleResp, priorDays: cappedPrior)
         XCTAssertLessThanOrEqual(fixedFolded.count, 1 + IntelligenceEngine.applePriorMaxNights,
                                  "the strap night + at most applePriorMaxNights capped Apple days")
-        XCTAssertEqual(fixedFolded.count, 8, "1 strap + 7 capped Apple RHR days (cap restored)")
+        XCTAssertEqual(fixedFolded.count, 8, "1 strap + 7 capped Apple resp days (cap restored)")
     }
 }

@@ -74,7 +74,8 @@ final class Repository: ObservableObject {
     /// Daily metrics (recovery/strain/sleep/HRV/RHR…), oldest→newest. Includes Apple-only rows (band-less
     /// nights surfaced from Apple Health). The recovery baseline reads this but EXCLUDES `appleHealthDays`
     /// before folding (FER-519, via `IntelligenceEngine.strapOnlyHistory`), so Apple's SDNN never enters
-    /// the band's RMSSD baseline; only the capped `foldApplePrior` seeds RHR/resp (same physical metric).
+    /// the band's RMSSD baseline; only the capped `foldApplePrior` seeds resp (breaths/min during sleep —
+    /// same metric; RHR is band sleep-nadir vs Apple awake, so it's no longer seeded either, FER-634).
     var days: [DailyMetric] { dashboard.days }
     /// Display-only daily rows: `days`, but strap-covered days with nil measured fields back-fill from
     /// Apple Health (FER-149). The dashboard sparklines/trends read these; analytics read `days`.
@@ -293,7 +294,8 @@ final class Repository: ObservableObject {
     /// HRV/sleep, and `appleDays` is the SET of those days. The recovery baseline reads `repo.days` but
     /// EXCLUDES `appleHealthDays` before folding HRV/RHR/resp (FER-519, `IntelligenceEngine.strapOnlyHistory`),
     /// so Apple's SDNN never enters the band's RMSSD baseline — only the capped `foldApplePrior` seeds
-    /// RHR/resp (same physical metric). `displayDays` (FER-149) is a display-only twin of `days`: a
+    /// resp (breaths/min during sleep — same metric; RHR is band sleep-nadir vs Apple awake, no longer
+    /// seeded, FER-634). `displayDays` (FER-149) is a display-only twin of `days`: a
     /// strap-covered day whose measured fields are nil (a partial-connection day) back-fills those nils
     /// from the Apple Health row this merge overwrote, so the HRV sparkline/trend shows Apple's value
     /// instead of a gap. The strap value always wins when present — only genuine gaps fill.
