@@ -76,4 +76,14 @@ final class StressTimeOfDayPatternsTests: XCTestCase {
         XCTAssertEqual(StressTimeOfDayPatterns.dominantPeakHour([9, 9, 10, 8, 9, 15, 9, 10]), 9)  // clusters at 9
         XCTAssertNil(StressTimeOfDayPatterns.dominantPeakHour([1, 5, 9, 13, 17, 21, 3, 7]))       // scattered
     }
+
+    func testDominantPeakHourWrapsMidnight() {
+        // A cluster split across midnight (23:00 + 00:00) must be detected: on the 24-h clock
+        // 23 and 0 are 1 hour apart, so the ±1h window at hour 23 (or 0) holds the majority.
+        // With linear distance (the old bug) 23 and 0 were 23 apart and no cluster was found.
+        let peaks = [23, 0, 23, 0, 23, 12]   // 5 of 6 within 1 circular hour of midnight
+        let dominant = StressTimeOfDayPatterns.dominantPeakHour(peaks)
+        XCTAssertTrue(dominant == 23 || dominant == 0,
+            "A cluster wrapping midnight should resolve to 23 or 0, got \(String(describing: dominant)).")
+    }
 }
