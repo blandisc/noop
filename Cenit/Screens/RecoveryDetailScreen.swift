@@ -428,8 +428,9 @@ struct RecoveryDetailScreen: View {
 
     /// A short es-MX state word per driver and flag (the source strings are English; es/de live in the
     /// String Catalog). Phrased per metric so each reads naturally ("HRV above your base", "Resting HR
-    /// running high"). Neutral always means "in your normal range" for that signal.
-    private static func driverWord(key: String, flag: ReadinessEngine.Flag) -> LocalizedStringKey {
+    /// running high"). Neutral always means "in your normal range" for that signal. Shared with the
+    /// recovery summary's «Qué la movió hoy» rows (FER-628), so both surfaces speak the same words.
+    static func driverWord(key: String, flag: ReadinessEngine.Flag) -> LocalizedStringKey {
         switch (key, flag) {
         case ("hrv", .good):       return "above your base"
         case ("hrv", .watch):      return "a touch low"

@@ -11779,23 +11779,6 @@
         }
       }
     },
-    "Each signal becomes a score of how far above or below your personal average it sits; they're averaged with the weights above and mapped onto a 0–100 scale, calibrated so a typical day lands near 58.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Each signal becomes a score of how far above or below your personal average it sits; they're averaged with the weights above and mapped onto a 0–100 scale, calibrated so a typical day lands near 58."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cada señal se vuelve un puntaje de qué tan arriba o abajo está de tu promedio personal; se promedian con los pesos de arriba y se ajustan a una escala 0–100, calibrada para que un día típico caiga cerca de 58."
-          }
-        }
-      }
-    },
     "Each square is a day, tinted by your recovery — red when low, amber in the middle, green when high. Empty squares are days with no reading. It's the at-a-glance shape of your last three months. (Buchheit 2014)": {
       "extractionState": "manual",
       "localizations": {
@@ -15403,23 +15386,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Inactivo"
-          }
-        }
-      }
-    },
-    "If a signal is missing on a given night, its weight is shared among the others.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "If a signal is missing on a given night, its weight is shared among the others."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Si falta alguna señal esa noche, su peso se reparte entre las demás."
           }
         }
       }
@@ -43039,6 +43005,210 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tus niveles salen de tu propia base — con unas noches más aparecen."
+          }
+        }
+      }
+    },
+    "What moved it today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What moved it today"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qué la movió hoy"
+          }
+        }
+      }
+    },
+    "All your signals sat near your base today.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All your signals sat near your base today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todas tus señales quedaron cerca de tu base hoy."
+          }
+        }
+      }
+    },
+    ", is what pulled your recovery down the most today.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", is what pulled your recovery down the most today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", es lo que más te bajó la recuperación hoy."
+          }
+        }
+      }
+    },
+    ", is what lifted your recovery the most today.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", is what lifted your recovery the most today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", es lo que más te subió la recuperación hoy."
+          }
+        }
+      }
+    },
+    "pulled it down hard": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pulled it down hard"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "la bajó mucho"
+          }
+        }
+      }
+    },
+    "pulled it down": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pulled it down"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "la bajó"
+          }
+        }
+      }
+    },
+    "pulled it down a bit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pulled it down a bit"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "la bajó algo"
+          }
+        }
+      }
+    },
+    "barely moved it": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "barely moved it"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "apenas la movió"
+          }
+        }
+      }
+    },
+    "lifted it": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lifted it"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "la subió"
+          }
+        }
+      }
+    },
+    "◀ pulled it down": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "◀ pulled it down"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "◀ te la bajó"
+          }
+        }
+      }
+    },
+    "lifted it ▶": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lifted it ▶"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "te la subió ▶"
+          }
+        }
+      }
+    },
+    "Each signal becomes a score of how far above or below your personal average it sits (a z-score, in σ). They're averaged with fixed weights — HRV 60%, resting heart rate 20%, sleep 15%, skin temperature 10%, respiration 5% — and mapped onto a 0–100 scale, calibrated so a typical day lands near 58. If a signal is missing on a given night, its weight is shared among the others.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Each signal becomes a score of how far above or below your personal average it sits (a z-score, in σ). They're averaged with fixed weights — HRV 60%, resting heart rate 20%, sleep 15%, skin temperature 10%, respiration 5% — and mapped onto a 0–100 scale, calibrated so a typical day lands near 58. If a signal is missing on a given night, its weight is shared among the others."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada señal se convierte en un puntaje de qué tan por arriba o por abajo de tu promedio personal quedó (un z-score, en σ). Se promedian con pesos fijos —HRV 60%, FC en reposo 20%, sueño 15%, temperatura de la piel 10%, respiración 5%— y se mapean a una escala de 0 a 100, calibrada para que un día típico caiga cerca de 58. Si una señal falta una noche, su peso se reparte entre las demás."
           }
         }
       }
