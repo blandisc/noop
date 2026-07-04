@@ -25,6 +25,10 @@ struct LiveView: View {
     @EnvironmentObject private var model: AppModel
     @EnvironmentObject private var live: LiveState
     @EnvironmentObject private var repo: Repository
+    /// Drives the release/re-arm of the heavy R10/R11 realtime stream around backgrounding (FER-636):
+    /// `onDisappear` doesn't fire when the app backgrounds with this sheet still open, so without this
+    /// the strap floods live HR (~2/s) 24/7 until the user returns and swipes the sheet away.
+    @Environment(\.scenePhase) private var scenePhase
 
     /// The active «Instrumento diurno» theme, passed from the presenter (does not propagate through
     /// `.sheet`). Defaults to `.base` for the standalone (tab) mount.
@@ -138,6 +142,18 @@ struct LiveView: View {
         .presentationDetents([.height(sheetHeight > 0 ? sheetHeight : 640)])
         .onAppear { refreshLiveSession() }
         .onDisappear { model.releaseRealtimeHR("live"); reconnectTimeout?.cancel() }
+        // Backgrounding with this sheet still open doesn't fire onDisappear, so the heavy realtime stream
+        // would otherwise stay armed and drain the strap (FER-636). Release "live" on background — the
+        // ref-count keeps the stream alive if a strength session ("strength") still holds it — and re-arm
+        // on return to foreground while the sheet is up. `.inactive` (Control Center / app switcher) is
+        // transient, so we leave the stream alone there.
+        .onChange(of: scenePhase) { _, phase in
+            switch phase {
+            case .background: model.releaseRealtimeHR("live")
+            case .active: refreshLiveSession()
+            default: break
+            }
+        }
         .onChange(of: live.bonded) { refreshLiveSession() }
         .onChange(of: live.connected) { wasConnected, nowConnected in
             refreshLiveSession()

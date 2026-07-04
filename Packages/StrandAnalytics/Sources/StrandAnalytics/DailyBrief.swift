@@ -40,7 +40,7 @@ public struct DailyBrief: Sendable, Equatable {
         public let flag: ReadinessEngine.Flag
         /// Encabezado semibold en lenguaje llano (p. ej. «Dormiste bien»).
         public let lead: String
-        /// Subtítulo con la cifra (duración, σ, o la comparación con la base).
+        /// Subtítulo: la interpretación en palabras (o la cifra legible — duración, °C, ratio).
         public let sub: String
 
         public init(kind: BulletKind, flag: ReadinessEngine.Flag, lead: String, sub: String) {
@@ -136,16 +136,16 @@ public enum DailyBriefEngine {
             guard let kind = bulletKind(forSignalKey: s.key) else { continue }   // monotony, etc. fuera
             pool.append(Candidate(kind: kind, flag: s.flag,
                                   lead: signalLead(kind: kind, flag: s.flag),
-                                  sub: s.value ?? s.detail))
+                                  sub: signalSub(kind: kind, flag: s.flag) ?? s.value ?? s.detail))
         }
         // FER-623: un día sin banda no produce señal de HRV en el veredicto (su SDNN se enmascaró de la base
         // de banda). Si la capa de app calculó la HRV estimada contra la propia base SDNN, entra como viñeta
         // de HRV — pero solo si el veredicto no trajo ya una (nunca dos viñetas de HRV). La UI la marca
-        // «estimado». Reusa el MISMO copy/σ que una señal de banda; la fuente (SDNN) la señala el sello.
+        // «estimado». Reusa el MISMO copy que una señal de banda; la fuente (SDNN) la señala el sello.
         if let est = hrvEstimated, !pool.contains(where: { $0.kind == .hrv }) {
             pool.append(Candidate(kind: .hrv, flag: est.flag,
                                   lead: signalLead(kind: .hrv, flag: est.flag),
-                                  sub: String(format: "%+.1fσ", est.z)))
+                                  sub: signalSub(kind: .hrv, flag: est.flag) ?? ""))
         }
         // Orden estable: peor flag primero; a igual flag, prioridad fija de tipo.
         let ordered = pool.enumerated().sorted { a, b in
@@ -212,9 +212,10 @@ public enum DailyBriefEngine {
         }
     }
 
-    /// La viñeta de recuperación: flag por banda + comparación con la media reciente (si la hay). Con
-    /// `baseline` compara «vs tu base»; sin base aún, describe por zona del dial (verde/media/roja) — honesto
-    /// sin comparar contra algo que no tiene.
+    /// La viñeta de recuperación: flag por banda + comparación con la media reciente (si la hay). El sub
+    /// habla el vocabulario del Detalle (FER-637): la zona con nombre de `MetricLevels.recovery` («en
+    /// Moderado»), nunca «tu base» — ese concepto no existe en la pantalla de Recuperación. Con `baseline`
+    /// se añade la comparación en llano («mejor que tus últimos días»); sin base aún, la zona sola.
     static func recoveryCandidate(recovery: Double, baseline: Double?) -> Candidate {
         let delta = baseline.map { recovery - $0 }
         let flag: ReadinessEngine.Flag
@@ -230,22 +231,39 @@ public enum DailyBriefEngine {
         case .watch:   lead = "Vienes por debajo"
         case .neutral: lead = "Recuperación estable"
         }
+        let zone = recoveryZoneName(recovery)
         let sub: String
         if let d = delta {
-            if d >= 5 { sub = "por encima de tu base" }
-            else if d <= -5 { sub = "por debajo de tu base" }
-            else { sub = "en tu base" }
+            if d >= 5 { sub = "en \(zone), mejor que tus últimos días" }
+            else if d <= -5 { sub = "en \(zone), por debajo de tus últimos días" }
+            else { sub = "en \(zone), como tus últimos días" }
         } else {
-            if recovery >= RecoveryScorer.bandYellowMax { sub = "en zona verde" }
-            else if recovery < RecoveryScorer.bandRedMax { sub = "en zona roja" }
-            else { sub = "en zona media" }
+            sub = "en \(zone)"
         }
         return Candidate(kind: .recovery, flag: flag, lead: lead, sub: sub)
     }
 
-    /// El lead interpretivo de una señal del cuerpo, por tipo y valencia. El `sub` lo lleva la cifra σ
-    /// de la propia señal. La dirección («subió/bajó») la decide el flag: para cada señal, `.good` es la
-    /// dirección sana y `.watch`/`.bad` la que pide atención.
+    /// El nombre es-MX de la zona de recuperación del Detalle para un score 0–100 (FER-637). Los RANGOS
+    /// vienen de `MetricLevels.recovery` (una sola fuente con la pantalla); los nombres son el es-MX del
+    /// String Catalog (este archivo es copy es-only, igual que leads/subs). FER-638: la zona 70–88 es
+    /// «Alto» — «A punto» quedó exclusivo del veredicto del dial. Espejo de `MetricLevelsExplorer.label`.
+    static func recoveryZoneName(_ score: Double) -> String {
+        let key = MetricLevels.levels(for: .recovery).first { lvl in
+            (lvl.lower.map { score >= $0 } ?? true) && (lvl.upper.map { score < $0 } ?? true)
+        }?.key
+        switch key {
+        case "depleted": return "Agotado"
+        case "low":      return "Bajo"
+        case "moderate": return "Moderado"
+        case "primed":   return "Alto"
+        case "peak":     return "Pico"
+        default:         return "Moderado"   // inalcanzable: la partición 0–100 es total
+        }
+    }
+
+    /// El lead interpretivo de una señal del cuerpo, por tipo y valencia. La dirección («subió/bajó») la
+    /// decide el flag: para cada señal, `.good` es la dirección sana y `.watch`/`.bad` la que pide atención.
+    /// La interpretación en palabras va en `signalSub` — el lead ya no empaca dos ideas con un guion (FER-637).
     ///
     /// FER-623: la HRV se ancla a «vs tu base» (sin verbo de cambio temporal). El σ siempre es relativo a la
     /// base personal, no a ayer; decir «bajó» sugería una comparación día-a-día que confundía («dice alta
@@ -258,15 +276,46 @@ public enum DailyBriefEngine {
         // Detalle. Así el Brief deja de contradecir a la hoja de Detalle (que a −0.9σ dice «En tu base»).
         case .hrv:
             switch flag {
-            case .good:  return "Tu HRV está sobre tu base"
-            case .watch: return "Tu HRV va a la baja"
-            default:     return "Tu HRV está bajo tu base"
+            case .good:    return "Tu HRV está sobre tu base"
+            case .neutral: return "Tu HRV está en tu base"
+            case .watch:   return "Tu HRV va a la baja"
+            case .bad:     return "Tu HRV está bajo tu base"
             }
-        case .rhr:      return good ? "Tu pulso en reposo está por debajo de tu base — señal de recuperación" : "Tu pulso en reposo está por encima de tu base — tu cuerpo sigue activo"
+        case .rhr:
+            switch flag {
+            case .good:    return "Tu pulso en reposo está bajo tu base"
+            case .neutral: return "Tu pulso en reposo está en tu base"
+            case .watch, .bad: return "Tu pulso en reposo está sobre tu base"
+            }
         case .respRate: return good ? "Tu respiración va estable" : "Tu respiración subió"
         case .skinTemp: return good ? "Tu temperatura va normal" : "Tu temperatura subió"
         case .acwr:     return good ? "Tu carga va en balance" : "Tu carga viene alta"
         case .recovery, .sleep: return ""   // estos tienen su propio constructor
+        }
+    }
+
+    /// El sub interpretivo que acompaña al lead (FER-637): la lectura en palabras, donde antes iba la
+    /// cifra σ que nadie entiende. `nil` para las señales cuya cifra sí es legible (temperatura en °C,
+    /// carga como ratio) — esas conservan su `value`.
+    static func signalSub(kind: DailyBrief.BulletKind, flag: ReadinessEngine.Flag) -> String? {
+        switch kind {
+        case .hrv:
+            switch flag {
+            case .good:    return "buena señal"
+            case .neutral: return "todo en orden"
+            case .watch:   return "cambio que vale la pena vigilar"
+            case .bad:     return "tu cuerpo pide calma"
+            }
+        case .rhr:
+            switch flag {
+            case .good:    return "señal de recuperación"
+            case .neutral: return "todo en orden"
+            case .watch, .bad: return "tu cuerpo sigue activo"
+            }
+        case .respRate:
+            return (flag == .good || flag == .neutral) ? "en su ritmo usual" : "por encima de lo usual"
+        case .skinTemp, .acwr, .recovery, .sleep:
+            return nil
         }
     }
 
@@ -292,7 +341,7 @@ public enum DailyBriefEngine {
         switch level {
         case .primed:       close = "Buen día para empujar."
         case .balanced:     close = "Entrena a tu ritmo."
-        case .strained:     close = "Hay algo que cuidar — entrena con cabeza."
+        case .strained:     close = "Hay algo que cuidar. Entrena con cabeza."
         case .rundown:      close = "Hoy tu cuerpo pide bajar el ritmo."
         case .insufficient: close = ""
         }

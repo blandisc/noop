@@ -240,7 +240,7 @@ struct TodayView: View {
     /// (mismo dashboard publicado, sin await en medio) para no reintroducir la carrera FER-177. Una sola
     /// fuente de verdad: `recomputeDerived` y el fallback en frío de `readiness` la comparten (deben coincidir).
     private var bandDays: [DailyMetric] {
-        HrvSourceLens.mask(repo.days, keep: .band, appleDays: repo.appleHealthDays)
+        SourceLens.maskHrv(repo.days, keep: .band, appleDays: repo.appleHealthDays)
     }
 
     /// Los conteos memoizados; cae a un cálculo en línea solo el primer frame (memo aún nil).
@@ -738,6 +738,20 @@ struct TodayView: View {
     /// Recovery score driving the hero numeral (0–100). nil while calibrating.
     private var recoveryScore: Int? { repo.today?.recovery.map { Int($0.rounded()) } }
 
+    /// The recovery summary sheet's model — the ONE way every entry point (Daily Brief bullet, the
+    /// hero numeral, the glance pill) opens it. Includes «Qué la movió hoy» (FER-628), computed
+    /// against the band-only slice: `RecoveryImpact` drops `repo.appleHealthDays` whole-row before
+    /// folding, the same `strapOnlyHistory` filter the persisted score's baselines use (FER-519), so
+    /// the block and the score can never disagree about the same night.
+    private var recoveryInfo: MetricInfo {
+        .recovery(score: recoveryScore,
+                  calibrationNights: recoveryCalibration,
+                  nightsNeeded: Baselines.minNightsSeed,
+                  impact: RecoveryImpact.compute(days: repo.days,
+                                                 todayKey: Repository.localDayKey(Date()),
+                                                 appleDays: repo.appleHealthDays))
+    }
+
     /// El lienzo: el papel del tema, leído DENTRO del subárbol tematizado para que también recolore por
     /// hora. (El `.background(theme.paper)` del propio `iosBody` resolvería contra el tema base, no el de
     /// la hora — por eso esta vista hija lo lee del entorno.)
@@ -1046,7 +1060,7 @@ struct TodayView: View {
     /// Se siembra en `recomputeDerived` (memo `memoAppleHrvEstimated`), no por frame — corre un `evaluate`.
     private func computeAppleHrvEstimated() -> DailyBrief.HrvEstimatedBullet? {
         guard repo.isRecoveryEstimated(Repository.localDayKey(Date())) else { return nil }
-        let appleDays = HrvSourceLens.mask(repo.days, keep: .apple, appleDays: repo.appleHealthDays)
+        let appleDays = SourceLens.maskHrv(repo.days, keep: .apple, appleDays: repo.appleHealthDays)
         let r = ReadinessEngine.evaluate(days: appleDays, today: Repository.localDayKey(Date()))
         guard let hrv = r.signals.first(where: { $0.key == "hrv" }), let z = hrv.z else { return nil }
         return DailyBrief.HrvEstimatedBullet(z: z, flag: hrv.flag)
@@ -1422,9 +1436,7 @@ struct TodayView: View {
         case .sleep:
             metricDetail = .sleep(resolveMeasured(todayOnly: true) { $0.totalSleepMin }.map { Int($0.value.rounded()) })
         case .recovery:
-            metricDetail = .recovery(score: recoveryScore,
-                                     calibrationNights: recoveryCalibration,
-                                     nightsNeeded: Baselines.minNightsSeed)
+            metricDetail = recoveryInfo
         case .hrv:
             metricDetail = .hrv(latestFromDisplay { $0.avgHrv }?.value)
         case .rhr:
@@ -1611,9 +1623,7 @@ struct TodayView: View {
                 }
                 .contentShape(Rectangle())
                 .onTapGesture {
-                    metricDetail = .recovery(score: recoveryScore,
-                                             calibrationNights: recoveryCalibration,
-                                             nightsNeeded: Baselines.minNightsSeed)
+                    metricDetail = recoveryInfo
                 }
                 // La palabra del nivel en su color; toca → «¿Por qué?» (`WhyVerdictSheet`), la misma hoja
                 // que abren la «i» de Métricas y el titular del Brief. `insufficient` no tiene palabra.
@@ -2257,9 +2267,7 @@ struct TodayView: View {
                        value: recovery.map { "\(Int($0.rounded()))" } ?? "—", unit: nil, source: recSource,
                        today: recovery, history: history(base) { $0.recovery },
                        betterHigher: true, deadband: 2, positive: positive, format: { "\(Int($0.rounded()))" }) {
-                metricDetail = .recovery(score: recoveryScore,
-                                         calibrationNights: recoveryCalibration,
-                                         nightsNeeded: Baselines.minNightsSeed)
+                metricDetail = recoveryInfo
             }
             glancePill(label: "HRV", icon: "waveform.path.ecg", color: theme.dataHrv,
                        value: hrv.map { "\(Int($0.value.rounded()))" } ?? "—", unit: String(localized: "ms"),
