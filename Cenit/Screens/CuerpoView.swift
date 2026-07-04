@@ -1041,11 +1041,22 @@ private struct CuerpoLanding: View {
         // Longevity (FER-145 + FER-214): Body Age + Vitality from a 28-night window. Regularity uses the
         // real Sleep Regularity Index when there's coverage (FER-214), else the documented duration proxy;
         // VO₂max needs a waist the profile doesn't collect, so the cardio signal flows through resting HR.
+        // Mask cross-source columns to the BAND before the engine folds them (FER-640): `nightlyRMSSD`
+        // takes the MEDIAN of `avgHrv` and `VitalityEngine` scores it against an RMSSD-by-age norm, but
+        // `displayDays` back-fills Apple **SDNN** on band-less nights (FER-149) — a different construct with
+        // no published conversion (Task Force 1996; Shaffer & Ginsberg 2017), so a few Apple nights bias
+        // Body Age by source, not physiology. The same `SourceLens.maskForBaseline(keep:.band)` (FER-631)
+        // also nils Apple's resting HR (band −12.7 bpm offset), which likewise scores against a band-domain
+        // norm — so both nocturnal inputs stay single-source. Single-source columns (steps) and cross-source-
+        // comparable ones (sleep duration) are untouched. If the user is Apple-only, band RMSSD is empty →
+        // `VitalityInputsBuilder`'s coverage gate drops the HRV factor rather than comparing SDNN to the
+        // band norm. A strap-only user is the identity — `recentBand == recent`.
         let recent = trailingDisplay(28)
+        let recentBand = SourceLens.maskForBaseline(recent, keep: .band, appleDays: repo.appleHealthDays)
         let vInputs = VitalityInputsBuilder.build(.init(
             chronoAge: Double(model.profile.age),
-            nightlyRestingHR: recent.compactMap { $0.restingHr.map(Double.init) },
-            nightlyRMSSD: recent.compactMap { $0.avgHrv },
+            nightlyRestingHR: recentBand.compactMap { $0.restingHr.map(Double.init) },
+            nightlyRMSSD: recentBand.compactMap { $0.avgHrv },
             nightlySleepHours: recent.compactMap { $0.totalSleepMin.map { $0 / 60 } },
             dailySteps: recent.compactMap { $0.steps.map(Double.init) },
             sleepRegularity: computeSleepRegularity()))
