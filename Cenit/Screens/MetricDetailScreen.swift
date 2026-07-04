@@ -39,6 +39,16 @@ struct MetricDetailScreen: View {
     /// reading never reads identical to a band one (FER-487). Never set for Heart Rate (band intraday).
     var todayFromApple: Bool = false
 
+    /// The day-keys ("yyyy-MM-dd") whose reading came from Apple Health rather than the band
+    /// (`repo.appleHealthDays`). For the three cross-source vitals (HRV, resting HR, respiration) the band
+    /// and Apple measure with DIFFERENT instruments (RMSSD≠SDNN, resting HR −12.7 bpm, resp +2.3 bpm — no
+    /// published conversion), so folding both into one baseline/σ, consistency CV or period Δ% mixes two
+    /// scales (FER-629). The screen keeps EVERY night on the today datum + hero (today may be an Apple
+    /// night), but folds a SINGLE source into the statistics and the trend line — the band-level equivalent
+    /// of `SourceLens.maskForBaseline` (FER-631), kept here as a plain day-key filter so the view stays
+    /// DB-free. Empty (a strap-only user, or a single-source metric) → identity, nothing changes. (FER-635)
+    var appleDays: Set<String> = []
+
     /// Loads the full daily series for this metric (oldest → newest), as `(day "yyyy-MM-dd", value)`.
     /// Injected so the screen stays DB-free and the caller controls the source (`displayDays` for BLE,
     /// Apple-Health series as a fallback).
@@ -162,7 +172,9 @@ struct MetricDetailScreen: View {
             }
             series = await seriesLoader()
             // Parse every day string to a Date ONCE per series (not per slice / per render). (FER-216)
-            parsedSeries = series.map { ($0.day, Repository.parseDayKey($0.day), $0.value) }
+            // The chart/window/trend read the SINGLE-source fold so the plotted line, its ±σ band and the
+            // Δ% never mix band and Apple; `series` stays full for today's datum + the hero. (FER-635)
+            parsedSeries = statSeries.map { ($0.day, Repository.parseDayKey($0.day), $0.value) }
             if let loader = nightVitalsLoader { nightVitals = await loader() }
             if visibleBlocks.contains(.whatMovesIt), let loader = whatMovesItLoader {
                 whatMovesItFindings = await loader()
@@ -258,7 +270,33 @@ struct MetricDetailScreen: View {
 
     private var unit: String { spec.info.unit ?? "" }
 
-    private var allValues: [Double] { series.map(\.value) }
+    /// The three vitals the band and Apple measure with different instruments — folding both sources into
+    /// one baseline/σ, CV or Δ% mixes two scales (FER-629). SpO₂/steps/skin-temp/VO₂max are single-source. (FER-635)
+    private var isCrossSource: Bool { ["hrv", "rhr", "resp_rate"].contains(spec.descriptor.key) }
+
+    /// Which source the statistics fold: the band (the anchor) whenever the user has ANY band night for this
+    /// metric, otherwise Apple — so an Apple-only user's chart is never emptied. Only meaningful for a
+    /// cross-source metric with Apple days present; elsewhere the fold keeps every night (identity). (FER-635)
+    private var statKeepsApple: Bool {
+        guard isCrossSource, !appleDays.isEmpty else { return false }
+        let hasBandNight = series.contains { !appleDays.contains($0.day) }
+        return !hasBandNight
+    }
+
+    /// Does this day belong to the source the statistics fold? Identity (keeps every day) for a single-source
+    /// metric or a strap-only user; otherwise keeps only the chosen source's nights — the same band↔Apple
+    /// classification `SourceLens` uses (`.band` keeps non-Apple days). (FER-635)
+    private func keepsForStats(_ day: String) -> Bool {
+        guard isCrossSource, !appleDays.isEmpty else { return true }
+        return appleDays.contains(day) == statKeepsApple
+    }
+
+    /// The full display series folded to a single source (for cross-source vitals) — what every statistic
+    /// (baseline ±σ, consistency CV, moving average) and the trend line read, so none of them crosses band
+    /// and Apple. `series` itself stays full for TODAY's datum + the hero (today may be an Apple night). (FER-635)
+    private var statSeries: [(day: String, value: Double)] { series.filter { keepsForStats($0.day) } }
+
+    private var allValues: [Double] { statSeries.map(\.value) }
 
     /// The series with each `day` string parsed to a `Date` exactly ONCE per series (not per slice,
     /// not per render). The shared window math (`MetricWindowMath`) reads `date` straight from here instead
@@ -1130,7 +1168,8 @@ struct MetricDetailScreen: View {
     /// The full series the period comparison splits, with the in-progress current day removed for a
     /// cumulative metric (so "this period" and "the previous period" are both completed-day means). (FER-264)
     private var trendComparisonSeries: [(day: String, value: Double)] {
-        dropsIncompleteToday ? series.filter { $0.day != todayKey } : series
+        // Single-source fold so the period Δ% compares band-to-band (or Apple-to-Apple), never mixed. (FER-635)
+        dropsIncompleteToday ? statSeries.filter { $0.day != todayKey } : statSeries
     }
 
     /// Whether a rise is good for this metric, from the catalog's `higherIsBetter` — drives the trend
