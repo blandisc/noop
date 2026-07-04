@@ -99,11 +99,15 @@ struct StressModel {
     /// Build from oldest→newest daily metrics plus any stored "stress" series.
     /// Returns nil only when there is no usable signal at all.
     ///
-    /// `appleDays` are the day-keys surfaced from Apple Health (`repo.appleHealthDays`). The HRV baseline is
-    /// split by source so each reading is z-scored against the baseline of ITS OWN source: band nights are
-    /// RMSSD, Apple nights are SDNN — two constructs with no published conversion (Task Force 1996; Shaffer
-    /// & Ginsberg 2017, Front Public Health 5:258). RHR keeps one merged baseline (same physical metric
-    /// across sources, FER-519 policy). `appleDays == []` is the identity — a strap-only user is unchanged.
+    /// `appleDays` are the day-keys surfaced from Apple Health (`repo.appleHealthDays`). BOTH baselines are
+    /// split by source so each reading is z-scored against the baseline of ITS OWN source. HRV: band nights
+    /// are RMSSD, Apple nights are SDNN — two constructs with no published conversion (Task Force 1996;
+    /// Shaffer & Ginsberg 2017, Front Public Health 5:258). RHR: the band reads it from the sleep nadir
+    /// (deep-sleep-weighted night average), Apple from awake sedentary samples that EXCLUDE sleep, so Apple
+    /// RHR runs systematically ~10–13 bpm higher (Fenland Study, Gonzales et al. 2023, PLoS One 18(5):
+    /// e0285272: sleep 56.9 vs seated 67.6 bpm) — not the same number, no fixed offset (it varies per
+    /// person). The z-score is the common currency; raw bpm/ms are never compared across sources (FER-633,
+    /// supersedes the old merged-RHR FER-519 policy). `appleDays == []` is the identity — strap-only unchanged.
     init?(days: [DailyMetric], stored: [(day: String, value: Double)], todayKey: String,
           appleDays: Set<String> = []) {
         // Anchor the hero to the most recent LOCAL day (≤ today) that actually carries a reading — a
@@ -131,7 +135,13 @@ struct StressModel {
         // own recent past rather than itself.
         let baseline = Array(usable[..<anchorIdx].suffix(30))
 
-        let rhrBase = baseline.compactMap { $0.restingHr }.map(Double.init)
+        // RHR baseline split by source (FER-633): band nights → sleep-nadir RHR, Apple nights → awake
+        // sedentary RHR. Each reading is z-scored against the baseline of its own source; the two are never
+        // mixed (systematic ~10–13 bpm gap, no fixed offset — see the init doc). `appleDays == []` →
+        // rhrAppleBase empty and every day routes to rhrBandBase == the old single base, so a strap-only
+        // user's scores are bit-for-bit identical.
+        let rhrBandBase  = baseline.filter { !appleDays.contains($0.day) }.compactMap { $0.restingHr }.map(Double.init)
+        let rhrAppleBase = baseline.filter {  appleDays.contains($0.day) }.compactMap { $0.restingHr }.map(Double.init)
         // HRV baseline split by source (FER-623): band nights → RMSSD, Apple nights → SDNN. Each reading is
         // z-scored against the baseline of its own source; the two are never mixed (no published conversion).
         // `appleDays == []` → sdnnBase empty and every day routes to rmssdBase == the old single base, so a
@@ -139,13 +149,20 @@ struct StressModel {
         let rmssdBase = baseline.filter { !appleDays.contains($0.day) }.compactMap { $0.avgHrv }
         let sdnnBase  = baseline.filter {  appleDays.contains($0.day) }.compactMap { $0.avgHrv }
 
-        let meanRHR = StressMath.mean(rhrBase)
-        let sdRHR   = StressMath.std(rhrBase, mean: meanRHR)
+        let meanBandRHR  = StressMath.mean(rhrBandBase)
+        let sdBandRHR    = StressMath.std(rhrBandBase, mean: meanBandRHR)
+        let meanAppleRHR = StressMath.mean(rhrAppleBase)
+        let sdAppleRHR   = StressMath.std(rhrAppleBase, mean: meanAppleRHR)
         let meanRMSSD = StressMath.mean(rmssdBase)
         let sdRMSSD   = StressMath.std(rmssdBase, mean: meanRMSSD)
         let meanSDNN  = StressMath.mean(sdnnBase)
         let sdSDNN    = StressMath.std(sdnnBase, mean: meanSDNN)
 
+        // Pick the RHR baseline for a day by its source. An Apple-only day with no Apple-RHR base yet →
+        // (nil, 0): the RHR term drops in `rawScore` and stress derives from HRV alone (honest cold-start).
+        func rhrBaseFor(_ day: String) -> (mean: Double?, sd: Double) {
+            appleDays.contains(day) ? (meanAppleRHR, sdAppleRHR) : (meanBandRHR, sdBandRHR)
+        }
         // Pick the HRV baseline for a day by its source. An Apple-only day with no SDNN base yet → (nil, 0):
         // the HRV term drops in `rawScore` and stress derives from RHR alone (honest cold-start).
         func hrvBaseFor(_ day: String) -> (mean: Double?, sd: Double) {
@@ -154,17 +171,18 @@ struct StressModel {
 
         let rhrT = anchor.restingHr.map(Double.init)
         let hrvT = anchor.avgHrv
+        let (meanRHRa, sdRHRa) = rhrBaseFor(anchor.day)
         let (meanHRVa, sdHRVa) = hrvBaseFor(anchor.day)
 
         // Resolve the anchor's score: prefer a stored value, else derive. A raw-signal day with no stored
         // value AND no baseline before it to derive against (e.g. the very first day) is not usable.
-        let derivedAvailable = (rhrT != nil && meanRHR != nil) || (hrvT != nil && meanHRVa != nil)
+        let derivedAvailable = (rhrT != nil && meanRHRa != nil) || (hrvT != nil && meanHRVa != nil)
         let storedAnchor = storedByDay[anchor.day]
         guard storedAnchor != nil || derivedAvailable else { return nil }
 
         let derivedScore: Double? = derivedAvailable
             ? StressMath.squash(StressMath.rawScore(
-                rhrToday: rhrT, meanRHR: meanRHR, sdRHR: sdRHR,
+                rhrToday: rhrT, meanRHR: meanRHRa, sdRHR: sdRHRa,
                 hrvToday: hrvT, meanHRV: meanHRVa, sdHRV: sdHRVa))
             : nil
 
@@ -174,7 +192,7 @@ struct StressModel {
         self.band = StressBand(score: s)
         self.rhrToday = anchor.restingHr
         self.hrvToday = hrvT
-        self.rhrDelta = (rhrT != nil && meanRHR != nil) ? (rhrT! - meanRHR!) : nil
+        self.rhrDelta = (rhrT != nil && meanRHRa != nil) ? (rhrT! - meanRHRa!) : nil
         self.hrvDelta = (hrvT != nil && meanHRVa != nil) ? (hrvT! - meanHRVa!) : nil
 
         self.explanation = StressMath.explanation(
@@ -203,10 +221,11 @@ struct StressModel {
             }
             let dRHR = d.restingHr.map(Double.init)
             let dHRV = d.avgHrv
+            let (mRHR, sdR) = rhrBaseFor(d.day)
             let (mHRV, sdH) = hrvBaseFor(d.day)
-            guard (dRHR != nil && meanRHR != nil) || (dHRV != nil && mHRV != nil) else { continue }
+            guard (dRHR != nil && mRHR != nil) || (dHRV != nil && mHRV != nil) else { continue }
             let r = StressMath.rawScore(
-                rhrToday: dRHR, meanRHR: meanRHR, sdRHR: sdRHR,
+                rhrToday: dRHR, meanRHR: mRHR, sdRHR: sdR,
                 hrvToday: dHRV, meanHRV: mHRV, sdHRV: sdH
             )
             pts.append(TrendPoint(date: date, value: StressMath.squash(r)))
