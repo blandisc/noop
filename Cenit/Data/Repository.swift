@@ -142,6 +142,12 @@ final class Repository: ObservableObject {
     }()
     nonisolated static func parseDayKey(_ s: String) -> Date? { dayKeyParser.date(from: s) }
 
+    /// Format a chart date BACK to its `yyyy-MM-dd` key in UTC — the exact inverse of `parseDayKey`,
+    /// for dates that were parsed/anchored in UTC (trend points). `localDayKey` on such a date shifts
+    /// one day back west of UTC (a UTC-midnight 27th is still the 26th in CDMX) — that mislabeled the
+    /// stress levels series a day behind its hero (FER-630).
+    nonisolated static func utcDayKey(_ date: Date) -> String { dayKeyParser.string(from: date) }
+
     /// The `yyyy-MM-dd` key for the day BEFORE `s`, computed in UTC (one fixed 24 h step — UTC has no
     /// DST) so it stays on the same DST-stable footing as `parseDayKey`. Used to cap a "fall back to the
     /// most recent reading" at yesterday (FER-397).
