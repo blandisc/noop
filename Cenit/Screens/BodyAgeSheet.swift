@@ -30,7 +30,14 @@ struct BodyAgeSheet: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
-                Text("Body age").font(StrandFont.serif(23)).foregroundStyle(theme.ink)   // serif title (FER-581)
+                // Serif title, with a «Partial estimate» flag when a heaviest factor (HRV/RHR) is
+                // missing — mirrors Physical age's `Estimate` chip (FER-643). Same warm-amber role.
+                HStack(alignment: .firstTextBaseline, spacing: 7) {
+                    Text("Body age").font(StrandFont.serif(23)).foregroundStyle(theme.ink)   // serif title (FER-581)
+                    if result?.isPartialEstimate == true {
+                        InlineFlagChip("Partial estimate", color: theme.warning)
+                    }
+                }
                 if let r = result { withData(r) } else { emptyState }
             }
             .padding(20)
@@ -56,6 +63,13 @@ struct BodyAgeSheet: View {
         }
         Text(deltaSentence(r)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             .fixedSize(horizontal: false, vertical: true)
+
+        // Honest confidence when a heaviest factor is absent (FER-643) — the band and number are
+        // unchanged, we just name what it's leaning without.
+        if r.isPartialEstimate {
+            Text(Self.partialCaveat(r)).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
 
         // The reading is the band, not the point.
         BodyAgeBand(bodyAge: r.bodyAge, chronoAge: r.chronoAge, bandYears: r.bandYears, color: tint,
@@ -165,6 +179,21 @@ struct BodyAgeSheet: View {
         return "Right at your chronological age (\(chrono))"
     }
 
+    /// Names which heaviest factor(s) the reading is missing (FER-643), so the caveat is specific: an
+    /// Apple-Health-only user misses both HRV and resting HR; a band user with sparse HRV nights misses
+    /// only HRV. Not shown when both are present (`isPartialEstimate == false`).
+    private static func partialCaveat(_ r: VitalityEngine.Result) -> LocalizedStringKey {
+        let keys = Set(r.contributions.map(\.key))
+        let noHRV = !keys.contains("hrv"), noRHR = !keys.contains("rhr")
+        if noHRV && noRHR {
+            return "Worked out without HRV or resting heart rate — the two heaviest signals. The number still holds, with less precision."
+        }
+        if noHRV {
+            return "Worked out without HRV — one of the heaviest signals. The number still holds, with less precision."
+        }
+        return "Worked out without resting heart rate — one of the heaviest signals. The number still holds, with less precision."
+    }
+
     // MARK: - Empty-state coverage
 
     private struct Factor { let key: String; let label: LocalizedStringKey; let reason: LocalizedStringKey }
@@ -218,9 +247,11 @@ struct BodyAgeSheet: View {
         let body = Int(r.bodyAge.rounded()), chrono = Int(r.chronoAge.rounded())
         let d = Int(r.deltaYears.rounded())
         let lo = Int((r.bodyAge - r.bandYears).rounded()), hi = Int((r.bodyAge + r.bandYears).rounded())
-        if d > 0 { return String(localized: "Body age \(body), \(d) years younger than your age \(chrono); estimated range \(lo) to \(hi)") }
-        if d < 0 { return String(localized: "Body age \(body), \(-d) years older than your age \(chrono); estimated range \(lo) to \(hi)") }
-        return String(localized: "Body age \(body), at your age \(chrono); estimated range \(lo) to \(hi)")
+        // Announce reduced confidence first, so VoiceOver users hear it before the number (FER-643).
+        let prefix = r.isPartialEstimate ? String(localized: "Partial estimate. ") : ""
+        if d > 0 { return prefix + String(localized: "Body age \(body), \(d) years younger than your age \(chrono); estimated range \(lo) to \(hi)") }
+        if d < 0 { return prefix + String(localized: "Body age \(body), \(-d) years older than your age \(chrono); estimated range \(lo) to \(hi)") }
+        return prefix + String(localized: "Body age \(body), at your age \(chrono); estimated range \(lo) to \(hi)")
     }
 
     private static func shortLabel(for key: String) -> String {
@@ -254,6 +285,18 @@ private struct BodyAgeSheetPaper: ViewModifier {
         chronoAge: 34,
         nightlyRestingHR: Array(repeating: 54, count: 10),
         nightlyRMSSD: Array(repeating: 48, count: 10),
+        nightlySleepHours: Array(repeating: 7.2, count: 10),
+        dailySteps: Array(repeating: 8200, count: 10)))
+    return Color.clear.sheet(isPresented: .constant(true)) {
+        BodyAgeSheet(result: VitalityEngine.compute(inputs), inputs: inputs)
+    }
+}
+
+#Preview("BodyAgeSheet — estimación parcial (solo Apple)") {
+    // No band → no nocturnal RHR and HRV gated out; only sleep, regularity and steps remain → the
+    // reading computes but flags «Partial estimate» (FER-643).
+    let inputs = VitalityInputsBuilder.build(.init(
+        chronoAge: 34,
         nightlySleepHours: Array(repeating: 7.2, count: 10),
         dailySteps: Array(repeating: 8200, count: 10)))
     return Color.clear.sheet(isPresented: .constant(true)) {

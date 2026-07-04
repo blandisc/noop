@@ -1861,6 +1861,12 @@ ES: dict[str, str] = {
     "That plan has no routines. Check the file and try again.": "Ese plan no tiene rutinas. Revisa el archivo e intenta de nuevo.",
     "One of the routines has no exercises. Check the file and try again.": "Una de las rutinas no tiene ejercicios. Revisa el archivo e intenta de nuevo.",
     "One of the exercises has no name. Check the file and try again.": "Uno de los ejercicios no tiene nombre. Revisa el archivo e intenta de nuevo.",
+    # FER-643 — Body Age: chip «estimación parcial» + caveat cuando faltan HRV/FC en reposo (solo-Apple).
+    "Partial estimate": "Estimación parcial",
+    "Partial estimate. ": "Estimación parcial. ",
+    "Worked out without HRV or resting heart rate — the two heaviest signals. The number still holds, with less precision.": "Calculada sin HRV ni FC en reposo — las dos señales de mayor peso. El número sigue valiendo, con menos precisión.",
+    "Worked out without HRV — one of the heaviest signals. The number still holds, with less precision.": "Calculada sin HRV — una de las señales de mayor peso. El número sigue valiendo, con menos precisión.",
+    "Worked out without resting heart rate — one of the heaviest signals. The number still holds, with less precision.": "Calculada sin FC en reposo — una de las señales de mayor peso. El número sigue valiendo, con menos precisión.",
 }
 
 
