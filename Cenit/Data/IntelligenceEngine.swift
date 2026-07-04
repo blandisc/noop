@@ -116,7 +116,7 @@ final class IntelligenceEngine: ObservableObject {
         // the up-front snapshot taken above (so a concurrent refresh can't drift the baseline). (#78)
         // FER-519: fold the STRAP-ONLY slice — Apple-only nights carry SDNN, not the band's RMSSD, so they
         // must not enter the HRV/RHR/resp baselines (the capped `foldApplePrior` below is the only Apple
-        // path, RHR/resp only). `filter` preserves chronological order.
+        // path, and — FER-634 — for respiration only). `filter` preserves chronological order.
         let strapHist = Self.strapOnlyHistory(hist, appleHealthDays: appleOnlyDays)
         let hrvBase1 = Baselines.foldHistory(strapHist.map { $0.avgHrv }, cfg: hrvCfg)
         let rhrBase1 = Baselines.foldHistory(strapHist.map { $0.restingHr.map(Double.init) }, cfg: rhrCfg)
@@ -209,14 +209,21 @@ final class IntelligenceEngine: ObservableObject {
         for (day, v) in nightlyRespByDay where histRespByDay[day] == nil { histRespByDay[day] = v }
         for (day, v) in nightlyEffByDay where histEffByDay[day] == nil { histEffByDay[day] = v }
 
-        // ── FER-60 / FER-519: Apple Health prior — the LOWEST-precedence seed, for RESTING-HR and
-        // RESPIRATION ONLY. A brand-new strap user has no imported history and a handful of on-device
-        // nightlies isn't enough to clear Baselines.minNightsSeed, so recovery stays null for the first
-        // nights. Folding Apple's resting-HR / respiration UNDER both strap layers (same `== nil` idiom:
-        // fill only days NEITHER strap source covered) seeds those baselines, capped to applePriorMaxNights
-        // so the seed lands PROVISIONAL, not trusted. RHR and respiration are the SAME physical quantity
-        // across sources (bpm, breaths/min), so this is an honest cold-start prior. Strap ALWAYS wins.
-        // FER-519: HRV is NOT seeded from Apple. Apple's HRV is SDNN; the band's is RMSSD — different
+        // ── FER-60 / FER-519 / FER-634: Apple Health prior — the LOWEST-precedence seed, for RESPIRATION
+        // ONLY. A brand-new strap user has no imported history and a handful of on-device nightlies isn't
+        // enough to clear Baselines.minNightsSeed, so recovery stays null for the first nights. Folding
+        // Apple's respiration UNDER both strap layers (same `== nil` idiom: fill only days NEITHER strap
+        // source covered) seeds that baseline, capped to applePriorMaxNights so the seed lands PROVISIONAL,
+        // not trusted. Respiration IS the same physical metric across sources — both are breaths/min
+        // measured DURING SLEEP (WHOOP via RSA, Apple via the accelerometer) — so this is an honest
+        // cold-start prior. Strap ALWAYS wins.
+        // FER-634: RHR is NO LONGER seeded from Apple. WHOOP reads RHR from the sleep nadir (deep-sleep-
+        // weighted night average); Apple estimates it from awake sedentary samples and EXCLUDES sleep, so
+        // Apple RHR runs systematically ~10–13 bpm higher (Fenland Study, Gonzales et al. 2023, PLoS One
+        // 18(5):e0285272: sleep 56.9 vs seated 67.6 bpm). The gap varies per person, so there's no fixed
+        // offset to subtract — seeding it would bias the cold-start RHR baseline high. RHR now takes the
+        // same honest cold-start as HRV: empty until the band accrues its own nights.
+        // FER-519: HRV is NOT seeded from Apple either. Apple's HRV is SDNN; the band's is RMSSD — different
         // constructs with no published conversion and a scale gap of UNCERTAIN direction (Shaffer &
         // Ginsberg 2017; Task Force 1996), so SDNN must never enter the RMSSD baseline. Apple's HRV path
         // is the SEPARATE SDNN-vs-own-SDNN estimator (AppleRecoveryEstimator, FER-153), not this prior.
@@ -227,14 +234,13 @@ final class IntelligenceEngine: ObservableObject {
                                                        from: AnalyticsEngine.dayString(now - 90 * 86_400, tzOffsetSeconds: tzOffset),
                                                        to: AnalyticsEngine.dayString(now, tzOffsetSeconds: tzOffset))) ?? []) : []
         let priorDays = Self.applePriorDays(appleRows, maxNights: Self.applePriorMaxNights)
-        var appleRhrByDay: [String: Double?] = [:]
         var appleRespByDay: [String: Double?] = [:]
         for r in appleRows {
-            appleRhrByDay[r.day]  = r.restingHr.map(Double.init)
             appleRespByDay[r.day] = r.respRateBpm
         }
         // FER-519: no foldApplePrior for HRV — Apple SDNN never seeds the RMSSD baseline.
-        histRhrByDay  = Self.foldApplePrior(into: histRhrByDay,  apple: appleRhrByDay,  priorDays: priorDays)
+        // FER-634: no foldApplePrior for RHR either — band (sleep nadir) and Apple (awake) RHR differ
+        // ~10–13 bpm; RHR takes the honest cold-start. Only respiration keeps the Apple prior.
         histRespByDay = Self.foldApplePrior(into: histRespByDay, apple: appleRespByDay, priorDays: priorDays)
 
         let hrvSeq = histHrvByDay.keys.sorted().map { histHrvByDay[$0]! }   // chronological [Double?]
@@ -373,7 +379,9 @@ final class IntelligenceEngine: ObservableObject {
     /// Folding Apple SDNN into the RMSSD baseline mixes two different HRV constructs with no published
     /// conversion (Shaffer & Ginsberg 2017, Front Public Health 5:258; Task Force 1996, Circulation
     /// 93:1043); the capped `foldApplePrior` is the only sanctioned Apple→baseline path, and only for
-    /// resting-HR / respiration (same physical metric across sources). `appleHealthDays` is the set
+    /// respiration (breaths/min during sleep — the same physical metric across sources). RHR is NOT the
+    /// same across sources (band sleep-nadir vs Apple awake-sedentary, ~10–13 bpm gap) so it's no longer
+    /// seeded from Apple either (FER-634). `appleHealthDays` is the set
     /// `mergeDaily` returns for the days surfaced from Apple Health. Pure (no store/actor state) for
     /// testing; `appleHealthDays == []` (e.g. whoopOnly, or a strap-only user) is the identity.
     ///
@@ -418,10 +426,6 @@ private extension DailyMetric {
     /// Rebuild the immutable DailyMetric with a substituted recovery + skin-temp deviation
     /// (the struct has no `copy()`). (#78)
     func with(recovery r: Double?, skinTempDevC sd: Double?) -> DailyMetric {
-        DailyMetric(day: day, totalSleepMin: totalSleepMin, efficiency: efficiency, deepMin: deepMin,
-                    remMin: remMin, lightMin: lightMin, disturbances: disturbances, restingHr: restingHr,
-                    avgHrv: avgHrv, recovery: r, strain: strain, exerciseCount: exerciseCount,
-                    spo2Pct: spo2Pct, skinTempDevC: sd, respRateBpm: respRateBpm,
-                    steps: steps, activeKcalEst: activeKcalEst)
+        with(recovery: .set(r), skinTempDevC: .set(sd))
     }
 }

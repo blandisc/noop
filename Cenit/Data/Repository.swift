@@ -74,7 +74,8 @@ final class Repository: ObservableObject {
     /// Daily metrics (recovery/strain/sleep/HRV/RHR…), oldest→newest. Includes Apple-only rows (band-less
     /// nights surfaced from Apple Health). The recovery baseline reads this but EXCLUDES `appleHealthDays`
     /// before folding (FER-519, via `IntelligenceEngine.strapOnlyHistory`), so Apple's SDNN never enters
-    /// the band's RMSSD baseline; only the capped `foldApplePrior` seeds RHR/resp (same physical metric).
+    /// the band's RMSSD baseline; only the capped `foldApplePrior` seeds resp (breaths/min during sleep —
+    /// same metric; RHR is band sleep-nadir vs Apple awake, so it's no longer seeded either, FER-634).
     var days: [DailyMetric] { dashboard.days }
     /// Display-only daily rows: `days`, but strap-covered days with nil measured fields back-fill from
     /// Apple Health (FER-149). The dashboard sparklines/trends read these; analytics read `days`.
@@ -141,6 +142,12 @@ final class Repository: ObservableObject {
         return f
     }()
     nonisolated static func parseDayKey(_ s: String) -> Date? { dayKeyParser.date(from: s) }
+
+    /// Format a chart date BACK to its `yyyy-MM-dd` key in UTC — the exact inverse of `parseDayKey`,
+    /// for dates that were parsed/anchored in UTC (trend points). `localDayKey` on such a date shifts
+    /// one day back west of UTC (a UTC-midnight 27th is still the 26th in CDMX) — that mislabeled the
+    /// stress levels series a day behind its hero (FER-630).
+    nonisolated static func utcDayKey(_ date: Date) -> String { dayKeyParser.string(from: date) }
 
     /// The `yyyy-MM-dd` key for the day BEFORE `s`, computed in UTC (one fixed 24 h step — UTC has no
     /// DST) so it stays on the same DST-stable footing as `parseDayKey`. Used to cap a "fall back to the
@@ -287,7 +294,8 @@ final class Repository: ObservableObject {
     /// HRV/sleep, and `appleDays` is the SET of those days. The recovery baseline reads `repo.days` but
     /// EXCLUDES `appleHealthDays` before folding HRV/RHR/resp (FER-519, `IntelligenceEngine.strapOnlyHistory`),
     /// so Apple's SDNN never enters the band's RMSSD baseline — only the capped `foldApplePrior` seeds
-    /// RHR/resp (same physical metric). `displayDays` (FER-149) is a display-only twin of `days`: a
+    /// resp (breaths/min during sleep — same metric; RHR is band sleep-nadir vs Apple awake, no longer
+    /// seeded, FER-634). `displayDays` (FER-149) is a display-only twin of `days`: a
     /// strap-covered day whose measured fields are nil (a partial-connection day) back-fills those nils
     /// from the Apple Health row this merge overwrote, so the HRV sparkline/trend shows Apple's value
     /// instead of a gap. The strap value always wins when present — only genuine gaps fill.
@@ -948,34 +956,29 @@ private extension DailyMetric {
     /// change. recovery/strain stay strap-only in practice because Apple rows carry them as nil. This is
     /// display-only and is never fed to the recovery baseline (`repo.days` keeps the un-filled row).
     func fillingNils(from other: DailyMetric) -> DailyMetric {
-        DailyMetric(
-            day: day,
-            totalSleepMin: totalSleepMin ?? other.totalSleepMin,
-            efficiency: efficiency ?? other.efficiency,
-            deepMin: deepMin ?? other.deepMin,
-            remMin: remMin ?? other.remMin,
-            lightMin: lightMin ?? other.lightMin,
-            disturbances: disturbances ?? other.disturbances,
-            restingHr: restingHr ?? other.restingHr,
-            avgHrv: avgHrv ?? other.avgHrv,
-            recovery: recovery ?? other.recovery,
-            strain: strain ?? other.strain,
-            exerciseCount: exerciseCount ?? other.exerciseCount,
-            spo2Pct: spo2Pct ?? other.spo2Pct,
-            skinTempDevC: skinTempDevC ?? other.skinTempDevC,
-            respRateBpm: respRateBpm ?? other.respRateBpm,
-            steps: steps ?? other.steps,
-            activeKcalEst: activeKcalEst ?? other.activeKcalEst)
+        with(
+            totalSleepMin: .set(totalSleepMin ?? other.totalSleepMin),
+            efficiency: .set(efficiency ?? other.efficiency),
+            deepMin: .set(deepMin ?? other.deepMin),
+            remMin: .set(remMin ?? other.remMin),
+            lightMin: .set(lightMin ?? other.lightMin),
+            disturbances: .set(disturbances ?? other.disturbances),
+            restingHr: .set(restingHr ?? other.restingHr),
+            avgHrv: .set(avgHrv ?? other.avgHrv),
+            recovery: .set(recovery ?? other.recovery),
+            strain: .set(strain ?? other.strain),
+            exerciseCount: .set(exerciseCount ?? other.exerciseCount),
+            spo2Pct: .set(spo2Pct ?? other.spo2Pct),
+            skinTempDevC: .set(skinTempDevC ?? other.skinTempDevC),
+            respRateBpm: .set(respRateBpm ?? other.respRateBpm),
+            steps: .set(steps ?? other.steps),
+            activeKcalEst: .set(activeKcalEst ?? other.activeKcalEst))
     }
 
     /// A copy with `recovery` substituted (the struct has no `copy()`). Used by `repo.today` to surface the
     /// Apple-Health estimated recovery on today's single row when the band didn't cover the night (FER-153)
     /// — every other field is carried verbatim, so the row's HRV/sleep stay Apple's own.
     func withRecovery(_ r: Double?) -> DailyMetric {
-        DailyMetric(day: day, totalSleepMin: totalSleepMin, efficiency: efficiency, deepMin: deepMin,
-                    remMin: remMin, lightMin: lightMin, disturbances: disturbances, restingHr: restingHr,
-                    avgHrv: avgHrv, recovery: r, strain: strain, exerciseCount: exerciseCount,
-                    spo2Pct: spo2Pct, skinTempDevC: skinTempDevC, respRateBpm: respRateBpm,
-                    steps: steps, activeKcalEst: activeKcalEst)
+        with(recovery: .set(r))
     }
 }

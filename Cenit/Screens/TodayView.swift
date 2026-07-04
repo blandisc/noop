@@ -738,6 +738,20 @@ struct TodayView: View {
     /// Recovery score driving the hero numeral (0–100). nil while calibrating.
     private var recoveryScore: Int? { repo.today?.recovery.map { Int($0.rounded()) } }
 
+    /// The recovery summary sheet's model — the ONE way every entry point (Daily Brief bullet, the
+    /// hero numeral, the glance pill) opens it. Includes «Qué la movió hoy» (FER-628), computed
+    /// against the band-only slice: `RecoveryImpact` drops `repo.appleHealthDays` whole-row before
+    /// folding, the same `strapOnlyHistory` filter the persisted score's baselines use (FER-519), so
+    /// the block and the score can never disagree about the same night.
+    private var recoveryInfo: MetricInfo {
+        .recovery(score: recoveryScore,
+                  calibrationNights: recoveryCalibration,
+                  nightsNeeded: Baselines.minNightsSeed,
+                  impact: RecoveryImpact.compute(days: repo.days,
+                                                 todayKey: Repository.localDayKey(Date()),
+                                                 appleDays: repo.appleHealthDays))
+    }
+
     /// El lienzo: el papel del tema, leído DENTRO del subárbol tematizado para que también recolore por
     /// hora. (El `.background(theme.paper)` del propio `iosBody` resolvería contra el tema base, no el de
     /// la hora — por eso esta vista hija lo lee del entorno.)
@@ -1422,9 +1436,7 @@ struct TodayView: View {
         case .sleep:
             metricDetail = .sleep(resolveMeasured(todayOnly: true) { $0.totalSleepMin }.map { Int($0.value.rounded()) })
         case .recovery:
-            metricDetail = .recovery(score: recoveryScore,
-                                     calibrationNights: recoveryCalibration,
-                                     nightsNeeded: Baselines.minNightsSeed)
+            metricDetail = recoveryInfo
         case .hrv:
             metricDetail = .hrv(latestFromDisplay { $0.avgHrv }?.value)
         case .rhr:
@@ -1611,9 +1623,7 @@ struct TodayView: View {
                 }
                 .contentShape(Rectangle())
                 .onTapGesture {
-                    metricDetail = .recovery(score: recoveryScore,
-                                             calibrationNights: recoveryCalibration,
-                                             nightsNeeded: Baselines.minNightsSeed)
+                    metricDetail = recoveryInfo
                 }
                 // La palabra del nivel en su color; toca → «¿Por qué?» (`WhyVerdictSheet`), la misma hoja
                 // que abren la «i» de Métricas y el titular del Brief. `insufficient` no tiene palabra.
@@ -2257,9 +2267,7 @@ struct TodayView: View {
                        value: recovery.map { "\(Int($0.rounded()))" } ?? "—", unit: nil, source: recSource,
                        today: recovery, history: history(base) { $0.recovery },
                        betterHigher: true, deadband: 2, positive: positive, format: { "\(Int($0.rounded()))" }) {
-                metricDetail = .recovery(score: recoveryScore,
-                                         calibrationNights: recoveryCalibration,
-                                         nightsNeeded: Baselines.minNightsSeed)
+                metricDetail = recoveryInfo
             }
             glancePill(label: "HRV", icon: "waveform.path.ecg", color: theme.dataHrv,
                        value: hrv.map { "\(Int($0.value.rounded()))" } ?? "—", unit: String(localized: "ms"),
@@ -2924,9 +2932,11 @@ struct TodayView: View {
     /// every other metric returns nil and keeps the classic 14-day summary.
     private func levelsSeriesLoader(for id: String) -> (() async -> [(day: String, value: Double)])? {
         // Stress isn't a stored `DailyMetric` field — its daily 0–3 series lives in `StressModel.fullTrend`
-        // (the same source as its trend). Map each point's date to a day key for the levels math. (FER-621)
+        // (the same source as its trend). Map each point's date to a day key for the levels math. The
+        // dates are UTC-midnight anchored (`parseDayKey`), so the key must be read back in UTC —
+        // `localDayKey` shifted every point one day back west of UTC (FER-630). (FER-621)
         if id == "stress" {
-            return { (self.stress?.fullTrend ?? []).map { (day: Repository.localDayKey($0.date), value: $0.value) } }
+            return { (self.stress?.fullTrend ?? []).map { (day: Repository.utcDayKey($0.date), value: $0.value) } }
         }
         let pick: (DailyMetric) -> Double?
         switch id {
@@ -2940,17 +2950,29 @@ struct TodayView: View {
         case "strain":    pick = { $0.strain }
         default:          return nil
         }
-        // Steps and Day Strain accumulate through the day — drop today's still-in-progress point so the
-        // levels count completed days only (same guard `bandSummary` uses, FER-264). Nightly metrics
-        // (rhr/spo2/sleep/resp) are already complete each morning, so they keep every point.
-        let dropInProgressToday = (id == "steps" || id == "strain")
+        // Drop today's partial point ONLY for a running daily total (steps) — the same "who drops today"
+        // policy the rich detail reads, from the single source so the two can't diverge (FER-630). Day
+        // Strain KEEPS today: its sheet's hero shows the in-progress score, so a line ending yesterday
+        // contradicted it. Nightly metrics (rhr/spo2/sleep/resp) are complete each morning anyway.
+        let dropsIncompleteToday = MetricDetailSpec.accumulatesToday(id)
         return {
-            var series = repo.displayDays.compactMap { row in pick(row).map { (day: row.day, value: $0) } }
-            if dropInProgressToday, series.count > 1, series.last?.day == Repository.localDayKey(Date()) {
-                series.removeLast()
-            }
-            return series
+            Self.levelsSeries(rows: repo.displayDays, todayKey: Repository.localDayKey(Date()),
+                              dropsIncompleteToday: dropsIncompleteToday, pick: pick)
         }
+    }
+
+    /// The full-history levels series for a metric, from the layered daily rows. Pure, so the
+    /// series↔current-day contract is pinned by `TrendCurrentDayTests` (FER-630). `dropsIncompleteToday`
+    /// removes today's still-accumulating partial point (running totals only — see
+    /// `MetricDetailSpec.accumulatesToday`); every other metric keeps every point.
+    nonisolated static func levelsSeries(rows: [DailyMetric], todayKey: String,
+                                         dropsIncompleteToday: Bool,
+                                         pick: (DailyMetric) -> Double?) -> [(day: String, value: Double)] {
+        var series = rows.compactMap { row in pick(row).map { (day: row.day, value: $0) } }
+        if dropsIncompleteToday, series.count > 1, series.last?.day == todayKey {
+            series.removeLast()
+        }
+        return series
     }
 
     /// Trailing-window slice of the derived 0–3 stress proxy the tile already computed

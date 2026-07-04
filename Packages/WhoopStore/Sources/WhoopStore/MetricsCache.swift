@@ -62,6 +62,66 @@ public struct DailyMetric: Equatable, Codable {
     }
 }
 
+public extension DailyMetric {
+    /// A per-column update for `with(...)`: `.keep` carries the current value through untouched, `.set(x)`
+    /// replaces it. This exists because most columns are themselves `Optional`, so a plain `nil`-default
+    /// parameter can't distinguish "leave as-is" from "clear to nil" — the enum makes the two EXPLICIT at every
+    /// call site (`.set(nil)` clears; omitting keeps). A literal `nil` won't even compile, which is the point:
+    /// silent nilification is exactly the bug `with(...)` prevents.
+    enum FieldUpdate<Value> {
+        case keep
+        case set(Value)
+        fileprivate func resolve(_ current: Value) -> Value {
+            switch self { case .keep: return current; case .set(let v): return v }
+        }
+    }
+
+    /// Return a copy of this row with only the named columns changed; every omitted column is carried through
+    /// verbatim. This is the SINGLE place the 17-field initializer is fanned out for a copy-with-change, so a
+    /// column added to `DailyMetric` is carried here by default instead of being silently nilled at each of the
+    /// hand-rolled reconstructors that used to rebuild the whole struct (`fillingNils`, `withRecovery`,
+    /// `IntelligenceEngine.with(recovery:skinTempDevC:)`, `SourceLens.hrvMasked`/`crossSourceMasked`). Pass
+    /// `.set(x)` to replace a column, including `.set(nil)` to clear a nullable one.
+    func with(
+        day: FieldUpdate<String> = .keep,
+        totalSleepMin: FieldUpdate<Double?> = .keep,
+        efficiency: FieldUpdate<Double?> = .keep,
+        deepMin: FieldUpdate<Double?> = .keep,
+        remMin: FieldUpdate<Double?> = .keep,
+        lightMin: FieldUpdate<Double?> = .keep,
+        disturbances: FieldUpdate<Int?> = .keep,
+        restingHr: FieldUpdate<Int?> = .keep,
+        avgHrv: FieldUpdate<Double?> = .keep,
+        recovery: FieldUpdate<Double?> = .keep,
+        strain: FieldUpdate<Double?> = .keep,
+        exerciseCount: FieldUpdate<Int?> = .keep,
+        spo2Pct: FieldUpdate<Double?> = .keep,
+        skinTempDevC: FieldUpdate<Double?> = .keep,
+        respRateBpm: FieldUpdate<Double?> = .keep,
+        steps: FieldUpdate<Int?> = .keep,
+        activeKcalEst: FieldUpdate<Double?> = .keep
+    ) -> DailyMetric {
+        DailyMetric(
+            day: day.resolve(self.day),
+            totalSleepMin: totalSleepMin.resolve(self.totalSleepMin),
+            efficiency: efficiency.resolve(self.efficiency),
+            deepMin: deepMin.resolve(self.deepMin),
+            remMin: remMin.resolve(self.remMin),
+            lightMin: lightMin.resolve(self.lightMin),
+            disturbances: disturbances.resolve(self.disturbances),
+            restingHr: restingHr.resolve(self.restingHr),
+            avgHrv: avgHrv.resolve(self.avgHrv),
+            recovery: recovery.resolve(self.recovery),
+            strain: strain.resolve(self.strain),
+            exerciseCount: exerciseCount.resolve(self.exerciseCount),
+            spo2Pct: spo2Pct.resolve(self.spo2Pct),
+            skinTempDevC: skinTempDevC.resolve(self.skinTempDevC),
+            respRateBpm: respRateBpm.resolve(self.respRateBpm),
+            steps: steps.resolve(self.steps),
+            activeKcalEst: activeKcalEst.resolve(self.activeKcalEst))
+    }
+}
+
 extension WhoopStore {
 
     // MARK: - Upserts (idempotent by natural key; latest server value wins on conflict)
