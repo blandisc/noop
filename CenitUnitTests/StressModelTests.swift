@@ -133,15 +133,46 @@ final class StressModelTests: XCTestCase {
         XCTAssertGreaterThan(clean!.hrvDelta!, mixed!.hrvDelta!)
     }
 
-    /// Today is an Apple-only day with no prior Apple nights → no SDNN base behind it. The HRV term drops
-    /// (no σ invented) and stress derives from resting-HR alone; the band RMSSD base is never touched.
-    func testAppleOnlyAnchorWithoutSdnnBaseFallsToHeartRate() {
-        var days = baseline()                              // all band (RMSSD) nights
-        days.append(dm("2026-06-17", rhr: 64, hrv: 80))   // today: Apple-only, high SDNN, but no SDNN base
-        let model = StressModel(days: days, stored: [], todayKey: "2026-06-17", appleDays: ["2026-06-17"])
+    // MARK: - FER-633 — RHR baseline ALSO split by source (band sleep-nadir vs Apple awake-sedentary)
+
+    /// An Apple night (awake-sedentary RHR) must NOT enter the band's sleep-nadir RHR base. Marking a
+    /// high-RHR outlier night as Apple removes it from the band base, lowering the band mean, so today
+    /// (a band night) reads FURTHER above it — proving the night was excluded (FER-633, ~10–13 bpm gap;
+    /// Fenland Study 2023). Mirrors `testAppleNightExcludedFromBandBase` for HRV.
+    func testAppleNightExcludedFromBandRhrBase() {
+        var days = (1...9).map { i in dm(String(format: "2026-06-%02d", i), rhr: 58 + i % 4, hrv: 48 + Double(i % 5)) }
+        days.append(dm("2026-06-10", rhr: 80, hrv: 50))   // an "awake" RHR outlier night (~20 bpm high)
+        days.append(dm("2026-06-17", rhr: 62, hrv: 50))   // today: a band night
+        let mixed = StressModel(days: days, stored: [], todayKey: "2026-06-17", appleDays: [])
+        let clean = StressModel(days: days, stored: [], todayKey: "2026-06-17", appleDays: ["2026-06-10"])
+        XCTAssertNotNil(mixed); XCTAssertNotNil(clean)
+        // Excluding the high outlier lowers the band RHR mean → today's delta (today − mean) is higher.
+        XCTAssertGreaterThan(clean!.rhrDelta!, mixed!.rhrDelta!)
+    }
+
+    /// An Apple day is z-scored against the APPLE RHR base, never a merged one. With a band base ~58 (sleep
+    /// nadir) and an Apple base ~68 (awake), today's Apple RHR of 67 reads slightly BELOW its own base
+    /// (−1 bpm); a merged base (~63) would have read it +4 above — the sign flip proves the split.
+    func testAppleDayScoresAgainstAppleRhrBaseNotBand() {
+        var days = (1...8).map { i in dm(String(format: "2026-06-%02d", i), rhr: 58, hrv: 48) }         // band nights
+        days += (9...14).map { i in dm(String(format: "2026-06-%02d", i), rhr: 68, hrv: 60) }           // Apple nights
+        days.append(dm("2026-06-17", rhr: 67, hrv: 60))                                                 // today: Apple
+        let appleDays = Set((9...14).map { String(format: "2026-06-%02d", $0) } + ["2026-06-17"])
+        let model = StressModel(days: days, stored: [], todayKey: "2026-06-17", appleDays: appleDays)
         XCTAssertNotNil(model)
-        XCTAssertNil(model?.hrvDelta, "no SDNN base behind today → the HRV term drops, no invented σ")
-        XCTAssertNotNil(model?.rhrDelta, "resting-HR still drives stress (one merged base, same metric)")
-        XCTAssertEqual(model?.hrvToday, 80, "the raw HRV number still shows; only its baseline comparison is withheld")
+        XCTAssertEqual(model?.rhrDelta ?? .nan, -1, accuracy: 0.001,
+                       "today's Apple RHR is scored against the Apple base (~68), not a merged base")
+    }
+
+    /// Today is an Apple-only day and every baseline night is a band night → there is NO same-source base
+    /// behind EITHER metric (no Apple RHR base, no SDNN base). The band base is never used for an Apple
+    /// reading (sleep-nadir vs awake RHR aren't comparable), so the model has nothing honest to compare
+    /// against and returns nil (the tile shows "—") rather than mixing sources (FER-633, supersedes the
+    /// old merged-RHR fallback).
+    func testAppleOnlyAnchorWithNoSameSourceBaseIsNil() {
+        var days = baseline()                              // all band (RMSSD + sleep-nadir RHR) nights
+        days.append(dm("2026-06-17", rhr: 64, hrv: 80))   // today: Apple-only, no Apple base behind it
+        let model = StressModel(days: days, stored: [], todayKey: "2026-06-17", appleDays: ["2026-06-17"])
+        XCTAssertNil(model, "no same-source base for RHR or HRV → nil, never a cross-source comparison")
     }
 }
