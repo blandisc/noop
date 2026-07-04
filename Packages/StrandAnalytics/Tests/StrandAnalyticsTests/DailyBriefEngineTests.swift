@@ -103,6 +103,15 @@ final class DailyBriefEngineTests: XCTestCase {
         XCTAssertEqual(DailyBriefEngine.sleepBullet(460).flag, .good)   // 7 h 40 → completa
     }
 
+    /// La duración mostrada redondea (no trunca) para coincidir con el Detalle de Sueño,
+    /// que usa `.rounded()` (FER-626). 318.6 min = 5 h 18.6 → «5 h 19 min», no «5 h 18 min».
+    func testSleepDurationRoundsToMatchDetail() {
+        XCTAssertTrue(DailyBriefEngine.sleepBullet(318.6).sub.hasPrefix("5 h 19 min"))
+        XCTAssertTrue(DailyBriefEngine.sleepBullet(318.4).sub.hasPrefix("5 h 18 min"))
+        // El redondeo no altera la clasificación: 318.6 sigue siendo «corta» (< 360).
+        XCTAssertEqual(DailyBriefEngine.sleepBullet(318.6).flag, .watch)
+    }
+
     // MARK: piso de 2 — degenerado devuelve nil (FER-470 / QA D1)
 
     /// Con veredicto pero solo la recuperación (sin sueño, sin base, sin señales del cuerpo) el brief no
