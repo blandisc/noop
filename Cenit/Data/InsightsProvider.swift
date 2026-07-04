@@ -31,9 +31,26 @@ enum InsightsProvider {
             }
         }
 
-        let inputs = InsightEngine.Inputs(days: days, behaviors: behaviors,
-                                          eligibleDaysByBehavior: eligibleDaysByBehavior, referenceDay: today)
         let proven = await repo.provenLevers()
+        return rank(days: days, appleDays: repo.appleHealthDays, behaviors: behaviors,
+                    eligibleDaysByBehavior: eligibleDaysByBehavior, proven: proven, today: today)
+    }
+
+    /// Pure ranking core (testable seam). Masks every cross-source column to the BAND source (FER-639)
+    /// BEFORE the engine folds any HRV/RHR/resp baseline, anomaly or correlation — the same
+    /// `SourceLens.maskForBaseline(keep:.band)` the Recovery detail and «Hoy» use (FER-631/632). Without
+    /// it, `InsightEngine`'s HRV baseline (`avgHrv`) mixes band RMSSD with Apple SDNN (no published
+    /// conversion — Task Force 1996; Shaffer & Ginsberg 2017), so «anoche tu HRV corrió bajo tu base» and
+    /// the HRV↔behavior correlations shift by SCALE, not physiology. `strain`/ACWR (trainingLoadInsight)
+    /// aren't cross-source columns, so that path is untouched. `appleDays == []` (strap-only) is the
+    /// identity — an existing strap user's insights are bit-for-bit unchanged.
+    static func rank(days: [DailyMetric], appleDays: Set<String>,
+                     behaviors: [String: Set<String>],
+                     eligibleDaysByBehavior: [String: Set<String>],
+                     proven: Set<Lever>, today: String) -> [Insight] {
+        let bandDays = SourceLens.maskForBaseline(days, keep: .band, appleDays: appleDays)
+        let inputs = InsightEngine.Inputs(days: bandDays, behaviors: behaviors,
+                                          eligibleDaysByBehavior: eligibleDaysByBehavior, referenceDay: today)
         return InsightEngine.promoteProven(InsightEngine.generate(inputs), provenLevers: proven)
     }
 }
