@@ -1378,19 +1378,20 @@ struct MetricInfoSheet: View {
         let flag = impactFlag(s)
         let color = flag == .neutral ? theme.inkSecondary : impactColor(flag)
         return VStack(alignment: .leading, spacing: 6) {
+            let impact = Self.impactWords(s.contribution)
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(Self.impactLabel(s.key)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Text(RecoveryDetailScreen.driverWord(key: s.key, flag: flag))
                     .font(StrandFont.caption)
                     .foregroundStyle(color)
                 Spacer(minLength: 8)
-                if let glyph = impactGlyph(s.contribution) {
+                if let glyph = impact.glyph {
                     Text(verbatim: glyph)
                         .font(StrandFont.footnote)
                         .foregroundStyle(color)
                         .accessibilityHidden(true)
                 }
-                Text(impactPhrase(s.contribution))
+                Text(impact.phrase)
                     .font(StrandFont.caption)
                     .foregroundStyle(theme.inkSecondary)
             }
@@ -1447,44 +1448,26 @@ struct MetricInfoSheet: View {
         }
     }
 
-    /// State flag from the ORIENTED z (+ = pushed the score up) — the same cuts
-    /// `ReadinessEngine.zSignal` flags with, so the state words agree with the Detalle's.
+    /// State flag from the ORIENTED z (+ = pushed the score up) — the single source of the σ cuts
+    /// (`ReadinessEngine.Flag(orientedZ:)`), so the state words agree with the Detalle's and the score.
     private func impactFlag(_ s: RecoveryImpact.Signal) -> ReadinessEngine.Flag {
-        switch s.orientedZ {
-        case 0.5...:        return .good
-        case -0.5..<0.5:    return .neutral
-        case -1.0 ..< -0.5: return .watch
-        default:            return .bad
-        }
+        ReadinessEngine.Flag(orientedZ: s.orientedZ)
     }
 
-    /// flag → theme color (good → verdict, neutral → quiet ink, watch → warning, bad → critical).
-    private func impactColor(_ flag: ReadinessEngine.Flag) -> Color {
-        switch flag {
-        case .good:    return theme.verdict
-        case .neutral: return theme.inkSecondary
-        case .watch:   return theme.warning
-        case .bad:     return theme.critical
-        }
-    }
+    /// flag → theme color, shared with the Detalle's driver rows so both surfaces color states alike.
+    private func impactColor(_ flag: ReadinessEngine.Flag) -> Color { flag.color(theme) }
 
-    /// The impact phrase, bucketed on the signed contribution («la bajó mucho / la bajó / la bajó
-    /// algo / apenas la movió / la subió»).
-    private func impactPhrase(_ c: Double) -> LocalizedStringKey {
+    /// The impact phrase + its ▼/▲ glyph, bucketed once on the signed contribution («la bajó mucho /
+    /// la bajó / la bajó algo / apenas la movió / la subió»). The glyph is decorative (hidden from
+    /// VoiceOver); nil in the near-zero bucket.
+    private static func impactWords(_ c: Double) -> (phrase: LocalizedStringKey, glyph: String?) {
         switch c {
-        case ..<(-0.9):                 return "pulled it down hard"
-        case ..<(-0.35):                return "pulled it down"
-        case ..<(-Self.impactBarely):   return "pulled it down a bit"
-        case ..<Self.impactBarely:      return "barely moved it"
-        default:                        return "lifted it"
+        case ..<(-0.9):                 return ("pulled it down hard", "▼")
+        case ..<(-0.35):                return ("pulled it down", "▼")
+        case ..<(-impactBarely):        return ("pulled it down a bit", "▼")
+        case ..<impactBarely:           return ("barely moved it", nil)
+        default:                        return ("lifted it", "▲")
         }
-    }
-
-    /// ▼ / ▲ beside the phrase (nil in the near-zero bucket) — decorative, hidden from VoiceOver.
-    private func impactGlyph(_ c: Double) -> String? {
-        if c <= -Self.impactBarely { return "▼" }
-        if c >= Self.impactBarely { return "▲" }
-        return nil
     }
 
     /// Progressive disclosure: the technical "how" lives one tap down, collapsed by default.

@@ -39,6 +39,18 @@ public enum ReadinessEngine {
 
     public enum Flag: String, Sendable, Equatable {
         case good, neutral, watch, bad
+
+        /// The single place the σ cutoffs live: an oriented z (+ = better than baseline) → flag.
+        /// Both the readiness signals and the recovery-summary «Qué la movió hoy» rows (FER-628) map
+        /// through this, so a signal's state word can never disagree across surfaces.
+        public init(orientedZ z: Double) {
+            switch z {
+            case 0.5...:        self = .good
+            case -0.5..<0.5:    self = .neutral
+            case -1.0 ..< -0.5: self = .watch
+            default:            self = .bad
+            }
+        }
     }
 
     /// Why the verdict reads the way it does, as one small decision the UI turns into a single
@@ -310,13 +322,13 @@ public enum ReadinessEngine {
         // Shrink toward neutral when the baseline is thin (FER-13), so a flag isn't
         // raised on weak evidence; a trusted baseline (≥ minNightsTrust) is unshrunk.
         let z = (higherIsBetter ? dev.z : -dev.z) * Baselines.confidence(nValid: state.nValid)
-        let flag: Flag
+        let flag = Flag(orientedZ: z)
         let text: String
-        switch z {
-        case 0.5...:        flag = .good;    text = goodText
-        case -0.5..<0.5:    flag = .neutral; text = neutralText
-        case -1.0 ..< -0.5: flag = .watch;   text = watchText
-        default:            flag = .bad;     text = badText
+        switch flag {
+        case .good:    text = goodText
+        case .neutral: text = neutralText
+        case .watch:   text = watchText
+        case .bad:     text = badText
         }
         // The compact read-out shows the RAW deviation from baseline (above = `+`), in σ — the unit the
         // flag itself is decided in. `dev.z` is unoriented (not flipped for lower-is-better metrics), so a

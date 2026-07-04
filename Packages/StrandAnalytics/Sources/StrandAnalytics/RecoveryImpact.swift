@@ -68,9 +68,10 @@ public enum RecoveryImpact {
                                appleDays: Set<String> = []) -> Result? {
         let band = (appleDays.isEmpty ? days : days.filter { !appleDays.contains($0.day) })
             .sorted { $0.day < $1.day }
-        guard let today = band.first(where: { $0.day == todayKey }),
-              let hrv = today.avgHrv, let rhr = today.restingHr else { return nil }
-        let history = band.filter { $0.day < todayKey }
+        guard let idx = band.firstIndex(where: { $0.day == todayKey }),
+              let hrv = band[idx].avgHrv, let rhr = band[idx].restingHr else { return nil }
+        let today = band[idx]
+        let history = Array(band[..<idx])   // sorted, so everything before today needs no re-scan
 
         // Cold-start gate: same as the scorer — no usable band HRV baseline, no decomposition.
         let hrvState = Baselines.foldHistory(history.map(\.avgHrv), cfg: Baselines.hrvCfg)
