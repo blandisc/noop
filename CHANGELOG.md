@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La duración de sueño ya coincide entre el Daily Brief y el Detalle / Sleep duration now matches between the Daily Brief and the Detail.**
+  **ES** — La misma noche podía verse como «5 h 18 min» en el Daily Brief y «5h 19m» al abrir el Detalle de Sueño. No eran datos distintos: el brief **truncaba** los segundos sobrantes y el detalle **redondeaba**. Ahora ambos redondean igual, así que la duración es idéntica en las dos vistas.
+  **EN** — The same night could read as "5 h 18 min" in the Daily Brief and "5h 19m" when opening the Sleep Detail. It wasn't different data: the brief **truncated** the leftover seconds while the detail **rounded**. Both now round the same way, so the duration is identical across the two views.
+  ([Packages/StrandAnalytics/Sources/StrandAnalytics/DailyBrief.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/DailyBrief.swift))
+
 - **FC en reposo del Daily Brief ancla la comparación a tu base personal / Resting HR in Daily Brief anchors comparison to your personal baseline.**
   **ES** — Las viñetas de frecuencia cardíaca en reposo del Daily Brief ya no dicen «Tu pulso en reposo bajó / subió» (ambiguo: ¿vs ayer?). Ahora dicen «Tu pulso en reposo está por debajo de tu base — señal de recuperación» o «…por encima de tu base — tu cuerpo sigue activo», dejando claro que la comparación es contra tu media personal de 30 días.
   **EN** — The resting heart rate bullet in the Daily Brief no longer says "Your resting pulse dropped / rose" (ambiguous: vs yesterday?). It now says "Your resting pulse is below your baseline — a recovery signal" or "…above your baseline — your body is still active", making clear the comparison is against your 30-day personal average.

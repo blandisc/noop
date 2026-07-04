@@ -197,7 +197,11 @@ public enum DailyBriefEngine {
 
     /// La viñeta de sueño: flag por suficiencia (corta < 6 h, completa ≥ 7 h, intermedia neutral).
     static func sleepBullet(_ minutes: Double) -> Candidate {
-        let h = Int(minutes) / 60, m = Int(minutes) % 60
+        // Redondea (no trunca) para que el h/min mostrado coincida con el Detalle
+        // de Sueño (SleepDetailScreen.hoursOnly, que usa .rounded()). La
+        // clasificación de abajo sigue con el valor crudo `minutes` (FER-626).
+        let total = Swift.max(0, Int(minutes.rounded()))
+        let h = total / 60, m = total % 60
         let dur = "\(h) h \(m) min"
         if minutes < 360 {
             return Candidate(kind: .sleep, flag: .watch, lead: "Dormiste poco", sub: "\(dur) · noche corta")
