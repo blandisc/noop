@@ -198,6 +198,9 @@ private struct CuerpoLanding: View {
                     && latestAppleVO2max == nil,
                 // FER-487: seal today's datum «Apple» when it came from Apple Health, matching the tile.
                 todayFromApple: todayVitalFromApple(spec.descriptor.key),
+                // FER-635: which nights are Apple-sourced, so the detail folds the baseline/σ, CV and Δ%
+                // on a single source (band-anchored) instead of mixing RMSSD↔SDNN and the band↔Apple offsets.
+                appleDays: repo.appleHealthDays,
                 seriesLoader: { vitalSeries(for: spec.descriptor.key) },
                 nightVitalsLoader: spec.blocks.contains(.nightVitals) ? { await loadNightVitals() } : nil,
                 whatMovesItLoader: spec.blocks.contains(.whatMovesIt)
@@ -1091,7 +1094,14 @@ private struct CuerpoLanding: View {
         case "steps":     pick = { $0.steps.map(Double.init) }
         default:          return []
         }
-        return repo.displayDays
+        // FER-635: the three cross-source vitals read `repo.days` (the un-backfilled merge), NOT
+        // `displayDays` — `displayDays` fills a band night's missing HRV/RHR/resp from Apple, which would
+        // slip an SDNN/offset value onto a band-classified day and defeat the detail's per-source fold. On
+        // `days`, each reading truly belongs to its day's source (band or Apple), so the detail can segment
+        // the baseline/σ, CV and Δ% cleanly (see `appleDays`). Single-source metrics keep the backfilled
+        // `displayDays` for continuous coverage (FER-149).
+        let source = ["hrv", "rhr", "resp_rate"].contains(key) ? repo.days : repo.displayDays
+        return source
             .compactMap { row in pick(row).map { (row.day, $0) } }
             .sorted { $0.day < $1.day }
     }
