@@ -285,18 +285,10 @@ struct RecoveryDetailScreen: View {
     // a quiet state-only sub-row for the signals with no σ (sleep, skin temp). The jargon moved to «See the
     // method» — this block has no ⓘ. (FER-476 #1, #2, #3, #5)
 
-    /// The z-scored drivers (HRV / resting-HR / respiration when it fired), ordered by |z| descending — the
-    /// first row answers «what moved this the most».
-    private var axisDrivers: [RecoveryDetailModel.DriverState] {
-        model.drivers
-            .filter { $0.z != nil }
-            .sorted { abs($0.z ?? 0) > abs($1.z ?? 0) }
-    }
-
-    /// The drivers with no σ to position on the axis (sleep, skin temperature) — shown as state-only rows.
-    private var otherDrivers: [RecoveryDetailModel.DriverState] {
-        model.drivers.filter { $0.z == nil }
-    }
+    /// The z-scored drivers ordered by contribution (|z·weight|), and the state-only rows (sleep, skin temp).
+    /// The ordering lives on the model (`RecoveryDetailModel.axisDrivers`) so it's unit-tested. (FER-632)
+    private var axisDrivers: [RecoveryDetailModel.DriverState] { model.axisDrivers }
+    private var otherDrivers: [RecoveryDetailModel.DriverState] { model.otherDrivers }
 
     private var whatExplainsItBlock: some View {
         let axis = axisDrivers
@@ -1047,6 +1039,17 @@ struct RecoveryDetailModel {
     /// True when there's a score or any stored recovery history to draw (the rich path); false → empty.
     var hasData: Bool { score != nil || !series.isEmpty }
 
+    /// The z-scored drivers (HRV / resting-HR / respiration when it fired), ordered by |z·weight| descending
+    /// — the first answers «what moved this the most», i.e. the largest CONTRIBUTION to the composite, not
+    /// merely the largest deviation. (FER-632: |z| alone crowned Respiration at 5% weight over HRV at 60%.)
+    var axisDrivers: [DriverState] {
+        drivers.filter { $0.z != nil }
+            .sorted { abs(($0.z ?? 0) * Double($0.weightPct)) > abs(($1.z ?? 0) * Double($1.weightPct)) }
+    }
+
+    /// The drivers with no σ to position on the axis (sleep, skin temperature) — shown as state-only rows.
+    var otherDrivers: [DriverState] { drivers.filter { $0.z == nil } }
+
     /// FER-529: an estimate shown WHILE THE BAND IS WORN but its RMSSD baseline isn't seeded yet
     /// (cold-start), vs a band-less Apple night (`isAppleHealth`). Drives reason-aware copy — «while your
     /// band is still calibrating» instead of «on a night your band didn't record».
@@ -1087,7 +1090,15 @@ struct RecoveryDetailModel {
         let sortedDays = days.sorted { $0.day < $1.day }
         let series = sortedDays.compactMap { d in d.recovery.map { (day: d.day, value: $0) } }
 
-        let readiness = ReadinessEngine.evaluate(days: days, today: todayKey)
+        // FER-632: score the detail's σ against the BAND-only baseline — the same history the recovery
+        // SCORE uses (`IntelligenceEngine.strapOnlyHistory`). Raw `days` measured HRV/RHR/resp against a
+        // baseline contaminated with Apple SDNN/offsets, so the σ the user saw (e.g. HRV −0.72σ, RHR
+        // «normal») diverged from the score's own (−3.56σ, +3.05σ). `maskForBaseline` (FER-631) is the
+        // column-level equivalent of the scorer's row drop — pinned to the same z by test. On an Apple-only
+        // day today's own row is masked too (the band didn't measure it; the estimate carries its own
+        // caveat), so no band σ is invented for a reading the band never took.
+        let bandDays = SourceLens.maskForBaseline(days, keep: .band, appleDays: appleHealthDays)
+        let readiness = ReadinessEngine.evaluate(days: bandDays, today: todayKey)
         let drivers = deriveDrivers(readiness: readiness, today: today)
         let load: LoadState? = readiness.acwr.map { acwr in
             LoadState(acwr: acwr,
