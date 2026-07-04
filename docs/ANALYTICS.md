@@ -409,7 +409,7 @@ A guided strength session uses `Calories.estimateStrengthEnergy`, which prefers 
 
 ## `FitnessAgeEngine` — on-device "Fitness Age" (Nes/HUNT)
 
-Source: `FitnessAgeEngine.swift`. A pure, **independent** implementation of the **Nes et al. 2011** HUNT non-exercise VO₂max model (waist-circumference variant), inverted into a **"Fitness Age"**. It is a *fitness comparison, never a biological or clinical age*. Engine only — orchestration (feeding it from `Repository.days`) and UI are tracked separately (FER-141).
+Source: `FitnessAgeEngine.swift`. A pure, **independent** implementation of the **Nes et al. 2011** HUNT non-exercise VO₂max model (waist-circumference variant), inverted into a **"Fitness Age"**. It is a *fitness comparison, never a biological or clinical age*. **Live** — orchestrated from `CuerpoView` (`FitnessAgeEngine.snapshot`) with its own detail view (FER-141, done).
 
 ### The model
 
@@ -439,7 +439,7 @@ The Nes model was calibrated on HUNT questionnaire inputs; NOOP feeds it wearabl
 
 ## `VitalityEngine` — on-device "Vitality" score + "Body Age" (WHOOP Age / Healthspan method)
 
-Source: `VitalityEngine.swift`. A pure, **independent** implementation of the published method behind WHOOP's "Healthspan / WHOOP Age": map each wearable input to its **all-cause-mortality hazard ratio** vs a population reference, sum the log-hazards with an overlap correction, and convert the combined hazard to **years of aging** via the Gompertz mortality-rate doubling time (~8 yr). Returns both a **Vitality** score (0–100) and a **Body Age** (years). It is a *wellness comparison, never a biological or clinical age*. Engine only — orchestration (feeding it from `Repository.days`) and UI are tracked separately (FER-145).
+Source: `VitalityEngine.swift`. A pure, **independent** implementation of the published method behind WHOOP's "Healthspan / WHOOP Age": map each wearable input to its **all-cause-mortality hazard ratio** vs a population reference, sum the log-hazards with an overlap correction, and convert the combined hazard to **years of aging** via the Gompertz mortality-rate doubling time (~8 yr). Returns both a **Vitality** score (0–100) and a **Body Age** (years). It is a *wellness comparison, never a biological or clinical age*. **Live** — orchestrated from `CuerpoView` (`VitalityEngine.compute` → `BodyAgeSheet`) (FER-145, done).
 
 **Differentiation from Fitness Age:** Fitness Age (above) is cardiorespiratory only (Nes/HUNT). Body Age is a **whole-body** composite that adds sleep duration, sleep regularity, HRV and steps; the two deliberately share the RHR/VO₂max signal, and the presentation layer keeps them distinct.
 

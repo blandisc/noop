@@ -86,6 +86,21 @@ public enum MetricLevels {
     ///
     /// The lowest level is always open below and the highest open above, so the partition is total;
     /// a value on any internal boundary falls into the upper level (half-open `[lower, upper)`).
+    ///
+    /// Sources for the population cuts (approximate, informational — NOT diagnostic):
+    /// - **steps** `<5000 / ≥10000` — Tudor-Locke et al. 2011, *IJBNPA* 8:79 (PMID 21798015):
+    ///   <5000/day "sedentary", ≥10000/day "active".
+    /// - **sleep** `360 / 420 / 510` min — National Sleep Foundation consensus, Hirshkowitz et al.
+    ///   2015, *Sleep Health* 1(1):40–43 (7–9 h "recommended" for adults; <6 h short, >8.5 h long).
+    /// - **restingHR** `>80 elevada` — conventional population reference (a resting HR in the high-70s+
+    ///   sits at the upper end of the adult range; associated with higher CV risk, Cooney et al. 2010,
+    ///   *Am Heart J* 159(4):612–619). Not a clinical threshold.
+    /// - **bloodOxygen** `<95 baja` — the conventional mild-hypoxemia cut; SpO₂ ≥95% is the typical
+    ///   healthy resting range (ATS). A pulse-ox screening level, never a diagnosis.
+    /// - **respiration** `>20 elevada` — the conventional adult tachypnea boundary (normal resting
+    ///   12–20 breaths/min). A descriptive band, not a clinical claim.
+    /// - **recovery / strain / stress** — product-calibration scales (0–100 / 0–21 / 0–3), not
+    ///   peer-reviewed norms; the band edges are Cénit's own, tunable, and documented as such.
     public static func levels(for metric: FixedMetric) -> [Level] {
         switch metric {
         case .recovery:
