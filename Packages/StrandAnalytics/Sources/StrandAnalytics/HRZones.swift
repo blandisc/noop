@@ -163,9 +163,12 @@ public enum HRZones {
             let dur: Double
             if i < sorted.count - 1 {
                 let gap = Double(sorted[i + 1].ts - sorted[i].ts)
-                // Guard against zero/negative or pathological gaps; cap at the median
-                // so a single huge wall-clock gap doesn't blow up one bucket.
-                dur = (gap > 0) ? gap : tailDuration
+                // Cap every per-sample duration at the median gap so a single huge wall-clock
+                // gap (a strap disconnection recorded as one interval) doesn't blow up one
+                // bucket; a zero/negative gap also falls back to the median. Matches the shipped
+                // zone-time path (MetricDetailScreen.computeZoneMinutes) and StrainScorer, which
+                // credit each reading one median bucket.
+                dur = (gap > 0) ? min(gap, tailDuration) : tailDuration
             } else {
                 dur = tailDuration
             }
