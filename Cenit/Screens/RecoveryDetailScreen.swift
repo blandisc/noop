@@ -333,8 +333,10 @@ struct RecoveryDetailScreen: View {
             + Text(valence)
     }
 
-    /// One axis driver: label · `±Nσ` (hue by flag) · `· P%` (weight, quiet), and a divergent bar centered
-    /// on your base — the sign sends it left/right, |z| sets its length, the flag sets its color. (FER-476 #2)
+    /// One axis driver: label · band word (hue by flag) · `· P%` (weight, quiet), and a divergent bar
+    /// centered on your base — the sign sends it left/right, |z| sets its length, the flag sets its color.
+    /// The read-out speaks the band vocabulary instead of a raw σ nobody reads (FER-637); |z| < 1 is «at
+    /// your base», matching the vital Detail's bands (FER-627). The σ math stays inside «See the method».
     private func axisDriverRow(_ d: RecoveryDetailModel.DriverState) -> some View {
         let color = flagColor(d.flag)
         let z = d.z ?? 0
@@ -342,7 +344,7 @@ struct RecoveryDetailScreen: View {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(d.label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Spacer(minLength: 8)
-                Text(verbatim: String(format: "%+.1fσ", z))
+                Text(Self.baseBandWord(z: z))
                     .font(StrandFont.captionNumber)
                     .foregroundStyle(d.flag == .neutral ? theme.inkSecondary : color)
                 Text(verbatim: "· \(d.weightPct)%")
@@ -424,6 +426,16 @@ struct RecoveryDetailScreen: View {
         case .watch:   return theme.warning
         case .bad:     return theme.critical
         }
+    }
+
+    /// The band word for a z-scored driver read-out (FER-637): where the row used to show `±N.Nσ`. The
+    /// direction comes from the RAW z (above base = `+`, same convention as the bar); |z| < 1 reads «at
+    /// your base», the same band the vital Detail draws (FER-627). Reuses the catalog keys the relative-
+    /// to-base levels already carry.
+    private static func baseBandWord(z: Double) -> LocalizedStringKey {
+        if z >= 1 { return "Above your base" }
+        if z <= -1 { return "Below your base" }
+        return "In your base"
     }
 
     /// A short es-MX state word per driver and flag (the source strings are English; es/de live in the
