@@ -62,6 +62,10 @@ struct MetricDetailScreen: View {
     /// Loads today's intraday HR curve (5-minute buckets). Injected only for Heart Rate (the spec
     /// declares `.intradayCurve`); the caller reuses the same `hrPoints` the summary sheet uses. (FER-253)
     var intradayCurveLoader: (() async -> [TrendPoint])? = nil
+    /// Loads last night's frequency-domain HRV breakdown (LF/HF/total powers + per-band «your normal»
+    /// label). Injected ONLY for the HRV vital by Cuerpo; nil elsewhere (so the section never shows on
+    /// the Hoy focus view or the other vitals). Additive — reads `HRVFreqDomain` powers only. (FER-702)
+    var spectralLoader: (() async -> SpectralHRV?)? = nil
     /// The user's estimated max HR (bpm), for the "time in zones" block. 0 disables zones. (FER-253)
     var hrMax: Double = 0
     /// Last night's resting HR (bpm), drawn as a quiet reference line under the day's curve. (FER-253)
@@ -82,6 +86,19 @@ struct MetricDetailScreen: View {
         var restingHR: Double?
     }
 
+    /// Last night's frequency-domain HRV breakdown for the «Tu HRV por frecuencia» section (FER-702).
+    /// Descriptive band POWERS (ms²) compared to the user's own recent nights — never an autonomic-balance
+    /// claim. `lf` is nil when last night's span was too short for the LF band (HF-only night).
+    struct SpectralHRV: Equatable {
+        struct Band: Equatable {
+            var value: Double                        // band power, ms²
+            var label: HRVSpectralBaseline.Label?    // vs your normal; nil while calibrating
+        }
+        var hf: Band
+        var lf: Band?
+        var total: Double
+    }
+
     @Environment(\.dismiss) private var dismiss
     @State private var range: ExploreRange = .month
     /// Which inline disclosure is open (one at a time per sheet): `"band"`, `"stat:<slot>"` or `"quemueve"`.
@@ -99,6 +116,10 @@ struct MetricDetailScreen: View {
     @State private var intradayCurve: [TrendPoint] = []
     /// Minutes per HR zone for today, computed once when the curve loads (see `computeZoneMinutes`). (FER-253)
     @State private var cachedZoneMinutes: [Double]? = nil
+    /// Last night's frequency-domain HRV breakdown (nil = no band-night spectrum → section hidden). (FER-702)
+    @State private var spectral: SpectralHRV? = nil
+    /// «Tu HRV por frecuencia» starts collapsed — a deep, for-the-curious layer, not a hero. (FER-702)
+    @State private var spectralExpanded = false
     @State private var loaded = false
 
     /// Heart Rate routes through a separate, intraday path (today's curve at minute resolution) rather
@@ -179,6 +200,7 @@ struct MetricDetailScreen: View {
             if visibleBlocks.contains(.whatMovesIt), let loader = whatMovesItLoader {
                 whatMovesItFindings = await loader()
             }
+            if let loader = spectralLoader { spectral = await loader() }
             loaded = true
         }
     }
@@ -1751,6 +1773,10 @@ struct MetricDetailScreen: View {
                 blockDivider
                 patronSection
             }
+            if spec.descriptor.key == "hrv", let s = spectral {
+                blockDivider
+                spectralSection(s)
+            }
             if visibleBlocks.contains(.method), let method = spec.info.method {
                 blockDivider
                 methodDisclosure(method)
@@ -2142,6 +2168,97 @@ struct MetricDetailScreen: View {
             return "Resting HR \(rhr)"
         }
         return nightVitalsLine
+    }
+
+    // MARK: Tu HRV por frecuencia (frequency-domain breakdown, FER-702)
+
+    /// The nightly LF/HF/total power breakdown, collapsed by default. HF is the protagonist (the only
+    /// datum with the HRV accent); LF and total stay in ink. Every value is a descriptive band power in
+    /// ms² compared to the user's own recent nights — never an autonomic-balance claim.
+    @ViewBuilder private func spectralSection(_ s: SpectralHRV) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Button { withAnimation(.easeInOut(duration: 0.25)) { spectralExpanded.toggle() } } label: {
+                HStack(spacing: 8) {
+                    Text("Your HRV by frequency").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Spacer(minLength: 8)
+                    Image(systemName: spectralExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 12, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            if spectralExpanded {
+                spectralBandRow(title: "Respiratory", tag: "HF",
+                                subtitle: "your calm signal, tied to your breathing",
+                                band: s.hf, accent: theme.dataHrv)
+                if let lf = s.lf {
+                    Divider().overlay(theme.hairline)
+                    spectralBandRow(title: "Slow", tag: "LF",
+                                    subtitle: "slow waves; a mix of signals",
+                                    band: lf, accent: theme.ink)
+                }
+                Divider().overlay(theme.hairline)
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Total variation").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                        Text("everything together, the “volume” of your HRV")
+                            .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 8)
+                    spectralValue(s.total, accent: theme.ink)
+                }
+                // Honest, state-specific note before the method line.
+                if s.lf == nil {
+                    spectralNote("Last night's reading was short, so it only covers the respiratory part — not the slow waves.")
+                } else if s.hf.label == nil {
+                    spectralNote("Still learning your normal range. Once there are enough nights, I'll tell you whether a value is high or low for you.")
+                }
+                spectralNote("Computed from last night's heartbeats (Lomb-Scargle). These are descriptive band powers to compare against yourself — not a diagnosis or a “stress balance.”")
+            }
+        }
+    }
+
+    private func spectralBandRow(title: LocalizedStringKey, tag: String, subtitle: LocalizedStringKey,
+                                 band: SpectralHRV.Band, accent: Color) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline) {
+                HStack(spacing: 5) {
+                    Text(title).font(StrandFont.subhead).foregroundStyle(theme.ink)
+                    Text("· \(tag)").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                }
+                Spacer(minLength: 8)
+                spectralValue(band.value, accent: accent)
+            }
+            Text(subtitle).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            if let phrase = Self.spectralLabelPhrase(band.label) {
+                Text(phrase).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            }
+        }
+    }
+
+    private func spectralValue(_ v: Double, accent: Color) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 3) {
+            Text(Self.groupedInt.string(from: NSNumber(value: Int(v.rounded()))) ?? "\(Int(v.rounded()))")
+                .font(StrandFont.number(15)).foregroundStyle(accent)
+            Text("ms²").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+        }
+    }
+
+    private func spectralNote(_ text: LocalizedStringKey) -> some View {
+        Text(text).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// «vs tu normal» phrase per band; nil while calibrating (no trusted baseline yet).
+    private static func spectralLabelPhrase(_ label: HRVSpectralBaseline.Label?) -> LocalizedStringKey? {
+        switch label {
+        case .higher: return "higher than your normal"
+        case .normal: return "within your normal"
+        case .lower:  return "lower than your normal"
+        case nil:     return nil
+        }
     }
 
     // MARK: Tu día (Heart Rate intraday)

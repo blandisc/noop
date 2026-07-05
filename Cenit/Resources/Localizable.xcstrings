@@ -4,38 +4,6 @@
     "": {
       "localizations": {}
     },
-    "Early warning — take it easy": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Early warning — take it easy"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aviso temprano — tómala con calma"
-          }
-        }
-      }
-    },
-    "On-device estimate (approximate) — not a diagnosis.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "On-device estimate (approximate) — not a diagnosis."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Estimación en el dispositivo (aproximada) — no es un diagnóstico."
-          }
-        }
-      }
-    },
     " No clear relationship — they move largely independently.": {
       "localizations": {
         "en": {
@@ -1553,6 +1521,16 @@
         }
       }
     },
+    "%lld h": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld h"
+          }
+        }
+      }
+    },
     "%lld h %lld min": {
       "localizations": {
         "en": {
@@ -2073,22 +2051,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld de tus últimas %lld noches"
-          }
-        }
-      }
-    },
-    "avg %lld d": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "avg %lld d"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "prom. %lld d"
           }
         }
       }
@@ -3745,6 +3707,16 @@
         }
       }
     },
+    "A WHOOP 4.0 sends no step count, so Cénit estimates steps from wrist motion calibrated against your iPhone. It is always an estimate, never an exact count.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La WHOOP 4.0 no manda conteo de pasos, así que Cénit los estima desde el movimiento de la muñeca, calibrado contra tu iPhone. Siempre es una estimación, nunca un conteo exacto."
+          }
+        }
+      }
+    },
     "A WHOOP export backfills recovery, strain, sleep and workouts. An Apple Health export adds HR, HRV, sleep, blood oxygen, steps and weight.": {
       "extractionState": "manual",
       "localizations": {
@@ -3876,6 +3848,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Un zumbido suave cuando tu HRV baja mientras tu pulso está en calma — una señal para respirar con calma. Limitado a una vez cada 15 minutos; apagado por defecto."
+          }
+        }
+      }
+    },
+    "A gentle wrist buzz when you've been sitting a long stretch, so you remember to get up and walk. Sitting less through the day is linked to better long-term health, independent of your workouts.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un zumbido suave en la muñeca cuando llevas mucho rato sentado, para que te acuerdes de levantarte y caminar. Estar menos tiempo sentado a lo largo del día se asocia con mejor salud a largo plazo, independiente de tu entrenamiento."
           }
         }
       }
@@ -4524,6 +4506,16 @@
         }
       }
     },
+    "Active from": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activo de"
+          }
+        }
+      }
+    },
     "Active time": {
       "localizations": {
         "en": {
@@ -5026,6 +5018,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Después de %@, tu recuperación del día siguiente baja ~%lld pts vs tus días de descanso (n=%lld)."
+          }
+        }
+      }
+    },
+    "After a long sit with no walking around, the strap buzzes on its next sync. It measures a lack of walking, not wrist stillness — typing at a desk still counts as sitting.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tras un rato largo sentado sin caminar, la banda zumba en su próxima sincronización. Mide la falta de caminata, no la quietud de la muñeca — teclear en el escritorio sigue contando como estar sentado."
           }
         }
       }
@@ -9047,6 +9049,23 @@
         }
       }
     },
+    "Computed from last night's heartbeats (Lomb-Scargle). These are descriptive band powers to compare against yourself — not a diagnosis or a “stress balance.”": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Computed from last night's heartbeats (Lomb-Scargle). These are descriptive band powers to compare against yourself — not a diagnosis or a “stress balance.”"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calculado de los latidos de anoche (Lomb-Scargle). Son potencias descriptivas para compararte contigo mismo — no un diagnóstico ni un «balance de estrés»."
+          }
+        }
+      }
+    },
     "Conecta Apple Health": {
       "extractionState": "manual",
       "localizations": {
@@ -9933,6 +9952,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "No se pudo copiar la base en este momento: se reintentará."
+          }
+        }
+      }
+    },
+    "Counter ticks per real step, %@": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pulsos del contador por paso real, %@"
           }
         }
       }
@@ -12167,6 +12196,22 @@
         }
       }
     },
+    "Early warning — take it easy": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Early warning — take it easy"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aviso temprano — tómala con calma"
+          }
+        }
+      }
+    },
     "Ease": {
       "localizations": {
         "en": {
@@ -13629,6 +13674,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Primer registro de estos ejercicios. A partir de aquí vas a ver tu progreso."
+          }
+        }
+      }
+    },
+    "Fit from %lld days your iPhone also counted steps. Confidence: high.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajustado con %lld días en que tu iPhone también contó pasos. Confianza: alta."
+          }
+        }
+      }
+    },
+    "Fit from %lld days your iPhone also counted steps. Confidence: low.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajustado con %lld días en que tu iPhone también contó pasos. Confianza: baja."
+          }
+        }
+      }
+    },
+    "Fit from %lld days your iPhone also counted steps. Confidence: medium.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajustado con %lld días en que tu iPhone también contó pasos. Confianza: media."
           }
         }
       }
@@ -17563,6 +17638,16 @@
         }
       }
     },
+    "Keep the nudges inside your day so they never fire at night.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mantén los avisos dentro de tu día para que nunca suenen de noche."
+          }
+        }
+      }
+    },
     "Keep wearing the band a few nights and it appears on its own — we don't show a half-finished number.": {
       "extractionState": "manual",
       "localizations": {
@@ -17868,6 +17953,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Anoche tu %@ estuvo por debajo de tu base (z=%@, base %lld%@)."
+          }
+        }
+      }
+    },
+    "Last night's reading was short, so it only covers the respiratory part — not the slow waves.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last night's reading was short, so it only covers the respiratory part — not the slow waves."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anoche la lectura fue corta, así que solo alcanza para la parte respiratoria — no para las ondas lentas."
           }
         }
       }
@@ -20242,6 +20344,16 @@
         }
       }
     },
+    "Move reminder": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recordatorio de movimiento"
+          }
+        }
+      }
+    },
     "Move to…": {
       "localizations": {
         "en": {
@@ -20286,6 +20398,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Movimiento"
+          }
+        }
+      }
+    },
+    "Movement reminder": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recordatorio de movimiento"
           }
         }
       }
@@ -20563,6 +20685,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cuello"
+          }
+        }
+      }
+    },
+    "Needs %lld more days where your iPhone also counted steps — or set the coefficient manually.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Faltan %lld días en que tu iPhone también cuente pasos — o fija el coeficiente manualmente."
           }
         }
       }
@@ -21834,6 +21966,16 @@
         }
       }
     },
+    "Not calibrated": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin calibrar"
+          }
+        }
+      }
+    },
     "Not connected": {
       "localizations": {
         "en": {
@@ -22301,6 +22443,16 @@
         }
       }
     },
+    "Nudge me to move": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuérdame moverme"
+          }
+        }
+      }
+    },
     "OFFLINE": {
       "localizations": {
         "en": {
@@ -22691,6 +22843,22 @@
         }
       }
     },
+    "On-device estimate (approximate) — not a diagnosis.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On-device estimate (approximate) — not a diagnosis."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimación en el dispositivo (aproximada) — no es un diagnóstico."
+          }
+        }
+      }
+    },
     "On-device free text needs iOS 26 or later. Meanwhile, I answer with pre-built questions and your engine's numbers.": {
       "localizations": {
         "en": {
@@ -22921,6 +23089,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Por ahora solo se admiten planes diarios."
+          }
+        }
+      }
+    },
+    "Only during active hours": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo en horas activas"
           }
         }
       }
@@ -24579,6 +24757,26 @@
         }
       }
     },
+    "Quiet from": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Silencio de"
+          }
+        }
+      }
+    },
+    "Quiet hours": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Horas silenciosas"
+          }
+        }
+      }
+    },
     "Quiet hours end": {
       "localizations": {
         "en": {
@@ -24743,6 +24941,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "RONDA"
+          }
+        }
+      }
+    },
+    "Raise it if the estimate runs low against a day you know; lower it if it runs high.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Súbelo si la estimación se queda corta contra un día que conoces; bájalo si se pasa."
           }
         }
       }
@@ -26298,6 +26506,7 @@
       }
     },
     "Respiratory": {
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -26308,7 +26517,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Respiratorio"
+            "value": "Respiratoria"
           }
         }
       }
@@ -28655,6 +28864,16 @@
         }
       }
     },
+    "Silence the nudges during a window you choose — a meeting block, an evening wind-down.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Silencia los avisos en una franja que elijas — un bloque de juntas, la calma de la noche."
+          }
+        }
+      }
+    },
     "Silent haptic HIIT — the strap buzzes the transitions": {
       "localizations": {
         "en": {
@@ -28701,6 +28920,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Desde medianoche"
+          }
+        }
+      }
+    },
+    "Sit time before a nudge": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiempo sentado antes de avisar"
           }
         }
       }
@@ -29112,6 +29341,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ligeramente fuera de tu línea base — %@ — así que estás moderadamente activado. Nada alarmante; solo no te excedas."
+          }
+        }
+      }
+    },
+    "Slow": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slow"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lenta"
           }
         }
       }
@@ -29848,6 +30094,26 @@
         }
       }
     },
+    "Steps calibration": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calibración de pasos"
+          }
+        }
+      }
+    },
+    "Steps calibration, %@": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calibración de pasos, %@"
+          }
+        }
+      }
+    },
     "Steps come from Apple Health and are not recorded by the WHOOP strap.": {
       "extractionState": "manual",
       "localizations": {
@@ -29912,6 +30178,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Los pasos vienen de Apple Salud. El detalle toma el total de cada día y lo suaviza en una tendencia de 7 días, para que los altibajos entre semana y fin de semana no tapen hacia dónde vas. La investigación asocia entre 7,000 y 9,000 pasos al día con menor mortalidad, y el beneficio se aplana más allá de eso: no hay nada mágico en los 10,000 exactos."
+          }
+        }
+      }
+    },
+    "Steps estimate": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimación de pasos"
+          }
+        }
+      }
+    },
+    "Steps per unit of motion, %lld": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pasos por unidad de movimiento, %lld"
           }
         }
       }
@@ -29991,6 +30277,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Aún reuniendo señal"
+          }
+        }
+      }
+    },
+    "Still learning your normal range. Once there are enough nights, I'll tell you whether a value is high or low for you.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Still learning your normal range. Once there are enough nights, I'll tell you whether a value is high or low for you."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todavía estoy aprendiendo tu rango normal. Cuando haya suficientes noches, te diré si un valor está alto o bajo para ti."
           }
         }
       }
@@ -32127,6 +32430,16 @@
         }
       }
     },
+    "Then re-nudge every": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Luego repetir cada"
+          }
+        }
+      }
+    },
     "There are no calendars on this iPhone yet.": {
       "localizations": {
         "en": {
@@ -32536,6 +32849,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rango de tiempo"
+          }
+        }
+      }
+    },
+    "Time to move — you've been seated a while.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hora de moverte — llevas un rato sentado."
           }
         }
       }
@@ -33057,6 +33380,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "El tiempo total que dormiste anoche, estimado a partir de tu movimiento y tu frecuencia cardíaca. El sueño aporta alrededor del 15% de tu recuperación y alimenta el balance entre esfuerzo y carga (ACWR)."
+          }
+        }
+      }
+    },
+    "Total variation": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total variation"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variación total"
           }
         }
       }
@@ -36793,6 +37133,16 @@
         }
       }
     },
+    "You've been seated about %lld min. Time to move.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Llevas unos %lld min sentado. Hora de moverte."
+          }
+        }
+      }
+    },
     "You've got the base. Let's keep going.": {
       "extractionState": "manual",
       "localizations": {
@@ -36872,6 +37222,23 @@
         }
       }
     },
+    "Your HRV by frequency": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your HRV by frequency"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu HRV por frecuencia"
+          }
+        }
+      }
+    },
     "Your Recovery is trending down (%lld days)": {
       "localizations": {
         "en": {
@@ -36917,6 +37284,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tu VO₂max equivale a la mediana de alguien de %lld años. Es una base distinta de tu Edad física."
+          }
+        }
+      }
+    },
+    "Your WHOOP 5.0/MG counts steps from a wrist counter that tends to read high. If it shows more steps than you actually took, raise this until it matches a day you can check. Leave it at Off (1.0) to use the raw count.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu WHOOP 5.0/MG cuenta pasos con un contador de muñeca que tiende a leer de más. Si marca más pasos de los que diste, súbelo hasta que cuadre con un día que puedas verificar. Déjalo en Apagado (1.0) para usar el conteo tal cual."
           }
         }
       }
@@ -39156,6 +39533,22 @@
         }
       }
     },
+    "avg %lld d": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "avg %lld d"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "prom. %lld d"
+          }
+        }
+      }
+    },
     "back, biceps": {
       "extractionState": "manual",
       "localizations": {
@@ -39473,6 +39866,16 @@
         }
       }
     },
+    "counter ticks per real step": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pulsos del contador por paso real"
+          }
+        }
+      }
+    },
     "day on your plan": {
       "localizations": {
         "en": {
@@ -39609,6 +40012,16 @@
         }
       }
     },
+    "est.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "est."
+          }
+        }
+      }
+    },
     "evenings": {
       "localizations": {
         "en": {
@@ -39621,6 +40034,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "noches"
+          }
+        }
+      }
+    },
+    "everything together, the “volume” of your HRV": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "everything together, the “volume” of your HRV"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "todo junto, el «volumen» de tu HRV"
           }
         }
       }
@@ -39897,6 +40327,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "mayor"
+          }
+        }
+      }
+    },
+    "higher than your normal": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "higher than your normal"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "más alta de lo normal"
           }
         }
       }
@@ -40458,6 +40905,23 @@
         }
       }
     },
+    "lower than your normal": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lower than your normal"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "más baja de lo normal"
+          }
+        }
+      }
+    },
     "mi": {
       "localizations": {
         "en": {
@@ -40973,6 +41437,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "ninguno"
+          }
+        }
+      }
+    },
+    "not calibrated yet": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "aún sin calibrar"
           }
         }
       }
@@ -42128,6 +42602,23 @@
         }
       }
     },
+    "slow waves; a mix of signals": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "slow waves; a mix of signals"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ondas lentas; mezcla de varias señales"
+          }
+        }
+      }
+    },
     "small": {
       "localizations": {
         "en": {
@@ -42191,6 +42682,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "estable"
+          }
+        }
+      }
+    },
+    "steps per unit of motion": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pasos por unidad de movimiento"
           }
         }
       }
@@ -42902,6 +43403,23 @@
         }
       }
     },
+    "within your normal": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "within your normal"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "dentro de tu normal"
+          }
+        }
+      }
+    },
     "without you logging it · %lld days": {
       "localizations": {
         "es": {
@@ -43094,6 +43612,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "tu respiración"
+          }
+        }
+      }
+    },
+    "your calm signal, tied to your breathing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "your calm signal, tied to your breathing"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tu señal de calma, ligada a la respiración"
           }
         }
       }
@@ -43801,336 +44336,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "✓"
-          }
-        }
-      }
-    },
-    "est.": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "est."
-          }
-        }
-      }
-    },
-    "Steps estimate": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Estimación de pasos"
-          }
-        }
-      }
-    },
-    "Not calibrated": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sin calibrar"
-          }
-        }
-      }
-    },
-    "steps per unit of motion": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "pasos por unidad de movimiento"
-          }
-        }
-      }
-    },
-    "not calibrated yet": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "aún sin calibrar"
-          }
-        }
-      }
-    },
-    "Steps per unit of motion, %lld": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pasos por unidad de movimiento, %lld"
-          }
-        }
-      }
-    },
-    "Raise it if the estimate runs low against a day you know; lower it if it runs high.": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Súbelo si la estimación se queda corta contra un día que conoces; bájalo si se pasa."
-          }
-        }
-      }
-    },
-    "Fit from %lld days your iPhone also counted steps. Confidence: high.": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ajustado con %lld días en que tu iPhone también contó pasos. Confianza: alta."
-          }
-        }
-      }
-    },
-    "Fit from %lld days your iPhone also counted steps. Confidence: medium.": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ajustado con %lld días en que tu iPhone también contó pasos. Confianza: media."
-          }
-        }
-      }
-    },
-    "Fit from %lld days your iPhone also counted steps. Confidence: low.": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ajustado con %lld días en que tu iPhone también contó pasos. Confianza: baja."
-          }
-        }
-      }
-    },
-    "Needs %lld more days where your iPhone also counted steps — or set the coefficient manually.": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Faltan %lld días en que tu iPhone también cuente pasos — o fija el coeficiente manualmente."
-          }
-        }
-      }
-    },
-    "A WHOOP 4.0 sends no step count, so Cénit estimates steps from wrist motion calibrated against your iPhone. It is always an estimate, never an exact count.": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "La WHOOP 4.0 no manda conteo de pasos, así que Cénit los estima desde el movimiento de la muñeca, calibrado contra tu iPhone. Siempre es una estimación, nunca un conteo exacto."
-          }
-        }
-      }
-    },
-    "Steps calibration": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Calibración de pasos"
-          }
-        }
-      }
-    },
-    "Steps calibration, %@": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Calibración de pasos, %@"
-          }
-        }
-      }
-    },
-    "counter ticks per real step": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "pulsos del contador por paso real"
-          }
-        }
-      }
-    },
-    "Counter ticks per real step, %@": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pulsos del contador por paso real, %@"
-          }
-        }
-      }
-    },
-    "Your WHOOP 5.0/MG counts steps from a wrist counter that tends to read high. If it shows more steps than you actually took, raise this until it matches a day you can check. Leave it at Off (1.0) to use the raw count.": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu WHOOP 5.0/MG cuenta pasos con un contador de muñeca que tiende a leer de más. Si marca más pasos de los que diste, súbelo hasta que cuadre con un día que puedas verificar. Déjalo en Apagado (1.0) para usar el conteo tal cual."
-          }
-        }
-      }
-    },
-    "Movement reminder": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Recordatorio de movimiento"
-          }
-        }
-      }
-    },
-    "A gentle wrist buzz when you've been sitting a long stretch, so you remember to get up and walk. Sitting less through the day is linked to better long-term health, independent of your workouts.": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Un zumbido suave en la muñeca cuando llevas mucho rato sentado, para que te acuerdes de levantarte y caminar. Estar menos tiempo sentado a lo largo del día se asocia con mejor salud a largo plazo, independiente de tu entrenamiento."
-          }
-        }
-      }
-    },
-    "Nudge me to move": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Recuérdame moverme"
-          }
-        }
-      }
-    },
-    "After a long sit with no walking around, the strap buzzes on its next sync. It measures a lack of walking, not wrist stillness — typing at a desk still counts as sitting.": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tras un rato largo sentado sin caminar, la banda zumba en su próxima sincronización. Mide la falta de caminata, no la quietud de la muñeca — teclear en el escritorio sigue contando como estar sentado."
-          }
-        }
-      }
-    },
-    "Sit time before a nudge": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tiempo sentado antes de avisar"
-          }
-        }
-      }
-    },
-    "Then re-nudge every": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Luego repetir cada"
-          }
-        }
-      }
-    },
-    "Only during active hours": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Solo en horas activas"
-          }
-        }
-      }
-    },
-    "Keep the nudges inside your day so they never fire at night.": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mantén los avisos dentro de tu día para que nunca suenen de noche."
-          }
-        }
-      }
-    },
-    "Active from": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Activo de"
-          }
-        }
-      }
-    },
-    "Quiet hours": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Horas silenciosas"
-          }
-        }
-      }
-    },
-    "Silence the nudges during a window you choose — a meeting block, an evening wind-down.": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Silencia los avisos en una franja que elijas — un bloque de juntas, la calma de la noche."
-          }
-        }
-      }
-    },
-    "Quiet from": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Silencio de"
-          }
-        }
-      }
-    },
-    "%lld h": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld h"
-          }
-        }
-      }
-    },
-    "You've been seated about %lld min. Time to move.": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Llevas unos %lld min sentado. Hora de moverte."
-          }
-        }
-      }
-    },
-    "Time to move — you've been seated a while.": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hora de moverte — llevas un rato sentado."
-          }
-        }
-      }
-    },
-    "Move reminder": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Recordatorio de movimiento"
           }
         }
       }
