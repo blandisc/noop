@@ -4,6 +4,38 @@
     "": {
       "localizations": {}
     },
+    "Early warning — take it easy": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Early warning — take it easy"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aviso temprano — tómala con calma"
+          }
+        }
+      }
+    },
+    "On-device estimate (approximate) — not a diagnosis.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On-device estimate (approximate) — not a diagnosis."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimación en el dispositivo (aproximada) — no es un diagnóstico."
+          }
+        }
+      }
+    },
     " No clear relationship — they move largely independently.": {
       "localizations": {
         "en": {
