@@ -57,6 +57,7 @@ struct CenitApp: App {
                 .environmentObject(model.repo)
                 .environmentObject(model.profile)
                 .environmentObject(model.behavior)
+                .environmentObject(model.inactivity)
                 .environmentObject(model.goal)
                 .environmentObject(model.intelligence)
                 .environmentObject(model.coach)

@@ -1779,16 +1779,22 @@ struct TodayView: View {
         }
     }
 
-    /// FER-153: «Estimado · confianza X» bajo el veredicto cuando la lectura del día es un estimado de Apple
-    /// (noche sin banda). Token-only; reusa la frase localizada del Detalle de recuperación.
+    /// FER-153/FER-700: sello bajo el veredicto cuando la lectura del día es un estimado de Apple (noche
+    /// sin banda). Muestra la COBERTURA de señales («Estimado — N de 3 señales») — el porqué de un número
+    /// conservador (el shrinkage de FER-698) — en vez del grado de confianza (madurez del baseline, que
+    /// vive en el Detalle). Cae al grado de confianza si la cobertura no está (no debería, en un estimado).
+    /// Token-only; reusa las frases localizadas del Detalle de recuperación.
     private var estimatedTodayMarker: some View {
-        HStack(spacing: NoopMetrics.space2) {
+        let dayKey = Repository.localDayKey(Date())
+        return HStack(spacing: NoopMetrics.space2) {
             Image(systemName: "applewatch").font(.system(size: 10, weight: .semibold))
                 .accessibilityHidden(true)
-            Text(RecoveryDetailScreen.confidenceLabel(repo.recoveryConfidence(Repository.localDayKey(Date()))))
+            Text(RecoveryDetailScreen.coverageLabel(repo.recoveryPrimaryDrivers(dayKey))
+                 ?? RecoveryDetailScreen.confidenceLabel(repo.recoveryConfidence(dayKey)))
                 .font(StrandFont.caption)
         }
         .foregroundStyle(theme.inkSecondary)
+        .accessibilityElement(children: .combine)
     }
 
     /// El pie del héroe — solo afordancias de onboarding (FER-189): el CTA «Buscar strap» cuando nunca se

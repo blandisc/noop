@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import UserNotifications
 import WhoopProtocol
 import WhoopStore
 import StrandImport
@@ -37,6 +38,8 @@ final class AppModel: ObservableObject {
     let profile = ProfileStore()
     /// Behaviour settings: double-tap action, wear automation, zone coaching, smart alarm, illness watch.
     let behavior = BehaviorStore()
+    /// Inactivity reminder settings + its restart-safe de-dup state (FER-664).
+    let inactivity = InactivityPrefs()
     /// The Bucle's goal (metric + optional date) — a single user preference, UserDefaults-backed (FER-311).
     let goal = GoalStore()
     /// Which data sources feed the dashboard + baseline (combined / WHOOP-only / Apple-Health-only) —
@@ -114,6 +117,11 @@ final class AppModel: ObservableObject {
     /// nothing could stop it. Now a new import (or `cancelImport()`) cancels the previous one, and
     /// the importers poll cancellation cooperatively so the work actually stops (FER-33).
     private var importTask: Task<Void, Never>?
+
+    /// The illness heads-up recompute (FER-667), retained so a newer dashboard emission cancels the
+    /// in-flight one — its journal read is async, so two overlapping runs could otherwise write
+    /// `healthAlert` out of order.
+    private var illnessTask: Task<Void, Never>?
 
     /// The periodic on-device analysis loop, retained so it can be cancelled. It used to be a
     /// fire-and-forget `Task` that lived for the whole process, re-reading ~21 days × 8 streams every
@@ -830,6 +838,30 @@ final class AppModel: ObservableObject {
         ble.send(.runHapticsPattern, payload: [pattern, loops, 0, 0, 0])
     }
 
+    /// Mirror the inactivity-reminder wrist buzz as a local notification, so the "time to move" nudge
+    /// still surfaces on the phone if the wrist buzz is missed (FER-664). Called from the BLE offload
+    /// hook after `SedentaryDetector` decided to buzz; `minutes` = the seated bout the detector reported.
+    /// Delivery is authorized-only (no second system prompt), mirroring `IllnessNotifier`. Gated on the
+    /// feature toggle so turning the reminder off silences the notification too. iOS-only.
+    static func postInactivity(minutes: Int) {
+        #if os(iOS)
+        guard InactivityPrefs.isEnabled() else { return }
+        let body = minutes > 0
+            ? String(localized: "You've been seated about \(minutes) min. Time to move.")
+            : String(localized: "Time to move — you've been seated a while.")
+        let center = UNUserNotificationCenter.current()
+        center.getNotificationSettings { settings in
+            guard settings.authorizationStatus == .authorized else { return }
+            let content = UNMutableNotificationContent()
+            content.title = String(localized: "Move reminder")
+            content.body = body
+            content.sound = .default
+            // A fixed identifier means a fresh nudge replaces the prior one rather than stacking.
+            center.add(UNNotificationRequest(identifier: "inactivity-nudge", content: content, trigger: nil))
+        }
+        #endif
+    }
+
     /// Arm (or clear) the strap's firmware alarm from the smart-alarm settings. The firmware alarm
     /// fires even if the Mac is asleep / NOOP is closed. No-op until bonded (send is gated on bond).
     func applySmartAlarm() {
@@ -893,12 +925,67 @@ final class AppModel: ObservableObject {
         else if zone <= 1, lastCoachZone > 1 { buzz(loops: 1) }     // recovered
     }
 
-    /// Illness/strain early-warning: compare the last ~2 days against a ~28-day baseline (ending 3
-    /// days ago) for resting HR, HRV, skin-temp deviation and respiration. Two or more anomalies →
-    /// a banner. The classic early-illness signature (RHR↑ + HRV↓ + skin-temp↑). On-device only.
+    /// Illness/strain early-warning (FER-667): compare the last ~2 days against a ~28-day baseline
+    /// (ending 3 days ago) for resting HR, HRV, skin-temp deviation and respiration, then hand the
+    /// per-signal z-scores to `IllnessSignalEngine` — a 0–100 composite behind a ≥2-signal
+    /// corroboration gate with EXPLICIT confounder suppression. A hangover / sauna / hard-training
+    /// night (read from the journal) damps the score ×0.45 and never fires the banner, so the classic
+    /// early-illness signature (RHR↑ + HRV↓ + skin-temp↑) only raises when a plainer explanation was
+    /// ruled out. On-device only; APPROXIMATE — a heads-up to rest, not a diagnosis.
+    ///
+    /// The journal read is async, so the recompute runs in a task; a newer dashboard emission cancels
+    /// the in-flight one (`illnessTask`) so two runs never write `healthAlert` out of order.
     private func evaluateIllness(_ days: [DailyMetric]) {
-        let previous = healthAlert
+        illnessTask?.cancel()
         guard behavior.illnessWatch, days.count >= 14 else { healthAlert = nil; return }
+        illnessTask = Task { [weak self] in
+            guard let self else { return }
+            let context = await self.illnessContext(days)
+            guard !Task.isCancelled else { return }
+            self.applyIllnessEvaluation(days, context: context)
+        }
+    }
+
+    /// The journal QUESTIONS (verbatim catalog keys — never localised, see `JournalCatalogStore`)
+    /// whose "yes" answer offers a plainer explanation than illness for an elevated night.
+    private enum IllnessJournal {
+        static let alcohol = "Did you drink any alcohol?"
+        static let stress  = "Did you feel stressed?"
+        static let sauna   = "Did you use a sauna?"
+        static let sick    = "Did you feel sick or ill?"
+    }
+
+    /// Same-day behaviour context for the recent illness window, read from the journal (imported ∪
+    /// native). A confounder answered "yes" on either of the last two nights suppresses the heads-up.
+    /// `hardOrLateWorkout` is derived from a strain z-anomaly (a hard/late session elevates RHR and
+    /// lowers HRV overnight just like early illness); `travelPhaseJump` stays false until the
+    /// CircadianEngine (FER-671) can flag a body-clock jump.
+    private func illnessContext(_ days: [DailyMetric]) async -> IllnessSignalEngine.Context {
+        let recentKeys = Set(days.suffix(2).map(\.day))
+        let yesQuestions = Set(
+            await repo.journalEntries(days: 5)
+                .filter { recentKeys.contains($0.day) && $0.answeredYes }
+                .map(\.question))
+        let recentStrain = days.suffix(2).compactMap(\.strain)
+        let hardWorkout = !recentStrain.isEmpty && IllnessWatch.isAnomaly(
+            recentMean: recentStrain.reduce(0, +) / Double(recentStrain.count),
+            base: Array(days.suffix(31).dropLast(3)).compactMap(\.strain),
+            higherIsWorse: true)
+        return IllnessSignalEngine.Context(
+            alcohol: yesQuestions.contains(IllnessJournal.alcohol),
+            stress: yesQuestions.contains(IllnessJournal.stress),
+            sauna: yesQuestions.contains(IllnessJournal.sauna),
+            hardOrLateWorkout: hardWorkout,
+            travelPhaseJump: false,
+            alreadyUnwell: yesQuestions.contains(IllnessJournal.sick),
+            baselineTrusted: true)   // gated to ≥14 nights at the call site
+    }
+
+    /// Score the recent window with `IllnessSignalEngine` and set the banner. Only a `.raised` level
+    /// (clear multi-signal anomaly, no confounder) surfaces the alarming banner + notification; mild /
+    /// suppressed / already-unwell / quiet stay silent — that suppression is the false-positive win.
+    private func applyIllnessEvaluation(_ days: [DailyMetric], context: IllnessSignalEngine.Context) {
+        let previous = healthAlert
         func mean(_ vals: [Double]) -> Double? { vals.isEmpty ? nil : vals.reduce(0, +) / Double(vals.count) }
         // FER-543 / FER-641: the HRV and resting-HR terms score against a STRAP-ONLY history. Apple-only
         // nights carry SDNN, not the band's RMSSD (not interchangeable, no published conversion; Shaffer &
@@ -910,39 +997,46 @@ final class AppModel: ObservableObject {
         // `appleHealthDays == []` ⇒ identity (whoopOnly / a strap-only user → no change).
         let strapDays = IntelligenceEngine.strapOnlyHistory(days, appleHealthDays: repo.appleHealthDays)
 
-        // Each anomaly fires by z-score ≥2σ against the baseline's OWN dispersion (robust σ via
-        // IllnessWatch), not a fixed offset — so the same absolute Δ trips a stable user but not a
-        // volatile one. The flag string still reports the human-readable Δ. `src` is the per-term history
-        // (`days` for respiration/skin-temp; `strapDays` for HRV and resting HR): recent = last ~2 nights (a
-        // single night if one is missing), base = the ~28 nights ending 3 days ago.
-        var flags: [String] = []
-        func anomaly(_ kp: (DailyMetric) -> Double?, higherIsWorse: Bool,
-                     from src: [DailyMetric] = days) -> (r: Double, b: Double)? {
+        // Each signal's illness-ward z-score is computed exactly as before (robust σ via IllnessWatch,
+        // recent = last ~2 nights, base = the ~28 nights ending 3 days ago), then handed to the engine
+        // which owns the corroboration + confounder logic. The es-MX phrase is rendered here, in the app
+        // layer, so the copy stays localised; the engine only decides which phrases to surface.
+        var inputs = IllnessSignalEngine.Inputs()
+        var labels: [String: String] = [:]
+        func read(_ key: String, _ kp: (DailyMetric) -> Double?, higherIsWorse: Bool,
+                  from src: [DailyMetric], label: (_ recent: Double, _ base: Double) -> String)
+        -> IllnessSignalEngine.SignalReading? {
             let recent = Array(src.suffix(2))
             let base = Array(src.suffix(31).dropLast(3))
             guard let r = mean(recent.compactMap(kp)),
-                  let dev = IllnessWatch.deviation(recentMean: r, base: base.compactMap(kp), higherIsWorse: higherIsWorse),
-                  dev.z >= IllnessWatch.zThreshold else { return nil }
-            return (r, dev.baseMean)
+                  let dev = IllnessWatch.deviation(recentMean: r, base: base.compactMap(kp), higherIsWorse: higherIsWorse)
+            else { return nil }
+            labels[key] = label(r, dev.baseMean)
+            return IllnessSignalEngine.SignalReading(zIllnessward: dev.z)
         }
-        if let a = anomaly({ $0.restingHr.map(Double.init) }, higherIsWorse: true, from: strapDays) {
-            flags.append(String(localized: "resting HR +\(Int((a.r - a.b).rounded())) bpm"))
+        inputs.restingHR = read("restingHR", { $0.restingHr.map(Double.init) }, higherIsWorse: true, from: strapDays) {
+            String(localized: "resting HR +\(Int(($0 - $1).rounded())) bpm")
         }
-        if let a = anomaly({ $0.avgHrv }, higherIsWorse: false, from: strapDays), a.b > 0 {
-            flags.append(String(localized: "HRV −\(Int(((1 - a.r / a.b) * 100).rounded()))%"))
+        // HRV's percentage phrase needs a positive baseline; skip the whole term if the base mean is 0.
+        if let hrvBase = mean(Array(strapDays.suffix(31).dropLast(3)).compactMap { $0.avgHrv }), hrvBase > 0 {
+            inputs.hrv = read("hrv", { $0.avgHrv }, higherIsWorse: false, from: strapDays) {
+                String(localized: "HRV −\(Int(((1 - $0 / $1) * 100).rounded()))%")
+            }
         }
-        if let a = anomaly({ $0.skinTempDevC }, higherIsWorse: true) {
-            flags.append(String(localized: "skin temp +\(String(format: "%.1f", a.r))°C"))
+        inputs.skinTemp = read("skinTemp", { $0.skinTempDevC }, higherIsWorse: true, from: days) { r, _ in
+            String(localized: "skin temp +\(String(format: "%.1f", r))°C")
         }
-        if anomaly({ $0.respRateBpm }, higherIsWorse: true) != nil {
-            flags.append(String(localized: "respiration up"))
+        inputs.respiration = read("respiration", { $0.respRateBpm }, higherIsWorse: true, from: days) { _, _ in
+            String(localized: "respiration up")
         }
-        healthAlert = flags.count >= 2
-            ? String(localized: "Your body looks strained — \(flags.joined(separator: ", ")). Consider taking it easy.")
+
+        let result = IllnessSignalEngine.evaluate(inputs, context: context, firedLabels: labels)
+        healthAlert = result.level == .raised
+            ? String(localized: "Your body looks strained — \(result.firedSignals.joined(separator: ", ")). Consider taking it easy.")
             : nil
         // Banner transition (clear → raised): surface it as a system notification so the
-        // early-warning reaches the user when the window is closed (menu bar keeps us alive).
-        // IllnessNotifier rate-limits to once per local day.
+        // early-warning reaches the user when the window is closed. IllnessNotifier rate-limits to
+        // once per local day; the not-a-diagnosis hedge lives in its subtitle.
         if let alert = healthAlert, previous == nil {
             IllnessNotifier.post(alert)
         }

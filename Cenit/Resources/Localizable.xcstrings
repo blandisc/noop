@@ -4,6 +4,38 @@
     "": {
       "localizations": {}
     },
+    "Early warning — take it easy": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Early warning — take it easy"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aviso temprano, tómala con calma"
+          }
+        }
+      }
+    },
+    "On-device estimate (approximate) — not a diagnosis.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On-device estimate (approximate) — not a diagnosis."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimación en el dispositivo (aproximada), no es un diagnóstico."
+          }
+        }
+      }
+    },
     " No clear relationship — they move largely independently.": {
       "localizations": {
         "en": {
@@ -2041,6 +2073,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld de tus últimas %lld noches"
+          }
+        }
+      }
+    },
+    "avg %lld d": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "avg %lld d"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "prom. %lld d"
           }
         }
       }
@@ -43873,6 +43921,232 @@
           "stringUnit": {
             "state": "translated",
             "value": "La WHOOP 4.0 no manda conteo de pasos, así que Cénit los estima desde el movimiento de la muñeca, calibrado contra tu iPhone. Siempre es una estimación, nunca un conteo exacto."
+          }
+        }
+      }
+    },
+    "Steps calibration": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calibración de pasos"
+          }
+        }
+      }
+    },
+    "Steps calibration, %@": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calibración de pasos, %@"
+          }
+        }
+      }
+    },
+    "counter ticks per real step": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pulsos del contador por paso real"
+          }
+        }
+      }
+    },
+    "Counter ticks per real step, %@": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pulsos del contador por paso real, %@"
+          }
+        }
+      }
+    },
+    "Your WHOOP 5.0/MG counts steps from a wrist counter that tends to read high. If it shows more steps than you actually took, raise this until it matches a day you can check. Leave it at Off (1.0) to use the raw count.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu WHOOP 5.0/MG cuenta pasos con un contador de muñeca que tiende a leer de más. Si marca más pasos de los que diste, súbelo hasta que cuadre con un día que puedas verificar. Déjalo en Apagado (1.0) para usar el conteo tal cual."
+          }
+        }
+      }
+    },
+    "Movement reminder": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recordatorio de movimiento"
+          }
+        }
+      }
+    },
+    "A gentle wrist buzz when you've been sitting a long stretch, so you remember to get up and walk. Sitting less through the day is linked to better long-term health, independent of your workouts.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un zumbido suave en la muñeca cuando llevas mucho rato sentado, para que te acuerdes de levantarte y caminar. Estar menos tiempo sentado a lo largo del día se asocia con mejor salud a largo plazo, independiente de tu entrenamiento."
+          }
+        }
+      }
+    },
+    "Nudge me to move": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuérdame moverme"
+          }
+        }
+      }
+    },
+    "After a long sit with no walking around, the strap buzzes on its next sync. It measures a lack of walking, not wrist stillness — typing at a desk still counts as sitting.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tras un rato largo sentado sin caminar, la banda zumba en su próxima sincronización. Mide la falta de caminata, no la quietud de la muñeca, teclear en el escritorio sigue contando como estar sentado."
+          }
+        }
+      }
+    },
+    "Sit time before a nudge": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiempo sentado antes de avisar"
+          }
+        }
+      }
+    },
+    "Then re-nudge every": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Luego repetir cada"
+          }
+        }
+      }
+    },
+    "Only during active hours": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo en horas activas"
+          }
+        }
+      }
+    },
+    "Keep the nudges inside your day so they never fire at night.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mantén los avisos dentro de tu día para que nunca suenen de noche."
+          }
+        }
+      }
+    },
+    "Active from": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activo de"
+          }
+        }
+      }
+    },
+    "Quiet hours": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Horas silenciosas"
+          }
+        }
+      }
+    },
+    "Silence the nudges during a window you choose — a meeting block, an evening wind-down.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Silencia los avisos en una franja que elijas, un bloque de juntas, la calma de la noche."
+          }
+        }
+      }
+    },
+    "Quiet from": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Silencio de"
+          }
+        }
+      }
+    },
+    "%lld h": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld h"
+          }
+        }
+      }
+    },
+    "You've been seated about %lld min. Time to move.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Llevas unos %lld min sentado. Hora de moverte."
+          }
+        }
+      }
+    },
+    "Time to move — you've been seated a while.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hora de moverte, llevas un rato sentado."
+          }
+        }
+      }
+    },
+    "Move reminder": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recordatorio de movimiento"
+          }
+        }
+      }
+    },
+    "Estimated — %lld of %lld signals": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimated — %lld of %lld signals"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimado, %lld de %lld señales"
           }
         }
       }

@@ -117,6 +117,10 @@ struct MetricTrendChart<Empty: View>: View {
     struct Style {
         /// Moving-average window for the plotted line; `nil` plots the raw values (SpO₂ / stress / skin temp).
         var smoothing: Int? = nil
+        /// When true AND `smoothing != nil`, the scrub tooltip appends «prom. N d» to its value line (N =
+        /// the smoothing window), so a moving-average point can't be mistaken for that day's raw reading.
+        /// Opt-in per screen (Recovery's «Tendencia» sets it); raw-value charts never show it. (FER-696)
+        var annotatesSmoothingInScrub: Bool = false
         var gradient: Gradient
         var showsArea: Bool = true
         var height: CGFloat = 200
@@ -180,6 +184,11 @@ struct MetricTrendChart<Empty: View>: View {
         // The value the bands bracket against: the LAST plotted point (matching the old per-screen
         // `pts.last?.value ?? window.values.last`), so a decimated long range still highlights the right band.
         let lastPlotted = points.last?.value ?? lineValues.last ?? 0
+        // «prom. N d» for the scrub tooltip — only when a screen opts in AND the line really is a moving
+        // average (raw-value charts can't trip it). N comes from the smoothing window, so the label can
+        // never drift from what's plotted. (FER-696)
+        let scrubSuffix: String? = (style.annotatesSmoothingInScrub ? style.smoothing : nil)
+            .map { String(localized: "avg \($0) d") }
         return TrendChart(
             points: points,
             gradient: style.gradient,
@@ -201,7 +210,8 @@ struct MetricTrendChart<Empty: View>: View {
             markedPointHollow: style.markedPointHollow,
             markedPointRingFill: style.markedPointRingFill,
             bandLabelsHidden: style.bandLabelsHidden,
-            yTickCount: style.yTickCount
+            yTickCount: style.yTickCount,
+            valueSuffix: scrubSuffix
         )
         .accessibilityElement()
         .accessibilityLabel(Text(style.accessibilityLabel))

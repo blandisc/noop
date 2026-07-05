@@ -55,8 +55,20 @@ public enum AppleRecoveryEstimator {
         public let day: String
         public let score: Double                 // estimated recovery, 0–100
         public let confidence: ScoreConfidence   // baja=.calibrating · media=.building · alta=.solid
-        public init(day: String, score: Double, confidence: ScoreConfidence) {
+        /// How many of the THREE primary recovery drivers (HRV, resting HR, sleep) actually
+        /// backed this night's score — the same coverage the FER-698 missing-driver shrinkage
+        /// keys on (`RecoveryScorer.referenceCoverageWeight`). HRV is required for any estimate,
+        /// so this is 1…3. Surfaced so the UI can say WHY an estimate is conservative
+        /// («Estimado — 1 de 3 señales», FER-700) rather than only shrinking the number. The
+        /// grade in `confidence` measures a DIFFERENT thing (how settled the HRV baseline is),
+        /// so the two are reported side by side, not merged.
+        public let presentPrimaryDrivers: Int
+        /// The total primary drivers coverage is measured against (always 3: HRV, RHR, sleep).
+        public static let totalPrimaryDrivers = 3
+        public init(day: String, score: Double, confidence: ScoreConfidence,
+                    presentPrimaryDrivers: Int) {
             self.day = day; self.score = score; self.confidence = confidence
+            self.presentPrimaryDrivers = presentPrimaryDrivers
         }
     }
 
@@ -112,17 +124,33 @@ public enum AppleRecoveryEstimator {
             // in-progress current night just after midnight (~2 h logged): with sleep/RHR
             // still absent, HRV alone drove the composite up to an inflated ~100.
             guard (n.sleepMinutes ?? 0) >= coverageSleepMinThreshold else { continue }
+            // The three PRIMARY drivers actually backing tonight's score (FER-700), for the honest
+            // «N de 3 señales» surface. `hasRHR` is the SAME predicate fed to the scorer's
+            // `rhrBaseline:` argument below (computed once, reused) so the RHR count and the RHR
+            // term can't diverge. HRV is required (the `guard let sdnn` above), so it always counts.
+            // `hasSleep` mirrors the scorer's own sleep-term condition (`sleepPerf != nil`,
+            // RecoveryScorer.swift): if that condition ever gains a threshold, keep this in step (a
+            // test pins 1/2/3). These are the drivers of the FER-698 `referenceCoverageWeight`.
+            let hasRHR = n.restingHr != nil && rhrBase.usable
+            let hasSleep = n.sleepPerf != nil
+            let primaryDrivers = 1 + (hasRHR ? 1 : 0) + (hasSleep ? 1 : 0)
             let score = RecoveryScorer.recovery(
                 hrv: sdnn,
-                rhr: n.restingHr ?? 0,                      // unused when rhrBaseline is nil
+                // INVARIANT: `rhr` is read by the scorer ONLY under a present rhrBaseline,
+                // and we pass rhrBaseline nil whenever restingHr is absent (see below). So
+                // this value is never consumed here — `.nan` (not a fake 0 bpm) makes any
+                // accidental future read fail the scorer's own z.isFinite guard → nil, rather
+                // than inflate a score. RecoveryScorer.recovery also `precondition`s this.
+                rhr: n.restingHr ?? .nan,
                 resp: n.resp,
                 hrvBaseline: hrvBase,
-                rhrBaseline: (n.restingHr != nil && rhrBase.usable) ? rhrBase : nil,
+                rhrBaseline: hasRHR ? rhrBase : nil,
                 respBaseline: (n.resp != nil && respBase.usable) ? respBase : nil,
                 sleepPerf: n.sleepPerf)
             guard let score else { continue }               // nil = cold-start guard inside the scorer
             out.append(DayEstimate(day: n.day, score: score,
-                                   confidence: confidence(hrvBaselineNights: hrvBase.nValid)))
+                                   confidence: confidence(hrvBaselineNights: hrvBase.nValid),
+                                   presentPrimaryDrivers: primaryDrivers))
         }
         return out
     }

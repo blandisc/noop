@@ -23,10 +23,18 @@ public struct UserProfile: Equatable, Sendable {
     public var heightCm: Double
     public var age: Double
     public var sex: String   // "male" | "female" | "nonbinary"
+    /// Calibration divisor for the WHOOP 5/MG native step counter (`step_motion_counter@57`, FER-665).
+    /// That counter OVER-counts (the @57 step semantics are unverified vs the official app, #78; observed
+    /// overcount reaches ~24×), so the daily step total is divided by this before display. 1.0 = raw
+    /// pass-through (the default — no behaviour change until the user calibrates). The 4.0 has no native
+    /// counter (its steps are estimated, FER-663), so this only affects the 5/MG path.
+    public var stepTicksPerStep: Double
     public init(weightKg: Double = 70.0, heightCm: Double = 170.0,
-                age: Double = 30.0, sex: String = "nonbinary") {
+                age: Double = 30.0, sex: String = "nonbinary",
+                stepTicksPerStep: Double = 1.0) {
         self.weightKg = weightKg; self.heightCm = heightCm
         self.age = age; self.sex = sex
+        self.stepTicksPerStep = stepTicksPerStep
     }
 }
 

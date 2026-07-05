@@ -174,7 +174,9 @@ struct RecoveryDetailScreen: View {
         return "Recovery blends several signals from your nervous system — your HRV above all, plus resting heart rate, sleep and breathing — and compares them with your own baseline from recent weeks. It's an estimate of how ready your body is today, not a diagnosis. (Buchheit 2014)"
     }
 
-    /// The «estimado · confianza X» marker + one honest line, shown only for an Apple-Health estimate. Token-only.
+    /// The «estimado · confianza X» marker + coverage («N de 3 señales») + one honest line, shown only for
+    /// an Apple-Health estimate. Coverage says WHY the number is conservative (how many primary drivers
+    /// backed it, FER-700); confidence says how settled the baseline is — two different honest facts. Token-only.
     private var estimatedNote: some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 6) {
@@ -185,6 +187,11 @@ struct RecoveryDetailScreen: View {
                     .font(StrandFont.caption)
             }
             .foregroundStyle(theme.inkSecondary)
+            if let coverage = Self.coverageLabel(model.presentPrimaryDrivers) {
+                Text(coverage)
+                    .font(StrandFont.caption)
+                    .foregroundStyle(theme.inkSecondary)
+            }
             Text("From your Apple Watch (HRV SDNN), a lower grade than your band.")
                 .font(StrandFont.footnote)
                 .foregroundStyle(theme.inkTertiary)
@@ -201,6 +208,15 @@ struct RecoveryDetailScreen: View {
         case .building:             return "Estimated · medium confidence"
         case .calibrating, .none:   return "Estimated · low confidence"
         }
+    }
+
+    /// «Estimado — N de 3 señales»: how many of the 3 primary drivers (HRV, resting HR, sleep) backed an
+    /// Apple estimate (FER-700), so the user sees WHY the number is conservative. English source; es/de in
+    /// the String Catalog. Shared with the Hoy hero marker. nil when the day isn't an estimate (a band day
+    /// with full coverage shows no count).
+    static func coverageLabel(_ present: Int?) -> LocalizedStringKey? {
+        guard let present else { return nil }
+        return "Estimated — \(present) of \(AppleRecoveryEstimator.DayEstimate.totalPrimaryDrivers) signals"
     }
 
     /// The fused direction: a 14-day mini-sparkline of recovery + a tendency arrow and «14 d» label. The
@@ -649,6 +665,7 @@ struct RecoveryDetailScreen: View {
                     theme: theme,
                     style: .init(
                         smoothing: 7,
+                        annotatesSmoothingInScrub: true,   // scrub reads «34 · prom. 7 d», not the day's raw value (FER-696)
                         gradient: Gradient(colors: [theme.dataRecovery.opacity(0.5), theme.dataRecovery]),
                         valueRange: { chartRange($0) },
                         valueFormat: { "\(Int($0.rounded()))" },
@@ -1050,6 +1067,10 @@ struct RecoveryDetailModel {
     let isEstimated: Bool
     /// The estimate's confidence grade (nil unless `isEstimated`).
     let confidence: ScoreConfidence?
+    /// FER-700: how many of the 3 primary drivers (HRV, resting HR, sleep) backed the estimate — the
+    /// coverage the FER-698 shrinkage keys on. nil unless `isEstimated`. Surfaced as «N de 3 señales»
+    /// so the user sees WHY the number is conservative, not just a shrunk score.
+    let presentPrimaryDrivers: Int?
 
     /// True when there's a score or any stored recovery history to draw (the rich path); false → empty.
     var hasData: Bool { score != nil || !series.isEmpty }
@@ -1071,7 +1092,8 @@ struct RecoveryDetailModel {
                      appleHealthDays: repo.appleHealthDays, loaded: repo.loaded,
                      importedSleep: repo.importedSleep,
                      isEstimated: repo.isRecoveryEstimated(key),
-                     confidence: repo.recoveryConfidence(key))
+                     confidence: repo.recoveryConfidence(key),
+                     presentPrimaryDrivers: repo.recoveryPrimaryDrivers(key))
     }
 
     /// Build the whole model from the repo's in-memory dashboard. Pure (no DB). `days` is the strap +
@@ -1084,7 +1106,8 @@ struct RecoveryDetailModel {
                       loaded: Bool,
                       importedSleep: [String: ImportedSleepFigures] = [:],
                       isEstimated: Bool = false,
-                      confidence: ScoreConfidence? = nil) -> RecoveryDetailModel {
+                      confidence: ScoreConfidence? = nil,
+                      presentPrimaryDrivers: Int? = nil) -> RecoveryDetailModel {
         let hasRecovery = today?.recovery != nil
         let score = today?.recovery.map { Int($0.rounded()) }
         let calibration = RecoveryScorer.calibrationNights(
@@ -1160,7 +1183,8 @@ struct RecoveryDetailModel {
             isAppleHealth: appleHealthDays.contains(todayKey),
             forecast: forecast,
             isEstimated: isEstimated,
-            confidence: confidence)
+            confidence: confidence,
+            presentPrimaryDrivers: presentPrimaryDrivers)
     }
 
     /// The trailing 90 calendar days as `RecoveryDay`, one per day (score nil where there's no reading), so
@@ -1198,7 +1222,8 @@ private func sampleRecoverySeries(days: Int = 120) -> [(day: String, value: Doub
 }
 
 private func sampleModel(score: Int?, calibration: Int?,
-                         isEstimated: Bool = false, confidence: ScoreConfidence? = nil) -> RecoveryDetailModel {
+                         isEstimated: Bool = false, confidence: ScoreConfidence? = nil,
+                         presentPrimaryDrivers: Int? = nil) -> RecoveryDetailModel {
     let series = score == nil && calibration != nil ? [] : sampleRecoverySeries()
     let cal = Calendar(identifier: .gregorian)
     let today = cal.startOfDay(for: Date())
@@ -1233,7 +1258,8 @@ private func sampleModel(score: Int?, calibration: Int?,
         isAppleHealth: isEstimated,
         forecast: RecoveryForecast.compute(recovery: series.map { $0.value }),
         isEstimated: isEstimated,
-        confidence: confidence)
+        confidence: confidence,
+        presentPrimaryDrivers: presentPrimaryDrivers)
 }
 
 #Preview("Recovery detail — con datos") {
@@ -1253,14 +1279,15 @@ private func sampleModel(score: Int?, calibration: Int?,
         RecoveryDetailScreen(model: RecoveryDetailModel(
             score: nil, calibration: nil, nightsNeeded: 4, impact: nil, change: nil,
             series: [], heat: [], load: nil, loaded: true, isAppleHealth: false, forecast: nil,
-            isEstimated: false, confidence: nil))
+            isEstimated: false, confidence: nil, presentPrimaryDrivers: nil))
     }
 }
 
 #Preview("Recovery detail — estimado (Apple)") {
     Color.clear.sheet(isPresented: .constant(true)) {
         RecoveryDetailScreen(model: sampleModel(score: 64, calibration: nil,
-                                                isEstimated: true, confidence: .building))
+                                                isEstimated: true, confidence: .building,
+                                                presentPrimaryDrivers: 1))
     }
 }
 #endif

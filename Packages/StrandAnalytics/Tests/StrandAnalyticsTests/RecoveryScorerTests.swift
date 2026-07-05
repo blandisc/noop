@@ -204,6 +204,59 @@ final class RecoveryScorerTests: XCTestCase {
         XCTAssertEqual(viaState, viaDriver, accuracy: 1e-9)
     }
 
+    // MARK: - Missing-driver shrinkage (FER-698)
+
+    /// A single strong driver must NOT saturate the score as if the whole picture agreed.
+    /// Before FER-698, HRV alone renormalized to full weight and the logistic ran toward
+    /// ~100; now the composite is pulled toward neutral by the coverage factor
+    /// (present 0.60 / reference 0.95). This is acceptance criterion #1.
+    func testSingleDriverDoesNotSaturate() {
+        let hrvB = baseline(mean: 50, sigma: 6)     // linear baseline → a clean +2σ
+        let hrvAt2Sigma = 50.0 + 2.0 * 6.0          // (x−μ)/σ = 2
+        let hrvOnly = RecoveryScorer.recovery(
+            hrv: hrvAt2Sigma, rhr: 0, resp: nil,
+            hrvBaseline: hrvB, rhrBaseline: nil, respBaseline: nil, sleepPerf: nil)!
+
+        // The old, unshrunk single-term score for the very same z=+2σ.
+        let unshrunk = 100.0 / (1.0 + exp(-RecoveryScorer.logisticK * (2.0 - RecoveryScorer.logisticZ0)))
+        XCTAssertGreaterThan(unshrunk, 95, "sanity: an unshrunk lone +2σ driver WOULD saturate")
+        XCTAssertLessThan(hrvOnly, unshrunk - 3,
+                          "a lone driver no longer saturates like the full picture")
+        XCTAssertLessThan(hrvOnly, 93, "HRV alone at +2σ stays below the saturation ceiling")
+
+        // The point of the shape: a missing driver now behaves like a NEUTRAL one, not an
+        // amplifier. HRV at +2σ alone == HRV at +2σ with RHR & sleep sitting at baseline.
+        let withNeutralOthers = RecoveryScorer.recovery(
+            hrv: hrvAt2Sigma, rhr: 55, resp: nil,
+            hrvBaseline: hrvB, rhrBaseline: baseline(mean: 55, sigma: 3), respBaseline: nil,
+            sleepPerf: RecoveryScorer.sleepPerfCenter)!
+        XCTAssertEqual(hrvOnly, withNeutralOthers, accuracy: 1e-9,
+                       "missing drivers behave like neutral ones, not amplifiers")
+    }
+
+    /// With the three PRIMARY drivers present (HRV+RHR+sleep = referenceCoverageWeight), the
+    /// coverage factor is capped at 1.0, so the score is byte-identical to the pre-FER-698
+    /// (un-shrunk) formula — no regression for band users. This is acceptance criterion #2.
+    func testFullPrimaryDriversUnaffectedByShrinkage() {
+        let hrvB = baseline(mean: 50, sigma: 6)
+        let rhrB = baseline(mean: 55, sigma: 3)
+        let score = RecoveryScorer.recovery(
+            hrv: 62, rhr: 52, resp: nil,
+            hrvBaseline: hrvB, rhrBaseline: rhrB, respBaseline: nil, sleepPerf: 0.92)!
+
+        // Recompute the pre-698 way: renormalize to present weight, NO coverage shrink
+        // (baselines are trusted → per-term Baselines.confidence == 1.0).
+        let zHRV = RecoveryScorer.zScore(62, mean: 50, spread: 6 / 1.253)
+        let zRHR = RecoveryScorer.zScore(55, mean: 52, spread: 3 / 1.253)     // (μ−x)/σ, lower is better
+        let zSleep = (0.92 - RecoveryScorer.sleepPerfCenter) / RecoveryScorer.sleepPerfScale
+        let w = RecoveryScorer.wHRV + RecoveryScorer.wRHR + RecoveryScorer.wSleep   // 0.95 = reference
+        let meanZ = (zHRV * RecoveryScorer.wHRV + zRHR * RecoveryScorer.wRHR
+                     + zSleep * RecoveryScorer.wSleep) / w
+        let expected = 100.0 / (1.0 + exp(-RecoveryScorer.logisticK * (meanZ - RecoveryScorer.logisticZ0)))
+        XCTAssertEqual(score, expected, accuracy: 1e-9,
+                       "primary-driver score is unchanged by the shrinkage")
+    }
+
     // MARK: - Degenerate logistic guard (FER-36)
 
     /// A non-finite driver (NaN/±inf) yields a non-finite composite z; the engine
@@ -218,5 +271,24 @@ final class RecoveryScorerTests: XCTestCase {
             hrv: .infinity, rhr: 55, resp: nil,
             hrvBaseline: b, rhrBaseline: baseline(mean: 55, sigma: 3),
             respBaseline: nil, sleepPerf: 0.85))
+    }
+
+    // MARK: - RHR sentinel is inert without a baseline (FER-698 follow-up)
+
+    /// When `rhrBaseline` is nil the RHR term is skipped entirely, so the value passed as
+    /// `rhr` must not touch the score. AppleRecoveryEstimator relies on exactly this: it
+    /// passes a sentinel (`?? .nan`) for nights without a resting-HR baseline. This pins the
+    /// invariant so a future refactor that starts reading `rhr` outside the baseline gate
+    /// (which would let 0/NaN bpm leak into the composite) fails here.
+    func testRHRSentinelInertWhenBaselineNil() {
+        let hrvB = baseline(mean: 50, sigma: 6)
+        let withZeroRHR = RecoveryScorer.recovery(
+            hrv: 50, rhr: 0, resp: nil,
+            hrvBaseline: hrvB, rhrBaseline: nil, respBaseline: nil, sleepPerf: nil)
+        let withRealRHR = RecoveryScorer.recovery(
+            hrv: 50, rhr: 45, resp: nil,
+            hrvBaseline: hrvB, rhrBaseline: nil, respBaseline: nil, sleepPerf: nil)
+        XCTAssertEqual(withZeroRHR, withRealRHR,
+                       "rhr must be inert when rhrBaseline is nil — the sentinel must not change the score")
     }
 }

@@ -280,7 +280,12 @@ public enum AnalyticsEngine {
                 if delta < 0 { delta += 65_536 }  // u16 wraparound
                 if delta >= 1 && delta < maxStepDelta { total += delta }  // ignore a delta >= 512 (gap/reset)
             }
-            return total > 0 ? total : nil
+            guard total > 0 else { return nil }
+            // FER-665: the 5/MG native counter over-counts, so scale by the personal calibration divisor
+            // (clamped to a 0.5 floor so a bad value can't multiply the count). Default 1.0 is a no-op, so
+            // an un-calibrated strap (and the 4.0, which has no native counter at all) is unaffected.
+            let scaled = Int((Double(total) / max(profile.stepTicksPerStep, 0.5)).rounded())
+            return scaled > 0 ? scaled : nil
         }()
 
         // ── Daily calories (APPROXIMATE, HR-only whole-day estimate) ──────────

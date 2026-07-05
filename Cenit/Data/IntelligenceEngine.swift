@@ -98,7 +98,8 @@ final class IntelligenceEngine: ObservableObject {
         defer { computing = false }
 
         let up = UserProfile(weightKg: profile.weightKg, heightCm: profile.heightCm,
-                             age: Double(profile.age), sex: profile.sex)
+                             age: Double(profile.age), sex: profile.sex,
+                             stepTicksPerStep: profile.stepTicksPerStep)
 
         let maxHR = profile.hrMaxOverride > 0 ? Double(profile.hrMaxOverride) : nil
         let now = Int(Date().timeIntervalSince1970)

@@ -94,6 +94,14 @@ final class Collector {
         return try? await s.latestHRSampleTs(deviceId: deviceId)
     }
 
+    /// Recent gravity samples in `[from, to]` (wall-clock unix seconds), for the inactivity reminder's
+    /// offload hook (FER-664). Empty if there's no concrete store or the read throws. Mirrors the
+    /// read-only accessors above.
+    func recentGravity(from: Int, to: Int, limit: Int = 100_000) async -> [GravitySample] {
+        guard let s = concreteStore else { return [] }
+        return (try? await s.gravitySamples(deviceId: deviceId, from: from, to: to, limit: limit)) ?? []
+    }
+
     /// Apply the raw-retention policy. Returns rows pruned (0 if no concrete store).
     @discardableResult
     func prune() async -> Int {
