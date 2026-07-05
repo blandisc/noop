@@ -1,4 +1,5 @@
 import XCTest
+import WhoopProtocol
 @testable import StrandAnalytics
 
 final class CircadianEngineTests: XCTestCase {
@@ -39,9 +40,76 @@ final class CircadianEngineTests: XCTestCase {
         XCTAssertEqual(est.confidence, .solid)
         // Acrophase 15:00 → derived temp-min ≈ 15 − 9.5 = 05:30 (population offset, Mitchell 2017).
         XCTAssertEqual(est.tempMinHour, 5.5, accuracy: 1e-6)
-        // Ideal temp-min = wake 7 − 2.5 = 04:30; estimated 05:30 sits 1 h later → mild night-owl lean.
-        XCTAssertEqual(est.offsetVsScheduleMinutes, 60, accuracy: 1e-6)
+        // Ideal temp-min = wake 7 − 2.5 = 04:30; estimated 05:30 is +60 min raw, −37 baseline ≈ +23 → owl.
+        XCTAssertEqual(est.offsetVsScheduleMinutes, 23, accuracy: 0.1)
         XCTAssertTrue(est.note.contains("night-owl"))
+    }
+
+    // MARK: - Baseline-bias centering (FER-704 finding → FER-712)
+
+    func testBaselineOffsetIsAboutThirtySevenMinutes() {
+        // (14.617 − 9.5) − (7 − 2.5) = 0.617 h ≈ 37 min, derived purely from the population anchors.
+        XCTAssertEqual(CircadianEngine.baselineOffsetMinutes, 37, accuracy: 0.1)
+    }
+
+    func testAveragePhenotypeReadsZeroOffset() {
+        // An average phenotype (activity acrophase 14:37, wake 07:00) must read ≈ 0 (no lean), not a
+        // false night-owl — the whole point of centering the baseline bias.
+        let bins = profile(mesor: 50, amp: 30, acrophase: 14.617)
+        let est = CircadianEngine.estimatePhase(bins: bins, daysObserved: 20, habitualWakeHour: 7)!
+        XCTAssertEqual(est.offsetVsScheduleMinutes, 0, accuracy: 0.5)
+        XCTAssertTrue(est.note.contains("well-aligned"))
+    }
+
+    func testSuggestedBedtimeSitsBeforeIdealWake() {
+        // tempMin 05:30 → ideal wake 05:30+2.5 = 08:00 → bedtime 08:00 − 8 h = 00:00.
+        XCTAssertEqual(CircadianEngine.suggestedBedtime(tempMinHour: 5.5), 0.0, accuracy: 1e-6)
+        // A lark (earlier tempMin) gets an earlier suggested bedtime.
+        let lark = CircadianEngine.suggestedBedtime(tempMinHour: 3.0)   // wake 05:30 → bed 21:30
+        XCTAssertEqual(lark, 21.5, accuracy: 1e-6)
+    }
+
+    // MARK: - Hourly activity-profile builder
+
+    /// Synthesize a day whose per-hour motion intensity follows mesor + amp·cos(2π(h−acro)/24): two samples
+    /// per local hour whose x-delta equals the target intensity (so hourMotionIntensity == target).
+    private func syntheticDay(dayIndex: Int, mesor: Double, amp: Double,
+                              acrophase: Double, tzOffsetSeconds: Int = 0) -> CircadianEngine.DayGravity {
+        var samples: [GravitySample] = []
+        let base = dayIndex * 86_400 - tzOffsetSeconds   // so local hour == h regardless of tz
+        for h in 0..<24 {
+            let target = mesor + amp * cos(2.0 * Double.pi * (Double(h) - acrophase) / 24.0)
+            let t = base + h * 3600
+            samples.append(GravitySample(ts: t, x: 0, y: 0, z: 0))
+            samples.append(GravitySample(ts: t + 1, x: target, y: 0, z: 0))
+        }
+        return CircadianEngine.DayGravity(samples: samples, tzOffsetSeconds: tzOffsetSeconds)
+    }
+
+    func testActivityBinsRecoverInjectedAcrophase() {
+        let days = (0..<14).map { syntheticDay(dayIndex: $0, mesor: 50, amp: 30, acrophase: 15) }
+        let (bins, daysObserved) = CircadianEngine.activityBins(days)
+        XCTAssertEqual(daysObserved, 14)
+        XCTAssertEqual(bins.count, 24)
+        let est = CircadianEngine.estimatePhase(bins: bins, daysObserved: daysObserved, habitualWakeHour: 7)!
+        XCTAssertEqual(est.acrophaseHours, 15, accuracy: 0.5)
+    }
+
+    func testActivityBinsUseLocalHour() {
+        // Same UTC ts, two different tz offsets → the sample lands in different local-hour bins.
+        let s = [GravitySample(ts: 3 * 3600, x: 0, y: 0, z: 0),
+                 GravitySample(ts: 3 * 3600 + 1, x: 10, y: 0, z: 0)]
+        let utc = CircadianEngine.activityBins([.init(samples: s, tzOffsetSeconds: 0)]).bins
+        let plus1 = CircadianEngine.activityBins([.init(samples: s, tzOffsetSeconds: 3600)]).bins
+        XCTAssertEqual(utc.first?.hour, 3)
+        XCTAssertEqual(plus1.first?.hour, 4)
+    }
+
+    func testActivityBinsEmptyInputIsNoFit() {
+        let (bins, days) = CircadianEngine.activityBins([])
+        XCTAssertTrue(bins.isEmpty)
+        XCTAssertEqual(days, 0)
+        XCTAssertNil(CircadianEngine.estimatePhase(bins: bins, daysObserved: days, habitualWakeHour: 7))
     }
 
     func testThinDataIsWideOrUnreadable() {
