@@ -649,6 +649,7 @@ struct RecoveryDetailScreen: View {
                     theme: theme,
                     style: .init(
                         smoothing: 7,
+                        annotatesSmoothingInScrub: true,   // scrub reads «34 · prom. 7 d», not the day's raw value (FER-696)
                         gradient: Gradient(colors: [theme.dataRecovery.opacity(0.5), theme.dataRecovery]),
                         valueRange: { chartRange($0) },
                         valueFormat: { "\(Int($0.rounded()))" },

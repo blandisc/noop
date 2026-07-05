@@ -209,6 +209,10 @@ public struct TrendChart: View {
     /// cards quiet; the taller detail «Media móvil» charts pass a higher count so a wide range (e.g. steps
     /// 0–15k) reads at finer increments instead of just 5k/10k/15k.
     public var yTickCount: Int
+    /// An optional short suffix appended to the scrub tooltip's value line (e.g. «prom. 7 d»), so a
+    /// smoothed line can say its point is a moving average — NOT that day's raw reading. `nil` = the
+    /// tooltip shows only the value. Affects the tooltip only; the Y-axis labels keep `valueFormat`. (FER-696)
+    public var valueSuffix: String?
 
     public init(
         points: [TrendPoint],
@@ -233,7 +237,8 @@ public struct TrendChart: View {
         markedPointRingFill: Color = .clear,
         bandLabelsHidden: Bool = false,
         tightTrailing: Bool = false,
-        yTickCount: Int = 4
+        yTickCount: Int = 4,
+        valueSuffix: String? = nil
     ) {
         self.points = points.sorted { $0.date < $1.date }
         self.gradient = gradient
@@ -258,6 +263,7 @@ public struct TrendChart: View {
         self.bandLabelsHidden = bandLabelsHidden
         self.tightTrailing = tightTrailing
         self.yTickCount = yTickCount
+        self.valueSuffix = valueSuffix
     }
 
     /// Right inset on the X-scale. Labelled bands need a wide gutter so the band text clears the line;
@@ -487,7 +493,7 @@ public struct TrendChart: View {
                             anchor: CGPoint(x: cx, y: cy),
                             container: geo.size,
                             tooltip: ChartTooltip(
-                                value: valueFormat(p.value),
+                                value: valueSuffix.map { "\(valueFormat(p.value)) · \($0)" } ?? valueFormat(p.value),
                                 label: dateFormat(p.date),
                                 accent: color
                             )
