@@ -522,6 +522,7 @@ struct LiveStrengthSheet: View {
     var theme: InstrumentoTheme = .base
 
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var confirmFinish = false
     @State private var confirmDiscard = false
     /// Whether the optional «Foco» (big-button mode) sheet is up — opened by tapping a set's number badge,
@@ -695,7 +696,15 @@ struct LiveStrengthSheet: View {
 
     private var sessionHeader: some View {
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-            HStack(alignment: .firstTextBaseline) {
+            // Row 1: minimize «‹» (session stays alive, the pill re-opens it) · routine name · «Terminar».
+            HStack(spacing: 10) {
+                Button { model.strengthSheetPresented = false } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 19, weight: .semibold)).foregroundStyle(theme.ink)
+                        .frame(width: 44, height: 44).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("Minimize session"))
                 Text(session.routineName).font(StrandFont.title2).foregroundStyle(theme.ink)
                     .lineLimit(1).minimumScaleFactor(0.7)
                 Spacer(minLength: 8)
@@ -708,17 +717,39 @@ struct LiveStrengthSheet: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Finish workout"))
             }
-            // The autoregulation line that «Rutina de hoy» used to carry (F6): now that the session starts
-            // in one tap, the «push / hold / ease» implication of today's recovery rides here instead of a
-            // duplicated band. Quiet, one line, hidden while calibrating. The cited rule is `TrainingRegulation`.
-            if let rec = recovery {
-                HStack(alignment: .firstTextBaseline, spacing: 7) {
-                    Circle().fill(theme.dataRecovery).frame(width: 7, height: 7)
-                    Text(recoveryLine(rec)).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+            .padding(.leading, -10)   // pull the 44pt chevron target back to the 24pt margin edge
+
+            // Row 2: per-exercise progress, filled by how done each exercise is.
+            SessionProgressBar(segments: progressSegments, hue: theme.dataStrain, track: theme.hairline)
+                .accessibilityLabel(Text("Session progress"))
+                .accessibilityValue(Text("\(session.doneCount) of \(sessionSetsTotal) sets"))
+
+            // Row 3: the big running clock (the session's dominant datum in the header).
+            TimelineView(.periodic(from: Date(), by: 1)) { ctx in
+                Text(Self.clock(max(0, Int(ctx.date.timeIntervalSince1970) - session.startTs)))
+                    .font(InstrumentoType.groteskSessionClock)
+                    .tracking(InstrumentoType.groteskSessionClockTracking)
+                    .foregroundStyle(theme.ink)
+                    .accessibilityLabel(Text("Elapsed \(Self.clock(max(0, Int(ctx.date.timeIntervalSince1970) - session.startTs)))"))
             }
-            sessionCounters
+
+            // Row 4: quiet counters — volume · sets · (kcal only when the strap is streaming, no dashes).
+            Text(counterLine).font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkSecondary)
+                .accessibilityElement(children: .combine)
+
+            // Row 5: live BPM with the one always-on pulse of the app — hidden (not dashed) with no strap.
+            if let bpm = model.bpm {
+                HStack(spacing: 6) {
+                    BpmPulseDot(color: theme.dataHeart, animated: !reduceMotion)
+                    Text("\(bpm)").font(StrandFont.caption.monospacedDigit()).foregroundStyle(theme.dataHeart)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(Text("Heart rate \(bpm)"))
+            } else if let rec = recovery {
+                // No strap: keep the «push / hold / ease» autoregulation line (F6), discreet, in place of BPM.
+                Text(recoveryLine(rec)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .padding(.horizontal, NoopMetrics.screenPadding)
         .padding(.top, 14)
@@ -727,34 +758,41 @@ struct LiveStrengthSheet: View {
         .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
     }
 
-    /// Duración · Volumen · Series — plain counters in ink (no color: they're not verdicts). The session
-    /// clock ticks live; volume is the sum of done weight×reps; series is the done count.
-    private var sessionCounters: some View {
-        let cells = Group {
-            TimelineView(.periodic(from: Date(), by: 1)) { ctx in
-                counterCell("Duration", Self.clock(max(0, Int(ctx.date.timeIntervalSince1970) - session.startTs)))
-            }
-            counterCell("Volume", massText(sessionVolumeKg))
-            counterCell("Sets", "\(session.doneCount)")
-            // Live HR from the strap, shown for EVERY exercise (not just cardio) so you can see the
-            // session is actually reading your pulse — "—" until a fresh sample lands (FER-498).
-            counterCell("HR", model.bpm.map { "\($0)" } ?? "—")
-        }
-        return Group {
-            if reflow {
-                VStack(alignment: .leading, spacing: 8) { cells }
-            } else {
-                HStack(alignment: .top, spacing: 22) { cells; Spacer(minLength: 0) }
-            }
+    /// One progress segment per non-skipped exercise: width ∝ its set count, fill = fraction of its sets done.
+    private var progressSegments: [SessionProgressBar.Segment] {
+        session.runs.filter { !$0.skipped }.map { run in
+            let total = max(run.sets.count, 1)
+            let done = run.sets.filter(\.done).count
+            return .init(sets: total, done: Double(done) / Double(total))
         }
     }
 
-    private func counterCell(_ label: LocalizedStringKey, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text(value).font(StrandFont.number(19, weight: .regular)).monospacedDigit().foregroundStyle(theme.ink)
-        }
-        .accessibilityElement(children: .combine)
+    /// Total planned sets across non-skipped exercises (the progress denominator).
+    private var sessionSetsTotal: Int {
+        session.runs.filter { !$0.skipped }.reduce(0) { $0 + $1.sets.count }
+    }
+
+    /// «2.480 kg · 8/17 series · ~312 kcal» — the kcal clause is dropped entirely when there's no strap
+    /// HR (no dashes, no zero): the receipt is where the estimate lands.
+    private var counterLine: String {
+        var parts = ["\(massText(sessionVolumeKg))",
+                     "\(session.doneCount)/\(sessionSetsTotal) " + String(localized: "series")]
+        if let kcal = liveKcal { parts.append("~\(kcal) kcal") }
+        return parts.joined(separator: " · ")
+    }
+
+    /// Live energy estimate (kcal) from the strap samples captured so far — nil (so the clause is hidden)
+    /// until the strap has streamed HR. Same Keytel entry point as the receipt/persist path (FER-715).
+    private var liveKcal: Int? {
+        let samples = session.hrSamples
+        guard samples.count >= Calories.strengthEnergyMinSamples else { return nil }
+        let now = Int(Date().timeIntervalSince1970)
+        let profile = UserProfile(weightKg: model.profile.weightKg, heightCm: model.profile.heightCm,
+                                  age: Double(model.profile.age), sex: model.profile.sex)
+        let kcal = Calories.estimateStrengthEnergy(
+            hrSamples: samples, durationSeconds: Double(max(0, now - session.startTs)),
+            profile: profile, hrMax: Double(model.profile.hrMax))
+        return Int(kcal.rounded())
     }
 
     /// Done weight×reps volume across non-skipped exercises (bodyweight adds lastre×reps; time/distance 0).
@@ -2035,6 +2073,23 @@ extension HRRestReference {
         case .karvonenReserve: return .karvonenReserve
         case .fixedBpm:        return .fixedBpm
         }
+    }
+}
+
+// MARK: - Live BPM dot (FER-716)
+
+/// The one always-on pulse of the app: the session header's live-BPM dot, breathing at 1.1 s. Falls
+/// back to a static dot under Reduce Motion (the preset does not self-disable).
+private struct BpmPulseDot: View {
+    let color: Color
+    var animated: Bool = true
+    @State private var pulsing = false
+    var body: some View {
+        Circle().fill(color).frame(width: 7, height: 7)
+            .scaleEffect(animated && pulsing ? 1.35 : 1.0)
+            .opacity(animated && pulsing ? 0.65 : 1.0)
+            .onAppear { if animated { withAnimation(StrandMotion.livePulse) { pulsing = true } } }
+            .accessibilityHidden(true)
     }
 }
 #endif
