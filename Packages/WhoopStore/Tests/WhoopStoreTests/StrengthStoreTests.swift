@@ -76,6 +76,119 @@ final class StrengthStoreTests: XCTestCase {
         XCTAssertEqual(routine?.updatedTs, 999)
     }
 
+    // MARK: - Per-set rest (FER-715)
+
+    /// A set can carry a rest override distinct from its siblings, and it survives a round-trip through
+    /// GRDB; a sibling with no override reads back `nil` (it inherits the exercise at runtime).
+    func testPerSetRestOverrideRoundTrip() async throws {
+        let store = try await WhoopStore.inMemory()
+        let r = Routine(id: "rt1", name: "Pierna", createdTs: 0, updatedTs: 0)
+        let override = RestConfig(mode: .fixed, seconds: 200, hrReference: .fixedBpm, hrValue: 110)
+        let exs = [
+            RoutineExercise(id: "a", routineId: "rt1", exerciseId: "ex1", position: 0, targetSets: 2,
+                            restMode: .heartRate, restSeconds: 90,
+                            sets: [RoutineSet(position: 0, kind: .work, reps: 8, weightKg: 60, rest: override),
+                                   RoutineSet(position: 1, kind: .work, reps: 6, weightKg: 70)]),
+        ]
+        try await store.saveRoutine(r, exercises: exs)
+
+        let back = try await store.routineExercises(routineId: "rt1")
+        let a = back.first { $0.id == "a" }!
+        XCTAssertEqual(a.sets[0].rest, override, "the first set keeps its distinct override")
+        XCTAssertNil(a.sets[1].rest, "a set with no override reads back nil = inherit")
+        // effectiveRest applies the fallback rule: overridden set → its own; sibling → the exercise.
+        XCTAssertEqual(a.effectiveRest(for: a.sets[0]), override)
+        XCTAssertEqual(a.effectiveRest(for: a.sets[1]), a.restConfig)
+    }
+
+    /// `updateRoutineExerciseRest` (scope exercise) cascades the new rest onto ALL the exercise's sets, so
+    /// the next session reads the fresh value from every set (no stale per-set copy) — the FER-540 → FER-715
+    /// regression guard.
+    func testUpdateRoutineExerciseRestCascadesToAllSets() async throws {
+        let store = try await WhoopStore.inMemory()
+        let r = Routine(id: "rt1", name: "Pierna", createdTs: 0, updatedTs: 0)
+        let exs = [
+            RoutineExercise(id: "a", routineId: "rt1", exerciseId: "ex1", position: 0, targetSets: 3,
+                            restMode: .fixed, restSeconds: 60,
+                            sets: [RoutineSet(position: 0, kind: .work, reps: 8),
+                                   RoutineSet(position: 1, kind: .work, reps: 8,
+                                              rest: RestConfig(mode: .fixed, seconds: 30)),
+                                   RoutineSet(position: 2, kind: .work, reps: 8)]),
+        ]
+        try await store.saveRoutine(r, exercises: exs)
+
+        try await store.updateRoutineExerciseRest(routineExerciseId: "a", routineId: "rt1",
+            mode: .heartRate, seconds: 150, reference: .peakDrop, value: 0.2, updatedTs: 42)
+
+        let a = try await store.routineExercises(routineId: "rt1").first { $0.id == "a" }!
+        let expected = RestConfig(mode: .heartRate, seconds: 150, hrReference: .peakDrop, hrValue: 0.2)
+        XCTAssertEqual(a.restConfig, expected, "the exercise default updated")
+        XCTAssertTrue(a.sets.allSatisfy { $0.rest == expected },
+                      "every set (even the one that had its own override) now carries the cascaded rest")
+    }
+
+    /// `updateRoutineSetRest` (scope set) pinpoint-updates one set and clears back to inherit with nil,
+    /// leaving its siblings and the exercise default untouched.
+    func testUpdateRoutineSetRestPinpointAndClear() async throws {
+        let store = try await WhoopStore.inMemory()
+        let r = Routine(id: "rt1", name: "Pierna", createdTs: 0, updatedTs: 0)
+        let exs = [
+            RoutineExercise(id: "a", routineId: "rt1", exerciseId: "ex1", position: 0, targetSets: 2,
+                            restMode: .fixed, restSeconds: 60,
+                            sets: [RoutineSet(id: "s0", position: 0, kind: .work, reps: 8),
+                                   RoutineSet(id: "s1", position: 1, kind: .work, reps: 8)]),
+        ]
+        try await store.saveRoutine(r, exercises: exs)
+
+        let newRest = RestConfig(mode: .heartRate, seconds: 100, hrReference: .karvonenReserve, hrValue: 0.5)
+        try await store.updateRoutineSetRest(routineSetId: "s0", routineId: "rt1", rest: newRest, updatedTs: 7)
+
+        var a = try await store.routineExercises(routineId: "rt1").first { $0.id == "a" }!
+        XCTAssertEqual(a.sets.first { $0.id == "s0" }?.rest, newRest, "only s0 got the override")
+        // s1 was saved with no override, so it stays nil (inherits the exercise) — untouched by the edit.
+        XCTAssertNil(a.sets.first { $0.id == "s1" }?.rest, "the sibling is untouched (still inherits)")
+        let routine = try await store.routines().first { $0.id == "rt1" }
+        XCTAssertEqual(routine?.updatedTs, 7, "the routine's updatedTs was bumped")
+
+        // Clearing the override with nil sends the set back to inheriting.
+        try await store.updateRoutineSetRest(routineSetId: "s0", routineId: "rt1", rest: nil, updatedTs: 8)
+        a = try await store.routineExercises(routineId: "rt1").first { $0.id == "a" }!
+        XCTAssertNil(a.sets.first { $0.id == "s0" }?.rest, "nil clears the override = inherit")
+    }
+
+    // MARK: - Persisted session energy (FER-715)
+
+    /// A session's energy (kcal + source) round-trips through save → read, via both the list read and the
+    /// by-id read, and an editing `updateSession` preserves it (like strain/avgHr).
+    func testSessionEnergyRoundTripAndSurvivesEdit() async throws {
+        let store = try await WhoopStore.inMemory()
+        let withHR = StrengthSession(id: "s1", startTs: 1000, endTs: 2000,
+                                     energyKcal: 412.5, energySource: .bandCalculated)
+        try await store.saveSession(withHR, sets: [
+            SetEntry(id: "a", sessionId: "s1", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 60, reps: 8, done: true, ts: 1001)])
+        let noHR = StrengthSession(id: "s2", startTs: 3000, endTs: 4000,
+                                   energyKcal: 180, energySource: .estimated)
+        try await store.saveSession(noHR, sets: [])
+
+        let byId = try await store.session(id: "s1")
+        XCTAssertEqual(byId?.energyKcal, 412.5)
+        XCTAssertEqual(byId?.energySource, .bandCalculated)
+        let recent = try await store.recentSessions()
+        XCTAssertEqual(recent.first { $0.id == "s2" }?.energySource, .estimated)
+        XCTAssertEqual(recent.first { $0.id == "s2" }?.energyKcal, 180)
+
+        // An edit that carries the same energy (the edit UI seeds from session(id:)) preserves it.
+        var edited = byId!
+        edited.notes = "editada"
+        try await store.updateSession(edited, sets: [
+            SetEntry(id: "a", sessionId: "s1", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 65, reps: 8, done: true, ts: 1001)])
+        let after = try await store.session(id: "s1")
+        XCTAssertEqual(after?.energyKcal, 412.5, "editing a session preserves its persisted energy")
+        XCTAssertEqual(after?.energySource, .bandCalculated)
+    }
+
     /// FER-541: the exercise type override round-trips, upserts (one row per id), and clears back to empty.
     func testExerciseTypeOverrideRoundTrip() async throws {
         let store = try await WhoopStore.inMemory()

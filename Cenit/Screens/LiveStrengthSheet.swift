@@ -48,6 +48,10 @@ struct StrengthSummary: Equatable {
     /// Tomorrow's projected recovery (0–100, rounded) given today's session cost — `nil` when there
     /// isn't ~2 weeks of recovery base (then the projection line is hidden). (FER-442)
     var costTomorrowPct: Int?
+    /// Energy spent this session (kcal) and where it came from (FER-715): `.bandCalculated` (Keytel over
+    /// strap HR) or `.estimated` (MET fallback). `nil` only for a legacy session with no persisted energy.
+    var energyKcal: Double?
+    var energySource: EnergySource?
     var prs: [PR]
     var muscles: [String]
     var isFirstTime: Bool
@@ -79,6 +83,9 @@ final class StrengthSessionModel: ObservableObject {
         var distanceM: Double?
         var done: Bool
         var doneTs: Int?
+        /// This set's own rest override (FER-715); `nil` = inherit the exercise's rest. Seeded from the
+        /// planned `RoutineSet.rest`; `computeRestTarget`/`startRest` resolve it with an exercise fallback.
+        var rest: RestConfig?
     }
 
     /// One exercise's run: its plan, the editable sets, which set the Foco is on, and whether it was skipped.
@@ -103,6 +110,16 @@ final class StrengthSessionModel: ObservableObject {
         var sets: [WorkingSet]
         var currentSet: Int
         var skipped: Bool
+
+        /// This exercise's rest as the shared `RestConfig` shape (FER-715), from its four flat fields.
+        var restConfig: RestConfig {
+            RestConfig(mode: restMode, seconds: restSeconds,
+                       hrReference: hrRestReference, hrValue: hrRestValue)
+        }
+        /// The rest to apply for the set at `index`: its own override, else this exercise's default.
+        func effectiveRest(forSet index: Int) -> RestConfig {
+            (sets.indices.contains(index) ? sets[index].rest : nil) ?? restConfig
+        }
     }
 
     enum Phase: Equatable { case capturing, resting }
@@ -135,6 +152,10 @@ final class StrengthSessionModel: ObservableObject {
     /// Strap HR captured during the session (FER-399), in memory only — fed by `AppModel.ingestHR` on the
     /// main actor. Drives avgHr/strain + the Keytel calorie estimate at finish; never persisted as a series.
     var hrSamples: [HRSample] = []
+    /// Whether the receipt's 0→value count-up already played (FER-715). A plain flag (not `@Published`, so
+    /// setting it never re-renders): the receipt view sets it after animating, so the numerals count up only
+    /// the first time the summary appears (at save), never when the session is re-opened. Dies with the session.
+    var receiptCountUpPlayed = false
 
     init(id: String = UUID().uuidString, routineId: String?, routineName: String,
          startTs: Int, runs: [ExerciseRun]) {
@@ -224,19 +245,22 @@ final class StrengthSessionModel: ObservableObject {
         let doneTs = Int(now.timeIntervalSince1970)
         runs[currentIndex].sets[i].done = true
         runs[currentIndex].sets[i].doneTs = doneTs
-        computeRestTarget(run: runs[currentIndex], doneTs: doneTs, restingHR: restingHR, maxHR: maxHR)
-        startRest(seconds: runs[currentIndex].restSeconds, now: now)
+        // FER-715: rest is resolved per set — the active set's own override, else the exercise's default.
+        let rest = runs[currentIndex].effectiveRest(forSet: i)
+        computeRestTarget(rest: rest, doneTs: doneTs, restingHR: restingHR, maxHR: maxHR)
+        startRest(seconds: rest.seconds, now: now)
         advanceToNextPending()
     }
 
-    /// Resolve the HR rest target once on entry (FER-495/506). The set peak is the max strap sample in the
-    /// ~90 s up to `doneTs` (the just-finished set's effort). `restingMargin`/no-target with a baseline →
-    /// HR mode using FER-348's default; no honest target and no baseline → degrade to the fixed timer.
-    private func computeRestTarget(run: ExerciseRun, doneTs: Int, restingHR: Double?, maxHR: Double?) {
-        guard run.restMode == .heartRate else { currentRestMode = .fixed; currentRestTarget = nil; return }
+    /// Resolve the HR rest target once on entry (FER-495/506), for a set's effective `RestConfig`. The set
+    /// peak is the max strap sample in the ~90 s up to `doneTs` (the just-finished set's effort).
+    /// `restingMargin`/no-target with a baseline → HR mode using FER-348's default; no honest target and no
+    /// baseline → degrade to the fixed timer.
+    private func computeRestTarget(rest: RestConfig, doneTs: Int, restingHR: Double?, maxHR: Double?) {
+        guard rest.mode == .heartRate else { currentRestMode = .fixed; currentRestTarget = nil; return }
         let peak = hrSamples.filter { $0.ts >= doneTs - 90 && $0.ts <= doneTs }.map(\.bpm).max()
-        let target = RestTarget.resolve(reference: run.hrRestReference.restTargetReference,
-                                        value: run.hrRestValue, peakHR: peak,
+        let target = RestTarget.resolve(reference: rest.hrReference.restTargetReference,
+                                        value: rest.hrValue, peakHR: peak,
                                         restingHR: restingHR, maxHR: maxHR)
         if target != nil {
             currentRestMode = .heartRate; currentRestTarget = target
@@ -357,10 +381,12 @@ final class StrengthSessionModel: ObservableObject {
     }
     func skipRest() { phase = .capturing; clearRest() }
 
-    /// Edit a run's rest configuration mid-session (FER-540). Applies to that exercise's *remaining*
-    /// rests (the next `startRest` reads `restSeconds`; `computeRestTarget` reads the mode/reference).
-    /// Does not retime a rest already counting down — that stays on the ±15 s nudge. Persisting to the
-    /// backing routine is the view's job (it owns the repo).
+    /// Edit a run's rest configuration mid-session at EXERCISE scope (FER-540, generalized in FER-715).
+    /// Applies to that exercise's *remaining* rests (the next `startRest` reads `restSeconds`;
+    /// `computeRestTarget` reads the mode/reference). Clears every set's per-set override on that run so
+    /// they all fall back to this new exercise default — otherwise a set materialized by the v26 migration
+    /// would shadow the edit. Does not retime a rest already counting down. Persisting to the backing
+    /// routine is the view's job (it owns the repo).
     func updateRest(exercise ei: Int, mode: RestMode, seconds: Int,
                     reference: HRRestReference, value: Double) {
         guard runs.indices.contains(ei) else { return }
@@ -368,6 +394,14 @@ final class StrengthSessionModel: ObservableObject {
         runs[ei].restSeconds = seconds
         runs[ei].hrRestReference = reference
         runs[ei].hrRestValue = value
+        for si in runs[ei].sets.indices { runs[ei].sets[si].rest = nil }
+    }
+
+    /// Edit one set's rest override mid-session at SET scope (FER-715). `nil` clears the override so the
+    /// set inherits the exercise. Only touches that set — siblings and the exercise default are untouched.
+    func updateRest(exercise ei: Int, set si: Int, rest: RestConfig?) {
+        guard runs.indices.contains(ei), runs[ei].sets.indices.contains(si) else { return }
+        runs[ei].sets[si].rest = rest
     }
 
     /// Clear all rest state (the fixed countdown + the HR target), so a stale HR target never bleeds into
@@ -455,7 +489,8 @@ final class StrengthSessionModel: ObservableObject {
             let sets: [WorkingSet] = slot.re.plannedSets.filter { $0.kind == .work }.map { p in
                 let weight = p.weightKg ?? lastWeight ?? 0
                 let reps = usesReps ? (p.reps ?? lastReps ?? 8) : 0
-                return WorkingSet(id: UUID().uuidString, weightKg: weight, reps: reps, done: false)
+                // FER-715: carry the set's own rest override (nil = inherit the exercise at rest time).
+                return WorkingSet(id: UUID().uuidString, weightKg: weight, reps: reps, done: false, rest: p.rest)
             }
             return ExerciseRun(id: slot.re.id, exerciseId: slot.re.exerciseId,
                                name: slot.exercise.map(StrengthDisplay.name) ?? String(localized: "Exercise"),

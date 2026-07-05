@@ -565,6 +565,14 @@ final class AppModel: ObservableObject {
         // Snapshot the profile on the main actor for the calorie estimate before hopping off it.
         let userProfile = UserProfile(weightKg: profile.weightKg, heightCm: profile.heightCm,
                                       age: Double(profile.age), sex: profile.sex)
+        // FER-715: persist the session's energy + where it came from. Same entry point and threshold as
+        // the Apple Health mirror, so the stored figure equals the mirrored one; the source label uses the
+        // exact count `estimateStrengthEnergy` branches on, so origin can't drift from the math.
+        record.energyKcal = Calories.estimateStrengthEnergy(
+            hrSamples: hrSamples, durationSeconds: Double(endTs - record.startTs),
+            profile: userProfile, hrMax: Double(hrMax))
+        record.energySource = hrSamples.count >= Calories.strengthEnergyMinSamples
+            ? .bandCalculated : .estimated
         Task { [weak self] in
             guard let self, let store = await self.repo.storeHandle() else { return }
             // Prior PRs (BEFORE save) so the receipt can tell which records are NEW this session.
@@ -660,6 +668,7 @@ final class AppModel: ObservableObject {
                                avgHr: record.avgHr,
                                costBand: SessionRecoveryCost.cost(sessionStrain: record.strain)?.band,
                                costTomorrowPct: costTomorrowPct,
+                               energyKcal: record.energyKcal, energySource: record.energySource,
                                prs: prs, muscles: Array(muscles.prefix(6)), isFirstTime: prior.allSatisfy { $0.value.isEmpty })
     }
 

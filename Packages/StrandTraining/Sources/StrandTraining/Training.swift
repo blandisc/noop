@@ -24,6 +24,45 @@ public enum HRRestReference: String, Codable, Sendable {
     case fixedBpm         // target = value (bpm)
 }
 
+/// The four rest knobs (mode, seconds, HR reference, HR value) as one value (FER-715). The handoff
+/// moves rest from the exercise down to the individual set; `RoutineExercise` keeps carrying its four
+/// flat fields (the shipped schema + call sites), so this shared shape is the currency of the *new*
+/// per-set APIs. SQL stays flat: `routineSet` gains the same four nullable columns, not JSON.
+public struct RestConfig: Codable, Sendable, Equatable {
+    public var mode: RestMode
+    public var seconds: Int
+    public var hrReference: HRRestReference
+    public var hrValue: Double
+
+    public init(mode: RestMode = .heartRate, seconds: Int = 90,
+                hrReference: HRRestReference = .restingMargin, hrValue: Double = 0) {
+        self.mode = mode; self.seconds = seconds
+        self.hrReference = hrReference; self.hrValue = hrValue
+    }
+}
+
+/// Where a persisted session-energy figure came from (FER-715). `bandCalculated` = Keytel 2005 over
+/// ≥ `Calories.strengthEnergyMinSamples` strap HR samples; `estimated` = the MET fallback (Ainsworth
+/// 2011 compendium) when the band wasn't worn. The raw values match the strings the DB stores.
+public enum EnergySource: String, Codable, Sendable {
+    case bandCalculated = "band_calculated"
+    case estimated
+}
+
+/// Which rows a rest edit applies to (FER-715, generalizing FER-540's mid-session edit). Consumed by
+/// the F1/F2 UI: `.set` touches one planned set, `.exercise` touches the exercise default *and* all
+/// its sets.
+public enum RestEditScope: Sendable, Equatable {
+    case set(routineSetId: String)   // solo esta serie
+    case exercise                    // el default del ejercicio + todas sus series
+}
+
+/// Where a rest edit lands (FER-715): only the live session, or persisted back to the routine.
+public enum RestEditPersistence: Sendable, Equatable {
+    case sessionOnly
+    case routine
+}
+
 /// A user-created folder grouping routines in «Mis rutinas» (FER-494). Flat — no nesting; a routine
 /// carries an optional `folderId` referencing one of these. Deleting a folder NULLs its routines'
 /// `folderId` (they fall to «Sin carpeta») — it never deletes routines.
@@ -84,11 +123,15 @@ public struct RoutineSet: Codable, Sendable, Identifiable, Equatable {
     public var kind: SetKind
     public var reps: Int?
     public var weightKg: Double?
+    /// This set's own rest override (FER-715); `nil` = inherit the exercise's rest. The v26 migration
+    /// materializes existing sets by copying the exercise's rest, so old data reads back identically;
+    /// sets added afterward stay `nil` and fall back to the exercise at runtime.
+    public var rest: RestConfig?
 
     public init(id: String = UUID().uuidString, position: Int, kind: SetKind = .work,
-                reps: Int? = nil, weightKg: Double? = nil) {
+                reps: Int? = nil, weightKg: Double? = nil, rest: RestConfig? = nil) {
         self.id = id; self.position = position; self.kind = kind
-        self.reps = reps; self.weightKg = weightKg
+        self.reps = reps; self.weightKg = weightKg; self.rest = rest
     }
 }
 
@@ -146,6 +189,21 @@ public struct RoutineExercise: Codable, Sendable, Identifiable, Equatable {
                 RoutineSet(position: $0, kind: .work, reps: targetReps, weightKg: targetWeightKg) }
             : sets
     }
+
+    /// This exercise's rest, as the shared `RestConfig` shape (FER-715). Bridges the four flat shipped
+    /// fields so per-set APIs speak one currency; setting it writes the four fields back.
+    public var restConfig: RestConfig {
+        get { RestConfig(mode: restMode, seconds: restSeconds,
+                         hrReference: hrRestReference, hrValue: hrRestValue) }
+        set {
+            restMode = newValue.mode; restSeconds = newValue.seconds
+            hrRestReference = newValue.hrReference; hrRestValue = newValue.hrValue
+        }
+    }
+
+    /// The rest to actually apply for a planned set (FER-715): the set's own override, else this
+    /// exercise's default. The one fallback rule, pure and testable.
+    public func effectiveRest(for set: RoutineSet) -> RestConfig { set.rest ?? restConfig }
 }
 
 /// A performed strength session. Optionally linked to a routine and to the strap
@@ -159,12 +217,20 @@ public struct StrengthSession: Codable, Sendable, Identifiable, Equatable {
     public var strain: Double?
     public var avgHr: Int?
     public var notes: String?
+    /// Energy spent this session in kcal (FER-715), computed and persisted at close: Keytel 2005 with
+    /// strap HR, else the MET fallback. `nil` = a pre-v26 session (the UI shows nothing, never a guess).
+    public var energyKcal: Double?
+    /// Where `energyKcal` came from (FER-715). `nil` alongside a non-nil `energyKcal` shouldn't occur;
+    /// both are written together at close.
+    public var energySource: EnergySource?
 
     public init(id: String = UUID().uuidString, routineId: String? = nil, startTs: Int,
                 endTs: Int? = nil, deviceId: String? = nil, strain: Double? = nil,
-                avgHr: Int? = nil, notes: String? = nil) {
+                avgHr: Int? = nil, notes: String? = nil,
+                energyKcal: Double? = nil, energySource: EnergySource? = nil) {
         self.id = id; self.routineId = routineId; self.startTs = startTs; self.endTs = endTs
         self.deviceId = deviceId; self.strain = strain; self.avgHr = avgHr; self.notes = notes
+        self.energyKcal = energyKcal; self.energySource = energySource
     }
 }
 
