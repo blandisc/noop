@@ -121,6 +121,10 @@ final class Repository: ObservableObject {
     func isRecoveryEstimated(_ day: String) -> Bool { dashboard.recoveryEstimates[day] != nil }
     /// Confidence grade for an estimated-recovery day; nil when the day isn't an Apple estimate.
     func recoveryConfidence(_ day: String) -> ScoreConfidence? { dashboard.recoveryEstimates[day]?.confidence }
+    /// How many of the 3 primary drivers (HRV, resting HR, sleep) backed an estimated-recovery day's
+    /// score (FER-700); nil when the day isn't an Apple estimate. Lets the UI say WHY an estimate is
+    /// conservative («N de 3 señales») rather than only showing the shrunk number.
+    func recoveryPrimaryDrivers(_ day: String) -> Int? { dashboard.recoveryEstimates[day]?.presentPrimaryDrivers }
 
     init(deviceId: String) { self.deviceId = deviceId }
 
@@ -457,6 +461,14 @@ final class Repository: ObservableObject {
     func rrIntervals(from: Int, to: Int, limit: Int = 200_000) async -> [RRInterval] {
         guard let store = await ensureStore() else { return [] }
         return (try? await store.rrIntervals(deviceId: deviceId, from: from, to: to, limit: limit)) ?? []
+    }
+
+    /// Gravity (accelerometer) samples for the strap in `[from, to]`. Feeds the night-rhythm
+    /// motion gate (`NightRhythmAssembler`), which needs per-window stillness to discard
+    /// movement-contaminated windows. Range-scanned like `rrIntervals` over `(deviceId, ts)`. (FER-666)
+    func gravitySamples(from: Int, to: Int, limit: Int = 200_000) async -> [GravitySample] {
+        guard let store = await ensureStore() else { return [] }
+        return (try? await store.gravitySamples(deviceId: deviceId, from: from, to: to, limit: limit)) ?? []
     }
 
     /// Downsampled HR (mean bpm per `bucketSeconds`) for the strap, for a Today/24h trend chart.

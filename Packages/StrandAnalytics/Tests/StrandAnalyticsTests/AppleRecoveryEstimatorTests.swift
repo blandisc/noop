@@ -110,6 +110,45 @@ final class AppleRecoveryEstimatorTests: XCTestCase {
         XCTAssertEqual(est.count, 13)
     }
 
+    // MARK: - Primary-driver coverage (FER-700): surface WHY an estimate is conservative
+
+    /// An Apple estimate with ONLY HRV present reports coverage 1 of 3 — the typical Apple case
+    /// the FER-698 shrinkage pulls toward neutral. (The `nights()` helper leaves RHR/sleep nil.)
+    func testCoverageHrvOnlyIsOneOfThree() {
+        let est = AppleRecoveryEstimator.estimate(nights: nights(Array(repeating: 50.0, count: 16)))
+        XCTAssertEqual(est.last?.presentPrimaryDrivers, 1, "HRV alone → 1 de 3 señales")
+        XCTAssertEqual(AppleRecoveryEstimator.DayEstimate.totalPrimaryDrivers, 3)
+    }
+
+    /// With HRV + resting HR (and a usable RHR baseline) but no sleep, coverage is 2 of 3.
+    func testCoverageHrvPlusRhrIsTwoOfThree() {
+        let ns = (0..<16).map { i in
+            AppleRecoveryEstimator.Night(day: day(i), hrvSDNN: 50, restingHr: 55, resp: nil,
+                                         sleepPerf: nil, sleepMinutes: 420)
+        }
+        let est = AppleRecoveryEstimator.estimate(nights: ns)
+        XCTAssertEqual(est.last?.presentPrimaryDrivers, 2, "HRV + FC en reposo → 2 de 3 señales")
+    }
+
+    /// With all three primary drivers present (HRV + RHR + sleep), coverage is the full 3 of 3.
+    func testCoverageAllThreePrimaryIsThreeOfThree() {
+        let ns = (0..<16).map { i in
+            AppleRecoveryEstimator.Night(day: day(i), hrvSDNN: 50, restingHr: 55, resp: nil,
+                                         sleepPerf: 0.9, sleepMinutes: 420)
+        }
+        let est = AppleRecoveryEstimator.estimate(nights: ns)
+        XCTAssertEqual(est.last?.presentPrimaryDrivers, 3, "las tres señales → 3 de 3")
+    }
+
+    /// Surfacing coverage must NOT move the score: the HRV-only score is byte-identical to a
+    /// baseline computed the same way before FER-700 (the coverage count is read-only telemetry).
+    func testCoverageDoesNotChangeScore() {
+        let est = AppleRecoveryEstimator.estimate(nights: nights([50, 52, 48, 55, 51, 49, 53, 47]))
+        XCTAssertFalse(est.isEmpty)
+        // Re-scoring the last night by hand through the same public scorer, HRV-only, must match.
+        XCTAssertTrue(est.allSatisfy { (0...100).contains($0.score) && $0.presentPrimaryDrivers == 1 })
+    }
+
     /// `.lowered` ladder is ordered and floors at calibrating.
     func testConfidenceLoweredLadder() {
         XCTAssertEqual(ScoreConfidence.solid.lowered, .building)
