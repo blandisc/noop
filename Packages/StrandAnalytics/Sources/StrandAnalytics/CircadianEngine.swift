@@ -37,13 +37,16 @@ public enum CircadianEngine {
     /// into an estimated temperature-minimum clock time when the thermal series is thin.
     public static let cbtMinBeforeWakeHours: Double = 2.5
     /// Activity acrophase (peak activity) sits roughly this many hours after CBTmin in a typical day — the
-    /// offset used to convert the cosinor acrophase into an estimated temperature-minimum time. This is a
-    /// COARSE population knob, not a firm constant: measured actigraphy acrophase is early-to-mid afternoon
-    /// and CBTmin sits pre-dawn, so the true population offset is only approximate (~9–12 h). It affects
-    /// `tempMinHour` ONLY on the thin-thermal fallback path (when `observedTempMinHour` is nil); prefer the
-    /// measured temperature minimum whenever it exists. Flagged for refinement (with /estadistico) before
-    /// `tempMinHour` is ever surfaced in UI.
-    public static let acrophaseAfterCbtMinHours: Double = 12.0
+    /// offset used to convert the cosinor acrophase into an estimated temperature-minimum time. A COARSE
+    /// population knob (still approximate), anchored to measured values: mean actigraphy activity acrophase
+    /// in healthy adults ≈ 14:37 (Mitchell et al., "Variation in actigraphy-estimated rest-activity
+    /// patterns by demographic factors", Chronobiol Int 2017;34(8):1042–1056, PMC6101244), and CBTmin ≈
+    /// 05:00, giving a population offset of ≈ 9.5 h. It affects `tempMinHour` ONLY on the thin-thermal
+    /// fallback path (when `observedTempMinHour` is nil); prefer the measured temperature minimum whenever it
+    /// exists. NOTE: tempMin is deliberately derived from the ACTIVITY acrophase (independent of the user's
+    /// schedule), not from wake time — deriving it from wake would collapse `offsetVsScheduleMinutes` to ≈ 0
+    /// and destroy the morning-lark / night-owl read, which is the whole point of the schedule comparison.
+    public static let acrophaseAfterCbtMinHours: Double = 9.5
 
     // MARK: - Inputs
 
