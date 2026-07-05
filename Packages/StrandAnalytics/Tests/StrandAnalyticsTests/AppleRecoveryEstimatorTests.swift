@@ -70,10 +70,32 @@ final class AppleRecoveryEstimatorTests: XCTestCase {
         XCTAssertEqual(est.last?.confidence, .solid, "≥14 nights + good coverage → alta")
     }
 
-    func testPoorCoverageDowngradesOneTier() {
-        let short = AppleRecoveryEstimator.estimate(
-            nights: nights(Array(repeating: 50.0, count: 16), sleepMinutes: 60))   // thin night
-        XCTAssertEqual(short.last?.confidence, .building, "trusted baseline but poor coverage → −1 tier")
+    // MARK: - Coverage gate (FER-697): a thin night is OMITTED, not downgraded
+
+    /// A night with measured sleep below the coverage floor gets NO estimate — the same "—"
+    /// as cold-start. This is what kills the inflated "estimado 100" seen just after midnight,
+    /// when only ~2 h of the current night has been logged (acceptance criterion #1).
+    func testThinCoverageNightIsOmitted() {
+        // 16 nights with good coverage, then one more night below the floor.
+        var ns = nights(Array(repeating: 50.0, count: 16))            // sleepMinutes: 420 (default)
+        let thinDay = day(16)
+        ns.append(AppleRecoveryEstimator.Night(day: thinDay, hrvSDNN: 90, restingHr: nil, resp: nil,
+                                               sleepPerf: nil, sleepMinutes: 120))   // ~2 h, in-progress night
+        let est = AppleRecoveryEstimator.estimate(nights: ns)
+        XCTAssertFalse(est.contains { $0.day == thinDay },
+                       "a night below the coverage floor is omitted, not scored")
+        XCTAssertEqual(est.count, 16, "only the 16 well-covered nights are scored")
+    }
+
+    /// The boundary is inclusive: a night AT the threshold still scores, so nights with
+    /// sufficient coverage (≥180) are unchanged by the gate (acceptance criterion #2).
+    func testCoverageAtThresholdStillScores() {
+        let atFloor = AppleRecoveryEstimator.estimate(
+            nights: nights(Array(repeating: 50.0, count: 16),
+                           sleepMinutes: AppleRecoveryEstimator.coverageSleepMinThreshold))
+        XCTAssertEqual(atFloor.count, 16, "sleep exactly at the floor is scored, not dropped")
+        XCTAssertEqual(atFloor.last?.confidence, .solid,
+                       "≥14 nights → alta; coverage no longer downgrades the grade")
     }
 
     // MARK: - HRV is the required driver
