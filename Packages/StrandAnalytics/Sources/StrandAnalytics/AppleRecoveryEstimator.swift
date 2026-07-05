@@ -114,7 +114,12 @@ public enum AppleRecoveryEstimator {
             guard (n.sleepMinutes ?? 0) >= coverageSleepMinThreshold else { continue }
             let score = RecoveryScorer.recovery(
                 hrv: sdnn,
-                rhr: n.restingHr ?? 0,                      // unused when rhrBaseline is nil
+                // INVARIANT: `rhr` is read by the scorer ONLY under a present rhrBaseline,
+                // and we pass rhrBaseline nil whenever restingHr is absent (see below). So
+                // this value is never consumed here — `.nan` (not a fake 0 bpm) makes any
+                // accidental future read fail the scorer's own z.isFinite guard → nil, rather
+                // than inflate a score. RecoveryScorer.recovery also `precondition`s this.
+                rhr: n.restingHr ?? .nan,
                 resp: n.resp,
                 hrvBaseline: hrvBase,
                 rhrBaseline: (n.restingHr != nil && rhrBase.usable) ? rhrBase : nil,
