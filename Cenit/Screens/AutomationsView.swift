@@ -20,6 +20,7 @@ struct AutomationsView: View {
 private struct AutomationsContent: View {
     @EnvironmentObject var model: AppModel
     @EnvironmentObject var behavior: BehaviorStore
+    @EnvironmentObject var inactivity: InactivityPrefs
     @EnvironmentObject var live: LiveState
     @Environment(\.instrumentoTheme) private var theme
 
@@ -39,6 +40,8 @@ private struct AutomationsContent: View {
                 wearSection
                 divider
                 coachingSection
+                divider
+                inactivitySection
                 divider
                 alarmSection
                 divider
@@ -153,6 +156,100 @@ private struct AutomationsContent: View {
                           isOn: $behavior.stressNudge)
             }
         }
+    }
+
+    // MARK: - Movement reminder (FER-664)
+
+    private var inactivitySection: some View {
+        section("Movement reminder", blurb: "A gentle wrist buzz when you've been sitting a long stretch, so you remember to get up and walk. Sitting less through the day is linked to better long-term health, independent of your workouts.") {
+            VStack(spacing: 0) {
+                toggleRow("Nudge me to move",
+                          help: "After a long sit with no walking around, the strap buzzes on its next sync. It measures a lack of walking, not wrist stillness — typing at a desk still counts as sitting.",
+                          isOn: $inactivity.enabled)
+                    .onChange(of: inactivity.enabled) {
+                        if inactivity.enabled { IllnessNotifier.requestAuthorization() }
+                    }
+                if inactivity.enabled {
+                    divider
+                    stepperRow("Sit time before a nudge",
+                               value: $inactivity.thresholdMinutes, range: 15...120, step: 15,
+                               format: minutesLabel)
+                    divider
+                    stepperRow("Then re-nudge every",
+                               value: $inactivity.reNudgeMinutes, range: 15...120, step: 15,
+                               format: minutesLabel)
+                    divider
+                    toggleRow("Only during active hours",
+                              help: "Keep the nudges inside your day so they never fire at night.",
+                              isOn: $inactivity.activeHoursEnabled)
+                    if inactivity.activeHoursEnabled {
+                        divider
+                        timeRangeRow("Active from", "to",
+                                     start: activeStartBinding, end: activeEndBinding)
+                    }
+                    divider
+                    toggleRow("Quiet hours",
+                              help: "Silence the nudges during a window you choose — a meeting block, an evening wind-down.",
+                              isOn: $inactivity.quietHoursEnabled)
+                    if inactivity.quietHoursEnabled {
+                        divider
+                        timeRangeRow("Quiet from", "to",
+                                     start: quietStartBinding, end: quietEndBinding)
+                    }
+                }
+            }
+        }
+    }
+
+    /// «45 min» / «1 h 15 min» for the sit-time / re-nudge steppers.
+    private func minutesLabel(_ m: Int) -> String {
+        m >= 60
+            ? (m % 60 == 0 ? String(localized: "\(m / 60) h") : String(localized: "\(m / 60) h \(m % 60) min"))
+            : String(localized: "\(m) min")
+    }
+
+    private func stepperRow(_ label: LocalizedStringKey, value: Binding<Int>,
+                            range: ClosedRange<Int>, step: Int, format: (Int) -> String) -> some View {
+        HStack(spacing: 12) {
+            Text(label).font(StrandFont.body).foregroundStyle(theme.ink)
+            Spacer()
+            Text(format(value.wrappedValue)).font(StrandFont.bodyNumber).foregroundStyle(theme.inkSecondary)
+                .frame(minWidth: 64, alignment: .trailing).monospacedDigit()
+            Stepper(label, value: value, in: range, step: step).labelsHidden()
+                .accessibilityValue(format(value.wrappedValue))
+        }
+        .frame(minHeight: 42).padding(.vertical, 4)
+    }
+
+    private func timeRangeRow(_ startLabel: LocalizedStringKey, _ endLabel: LocalizedStringKey,
+                              start: Binding<Date>, end: Binding<Date>) -> some View {
+        HStack(spacing: 12) {
+            Text(startLabel).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            DatePicker("", selection: start, displayedComponents: .hourAndMinute)
+                .labelsHidden().datePickerStyle(.compact).tint(theme.ink)
+            Text(endLabel).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            DatePicker("", selection: end, displayedComponents: .hourAndMinute)
+                .labelsHidden().datePickerStyle(.compact).tint(theme.ink)
+            Spacer()
+        }
+        .frame(minHeight: 42).padding(.vertical, 4)
+    }
+
+    private var activeStartBinding: Binding<Date> {
+        Binding(get: { Self.date(fromMinutes: inactivity.activeStartMinutes) },
+                set: { inactivity.activeStartMinutes = Self.minutes(from: $0) })
+    }
+    private var activeEndBinding: Binding<Date> {
+        Binding(get: { Self.date(fromMinutes: inactivity.activeEndMinutes) },
+                set: { inactivity.activeEndMinutes = Self.minutes(from: $0) })
+    }
+    private var quietStartBinding: Binding<Date> {
+        Binding(get: { Self.date(fromMinutes: inactivity.quietStartMinutes) },
+                set: { inactivity.quietStartMinutes = Self.minutes(from: $0) })
+    }
+    private var quietEndBinding: Binding<Date> {
+        Binding(get: { Self.date(fromMinutes: inactivity.quietEndMinutes) },
+                set: { inactivity.quietEndMinutes = Self.minutes(from: $0) })
     }
 
     // MARK: - Smart alarm

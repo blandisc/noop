@@ -37,6 +37,8 @@ final class AppModel: ObservableObject {
     let profile = ProfileStore()
     /// Behaviour settings: double-tap action, wear automation, zone coaching, smart alarm, illness watch.
     let behavior = BehaviorStore()
+    /// Inactivity reminder settings + its restart-safe de-dup state (FER-664).
+    let inactivity = InactivityPrefs()
     /// The Bucle's goal (metric + optional date) — a single user preference, UserDefaults-backed (FER-311).
     let goal = GoalStore()
     /// Which data sources feed the dashboard + baseline (combined / WHOOP-only / Apple-Health-only) —
@@ -828,6 +830,30 @@ final class AppModel: ObservableObject {
     /// Used by the notification-pattern picker and coaching features.
     func buzz(pattern: UInt8, loops: UInt8 = 1) {
         ble.send(.runHapticsPattern, payload: [pattern, loops, 0, 0, 0])
+    }
+
+    /// Mirror the inactivity-reminder wrist buzz as a local notification, so the "time to move" nudge
+    /// still surfaces on the phone if the wrist buzz is missed (FER-664). Called from the BLE offload
+    /// hook after `SedentaryDetector` decided to buzz; `minutes` = the seated bout the detector reported.
+    /// Delivery is authorized-only (no second system prompt), mirroring `IllnessNotifier`. Gated on the
+    /// feature toggle so turning the reminder off silences the notification too. iOS-only.
+    static func postInactivity(minutes: Int) {
+        #if os(iOS)
+        guard InactivityPrefs.isEnabled() else { return }
+        let body = minutes > 0
+            ? String(localized: "You've been seated about \(minutes) min. Time to move.")
+            : String(localized: "Time to move — you've been seated a while.")
+        let center = UNUserNotificationCenter.current()
+        center.getNotificationSettings { settings in
+            guard settings.authorizationStatus == .authorized else { return }
+            let content = UNMutableNotificationContent()
+            content.title = String(localized: "Move reminder")
+            content.body = body
+            content.sound = .default
+            // A fixed identifier means a fresh nudge replaces the prior one rather than stacking.
+            center.add(UNNotificationRequest(identifier: "inactivity-nudge", content: content, trigger: nil))
+        }
+        #endif
     }
 
     /// Arm (or clear) the strap's firmware alarm from the smart-alarm settings. The firmware alarm
