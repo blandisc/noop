@@ -332,7 +332,7 @@ final class IntelligenceEngine: ObservableObject {
         // calibration — a user with no phone steps sees no estimate until they set a manual `k`.
         // Days the phone DID count keep their real value (the tile prefers real over estimate); on a
         // 5/MG the block never runs — the native counter is authoritative (no estimate needed).
-        if family == .whoop4 {
+        if family.estimatesSteps {
             // Calibration window: a generous 60 days (not the 21 the scoring loop uses) so enough
             // both-have days accumulate to fit. Reference steps = the apple-health daily `steps`
             // (the same source the dashboard's steps tile reads); motion = the [localMidnight, +24h)

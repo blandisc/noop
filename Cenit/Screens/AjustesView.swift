@@ -2,6 +2,7 @@
 import SwiftUI
 import StrandDesign
 import StrandAnalytics
+import WhoopProtocol
 import WhoopStore
 
 // MARK: - Ajustes (the Settings tab root) — FER-337
@@ -218,8 +219,9 @@ private struct AjustesLanding: View {
             valueRow("Max heart rate", value: maxHRDisplay,
                      a11y: "Maximum heart rate, \(maxHRDisplay)") { showMaxHR = true }
             // Estimación de pasos (FER-663) — solo aplica a la WHOOP 4.0 (sin contador nativo por BLE);
-            // en un 5/MG la fila no aparece: el contador del strap manda y no hay nada que calibrar.
-            if WhoopModel.persisted == .whoop4 {
+            // en un 5/MG la fila no aparece: el contador del strap manda y no hay nada que calibrar. El
+            // mismo predicado `estimatesSteps` que activa el motor en IntelligenceEngine.
+            if WhoopModel.persisted.deviceFamily.estimatesSteps {
                 divider
                 valueRow("Steps estimate", value: stepsCalDisplay,
                          a11y: "Steps estimate, \(stepsCalDisplay)") { showStepsCal = true }
@@ -697,27 +699,27 @@ private struct StepsCalibrationSheet: View {
                 Text("Raise it if the estimate runs low against a day you know; lower it if it runs high.")
                     .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
-            } else if profile.stepsCalibrationCoefficient > 0 {
-                VStack(alignment: .center, spacing: 4) {
-                    Text(String(format: "%.0f", profile.stepsCalibrationCoefficient))
-                        .font(StrandFont.number(48)).foregroundStyle(theme.ink)
-                    Text("steps per unit of motion").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 24)
-                fitLine
-                    .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
             } else {
+                // Auto: either a fitted coefficient (big number + fit line) or not-yet-calibrated
+                // («—» + how many more phone-counted days are needed). Same layout, only the values differ.
+                let calibrated = profile.stepsCalibrationCoefficient > 0
                 VStack(alignment: .center, spacing: 4) {
-                    Text("—").font(StrandFont.number(48)).foregroundStyle(theme.inkDim)
-                    Text("not calibrated yet").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    Text(calibrated ? String(format: "%.0f", profile.stepsCalibrationCoefficient) : "—")
+                        .font(StrandFont.number(48)).foregroundStyle(calibrated ? theme.ink : theme.inkDim)
+                    Text(calibrated ? "steps per unit of motion" : "not calibrated yet")
+                        .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 24)
-                Text("Needs \(max(0, StepsEstimateEngine.minCalibrationDays - profile.stepsCalibrationSampleDays)) more days where your iPhone also counted steps — or set the coefficient manually.")
-                    .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                Group {
+                    if calibrated {
+                        fitLine
+                    } else {
+                        Text("Needs \(max(0, StepsEstimateEngine.minCalibrationDays - profile.stepsCalibrationSampleDays)) more days where your iPhone also counted steps — or set the coefficient manually.")
+                    }
+                }
+                .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
             }
 
             Text("A WHOOP 4.0 sends no step count, so Cénit estimates steps from wrist motion calibrated against your iPhone. It is always an estimate, never an exact count.")

@@ -21,6 +21,12 @@ public enum HeaderCRCKind: String, Sendable, CaseIterable {
 }
 
 public extension DeviceFamily {
+    /// Whether daily steps are ESTIMATED from motion for this family rather than read from a native
+    /// counter (FER-663). Only the 4.0 lacks a BLE step counter, so only it estimates; the 5/MG streams
+    /// the native @57 counter and never estimates. The single source for the "who estimates steps" rule
+    /// so the analytics gate and the Settings row can't drift.
+    var estimatesSteps: Bool { self == .whoop4 }
+
     /// The header-CRC algorithm this family uses. This is the single switch that the family-aware
     /// `verifyFrame`/`parseFrame` overloads branch on; the payload CRC32 is identical for both.
     var headerCRCKind: HeaderCRCKind {
