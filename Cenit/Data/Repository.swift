@@ -373,6 +373,14 @@ final class Repository: ObservableObject {
         return (try? await store.rrIntervals(deviceId: deviceId, from: from, to: to, limit: limit)) ?? []
     }
 
+    /// Gravity (accelerometer) samples for the strap in `[from, to]`. Feeds the night-rhythm
+    /// motion gate (`NightRhythmAssembler`), which needs per-window stillness to discard
+    /// movement-contaminated windows. Range-scanned like `rrIntervals` over `(deviceId, ts)`. (FER-666)
+    func gravitySamples(from: Int, to: Int, limit: Int = 200_000) async -> [GravitySample] {
+        guard let store = await ensureStore() else { return [] }
+        return (try? await store.gravitySamples(deviceId: deviceId, from: from, to: to, limit: limit)) ?? []
+    }
+
     /// Downsampled HR (mean bpm per `bucketSeconds`) for the strap, for a Today/24h trend chart.
     /// Aggregated in SQL so a full day never loads the raw ~1 Hz rows.
     func hrBuckets(from: Int, to: Int, bucketSeconds: Int = 300) async -> [HRBucket] {
