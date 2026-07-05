@@ -203,6 +203,17 @@ final class FusionResolverTests: XCTestCase {
         }
     }
 
+    func testCanonicalKeyFoldsAliasesAndPassesThroughTheRest() {
+        // The single normalization point (FER-670): every alias folds onto the map's canonical key,
+        // so a caller can pass any catalog key. Non-arbitrated keys pass through untouched.
+        XCTAssertEqual(MetricArbitrationPolicy.canonicalKey(forKey: "energy_kcal"), "active_kcal")
+        XCTAssertEqual(MetricArbitrationPolicy.canonicalKey(forKey: "active_kcal"), "active_kcal")
+        XCTAssertEqual(MetricArbitrationPolicy.canonicalKey(forKey: "asleep_min"), "sleep_total_min")
+        XCTAssertEqual(MetricArbitrationPolicy.canonicalKey(forKey: "sleep_total_min"), "sleep_total_min")
+        XCTAssertEqual(MetricArbitrationPolicy.canonicalKey(forKey: "steps"), "steps")
+        XCTAssertEqual(MetricArbitrationPolicy.canonicalKey(forKey: "hrv"), "hrv")   // untouched
+    }
+
     func testOnlySingleConstructKeysMap() {
         // The full allowlist — anything beyond these three constructs is a policy change, not a drift.
         XCTAssertEqual(MetricArbitrationPolicy.kind(forKey: "steps"), .steps)

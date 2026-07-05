@@ -103,9 +103,11 @@ final class Repository: ObservableObject {
     var appleHealthDays: Set<String> { dashboard.appleHealthDays }
     /// FER-670: the fused single-construct point for a `(day, metric)` — nil unless ≥2 sources reported
     /// that metric on that day. The detail screens read this to show "coinciden / en conflicto" for the
-    /// exact day they display; a nil simply shows nothing.
+    /// exact day they display; a nil simply shows nothing. `metric` may be any catalog series key — the
+    /// policy folds aliases (`energy_kcal`, `asleep_min`) onto the map's canonical key, so no caller has
+    /// to know the synonyms.
     func fusionPoint(day: String, metric: String) -> FusedMetricPoint? {
-        dashboard.fusion[day]?[metric]
+        dashboard.fusion[day]?[MetricArbitrationPolicy.canonicalKey(forKey: metric)]
     }
     /// FER-670: the whole per-day fusion map, for model builders that resolve their own day key
     /// (`SleepDetailModel.build`). Same content `fusionPoint` reads.

@@ -396,6 +396,8 @@ struct MetricDetailView: View {
                 .foregroundStyle(theme.inkTertiary)
             // FER-670: when a second source reported the shown day (steps / sleep total / active kcal),
             // say whether they agree — both values stay visible, a conflict is flagged, never averaged.
+            // `fusionPoint` folds the calorie alias (`energy_kcal`→`active_kcal`) via the policy, so the
+            // raw catalog key works here.
             if let day = latest?.day,
                let agreement = repo.fusionPoint(day: day, metric: metric.key) {
                 FusionAgreementRow(point: agreement, theme: theme, format: fmt)

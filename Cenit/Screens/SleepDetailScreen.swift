@@ -808,14 +808,16 @@ struct SleepDetailScreen: View {
             // FER-670: when band AND Apple both reported this night, say whether they agree — both
             // totals stay visible, a conflict is flagged, nothing is averaged.
             if let agreement = model.sourceAgreement {
-                FusionAgreementRow(point: agreement, theme: theme, format: Self.hoursMinutes)
+                FusionAgreementRow(point: agreement, theme: theme, format: Self.sleepTotalHM)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// "7 h 05 m" for a minutes value — the agreement row's sleep-total unit.
-    private static func hoursMinutes(_ minutes: Double) -> String {
+    /// "7 h 05 m" for a minutes value — the agreement row's sleep-total unit. Distinct from the
+    /// instance `hoursMinutes` ("1h 20m", drops to min-only) and `hoursOnly` ("7:24"): the compare row
+    /// wants both fields always, zero-padded, so two sources' totals align.
+    private static func sleepTotalHM(_ minutes: Double) -> String {
         let m = Int(minutes.rounded())
         return "\(m / 60) h \(String(format: "%02d", m % 60)) m"
     }

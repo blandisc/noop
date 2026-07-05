@@ -52,6 +52,19 @@ public enum MetricArbitrationPolicy {
         }
     }
 
+    /// The canonical resolver key `FusionResolver`/`Repository.fusionByDay` emit for a metric, folding
+    /// every alias onto it (`energy_kcal`→`active_kcal`, `asleep_min`→`sleep_total_min`). A key the
+    /// engine doesn't arbitrate passes through unchanged. This is the single place aliasing lives, so a
+    /// caller looking up the fusion map by a descriptor key never has to know the synonyms (FER-670).
+    public static func canonicalKey(forKey key: String) -> String {
+        switch kind(forKey: key) {
+        case .steps:    return "steps"
+        case .sleep:    return "sleep_total_min"
+        case .calories: return "active_kcal"
+        case nil:       return key
+        }
+    }
+
     /// Trust tier for a `(metric, source)` pair — lower is more trusted. Encodes the
     /// measure-vs-estimate intuition as data, consistent with the display precedence the app already
     /// ships: Apple's pedometer count beats the strap's motion figure for steps (FER-663), the band's
