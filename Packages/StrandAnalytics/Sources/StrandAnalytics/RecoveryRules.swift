@@ -83,16 +83,16 @@ public enum RecoveryRules {
         var active = Set(raw.indices)
         var remaining = Double(min(target, caps.reduce(0, +)))
 
-        // Pin overflowing rows at their cap until every active row fits under scaling.
+        // Pin overflowing rows at their cap until every active row fits under scaling. `apportion`
+        // always hands ≥1 row a positive length and every fill is a logistic in (0,1), so `rawSum`
+        // is positive whenever there's still fill to place; the guard just keeps a degenerate all-zero
+        // input (target 0, or every row capped out) from dividing by zero — the rounding pass below
+        // still lands the exact total.
         while !active.isEmpty {
             let rawSum = active.reduce(0.0) { $0 + raw[$1] }
+            guard rawSum > 0 else { break }
             var overflowed = false
-            for i in active {
-                // With no signal fill at all (raw ≈ 0 everywhere), fall back to cap-proportional.
-                let capSum = active.reduce(0.0) { $0 + Double(caps[$1]) }
-                scaled[i] = rawSum > 0 ? raw[i] * remaining / rawSum
-                                       : Double(caps[i]) * remaining / capSum
-            }
+            for i in active { scaled[i] = raw[i] * remaining / rawSum }
             for i in active where scaled[i] > Double(caps[i]) {
                 scaled[i] = Double(caps[i])
                 remaining -= Double(caps[i])

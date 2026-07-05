@@ -192,6 +192,9 @@ struct TodayView: View {
     /// (banda-only) + el score mostrado, de modo que la suma encendida == el numeral. Vacías sin
     /// descomposición honesta (cold-start o día Apple-only estimado).
     @State private var memoRules: [RecoveryRules.Rule]?
+    /// Los días de base para las medias de 7 días, memoizados (ver `baselineDays()`): el `filter+sort`
+    /// sobre `repo.displayDays` lo comparten el delta del héroe, el Daily Brief y los tiles.
+    @State private var memoBaselineDays: [DailyMetric]?
 
     // MARK: - Celebración del pull-to-refresh (FER-709)
     //
@@ -245,6 +248,8 @@ struct TodayView: View {
         memoYesterdayLevel = ReadinessEngine.evaluate(days: band, today: yKey).level
         // FER-623: la viñeta de HRV estimada (día sin banda) también se siembra aquí, no por frame.
         memoAppleHrvEstimated = computeAppleHrvEstimated()
+        // FER-709: la base de 7 días (filter+sort sobre displayDays) una vez por refresh, no 2–3 por render.
+        memoBaselineDays = computeBaselineDays()
         // FER-709: las cinco reglas del día — el impacto por señal (banda-only, FER-519) mapeado a
         // marcas cuya suma encendida == el numeral. `RecoveryImpact` devuelve nil en cold-start o en un
         // día Apple-only (estimado): ahí el bloque se oculta en vez de inventar una descomposición.
@@ -1659,6 +1664,9 @@ struct TodayView: View {
     /// («POR QUÉ N» / «EL LARGO ES EL PESO»), el instrumento de marcas, y la leyenda de origen abajo.
     /// Tras un pull-to-refresh las marcas se encienden en secuencia (`celebrationStart`); al abrir, nunca.
     @ViewBuilder private var fiveRulesBlock: some View {
+        // Mapea las filas UNA vez por render (no por frame): durante la celebración el `TimelineView`
+        // solo debe recomputar `reveal`, no re-hacer los 5 `String(localized:)` del mapeo por cada frame.
+        let rows = rulesRows
         VStack(alignment: .leading, spacing: NoopMetrics.space2) {
             HStack {
                 Text("Por qué \(recoveryScore ?? 0)")
@@ -1669,11 +1677,11 @@ struct TodayView: View {
             }
             if let start = celebrationStart, !reduceMotion {
                 TimelineView(.animation) { context in
-                    FiveRulesView(rows: rulesRows,
+                    FiveRulesView(rows: rows,
                                   reveal: min(1, context.date.timeIntervalSince(start) / 1.2))
                 }
             } else {
-                FiveRulesView(rows: rulesRows)
+                FiveRulesView(rows: rows)
             }
             HStack(spacing: NoopMetrics.space2) {
                 Text("Señales").groteskOverline(small: true).foregroundStyle(theme.inkMuted)
@@ -2371,8 +2379,14 @@ struct TodayView: View {
     /// Los días de base para la media de 7 días (FER-258): las filas del dashboard de display
     /// ANTERIORES a hoy (la misma fuente en capas que resuelve el valor de hoy y la de la tendencia
     /// 14d), ordenadas y acotadas a las recientes. Excluir hoy hace que el delta sea «hoy vs tu
-    /// semana», no «hoy contra sí mismo». Se computa una vez por render, no por tile.
+    /// semana», no «hoy contra sí mismo». Memoizado en `memoBaselineDays` (FER-172): el `filter+sort`
+    /// sobre `repo.displayDays` corría 2–3 veces por render (héroe + Brief + tiles); ahora una vez por
+    /// refresh. Cae al cálculo en línea solo el primer frame (memo aún nil), nunca en el camino caliente.
     private func baselineDays() -> [DailyMetric] {
+        memoBaselineDays ?? computeBaselineDays()
+    }
+
+    private func computeBaselineDays() -> [DailyMetric] {
         let todayKey = Repository.localDayKey(Date())
         return Array(repo.displayDays.filter { $0.day < todayKey }.sorted { $0.day < $1.day }.suffix(30))
     }
@@ -2863,11 +2877,6 @@ struct TodayView: View {
     }
 
     // MARK: - Derived text
-
-    /// Sleep minutes → "Xh Ym".
-    private func sleepText(_ mins: Double) -> String {
-        "\(Int(mins) / 60)h \(Int(mins) % 60)m"
-    }
 
     /// FER-546: the value a measured tile (HRV / resting HR / SpO₂) shows MUST match the LAST point of its
     /// own 14-day chart — both read `repo.displayDays` (the layered Apple-base + strap source `loadTrend`

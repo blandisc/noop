@@ -35,13 +35,13 @@ public struct DialSeal: View {
                        with: .color(theme.hairlineStrong), lineWidth: 1)
             // Day arc (sunrise → sunset) in the sun hue.
             if let s = solar {
-                ctx.stroke(arc(center: c, radius: r, from: s.sunrise, to: s.sunset),
+                ctx.stroke(DialGeometry.arc(center: c, radius: r, fromHour: s.sunrise, toHour: s.sunset),
                            with: .color(theme.dataSun),
                            style: StrokeStyle(lineWidth: 2.4, lineCap: .round))
             }
             // Sleep band (bedtime → wake), drawn slightly inset so both arcs read at 34 pt.
             if let s = sleep {
-                ctx.stroke(arc(center: c, radius: r - 3, from: s.bedtime, to: s.wake),
+                ctx.stroke(DialGeometry.arc(center: c, radius: r - 3, fromHour: s.bedtime, toHour: s.wake),
                            with: .color(theme.dataSleep),
                            style: StrokeStyle(lineWidth: 2, lineCap: .round))
             }
@@ -54,16 +54,6 @@ public struct DialSeal: View {
         }
         .frame(width: diameter, height: diameter)
         .accessibilityHidden(true)   // decorative signature; the header text carries the state
-    }
-
-    private func arc(center: CGPoint, radius: CGFloat, from: Double, to: Double) -> Path {
-        let span = DialGeometry.spanHours(from: from, to: to)
-        var path = Path()
-        path.addArc(center: center, radius: radius,
-                    startAngle: DialGeometry.angle(forHour: from),
-                    endAngle: DialGeometry.angle(forHour: from + span),
-                    clockwise: false)
-        return path
     }
 }
 

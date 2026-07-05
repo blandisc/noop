@@ -42,9 +42,12 @@ public struct TileSparkband: View {
         let pts = series.indices.map { i in
             CGPoint(x: size.width * CGFloat(i) / CGFloat(series.count - 1), y: y(series[i]))
         }
+        // Personal range + median via the shared chart-stats helper (same module) so the band
+        // math is identical to every other «rango típico» in the design system.
         let sorted = series.sorted()
-        let p25 = quantile(sorted, 0.25), p75 = quantile(sorted, 0.75)
-        let median = quantile(sorted, 0.5)
+        let band = ReferenceRange.interquartile(series)
+        let p25 = band?.lowerBound ?? lo, p75 = band?.upperBound ?? hi
+        let median = ReferenceRange.percentile(sorted, 50)
 
         return ZStack(alignment: .topLeading) {
             // Personal range band p25–p75 (min 3 pt tall so a tight range still reads).
@@ -84,16 +87,6 @@ public struct TileSparkband: View {
         }
     }
 
-    /// Linear-interpolated quantile over an already-sorted series.
-    private func quantile(_ sorted: [Double], _ q: Double) -> Double {
-        guard let first = sorted.first, let last = sorted.last else { return 0 }
-        guard sorted.count > 1 else { return first }
-        let pos = q * Double(sorted.count - 1)
-        let i = Int(pos.rounded(.down))
-        if i >= sorted.count - 1 { return last }
-        let frac = pos - Double(i)
-        return sorted[i] * (1 - frac) + sorted[i + 1] * frac
-    }
 }
 
 #if DEBUG
