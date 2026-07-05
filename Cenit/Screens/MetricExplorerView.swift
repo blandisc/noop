@@ -394,6 +394,13 @@ struct MetricDetailView: View {
             Text(asOf)
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.inkTertiary)
+            // FER-670: when a second source reported the shown day (steps / sleep total / active kcal),
+            // say whether they agree — both values stay visible, a conflict is flagged, never averaged.
+            if let day = latest?.day,
+               let agreement = repo.fusionPoint(day: day, metric: metric.key) {
+                FusionAgreementRow(point: agreement, theme: theme, format: fmt)
+                    .padding(.top, 2)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)

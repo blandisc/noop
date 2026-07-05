@@ -71,6 +71,11 @@ struct MetricDetailScreen: View {
     /// in-progress current day for a cumulative metric (steps). nil → nothing is dropped. (FER-264)
     var todayKey: String? = nil
 
+    /// FER-670: today's fused single-construct point for THIS metric (steps today) — drives the quiet
+    /// source-agreement row under the hero ("coinciden / en conflicto"). nil (one source, or a metric
+    /// the fusion engine doesn't arbitrate) shows nothing; the caller reads `repo.fusionPoint`.
+    var fusion: FusedMetricPoint? = nil
+
     enum Depth { case focus, full }
 
     /// The «Tu historia» chart view for metrics with population ranges. (Detalle de Vital)
@@ -407,6 +412,12 @@ struct MetricDetailScreen: View {
                 }
             }
             if loaded { heroSecondary }
+            // FER-670: when a second source reported today, say whether they agree — both values stay
+            // visible, a conflict is flagged, nothing is averaged.
+            if loaded, let fusion {
+                FusionAgreementRow(point: fusion, theme: theme, format: fmt)
+                    .padding(.top, 2)
+            }
             if let reading = readingCopy(for: .header) {
                 Text(reading)
                     .font(StrandFont.caption)

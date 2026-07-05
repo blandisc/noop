@@ -795,16 +795,29 @@ struct SleepDetailScreen: View {
     // MARK: - 8. Footer — fuente del dato (la fuente migró aquí desde el contexto del héroe)
 
     private var sourceFooter: some View {
-        HStack(spacing: 6) {
-            Image(systemName: model.isAppleHealth ? "heart.fill" : "antenna.radiowaves.left.and.right")
-                .font(.system(size: 10))
-                .foregroundStyle(theme.inkTertiary)
-            Text(model.isAppleHealth ? "From Apple Health" : "From your band, on your device")
-                .font(StrandFont.footnote)
-                .foregroundStyle(theme.inkTertiary)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: model.isAppleHealth ? "heart.fill" : "antenna.radiowaves.left.and.right")
+                    .font(.system(size: 10))
+                    .foregroundStyle(theme.inkTertiary)
+                Text(model.isAppleHealth ? "From Apple Health" : "From your band, on your device")
+                    .font(StrandFont.footnote)
+                    .foregroundStyle(theme.inkTertiary)
+            }
+            .accessibilityElement(children: .combine)
+            // FER-670: when band AND Apple both reported this night, say whether they agree — both
+            // totals stay visible, a conflict is flagged, nothing is averaged.
+            if let agreement = model.sourceAgreement {
+                FusionAgreementRow(point: agreement, theme: theme, format: Self.hoursMinutes)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
+    }
+
+    /// "7 h 05 m" for a minutes value — the agreement row's sleep-total unit.
+    private static func hoursMinutes(_ minutes: Double) -> String {
+        let m = Int(minutes.rounded())
+        return "\(m / 60) h \(String(format: "%02d", m % 60)) m"
     }
 
     // MARK: - Empty state (ported from the old sleep screen)
@@ -1073,6 +1086,9 @@ struct SleepDetailModel {
     let intervals: [SleepInterval]
     /// The night came from Apple Health (no clock, no per-epoch timeline). Hides the onset–wake clock.
     let isAppleHealth: Bool
+    /// FER-670: the fused sleep-total point for the displayed night's day — nil unless BOTH the band
+    /// and Apple Health reported that night. Drives the "coinciden / en conflicto" line in the footer.
+    let sourceAgreement: FusedMetricPoint?
     /// Whether the repo finished its first load (drives the empty-state copy: loading vs no-data).
     let loaded: Bool
 
@@ -1146,7 +1162,8 @@ struct SleepDetailModel {
                       importedSleep: [String: ImportedSleepFigures],
                       appleHealthDays: Set<String>,
                       loaded: Bool,
-                      todayKey: String) -> SleepDetailModel {
+                      todayKey: String,
+                      fusion: [String: [String: FusedMetricPoint]] = [:]) -> SleepDetailModel {
         // Ignore any future-dated row: a daily can be bucketed under "tomorrow" in UTC (FER-226),
         // and a `.last` read would surface that empty row as "last night". Anchor to the device's
         // local day, mirroring StressModel (FER-224) / ReadinessEngine.
@@ -1274,6 +1291,9 @@ struct SleepDetailModel {
             night: night,
             intervals: intervals,
             isAppleHealth: isApple,
+            // FER-670: the source-agreement point for the displayed night's day (the same `latestDay`
+            // the other night metrics read) — non-nil only when band AND Apple reported that night.
+            sourceAgreement: latestDay.flatMap { fusion[$0.day]?["sleep_total_min"] },
             loaded: loaded,
             regularity: regularity,
             regularityNights: regularityNights,
