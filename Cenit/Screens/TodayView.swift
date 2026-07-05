@@ -2312,6 +2312,11 @@ struct TodayView: View {
                 metricDetail = .sleep(sleep.map { Int($0.value.rounded()) })
             }
         }
+        // `fixedSize(vertical:)` acota la fila a su alto NATURAL (el de la pill más alta), en vez de dejarla
+        // crecer al alto que le propone la página del pager. Sin esto, el `maxHeight: .infinity` de cada pill
+        // —que las iguala entre sí— las estiraba a TODA la altura disponible. Con el clamp, las tres quedan
+        // parejas y compactas.
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     /// Una pill del Vistazo, envuelta en su `Button` tocable (mismo realce que los tiles). El delta vs media
