@@ -91,6 +91,13 @@ public enum SleepStager {
     /// Local hour (exclusive) at which the stricter daytime bar ends. A window whose center
     /// is in [start, end) local hours is "daytime"; everything else is "overnight".
     public static let daytimeBandEndHour: Int = 20
+    /// A still sleep run that resumes within this gap of an overnight sleep chain is the
+    /// night's TAIL — a late wake past the daytime-band start, or a brief morning stir then
+    /// back to sleep — not an isolated daytime nap, so it skips the daytime guard. Without
+    /// this, a real sleep that ran past ~11:00 local had its tail rejected as a "nap" and the
+    /// displayed wake time was truncated to late morning (late sleepers / shift workers).
+    // Reimplemented from @vulnix0x4's PR #353.
+    public static let nightContinuationGapMin: Int = 90
     /// A daytime window must run at least this long (minutes) to count — short still
     /// daytime stretches are the dominant false-positive and are rejected outright.
     public static let daytimeMinSleepMin: Int = 90
@@ -108,6 +115,107 @@ public enum SleepStager {
     public static let hrRefineMinSamples: Int = 30
     /// Consecutive sleep epochs required to declare onset.
     public static let onsetPersistEpochs: Int = 3
+
+    // MARK: - H4 physiological in-bed span cap (#547 / #531 / #509 / tail)
+
+    /// Maximum plausible in-bed span (seconds) for a SINGLE assembled main-sleep run. No real single night
+    /// runs longer than this: a 12 h+ "sleep" is a bad-clock artefact (a stale/duplicated timestamp range,
+    /// or a strap that banked one frozen still stretch under a wrong clock) reading as one enormous still
+    /// block — which then reports a 12 h sleep and poisons Rest / the debt ledger / the headline. 16 h is
+    /// well above any genuine night (incl. recovery/illness sleeps and late weekend lie-ins) yet below the
+    /// clock-artefact range. A run whose span exceeds this is DROPPED (not silently truncated to 16 h, which
+    /// would fabricate a wake time): an over-long block is not trustworthy enough to assert a span for at
+    /// all. (#547 / #531 / #509 tail)
+    public static let maxMainSleepSpanS: Int = 16 * 60 * 60
+
+    // MARK: - H7 morning-stillness nap suppression (#531)
+
+    // After a real overnight wake the wrist is often still (sitting with coffee, back in bed scrolling, a
+    // sofa) for a stretch the gravity spine reads as a fresh "nap" — #531's 9 am phantom nap right after
+    // the night ended. It is NOT a night-tail continuation (that is handled by `nightContinuationGapMin` and
+    // exempted), and it can clear the ordinary daytime guard (it is long + the post-wake HR is still low), so
+    // it slipped through. H7 holds a daytime block that BEGINS within `morningStillnessWindowMin` of the
+    // just-detected overnight wake to a STRONGER bar than an ordinary daytime nap: it must show a genuine
+    // SUSTAINED re-onset — a real second sleep dips clearly below the day median, not merely near it.
+
+    /// A daytime block whose onset falls within this many minutes AFTER an overnight chain's wake is treated
+    /// as suspected morning residual stillness and held to the stronger re-onset bar below. ~3 h covers the
+    /// post-wake window where residual stillness masquerades as a nap; a genuine afternoon nap (hours later)
+    /// is past it and faces only the ordinary daytime guard. (#531)
+    public static let morningStillnessWindowMin: Int = 180
+
+    /// The stronger resting-HR bar (× day baseline) a suspected-morning-stillness block must clear to be kept
+    /// as a real re-onset. Stricter than the ordinary daytime `daytimeRestingHRMult` (0.95): residual waking
+    /// stillness keeps a near-waking HR, so only a block that dips clearly (a true second sleep) survives.
+    public static let morningReonsetRestingHRMult: Double = 0.90
+
+    /// The persisted v18 BAND sleep_state value that means "asleep" (Interpreter's `(sb>>4)&3`: 0 wake /
+    /// 1 still / 2 asleep / 3 up). The strap's OWN scored band state — an independent anchor we CONSUME to
+    /// confirm a borderline morning re-onset (H7) without re-deriving anything. (#531 / H8 consume)
+    public static let bandStateAsleep: Int = 2
+
+    /// Fraction of a suspected-morning-stillness block's epochs whose persisted band sleep_state must read
+    /// "asleep" (`bandStateAsleep`) for the strap's OWN signal to CONFIRM a genuine re-onset and KEEP the
+    /// block even when its HR dip is borderline. A real second sleep the strap itself scored asleep is a
+    /// strong, honest anchor; a residual-stillness false nap reads "still"/"up", not "asleep". ≥0.6 keeps
+    /// this conservative. (H8 consume)
+    public static let morningReonsetBandAsleepFrac: Double = 0.6
+
+    // MARK: - Off-wrist backstop (#500)
+
+    // A wrist-OFF stretch reads as perfectly still gravity with no contrary motion, so the gravity spine
+    // classifies it as sleep — and because the off-wrist epochs carry zero/missing HR the daytime guard
+    // treats them as "missing data" and lets them through (a daytime desk-off strap logged a phantom sleep).
+    // The backstop measures OFF-WRIST COVERAGE: while the strap is worn it emits ~1 Hz HR, so a long
+    // CONTIGUOUS gap in the HR samples spanning part of a candidate sleep run is a strong off-wrist proxy
+    // that works even when explicit WRIST_OFF events are absent; explicit WRIST_OFF→WRIST_ON intervals (when
+    // the store surfaces them) sharpen it. A run is dropped only when that coverage reaches
+    // maxOffWristSleepFraction of its duration (the FRACTIONAL rule from j0b-dev's #504), so a real night
+    // that over-extends into a SHORT off-wrist tail survives. This is independent of the daytime band, and a
+    // night-tail continuation does NOT exempt it.
+
+    /// A contiguous HR-sample gap of at least this many minutes contributes to a candidate run's off-wrist
+    /// coverage. Sized at maxGapMin so a real worn night (dense ~1 Hz HR, or PPG-derived HR on a 5/MG)
+    /// contributes ~no gap, but a wrist-off stretch (HR flatlines to no samples) contributes its whole span.
+    public static let offWristHRGapMin: Int = 20
+
+    /// FRACTIONAL off-wrist rejection (#500), design credited to j0b-dev's #504 analysis. A candidate sleep
+    /// run is dropped ONLY when its off-wrist coverage — the UNION of its long HR-gap spans and any
+    /// WRIST_OFF→WRIST_ON intervals overlapping it — is at least this fraction of its duration. 0.5 keeps a
+    /// real night that over-extends into a SHORT (<50%) off-wrist morning tail while still dropping an
+    /// all-day desk strap (≈100% gap) or a session genuinely spent off-wrist.
+    public static let maxOffWristSleepFraction: Double = 0.5
+
+    /// Minimum average HR-stream density for the off-wrist HR-gap proxy to be trusted (#507). The proxy reads
+    /// a >`offWristHRGapMin`-minute hole in HR as "off the wrist" — valid only when HR is otherwise dense
+    /// (live 5/MG, or a worn night with continuous HR), so a real gap is anomalous. A WHOOP 4.0's SYNCED
+    /// night is reconstructed mostly from MOTION with sparse, derived HR, whose natural gaps would otherwise
+    /// read as off-wrist and wrongly DROP a real night. So if the HR stream averages fewer than one sample
+    /// per this many seconds, we don't assert off-wrist from gaps at all (WRIST_OFF events still apply).
+    static let hrDenseSpacingS: Int = 600   // one HR sample per 10 minutes, averaged over the stream
+
+    // MARK: - Sparse-gravity robustness (#308)
+
+    // On an un-unlocked WHOOP 5.0 the strap backfills mostly v18/v26 records where gravity is sparse/clumped
+    // (~25% coverage), so the gravity-only Stage-0 spine fragments the night at every >maxGapMin gravity gap
+    // and detectSleep drops every <minSleepMin fragment — collapsing a ~6 h night to ~1 h. The fix lets a
+    // pure gravity gap NOT break a sleep run when HR stays in the sleep band across it, and bridges runs
+    // fragmented by such gaps, GATED ENTIRELY behind a "gravity is sparse" condition so dense WHOOP-4.0
+    // nights stay BYTE-IDENTICAL (a 4.0 regression is unacceptable).
+
+    /// Gravity is "sparse" when its timespan covers less than this fraction of the HR-sample timespan. A
+    /// dense 4.0 night has gravity spanning the whole HR window (≈1.0) and never trips this; a 5.0 backfill
+    /// clumps gravity into a fraction of the night.
+    public static let sparseGravitySpanFrac: Double = 0.5
+    /// When sparse, HR drives the in-bed spine: an HR sample is "sleep-band" when its bpm ≤ baseline × this.
+    /// Reuses the overnight HR-confirmation multiplier so the band is the same one detectSleep already
+    /// trusts to confirm a run.
+    public static let hrSleepBandMult: Double = hrSleepBaselineMult
+    /// When sparse, two adjacent sleep runs separated ONLY by a gravity gap up to this many minutes are
+    /// merged if the intervening HR stays in the sleep band — so a real night is not shredded into
+    /// sub-minSleepMin fragments by gravity dropouts. Sized at the daytime-nap floor (a real continuous night
+    /// never has a true >90 min wake bridge mid-sleep).
+    public static let sparseBridgeGapMin: Int = 90
 
     // MARK: - Stage 1–3 constants (sleep_features.py)
 
@@ -180,6 +288,53 @@ public enum SleepStager {
         return max(minWindowSamples, Int(Double(stillWindowMin * 60) / interval))
     }
 
+    // MARK: - Sparse-gravity gate (#308)
+
+    /// Largest spacing between consecutive timestamps (seconds), NO upper cap; 0 for <2 samples.
+    /// Used to detect clumped/sparse gravity where the dropouts themselves are the signal: a few
+    /// long dropouts in otherwise-dense (clumped) motion keep the MEDIAN gap small but still break
+    /// runs, so the largest gap — not the median — is the right signal (#28).
+    static func largestGapS(_ times: [Int]) -> Double {
+        guard times.count >= 2 else { return 0 }
+        var mx = 0.0
+        for i in 0..<(times.count - 1) {
+            let g = Double(times[i + 1] - times[i])
+            if g > mx { mx = g }
+        }
+        return mx
+    }
+
+    /// True when gravity is too sparse for the gravity-only spine to be trusted across gaps:
+    /// the gravity timespan covers < sparseGravitySpanFrac of the HR-sample timespan, OR the
+    /// LARGEST gravity inter-sample gap exceeds maxGapMin. The largest-gap test (not just the
+    /// median) catches CLUMPED motion — dense bursts split by a few long dropouts, the typical
+    /// WHOOP 4.0 backfill (#28) — whose median gap stays small yet which still hides run-breaking
+    /// gaps. Requires a real HR span to compare against — with no/degenerate HR the dense path is
+    /// kept (false), so a 4.0 with absent HR is never reclassified as sparse.
+    static func isGravitySparse(_ grav: [GravitySample], hr: [HRSample]) -> Bool {
+        if grav.count < 2 || hr.count < 2 { return false }
+        let hrSpan = Double(hr[hr.count - 1].ts - hr[0].ts)
+        if hrSpan <= 0 { return false }
+        let gravSpan = Double(grav[grav.count - 1].ts - grav[0].ts)
+        if gravSpan < sparseGravitySpanFrac * hrSpan { return true }
+        // #28: clumped 4.0 motion keeps a SMALL median gap yet still contains >maxGapMin dropouts
+        // the gravity-only spine shreds the night on. The largest gap catches what a median would
+        // miss (largest ≥ median, so this subsumes the old median check). Flagging sparse only
+        // ENABLES buildRuns' HR-vouched bridge — a real wake (HR above the sleep band) still breaks.
+        return largestGapS(grav.map { $0.ts }) > Double(maxGapMin * 60)
+    }
+
+    /// True when HR stays in the sleep band (≤ baseline × hrSleepBandMult) across (a, b], used to
+    /// decide whether a pure gravity gap is a real wake or just a dropout. With no baseline or no
+    /// HR in the interval, the answer is false (cannot vouch for the gap → treat as a real break).
+    static func hrSleepBandAcross(_ a: Int, _ b: Int, hr: [HRSample], baseline: Double?) -> Bool {
+        guard let baseline = baseline else { return false }
+        let seg = hr.filter { $0.ts > a && $0.ts <= b }
+        if seg.isEmpty { return false }
+        let meanHR = Double(seg.reduce(0) { $0 + $1.bpm }) / Double(seg.count)
+        return meanHR <= baseline * hrSleepBandMult
+    }
+
     /// Per-record sleep flags from a rolling fraction of "still" samples.
     static func classifyStill(_ grav: [GravitySample], _ deltas: [Double]) -> [Bool] {
         let n = grav.count
@@ -205,7 +360,13 @@ public enum SleepStager {
 
     /// Collapse per-record flags into contiguous runs, breaking on class change
     /// or a gap > maxGapMin minutes.
-    static func buildRuns(_ grav: [GravitySample], _ flags: [Bool]) -> [Period] {
+    ///
+    /// When `sparse` (gravity is too clumped to bridge gaps — #308), a PURE gravity data-gap
+    /// (no contrary motion) does NOT close a SLEEP run while HR stays in the sleep band across
+    /// the gap: the strap simply banked no motion there, not a wake. A class change always still
+    /// closes the run, and the dense path (`sparse == false`) is byte-identical to the original.
+    static func buildRuns(_ grav: [GravitySample], _ flags: [Bool],
+                          sparse: Bool = false, hr: [HRSample] = [], baseline: Double? = nil) -> [Period] {
         let n = grav.count
         if n == 0 { return [] }
         let times = grav.map { $0.ts }
@@ -219,7 +380,13 @@ public enum SleepStager {
                 close = true
             } else {
                 let classChanged = flags[i] != flags[runStart]
-                let gapExceeded = (times[i] - times[i - 1]) > maxGapS
+                var gapExceeded = (times[i] - times[i - 1]) > maxGapS
+                // Sparse override: a pure gravity gap (no class change) does not break a sleep
+                // run when HR stays in the sleep band across it — the gap is a dropout, not a wake.
+                if sparse && gapExceeded && !classChanged && flags[runStart]
+                    && hrSleepBandAcross(times[i - 1], times[i], hr: hr, baseline: baseline) {
+                    gapExceeded = false
+                }
                 close = classChanged || gapExceeded
             }
             if close {
@@ -264,6 +431,31 @@ public enum SleepStager {
             }
         }
         return merged
+    }
+
+    /// Sparse-gravity bridge (#308): merge two adjacent SLEEP runs separated ONLY by a gap up to
+    /// sparseBridgeGapMin minutes when the intervening HR stays in the sleep band — so a real night
+    /// fragmented by gravity dropouts is re-stitched into one continuous in-bed span BEFORE the
+    /// minSleepMin gate drops the pieces. Active runs and over-threshold gaps are left untouched;
+    /// the span between two bridged sleep runs (an "active"/gap run, if present) is absorbed.
+    /// A no-op when `sparse == false`, so the dense 4.0 path is unchanged.
+    static func bridgeSparseSleep(_ periods: [Period], sparse: Bool,
+                                  hr: [HRSample], baseline: Double?) -> [Period] {
+        if !sparse || periods.isEmpty { return periods }
+        let bridgeGapS = sparseBridgeGapMin * 60
+        var out: [Period] = []
+        for p in periods {
+            if let last = out.last, last.stage == "sleep", p.stage == "sleep" {
+                let gap = p.start - last.end
+                if gap >= 0 && gap <= bridgeGapS
+                    && hrSleepBandAcross(last.end, p.start, hr: hr, baseline: baseline) {
+                    out[out.count - 1] = Period(stage: "sleep", start: last.start, end: p.end)
+                    continue
+                }
+            }
+            out.append(p)
+        }
+        return out
     }
 
     // MARK: - HR refinement
@@ -318,6 +510,125 @@ public enum SleepStager {
         return Double(resting) <= baseline * daytimeRestingHRMult
     }
 
+    /// True when a run's ONSET (start), in LOCAL time, falls OUTSIDE the daytime band — i.e.
+    /// the sleep began at night, not during the day. Anchors a continuous-sleep chain: only a
+    /// chain that began overnight may carry its tail past the daytime-band start (a late wake).
+    static func isOvernightOnset(_ start: Int, tzOffsetSeconds: Int) -> Bool {
+        let local = start + tzOffsetSeconds
+        let secOfDay = ((local % secondsPerDay) + secondsPerDay) % secondsPerDay
+        let hour = secOfDay / 3_600
+        return !(hour >= daytimeBandStartHour && hour < daytimeBandEndHour)
+    }
+
+    /// H7 morning-stillness nap suppression (#531). Returns true = KEEP, false = REJECT, for a daytime block
+    /// `p` that begins shortly after a real overnight wake. `morningWakeEnd` is the end of the just-detected
+    /// OVERNIGHT chain (nil when the prior chain was not overnight, or there was none) — when `p.start` is
+    /// within `morningStillnessWindowMin` of it, the block is suspected morning residual stillness and must
+    /// clear the ORDINARY daytime guard AND show a SUSTAINED re-onset: its resting HR must dip below the
+    /// stronger `morningReonsetRestingHRMult × baseline` bar (a true second sleep, not near-waking stillness).
+    /// Outside the morning window this is a no-op (returns the plain daytime-guard result), so a genuine
+    /// afternoon nap is unaffected. (#531)
+    static func passesMorningStillnessGuard(_ p: Period, restingHR: Int?, baseline: Double?,
+                                            morningWakeEnd: Int?,
+                                            bandSleepState: [(ts: Int, state: Int)] = []) -> Bool {
+        // Only a daytime block beginning within the post-wake window of an overnight chain is suspected.
+        guard let wakeEnd = morningWakeEnd, p.start >= wakeEnd,
+              (p.start - wakeEnd) <= morningStillnessWindowMin * 60 else {
+            return passesDaytimeGuard(p, restingHR: restingHR, baseline: baseline)
+        }
+        // Suspected morning stillness needs at least the ordinary daytime guard (long enough + a real dip).
+        if !passesDaytimeGuard(p, restingHR: restingHR, baseline: baseline) { return false }
+        // CONSUME the strap's OWN banked band sleep_state (#531 / H8): if the strap itself scored this block
+        // predominantly "asleep", that is a strong independent re-onset anchor — KEEP it even on a borderline
+        // HR dip. This only ever RESCUES a block the strap says was real sleep; it never fabricates one.
+        if bandStateConfirmsAsleep(p, bandSleepState: bandSleepState) { return true }
+        // Otherwise require the clearly-deeper cardiac dip of a true second sleep.
+        guard let baseline = baseline, let resting = restingHR else { return false }
+        return Double(resting) <= baseline * morningReonsetRestingHRMult
+    }
+
+    /// CONSUME-side helper (#531 / H8): true when the strap's OWN persisted v18 band sleep_state over the
+    /// block `[p.start, p.end]` reads predominantly "asleep" (`bandStateAsleep`), at/above
+    /// `morningReonsetBandAsleepFrac` of the in-block samples — an independent confirmation of a real
+    /// re-onset. Empty/absent band state → false (no anchor → fall back to the HR bar); we never invent a
+    /// "asleep" reading the strap did not bank. Pure + deterministic. (#531 / H8 consume)
+    ///
+    /// NOTE (FER-662): NOOP does not decode the v18 BAND sleep_state yet, so the only live call site passes
+    /// `[]` and this returns false — the function is a wired-up anchor that becomes active the day the decode
+    /// lands, with no change here. Its logic is pinned by tests with synthetic band state.
+    static func bandStateConfirmsAsleep(_ p: Period, bandSleepState: [(ts: Int, state: Int)]) -> Bool {
+        let inBlock = bandSleepState.filter { $0.ts >= p.start && $0.ts <= p.end }
+        guard !inBlock.isEmpty else { return false }
+        let asleep = inBlock.reduce(0) { $0 + ($1.state == bandStateAsleep ? 1 : 0) }
+        return Double(asleep) / Double(inBlock.count) >= morningReonsetBandAsleepFrac
+    }
+
+    /// Off-wrist HR-gap spans (#500). The contiguous HR-coverage gaps of at least `offWristHRGapMin`
+    /// minutes WITHIN [p.start, p.end], as concrete `[start, end)` sub-intervals — a strong wrist-OFF
+    /// proxy. Worn, the strap streams ~1 Hz HR (or PPG-derived HR on a 5/MG), so a real night yields no
+    /// long gap; an off-wrist stretch flatlines to no HR samples and yields a span. The leading edge
+    /// (`p.start` → first in-run sample) and trailing edge (last in-run sample → `p.end`) count too,
+    /// and a run with NO in-run HR at all is one full-period gap. With NO HR data at all (no stream)
+    /// this returns [] (the gravity-only path is left to the existing guards — we can't assert
+    /// off-wrist without HR). These spans are UNIONed with the WRIST_OFF intervals by `offWristFraction`.
+    static func offWristHRGapSpans(_ p: Period, hr: [HRSample]) -> [(start: Int, end: Int)] {
+        if hr.isEmpty || p.end <= p.start { return [] }
+        // Density gate (#507): only trust the HR-gap off-wrist proxy when the HR STREAM is dense enough
+        // that a long gap is anomalous. A WHOOP 4.0 synced night is motion-reconstructed with sparse HR,
+        // so its natural gaps must NOT read as off-wrist (that wrongly dropped a real night). Judge over
+        // the whole stream so an off-wrist HOLE inside an otherwise dense, worn day (#500) is still caught.
+        let sortedAll = hr.sorted { $0.ts < $1.ts }
+        let streamSpan = sortedAll[sortedAll.count - 1].ts - sortedAll[0].ts
+        if streamSpan >= hrDenseSpacingS && hr.count < streamSpan / hrDenseSpacingS { return [] }
+        let gapS = offWristHRGapMin * 60
+        let seg = hr.filter { $0.ts >= p.start && $0.ts <= p.end }.sorted { $0.ts < $1.ts }
+        // No HR anywhere inside a run long enough to matter → the whole period is one gap.
+        if seg.isEmpty { return (p.end - p.start) >= gapS ? [(start: p.start, end: p.end)] : [] }
+        var spans: [(start: Int, end: Int)] = []
+        // Leading edge: run start to first sample.
+        if seg[0].ts - p.start >= gapS { spans.append((start: p.start, end: seg[0].ts)) }
+        // Interior: any gap between consecutive in-run samples.
+        for i in 1..<seg.count where seg[i].ts - seg[i - 1].ts >= gapS {
+            spans.append((start: seg[i - 1].ts, end: seg[i].ts))
+        }
+        // Trailing edge: last sample to run end.
+        if p.end - seg[seg.count - 1].ts >= gapS { spans.append((start: seg[seg.count - 1].ts, end: p.end)) }
+        return spans
+    }
+
+    /// Fractional off-wrist coverage of a candidate run [p.start, p.end] in [0, 1] (#500).
+    /// Design credited to j0b-dev's #504 analysis: instead of a binary drop on ANY HR gap or ANY single
+    /// WRIST_OFF blip, we measure how much of the run is off-wrist and let the caller drop it only past
+    /// `maxOffWristSleepFraction`. Coverage = (length of the UNION of) the HR-gap spans (`offWristHRGapSpans`)
+    /// AND the supplied WRIST_OFF→WRIST_ON `wristOff` intervals, clipped to the run, divided by duration.
+    /// Unioning avoids double-counting overlapping gap+event time. A real night with a small (<50%)
+    /// off-wrist tail scores low and is kept; an all-day desk strap (HR-gap ≈100%, no events needed) or a
+    /// session genuinely spent off the wrist scores high and is dropped.
+    static func offWristFraction(_ p: Period, hr: [HRSample], wristOff: [(start: Int, end: Int)]) -> Double {
+        let dur = p.end - p.start
+        if dur <= 0 { return 0 }
+        // Collect every off-wrist span, clipped to the run: HR-gap proxy spans + explicit wrist-off events.
+        var spans = offWristHRGapSpans(p, hr: hr)
+        for w in wristOff {
+            let s = max(w.start, p.start), e = min(w.end, p.end)
+            if e > s { spans.append((start: s, end: e)) }
+        }
+        if spans.isEmpty { return 0 }
+        // Union the spans so overlapping gap+event time is counted once, then sum the covered length.
+        spans.sort { $0.start < $1.start }
+        var covered = 0, curStart = spans[0].start, curEnd = spans[0].end
+        for sp in spans.dropFirst() {
+            if sp.start <= curEnd {
+                curEnd = max(curEnd, sp.end)              // overlapping/adjacent → extend
+            } else {
+                covered += curEnd - curStart             // disjoint → bank the run
+                curStart = sp.start; curEnd = sp.end
+            }
+        }
+        covered += curEnd - curStart
+        return Double(covered) / Double(dur)
+    }
+
     // MARK: - detectSleep (public)
 
     /// Detect sleep sessions from biometric streams. Empty/absent gravity → [].
@@ -327,11 +638,19 @@ public enum SleepStager {
     /// used ONLY to place each window's center on a LOCAL clock for the daytime
     /// false-sleep guard (#90). It defaults to 0 so the pure function and its tests stay
     /// UTC; the live call site (IntelligenceEngine) passes the device's real offset.
+    ///
+    /// `wristOff` and `bandSleepState` are OPTIONAL robustness inputs (FER-662, default empty). When
+    /// absent, the off-wrist backstop falls back to its HR-gap proxy and the morning-stillness guard to
+    /// its HR bar — so every existing caller keeps identical behavior. The sparse-gravity robustness
+    /// (#308), the 16 h span cap, the off-wrist backstop and the night-tail / morning-stillness handling
+    /// are all gated behind `sparse`/flags so a dense WHOOP 4.0 night is byte-identical.
     public static func detectSleep(hr: [HRSample] = [],
                                    rr: [RRInterval] = [],
                                    resp: [RespSample] = [],
                                    gravity: [GravitySample],
-                                   tzOffsetSeconds: Int = 0) -> [SleepSession] {
+                                   tzOffsetSeconds: Int = 0,
+                                   wristOff: [(start: Int, end: Int)] = [],
+                                   bandSleepState: [(ts: Int, state: Int)] = []) -> [SleepSession] {
         let grav = gravity.sorted { $0.ts < $1.ts }
         if grav.count < 2 { return [] }
 
@@ -339,31 +658,74 @@ public enum SleepStager {
         let rrS = rr.sorted { $0.ts < $1.ts }
         let respS = resp.sorted { $0.ts < $1.ts }
 
+        let baseline = hrBaseline(hrS)
+        // Sparse-gravity gate (#308): an un-unlocked WHOOP 5.0 backfills mostly v18/v26 records where
+        // gravity is clumped (~25% coverage), so the gravity-only spine fragments the night. ONLY when
+        // sparse do the sparse robustness branches engage; a dense 4.0 night is `false` here and follows
+        // the exact original path (byte-identical).
+        let sparse = isGravitySparse(grav, hr: hrS)
+
         let deltas = gravityDeltas(grav)
         let flags = classifyStill(grav, deltas)
-        var runs = buildRuns(grav, flags)
+        var runs = buildRuns(grav, flags, sparse: sparse, hr: hrS, baseline: baseline)
         runs = mergePeriods(runs)
+        // Re-stitch sleep runs fragmented by pure gravity dropouts (sparse only) before minSleepMin.
+        runs = bridgeSparseSleep(runs, sparse: sparse, hr: hrS, baseline: baseline)
 
-        let baseline = hrBaseline(hrS)
         let minSleepS = minSleepMin * 60
 
         var sessions: [SleepSession] = []
+        // Continuous-sleep chain tracking so a real overnight sleep that runs PAST the daytime-band
+        // start (a late wake, or a brief morning stir then back to sleep that leaves the tail as its own
+        // daytime-centered run) is NOT mistaken for an isolated daytime nap and rejected. A daytime run
+        // skips the nap guard ONLY when it directly continues (≤ nightContinuationGap) a chain that BEGAN
+        // overnight; isolated daytime stillness (hours after waking) still faces the full guard.
+        // Reimplemented from @vulnix0x4's PR #353.
+        let continuationGapS = nightContinuationGapMin * 60
+        var chainPrevEnd: Int? = nil       // end of the last accepted sleep run
+        var chainFromOvernight = false     // did the current contiguous chain begin overnight?
         for p in runs {
             if p.stage != "sleep" { continue }
             if (p.end - p.start) <= minSleepS { continue }
+            // H4 physiological in-bed span cap (#547/#531/#509 tail): a single assembled main-sleep run
+            // longer than ~16 h is a bad-clock artefact (a frozen still stretch banked under a stale/wrong
+            // clock), not a real night. Drop it rather than report (or truncate to) a 12 h+ "sleep".
+            if (p.end - p.start) > maxMainSleepSpanS { continue }
             if !confirmSleepWithHR(p, hr: hrS, baseline: baseline) { continue }
-            // Daytime false-sleep guard (#90): a window centered in the local daytime band
-            // must clear a stricter bar (≥daytimeMinSleepMin AND a real resting-HR dip).
-            // Overnight windows skip this entirely. restingHR is computed here (reused below).
+            // Off-wrist backstop (#500), FRACTIONAL rule: a wrist-OFF stretch is still gravity with no HR,
+            // so it slips past both the gravity spine and the daytime guard's "missing data" path. Measure
+            // off-wrist COVERAGE — the union of the run's long HR-coverage gaps and any WRIST_OFF intervals
+            // overlapping it — and drop the run only when that reaches maxOffWristSleepFraction. Checked
+            // BEFORE the night-tail exemption: off-wrist time is off-wrist day or night and must NOT ride a
+            // continuation chain. It does NOT re-anchor the chain (the run is simply skipped).
+            let offFrac = offWristFraction(p, hr: hrS, wristOff: wristOff)
+            if offFrac >= maxOffWristSleepFraction { continue }
+            // Daytime false-sleep guard (#90) + H7 morning-stillness suppression (#531): a window centered
+            // in the local daytime band must clear a stricter bar. Overnight windows skip this entirely.
+            // restingHR is computed here (reused below).
             let resting = sessionRestingHR(start: p.start, end: p.end, hr: hrS)
-            if isDaytimeCenter(p, tzOffsetSeconds: tzOffsetSeconds),
-               !passesDaytimeGuard(p, restingHR: resting, baseline: baseline) { continue }
+            let continuesChain = chainPrevEnd.map { p.start - $0 <= continuationGapS } ?? false
+            let isNightTail = continuesChain && chainFromOvernight   // the night's tail, not a nap
+            // When the prior accepted chain BEGAN overnight, its wake (`chainPrevEnd`) anchors the
+            // morning-stillness window; a daytime block within it that is NOT a night-tail must clear the
+            // STRONGER re-onset bar. Outside the window the guard is the ordinary daytime bar.
+            let morningWakeEnd = chainFromOvernight ? chainPrevEnd : nil
+            let isDaytime = isDaytimeCenter(p, tzOffsetSeconds: tzOffsetSeconds)
+            let passesMorning = isDaytime
+                ? passesMorningStillnessGuard(p, restingHR: resting, baseline: baseline,
+                                              morningWakeEnd: morningWakeEnd,
+                                              bandSleepState: bandSleepState)
+                : true
+            if isDaytime, !passesMorning, !isNightTail { continue }
             let stages = stageSession(start: p.start, end: p.end, grav: grav,
                                       hr: hrS, rr: rrS, resp: respS)
             let eff = efficiency(start: p.start, end: p.end, stages: stages)
             let avgHrv = sessionAvgHRV(start: p.start, end: p.end, rr: rrS, stages: stages)
             sessions.append(SleepSession(start: p.start, end: p.end, efficiency: eff,
                                          stages: stages, restingHR: resting, avgHRV: avgHrv))
+            // A run that does NOT continue the chain re-anchors it on this run's onset.
+            if !continuesChain { chainFromOvernight = isOvernightOnset(p.start, tzOffsetSeconds: tzOffsetSeconds) }
+            chainPrevEnd = p.end
         }
         sessions.sort { $0.start < $1.start }
         return sessions

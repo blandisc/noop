@@ -201,6 +201,211 @@ final class SleepStagerTests: XCTestCase {
         XCTAssertFalse(SleepStager.passesDaytimeGuard(p, restingHR: nil, baseline: nil))
     }
 
+    // MARK: - Sparse-gravity robustness (#308 / FER-662)
+
+    /// Still gravity emitted in `clumps` bursts of `clumpMin` minutes each, separated by
+    /// `gapMin`-minute gaps with NO gravity samples (the un-unlocked WHOOP 5.0 backfill shape).
+    private func clumpedStillGravity(start: Int, clumps: Int, clumpMin: Int, gapMin: Int) -> [GravitySample] {
+        var out: [GravitySample] = []
+        var t = start
+        for _ in 0..<clumps {
+            out += stillGravity(start: t, durationS: clumpMin * 60)
+            t += clumpMin * 60 + gapMin * 60   // advance past the clump AND the empty gap
+        }
+        return out
+    }
+
+    func testSparseGravityBridgesFragmentedNight() {
+        // 3 still clumps of 25 min split by 40-min gravity gaps (no gravity), HR continuous 50 bpm
+        // over the whole ~155-min overnight span. The gravity-only spine breaks at each >20-min gap
+        // into three sub-60-min fragments and drops them all → 0 sessions. The sparse path keeps the
+        // run open across a pure gravity gap while HR stays in the sleep band → one continuous night.
+        let start = nightStart(02)
+        let grav = clumpedStillGravity(start: start, clumps: 3, clumpMin: 25, gapMin: 40)
+        let spanS = (25 * 3 + 40 * 2) * 60
+        let hr = hrStream(start: start, durationS: spanS, bpm: 50)
+        XCTAssertTrue(SleepStager.isGravitySparse(grav, hr: hr), "clumped gravity must read as sparse")
+        let sessions = SleepStager.detectSleep(hr: hr, gravity: grav)
+        XCTAssertEqual(sessions.count, 1, "the fragmented night must be re-stitched into one session")
+        XCTAssertGreaterThan(sessions[0].end - sessions[0].start, 150 * 60)
+    }
+
+    func testDenseNightNotFlaggedSparseAndUnchanged() {
+        // Invariant: a dense 1 Hz night is never reclassified sparse, and detection is unchanged.
+        let start = nightStart(02)
+        let dur = 90 * 60
+        let grav = stillGravity(start: start, durationS: dur)
+        let hr = hrStream(start: start, durationS: dur, bpm: 50)
+        XCTAssertFalse(SleepStager.isGravitySparse(grav, hr: hr))
+        XCTAssertEqual(SleepStager.detectSleep(hr: hr, gravity: grav).count, 1)
+    }
+
+    func testIsGravitySparseNoHRIsDense() {
+        // A 4.0 night with absent/degenerate HR is never reclassified sparse (dense path kept).
+        let start = nightStart(02)
+        let clumped = clumpedStillGravity(start: start, clumps: 3, clumpMin: 25, gapMin: 40)
+        XCTAssertFalse(SleepStager.isGravitySparse(clumped, hr: []), "no HR → dense path, never sparse")
+        XCTAssertFalse(SleepStager.isGravitySparse(clumped, hr: [HRSample(ts: start, bpm: 50)]))
+    }
+
+    func testBuildRunsAndBridgeAreNoOpWhenDense() {
+        // The sparse override in buildRuns and bridgeSparseSleep must be inert when sparse == false:
+        // the clumped gravity splits into three sleep runs exactly as the original did.
+        let start = nightStart(02)
+        let grav = clumpedStillGravity(start: start, clumps: 3, clumpMin: 25, gapMin: 40)
+        let deltas = SleepStager.gravityDeltas(grav)
+        let flags = SleepStager.classifyStill(grav, deltas)
+        let dense = SleepStager.buildRuns(grav, flags)                       // old signature
+        let denseExplicit = SleepStager.buildRuns(grav, flags, sparse: false, hr: [], baseline: nil)
+        XCTAssertEqual(dense.count, 3, "dense buildRuns splits the clumps into three runs")
+        XCTAssertEqual(denseExplicit.count, dense.count)
+        // bridgeSparseSleep is a no-op when not sparse.
+        XCTAssertEqual(SleepStager.bridgeSparseSleep(dense, sparse: false, hr: [], baseline: nil).count, 3)
+        // ...and with sparse + in-band HR it stitches the three sleep runs into one.
+        let hr = hrStream(start: start, durationS: (25 * 3 + 40 * 2) * 60, bpm: 50)
+        XCTAssertEqual(SleepStager.bridgeSparseSleep(dense, sparse: true, hr: hr, baseline: 50).count, 1)
+    }
+
+    // MARK: - 16 h physiological span cap (#547 / FER-662)
+
+    /// Still gravity/HR every `stepS` seconds over a long span — coarse enough to keep the fixture
+    /// small, dense enough (`stepS` ≪ maxGapMin) that the night is NOT flagged sparse.
+    private func longStill(start: Int, hours: Int, stepS: Int, bpm: Int) -> ([GravitySample], [HRSample]) {
+        let dur = hours * 3_600
+        let grav = stride(from: 0, to: dur, by: stepS).map { GravitySample(ts: start + $0, x: 0, y: 0, z: 1.0) }
+        let hr = stride(from: 0, to: dur, by: stepS).map { HRSample(ts: start + $0, bpm: bpm) }
+        return (grav, hr)
+    }
+
+    func testOverlongBlockDroppedButUnderCapKept() {
+        // A single 17 h still block is a bad-clock artefact → dropped; a 15 h block is a long but
+        // plausible night → kept. Anchored at 20:00 so both centers stay overnight (out of [11,20)).
+        let (g17, h17) = longStill(start: startAtHour(20), hours: 17, stepS: 20, bpm: 50)
+        XCTAssertTrue(SleepStager.detectSleep(hr: h17, gravity: g17).isEmpty, "17 h > 16 h cap → dropped")
+        let (g15, h15) = longStill(start: startAtHour(20), hours: 15, stepS: 20, bpm: 50)
+        XCTAssertEqual(SleepStager.detectSleep(hr: h15, gravity: g15).count, 1, "15 h < 16 h cap → kept")
+    }
+
+    // MARK: - Off-wrist backstop (#500 / FER-662)
+
+    func testOffWristFractionUnionsSpans() {
+        // A run [0, 1000] with an HR hole (no samples in (100, 900]) → one ~900 s gap span, plus an
+        // overlapping WRIST_OFF event [800, 1000]; the union is counted once (not double).
+        let p = SleepStager.Period(stage: "sleep", start: 0, end: 1000)
+        // HR present only at the edges (dense enough stream span to pass the density gate).
+        let hr = (0...100).map { HRSample(ts: $0, bpm: 50) } + (901...1000).map { HRSample(ts: $0, bpm: 50) }
+        let frac = SleepStager.offWristFraction(p, hr: hr, wristOff: [(start: 800, end: 1000)])
+        // The interior HR gap is (100, 901] ≈ 800 s ≥ offWristHRGapMin(1200 s)? No — 800 s < 1200 s,
+        // so the HR-gap proxy contributes nothing; only the explicit 200 s wrist-off event counts.
+        XCTAssertEqual(frac, 200.0 / 1000.0, accuracy: 1e-9)
+    }
+
+    func testAllDayOffWristDroppedShortTailKept() {
+        // Overnight still gravity 3 h. When HR is present only for the first 30 min (off-wrist the
+        // rest), off-wrist coverage ≈ 83% ≥ 50% → dropped. When HR covers the first 2.5 h (30-min
+        // off-wrist tail), coverage ≈ 17% < 50% → kept.
+        let start = nightStart(01)
+        let dur = 3 * 60 * 60
+        let grav = stillGravity(start: start, durationS: dur)
+        let hrShort = hrStream(start: start, durationS: 30 * 60, bpm: 50)       // off-wrist 2.5 h
+        XCTAssertTrue(SleepStager.detectSleep(hr: hrShort, gravity: grav).isEmpty, "≈83% off-wrist → dropped")
+        let hrLong = hrStream(start: start, durationS: 150 * 60, bpm: 50)       // off-wrist 0.5 h
+        XCTAssertEqual(SleepStager.detectSleep(hr: hrLong, gravity: grav).count, 1, "≈17% off-wrist → kept")
+    }
+
+    // MARK: - Morning-stillness guard + band-state (#531 / FER-662)
+
+    func testMorningStillnessGuardHRBar() {
+        // A daytime block beginning within the morning window of an overnight wake must clear the
+        // STRONGER 0.90× re-onset bar, not the ordinary 0.95×. baseline 60: 0.90×=54, 0.95×=57.
+        let p = SleepStager.Period(stage: "sleep", start: 1_000, end: 1_000 + 120 * 60)  // 120 min ≥ daytime min
+        let wakeEnd = 1_000 - 10 * 60   // block starts 10 min after the overnight wake (within 180 min)
+        // resting 56 clears the ordinary daytime bar (≤57) but NOT the stronger morning bar (≤54) → reject.
+        XCTAssertFalse(SleepStager.passesMorningStillnessGuard(
+            p, restingHR: 56, baseline: 60, morningWakeEnd: wakeEnd))
+        // resting 53 clears the stronger bar → keep.
+        XCTAssertTrue(SleepStager.passesMorningStillnessGuard(
+            p, restingHR: 53, baseline: 60, morningWakeEnd: wakeEnd))
+        // With no overnight wake anchor, it's the ordinary daytime guard: 56 ≤ 57 → keep.
+        XCTAssertTrue(SleepStager.passesMorningStillnessGuard(
+            p, restingHR: 56, baseline: 60, morningWakeEnd: nil))
+    }
+
+    func testMorningStillnessBandStateRescue() {
+        // A borderline morning block (resting 56, fails the 0.90× HR bar) is RESCUED when the strap's
+        // own band sleep_state reads predominantly "asleep" (≥60% state==2) over the block.
+        let p = SleepStager.Period(stage: "sleep", start: 1_000, end: 1_000 + 120 * 60)
+        let wakeEnd = 1_000 - 10 * 60
+        let asleepState = stride(from: 1_000, through: 1_000 + 120 * 60, by: 60)
+            .map { (ts: $0, state: SleepStager.bandStateAsleep) }             // 100% asleep
+        XCTAssertTrue(SleepStager.passesMorningStillnessGuard(
+            p, restingHR: 56, baseline: 60, morningWakeEnd: wakeEnd, bandSleepState: asleepState),
+            "band-state asleep must rescue a borderline morning re-onset")
+        // Empty band state → no anchor → falls back to the HR bar → still rejected.
+        XCTAssertFalse(SleepStager.passesMorningStillnessGuard(
+            p, restingHR: 56, baseline: 60, morningWakeEnd: wakeEnd, bandSleepState: []))
+    }
+
+    func testBandStateConfirmsAsleepThreshold() {
+        let p = SleepStager.Period(stage: "sleep", start: 0, end: 100)
+        XCTAssertFalse(SleepStager.bandStateConfirmsAsleep(p, bandSleepState: []), "no band state → false")
+        // 6 of 10 asleep (0.6) meets the ≥0.6 threshold.
+        let sixtyPct = (0..<10).map { (ts: $0 * 10, state: $0 < 6 ? SleepStager.bandStateAsleep : 1) }
+        XCTAssertTrue(SleepStager.bandStateConfirmsAsleep(p, bandSleepState: sixtyPct))
+        // 5 of 10 (0.5) falls short.
+        let fiftyPct = (0..<10).map { (ts: $0 * 10, state: $0 < 5 ? SleepStager.bandStateAsleep : 1) }
+        XCTAssertFalse(SleepStager.bandStateConfirmsAsleep(p, bandSleepState: fiftyPct))
+    }
+
+    // MARK: - Night-tail continuation (#353 / FER-662)
+
+    func testIsOvernightOnset() {
+        XCTAssertTrue(SleepStager.isOvernightOnset(startAtHour(2), tzOffsetSeconds: 0))    // 02:00 → overnight
+        XCTAssertFalse(SleepStager.isOvernightOnset(startAtHour(13), tzOffsetSeconds: 0))  // 13:00 → daytime
+    }
+
+    func testNightTailPastDaytimeBandKept() {
+        // An overnight sleep (02:00) that continues, after a brief 15-min wake, into a daytime-centered
+        // tail (11:00, center ~11:45) is KEPT as the night's tail — not rejected as a nap — because it
+        // directly continues an overnight chain. The tail's HR sits at the day baseline, so it would
+        // FAIL the ordinary daytime guard: only the night-tail exemption saves it. An identical tail
+        // with no preceding overnight chain is rejected.
+        let step = 10
+        let sleepStart = startAtHour(02)
+        let sleepDur = 8 * 3_600 + 45 * 60           // 02:00 → 10:45
+        let wakeStart = sleepStart + sleepDur         // 10:45
+        let wakeDur = 15 * 60                          // 15-min real wake (class change splits the runs)
+        let tailStart = wakeStart + wakeDur           // 11:00
+        let tailDur = 90 * 60                          // 90 min, center ~11:45 → daytime band
+
+        func stillG(_ s: Int, _ d: Int) -> [GravitySample] {
+            stride(from: 0, to: d, by: step).map { GravitySample(ts: s + $0, x: 0, y: 0, z: 1.0) }
+        }
+        func activeG(_ s: Int, _ d: Int) -> [GravitySample] {
+            stride(from: 0, to: d, by: step).enumerated().map { (i, o) in
+                GravitySample(ts: s + o, x: Double(i % 2) * 0.5, y: 0, z: 1.0)
+            }
+        }
+        func hrG(_ s: Int, _ d: Int, _ bpm: Int) -> [HRSample] {
+            stride(from: 0, to: d, by: step).map { HRSample(ts: s + $0, bpm: bpm) }
+        }
+
+        let grav = stillG(sleepStart, sleepDur) + activeG(wakeStart, wakeDur) + stillG(tailStart, tailDur)
+        // Night 50, wake 90, tail 50 (= day baseline ⇒ fails the 0.95× daytime dip bar).
+        let hr = hrG(sleepStart, sleepDur, 50) + hrG(wakeStart, wakeDur, 90) + hrG(tailStart, tailDur, 50)
+
+        let withChain = SleepStager.detectSleep(hr: hr, gravity: grav)
+        XCTAssertEqual(withChain.count, 2, "overnight sleep + its daytime tail both register")
+        XCTAssertTrue(withChain.contains { $0.start >= tailStart && $0.start < tailStart + 10 * 60 },
+                      "the daytime tail is kept as the night's continuation")
+
+        // The SAME tail in isolation (no overnight chain) faces the full daytime guard and is rejected.
+        let tailOnlyGrav = stillG(tailStart, tailDur)
+        let tailOnlyHR = hrG(tailStart, tailDur, 50)
+        XCTAssertTrue(SleepStager.detectSleep(hr: tailOnlyHR, gravity: tailOnlyGrav).isEmpty,
+                      "an isolated daytime still block at day-baseline HR is rejected")
+    }
+
     // MARK: - Staging output integrity
 
     func testStagesTileSessionExactly() {
