@@ -652,6 +652,10 @@ struct LiveStrengthSheet: View {
                                 } label: { Label("Delete", systemImage: "trash") }
                             }
                     }
+                    // The rest card (1k) slots between this exercise's rows and the next, while resting here.
+                    if session.phase == .resting, ei == session.currentIndex, session.summary == nil {
+                        restInlineCard.plainRow(top: 4)
+                    }
                     addSetButton(ei).plainRow(top: 4)
                 }
             }
@@ -1088,6 +1092,136 @@ struct LiveStrengthSheet: View {
         .padding(.leading, 44)
     }
 
+    // MARK: - Inline rest card (1k, FER-716)
+
+    /// The rest card — the ONE surface in the flow that lifts off the paper (`floatShadow`), because it's
+    /// literally above the session's time. Slots between the marked set and the next; the table never
+    /// disappears. By-HR: the live pulse drops toward the threshold; by-time: a countdown. No strap on an
+    /// HR rest → it degrades to a capped timer with an honest notice (no dashes, no red).
+    @ViewBuilder private var restInlineCard: some View {
+        let hrMode = session.currentRestMode == .heartRate
+        VStack(alignment: .leading, spacing: 12) {
+            if hrMode, let started = session.restStartedAt {
+                TimelineView(.periodic(from: started, by: 1)) { ctx in
+                    let elapsed = max(0, Int(ctx.date.timeIntervalSince(started)))
+                    let v = RestReadinessRule.evaluate(
+                        currentHR: model.bpm, worn: model.live.worn, restingHR: restingBaseline,
+                        elapsedS: elapsed, targetHR: session.currentRestTarget)
+                    if v.state == .noSignal {
+                        restCardTimeBody(end: session.restEndsAt, now: ctx.date, noStrapFallback: true)
+                    } else {
+                        restCardHRBody(elapsed: elapsed, readiness: v)
+                    }
+                }
+                .sensoryFeedback(.success, trigger: model.bpm != nil && session.currentRestTarget != nil)
+            } else if let end = session.restEndsAt, let started = session.restStartedAt {
+                TimelineView(.periodic(from: started, by: 1)) { ctx in
+                    restCardTimeBody(end: end, now: ctx.date, noStrapFallback: false)
+                }
+            }
+            restCardPills
+        }
+        .padding(.horizontal, 17).padding(.vertical, 15)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+            .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+        .floatShadow(theme)
+        .padding(.horizontal, -4).padding(.vertical, 10)
+        .accessibilityElement(children: .combine)
+    }
+
+    /// By-HR rest body: the live pulse dropping toward the threshold, with a gradient track + ink tick.
+    private func restCardHRBody(elapsed: Int, readiness v: RestReadiness) -> some View {
+        let bpm = model.bpm ?? 0
+        let target = session.currentRestTarget
+        let ready = v.ready
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Resting · by HR").font(StrandFont.caption).fontWeight(.semibold)
+                    .tracking(0.8).textCase(.uppercase).foregroundStyle(theme.dataStrain)
+                Spacer()
+                Text("\(Self.clock(elapsed)) elapsed").font(StrandFont.caption).monospacedDigit()
+                    .foregroundStyle(theme.inkTertiary)
+            }
+            Text(ready ? String(localized: "Ready") : "\(bpm)")
+                .font(InstrumentoType.groteskRestPulse).tracking(InstrumentoType.groteskRestPulseTracking)
+                .monospacedDigit()
+                .foregroundStyle(theme.dataRecovery)
+                .contentTransition(.numericText())
+            restHRTrack(bpm: bpm, target: target)
+            if let target, !ready {
+                (Text(String(localized: "dropping toward "))
+                 + Text("\(target) lpm").foregroundColor(theme.dataRecovery).bold()
+                 + Text(" · " + String(localized: "the strap will buzz")))
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// The FC track: a linear scale from a warm start toward the threshold; the ink tick is the threshold
+    /// (position is the channel), the `dataHeart → dataRecovery` gradient reinforces hot → goal.
+    private func restHRTrack(bpm: Int, target: Int?) -> some View {
+        GeometryReader { geo in
+            let w = geo.size.width
+            // Progress toward ready: from a nominal peak (~target+40) down to the target.
+            let hi = Double((target ?? bpm) + 40)
+            let lo = Double(target ?? bpm)
+            let frac = hi > lo ? max(0, min(1, (hi - Double(bpm)) / (hi - lo))) : 1
+            ZStack(alignment: .leading) {
+                Capsule().fill(theme.hairline)
+                Capsule().fill(LinearGradient(colors: [theme.dataHeart, theme.dataRecovery],
+                                              startPoint: .leading, endPoint: .trailing))
+                    .frame(width: w * frac)
+                Rectangle().fill(theme.ink).frame(width: 2, height: 14)
+                    .offset(x: w - 1)   // threshold tick at the ready end
+            }
+        }
+        .frame(height: 6)
+    }
+
+    /// By-time rest body (also the no-strap fallback for an HR rest, capped at 5 min with a notice).
+    private func restCardTimeBody(end: Date?, now: Date, noStrapFallback: Bool) -> some View {
+        let cappedEnd = noStrapFallback ? min(end ?? now, (session.restStartedAt ?? now).addingTimeInterval(300)) : end
+        let remaining = cappedEnd.map { max(0, Int($0.timeIntervalSince(now).rounded(.up))) } ?? 0
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(noStrapFallback ? "Resting · by time" : "Resting")
+                    .font(StrandFont.caption).fontWeight(.semibold)
+                    .tracking(0.8).textCase(.uppercase).foregroundStyle(theme.dataStrain)
+                Spacer()
+            }
+            Text(Self.clock(remaining))
+                .font(InstrumentoType.groteskRestPulse).tracking(InstrumentoType.groteskRestPulseTracking)
+                .monospacedDigit()
+                .foregroundStyle(remaining == 0 ? theme.dataRecovery : theme.ink)
+                .contentTransition(.numericText())
+            if noStrapFallback {
+                Text("No strap signal: resting by time, 5 min cap")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var restCardPills: some View {
+        HStack(spacing: 10) {
+            Button { openRestEditor(ei: session.currentIndex) } label: {
+                Label("Change rest", systemImage: "pencil").font(StrandFont.caption).foregroundStyle(theme.ink)
+                    .padding(.horizontal, 13).padding(.vertical, 6)
+                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            Button { withAnimation(StrandMotion.gentle) { session.skipRest() } } label: {
+                Text("Skip").font(StrandFont.caption).foregroundStyle(theme.ink)
+                    .padding(.horizontal, 13).padding(.vertical, 6)
+                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            Spacer()
+        }
+    }
+
     /// The set-number badge — a non-interactive marker in the effort hue (FER-716: the Foco is gone; the
     /// row itself is the interactive surface). A ring with the set number.
     private func badge(ei: Int, si: Int, number: Int) -> some View {
@@ -1245,9 +1379,18 @@ struct LiveStrengthSheet: View {
         .accessibilityHint(Text("Expands the timer"))
     }
 
-    /// The done toggle (the datum's color — green when logged). 44pt touch target.
+    /// The done toggle (the datum's color — green when logged). 44pt touch target. Checking the ACTIVE
+    /// pending set registers it and starts the rest (FER-716: the rest card appears inline); any other
+    /// tap is a plain toggle (a correction that starts no rest).
     private func checkButton(ei: Int, si: Int, set: StrengthSessionModel.WorkingSet) -> some View {
-        Button { withAnimation(.snappy) { session.toggleDone(exercise: ei, set: si) } } label: {
+        let curSet = session.runs.indices.contains(ei) ? session.runs[ei].currentSet : -1
+        let isActivePending = ei == session.currentIndex && si == curSet && !set.done
+        return Button {
+            withAnimation(.snappy) {
+                if isActivePending { activeCell = nil; session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR) }
+                else { session.toggleDone(exercise: ei, set: si) }
+            }
+        } label: {
             Image(systemName: set.done ? "checkmark.circle.fill" : "circle")
                 .font(.system(size: 22))
                 .foregroundStyle(set.done ? theme.dataRecovery : theme.inkDim)
