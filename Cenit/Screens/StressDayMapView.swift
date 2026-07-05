@@ -19,7 +19,7 @@ struct StressDayMapBlock: View {
     var body: some View {
         InfoAccordion(
             title: "Stress through the day",
-            explanation: "We put your day's stress curve next to your events so you can see what your most and least activated moments coincided with. You choose which calendars are included; all-day events aren't matched to a moment. It reads coincidence, not cause — seeing two things together doesn't mean one caused the other. Everything is computed on your iPhone; nothing is shared.",
+            explanation: "We put your day's stress curve next to your events so you can see what your most and least activated moments coincided with. Here each moment is measured against your recent calm — your waking readings over about the last 7 days — so this maps when you spiked today, a different lens from the day's number above (your whole day vs your 30-day baseline). You choose which calendars are included; all-day events aren't matched to a moment. It reads coincidence, not cause — seeing two things together doesn't mean one caused the other. Everything is computed on your iPhone; nothing is shared.",
             accessibilityLabel: "Information about stress through the day",
             theme: theme
         ) {
