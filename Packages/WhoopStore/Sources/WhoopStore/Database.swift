@@ -576,6 +576,29 @@ extension WhoopStore {
                 t.column("ts", .integer).notNull()
             }
         }
+
+        // v25 (FER-712): body-clock phase for the "Tu reloj corporal" experimental surface. One
+        // structured record per local civil day, holding CircadianEngine's cosinor phase estimate.
+        // Written by the nightly IntelligenceEngine pass (the phase signal is the band's accelerometer
+        // rest-activity rhythm). PK (deviceId, day) ⇒ recomputing a day is an idempotent upsert.
+        // `confidence` is the raw PhaseConfidence string; WhoopStore keeps no dependency on
+        // StrandAnalytics (the app layer translates). Append-only: brand-new table, touches no prior
+        // migration.
+        migrator.registerMigration("v25") { db in
+            try db.create(table: "circadianPhase") { t in
+                t.column("deviceId", .text).notNull()        // source partition (consistent w/ schema)
+                t.column("day", .text).notNull()             // YYYY-MM-DD (local civil day)
+                t.column("tempMinHour", .double).notNull()   // estimated body-temp minimum clock hour
+                t.column("acrophaseHours", .double).notNull()// activity acrophase (peak), 0..<24
+                t.column("offsetMinutes", .double).notNull() // CENTERED lean vs schedule (bias removed)
+                t.column("confidence", .text).notNull()      // unreadable | wide | solid
+                t.column("daysObserved", .integer).notNull() // days backing the fit → UI confidence
+                t.column("bedtimeHour", .double)             // suggested sleep-window hour (nullable)
+                t.column("wakeHour", .double)                // habitual wake used (nullable)
+                t.column("computedAt", .integer).notNull()   // unix seconds
+                t.primaryKey(["deviceId", "day"])            // ≤ 1 record/day ⇒ idempotent upsert
+            }
+        }
         return migrator
     }
 }

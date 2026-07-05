@@ -62,7 +62,7 @@ final class MigrationTests: XCTestCase {
                               "\(table) keeps synced (not rebuilt)")
             }
         }
-        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 24)
+        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 25)
     }
 
     /// v23 (FER-531): the weekly-split table exists with `weekday` as its PRIMARY KEY (one routine per
@@ -111,7 +111,35 @@ final class MigrationTests: XCTestCase {
         }
         let pk = try await store.primaryKeyColumns("exerciseTypeOverride")
         XCTAssertEqual(pk, ["exerciseId"], "exerciseId is the PK → at most one override per exercise")
-        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 24)
+    }
+
+    /// v25 (FER-712): the circadianPhase table exists with a (deviceId, day) composite PK (≤ 1 record per
+    /// day), append-only — every prior table still stands.
+    func testV25CreatesCircadianPhaseTableAppendOnly() async throws {
+        let store = try await WhoopStore.inMemory()   // migrated to v25
+        let tables = try await store.tableNames()
+        XCTAssertTrue(tables.contains("circadianPhase"), "v25 must create circadianPhase")
+        for prior in ["hrSample", "experiment", "exerciseTypeOverride", "routineSchedule"] {
+            XCTAssertTrue(tables.contains(prior), "v25 is append-only — \(prior) must survive")
+        }
+        let pk = try await store.primaryKeyColumns("circadianPhase")
+        XCTAssertEqual(pk, ["deviceId", "day"], "PK is (deviceId, day) → at most one record per day")
+        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 25)
+    }
+
+    /// v25 upsert is idempotent by (deviceId, day): writing the same day twice keeps one row, latest wins.
+    func testV25UpsertIsIdempotentPerDay() async throws {
+        let store = try await WhoopStore.inMemory()
+        let first = CircadianPhaseRow(day: "2026-07-05", tempMinHour: 5.5, acrophaseHours: 15,
+                                      offsetMinutes: 23, confidence: "solid", daysObserved: 20,
+                                      bedtimeHour: 23.3, wakeHour: 7, computedAt: 1)
+        try await store.upsertCircadianPhase(first, deviceId: "dev")
+        let updated = CircadianPhaseRow(day: "2026-07-05", tempMinHour: 4.0, acrophaseHours: 13,
+                                        offsetMinutes: -30, confidence: "wide", daysObserved: 9,
+                                        bedtimeHour: 22.0, wakeHour: 7, computedAt: 2)
+        try await store.upsertCircadianPhase(updated, deviceId: "dev")
+        let latest = try await store.latestCircadianPhase(deviceId: "dev")
+        XCTAssertEqual(latest, updated)   // second write overwrote the first, not appended
     }
 
     /// v24 preserves existing data: seed a custom exercise at v23, migrate to v24, assert it survives and
