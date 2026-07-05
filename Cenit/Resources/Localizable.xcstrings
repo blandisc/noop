@@ -846,6 +846,23 @@
         }
       }
     },
+    "%@ · recent vs. your usual": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · recent vs. your usual"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · reciente vs. tu normal"
+          }
+        }
+      }
+    },
     "%@ · recovery %lld": {
       "extractionState": "manual",
       "localizations": {
@@ -6649,23 +6666,6 @@
         }
       }
     },
-    "Balanced load": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Balanced load"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Carga equilibrada"
-          }
-        }
-      }
-    },
     "Band": {
       "localizations": {
         "en": {
@@ -6914,6 +6914,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Efectos de tus hábitos"
+          }
+        }
+      }
+    },
+    "Behind the number": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Behind the number"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detrás del número"
           }
         }
       }
@@ -12296,6 +12313,23 @@
         }
       }
     },
+    "Easing off": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Easing off"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bajando"
+          }
+        }
+      }
+    },
     "Edit": {
       "localizations": {
         "en": {
@@ -15331,23 +15365,6 @@
         }
       }
     },
-    "High load": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "High load"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Carga alta"
-          }
-        }
-      }
-    },
     "Higher HRV usually means better recovery. What matters is your trend, not any single day's number.": {
       "extractionState": "manual",
       "localizations": {
@@ -16616,6 +16633,23 @@
         }
       }
     },
+    "In balance": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In balance"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En equilibrio"
+          }
+        }
+      }
+    },
     "In line with what's expected for your age.": {
       "extractionState": "manual",
       "localizations": {
@@ -17029,6 +17063,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Información sobre la tendencia del estrés"
+          }
+        }
+      }
+    },
+    "Information about the training-load method": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Information about the training-load method"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Información sobre el método de carga de entrenamiento"
           }
         }
       }
@@ -17558,6 +17609,23 @@
         }
       }
     },
+    "It's context for your recovery, not an injury prediction.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It's context for your recovery, not an injury prediction."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Es contexto para tu recuperación, no una predicción de lesión."
+          }
+        }
+      }
+    },
     "It's copied into «My routines». You can edit it like any routine.": {
       "extractionState": "manual",
       "localizations": {
@@ -17951,6 +18019,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Último evento"
+          }
+        }
+      }
+    },
+    "Last few weeks · the shaded strip is your balance zone (0.8–1.3)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last few weeks · the shaded strip is your balance zone (0.8–1.3)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Últimas semanas · la franja sombreada es tu zona de equilibrio (0.8–1.3)"
           }
         }
       }
@@ -18462,23 +18547,6 @@
         }
       }
     },
-    "Light load": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Light load"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Carga ligera"
-          }
-        }
-      }
-    },
     "Light load today — plenty left in the tank.": {
       "extractionState": "manual",
       "localizations": {
@@ -18669,6 +18737,23 @@
     },
     "Load": {
       "localizations": {}
+    },
+    "Load scale. Today: %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Load scale. Today: %@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escala de carga. Hoy: %@."
+          }
+        }
+      }
     },
     "Loaded": {
       "localizations": {
@@ -20813,6 +20898,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Faltan %lld días en que tu iPhone también cuente pasos, o fija el coeficiente manualmente."
+          }
+        }
+      }
+    },
+    "Needs about 2 weeks of recorded strain": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Needs about 2 weeks of recorded strain"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Necesita unas 2 semanas de esfuerzo registrado"
+          }
+        }
+      }
+    },
+    "Needs about 2 weeks of recorded strain. Keep wearing the strap and this read will appear.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Needs about 2 weeks of recorded strain. Keep wearing the strap and this read will appear."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Necesita unas 2 semanas de esfuerzo registrado. Sigue usando la banda y esta lectura aparecerá."
           }
         }
       }
@@ -23559,6 +23678,23 @@
         }
       }
     },
+    "Opens the training-load explainer.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the training-load explainer."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre el detalle de carga de entrenamiento."
+          }
+        }
+      }
+    },
     "Opens today's routine": {
       "localizations": {
         "en": {
@@ -25103,6 +25239,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Súbelo si la estimación se queda corta contra un día que conoces; bájalo si se pasa."
+          }
+        }
+      }
+    },
+    "Ramping fast": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ramping fast"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subiendo rápido"
+          }
+        }
+      }
+    },
+    "Ramping up": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ramping up"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subiendo"
           }
         }
       }
@@ -27490,23 +27660,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Justo en tu edad cronológica (%lld)"
-          }
-        }
-      }
-    },
-    "Rising load": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rising load"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Carga al alza"
           }
         }
       }
@@ -32442,6 +32595,23 @@
         }
       }
     },
+    "The ratio compares your average load over the last ~7 days against your last ~28 — the acute:chronic workload ratio (ACWR). 1.0 means you trained exactly your usual; 0.8–1.3 reads as balanced (Gabbett 2016). It's a debated heuristic and does not predict injuries (Impellizzeri 2020).": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The ratio compares your average load over the last ~7 days against your last ~28 — the acute:chronic workload ratio (ACWR). 1.0 means you trained exactly your usual; 0.8–1.3 reads as balanced (Gabbett 2016). It's a debated heuristic and does not predict injuries (Impellizzeri 2020)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La razón compara tu carga promedio de los últimos ~7 días contra tus últimos ~28 (la razón de carga aguda:crónica, ACWR). 1.0 significa que entrenaste exactamente tu normal; 0.8–1.3 se lee como equilibrio (Gabbett 2016). Es una heurística debatida y no predice lesiones (Impellizzeri 2020)."
+          }
+        }
+      }
+    },
     "The routine builder — pick exercises, set your work sets, and save reusable routines or start from a template — arrives in a coming update.": {
       "localizations": {
         "en": {
@@ -32702,6 +32872,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Estas bandas son iguales para todos porque el índice ya viene ajustado a tu propia base, no a la población, un 1.5 cae en TU normal. Por eso no hay un rango personal ± que calcular: lo que vale la pena vigilar es pasar a «Alto» varios días seguidos."
+          }
+        }
+      }
+    },
+    "These days you've trained less than your body is used to.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These days you've trained less than your body is used to."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estos días has entrenado menos de lo que tu cuerpo acostumbra."
+          }
+        }
+      }
+    },
+    "These days you've trained more than your body is used to.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These days you've trained more than your body is used to."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estos días has entrenado más de lo que tu cuerpo acostumbra."
           }
         }
       }
@@ -38585,6 +38789,40 @@
         }
       }
     },
+    "Your recent load is in line with what your body is used to.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your recent load is in line with what your body is used to."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu carga reciente va a la par de lo que tu cuerpo acostumbra."
+          }
+        }
+      }
+    },
+    "Your recent load is well above what your body is used to.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your recent load is well above what your body is used to."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu carga reciente va muy por encima de lo que tu cuerpo acostumbra."
+          }
+        }
+      }
+    },
     "Your record": {
       "extractionState": "manual",
       "localizations": {
@@ -39550,6 +39788,23 @@
         }
       }
     },
+    "acute:chronic %@ · ACWR": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "acute:chronic %@ · ACWR"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "aguda:crónica %@ · ACWR"
+          }
+        }
+      }
+    },
     "adherence · %lld of %lld meals": {
       "extractionState": "manual",
       "localizations": {
@@ -39932,23 +40187,6 @@
         }
       }
     },
-    "building fast (acute:chronic %@) — acute above chronic": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "building fast (acute:chronic %@) — acute above chronic"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "subiendo rápido (aguda:crónica %@), la aguda va por encima de la crónica"
-          }
-        }
-      }
-    },
     "by HR": {
       "localizations": {
         "en": {
@@ -40180,6 +40418,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "p. ej. Correr"
+          }
+        }
+      }
+    },
+    "easing off (%@) — recent load below your usual": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "easing off (%@) — recent load below your usual"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bajando (%@): tu carga reciente va por debajo de tu normal"
           }
         }
       }
@@ -40631,19 +40886,19 @@
         }
       }
     },
-    "in the sweet spot (acute:chronic %@) — acute in line with chronic": {
-      "extractionState": "stale",
+    "in balance (%@) — recent load in line with your usual": {
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "in the sweet spot (acute:chronic %@) — acute in line with chronic"
+            "value": "in balance (%@) — recent load in line with your usual"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "en el punto ideal (aguda:crónica %@), la aguda va a la par de la crónica"
+            "value": "en equilibrio (%@): tu carga reciente va a la par de tu normal"
           }
         }
       }
@@ -42178,19 +42433,36 @@
         }
       }
     },
-    "ramping down (acute:chronic %@) — acute below chronic": {
-      "extractionState": "stale",
+    "ramping fast (%@) — recent load well above your usual": {
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "ramping down (acute:chronic %@) — acute below chronic"
+            "value": "ramping fast (%@) — recent load well above your usual"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "bajando (aguda:crónica %@), la aguda va por debajo de la crónica"
+            "value": "subiendo rápido (%@): tu carga reciente va muy por encima de tu normal"
+          }
+        }
+      }
+    },
+    "ramping up (%@) — recent load above your usual": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ramping up (%@) — recent load above your usual"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "subiendo (%@): tu carga reciente va por encima de tu normal"
           }
         }
       }
@@ -42915,23 +43187,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "sólido"
-          }
-        }
-      }
-    },
-    "spiking (acute:chronic %@) — acute well above chronic": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "spiking (acute:chronic %@) — acute well above chronic"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "disparada (aguda:crónica %@), la aguda va muy por encima de la crónica"
           }
         }
       }
@@ -43947,6 +44202,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "tu rango normal · %lld noches"
+          }
+        }
+      }
+    },
+    "your recent load (~7 days) vs. your usual (~28)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "your recent load (~7 days) vs. your usual (~28)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tu carga reciente (~7 días) vs. tu normal (~28)"
           }
         }
       }
