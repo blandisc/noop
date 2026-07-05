@@ -654,7 +654,10 @@ private struct CuerpoLanding: View {
     }
 
     private var strainStat: some View {
-        let v = repo.today?.strain
+        // Valor VIVO del día en curso (fin de la curva intradía), no el score asentado — una sola
+        // derivación alimenta este número, el héroe del Detalle y la curva (FER-650). Cae al asentado
+        // mientras el vivo aún no se computa.
+        let v = model.displayedDayStrain
         return statColumn("Day Strain", value: v.map { String(format: "%.1f", $0) },
                           color: theme.dataStrain, spark: windowedSpark { $0.strain }) {
             // Opens the rich Detalle de Esfuerzo (FER-238) — built fresh from the in-memory dashboard;
@@ -1032,6 +1035,8 @@ private struct CuerpoLanding: View {
         hrPoints = await hrRows.map {
             TrendPoint(date: Date(timeIntervalSince1970: TimeInterval($0.ts)), value: $0.bpm)
         }
+        // Esfuerzo del día en curso (FER-650): valor VIVO para el stat, en lockstep con la curva del Detalle.
+        await model.refreshLiveDayStrain()
         // displayDays = Apple-health fallback (FER-149); local todayKey ignores a UTC "tomorrow" row (FER-226).
         let stored = await stressRows
         stressSeries = stored   // for the Stress stat's sparkline (FER-566)
@@ -1150,20 +1155,11 @@ private struct CuerpoLanding: View {
         return { await self.loadTrend(pick: pick) }
     }
 
-    /// Today's accumulated-strain curve for the Day Strain sheet — same parameters as the daily score
-    /// so the curve's last point lands on the header value. [] when there's no score / too little data.
+    /// Today's accumulated-strain curve for the Day Strain sheet — the ONE canonical builder
+    /// (`model.strainCurveTrendPoints`, FER-650) so its last point lands exactly on the header value and the
+    /// Hoy tile. [] when there's no score / too little data.
     private func loadStrainCurve() async -> [TrendPoint] {
-        guard repo.today?.strain != nil else { return [] }
-        let startOfToday = Int(Calendar.current.startOfDay(for: Date()).timeIntervalSince1970)
-        let nowTs = Int(Date().timeIntervalSince1970)
-        let samples = await repo.hrSamples(from: startOfToday, to: nowTs, limit: 100_000)
-        let restHR = repo.today?.restingHr.map(Double.init) ?? StrainScorer.defaultRestingHR
-        let curve = StrainScorer.cumulativeStrain(
-            samples, maxHR: Double(model.profile.hrMax), restingHR: restHR, sex: model.profile.sex
-        ).map { TrendPoint(date: $0.date, value: $0.strain) }
-        guard !curve.isEmpty else { return [] }
-        let midnight = TrendPoint(date: Date(timeIntervalSince1970: TimeInterval(startOfToday)), value: 0)
-        return [midnight] + curve
+        await model.strainCurveTrendPoints()
     }
 
     // MARK: - Value resolution + helpers (mirror Today)

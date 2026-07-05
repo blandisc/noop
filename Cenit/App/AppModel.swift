@@ -5,6 +5,7 @@ import WhoopStore
 import StrandImport
 import StrandAnalytics
 import StrandTraining
+import StrandDesign
 
 /// Data source currently running an import from the Data Sources screen.
 enum DataSourceImportKind {
@@ -156,6 +157,13 @@ final class AppModel: ObservableObject {
     /// Smoothed, display-ready live heart rate — median over a short window, spike-filtered.
     /// Every screen should show THIS, not the raw per-beat value (which swings with HRV).
     @Published var bpm: Int?
+    /// The in-progress day's LIVE Day Strain (0–21): today's HR (local civil day → now) run through the
+    /// SAME canonical parameters the intraday curve uses, so it equals the curve's LAST point by
+    /// construction (FER-650). This is the DISPLAY value for the CURRENT day on the Hoy tile and the
+    /// Detalle hero — one derivation, three surfaces. The settled `repo.today.strain` is left untouched
+    /// (it still feeds recovery/readiness baselines). nil until first computed, or when there's too little
+    /// activity today to score. Refreshed by `refreshLiveDayStrain()` on each dashboard/HR-flush tick.
+    @Published private(set) var liveDayStrain: Double?
     private var hrWindow: [(t: Date, v: Double)] = []
     private var hrCancellables = Set<AnyCancellable>()
 
@@ -673,6 +681,56 @@ final class AppModel: ObservableObject {
         w.avgHr = Int((Double(w.samples.map(\.bpm).reduce(0, +)) / Double(w.samples.count)).rounded())
         w.liveStrain = StrainScorer.strain(w.samples, maxHR: Double(profile.hrMax), sex: profile.sex) ?? 0
         activeWorkout = w
+    }
+
+    // MARK: - Live Day Strain (in-progress day) — FER-650
+
+    /// The ONE canonical derivation of the in-progress day's accumulated strain, shared by the Hoy tile,
+    /// the Detalle hero and the intraday curve (FER-650). Reads today's HR (local civil day → now) and runs
+    /// `StrainScorer.cumulativeStrain` with the SAME parameters the daily engine uses, so the curve's last
+    /// point is — by construction — the value the tile and hero show:
+    ///   • **HRmax:** the UNROUNDED effective max the engine uses (`hrMaxOverride ?? Tanaka(age)`), NOT the
+    ///     rounded `profile.hrMax` (rounding is display-only) — the divergence FER-650 traced.
+    ///   • **Resting HR:** today's single resting HR (`repo.today.restingHr`), one source for all surfaces.
+    ///   • **Window:** local midnight → now, so just past midnight it reads TODAY's (near-empty) samples,
+    ///     never yesterday's (preserves FER-341).
+    /// Publishes `liveDayStrain` (= the last cumulative point) as a side effect so the tile stays in lockstep
+    /// with the curve. Returns [] under the same guard as the daily score: no settled score for today yet
+    /// (the engine hasn't acknowledged the civil day), too few readings, or invalid HRR. PAST days are never
+    /// read here — this only ever scores today's window, so settled history is untouched.
+    @discardableResult
+    func liveDayStrainCurve() async -> [StrainScorer.CumulativeStrainPoint] {
+        guard repo.today?.strain != nil else { liveDayStrain = nil; return [] }
+        let startOfToday = Int(Calendar.current.startOfDay(for: Date()).timeIntervalSince1970)
+        let nowTs = Int(Date().timeIntervalSince1970)
+        let samples = await repo.hrSamples(from: startOfToday, to: nowTs, limit: 100_000)
+        let restHR = repo.today?.restingHr.map(Double.init) ?? StrainScorer.defaultRestingHR
+        let effMax: Double? = profile.hrMaxOverride > 0
+            ? Double(profile.hrMaxOverride)
+            : (profile.age > 0 ? StrainScorer.tanakaHRmax(age: Double(profile.age)) : nil)
+        let curve = StrainScorer.cumulativeStrain(samples, maxHR: effMax, restingHR: restHR, sex: profile.sex)
+        liveDayStrain = curve.last?.strain
+        return curve
+    }
+
+    /// Refresh only the published `liveDayStrain` value (drops the curve) — the tile's cheap path, called on
+    /// each dashboard refresh / live-HR flush so the Hoy tile rises in lockstep with the Detalle curve.
+    func refreshLiveDayStrain() async { _ = await liveDayStrainCurve() }
+
+    /// The value the CURRENT day's strain shows on the Hoy/Cuerpo tiles: the live derivation when it's
+    /// computed, else the settled `repo.today.strain` (before the first live pass, or too little activity).
+    /// One accessor so both tiles share the exact same fallback (FER-650).
+    var displayedDayStrain: Double? { liveDayStrain ?? repo.today?.strain }
+
+    /// The in-progress day's intraday strain curve as chart points, with the local-midnight anchor prepended
+    /// (so the line reads "from 00:00" even if the strap wasn't worn until later). The ONE builder both the
+    /// Hoy and Cuerpo detail sheets draw, over `liveDayStrainCurve()` — its last point is the tile/hero value
+    /// by construction (FER-650). [] when there's no score / too little activity today.
+    func strainCurveTrendPoints() async -> [TrendPoint] {
+        let curve = await liveDayStrainCurve()
+        guard !curve.isEmpty else { return [] }
+        let midnight = TrendPoint(date: Calendar.current.startOfDay(for: Date()), value: 0)
+        return [midnight] + curve.map { TrendPoint(date: $0.date, value: $0.strain) }
     }
 
     /// Drop the smoothing window and blank the hero number so a resume / re-attach shows "—"

@@ -157,6 +157,18 @@ final class StrainScorerTests: XCTestCase {
         XCTAssertEqual(curve.last!.strain, daily, accuracy: 1e-9)
     }
 
+    func testCumulativeStrainEndsAtDailyStrainUnroundedMaxHR() {
+        // FER-650: the in-progress day feeds the curve the UNROUNDED effective HRmax (Tanaka is fractional,
+        // e.g. 208 − 0.7×33 = 184.9), not the rounded `profile.hrMax`. The invariant must still hold exactly
+        // with a fractional maxHR, so the tile/hero (= the last point) can never disagree with the curve.
+        let series = twoPhase(120, 3600, 185, 3600)
+        let maxHR = StrainScorer.tanakaHRmax(age: 33)     // 184.9 — deliberately non-integer
+        let daily = StrainScorer.strain(series, maxHR: maxHR, restingHR: 58)!
+        let curve = StrainScorer.cumulativeStrain(series, bucketSeconds: 900, maxHR: maxHR, restingHR: 58)
+        XCTAssertFalse(curve.isEmpty)
+        XCTAssertEqual(curve.last!.strain, daily, accuracy: 1e-9)
+    }
+
     func testCumulativeStrainBanisterEndsAtDailyStrain() {
         let series = twoPhase(120, 3600, 185, 3600)
         let daily = StrainScorer.strain(series, maxHR: 190, restingHR: 60, method: .banister)!
