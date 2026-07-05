@@ -1,6 +1,703 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Looked steady.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Looked steady."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se vio estable."
+          }
+        }
+      }
+    },
+    "A few extra or skipped beats showed up.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A few extra or skipped beats showed up."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se vieron algunos latidos extra o salteados."
+          }
+        }
+      }
+    },
+    "Varied more than usual.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Varied more than usual."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Varió más de lo usual."
+          }
+        }
+      }
+    },
+    "Couldn't read it clearly.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't read it clearly."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo leer con claridad."
+          }
+        }
+      }
+    },
+    "Experimental · Not an ECG or a diagnosis · Doesn't detect disease.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Experimental · Not an ECG or a diagnosis · Doesn't detect disease."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Experimental · No es un ECG ni un diagnóstico · No detecta enfermedades."
+          }
+        }
+      }
+    },
+    "EXPERIMENTAL": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EXPERIMENTAL"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EXPERIMENTAL"
+          }
+        }
+      }
+    },
+    "A glimpse of your rhythm": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A glimpse of your rhythm"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un vistazo a tu ritmo"
+          }
+        }
+      }
+    },
+    "While you sleep, Cénit looks at how evenly your heart beats, beat to beat, and draws it for you.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "While you sleep, Cénit looks at how evenly your heart beats, beat to beat, and draws it for you."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mientras duermes, Cénit mira qué tan parejo late tu corazón, latido a latido, y te lo dibuja."
+          }
+        }
+      }
+    },
+    "It's not an ECG.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It's not an ECG."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No es un ECG."
+          }
+        }
+      }
+    },
+    "It's not a diagnosis.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It's not a diagnosis."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No es un diagnóstico."
+          }
+        }
+      }
+    },
+    "It doesn't detect disease.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It doesn't detect disease."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No detecta enfermedades."
+          }
+        }
+      }
+    },
+    "RHYTHM · LAST NIGHT": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RHYTHM · LAST NIGHT"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RITMO · ANOCHE"
+          }
+        }
+      }
+    },
+    "tap the cloud for the details": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tap the cloud for the details"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "toca la nube para ver los detalles"
+          }
+        }
+      }
+    },
+    "%lld beats · solid read": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld beats · solid read"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld latidos · lectura sólida"
+          }
+        }
+      }
+    },
+    "%lld beats · forming read": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld beats · forming read"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld latidos · lectura en formación"
+          }
+        }
+      }
+    },
+    "%lld beats · calibrating": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld beats · calibrating"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld latidos · calibrando"
+          }
+        }
+      }
+    },
+    "%lld of %lld readable windows looked steady.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of %lld readable windows looked steady."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld de %lld ventanas legibles se vieron estables."
+          }
+        }
+      }
+    },
+    "%lld of %lld readable windows showed extra or skipped beats.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of %lld readable windows showed extra or skipped beats."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld de %lld ventanas legibles mostraron latidos extra o salteados."
+          }
+        }
+      }
+    },
+    "%lld of %lld readable windows varied more than usual.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of %lld readable windows varied more than usual."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld de %lld ventanas legibles variaron más de lo usual."
+          }
+        }
+      }
+    },
+    "No window last night could be read clearly.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No window last night could be read clearly."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ninguna ventana de anoche se pudo leer con claridad."
+          }
+        }
+      }
+    },
+    "Still calibrating.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Still calibrating."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún calibrando."
+          }
+        }
+      }
+    },
+    "I'm still learning your rhythm. A few more nights and the read sharpens.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I'm still learning your rhythm. A few more nights and the read sharpens."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún estoy aprendiendo tu ritmo. Unas cuantas noches más y la lectura se afina."
+          }
+        }
+      }
+    },
+    "Couldn't read it clearly last night.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't read it clearly last night."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo leer con claridad anoche."
+          }
+        }
+      }
+    },
+    "There was too much movement or too little signal at rest. It's normal, try again tomorrow.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "There was too much movement or too little signal at rest. It's normal, try again tomorrow."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hubo mucho movimiento o poca señal en reposo. Es normal, vuelve a intentar mañana."
+          }
+        }
+      }
+    },
+    "No reading from last night.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No reading from last night."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin lectura de anoche."
+          }
+        }
+      }
+    },
+    "Sleep with your strap to see your rhythm here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sleep with your strap to see your rhythm here."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duerme con tu strap para ver tu ritmo aquí."
+          }
+        }
+      }
+    },
+    "Ritmo needs a WHOOP band.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ritmo needs a WHOOP band."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ritmo necesita una banda WHOOP."
+          }
+        }
+      }
+    },
+    "The beat-to-beat tacogram only comes from the band; it isn't available with Apple Health only.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The beat-to-beat tacogram only comes from the band; it isn't available with Apple Health only."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El tacograma latido a latido solo viene de la banda; no está disponible con solo Apple Health."
+          }
+        }
+      }
+    },
+    "Cloud shape (SD1:SD2)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cloud shape (SD1:SD2)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forma de la nube (SD1:SD2)"
+          }
+        }
+      }
+    },
+    "how round vs. elongated": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "how round vs. elongated"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "qué tan redonda vs. alargada"
+          }
+        }
+      }
+    },
+    "Short width (SD1)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Short width (SD1)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ancho corto (SD1)"
+          }
+        }
+      }
+    },
+    "variation from one beat to the next": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "variation from one beat to the next"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "variación de un latido al siguiente"
+          }
+        }
+      }
+    },
+    "Length (SD2)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Length (SD2)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Largo (SD2)"
+          }
+        }
+      }
+    },
+    "variation across the night": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "variation across the night"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "variación a lo largo de la noche"
+          }
+        }
+      }
+    },
+    "Relative variation": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relative variation"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variación relativa"
+          }
+        }
+      }
+    },
+    "against your average beat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "against your average beat"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "respecto a tu latido promedio"
+          }
+        }
+      }
+    },
+    "Direction changes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Direction changes"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cambios de dirección"
+          }
+        }
+      }
+    },
+    "how jagged the rhythm was": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "how jagged the rhythm was"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "qué tan «picudo» fue el ritmo"
+          }
+        }
+      }
+    },
+    "Extra or skipped beats": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extra or skipped beats"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Latidos extra o salteados"
+          }
+        }
+      }
+    },
+    "fraction of the total": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "fraction of the total"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "fracción del total"
+          }
+        }
+      }
+    },
+    "Your rhythm, beat to beat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your rhythm, beat to beat"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu ritmo, latido a latido"
+          }
+        }
+      }
+    },
     "": {
       "localizations": {}
     },
