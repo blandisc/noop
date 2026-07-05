@@ -18,9 +18,12 @@ import WhoopProtocol
 //
 // Each metric is standardized to a robust z-score against the personal baseline
 // (mean + EWMA-abs-dev spread). Missing terms are dropped and the weights
-// renormalized. The composite z is squashed through a logistic anchored so that
-// Z = 0 → ~58% (WHOOP's self-reported member-average recovery — a calibration
-// anchor from WHOOP's own user base, not a peer-reviewed population norm).
+// renormalized; the composite is then pulled toward neutral in proportion to the
+// driver weight actually present (missing-driver shrinkage, FER-698), so a single
+// driver can't saturate the score as if the whole picture agreed. The composite z is
+// squashed through a logistic anchored so that Z = 0 → ~58% (WHOOP's self-reported
+// member-average recovery — a calibration anchor from WHOOP's own user base, not a
+// peer-reviewed population norm).
 //
 // Cold-start: if the HRV baseline (dominant driver) is not yet usable
 // (< MIN_NIGHTS_SEED valid nights), recovery() returns nil. Callers may use
@@ -39,6 +42,15 @@ public enum RecoveryScorer {
     /// and the weights renormalize when no temp value or baseline is available, so
     /// callers that don't supply temperature score exactly as before.
     public static let wTemp: Double = 0.10
+
+    /// Reference weight for the missing-driver shrinkage (FER-698): the three PRIMARY
+    /// drivers (HRV + RHR + sleep = 0.95). A composite standing on at least this much
+    /// weight counts as full coverage (shrink factor capped at 1.0, unchanged); below it,
+    /// the composite z is pulled toward neutral in proportion to the weight present, so a
+    /// single strong driver can't saturate the score as if the whole picture agreed.
+    /// Resp/temp are optional refinements, excluded from the reference so their absence
+    /// never shrinks a band read.
+    public static let referenceCoverageWeight: Double = wHRV + wRHR + wSleep   // 0.95
 
     /// Logistic spread: ±2 z-units ≈ full Red–Green band (15%–95%).
     public static let logisticK: Double = 1.6
@@ -224,10 +236,23 @@ public enum RecoveryScorer {
         }
 
         guard !terms.isEmpty else { return nil }
-        let totalWeight = terms.reduce(0) { $0 + $1.w }
-        guard totalWeight > 0 else { return nil }
+        let presentWeight = terms.reduce(0) { $0 + $1.w }
+        guard presentWeight > 0 else { return nil }
 
-        let z = terms.reduce(0) { $0 + $1.z * $1.w } / totalWeight
+        // Weighted mean-z of the drivers actually present (renormalized to their own
+        // weight, as before).
+        let meanZ = terms.reduce(0) { $0 + $1.z * $1.w } / presentWeight
+        // Missing-driver shrinkage (FER-698): renormalizing to the present weight lets a
+        // single strong driver (e.g. HRV alone in an Apple-Health estimate, where RHR/sleep
+        // are absent) speak for the whole composite and saturate the logistic to ~100 as if
+        // every driver agreed. Instead, pull the composite toward neutral (Z=0) in
+        // proportion to the weight actually present. Reference = the three PRIMARY drivers
+        // (HRV+RHR+sleep = 0.95 of the 1.10 max); resp/temp are optional refinements, so a
+        // read backed by the primary three counts as full coverage (factor capped at 1.0)
+        // and is byte-identical to before — no regression for band users. Same spirit as the
+        // thin-baseline shrinkage already applied per term via Baselines.confidence.
+        let coverage = min(1.0, presentWeight / referenceCoverageWeight)
+        let z = meanZ * coverage
         // A non-finite z (NaN/±inf from a degenerate term) would propagate through
         // the logistic; bail rather than emit a bogus score.
         guard z.isFinite else { return nil }
