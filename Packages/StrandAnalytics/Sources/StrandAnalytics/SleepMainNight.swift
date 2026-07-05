@@ -26,7 +26,9 @@ public enum SleepMainNight {
     public static let minDurationMinutes = 180.0   // 3 h
 
     /// Does the `[startTs, endTs]` span (unix seconds) qualify as a main night (vs a nap)?
-    static func qualifies(startTs: Int, endTs: Int) -> Bool {
+    /// Public so the app layer can share this exact predicate (e.g. `NightRhythmProvider`
+    /// picking last night) instead of re-deriving the duration formula from the constant.
+    public static func qualifies(startTs: Int, endTs: Int) -> Bool {
         Double(endTs - startTs) / 60.0 >= minDurationMinutes
     }
 }
