@@ -201,9 +201,9 @@ public enum StrainScorer {
     /// endpoint keeps matching the score (FER-650 invariant).
     static func hasEnoughData(_ hr: [HRSample]) -> Bool {
         if hr.count >= minReadings { return true }
-        guard hr.count >= minSparseReadings,
-              let first = hr.map(\.ts).min(), let last = hr.map(\.ts).max() else { return false }
-        return last - first >= minSpanSeconds
+        guard hr.count >= minSparseReadings else { return false }
+        let tss = hr.map(\.ts)
+        return (tss.max() ?? 0) - (tss.min() ?? 0) >= minSpanSeconds
     }
 
     /// Cardiovascular strain (0–21) from an HR series. APPROXIMATE.
