@@ -410,6 +410,14 @@ HRV powers (`hrv_lf` / `hrv_hf` / `hrv_totalpower`, ms², FER-702) persist here 
 computed source — an additive scalar cache with no schema change, alongside `steps_est` and the stress
 aggregates.
 
+**Circadian phase** — `circadianPhase(deviceId, day, tempMinHour, acrophaseHours, offsetMinutes,
+confidence, daysObserved, bedtimeHour, wakeHour, computedAt)`, PK `(deviceId, day)`: one structured
+record per local civil day holding `CircadianEngine`'s cosinor phase estimate for the «Tu reloj
+corporal» surface (FER-712). Written by the nightly `IntelligenceEngine` pass (gated to WHOOP bands —
+the phase signal is the accelerometer rest-activity rhythm). A dedicated table, not `metricSeries`,
+because the record is multi-field including an enum confidence. `confidence` is stored as the raw
+`PhaseConfidence` string; `WhoopStore` keeps no dependency on `StrandAnalytics`.
+
 **Raw outbox** — `rawBatch`: the compressed, **transient, prunable** record of original frames,
 captured only when the research toggle is on. Decoded data is always committed *before* raw is queued,
 so pruning raw (`PrunePolicy`: 24h window / 50MB cap) can never lose a metric. `cursors` holds durable
