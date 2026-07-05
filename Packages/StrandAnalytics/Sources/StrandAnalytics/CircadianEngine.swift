@@ -81,6 +81,20 @@ public enum CircadianEngine {
         }
     }
 
+    /// Typical adult sleep need (hours) — used only to place the suggested sleep window on the clock.
+    public static let typicalSleepHours: Double = 8.0
+
+    /// The suggested sleep-onset clock hour implied by the body clock. CBTmin sits in the final third of
+    /// a night, ~`cbtMinBeforeWakeHours` before the ideal wake, so ideal wake ≈ tempMin +
+    /// cbtMinBeforeWakeHours and ideal bedtime ≈ ideal wake − typicalSleepHours. APPROXIMATE wellness
+    /// guidance, never a prescription. Method: CBTmin as the canonical circadian phase marker in the last
+    /// third of habitual sleep (Duffy & Czeisler, "Effect of light on human circadian physiology", Sleep
+    /// Med Clin 2009;4(2):165–177). Always communicated with "~"/a range, never as an exact instant.
+    public static func suggestedBedtime(tempMinHour: Double) -> Double {
+        let idealWake = wrap24(tempMinHour + cbtMinBeforeWakeHours)
+        return wrap24(idealWake - typicalSleepHours)
+    }
+
     // MARK: - Hourly activity-profile builder
 
     /// One day of raw gravity samples plus the local time-zone offset to place them on the local clock.

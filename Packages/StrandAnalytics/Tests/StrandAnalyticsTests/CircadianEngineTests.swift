@@ -61,6 +61,14 @@ final class CircadianEngineTests: XCTestCase {
         XCTAssertTrue(est.note.contains("well-aligned"))
     }
 
+    func testSuggestedBedtimeSitsBeforeIdealWake() {
+        // tempMin 05:30 → ideal wake 05:30+2.5 = 08:00 → bedtime 08:00 − 8 h = 00:00.
+        XCTAssertEqual(CircadianEngine.suggestedBedtime(tempMinHour: 5.5), 0.0, accuracy: 1e-6)
+        // A lark (earlier tempMin) gets an earlier suggested bedtime.
+        let lark = CircadianEngine.suggestedBedtime(tempMinHour: 3.0)   // wake 05:30 → bed 21:30
+        XCTAssertEqual(lark, 21.5, accuracy: 1e-6)
+    }
+
     // MARK: - Hourly activity-profile builder
 
     /// Synthesize a day whose per-hour motion intensity follows mesor + amp·cos(2π(h−acro)/24): two samples
