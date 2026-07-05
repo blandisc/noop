@@ -37,8 +37,11 @@ final class CircadianEngineTests: XCTestCase {
         let bins = profile(mesor: 50, amp: 30, acrophase: 15)
         let est = CircadianEngine.estimatePhase(bins: bins, daysObserved: 20, habitualWakeHour: 7)!
         XCTAssertEqual(est.confidence, .solid)
-        // Acrophase 15:00 → derived temp-min ≈ 15 − 12 = 03:00.
-        XCTAssertEqual(est.tempMinHour, 3, accuracy: 1e-6)
+        // Acrophase 15:00 → derived temp-min ≈ 15 − 9.5 = 05:30 (population offset, Mitchell 2017).
+        XCTAssertEqual(est.tempMinHour, 5.5, accuracy: 1e-6)
+        // Ideal temp-min = wake 7 − 2.5 = 04:30; estimated 05:30 sits 1 h later → mild night-owl lean.
+        XCTAssertEqual(est.offsetVsScheduleMinutes, 60, accuracy: 1e-6)
+        XCTAssertTrue(est.note.contains("night-owl"))
     }
 
     func testThinDataIsWideOrUnreadable() {
