@@ -28,6 +28,12 @@ final class ProfileStore: ObservableObject {
     /// True when the persisted coefficient came from the user's manual override, not an auto-fit.
     @Published var stepsCalibrationManual: Bool { didSet { d.set(stepsCalibrationManual, forKey: K.stepsManualFlag) } }
 
+    /// Calibration divisor for the WHOOP 5/MG NATIVE step counter (`step_motion_counter@57`, FER-665).
+    /// The counter over-counts, so the daily total is divided by this before display. 1.0 = raw
+    /// pass-through (default, no change). Clamped 0.5–30.0 (observed 5/MG overcount reaches ~24×, so the
+    /// ceiling is high). Distinct from the WHOOP 4.0 ESTIMATE fields above — this scales a REAL counter.
+    @Published var stepTicksPerStep: Double { didSet { d.set(min(max(stepTicksPerStep, 0.5), 30.0), forKey: K.stepScale) } }
+
     private let d = UserDefaults.standard
     private enum K {
         static let age = "profile.age", sex = "profile.sex", weight = "profile.weightKg"
@@ -37,6 +43,7 @@ final class ProfileStore: ObservableObject {
         static let stepsSampleDays = "profile.stepsCalibrationSampleDays"
         static let stepsConfidence = "profile.stepsCalibrationConfidence"
         static let stepsManualFlag = "profile.stepsCalibrationManual"
+        static let stepScale = "profile.stepTicksPerStep"
     }
 
     init() {
@@ -50,6 +57,7 @@ final class ProfileStore: ObservableObject {
         stepsCalibrationSampleDays = d.object(forKey: K.stepsSampleDays) as? Int ?? 0
         stepsCalibrationConfidence = d.object(forKey: K.stepsConfidence) as? Double ?? 0
         stepsCalibrationManual = d.object(forKey: K.stepsManualFlag) as? Bool ?? false
+        stepTicksPerStep = min(max(d.object(forKey: K.stepScale) as? Double ?? 1.0, 0.5), 30.0)
     }
 
     /// Tanaka estimate unless overridden.

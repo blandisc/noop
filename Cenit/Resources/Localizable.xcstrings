@@ -43876,6 +43876,56 @@
           }
         }
       }
+    },
+    "Steps calibration": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calibración de pasos"
+          }
+        }
+      }
+    },
+    "Steps calibration, %@": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calibración de pasos, %@"
+          }
+        }
+      }
+    },
+    "counter ticks per real step": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pulsos del contador por paso real"
+          }
+        }
+      }
+    },
+    "Counter ticks per real step, %@": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pulsos del contador por paso real, %@"
+          }
+        }
+      }
+    },
+    "Your WHOOP 5.0/MG counts steps from a wrist counter that tends to read high. If it shows more steps than you actually took, raise this until it matches a day you can check. Leave it at Off (1.0) to use the raw count.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu WHOOP 5.0/MG cuenta pasos con un contador de muñeca que tiende a leer de más. Si marca más pasos de los que diste, súbelo hasta que cuadre con un día que puedas verificar. Déjalo en Apagado (1.0) para usar el conteo tal cual."
+          }
+        }
+      }
     }
   },
   "version": "1.1"
