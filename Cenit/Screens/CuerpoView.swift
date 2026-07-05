@@ -120,6 +120,12 @@ private struct CuerpoLanding: View {
     /// opens this dedicated screen (última lectura + tendencia con banda ±típica + consistencia en SD °C +
     /// método) instead of the legacy dark catalog sheet; theme passed explicitly.
     @State private var skinTempDetail: SkinTempDetailItem? = nil
+    /// Carga de entrenamiento (FER-705): today's ACWR + the replayed per-day series, computed once per
+    /// refresh in `loadAll` from the band-masked dashboard (the same slice the recovery detail feeds
+    /// `ReadinessEngine`). nil until the first load; `acwr == nil` inside → calibrating.
+    @State private var trainingLoad: TrainingLoadModel? = nil
+    /// Presents the light «Carga de entrenamiento» explainer sheet (FER-705).
+    @State private var trainingLoadItem: TrainingLoadItem? = nil
     /// «How you wake after each sport» — ranked ActivityCost per sport (FER-139); empty = "gathering data".
     @State private var activityCosts: [ActivityCost] = []
     /// Presents the light Activity-recovery detail sheet.
@@ -171,6 +177,7 @@ private struct CuerpoLanding: View {
                 periodSelector
                 recoveryHero
                 restLoadCard
+                trainingLoadCard
                 muscleMapCard
                 vitalsCard
                 activityCard
@@ -303,6 +310,11 @@ private struct CuerpoLanding: View {
                                    repo: repo, maxHR: model.profile.hrMax, restingHR: stressRestingHR) },
                                eventPatternsLoader: { await StressDayMapPresenter.eventPatterns(
                                    repo: repo, map: stressDayMap) })
+        }
+        .sheet(item: $trainingLoadItem) { item in
+            // Light «Carga de entrenamiento» explainer (FER-705) — theme passed explicitly (it doesn't
+            // propagate through `.sheet`), NO nested NavigationStack (FER-171).
+            TrainingLoadSheet(model: item.model, theme: theme)
         }
         .sheet(item: $skinTempDetail) { item in
             // Light «Instrumento» Detalle de Temperatura de la piel — theme passed explicitly (it doesn't
@@ -479,6 +491,58 @@ private struct CuerpoLanding: View {
                 stressStat
             }
         }
+    }
+
+    /// Carga de entrenamiento (FER-705) — the band in a plain word is the datum (colored by its flag),
+    /// with the glossed ratio underneath and the replayed-ratio mini-trend as the right accessory.
+    /// Calibrating (< ~2 weeks of strain) shows an honest «—» + the wait copy, never a fake number.
+    /// The whole card taps into the explainer sheet.
+    private var trainingLoadCard: some View {
+        let load = trainingLoad
+        let band = load?.band
+        return Button {
+            trainingLoadItem = TrainingLoadItem(model: load ?? TrainingLoadModel(acwr: nil, series: []))
+        } label: {
+            HStack(spacing: 14) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Training load").font(StrandFont.serif(27)).foregroundStyle(theme.ink)
+                    Text(band?.shortLabel ?? "—")
+                        .font(StrandFont.number(24, weight: .semibold))
+                        .foregroundStyle(band.map { $0.flag.color(theme) } ?? theme.inkTertiary)
+                    if let acwr = load?.acwr {
+                        Text("\(String(format: "%.2f", acwr)) · recent vs. your usual")
+                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    } else {
+                        Text("Needs about 2 weeks of recorded strain")
+                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    }
+                }
+                Spacer(minLength: 8)
+                if let load, load.series.count > 1, let band {
+                    let color = band.flag.color(theme)
+                    Sparkline(values: load.series.map(\.value),
+                              gradient: Gradient(colors: [color.opacity(0.55), color]),
+                              referenceBand: ReadinessEngine.acwrSweetSpotLow...ReadinessEngine.acwrSweetSpotHigh,
+                              bandColor: theme.hairlineStrong,
+                              lineWidth: 2.0, showsArea: false, showsHead: true, showsScrub: false)
+                        .frame(width: 104, height: 40)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    .accessibilityHidden(true)
+            }
+            .padding(.vertical, 16).padding(.horizontal, 20)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                .strokeBorder(theme.hairline, lineWidth: 1))
+        }
+        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05)))
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("Opens the training-load explainer.")
     }
 
     /// Muscle map (FER-350) — a navigational card into the front/back fatigue map. The whole card is the
@@ -1050,6 +1114,15 @@ private struct CuerpoLanding: View {
         stressModel = stress
 
         fitnessAge = computeFitnessAge()
+
+        // Carga de entrenamiento (FER-705): today's ACWR + the replayed series, from the BAND-masked
+        // dashboard — the same slice the recovery detail feeds `ReadinessEngine` (FER-632), so the card,
+        // the «Your patterns» line and the verdict signal can never disagree on the band.
+        let bandMasked = SourceLens.maskForBaseline(repo.days, keep: .band, appleDays: repo.appleHealthDays)
+        let readiness = ReadinessEngine.evaluate(days: bandMasked, today: Repository.localDayKey(Date()))
+        trainingLoad = TrainingLoadModel(
+            acwr: readiness.acwr,
+            series: ReadinessEngine.acwrSeries(days: bandMasked).map { (day: $0.day, value: $0.ratio) })
 
         // Longevity (FER-145 + FER-214): Body Age + Vitality from a 28-night window. Regularity uses the
         // real Sleep Regularity Index when there's coverage (FER-214), else the documented duration proxy;
