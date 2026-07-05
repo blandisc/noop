@@ -55,6 +55,30 @@ final class WorkoutDetectorTests: XCTestCase {
         XCTAssertNotEqual(male, female, accuracy: 0.0)
     }
 
+    func testBoutCaloriesSparseStreamCountsRealElapsedTime() {
+        // FER-661/#137: a 20-min bout sampled every 30 s (WHOOP 5/MG cadence) is 41 samples over
+        // 1200 s. The old flat 1-s-per-sample model collapsed it to ~41 s of energy (kcal → ~1);
+        // elapsed-time weighting counts the real ~1200 s, so it matches the same bout at 1 Hz.
+        let profile = UserProfile(weightKg: 80, heightCm: 180, age: 30, sex: "male")
+        let sparse = Array(stride(from: 0, through: 1200, by: 30)).map { HRSample(ts: $0, bpm: 150) }
+        let dense  = (0...1200).map { HRSample(ts: $0, bpm: 150) }
+        let sparseKcal = Calories.estimateBoutCalories(sparse, profile: profile, hrmax: 190, restingHR: 60).0
+        let denseKcal  = Calories.estimateBoutCalories(dense,  profile: profile, hrmax: 190, restingHR: 60).0
+        XCTAssertEqual(sparseKcal, denseKcal, accuracy: denseKcal * 0.02)
+        XCTAssertGreaterThan(sparseKcal, denseKcal * 0.95, "sparse bout must no longer collapse")
+    }
+
+    func testBoutCaloriesCapsLongGapAtMergeGap() {
+        // A single 300-s gap between two elevated samples is capped at mergeGapS (150 s), so one
+        // isolated reading can't credit unbounded active burn: first sample 150 s + last 1 s = 151 s.
+        let profile = UserProfile(weightKg: 80, heightCm: 180, age: 30, sex: "male")
+        let gapped = [HRSample(ts: 0, bpm: 150), HRSample(ts: 300, bpm: 150)]
+        let kcal = Calories.estimateBoutCalories(gapped, profile: profile, hrmax: 190, restingHR: 60).0
+        let ref151 = Calories.estimateBoutCalories(
+            (0...150).map { HRSample(ts: $0, bpm: 150) }, profile: profile, hrmax: 190, restingHR: 60).0
+        XCTAssertEqual(kcal, ref151, accuracy: ref151 * 0.01)
+    }
+
     // MARK: - Detection
 
     /// A workout: high HR + sustained motion for `durationS`, embedded in a rest day.
