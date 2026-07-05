@@ -129,7 +129,7 @@ struct StressDetailScreen: View {
         // the ⓘ exactly as the old InfoAccordion had it.
         VStack(alignment: .leading, spacing: 14) {
             InstrumentoScreenTitle("Stress", theme: theme,
-                explanation: "Your autonomic load for the day: how activated your body is. We take today's resting heart rate and HRV, compare each with your own 30-day baseline as a z-score, and map the combined shift onto a 0–3 scale through a logistic curve (0 calm · 1.5 your baseline · 3 highly activated). It's an estimate, not a diagnosis.")
+                explanation: "Your autonomic load for the day: how activated your body is. We take today's resting heart rate and HRV, compare each with your own 30-day baseline as a z-score, and map the combined shift onto a 0–3 scale through a logistic curve (0 calm · 1.5 your baseline · 3 highly activated). This number is your whole day against your baseline of the last ~30 days — a different lens from the day map below, which marks the moments you spiked. It's an estimate, not a diagnosis.")
             VStack(alignment: .leading, spacing: 14) {
                 // When the reading isn't today's (fell back to yesterday at the midnight boundary), date
                 // it so it's never passed off as today's. (FER-397)

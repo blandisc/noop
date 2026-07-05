@@ -12068,6 +12068,23 @@
         }
       }
     },
+    "Each signal becomes a score of how far above or below your personal average it sits; they're averaged with the weights above and mapped onto a 0–100 scale, calibrated so a typical day lands near 58.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Each signal becomes a score of how far above or below your personal average it sits; they're averaged with the weights above and mapped onto a 0–100 scale, calibrated so a typical day lands near 58."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada señal se vuelve un puntaje de qué tan arriba o abajo está de tu promedio personal; se promedian con los pesos de arriba y se ajustan a una escala 0–100, calibrada para que un día típico caiga cerca de 58."
+          }
+        }
+      }
+    },
     "Each square is a day, tinted by your recovery — red when low, amber in the middle, green when high. Empty squares are days with no reading. It's the at-a-glance shape of your last three months. (Buchheit 2014)": {
       "extractionState": "manual",
       "localizations": {
@@ -16073,6 +16090,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Inactivo"
+          }
+        }
+      }
+    },
+    "If a signal is missing on a given night, its weight is shared among the others.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If a signal is missing on a given night, its weight is shared among the others."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si falta alguna señal esa noche, su peso se reparte entre las demás."
           }
         }
       }
@@ -23596,6 +23630,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Paluch et al. 2022, Lancet Public Health."
+          }
+        }
+      }
+    },
+    "Partial estimate": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partial estimate"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimación parcial"
+          }
+        }
+      }
+    },
+    "Partial estimate. ": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partial estimate. "
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimación parcial. "
           }
         }
       }
@@ -34736,18 +34804,18 @@
         }
       }
     },
-    "We put your day's stress curve next to your events so you can see what your most and least activated moments coincided with. You choose which calendars are included; all-day events aren't matched to a moment. It reads coincidence, not cause — seeing two things together doesn't mean one caused the other. Everything is computed on your iPhone; nothing is shared.": {
+    "We put your day's stress curve next to your events so you can see what your most and least activated moments coincided with. Here each moment is measured against your recent calm — your waking readings over about the last 7 days — so this maps when you spiked today, a different lens from the day's number above (your whole day vs your 30-day baseline). You choose which calendars are included; all-day events aren't matched to a moment. It reads coincidence, not cause — seeing two things together doesn't mean one caused the other. Everything is computed on your iPhone; nothing is shared.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "We put your day's stress curve next to your events so you can see what your most and least activated moments coincided with. You choose which calendars are included; all-day events aren't matched to a moment. It reads coincidence, not cause — seeing two things together doesn't mean one caused the other. Everything is computed on your iPhone; nothing is shared."
+            "value": "We put your day's stress curve next to your events so you can see what your most and least activated moments coincided with. Here each moment is measured against your recent calm — your waking readings over about the last 7 days — so this maps when you spiked today, a different lens from the day's number above (your whole day vs your 30-day baseline). You choose which calendars are included; all-day events aren't matched to a moment. It reads coincidence, not cause — seeing two things together doesn't mean one caused the other. Everything is computed on your iPhone; nothing is shared."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ponemos tu curva de estrés del día junto a tus eventos para que veas con qué coincidieron tus momentos más y menos activados. Tú eliges qué calendarios entran; los eventos de todo el día no se cruzan con un momento. Es una observación de coincidencias, no de causas: ver dos cosas juntas no significa que una haya causado la otra. Todo se calcula en tu iPhone; nada se comparte."
+            "value": "Ponemos tu curva de estrés del día junto a tus eventos para que veas con qué coincidieron tus momentos más y menos activados. Aquí cada momento se mide contra tu calma reciente —tus lecturas de vigilia de más o menos los últimos 7 días—, así que esto mapea cuándo te disparaste hoy, una lente distinta a la del número del día de arriba (tu día completo frente a tu base de 30 días). Tú eliges qué calendarios entran; los eventos de todo el día no se cruzan con un momento. Es una observación de coincidencias, no de causas: ver dos cosas juntas no significa que una haya causado la otra. Todo se calcula en tu iPhone; nada se comparte."
           }
         }
       }
@@ -36074,6 +36142,57 @@
         }
       }
     },
+    "Worked out without HRV or resting heart rate — the two heaviest signals. The number still holds, with less precision.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Worked out without HRV or resting heart rate — the two heaviest signals. The number still holds, with less precision."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calculada sin HRV ni FC en reposo — las dos señales de mayor peso. El número sigue valiendo, con menos precisión."
+          }
+        }
+      }
+    },
+    "Worked out without HRV — one of the heaviest signals. The number still holds, with less precision.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Worked out without HRV — one of the heaviest signals. The number still holds, with less precision."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calculada sin HRV — una de las señales de mayor peso. El número sigue valiendo, con menos precisión."
+          }
+        }
+      }
+    },
+    "Worked out without resting heart rate — one of the heaviest signals. The number still holds, with less precision.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Worked out without resting heart rate — one of the heaviest signals. The number still holds, with less precision."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calculada sin FC en reposo — una de las señales de mayor peso. El número sigue valiendo, con menos precisión."
+          }
+        }
+      }
+    },
     "Working…": {
       "localizations": {
         "en": {
@@ -36754,19 +36873,19 @@
         }
       }
     },
-    "Your autonomic load for the day: how activated your body is. We take today's resting heart rate and HRV, compare each with your own 30-day baseline as a z-score, and map the combined shift onto a 0–3 scale through a logistic curve (0 calm · 1.5 your baseline · 3 highly activated). It's an estimate, not a diagnosis.": {
+    "Your autonomic load for the day: how activated your body is. We take today's resting heart rate and HRV, compare each with your own 30-day baseline as a z-score, and map the combined shift onto a 0–3 scale through a logistic curve (0 calm · 1.5 your baseline · 3 highly activated). This number is your whole day against your baseline of the last ~30 days — a different lens from the day map below, which marks the moments you spiked. It's an estimate, not a diagnosis.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your autonomic load for the day: how activated your body is. We take today's resting heart rate and HRV, compare each with your own 30-day baseline as a z-score, and map the combined shift onto a 0–3 scale through a logistic curve (0 calm · 1.5 your baseline · 3 highly activated). It's an estimate, not a diagnosis."
+            "value": "Your autonomic load for the day: how activated your body is. We take today's resting heart rate and HRV, compare each with your own 30-day baseline as a z-score, and map the combined shift onto a 0–3 scale through a logistic curve (0 calm · 1.5 your baseline · 3 highly activated). This number is your whole day against your baseline of the last ~30 days — a different lens from the day map below, which marks the moments you spiked. It's an estimate, not a diagnosis."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu carga autonómica del día: qué tan activado está tu cuerpo. Tomamos tu frecuencia en reposo y tu HRV de hoy, comparamos cada una con tu propia base de 30 días como z-score, y mapeamos el desplazamiento combinado a una escala 0–3 con una curva logística (0 en calma · 1.5 tu base · 3 muy activado). Es una estimación, no un diagnóstico."
+            "value": "Tu carga autonómica del día: qué tan activado está tu cuerpo. Tomamos tu frecuencia en reposo y tu HRV de hoy, comparamos cada una con tu propia base de 30 días como z-score, y mapeamos el desplazamiento combinado a una escala 0–3 con una curva logística (0 en calma · 1.5 tu base · 3 muy activado). Este número es tu día completo frente a tu base de los últimos ~30 días — una lente distinta a la del mapa del día de abajo, que marca los momentos en que te disparaste. Es una estimación, no un diagnóstico."
           }
         }
       }
@@ -38654,6 +38773,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "fuerte"
+          }
+        }
+      }
+    },
+    "a touch below baseline": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "a touch below baseline"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "un poco por debajo de la línea base"
           }
         }
       }
@@ -43617,142 +43753,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "✓"
-          }
-        }
-      }
-    },
-    "If a signal is missing on a given night, its weight is shared among the others.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "If a signal is missing on a given night, its weight is shared among the others."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Si falta alguna señal esa noche, su peso se reparte entre las demás."
-          }
-        }
-      }
-    },
-    "Each signal becomes a score of how far above or below your personal average it sits; they're averaged with the weights above and mapped onto a 0–100 scale, calibrated so a typical day lands near 58.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Each signal becomes a score of how far above or below your personal average it sits; they're averaged with the weights above and mapped onto a 0–100 scale, calibrated so a typical day lands near 58."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cada señal se vuelve un puntaje de qué tan arriba o abajo está de tu promedio personal; se promedian con los pesos de arriba y se ajustan a una escala 0–100, calibrada para que un día típico caiga cerca de 58."
-          }
-        }
-      }
-    },
-    "a touch below baseline": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "a touch below baseline"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "un poco por debajo de la línea base"
-          }
-        }
-      }
-    },
-    "Partial estimate": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Partial estimate"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Estimación parcial"
-          }
-        }
-      }
-    },
-    "Partial estimate. ": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Partial estimate. "
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Estimación parcial. "
-          }
-        }
-      }
-    },
-    "Worked out without HRV or resting heart rate — the two heaviest signals. The number still holds, with less precision.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Worked out without HRV or resting heart rate — the two heaviest signals. The number still holds, with less precision."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Calculada sin HRV ni FC en reposo — las dos señales de mayor peso. El número sigue valiendo, con menos precisión."
-          }
-        }
-      }
-    },
-    "Worked out without HRV — one of the heaviest signals. The number still holds, with less precision.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Worked out without HRV — one of the heaviest signals. The number still holds, with less precision."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Calculada sin HRV — una de las señales de mayor peso. El número sigue valiendo, con menos precisión."
-          }
-        }
-      }
-    },
-    "Worked out without resting heart rate — one of the heaviest signals. The number still holds, with less precision.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Worked out without resting heart rate — one of the heaviest signals. The number still holds, with less precision."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Calculada sin FC en reposo — una de las señales de mayor peso. El número sigue valiendo, con menos precisión."
           }
         }
       }
