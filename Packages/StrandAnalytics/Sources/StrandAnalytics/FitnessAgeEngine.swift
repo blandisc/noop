@@ -5,10 +5,11 @@ import Foundation
 // INDEPENDENT implementation of published, peer-reviewed methods (NOT medical advice; a fitness
 // comparison, never a "biological age"):
 //   • VO₂max estimate: Nes et al. 2011 HUNT non-exercise model, WAIST-CIRCUMFERENCE variant — the
-//     CONFIRMED original (Nes 2011, Med Sci Sports Exerc 43(11):2024-2030; coefficients reproduced
-//     verbatim in JAHA/Ball State 2020, PMC7428991, and corroborated by CERG/NTNU). SEE ≈ 5.70 (men) /
-//     5.14 (women). (The BMI-variant coefficients that circulate from a 2019 secondary source were NOT
-//     reliably confirmable against the original and are deliberately NOT used here.)
+//     CONFIRMED original (Nes 2011, Med Sci Sports Exerc 43(11):2024-2030, PMID 21502897), corroborated
+//     by CERG/NTNU. SEE ≈ 5.70 (men) / 5.14 (women). A secondary "verbatim reproduction" (JAHA/Ball
+//     State 2020, PMC7428991) COULD NOT be verified, so the primary Nes 2011 alone anchors these
+//     coefficients (FER-657). (The BMI-variant coefficients that circulate from a 2019 secondary source
+//     were NOT reliably confirmable against the original and are deliberately NOT used here.)
 //   • Physical-activity index: HUNT1 PA-Q (Kurtze 2008), frequency×intensity×duration ∈ [0, 15];
 //     NOOP has no questionnaire, so it RECONSTRUCTS each factor from measured weekly signals.
 //   • Fitness Age: invert the SAME Nes equation self-consistently — the normative curve is the Nes
