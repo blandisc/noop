@@ -69,9 +69,13 @@ public enum AppleRecoveryEstimator {
     static let buildingNights = 7
     // Below `Baselines.minNightsSeed` (4) the baseline isn't usable → no estimate at all.
 
-    /// Minimum measured sleep (minutes) for "full" overnight coverage. A loose proxy:
-    /// Apple's SDNN is all-day, so a short/absent night signals thin coverage and drops
-    /// the grade one tier. Product-calibration knob, not a validated threshold.
+    /// Minimum measured sleep (minutes) to score a night at all. This is a SLEEP-COVERAGE
+    /// floor, not an HRV-stability one: SDNN stabilizes in minutes (Task Force 1996), so 3 h
+    /// is not about the HRV window settling — it is a proxy that a genuine night is present
+    /// (essentially over), not a sliver of the current in-progress one. Below it the night
+    /// is OMITTED (UI shows "—"). This is what suppresses the just-after-midnight night
+    /// (~2 h logged), which otherwise scored an inflated "estimado 100" off HRV alone
+    /// (FER-697). Product-calibration knob, not a validated threshold.
     static let coverageSleepMinThreshold: Double = 180   // ~3 h
 
     // MARK: - Estimate
@@ -84,6 +88,8 @@ public enum AppleRecoveryEstimator {
     /// baseline (same approach as the strap's pass-2 recompute). Returns an estimate ONLY
     /// for nights whose Apple HRV baseline is `usable` (≥ `minNightsSeed` valid SDNN
     /// nights); below that the night is omitted (honest cold-start → the UI shows "—").
+    /// A night is ALSO omitted when its measured sleep is below `coverageSleepMinThreshold`
+    /// (too thin to score — same "—" as cold-start; see FER-697).
     ///
     /// `nights` must be ordered oldest → newest (the baseline replay is chronological).
     public static func estimate(nights: [Night]) -> [DayEstimate] {
@@ -100,6 +106,12 @@ public enum AppleRecoveryEstimator {
         var out: [DayEstimate] = []
         for n in nights {
             guard let sdnn = n.hrvSDNN else { continue }   // HRV is the required driver
+            // Coverage gate (FER-697): below the minimum measured sleep the night is too
+            // thin to stand as a number — omit it (UI shows "—") rather than emit a score
+            // with a merely-lowered confidence grade. This is what suppresses the
+            // in-progress current night just after midnight (~2 h logged): with sleep/RHR
+            // still absent, HRV alone drove the composite up to an inflated ~100.
+            guard (n.sleepMinutes ?? 0) >= coverageSleepMinThreshold else { continue }
             let score = RecoveryScorer.recovery(
                 hrv: sdnn,
                 rhr: n.restingHr ?? 0,                      // unused when rhrBaseline is nil
@@ -110,19 +122,18 @@ public enum AppleRecoveryEstimator {
                 sleepPerf: n.sleepPerf)
             guard let score else { continue }               // nil = cold-start guard inside the scorer
             out.append(DayEstimate(day: n.day, score: score,
-                                   confidence: confidence(hrvBaselineNights: hrvBase.nValid,
-                                                          sleepMinutes: n.sleepMinutes)))
+                                   confidence: confidence(hrvBaselineNights: hrvBase.nValid)))
         }
         return out
     }
 
-    /// Confidence grade from (a) how many Apple SDNN nights back the baseline and
-    /// (b) this night's overnight coverage. Thin baseline or poor coverage → lower grade.
-    static func confidence(hrvBaselineNights nValid: Int, sleepMinutes: Double?) -> ScoreConfidence {
-        let base: ScoreConfidence = nValid >= solidNights ? .solid
-                                  : nValid >= buildingNights ? .building
-                                  : .calibrating
-        let poorCoverage = (sleepMinutes ?? 0) < coverageSleepMinThreshold
-        return poorCoverage ? base.lowered : base
+    /// Confidence grade from how many Apple SDNN nights back the baseline. Coverage is a
+    /// hard gate in `estimate` (nights below `coverageSleepMinThreshold` are omitted, not
+    /// downgraded), so every scored night has already cleared it — the grade tracks only
+    /// how settled the baseline is.
+    static func confidence(hrvBaselineNights nValid: Int) -> ScoreConfidence {
+        nValid >= solidNights ? .solid
+      : nValid >= buildingNights ? .building
+      : .calibrating
     }
 }
