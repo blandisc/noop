@@ -20,11 +20,12 @@ import Foundation
 // data overrides them quickly), not point estimates from a specific published cohort:
 //   - Alcohol lowering next-day recovery/HRV is a robust, repeatedly-observed direction in
 //     wearable and lab work (e.g. Pietilä et al. 2018, "Acute effect of alcohol intake on
-//     cardiovascular autonomic regulation during the first hours of sleep", JMIR); the −5
+//     cardiovascular autonomic regulation during the first hours of sleep", JMIR Mental
+//     Health 5(1):e23); the −5
 //     Charge/drink magnitude here is a deliberately gentle stand-in, not their coefficient.
 //   - Later-in-day caffeine blunting HRV/sleep is likewise directionally supported
 //     (e.g. Drake et al. 2013, "Caffeine effects on sleep taken 0, 3, or 6 hours before
-//     going to bed", J Clin Sleep Med); −4 ms/step is a conservative timing proxy.
+//     going to bed", J Clin Sleep Med 9(11):1195–1200); −4 ms/step is a conservative timing proxy.
 // Any consumer of these values must present them as "typical, not yours / not clinical".
 
 /// Identifies a dosed behaviour whose dose-response has a documented population prior.

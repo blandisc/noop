@@ -22,7 +22,8 @@ import Foundation
 //      n_user ≫ k ⇒ β → β_user. β is then clamped to the prior's sane range. This is textbook
 //      empirical-Bayes / James–Stein shrinkage of a noisy per-unit slope toward a population
 //      mean (James & Stein 1961; Efron & Morris 1975, "Data Analysis Using Stein's
-//      Estimator and Its Generalizations", JASA) — the weight is the classic n/(n+k) blend.
+//      Estimator and Its Generalizations", JASA 70(350):311–319) — the weight is the classic
+//      n/(n+k) blend.
 //   4. Report the per-incremental-unit Δ (= β), the personal curve points for the chart, and
 //      a ScoreConfidence from n_user (mostly-prior → calibrating; blended → building;
 //      personal-dominant with enough nights → solid).
