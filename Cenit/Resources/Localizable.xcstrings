@@ -1,6 +1,70 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Above your baseline, ready for a strong day.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Above your baseline, ready for a strong day."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por encima de tu línea base, listo para un día fuerte."
+          }
+        }
+      }
+    },
+    "Recovering, train but keep it controlled.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovering, train but keep it controlled."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuperándote, entrena pero con control."
+          }
+        }
+      }
+    },
+    "Low, prioritize rest today.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Low, prioritize rest today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bajo, prioriza el descanso hoy."
+          }
+        }
+      }
+    },
+    "Source · calculated": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source · calculated"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Origen · calculado"
+          }
+        }
+      }
+    },
     "Looked steady.": {
       "extractionState": "manual",
       "localizations": {
