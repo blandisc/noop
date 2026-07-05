@@ -1,6 +1,7 @@
 #if os(iOS)
 import SwiftUI
 import StrandDesign
+import StrandAnalytics
 import WhoopStore
 
 // MARK: - Ajustes (the Settings tab root) — FER-337
@@ -103,6 +104,7 @@ private struct AjustesLanding: View {
     @State private var showLog = false
     @State private var showAdvanced = false
     @State private var showMaxHR = false
+    @State private var showStepsCal = false
     @State private var profileWheel: ProfileWheel? = nil
     @State private var darkScreen: AjustesDarkScreen? = nil
     @State private var confirmDisconnect = false
@@ -135,6 +137,9 @@ private struct AjustesLanding: View {
         }
         .sheet(isPresented: $showMaxHR) {
             MaxHRSheet().instrumentoTheme(theme).environmentObject(profile)
+        }
+        .sheet(isPresented: $showStepsCal) {
+            StepsCalibrationSheet().instrumentoTheme(theme).environmentObject(profile)
         }
         .sheet(item: $profileWheel) { wheel in
             ProfileWheelSheet(wheel: wheel).instrumentoTheme(theme).environmentObject(profile)
@@ -212,6 +217,13 @@ private struct AjustesLanding: View {
             divider
             valueRow("Max heart rate", value: maxHRDisplay,
                      a11y: "Maximum heart rate, \(maxHRDisplay)") { showMaxHR = true }
+            // Estimación de pasos (FER-663) — solo aplica a la WHOOP 4.0 (sin contador nativo por BLE);
+            // en un 5/MG la fila no aparece: el contador del strap manda y no hay nada que calibrar.
+            if WhoopModel.persisted == .whoop4 {
+                divider
+                valueRow("Steps estimate", value: stepsCalDisplay,
+                         a11y: "Steps estimate, \(stepsCalDisplay)") { showStepsCal = true }
+            }
         }
     }
 
@@ -227,6 +239,12 @@ private struct AjustesLanding: View {
         profile.hrMaxOverride > 0
             ? "\(profile.hrMaxOverride) bpm"
             : String(localized: "Auto · \(profile.hrMax) bpm")
+    }
+    /// One-line state for the «Steps estimate» row (FER-663): manual override, auto-fit, or not yet.
+    private var stepsCalDisplay: String {
+        if profile.stepsManualCoefficient > 0 { return String(localized: "Manual") }
+        if profile.stepsCalibrationCoefficient > 0 { return String(localized: "Auto") }
+        return String(localized: "Not calibrated")
     }
 
     // MARK: - Your strap (A4: status + action + log only; A7: disconnect demoted)
@@ -615,6 +633,102 @@ private struct MaxHRSheet: View {
         .background(theme.paper.ignoresSafeArea())
         .fittedSheet()
         .onAppear { manual = profile.hrMaxOverride > 0 }
+    }
+}
+
+// MARK: - Steps estimate calibration (FER-663 — WHOOP 4.0 only)
+
+/// «Estimación de pasos» — a focused sheet over the StepsEstimateEngine calibration. Auto shows the
+/// current fit state (days used + confidence, or how many more overlapping days are needed); Manual
+/// reveals a slider writing `profile.stepsManualCoefficient` (0 = auto), for users with no phone step
+/// history to fit against. The copy always says ESTIMATE — the 4.0's motion data can't count strides.
+private struct StepsCalibrationSheet: View {
+    @Environment(\.instrumentoTheme) private var theme
+    @EnvironmentObject private var profile: ProfileStore
+    /// Local mode toggle. Drives the override: Auto → 0; Manual → keep/seed a concrete coefficient.
+    @State private var manual = false
+
+    /// Slider headroom: generous over whatever the auto-fit found so a manual nudge in either
+    /// direction is reachable; floor keeps the slider usable before any fit exists.
+    private var sliderMax: Double {
+        max(profile.stepsCalibrationCoefficient, profile.stepsManualCoefficient, 50) * 2
+    }
+    /// Full fit line with a coarse confidence word (≥0.7 high, ≥0.4 medium, else low). Three whole
+    /// sentences (not an interpolated word) so the es translation can agree in gender («confianza alta»).
+    private var fitLine: Text {
+        let n = profile.stepsCalibrationSampleDays
+        let c = profile.stepsCalibrationConfidence
+        if c >= 0.7 { return Text("Fit from \(n) days your iPhone also counted steps. Confidence: high.") }
+        if c >= 0.4 { return Text("Fit from \(n) days your iPhone also counted steps. Confidence: medium.") }
+        return Text("Fit from \(n) days your iPhone also counted steps. Confidence: low.")
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Profile").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("Steps estimate").font(StrandFont.title1).foregroundStyle(theme.ink)
+            }
+
+            Picker("Mode", selection: $manual) {
+                Text("Automatic").tag(false)
+                Text("Manual").tag(true)
+            }
+            .pickerStyle(.segmented)
+            .onChange(of: manual) { _, isManual in
+                if isManual {
+                    if profile.stepsManualCoefficient == 0 {
+                        profile.stepsManualCoefficient = profile.stepsCalibrationCoefficient > 0
+                            ? profile.stepsCalibrationCoefficient : 50
+                    }
+                } else { profile.stepsManualCoefficient = 0 }
+            }
+
+            if manual {
+                VStack(alignment: .center, spacing: 4) {
+                    Text(String(format: "%.0f", profile.stepsManualCoefficient))
+                        .font(StrandFont.number(48)).foregroundStyle(theme.ink)
+                    Text("steps per unit of motion").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                }
+                .frame(maxWidth: .infinity)
+                Slider(value: $profile.stepsManualCoefficient, in: 1...sliderMax, step: 1)
+                    .tint(theme.ink)
+                    .accessibilityLabel(Text("Steps per unit of motion, \(Int(profile.stepsManualCoefficient))"))
+                Text("Raise it if the estimate runs low against a day you know; lower it if it runs high.")
+                    .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if profile.stepsCalibrationCoefficient > 0 {
+                VStack(alignment: .center, spacing: 4) {
+                    Text(String(format: "%.0f", profile.stepsCalibrationCoefficient))
+                        .font(StrandFont.number(48)).foregroundStyle(theme.ink)
+                    Text("steps per unit of motion").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 24)
+                fitLine
+                    .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                VStack(alignment: .center, spacing: 4) {
+                    Text("—").font(StrandFont.number(48)).foregroundStyle(theme.inkDim)
+                    Text("not calibrated yet").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 24)
+                Text("Needs \(max(0, StepsEstimateEngine.minCalibrationDays - profile.stepsCalibrationSampleDays)) more days where your iPhone also counted steps — or set the coefficient manually.")
+                    .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Text("A WHOOP 4.0 sends no step count, so Cénit estimates steps from wrist motion calibrated against your iPhone. It is always an estimate, never an exact count.")
+                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(NoopMetrics.screenPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.paper.ignoresSafeArea())
+        .fittedSheet()
+        .onAppear { manual = profile.stepsManualCoefficient > 0 }
     }
 }
 

@@ -43756,6 +43756,126 @@
           }
         }
       }
+    },
+    "est.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "est."
+          }
+        }
+      }
+    },
+    "Steps estimate": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimación de pasos"
+          }
+        }
+      }
+    },
+    "Not calibrated": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin calibrar"
+          }
+        }
+      }
+    },
+    "steps per unit of motion": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pasos por unidad de movimiento"
+          }
+        }
+      }
+    },
+    "not calibrated yet": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "aún sin calibrar"
+          }
+        }
+      }
+    },
+    "Steps per unit of motion, %lld": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pasos por unidad de movimiento, %lld"
+          }
+        }
+      }
+    },
+    "Raise it if the estimate runs low against a day you know; lower it if it runs high.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Súbelo si la estimación se queda corta contra un día que conoces; bájalo si se pasa."
+          }
+        }
+      }
+    },
+    "Fit from %lld days your iPhone also counted steps. Confidence: high.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajustado con %lld días en que tu iPhone también contó pasos. Confianza: alta."
+          }
+        }
+      }
+    },
+    "Fit from %lld days your iPhone also counted steps. Confidence: medium.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajustado con %lld días en que tu iPhone también contó pasos. Confianza: media."
+          }
+        }
+      }
+    },
+    "Fit from %lld days your iPhone also counted steps. Confidence: low.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajustado con %lld días en que tu iPhone también contó pasos. Confianza: baja."
+          }
+        }
+      }
+    },
+    "Needs %lld more days where your iPhone also counted steps — or set the coefficient manually.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Faltan %lld días en que tu iPhone también cuente pasos — o fija el coeficiente manualmente."
+          }
+        }
+      }
+    },
+    "A WHOOP 4.0 sends no step count, so Cénit estimates steps from wrist motion calibrated against your iPhone. It is always an estimate, never an exact count.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La WHOOP 4.0 no manda conteo de pasos, así que Cénit los estima desde el movimiento de la muñeca, calibrado contra tu iPhone. Siempre es una estimación, nunca un conteo exacto."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

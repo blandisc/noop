@@ -96,6 +96,11 @@ struct TodayView: View {
     #endif
 
     @State private var appleDays: [AppleDaily] = []
+    // FER-663: la estimación de pasos on-device por día (key "steps_est", fuente computada "-noop"),
+    // oldest→newest. Solo la escribe el motor para una WHOOP 4.0 calibrada (en 5/MG el contador nativo
+    // manda y la serie queda vacía). El tile de Pasos cae a ella únicamente cuando el día no tiene
+    // conteo real de Apple Salud — y siempre rotulada «est.» para que nunca se lea como conteo medido.
+    @State private var stepsEst: [(day: String, value: Double)] = []
     // Apple-Health daily metric rows (sleep/HRV/RHR/SpO₂) read straight from the apple-health source,
     // so Key Metrics can fall back to them when a strap row clobbered Apple's row for the day in the
     // dashboard merge (e.g. a WHOOP 4.0 that didn't decode HRV/sleep). (FER-98)
@@ -2145,11 +2150,15 @@ struct TodayView: View {
         // así el tile, el héroe del Detalle y la curva muestran UN solo número (FER-650). Cae al asentado
         // mientras el vivo aún no se computa. Los días pasados no lo tocan.
         let strainT = model.displayedDayStrain
-        // Pasos: sólo Apple Salud; acota a la ventana de 14 días para no mostrar pasos rancios bajo un
-        // tile de "hoy".
+        // Pasos: Apple Salud primero; acota a la ventana de 14 días para no mostrar pasos rancios bajo
+        // un tile de "hoy". Sin conteo real, cae a la ESTIMACIÓN on-device de la WHOOP 4.0 (steps_est,
+        // FER-663) — el real siempre gana; la estimación solo llena el hueco, rotulada «est.».
         let stepsCutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -13, to: Date()) ?? Date())
         let stepsFresh  = appleDays.last(where: { $0.day >= stepsCutoff })?.steps
-        let stepsT      = stepsFresh.map(Double.init)
+        let stepsEstFresh = stepsFresh == nil
+            ? stepsEst.last(where: { $0.day >= stepsCutoff }).map { Int($0.value.rounded()) }
+            : nil
+        let stepsT      = (stepsFresh ?? stepsEstFresh).map(Double.init)
         let stressT     = stress?.score
         // Base para la media de 7 días de cada tile (FER-258): días anteriores a hoy, ordenados,
         // computada una vez por render (no por tile).
@@ -2217,17 +2226,26 @@ struct TodayView: View {
                                          betterHigher: true, deadband: 0.5, positive: positiveDelta) { "\(Int($0.rounded())) %" },
                     series: areaSeries(base, today: spo2R?.value) { $0.spo2Pct }
                 )) { metricDetail = .spo2(spo2R?.value) }
-                // Pasos — sin meta (no existe en la app); más es mejor.
+                // Pasos — sin meta (no existe en la app); más es mejor. Con conteo real (Apple) el tile
+                // es el de siempre; en un día estimado (WHOOP 4.0, FER-663) el valor lleva «est.», el
+                // chip pasa a «calculado» y el contexto/serie comparan estimación-contra-estimación
+                // (nunca se mezcla la estimación con la media de conteos reales).
                 metricTile(TodayMetricTile(
                     label: "Steps",
                     icon: "figure.walk",
                     value: stepsT.map { intString($0) } ?? "—",
+                    unit: stepsEstFresh != nil ? String(localized: "est.") : nil,
                     valueColor: theme.dataSteps,
-                    source: .apple,
-                    context: tileContext(today: stepsT, history: history(base) { $0.steps.map(Double.init) },
-                                         betterHigher: true, deadband: 100, positive: positiveDelta) { intString($0) },
-                    series: areaSeries(base, today: stepsT) { $0.steps.map(Double.init) }
-                )) { metricDetail = .steps(stepsFresh) }
+                    source: stepsEstFresh != nil ? .calculated : .apple,
+                    context: stepsEstFresh != nil
+                        ? tileContext(today: stepsT, history: stepsEstHistory,
+                                      betterHigher: true, deadband: 100, positive: positiveDelta) { intString($0) }
+                        : tileContext(today: stepsT, history: history(base) { $0.steps.map(Double.init) },
+                                      betterHigher: true, deadband: 100, positive: positiveDelta) { intString($0) },
+                    series: stepsEstFresh != nil
+                        ? Array(stepsEst.suffix(14).map { $0.value })
+                        : areaSeries(base, today: stepsT) { $0.steps.map(Double.init) }
+                )) { metricDetail = .steps(stepsFresh ?? stepsEstFresh) }
                 // Estrés — más alto es PEOR; valor bandeado por nivel 0–3 (verde/ámbar/rojo).
                 metricTile(TodayMetricTile(
                     label: "Stress",
@@ -2483,6 +2501,13 @@ struct TodayView: View {
     private var stressHistory: [Double] {
         guard let trend = stress?.fullTrend, !trend.isEmpty else { return [] }
         return Array(trend.dropLast().suffix(7).map { $0.value })
+    }
+
+    /// La base de 7 días de la estimación de pasos (FER-663), excluyendo hoy — la media del tile en un
+    /// día estimado compara estimación-contra-estimación, nunca contra los conteos reales de Apple.
+    private var stepsEstHistory: [Double] {
+        let todayKey = Repository.localDayKey(Date())
+        return Array(stepsEst.filter { $0.day < todayKey }.suffix(7).map { $0.value })
     }
 
     /// El contexto de un tile (FER-258): compara hoy contra la media de 7 días de `history` y arma la
@@ -2870,6 +2895,8 @@ struct TodayView: View {
         async let amRows     = repo.appleDailyMetricRows()
         // Stored daily "stress" series (0–3) — the model prefers it, else derives from RHR/HRV. (FER-180)
         async let stressRows = repo.series(key: "stress", source: "my-whoop")
+        // Estimación de pasos WHOOP 4.0 (FER-663) — vacía salvo que el motor la haya calibrado y escrito.
+        async let stepsEstRows = repo.series(key: "steps_est", source: "my-whoop-noop", days: 60)
 
         // Today's HR trend — 5-minute bucket means from local midnight → now.
         let startOfToday = Int(Calendar.current.startOfDay(for: Date()).timeIntervalSince1970)
@@ -2878,6 +2905,7 @@ struct TodayView: View {
 
         appleDays = await adRows
         appleMetricDays = (await amRows).sorted { $0.day < $1.day }
+        stepsEst = (await stepsEstRows).sorted { $0.day < $1.day }
         hrPoints  = await hrBucketRows
             .map { TrendPoint(date: Date(timeIntervalSince1970: TimeInterval($0.ts)), value: $0.bpm) }
         // Build today's stress model from the day rows + stored series (nil when there's no usable

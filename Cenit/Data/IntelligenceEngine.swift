@@ -322,6 +322,73 @@ final class IntelligenceEngine: ObservableObject {
                                             from: windowStart, to: now)
         if !workoutRows.isEmpty { _ = try? await store.upsertWorkouts(workoutRows, deviceId: computedId) }
 
+        // ── Steps ESTIMATE (WHOOP 4.0 only, FER-663) — daily, keyed to each strap day ───────────────
+        // A WHOOP 4.0 sends no step counter over BLE (the @57 counter is 5/MG-only), so we ESTIMATE
+        // steps from the strap's daily motion volume, calibrated per-user against the phone's step
+        // count (Apple Health) on days both exist. Engine = StepsEstimateEngine (StrandAnalytics,
+        // unit-tested); this block is pure orchestration — gather points, fit, upsert `steps_est`
+        // under the computed "-noop" source, mirror the fit into ProfileStore for Settings/the tile.
+        // Idempotent (re-upserts the same (computedId, day, "steps_est") rows). Inert until there's a
+        // calibration — a user with no phone steps sees no estimate until they set a manual `k`.
+        // Days the phone DID count keep their real value (the tile prefers real over estimate); on a
+        // 5/MG the block never runs — the native counter is authoritative (no estimate needed).
+        if family == .whoop4 {
+            // Calibration window: a generous 60 days (not the 21 the scoring loop uses) so enough
+            // both-have days accumulate to fit. Reference steps = the apple-health daily `steps`
+            // (the same source the dashboard's steps tile reads); motion = the [localMidnight, +24h)
+            // gravity volume — the same calendar-day window the daily totals use (FER-226).
+            let stepsCalDays = 60
+            let calRows = mode.usesAppleHealth
+                ? ((try? await store.dailyMetrics(
+                        deviceId: "apple-health",
+                        from: AnalyticsEngine.dayString(now - (stepsCalDays - 1) * 86_400, tzOffsetSeconds: tzOffset),
+                        to: AnalyticsEngine.dayString(now, tzOffsetSeconds: tzOffset))) ?? [])
+                : []
+            var refStepsByDay: [String: Double] = [:]
+            for r in calRows where (r.steps ?? 0) > 0 { refStepsByDay[r.day] = Double(r.steps!) }
+            var motionByDay: [String: Double] = [:]
+            for off in 0..<stepsCalDays {
+                let dayMid = AnalyticsEngine.localMidnight(now - off * 86_400, tzOffsetSeconds: tzOffset)
+                let dayKey = AnalyticsEngine.dayString(dayMid, tzOffsetSeconds: tzOffset)
+                let grav = (try? await store.gravitySamples(deviceId: deviceId, from: dayMid,
+                                                            to: dayMid + 86_400 - 1, limit: 200_000)) ?? []
+                let m = StepsEstimateEngine.dayMotionIntensity(grav)
+                if m > 0 { motionByDay[dayKey] = m }
+            }
+            let manualK: Double? = profile.stepsManualCoefficient > 0 ? profile.stepsManualCoefficient : nil
+            let calPoints = motionByDay.compactMap { (day, motion) -> StepsEstimateEngine.CalibrationPoint? in
+                guard let s = refStepsByDay[day] else { return nil }
+                return StepsEstimateEngine.CalibrationPoint(motion: motion, steps: s)
+            }
+            if let cal = StepsEstimateEngine.calibrate(calPoints, manualOverride: manualK) {
+                // Estimate + upsert every motion day WITHOUT a real phone count (a real count wins; the
+                // estimate only fills the gaps). The whole 60-day window re-upserts so the history keeps
+                // improving as the calibration converges.
+                var estPts: [MetricPoint] = []
+                for (day, motion) in motionByDay where refStepsByDay[day] == nil {
+                    guard let est = StepsEstimateEngine.estimate(motion: motion, calibration: cal) else { continue }
+                    estPts.append(MetricPoint(day: day, key: "steps_est", value: Double(est)))
+                }
+                if !estPts.isEmpty { _ = try? await store.upsertMetricSeries(estPts, deviceId: computedId) }
+                // Mirror the fit into ProfileStore so Settings can show + adjust the calibration.
+                profile.stepsCalibrationCoefficient = cal.coefficient
+                profile.stepsCalibrationSampleDays = cal.sampleDays
+                profile.stepsCalibrationConfidence = cal.confidence
+                profile.stepsCalibrationManual = cal.manual
+            } else {
+                // Not yet calibrated (too few overlapping phone-counted days, no manual override).
+                // Persist the PROGRESS so Settings/the tile can say how many more days are needed
+                // instead of going silently blank. Coefficient stays 0 (the "not calibrated" gate the
+                // UI keys off); sampleDays carries the usable-day count for the "need N more" copy.
+                if case let .needsMoreDays(have, _) = StepsEstimateEngine.status(calPoints, manualOverride: manualK) {
+                    profile.stepsCalibrationCoefficient = 0
+                    profile.stepsCalibrationSampleDays = have
+                    profile.stepsCalibrationConfidence = 0
+                    profile.stepsCalibrationManual = false
+                }
+            }
+        }
+
         results = out
         note = out.isEmpty
             ? String(localized: "No scored nights yet. Wear the strap with Cénit connected overnight and the engine will score your recovery, strain and sleep itself, no WHOOP cloud required.")
