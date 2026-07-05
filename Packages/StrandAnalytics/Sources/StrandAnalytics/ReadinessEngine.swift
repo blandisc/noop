@@ -340,14 +340,21 @@ public enum ReadinessEngine {
         return Signal(key: key, label: label, detail: text, flag: flag, value: valueText, z: dev.z)
     }
 
+    /// The acute:chronic thresholds, public so UI scales (the Tendencias sheet's band bar and the
+    /// mini-trend's shaded balance zone, FER-705) draw the SAME numbers `loadBand` cuts on and can
+    /// never drift from the engine.
+    public static let acwrSweetSpotLow  = 0.8
+    public static let acwrSweetSpotHigh = 1.3
+    public static let acwrSpikeAt       = 1.5
+
     /// The one place the acute:chronic thresholds live. `acwrSignal` and `Readiness.loadBand`
     /// both route through this, so the verdict word and the signal sentence can never disagree.
     public static func loadBand(forACWR ratio: Double) -> LoadBand {
         switch ratio {
-        case ..<0.8:    return .rampingDown
-        case 0.8..<1.3: return .sweetSpot
-        case 1.3..<1.5: return .buildingFast
-        default:        return .spiking
+        case ..<acwrSweetSpotLow:                  return .rampingDown
+        case acwrSweetSpotLow..<acwrSweetSpotHigh: return .sweetSpot
+        case acwrSweetSpotHigh..<acwrSpikeAt:      return .buildingFast
+        default:                                   return .spiking
         }
     }
 
@@ -362,13 +369,19 @@ public enum ReadinessEngine {
         let sorted = days.sorted { $0.day < $1.day }
         let strains = sorted.compactMap { d in d.strain.map { (day: d.day, load: strainToLoad($0)) } }
         guard strains.count >= minChronic else { return [] }
+        let loads = strains.map(\.load)
+        // Mean of the trailing `w` loads ending at index i — the same suffix mean `evaluate` folds,
+        // computed by index so the prefix is never copied per day (keeps a multi-year history O(n·w)).
+        func windowMean(endingAt i: Int, width w: Int) -> Double {
+            let lo = max(0, i - w + 1)
+            return loads[lo...i].reduce(0, +) / Double(i - lo + 1)
+        }
         var out: [(day: String, ratio: Double)] = []
-        for i in (minChronic - 1)..<strains.count {
-            let loads = strains[0...i].map(\.load)
-            let acute = mean(Array(loads.suffix(acuteWindow)))!
-            let chronic = mean(Array(loads.suffix(chronicWindow)))!
+        for i in (minChronic - 1)..<loads.count {
+            let chronic = windowMean(endingAt: i, width: chronicWindow)
             guard chronic > 0 else { continue }
-            out.append((day: strains[i].day, ratio: acute / chronic))
+            out.append((day: strains[i].day,
+                        ratio: windowMean(endingAt: i, width: acuteWindow) / chronic))
         }
         return Array(out.suffix(lastN))
     }

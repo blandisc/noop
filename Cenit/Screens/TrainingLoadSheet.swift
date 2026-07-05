@@ -107,13 +107,15 @@ struct TrainingLoadSheet: View {
 
     /// The scale's display domain: ratios plotted 0…2 (a spike beyond 2 pins to the right edge).
     private static let scaleMax = 2.0
-    /// The band cut points (0.8 / 1.3 / 1.5) — display only; the thresholds live in `ReadinessEngine`.
-    private static let cuts: [Double] = [0.8, 1.3, 1.5]
+    /// The band cut points, read from the engine so the scale can never drift from `loadBand(forACWR:)`.
+    private static let cuts: [Double] = [ReadinessEngine.acwrSweetSpotLow,
+                                         ReadinessEngine.acwrSweetSpotHigh,
+                                         ReadinessEngine.acwrSpikeAt]
 
     private func bandScale(acwr: Double, band: ReadinessEngine.LoadBand) -> some View {
         let bounds: [(lo: Double, hi: Double, band: ReadinessEngine.LoadBand)] = [
-            (0, 0.8, .rampingDown), (0.8, 1.3, .sweetSpot),
-            (1.3, 1.5, .buildingFast), (1.5, Self.scaleMax, .spiking),
+            (0, Self.cuts[0], .rampingDown), (Self.cuts[0], Self.cuts[1], .sweetSpot),
+            (Self.cuts[1], Self.cuts[2], .buildingFast), (Self.cuts[2], Self.scaleMax, .spiking),
         ]
         let x = min(max(acwr, 0), Self.scaleMax) / Self.scaleMax
         return VStack(alignment: .leading, spacing: 6) {
@@ -184,7 +186,7 @@ struct TrainingLoadSheet: View {
         return VStack(alignment: .leading, spacing: 6) {
             Sparkline(values: model.series.map(\.value),
                       gradient: Gradient(colors: [color.opacity(0.5), color]),
-                      referenceBand: 0.8...1.3,
+                      referenceBand: ReadinessEngine.acwrSweetSpotLow...ReadinessEngine.acwrSweetSpotHigh,
                       bandColor: theme.hairlineStrong,
                       lineWidth: 2.0, showsArea: false, showsHead: true, showsScrub: false)
                 .frame(height: 44)

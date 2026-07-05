@@ -522,7 +522,8 @@ private struct CuerpoLanding: View {
                     let color = band.flag.color(theme)
                     Sparkline(values: load.series.map(\.value),
                               gradient: Gradient(colors: [color.opacity(0.55), color]),
-                              referenceBand: 0.8...1.3, bandColor: theme.hairlineStrong,
+                              referenceBand: ReadinessEngine.acwrSweetSpotLow...ReadinessEngine.acwrSweetSpotHigh,
+                              bandColor: theme.hairlineStrong,
                               lineWidth: 2.0, showsArea: false, showsHead: true, showsScrub: false)
                         .frame(width: 104, height: 40)
                         .allowsHitTesting(false)
