@@ -410,6 +410,14 @@ HRV powers (`hrv_lf` / `hrv_hf` / `hrv_totalpower`, ms², FER-702) persist here 
 computed source — an additive scalar cache with no schema change, alongside `steps_est` and the stress
 aggregates.
 
+**Circadian phase** — `circadianPhase(deviceId, day, tempMinHour, acrophaseHours, offsetMinutes,
+confidence, daysObserved, bedtimeHour, wakeHour, computedAt)`, PK `(deviceId, day)`: one structured
+record per local civil day holding `CircadianEngine`'s cosinor phase estimate for the «Tu reloj
+corporal» surface (FER-712). Written by the nightly `IntelligenceEngine` pass (gated to WHOOP bands —
+the phase signal is the accelerometer rest-activity rhythm). A dedicated table, not `metricSeries`,
+because the record is multi-field including an enum confidence. `confidence` is stored as the raw
+`PhaseConfidence` string; `WhoopStore` keeps no dependency on `StrandAnalytics`.
+
 **Raw outbox** — `rawBatch`: the compressed, **transient, prunable** record of original frames,
 captured only when the research toggle is on. Decoded data is always committed *before* raw is queued,
 so pruning raw (`PrunePolicy`: 24h window / 50MB cap) can never lose a metric. `cursors` holds durable
@@ -513,6 +521,14 @@ night), which is what the ring, the verdict and the recovery-detail hero read. `
   with the strap's RMSSD; SDNN is a different construct (total vs vagal variability) and ultra-short/all-day,
   so the result is labelled «estimado» with a `ScoreConfidence` grade, never equated to a band recovery
   (Task Force 1996; Shaffer & Ginsberg 2017). Pure + DB-free; surfaced read-time (see §8), not persisted.
+- **`CyclePhaseEngine`** (FER-672) estimates the current menstrual-cycle phase (follicular-lean vs
+  luteal-lean) from the nightly `skinTempDevC` NOOP already persists (+ resting HR corroboration; HRV as
+  conditional confidence only, decision H1). Robust z-index over the trailing window (median centre,
+  IllnessWatch robust σ), ≥42-night gate, states `.learning` / `.noClearPattern` / `.estimated`. Pure,
+  DB-free, **on-the-fly — no persistence, no migration, no new decode**. Opt-in, surfaced only in the
+  Experiments sheet (Ajustes), off by default. Wellness / self-knowledge only, retrospective (temp
+  confirms a phase with 1–3-day lag), never fertility/ovulation/contraception/diagnosis. Weights + gate
+  are product-calibration knobs, not validated; see docs/ANALYTICS.md for citations.
 - **`SourceLens`** (FER-623 / FER-631, formerly `HrvSourceLens`) keeps a baseline pure by source, with two
   lenses over one row classification (`appleDays` is app knowledge passed in; the package stays pure).
   `maskHrv(_:keep:appleDays:)` nils only `avgHrv` on the rows of the other source — the FER-623 path: the

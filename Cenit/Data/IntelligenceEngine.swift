@@ -408,6 +408,41 @@ final class IntelligenceEngine: ObservableObject {
             }
         }
 
+        // ── Body-clock PHASE (FER-712) — CircadianEngine cosinor over the trailing hourly activity ────
+        // Estimate the user's circadian phase from ~14 days of the band's accelerometer rest-activity
+        // rhythm and persist ONE record per day for the experimental "Tu reloj corporal" surface. Pure
+        // orchestration: gather gravity per day → build the hourly profile → estimatePhase → upsert. The
+        // phase signal is the band's motion, so gate to `usesWhoop`; skip when there's no recent sleep
+        // session to read a habitual wake from (the surface then shows "hard to read"). Idempotent
+        // (re-upserts today's row for `computedId`).
+        if mode.usesWhoop,
+           let wake = SleepWindowClock.recent(scoredNights.flatMap { $0.cachedSleep },
+                                              now: Date(timeIntervalSince1970: TimeInterval(now)))?.wake {
+            let phaseDays = 14
+            var dayGravity: [CircadianEngine.DayGravity] = []
+            for off in 0..<phaseDays {
+                let dayMid = AnalyticsEngine.localMidnight(now - off * 86_400, tzOffsetSeconds: tzOffset)
+                // Resolve the tz offset AS OF that day, so a DST change inside the window doesn't shift the
+                // local-hour binning of the affected days by an hour (the builder places samples by local hour).
+                let dayTz = TimeZone.current.secondsFromGMT(for: Date(timeIntervalSince1970: TimeInterval(dayMid)))
+                let grav = (try? await store.gravitySamples(deviceId: deviceId, from: dayMid,
+                                                            to: dayMid + 86_400 - 1, limit: 200_000)) ?? []
+                if !grav.isEmpty { dayGravity.append(.init(samples: grav, tzOffsetSeconds: dayTz)) }
+            }
+            let (bins, daysObserved) = CircadianEngine.activityBins(dayGravity)
+            if let phase = CircadianEngine.estimatePhase(bins: bins, daysObserved: daysObserved,
+                                                         habitualWakeHour: wake) {
+                let rec = CircadianPhaseRow(
+                    day: AnalyticsEngine.dayString(now, tzOffsetSeconds: tzOffset),
+                    tempMinHour: phase.tempMinHour, acrophaseHours: phase.acrophaseHours,
+                    offsetMinutes: phase.offsetVsScheduleMinutes,
+                    confidence: phase.confidence.rawValue, daysObserved: daysObserved,
+                    bedtimeHour: CircadianEngine.suggestedBedtime(tempMinHour: phase.tempMinHour),
+                    wakeHour: wake, computedAt: now)
+                _ = try? await store.upsertCircadianPhase(rec, deviceId: computedId)
+            }
+        }
+
         results = out
         note = out.isEmpty
             ? String(localized: "No scored nights yet. Wear the strap with Cénit connected overnight and the engine will score your recovery, strain and sleep itself, no WHOOP cloud required.")

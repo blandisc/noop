@@ -300,4 +300,61 @@ final class ReadinessEngineTests: XCTestCase {
         }
         XCTAssertTrue(sawDowngrade, "shrinkage never downgraded a flag across the sweep")
     }
+
+    // MARK: - ACWR series (FER-705 — Gabbett 2016; descriptive only, Impellizzeri 2020)
+
+    /// Constant strain → the acute mean equals the chronic mean on every day, so every ratio is 1.0.
+    func testAcwrSeriesConstantStrainIsFlat() {
+        var days: [DailyMetric] = []
+        for i in 1...28 { days.append(d(i, hrv: nil, rhr: nil, strain: 10)) }
+        let series = ReadinessEngine.acwrSeries(days: days)
+        XCTAssertEqual(series.count, 15, "days 14…28 each carry a ratio once minChronic is met")
+        for p in series { XCTAssertEqual(p.ratio, 1.0, accuracy: 1e-9) }
+        XCTAssertEqual(series.first?.day, "2024-03-14")
+        XCTAssertEqual(series.last?.day, "2024-03-28")
+    }
+
+    /// A late acute ramp lifts the tail of the series above the flat head (input→output direction).
+    func testAcwrSeriesRampLiftsTail() {
+        var days: [DailyMetric] = []
+        for i in 1...21 { days.append(d(i, hrv: nil, rhr: nil, strain: 5)) }
+        for i in 22...28 { days.append(d(i, hrv: nil, rhr: nil, strain: 15)) }
+        let series = ReadinessEngine.acwrSeries(days: days)
+        XCTAssertEqual(series.first!.ratio, 1.0, accuracy: 1e-9)   // flat prefix
+        XCTAssertGreaterThan(series.last!.ratio, 1.5)              // spike reads as a spike
+    }
+
+    /// Below `minChronic` (14) strain days there is no honest ratio — the series is empty,
+    /// matching the single-day read's calibration gate.
+    func testAcwrSeriesEmptyBelowMinChronic() {
+        var days: [DailyMetric] = []
+        for i in 1...13 { days.append(d(i, hrv: nil, rhr: nil, strain: 10)) }
+        XCTAssertTrue(ReadinessEngine.acwrSeries(days: days).isEmpty)
+    }
+
+    /// The series' last point is EXACTLY today's `evaluate().acwr` — one fold, replayed, so the
+    /// card's mini-trend can never end on a different number than the engine's own read.
+    func testAcwrSeriesLastPointMatchesEvaluate() {
+        var days: [DailyMetric] = []
+        for i in 1...21 { days.append(d(i, hrv: 60, rhr: 52, strain: 5)) }
+        for i in 22...28 { days.append(d(i, hrv: 60, rhr: 52, strain: 15)) }
+        days.append(d(29, hrv: 60, rhr: 52, strain: 15))
+        let r = ReadinessEngine.evaluate(days: days)
+        let series = ReadinessEngine.acwrSeries(days: days)
+        XCTAssertEqual(series.last!.ratio, r.acwr!, accuracy: 1e-9)
+        // And `lastN` trims from the head, never the tail.
+        let trimmed = ReadinessEngine.acwrSeries(days: days, lastN: 5)
+        XCTAssertEqual(trimmed.count, 5)
+        XCTAssertEqual(trimmed.last!.ratio, r.acwr!, accuracy: 1e-9)
+    }
+
+    /// Unordered input folds identically (the engine sorts by day key, same as `evaluate`).
+    func testAcwrSeriesOrderIndependent() {
+        var days: [DailyMetric] = []
+        for i in 1...28 { days.append(d(i, hrv: nil, rhr: nil, strain: Double(5 + i % 7))) }
+        let sorted = ReadinessEngine.acwrSeries(days: days)
+        let shuffled = ReadinessEngine.acwrSeries(days: days.shuffled())
+        XCTAssertEqual(sorted.map(\.day), shuffled.map(\.day))
+        for (a, b) in zip(sorted, shuffled) { XCTAssertEqual(a.ratio, b.ratio, accuracy: 1e-12) }
+    }
 }
