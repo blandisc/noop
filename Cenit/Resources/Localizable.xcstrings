@@ -43926,6 +43926,166 @@
           }
         }
       }
+    },
+    "Movement reminder": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recordatorio de movimiento"
+          }
+        }
+      }
+    },
+    "A gentle wrist buzz when you've been sitting a long stretch, so you remember to get up and walk. Sitting less through the day is linked to better long-term health, independent of your workouts.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un zumbido suave en la muñeca cuando llevas mucho rato sentado, para que te acuerdes de levantarte y caminar. Estar menos tiempo sentado a lo largo del día se asocia con mejor salud a largo plazo, independiente de tu entrenamiento."
+          }
+        }
+      }
+    },
+    "Nudge me to move": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuérdame moverme"
+          }
+        }
+      }
+    },
+    "After a long sit with no walking around, the strap buzzes on its next sync. It measures a lack of walking, not wrist stillness — typing at a desk still counts as sitting.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tras un rato largo sentado sin caminar, la banda zumba en su próxima sincronización. Mide la falta de caminata, no la quietud de la muñeca — teclear en el escritorio sigue contando como estar sentado."
+          }
+        }
+      }
+    },
+    "Sit time before a nudge": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiempo sentado antes de avisar"
+          }
+        }
+      }
+    },
+    "Then re-nudge every": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Luego repetir cada"
+          }
+        }
+      }
+    },
+    "Only during active hours": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo en horas activas"
+          }
+        }
+      }
+    },
+    "Keep the nudges inside your day so they never fire at night.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mantén los avisos dentro de tu día para que nunca suenen de noche."
+          }
+        }
+      }
+    },
+    "Active from": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activo de"
+          }
+        }
+      }
+    },
+    "Quiet hours": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Horas silenciosas"
+          }
+        }
+      }
+    },
+    "Silence the nudges during a window you choose — a meeting block, an evening wind-down.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Silencia los avisos en una franja que elijas — un bloque de juntas, la calma de la noche."
+          }
+        }
+      }
+    },
+    "Quiet from": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Silencio de"
+          }
+        }
+      }
+    },
+    "%lld h": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld h"
+          }
+        }
+      }
+    },
+    "You've been seated about %lld min. Time to move.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Llevas unos %lld min sentado. Hora de moverte."
+          }
+        }
+      }
+    },
+    "Time to move — you've been seated a while.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hora de moverte — llevas un rato sentado."
+          }
+        }
+      }
+    },
+    "Move reminder": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recordatorio de movimiento"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
