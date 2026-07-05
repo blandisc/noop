@@ -76,7 +76,7 @@ The schema falls into four groups:
 | **Bookkeeping** | `cursors` | Highwater / read cursors |
 | **Metric caches** | `sleepSession`, `dailyMetric`, `journal`, `workout`, `appleDaily`, `metricSeries` | Derived metrics + CSV / Apple-Health imports |
 | **Experiments** *(v12)* | `experiment` | N-of-1 experiments (FER-307) |
-| **Strength tracker** *(v13, +v15)* | `customExercise`, `routine`, `routineExercise`, `strengthSession`, `setEntry`, `personalRecord` | User-authored routines/sessions/sets/PRs — relational, UUID PKs. `routineExercise.supersetGroup` (v15) groups exercises into supersets. The seed exercise catalog is a bundled resource in `StrandTraining`, not in SQLite. (FER-345/346) |
+| **Strength tracker** *(v13, +v15, +v17, +v26)* | `customExercise`, `routine`, `routineExercise`, `routineSet`, `strengthSession`, `setEntry`, `personalRecord` | User-authored routines/sessions/sets/PRs — relational, UUID PKs. `routineExercise.supersetGroup` (v15) groups exercises into supersets. `routineSet` (v17) holds the per-set prescription; each set carries an optional rest override (v26, NULL = inherit the exercise). `strengthSession.energyKcal`/`energySource` (v26) persist the session's energy + its origin. The seed exercise catalog is a bundled resource in `StrandTraining`, not in SQLite. (FER-345/346/492/715) |
 | **Diet** *(v14, +v16)* | `dietPlan`, `dietAdherence` | Prescribed diet plan (`noop.diet.v1`, captured via import) + daily per-meal adherence — apego tracking. `dietAdherence.optionIndex` (v16) records which equivalent option was eaten (FER-370/401) |
 
 All timestamp columns named `ts`, `startTs`, `endTs`, `capturedAt`, etc. are **unix seconds**
@@ -108,6 +108,8 @@ Migrations are registered in `Packages/WhoopStore/Sources/WhoopStore/Database.sw
 | **v14** | Diet (FER-370): `dietPlan` (prescribed plan as an opaque `noop.diet.v1` JSON payload + denormalized columns, PK `id`) and `dietAdherence` (per-meal daily status, PK `(deviceId, day, mealId)`). Append-only. |
 | **v15** | Supersets (FER-346): adds nullable `supersetGroup` (INTEGER) to `routineExercise` — same value within a routine = one superset; NULL = standalone. Append-only `ALTER ADD COLUMN`. |
 | **v16** | Diet option (FER-401): adds nullable `optionIndex` (INTEGER) to `dietAdherence` — the 0-based index into the plan meal's `opciones` array (which equivalent was eaten); NULL = not recorded. Registro only — does not change the apego %. Append-only `ALTER ADD COLUMN`. |
+| **v17–v25** | *(not yet documented row-by-row — this table has a gap; v17 created `routineSet`, later migrations covered routine folders, HR-rest references, the weekly split, exercise-type overrides, DB compaction, and the circadian-phase table.)* |
+| **v26** | Per-set rest + persisted session energy (FER-715): four nullable rest columns on `routineSet` (`restMode`/`restSeconds`/`hrRestReference`/`hrRestValue`; NULL = inherit the exercise's rest at runtime), back-filled by copying each `routineExercise`'s rest onto ALL its sets (old data keeps today's behavior). Plus nullable `energyKcal`/`energySource` on `strengthSession` (NULL = a pre-v26 session). Append-only. |
 
 ### The vestigial `synced` column
 

@@ -163,12 +163,18 @@ extension WhoopStore {
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, arguments: StatementArguments(args))
                 for (idx, s) in planned.enumerated() {
+                    // The four rest columns are written together (FER-715): a non-nil override writes
+                    // all four, a nil `rest` writes four NULLs = "inherit the exercise" on read-back.
                     let sArgs: [DatabaseValueConvertible?] = [
-                        s.id, re.id, idx, s.kind.rawValue, s.reps, s.weightKg
+                        s.id, re.id, idx, s.kind.rawValue, s.reps, s.weightKg,
+                        s.rest?.mode.rawValue, s.rest?.seconds,
+                        s.rest?.hrReference.rawValue, s.rest?.hrValue
                     ]
                     try db.execute(sql: """
-                        INSERT INTO routineSet (id, routineExerciseId, position, kind, reps, weightKg)
-                        VALUES (?, ?, ?, ?, ?, ?)
+                        INSERT INTO routineSet
+                            (id, routineExerciseId, position, kind, reps, weightKg,
+                             restMode, restSeconds, hrRestReference, hrRestValue)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """, arguments: StatementArguments(sArgs))
                 }
             }
@@ -226,9 +232,11 @@ extension WhoopStore {
         }
     }
 
-    /// Pinpoint-update one routine exercise's rest config, editable mid-session (FER-540). Touches only
-    /// that row's four rest columns + the routine's `updatedTs` — it does NOT rewrite the routine's other
-    /// exercises or any `routineSet` rows, so the per-set prescription is untouched (unlike `saveRoutine`).
+    /// Pinpoint-update one routine exercise's rest config, editable mid-session (FER-540). Touches that
+    /// row's four rest columns + cascades the same values onto ALL its `routineSet` rows (FER-715) + the
+    /// routine's `updatedTs` — it does NOT rewrite the routine's other exercises' sets (unlike
+    /// `saveRoutine`). The cascade is required post-v26: since every set now carries a materialized rest,
+    /// an exercise-scope edit must overwrite them all or the next session would read the stale per-set copy.
     public func updateRoutineExerciseRest(routineExerciseId reId: String, routineId: String,
                                           mode: RestMode, seconds: Int,
                                           reference: HRRestReference, value: Double, updatedTs: Int) async throws {
@@ -238,6 +246,28 @@ extension WhoopStore {
                    SET restMode = ?, restSeconds = ?, hrRestReference = ?, hrRestValue = ?
                  WHERE id = ?
                 """, arguments: [mode.rawValue, seconds, reference.rawValue, value, reId])
+            try db.execute(sql: """
+                UPDATE routineSet
+                   SET restMode = ?, restSeconds = ?, hrRestReference = ?, hrRestValue = ?
+                 WHERE routineExerciseId = ?
+                """, arguments: [mode.rawValue, seconds, reference.rawValue, value, reId])
+            try db.execute(sql: "UPDATE routine SET updatedTs = ? WHERE id = ?",
+                           arguments: [updatedTs, routineId])
+        }
+    }
+
+    /// Pinpoint-update one set's rest override (FER-715). `rest == nil` clears the override (four NULLs =
+    /// the set goes back to inheriting the exercise). Touches only that `routineSet` row + the routine's
+    /// `updatedTs`; the exercise default and sibling sets are untouched (scope `.set`).
+    public func updateRoutineSetRest(routineSetId: String, routineId: String,
+                                     rest: RestConfig?, updatedTs: Int) async throws {
+        try syncWrite { db in
+            try db.execute(sql: """
+                UPDATE routineSet
+                   SET restMode = ?, restSeconds = ?, hrRestReference = ?, hrRestValue = ?
+                 WHERE id = ?
+                """, arguments: [rest?.mode.rawValue, rest?.seconds,
+                                 rest?.hrReference.rawValue, rest?.hrValue, routineSetId])
             try db.execute(sql: "UPDATE routine SET updatedTs = ? WHERE id = ?",
                            arguments: [updatedTs, routineId])
         }
@@ -348,9 +378,17 @@ extension WhoopStore {
     }
 
     private static func routineSet(_ r: Row) -> RoutineSet {
-        RoutineSet(id: r["id"], position: r["position"],
-                   kind: SetKind(rawValue: r["kind"]) ?? .work,
-                   reps: r["reps"], weightKg: r["weightKg"])
+        // The rest override reads back only when all four columns are present (FER-715): `restMode`
+        // NOT NULL is the flag — a NULL restMode (a set that inherits) yields `rest == nil`.
+        let rest: RestConfig? = (r["restMode"] as String?).map {
+            RestConfig(mode: RestMode(rawValue: $0) ?? .heartRate,
+                       seconds: r["restSeconds"] ?? 90,
+                       hrReference: HRRestReference(rawValue: r["hrRestReference"] ?? "") ?? .restingMargin,
+                       hrValue: r["hrRestValue"] ?? 0)
+        }
+        return RoutineSet(id: r["id"], position: r["position"],
+                          kind: SetKind(rawValue: r["kind"]) ?? .work,
+                          reps: r["reps"], weightKg: r["weightKg"], rest: rest)
     }
 
     // MARK: - Sessions + sets (+ PR derivation, transactional)
@@ -360,14 +398,17 @@ extension WhoopStore {
         try syncWrite { db in
             let sArgs: [DatabaseValueConvertible?] = [
                 session.id, session.routineId, session.startTs, session.endTs,
-                session.deviceId, session.strain, session.avgHr, session.notes
+                session.deviceId, session.strain, session.avgHr, session.notes,
+                session.energyKcal, session.energySource?.rawValue
             ]
             try db.execute(sql: """
-                INSERT INTO strengthSession (id, routineId, startTs, endTs, deviceId, strain, avgHr, notes)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO strengthSession
+                    (id, routineId, startTs, endTs, deviceId, strain, avgHr, notes, energyKcal, energySource)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     routineId = excluded.routineId, endTs = excluded.endTs, deviceId = excluded.deviceId,
-                    strain = excluded.strain, avgHr = excluded.avgHr, notes = excluded.notes
+                    strain = excluded.strain, avgHr = excluded.avgHr, notes = excluded.notes,
+                    energyKcal = excluded.energyKcal, energySource = excluded.energySource
                 """, arguments: StatementArguments(sArgs))
 
             try db.execute(sql: "DELETE FROM setEntry WHERE sessionId = ?", arguments: [session.id])
@@ -402,15 +443,18 @@ extension WhoopStore {
 
             let sArgs: [DatabaseValueConvertible?] = [
                 session.id, session.routineId, session.startTs, session.endTs,
-                session.deviceId, session.strain, session.avgHr, session.notes
+                session.deviceId, session.strain, session.avgHr, session.notes,
+                session.energyKcal, session.energySource?.rawValue
             ]
             try db.execute(sql: """
-                INSERT INTO strengthSession (id, routineId, startTs, endTs, deviceId, strain, avgHr, notes)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO strengthSession
+                    (id, routineId, startTs, endTs, deviceId, strain, avgHr, notes, energyKcal, energySource)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     routineId = excluded.routineId, startTs = excluded.startTs, endTs = excluded.endTs,
                     deviceId = excluded.deviceId, strain = excluded.strain, avgHr = excluded.avgHr,
-                    notes = excluded.notes
+                    notes = excluded.notes, energyKcal = excluded.energyKcal,
+                    energySource = excluded.energySource
                 """, arguments: StatementArguments(sArgs))
 
             try db.execute(sql: "DELETE FROM setEntry WHERE sessionId = ?", arguments: [session.id])
@@ -547,7 +591,9 @@ extension WhoopStore {
 
     private static func session(_ r: Row) -> StrengthSession {
         StrengthSession(id: r["id"], routineId: r["routineId"], startTs: r["startTs"], endTs: r["endTs"],
-                        deviceId: r["deviceId"], strain: r["strain"], avgHr: r["avgHr"], notes: r["notes"])
+                        deviceId: r["deviceId"], strain: r["strain"], avgHr: r["avgHr"], notes: r["notes"],
+                        energyKcal: r["energyKcal"],
+                        energySource: (r["energySource"] as String?).flatMap(EnergySource.init(rawValue:)))
     }
 
     private static func setEntry(_ r: Row) -> SetEntry {

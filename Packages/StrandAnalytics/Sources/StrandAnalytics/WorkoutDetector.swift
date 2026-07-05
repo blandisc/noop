@@ -530,12 +530,18 @@ public enum Calories {
         return met * weightKg * (seconds / 3600.0)
     }
 
+    /// The HR-sample count at/above which a strength session's energy is the Keytel (band) estimate
+    /// rather than the MET fallback (FER-715). Named so the caller that records `EnergySource` uses the
+    /// exact same threshold this method branches on — the origin label can't drift from the math.
+    public static let strengthEnergyMinSamples = 2
+
     /// Active energy (kcal) for a strength session, preferring HR when the session captured it (FER-399):
     /// with ≥ `minSamples` HR samples → the HR-based **Keytel** estimate (`estimateBoutCalories`); otherwise
     /// the MET fallback above. One entry point so the HealthKit write doesn't have to branch.
     public static func estimateStrengthEnergy(hrSamples: [HRSample], durationSeconds: Double,
                                               profile: UserProfile, hrMax: Double? = nil,
-                                              restingHR: Double? = nil, minSamples: Int = 2) -> Double {
+                                              restingHR: Double? = nil,
+                                              minSamples: Int = strengthEnergyMinSamples) -> Double {
         if hrSamples.count >= minSamples {
             return estimateBoutCalories(hrSamples, profile: profile, hrmax: hrMax, restingHR: restingHR).0
         }

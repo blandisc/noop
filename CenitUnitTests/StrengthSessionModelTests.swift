@@ -69,6 +69,42 @@ final class StrengthSessionModelTests: XCTestCase {
         XCTAssertEqual(s.restEndsAt?.timeIntervalSince1970 ?? 0, 5000 + 120, accuracy: 0.5)
     }
 
+    // MARK: Per-set rest (FER-715)
+
+    func testRegisterRespectsPerSetRestOverride() {
+        // Exercise default = fixed 90s; set 0 overrides to fixed 200s, set 1 inherits.
+        let override = RestConfig(mode: .fixed, seconds: 200)
+        let re = RoutineExercise(id: "a", routineId: "rt", exerciseId: "bench", position: 0, targetSets: 2,
+                                 restMode: .fixed, restSeconds: 90,
+                                 sets: [RoutineSet(position: 0, kind: .work, reps: 8, weightKg: 60, rest: override),
+                                        RoutineSet(position: 1, kind: .work, reps: 8, weightKg: 60)])
+        let s = make([StrengthSessionModel.PlanSlot(re: re, exercise: ex("bench", "Bench"), lastSets: [])])
+
+        // Registering set 0 uses its OWN 200s rest, not the exercise's 90s.
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5000))
+        XCTAssertEqual(s.restEndsAt?.timeIntervalSince1970 ?? 0, 5000 + 200, accuracy: 0.5,
+                       "the active set's own rest wins")
+        // Registering set 1 (no override) falls back to the exercise's 90s.
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 6000))
+        XCTAssertEqual(s.restEndsAt?.timeIntervalSince1970 ?? 0, 6000 + 90, accuracy: 0.5,
+                       "a set with no override inherits the exercise rest")
+    }
+
+    func testUpdateRestExerciseScopeClearsPerSetOverrides() {
+        let override = RestConfig(mode: .fixed, seconds: 200)
+        let re = RoutineExercise(id: "a", routineId: "rt", exerciseId: "bench", position: 0, targetSets: 2,
+                                 restMode: .fixed, restSeconds: 90,
+                                 sets: [RoutineSet(position: 0, kind: .work, reps: 8, weightKg: 60, rest: override),
+                                        RoutineSet(position: 1, kind: .work, reps: 8, weightKg: 60)])
+        let s = make([StrengthSessionModel.PlanSlot(re: re, exercise: ex("bench", "Bench"), lastSets: [])])
+
+        // An exercise-scope edit clears the per-set override, so set 0's next rest follows the new default.
+        s.updateRest(exercise: 0, mode: .fixed, seconds: 45, reference: .restingMargin, value: 0)
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5000))
+        XCTAssertEqual(s.restEndsAt?.timeIntervalSince1970 ?? 0, 5000 + 45, accuracy: 0.5,
+                       "exercise-scope edit overrides the set's old per-set rest")
+    }
+
     func testRegisterCrossesToNextExercise() {
         let s = make([
             StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 1), exercise: ex("bench", "Bench"), lastSets: []),

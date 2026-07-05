@@ -599,6 +599,39 @@ extension WhoopStore {
                 t.primaryKey(["deviceId", "day"])            // ≤ 1 record/day ⇒ idempotent upsert
             }
         }
+
+        // v26 (FER-715): per-set rest + persisted session energy. Append-only. Four nullable rest
+        // columns on `routineSet` (NULL = inherit the exercise's rest at runtime), back-filled by
+        // COPYING each routineExercise's rest onto ALL its existing sets (the FER-348 pattern: old
+        // data keeps today's behavior bit-for-bit, zero loss). An orphan set (no parent exercise)
+        // stays NULL and inherits at runtime rather than being lost. Plus nullable energyKcal/
+        // energySource on `strengthSession` (NULL = a pre-v26 session — the UI shows no energy
+        // rather than inventing one).
+        migrator.registerMigration("v26") { db in
+            try db.alter(table: "routineSet") { t in
+                t.add(column: "restMode", .text)          // heartRate | fixed; NULL = inherit
+                t.add(column: "restSeconds", .integer)
+                t.add(column: "hrRestReference", .text)
+                t.add(column: "hrRestValue", .double)
+            }
+            try db.execute(sql: """
+                UPDATE routineSet
+                   SET restMode = (SELECT re.restMode FROM routineExercise re
+                                   WHERE re.id = routineSet.routineExerciseId),
+                       restSeconds = (SELECT re.restSeconds FROM routineExercise re
+                                      WHERE re.id = routineSet.routineExerciseId),
+                       hrRestReference = (SELECT re.hrRestReference FROM routineExercise re
+                                          WHERE re.id = routineSet.routineExerciseId),
+                       hrRestValue = (SELECT re.hrRestValue FROM routineExercise re
+                                      WHERE re.id = routineSet.routineExerciseId)
+                 WHERE EXISTS (SELECT 1 FROM routineExercise re
+                               WHERE re.id = routineSet.routineExerciseId)
+                """)
+            try db.alter(table: "strengthSession") { t in
+                t.add(column: "energyKcal", .double)      // NULL = pre-v26 session
+                t.add(column: "energySource", .text)      // 'band_calculated' | 'estimated'
+            }
+        }
         return migrator
     }
 }

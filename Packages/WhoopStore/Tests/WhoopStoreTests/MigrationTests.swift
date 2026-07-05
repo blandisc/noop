@@ -583,6 +583,79 @@ final class MigrationTests: XCTestCase {
         }
     }
 
+    /// v26 (FER-715) adds four nullable rest columns to `routineSet` and copies each `routineExercise`'s
+    /// rest onto ALL its sets, plus nullable energyKcal/energySource to `strengthSession`. Append-only:
+    /// old data keeps behavior bit-for-bit (a set inherits its exercise's exact rest), an orphan set (no
+    /// parent) stays NULL to inherit at runtime, and a pre-v26 session keeps NULL energy. Drives the
+    /// migrator (upTo v25 → insert v25-shaped rows → v26).
+    func testV26CopiesExerciseRestToAllSetsAndAddsSessionEnergy() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = WhoopStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v25")
+
+        try await dbQueue.write { db in
+            try db.execute(sql:
+                "INSERT INTO routine (id, name, createdTs, updatedTs, sortOrder) VALUES ('r1','Old',0,0,0)")
+            // An exercise with a NON-default rest, and three sets under it.
+            try db.execute(sql: """
+                INSERT INTO routineExercise
+                    (id, routineId, exerciseId, position, targetSets, warmupPercents,
+                     restMode, restSeconds, hrRestReference, hrRestValue)
+                VALUES ('re1','r1','ex1',0,3,'[]','fixed',120,'peakDrop',0.25)
+                """)
+            for i in 0..<3 {
+                try db.execute(sql: """
+                    INSERT INTO routineSet (id, routineExerciseId, position, kind, reps, weightKg)
+                    VALUES (?, 're1', ?, 'work', 8, 60.0)
+                    """, arguments: ["s\(i)", i])
+            }
+            // An orphan set: its parent exercise doesn't exist. It must survive with NULL rest.
+            try db.execute(sql: """
+                INSERT INTO routineSet (id, routineExerciseId, position, kind, reps, weightKg)
+                VALUES ('orphan','missing',0,'work',5,40.0)
+                """)
+            // A pre-v26 session — must keep NULL energy after the upgrade.
+            try db.execute(sql: """
+                INSERT INTO strengthSession (id, routineId, startTs, endTs, deviceId, strain, avgHr, notes)
+                VALUES ('sess1','r1',100,200,'d1',5.5,120,NULL)
+                """)
+        }
+
+        try migrator.migrate(dbQueue)   // → v26
+
+        try await dbQueue.read { db in
+            let setCols = try db.columns(in: "routineSet").map(\.name)
+            for expected in ["restMode", "restSeconds", "hrRestReference", "hrRestValue"] {
+                XCTAssertTrue(setCols.contains(expected), "v26 must add routineSet.\(expected)")
+            }
+            // All three sets inherited re1's exact rest — zero behavior change.
+            let sets = try Row.fetchAll(db, sql:
+                "SELECT * FROM routineSet WHERE routineExerciseId='re1' ORDER BY position")
+            XCTAssertEqual(sets.count, 3)
+            XCTAssertTrue(sets.allSatisfy { ($0["restMode"] as String?) == "fixed" })
+            XCTAssertTrue(sets.allSatisfy { ($0["restSeconds"] as Int?) == 120 })
+            XCTAssertTrue(sets.allSatisfy { ($0["hrRestReference"] as String?) == "peakDrop" })
+            XCTAssertTrue(sets.allSatisfy { ($0["hrRestValue"] as Double?) == 0.25 })
+            // The orphan set survives with NULL rest (it inherits at runtime instead of being lost).
+            let orphan = try Row.fetchOne(db, sql: "SELECT * FROM routineSet WHERE id='orphan'")
+            XCTAssertNotNil(orphan, "an orphan set must not be dropped")
+            XCTAssertNil(orphan?["restMode"] as String?, "an orphan set's rest stays NULL = inherit")
+            // No rows lost.
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM routineSet") ?? 0, 4)
+
+            // strengthSession gained energy columns; the pre-v26 session keeps NULL for both.
+            let sessCols = try db.columns(in: "strengthSession").map(\.name)
+            XCTAssertTrue(sessCols.contains("energyKcal"))
+            XCTAssertTrue(sessCols.contains("energySource"))
+            let sess = try Row.fetchOne(db, sql:
+                "SELECT * FROM strengthSession WHERE id='sess1'")
+            XCTAssertNotNil(sess, "the pre-v26 session must survive")
+            XCTAssertNil(sess?["energyKcal"] as Double?, "a pre-v26 session has NULL energy")
+            XCTAssertNil(sess?["energySource"] as String?)
+            XCTAssertEqual(sess?["strain"] as Double?, 5.5, "existing columns untouched")
+        }
+    }
+
     /// v12 (FER-307) creates the `experiment` table with `id` as the sole primary key.
     func testV12CreatesExperimentTable() async throws {
         let store = try await WhoopStore.inMemory()
