@@ -52,8 +52,7 @@ struct RelojCorporalSheet: View {
             if jetLag.days.isEmpty || dayIndex > jetLag.estimatedDays {
                 planFinished(total: jetLag.estimatedDays)
             } else {
-                planActive(jetLag.days[dayIndex - 1], dayIndex: dayIndex,
-                           total: jetLag.estimatedDays, advance: jetLag.direction == .advance)
+                planActive(jetLag.days[dayIndex - 1], dayIndex: dayIndex, total: jetLag.estimatedDays)
             }
         } else {
             Text(verbatim: "¿Un viaje o cambio de turno a la vista? Arma un plan de luz y horarios para reajustar tu reloj a tu ritmo.")
@@ -63,8 +62,7 @@ struct RelojCorporalSheet: View {
         }
     }
 
-    private func planActive(_ day: CircadianEngine.DayPlan, dayIndex: Int,
-                            total: Int, advance: Bool) -> some View {
+    private func planActive(_ day: CircadianEngine.DayPlan, dayIndex: Int, total: Int) -> some View {
         VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(verbatim: "Día \(dayIndex)")
@@ -73,16 +71,21 @@ struct RelojCorporalSheet: View {
                     .font(StrandFont.title2).foregroundStyle(theme.inkTertiary)
             }
             .fixedSize(horizontal: false, vertical: true)
-            Text(verbatim: Self.todayGuidance(day, advance: advance))
+            Text(verbatim: Self.todayGuidance(day))
                 .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             Text(verbatim: "Apunta a dormir alrededor de las ~\(JetLagPlanStore.clock(day.targetSleepHour)) y despertar ~\(JetLagPlanStore.clock(day.targetWakeHour)).")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             QuietButton("Ver el plan completo") { showPlanViaje = true }
+            // Anchor the wellness disclaimer with the actionable light/timing guidance, so it travels
+            // with the claim even if the user never opens the full plan (/cso finding 3b).
+            Text(verbatim: PlanViajeSheet.methodLine)
+                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Plan de reajuste, día \(dayIndex) de \(total). \(Self.todayGuidance(day, advance: advance)) Apunta a dormir alrededor de las \(JetLagPlanStore.clock(day.targetSleepHour)). Toca dos veces para ver el plan completo.")
+        .accessibilityLabel("Plan de reajuste, día \(dayIndex) de \(total). \(Self.todayGuidance(day)) Apunta a dormir alrededor de las \(JetLagPlanStore.clock(day.targetSleepHour)). Toca dos veces para ver el plan completo.")
     }
 
     private func planFinished(total: Int) -> some View {
@@ -94,7 +97,7 @@ struct RelojCorporalSheet: View {
         }
     }
 
-    private static func todayGuidance(_ day: CircadianEngine.DayPlan, advance: Bool) -> String {
+    private static func todayGuidance(_ day: CircadianEngine.DayPlan) -> String {
         "Hoy: busca luz brillante entre las ~\(JetLagPlanStore.clock(day.brightLightStartHour)) y las ~\(JetLagPlanStore.clock(day.brightLightEndHour)), y baja luces desde las ~\(JetLagPlanStore.clock(day.dimFromHour))."
     }
 
