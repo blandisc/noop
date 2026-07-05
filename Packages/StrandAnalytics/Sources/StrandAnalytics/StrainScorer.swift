@@ -24,8 +24,19 @@ public enum StrainScorer {
 
     // MARK: - Constants (strain.py)
 
-    /// Minimum HR readings before computing strain (≈10 min at 1 Hz).
+    /// Minimum HR readings before computing strain on a DENSE stream (≈10 min at 1 Hz).
     public static let minReadings: Int = 600
+    /// Sparse-stream acceptance (upstream #482/#480): a low-cadence strap — the WHOOP 5/MG sends
+    /// live standard HR only ~every 30 s — would need ~5 h of continuous wear to reach
+    /// `minReadings`, so strain sat un-scored (nil) for most of the day. Also accept once the HR
+    /// series SPANS at least `minSpanSeconds` of wall-clock with a small sample floor. This never
+    /// fabricates load: TRIMP still integrates honestly over whatever HR is there, so a genuine
+    /// low-HR day scores 0 either way — it just lets the gauge reflect TODAY instead of staying
+    /// nil. A dense 1 Hz stream is unaffected (it clears `minReadings` first).
+    public static let minSparseReadings: Int = 20
+    /// Wall-clock coverage (seconds) that qualifies a sparse stream. 600 s = 10 min, matching the
+    /// dense gate's ≈10 min of 600 × 1 Hz samples, so both cadences trust the number at the same age.
+    public static let minSpanSeconds: Int = 600
     /// Top of the strain scale.
     public static let maxStrain: Double = 21.0
 
@@ -183,10 +194,23 @@ public enum StrainScorer {
 
     // MARK: - Public API
 
+    /// Enough data to trust a strain score: a dense stream (≥ `minReadings` samples) OR a
+    /// sparse-but-sustained one (≥ `minSparseReadings` samples spanning ≥ `minSpanSeconds` of
+    /// wall-clock — the 5/MG's ~30 s live-HR cadence). Shared by `strain(_:)` and
+    /// `cumulativeStrain(_:)` so the intraday curve appears exactly when the score does and its
+    /// endpoint keeps matching the score (FER-650 invariant).
+    static func hasEnoughData(_ hr: [HRSample]) -> Bool {
+        if hr.count >= minReadings { return true }
+        guard hr.count >= minSparseReadings,
+              let first = hr.map(\.ts).min(), let last = hr.map(\.ts).max() else { return false }
+        return last - first >= minSpanSeconds
+    }
+
     /// Cardiovascular strain (0–21) from an HR series. APPROXIMATE.
     ///
-    /// Returns nil when there are fewer than `minReadings` samples or
-    /// maxHR ≤ restingHR (invalid HRR).
+    /// Returns nil when there isn't yet enough data to trust the number — fewer than
+    /// `minReadings` samples AND not a sparse-but-sustained stream (`minSparseReadings` /
+    /// `minSpanSeconds`, upstream #482) — or when maxHR ≤ restingHR (invalid HRR).
     ///
     /// - Parameters:
     ///   - hr: time-ordered `[HRSample]`.
@@ -202,7 +226,7 @@ public enum StrainScorer {
                               sex: String = "male",
                               denominator: Double = strainDenominator) -> Double? {
         let effMax = maxHR ?? Double(defaultMaxHR())
-        if hr.count < minReadings || effMax <= restingHR { return nil }
+        if !hasEnoughData(hr) || effMax <= restingHR { return nil }
 
         let sampleDur = sampleDurationMinutes(hr)
         let hrReserve = effMax - restingHR
@@ -240,9 +264,9 @@ public enum StrainScorer {
     /// non-decreasing and its LAST point equals `strain(hr, …)` over the same window and parameters
     /// — so a chart of this series ends exactly on the day's strain score.
     ///
-    /// Returns `[]` under the same guard as `strain(_:)`: fewer than `minReadings` samples or
-    /// maxHR ≤ restingHR (invalid HRR). Parameters mirror `strain(_:)` so the caller can pass the
-    /// SAME values it used for the daily score and get a matching endpoint.
+    /// Returns `[]` under the same guard as `strain(_:)` (`hasEnoughData` — dense or
+    /// sparse-but-sustained) or maxHR ≤ restingHR (invalid HRR). Parameters mirror `strain(_:)` so
+    /// the caller can pass the SAME values it used for the daily score and get a matching endpoint.
     public static func cumulativeStrain(_ hr: [HRSample],
                                         bucketSeconds: Int = 900,
                                         maxHR: Double? = nil,
@@ -251,7 +275,7 @@ public enum StrainScorer {
                                         sex: String = "male",
                                         denominator: Double = strainDenominator) -> [CumulativeStrainPoint] {
         let effMax = maxHR ?? Double(defaultMaxHR())
-        guard hr.count >= minReadings, effMax > restingHR, bucketSeconds > 0 else { return [] }
+        guard hasEnoughData(hr), effMax > restingHR, bucketSeconds > 0 else { return [] }
 
         let sampleDur = sampleDurationMinutes(hr)
         let hrReserve = effMax - restingHR

@@ -207,4 +207,62 @@ final class StrainScorerTests: XCTestCase {
         // Bucket size changes the sampling density, never the final accumulated score.
         XCTAssertEqual(fine.last!.strain, coarse.last!.strain, accuracy: 1e-9)
     }
+
+    // MARK: - Sparse-stream gate (FER-659, upstream #482)
+
+    /// `n` samples at a constant bpm spaced `stepSec` apart — the 5/MG's low-cadence live HR.
+    private func sparseHr(_ bpm: Int, _ n: Int, stepSec: Int) -> [HRSample] {
+        (0..<n).map { HRSample(ts: $0 * stepSec, bpm: bpm) }
+    }
+
+    func testStrainSparseStreamAccepted() {
+        // 21 zone-5 samples every 30 s (5/MG cadence) span 600 s — scored, not nil, and TRIMP
+        // integrates honestly: 21 samples × weight 5 × 0.5 min = 52.5 → 21·ln(53.5)/ln(7201) ≈ 9.41.
+        let s = StrainScorer.strain(sparseHr(185, 21, stepSec: 30), maxHR: 190, restingHR: 60)
+        XCTAssertNotNil(s)
+        XCTAssertEqual(s!, 9.41, accuracy: 1e-2)
+    }
+
+    func testStrainSparseTooFewSamplesStillNil() {
+        // 19 samples < minSparseReadings — nil even though the span (1080 s) clears minSpanSeconds.
+        XCTAssertNil(StrainScorer.strain(sparseHr(150, 19, stepSec: 60), maxHR: 190, restingHR: 60))
+    }
+
+    func testStrainSparseShortSpanStillNil() {
+        // 20 samples but only 380 s of wall-clock — not yet sustained, still nil.
+        XCTAssertNil(StrainScorer.strain(sparseHr(150, 20, stepSec: 20), maxHR: 190, restingHR: 60))
+    }
+
+    func testStrainSparseSpanBoundary() {
+        // Exactly minSparseReadings samples: 19 steps of 30 s span 570 s (< 600, nil);
+        // stretching only the last gap so the span lands exactly on 600 s flips it to scored.
+        var justShort = sparseHr(150, 20, stepSec: 30)                 // span 570 → nil
+        XCTAssertNil(StrainScorer.strain(justShort, maxHR: 190, restingHR: 60))
+        justShort[19] = HRSample(ts: 600, bpm: 150)                    // span 600 → scored
+        XCTAssertNotNil(StrainScorer.strain(justShort, maxHR: 190, restingHR: 60))
+    }
+
+    func testStrainDenseGateUnchangedBySparsePath() {
+        // The dense golden vector must score identically with the sparse gate in place.
+        let s = StrainScorer.strain(hr(185, 600), maxHR: 190, restingHR: 60)
+        XCTAssertEqual(s!, 9.3, accuracy: 1e-2)
+    }
+
+    func testCumulativeStrainSparseEndsAtDailyStrain() {
+        // FER-650 invariant on the sparse path too: the curve exists exactly when the score does,
+        // and its last point equals strain() over the same window + params.
+        let series = sparseHr(140, 40, stepSec: 30)
+        let daily = StrainScorer.strain(series, maxHR: 190, restingHR: 60)
+        let curve = StrainScorer.cumulativeStrain(series, bucketSeconds: 300, maxHR: 190, restingHR: 60)
+        XCTAssertNotNil(daily)
+        XCTAssertFalse(curve.isEmpty)
+        XCTAssertEqual(curve.last!.strain, daily!, accuracy: 1e-9)
+    }
+
+    func testCumulativeStrainSparseRejectedStaysEmpty() {
+        // Below the sparse floor the curve stays empty, matching strain() == nil.
+        let series = sparseHr(140, 19, stepSec: 60)
+        XCTAssertNil(StrainScorer.strain(series, maxHR: 190, restingHR: 60))
+        XCTAssertTrue(StrainScorer.cumulativeStrain(series, bucketSeconds: 300, maxHR: 190, restingHR: 60).isEmpty)
+    }
 }
