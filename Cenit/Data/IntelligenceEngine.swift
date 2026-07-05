@@ -422,9 +422,12 @@ final class IntelligenceEngine: ObservableObject {
             var dayGravity: [CircadianEngine.DayGravity] = []
             for off in 0..<phaseDays {
                 let dayMid = AnalyticsEngine.localMidnight(now - off * 86_400, tzOffsetSeconds: tzOffset)
+                // Resolve the tz offset AS OF that day, so a DST change inside the window doesn't shift the
+                // local-hour binning of the affected days by an hour (the builder places samples by local hour).
+                let dayTz = TimeZone.current.secondsFromGMT(for: Date(timeIntervalSince1970: TimeInterval(dayMid)))
                 let grav = (try? await store.gravitySamples(deviceId: deviceId, from: dayMid,
                                                             to: dayMid + 86_400 - 1, limit: 200_000)) ?? []
-                if !grav.isEmpty { dayGravity.append(.init(samples: grav, tzOffsetSeconds: tzOffset)) }
+                if !grav.isEmpty { dayGravity.append(.init(samples: grav, tzOffsetSeconds: dayTz)) }
             }
             let (bins, daysObserved) = CircadianEngine.activityBins(dayGravity)
             if let phase = CircadianEngine.estimatePhase(bins: bins, daysObserved: daysObserved,

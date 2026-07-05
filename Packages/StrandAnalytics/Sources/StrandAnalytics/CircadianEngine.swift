@@ -42,8 +42,9 @@ public enum CircadianEngine {
     /// population knob (still approximate), anchored to measured values: mean actigraphy activity acrophase
     /// in healthy adults ≈ 14:37 (Mitchell et al., "Variation in actigraphy-estimated rest-activity
     /// patterns by demographic factors", Chronobiol Int 2017;34(8):1042–1056, PMC6101244), and CBTmin ≈
-    /// 05:00 (nadir ~2 h before habitual wake; Duffy & Czeisler, "Effect of light on human circadian
-    /// physiology", Sleep Med Clin 2009;4(2):165–177), giving a population offset of ≈ 9.5 h. It affects
+    /// 05:00 (its nadir sits ~2–3 h before habitual wake — a standard chronobiology finding; CBTmin as the
+    /// canonical circadian phase marker: Duffy & Czeisler, "Effect of light on human circadian physiology",
+    /// Sleep Med Clin 2009;4(2):165–177), giving a population offset of ≈ 9.5 h. It affects
     /// `tempMinHour` ONLY on the thin-thermal fallback path (when `observedTempMinHour` is nil); prefer the
     /// measured temperature minimum whenever it exists. NOTE: tempMin is deliberately derived from the
     /// ACTIVITY acrophase (independent of the user's schedule), not from wake time — deriving it from wake
@@ -87,9 +88,10 @@ public enum CircadianEngine {
     /// The suggested sleep-onset clock hour implied by the body clock. CBTmin sits in the final third of
     /// a night, ~`cbtMinBeforeWakeHours` before the ideal wake, so ideal wake ≈ tempMin +
     /// cbtMinBeforeWakeHours and ideal bedtime ≈ ideal wake − typicalSleepHours. APPROXIMATE wellness
-    /// guidance, never a prescription. Method: CBTmin as the canonical circadian phase marker in the last
-    /// third of habitual sleep (Duffy & Czeisler, "Effect of light on human circadian physiology", Sleep
-    /// Med Clin 2009;4(2):165–177). Always communicated with "~"/a range, never as an exact instant.
+    /// guidance, never a prescription. Method: CBTmin as the canonical circadian phase marker (Duffy &
+    /// Czeisler, "Effect of light on human circadian physiology", Sleep Med Clin 2009;4(2):165–177); its
+    /// nadir in the final ~2–3 h of habitual sleep is a standard chronobiology finding. Always communicated
+    /// with "~"/a range, never as an exact instant.
     public static func suggestedBedtime(tempMinHour: Double) -> Double {
         let idealWake = wrap24(tempMinHour + cbtMinBeforeWakeHours)
         return wrap24(idealWake - typicalSleepHours)
