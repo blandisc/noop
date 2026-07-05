@@ -316,7 +316,7 @@ private struct AjustesLanding: View {
                 navRow("Data & sources", subtitle: Text("WHOOP · Apple Health · backup")) { darkScreen = .dataSources }
             }
             section("Experimental") {
-                navRow("Ritmo", subtitle: Text("Regularidad de tu ritmo, latido a latido")) { showRitmo = true }
+                navRow("Ritmo", subtitle: Text("Your rhythm, beat to beat")) { showRitmo = true }
             }
             section("More") {
                 navRow("Advanced", subtitle: Text("WHOOP 5/MG probes, frames")) { showAdvanced = true }
