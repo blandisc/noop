@@ -168,7 +168,14 @@ z = (value − mean) / (1.253 · spread)
 
 The `1.253` converts an EWMA mean-absolute-deviation into an approximate Gaussian σ (`E[|X−μ|] = σ·√(2/π) ≈ σ/1.253`). For "lower is better" drivers (RHR, resp, skin temp) the z is inverted by swapping value and mean. The **skin-temperature term is optional** — it joins once its personal baseline is usable, and an elevated nightly temp (illness / overreaching) lowers recovery. The **sleep term is personalized** against the user's own efficiency baseline when available; until then it falls back to the fixed population center `(sleepPerf − 0.85) / 0.12`.
 
-Missing terms are dropped and weights renormalized. The weighted-mean z is squashed:
+Missing terms are dropped and weights renormalized. The weighted-mean z is then **pulled toward neutral in proportion to the driver weight actually present** (missing-driver shrinkage, FER-698), so a single strong driver can't saturate the score as if the whole picture agreed:
+
+```
+z = weightedMeanZ · min(1, presentWeight / referenceCoverageWeight)
+    referenceCoverageWeight = wHRV + wRHR + wSleep = 0.95   (the three primary drivers)
+```
+
+A read backed by the three primary drivers (HRV + RHR + sleep = `0.95`) counts as full coverage — the factor caps at `1.0`, so band scores are unchanged. `resp`/`skin-temp` are optional refinements, excluded from the reference so their absence never shrinks a band read. Below `0.95` (e.g. an Apple-Health estimate carrying HRV alone) the composite is shrunk toward `Z = 0` — the same James–Stein / empirical-Bayes spirit (Efron & Morris 1977) already applied per term via `Baselines.confidence(nValid)` for thin baselines, now applied along the coverage axis too. The shrunken z is squashed:
 
 ```
 score = 100 / (1 + exp(−logisticK · (z − logisticZ0)))
