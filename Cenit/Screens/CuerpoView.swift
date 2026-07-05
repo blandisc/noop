@@ -207,6 +207,8 @@ private struct CuerpoLanding: View {
                     ? { whatMovesItFindings(for: spec.descriptor.key) }
                     : nil,
                 intradayCurveLoader: spec.blocks.contains(.intradayCurve) ? { hrPoints } : nil,
+                // FER-702: the frequency-domain HRV breakdown lives only in the HRV detail.
+                spectralLoader: spec.descriptor.key == "hrv" ? { await loadSpectralHRV() } : nil,
                 hrMax: Double(model.profile.hrMax),
                 restingHR: resolveMeasured { $0.restingHr.map(Double.init) }?.value,
                 todayKey: Repository.localDayKey(Date()),
@@ -1140,6 +1142,26 @@ private struct CuerpoLanding: View {
         MetricDetailScreen.NightVitals(
             respiration: resolveMeasured { $0.respRateBpm }?.value,
             restingHR: resolveMeasured { $0.restingHr.map(Double.init) }?.value)
+    }
+
+    /// Last night's frequency-domain HRV breakdown (LF/HF/total, ms²) + a per-band «your normal» label,
+    /// read from the `-noop` computed `metricSeries` the pipeline persisted (FER-702). Returns nil when
+    /// there is no band-night spectrum, so the section stays hidden (an Apple-only night has none).
+    private func loadSpectralHRV() async -> MetricDetailScreen.SpectralHRV? {
+        let hf = (await repo.computedSeries(key: "hrv_hf")).sorted { $0.day < $1.day }
+        guard let latest = hf.last else { return nil }
+        let day = latest.day
+        let lf = (await repo.computedSeries(key: "hrv_lf")).sorted { $0.day < $1.day }
+        let total = (await repo.computedSeries(key: "hrv_totalpower")).sorted { $0.day < $1.day }
+        func band(_ s: [(day: String, value: Double)]) -> MetricDetailScreen.SpectralHRV.Band? {
+            guard let today = s.first(where: { $0.day == day }) else { return nil }
+            let history = s.filter { $0.day < day }.map { Optional($0.value) }   // exclude tonight
+            return .init(value: today.value,
+                         label: HRVSpectralBaseline.label(value: today.value, history: history))
+        }
+        guard let hfBand = band(hf) else { return nil }
+        let totalVal = total.first(where: { $0.day == day })?.value ?? hfBand.value
+        return .init(hf: hfBand, lf: band(lf), total: totalVal)
     }
 
     /// The 14-day trend loader the `MetricInfoSheet` runs lazily. Strain returns nil (it has its own

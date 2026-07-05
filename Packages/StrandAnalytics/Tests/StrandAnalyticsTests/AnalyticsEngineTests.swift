@@ -102,6 +102,45 @@ final class AnalyticsEngineTests: XCTestCase {
         XCTAssertEqual(result.daily.exerciseCount, 0)
     }
 
+    // MARK: - Frequency-domain HRV (FER-702, additive)
+
+    func testAnalyzeDayComputesSpectralBands() {
+        // A full 7 h night (span ≫ 250 s) yields a non-nil Bands with HF present, LF present, and the
+        // superset invariant totalPower >= hf. The RR modulates at 0.25 Hz (HF band) by construction.
+        let day = "2021-06-15"
+        let n = night(endDay: day, hours: 7)
+        let result = AnalyticsEngine.analyzeDay(
+            day: day, hr: n.hr, rr: n.rr, gravity: n.gravity,
+            profile: UserProfile(weightKg: 75, heightCm: 178, age: 30, sex: "male"))
+        let bands = result.spectralBands
+        XCTAssertNotNil(bands, "a full night must produce a spectrum")
+        XCTAssertGreaterThan(bands!.hf, 0)
+        XCTAssertNotNil(bands!.lf, "span ≫ 250 s → LF present")
+        XCTAssertGreaterThanOrEqual(bands!.totalPower, bands!.hf)
+    }
+
+    func testAnalyzeDayNoNightNoSpectralBands() {
+        // No matched sleep session → no session R-R → nil spectrum (never fabricated).
+        let n = night(endDay: "2021-06-18", hours: 7)
+        let result = AnalyticsEngine.analyzeDay(
+            day: "2021-06-19", hr: n.hr, rr: n.rr, gravity: n.gravity,
+            profile: UserProfile(age: 30))
+        XCTAssertNil(result.spectralBands)
+    }
+
+    func testSpectralComputeIsAdditiveToAvgHrv() {
+        // The spectral pass reads the SAME session R-R as avgHrv but must not perturb it: avgHrv is
+        // still the RMSSD of the ±5 ms oscillation, unchanged from testAnalyzeDayProducesSleepMetric.
+        let day = "2021-06-15"
+        let n = night(endDay: day, hours: 7)
+        let result = AnalyticsEngine.analyzeDay(
+            day: day, hr: n.hr, rr: n.rr, gravity: n.gravity,
+            profile: UserProfile(weightKg: 75, heightCm: 178, age: 30, sex: "male"))
+        XCTAssertNotNil(result.daily.avgHrv)
+        XCTAssertEqual(result.daily.avgHrv!, 10.0, accuracy: 1.0)
+        XCTAssertNotNil(result.spectralBands)  // both derived from the same night, coherently
+    }
+
     func testAnalyzeDayDailyMetricRoundTripsThroughCodable() throws {
         // The produced DailyMetric must encode/decode (it's the WhoopStore cache shape).
         let day = "2021-06-20"

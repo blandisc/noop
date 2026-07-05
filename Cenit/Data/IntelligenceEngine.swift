@@ -128,7 +128,8 @@ final class IntelligenceEngine: ObservableObject {
         // except recovery is baseline-independent, so pass 2 only re-scores the cheap recovery
         // composite. The hr/rr/resp/gravity arrays go out of scope each iteration (memory stays bounded).
         var scoredNights: [(daily: DailyMetric, strain: Double?, cachedSleep: [CachedSleepSession],
-                            workouts: [ExerciseSession], nightlySkin: Double?)] = []
+                            workouts: [ExerciseSession], nightlySkin: Double?,
+                            spectral: HRVFreqDomain.Bands?)] = []
         // Nightly values harvested in pass 1, keyed by day, to seed the pass-2 baseline.
         var nightlyHrvByDay: [String: Double?] = [:]
         var nightlyRhrByDay: [String: Double?] = [:]
@@ -185,7 +186,8 @@ final class IntelligenceEngine: ObservableObject {
             nightlySkinByDay[res.daily.day] = res.nightlySkinTempC
             nightlyEffByDay[res.daily.day] = res.daily.efficiency
             scoredNights.append((daily: res.daily, strain: res.strain, cachedSleep: res.cachedSleep,
-                                 workouts: res.workouts, nightlySkin: res.nightlySkinTempC))
+                                 workouts: res.workouts, nightlySkin: res.nightlySkinTempC,
+                                 spectral: res.spectralBands))
             await Task.yield()
         }
 
@@ -322,6 +324,22 @@ final class IntelligenceEngine: ObservableObject {
         _ = try? await store.deleteWorkouts(deviceId: computedId, sport: "detected",
                                             from: windowStart, to: now)
         if !workoutRows.isEmpty { _ = try? await store.upsertWorkouts(workoutRows, deviceId: computedId) }
+
+        // ── Frequency-domain HRV (FER-702, ADDITIVE) — persist the nightly band powers as scalars ─────
+        // analyzeDay computed a spectral `Bands` (LF/HF/total, ms²) over the same in-bed R-R as avgHrv.
+        // Persist the three powers to the generic `metricSeries` cache under the "-noop" source (same
+        // substrate as steps_est), so the HRV detail can read them + build a per-band "your normal"
+        // baseline without recomputing the O(0.6s/night) Lomb-Scargle on screen open. Idempotent
+        // (re-upserts the same (computedId, day, key) rows). `hrv_lf` is omitted when the span was too
+        // short for the LF band (nil); the three are omitted entirely on a night with no spectrum.
+        var spectralPts: [MetricPoint] = []
+        for night in scoredNights {
+            guard let b = night.spectral else { continue }
+            if let lf = b.lf { spectralPts.append(MetricPoint(day: night.daily.day, key: "hrv_lf", value: lf)) }
+            spectralPts.append(MetricPoint(day: night.daily.day, key: "hrv_hf", value: b.hf))
+            spectralPts.append(MetricPoint(day: night.daily.day, key: "hrv_totalpower", value: b.totalPower))
+        }
+        if !spectralPts.isEmpty { _ = try? await store.upsertMetricSeries(spectralPts, deviceId: computedId) }
 
         // ── Steps ESTIMATE (WHOOP 4.0 only, FER-663) — daily, keyed to each strap day ───────────────
         // A WHOOP 4.0 sends no step counter over BLE (the @57 counter is 5/MG-only), so we ESTIMATE

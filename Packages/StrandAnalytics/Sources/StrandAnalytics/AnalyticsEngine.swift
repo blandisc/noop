@@ -51,14 +51,21 @@ public enum AnalyticsEngine {
         /// a personal skin-temp baseline from these nightly means and re-derives
         /// `DailyMetric.skinTempDevC` in a second pass. APPROXIMATE.
         public let nightlySkinTempC: Double?
+        /// Nightly frequency-domain HRV (LF/HF/total power, ms²) over the SAME in-bed session R-R
+        /// as `daily.avgHrv` — coherent by construction. Nil when the span is too short (<60 s) or
+        /// there are no matched sessions. PURELY ADDITIVE: feeds no recovery/strain/sleep output;
+        /// surfaced only in the HRV detail (FER-702). See `HRVFreqDomain`.
+        public let spectralBands: HRVFreqDomain.Bands?
 
         public init(daily: DailyMetric, sleepSessions: [SleepSession],
                     cachedSleep: [CachedSleepSession], workouts: [ExerciseSession],
-                    recovery: Double?, strain: Double?, nightlySkinTempC: Double? = nil) {
+                    recovery: Double?, strain: Double?, nightlySkinTempC: Double? = nil,
+                    spectralBands: HRVFreqDomain.Bands? = nil) {
             self.daily = daily; self.sleepSessions = sleepSessions
             self.cachedSleep = cachedSleep; self.workouts = workouts
             self.recovery = recovery; self.strain = strain
             self.nightlySkinTempC = nightlySkinTempC
+            self.spectralBands = spectralBands
         }
     }
 
@@ -218,6 +225,19 @@ public enum AnalyticsEngine {
             return perSession.isEmpty ? nil : HRVAnalyzer.median(perSession)
         }()
 
+        // Nightly frequency-domain HRV over the SAME in-bed session R-R that feeds avgHRVDaily, so the
+        // spectrum and the time-domain HRV describe the same physiological window (both clean via
+        // HRVAnalyzer.cleanRR). Concatenate the matched sessions' R-R; freqDomain rebuilds the tachogram
+        // by cumulative sum of clean intervals, so a between-session gap is just one interval (Malik-
+        // filtered if aberrant). ADDITIVE: consumed only by the HRV detail, never by recovery. (FER-702)
+        let spectralBands: HRVFreqDomain.Bands? = {
+            guard !matched.isEmpty else { return nil }
+            let sessionRR = matched.flatMap { s in
+                rr.filter { $0.ts >= s.start && $0.ts <= s.end }
+            }
+            return HRVFreqDomain.freqDomain(rr: sessionRR)
+        }()
+
         let sleepStart = matched.map { $0.start }.min()
         let sleepEnd = matched.map { $0.end }.max()
 
@@ -347,7 +367,7 @@ public enum AnalyticsEngine {
 
         return DayResult(daily: daily, sleepSessions: matched, cachedSleep: cachedSleep,
                          workouts: workouts, recovery: recovery, strain: strain,
-                         nightlySkinTempC: nightlySkinTempC)
+                         nightlySkinTempC: nightlySkinTempC, spectralBands: spectralBands)
     }
 
     /// Round to 2 decimal places (matches the imported/demo skin-temp deviation precision).
