@@ -1389,7 +1389,7 @@ struct MetricInfoSheet: View {
             lead = Text("Vs yesterday: no change")
         }
         guard let tail = Self.moversTail(change.movers) else { return lead + Text(verbatim: ".") }
-        return lead + Text(" — ") + Text(verbatim: tail)
+        return lead + Text(verbatim: ", ") + Text(verbatim: tail)
     }
 
     /// The movers tail with correct verb agreement (D1/CSO#2): a SINGLE localized sentence per grammatical
@@ -1479,8 +1479,8 @@ struct MetricInfoSheet: View {
         let above = s.z >= 0
         let strong = abs(s.z) >= 1.0
         return strong
-            ? (above ? ", well above your base, " : ", well below your base, ")
-            : (above ? ", above your base, "      : ", below your base, ")
+            ? (above ? ", well above your base" : ", well below your base")
+            : (above ? ", above your base"      : ", below your base")
     }
 
     /// The divergent «vs your base» bar: a center base tick, a capsule extending left (it pulled the
