@@ -5,6 +5,7 @@ import WhoopStore
 import StrandImport
 import StrandAnalytics
 import StrandTraining
+import StrandDesign
 
 /// Data source currently running an import from the Data Sources screen.
 enum DataSourceImportKind {
@@ -715,6 +716,22 @@ final class AppModel: ObservableObject {
     /// Refresh only the published `liveDayStrain` value (drops the curve) — the tile's cheap path, called on
     /// each dashboard refresh / live-HR flush so the Hoy tile rises in lockstep with the Detalle curve.
     func refreshLiveDayStrain() async { _ = await liveDayStrainCurve() }
+
+    /// The value the CURRENT day's strain shows on the Hoy/Cuerpo tiles: the live derivation when it's
+    /// computed, else the settled `repo.today.strain` (before the first live pass, or too little activity).
+    /// One accessor so both tiles share the exact same fallback (FER-650).
+    var displayedDayStrain: Double? { liveDayStrain ?? repo.today?.strain }
+
+    /// The in-progress day's intraday strain curve as chart points, with the local-midnight anchor prepended
+    /// (so the line reads "from 00:00" even if the strap wasn't worn until later). The ONE builder both the
+    /// Hoy and Cuerpo detail sheets draw, over `liveDayStrainCurve()` — its last point is the tile/hero value
+    /// by construction (FER-650). [] when there's no score / too little activity today.
+    func strainCurveTrendPoints() async -> [TrendPoint] {
+        let curve = await liveDayStrainCurve()
+        guard !curve.isEmpty else { return [] }
+        let midnight = TrendPoint(date: Calendar.current.startOfDay(for: Date()), value: 0)
+        return [midnight] + curve.map { TrendPoint(date: $0.date, value: $0.strain) }
+    }
 
     /// Drop the smoothing window and blank the hero number so a resume / re-attach shows "—"
     /// until a genuinely fresh sample arrives, instead of republishing the stale pre-gap median.

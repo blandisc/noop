@@ -657,7 +657,7 @@ private struct CuerpoLanding: View {
         // Valor VIVO del día en curso (fin de la curva intradía), no el score asentado — una sola
         // derivación alimenta este número, el héroe del Detalle y la curva (FER-650). Cae al asentado
         // mientras el vivo aún no se computa.
-        let v = model.liveDayStrain ?? repo.today?.strain
+        let v = model.displayedDayStrain
         return statColumn("Day Strain", value: v.map { String(format: "%.1f", $0) },
                           color: theme.dataStrain, spark: windowedSpark { $0.strain }) {
             // Opens the rich Detalle de Esfuerzo (FER-238) — built fresh from the in-memory dashboard;
@@ -1155,14 +1155,11 @@ private struct CuerpoLanding: View {
         return { await self.loadTrend(pick: pick) }
     }
 
-    /// Today's accumulated-strain curve for the Day Strain sheet — the ONE canonical derivation
-    /// (`model.liveDayStrainCurve`, FER-650) so its last point lands exactly on the header value and the
+    /// Today's accumulated-strain curve for the Day Strain sheet — the ONE canonical builder
+    /// (`model.strainCurveTrendPoints`, FER-650) so its last point lands exactly on the header value and the
     /// Hoy tile. [] when there's no score / too little data.
     private func loadStrainCurve() async -> [TrendPoint] {
-        let curve = await model.liveDayStrainCurve()
-        guard !curve.isEmpty else { return [] }
-        let midnight = TrendPoint(date: Calendar.current.startOfDay(for: Date()), value: 0)
-        return [midnight] + curve.map { TrendPoint(date: $0.date, value: $0.strain) }
+        await model.strainCurveTrendPoints()
     }
 
     // MARK: - Value resolution + helpers (mirror Today)

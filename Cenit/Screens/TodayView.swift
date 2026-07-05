@@ -2143,8 +2143,8 @@ struct TodayView: View {
         let spo2R   = latestFromDisplay { $0.spo2Pct }
         // Esfuerzo del día en curso: el valor VIVO (fin de la curva intradía), no el score asentado —
         // así el tile, el héroe del Detalle y la curva muestran UN solo número (FER-650). Cae al asentado
-        // `repo.today.strain` mientras el vivo aún no se computa. Los días pasados no lo tocan.
-        let strainT = model.liveDayStrain ?? repo.today?.strain
+        // mientras el vivo aún no se computa. Los días pasados no lo tocan.
+        let strainT = model.displayedDayStrain
         // Pasos: sólo Apple Salud; acota a la ventana de 14 días para no mostrar pasos rancios bajo un
         // tile de "hoy".
         let stepsCutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -13, to: Date()) ?? Date())
@@ -3039,14 +3039,10 @@ struct TodayView: View {
     /// shown in the header. Loaded lazily when the sheet opens. Returns [] when there's no score yet or
     /// too little activity, so the sheet shows its "not enough activity" state.
     private func loadStrainCurve() async -> [TrendPoint] {
-        // Single canonical derivation (FER-650): AppModel owns the params + window so the tile, the hero
-        // and this curve can never disagree. It also publishes `model.liveDayStrain` (= the last point).
-        let curve = await model.liveDayStrainCurve()
-        guard !curve.isEmpty else { return [] }
-        // Anchor the x-axis to local midnight so the curve reads "from 00:00" even when the strap
-        // wasn't worn until later — no recorded load before the first sample means strain 0.
-        let midnight = TrendPoint(date: Calendar.current.startOfDay(for: Date()), value: 0)
-        return [midnight] + curve.map { TrendPoint(date: $0.date, value: $0.strain) }
+        // Single canonical derivation + builder (FER-650): AppModel owns the params, window and midnight
+        // anchor so the tile, the hero and this curve can never disagree. It also publishes
+        // `model.liveDayStrain` (= the last point) as a side effect.
+        await model.strainCurveTrendPoints()
     }
     #endif
 
