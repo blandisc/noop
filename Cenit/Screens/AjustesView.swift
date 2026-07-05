@@ -108,6 +108,7 @@ private struct AjustesLanding: View {
     @State private var showMaxHR = false
     @State private var showStepsCal = false
     @State private var showStepTicks = false
+    @State private var showRitmo = false
     @State private var profileWheel: ProfileWheel? = nil
     @State private var darkScreen: AjustesDarkScreen? = nil
     @State private var confirmDisconnect = false
@@ -146,6 +147,9 @@ private struct AjustesLanding: View {
         }
         .sheet(isPresented: $showStepTicks) {
             StepTicksSheet().instrumentoTheme(theme).environmentObject(profile)
+        }
+        .sheet(isPresented: $showRitmo) {
+            RitmoView().instrumentoTheme(theme).environmentObject(repo)
         }
         .sheet(item: $profileWheel) { wheel in
             ProfileWheelSheet(wheel: wheel).instrumentoTheme(theme).environmentObject(profile)
@@ -310,6 +314,9 @@ private struct AjustesLanding: View {
             }
             section("Data") {
                 navRow("Data & sources", subtitle: Text("WHOOP · Apple Health · backup")) { darkScreen = .dataSources }
+            }
+            section("Experimental") {
+                navRow("Ritmo", subtitle: Text("Regularidad de tu ritmo, latido a latido")) { showRitmo = true }
             }
             section("More") {
                 navRow("Advanced", subtitle: Text("WHOOP 5/MG probes, frames")) { showAdvanced = true }
