@@ -1,4 +1,5 @@
 import Foundation
+import WhoopProtocol
 
 // CircadianEngine.swift — on-device body-clock phase estimate + a jet-lag / shift-work LIGHT &
 // SLEEP-TIMING plan. Pure, deterministic, DB-free.
@@ -49,11 +50,24 @@ public enum CircadianEngine {
     /// would collapse `offsetVsScheduleMinutes` to ≈ 0 and destroy the morning-lark / night-owl read, which
     /// is the whole point of the schedule comparison.
     ///
-    /// NOT VALIDATED FOR DISPLAY: this knob (paired with `cbtMinBeforeWakeHours`) leaves a ~+37 min baseline
-    /// bias in `offsetVsScheduleMinutes` for an average phenotype (the two CBTmin estimates don't reconcile
-    /// to 0). `tempMinHour` / `offsetVsScheduleMinutes` must NOT be surfaced in UI without re-validating and
-    /// centering that bias through /cso + /estadistico (tracked in FER-712).
     public static let acrophaseAfterCbtMinHours: Double = 9.5
+
+    /// Reference population activity acrophase (clock hours): mean cosinor acrophase in healthy adults ≈
+    /// 14:37 (Mitchell et al. 2017, PMC6101244). Used only to center the baseline offset (below).
+    static let referenceAcrophaseHours: Double = 14.617
+    /// Reference habitual wake (clock hours) for the average phenotype.
+    static let referenceWakeHours: Double = 7.0
+    /// Baseline offset (minutes) the two-anchor estimate assigns to a perfectly-average phenotype. Because
+    /// tempMin is derived from the activity acrophase while the schedule ideal is derived from wake, the two
+    /// population anchors don't reconcile to 0: an average clock (acrophase 14:37, wake 07:00) comes out at
+    /// ≈ +37 min, a false "night-owl". We subtract this from the raw offset so the average phenotype reads 0
+    /// (no lean). Derived from the anchors (NOT tuned) — recomputes correctly if the knobs change, and is
+    /// re-derivable by /estadistico. See FER-704 (bias finding) / FER-712 (surface).
+    public static var baselineOffsetMinutes: Double {
+        let refTempMin = wrap24(referenceAcrophaseHours - acrophaseAfterCbtMinHours)
+        let refIdeal = wrap24(referenceWakeHours - cbtMinBeforeWakeHours)
+        return signedHourDelta(from: refIdeal, to: refTempMin) * 60.0
+    }
 
     // MARK: - Inputs
 
@@ -65,6 +79,70 @@ public enum CircadianEngine {
         public init(hour: Double, activity: Double) {
             self.hour = hour; self.activity = activity
         }
+    }
+
+    // MARK: - Hourly activity-profile builder
+
+    /// One day of raw gravity samples plus the local time-zone offset to place them on the local clock.
+    /// The offset is passed in (not read from the clock) so the builder stays pure and locale-free.
+    public struct DayGravity: Equatable, Sendable {
+        /// Gravity samples for the day (ts in unix seconds).
+        public let samples: [GravitySample]
+        /// Seconds to add to a UTC ts to get local wall-clock time (e.g. −6·3600 for CST).
+        public let tzOffsetSeconds: Int
+        public init(samples: [GravitySample], tzOffsetSeconds: Int) {
+            self.samples = samples; self.tzOffsetSeconds = tzOffsetSeconds
+        }
+    }
+
+    /// Build a 24-bin hourly activity profile from N days of gravity samples, pooled for the cosinor fit.
+    ///
+    /// Each sample is placed in its LOCAL hour (0..<24) via the day's `tzOffsetSeconds` — the builder never
+    /// reads the clock or zone itself (purity; mapping in UTC would smear the acrophase). Within an hour the
+    /// value is the motion VOLUME (sum of L2 gravity-vector deltas between consecutive samples in that hour —
+    /// the per-hour analogue of `StepsEstimateEngine.dayMotionIntensity`). Across days the bin is the MEAN
+    /// over the days that actually contributed samples to that hour (not a fixed N), so sparse-coverage bins
+    /// aren't penalised. Returns only the hours with ≥1 contributing day, plus the count of days that carried
+    /// any motion (drives `estimatePhase`'s confidence gate).
+    public static func activityBins(_ days: [DayGravity]) -> (bins: [ActivityBin], daysObserved: Int) {
+        var perHourSum = [Double](repeating: 0, count: 24)   // Σ per-day intensity in each local hour
+        var perHourDays = [Int](repeating: 0, count: 24)     // # days that had samples in each hour
+        var daysObserved = 0
+        for day in days {
+            let sorted = day.samples.sorted { $0.ts < $1.ts }
+            var hourly = [[GravitySample]](repeating: [], count: 24)
+            for s in sorted {
+                let local = ((s.ts + day.tzOffsetSeconds) % 86_400 + 86_400) % 86_400
+                hourly[local / 3600].append(s)
+            }
+            var dayHadMotion = false
+            for h in 0..<24 where !hourly[h].isEmpty {
+                perHourSum[h] += hourMotionIntensity(hourly[h])
+                perHourDays[h] += 1
+                if hourMotionIntensity(hourly[h]) > 0 { dayHadMotion = true }
+            }
+            if dayHadMotion { daysObserved += 1 }
+        }
+        var bins: [ActivityBin] = []
+        for h in 0..<24 where perHourDays[h] > 0 {
+            bins.append(ActivityBin(hour: Double(h), activity: perHourSum[h] / Double(perHourDays[h])))
+        }
+        return (bins, daysObserved)
+    }
+
+    /// Motion intensity within one hour's samples: sum of L2 gravity-vector deltas between consecutive
+    /// samples (same primitive as `StepsEstimateEngine.dayMotionIntensity`, scoped to the hour).
+    static func hourMotionIntensity(_ grav: [GravitySample]) -> Double {
+        guard grav.count > 1 else { return 0 }
+        var total = 0.0
+        var prev = grav[0]
+        for i in 1..<grav.count {
+            let r = grav[i]
+            let dx = prev.x - r.x, dy = prev.y - r.y, dz = prev.z - r.z
+            total += (dx * dx + dy * dy + dz * dz).squareRoot()
+            prev = r
+        }
+        return total
     }
 
     // MARK: - Cosinor
@@ -194,7 +272,9 @@ public enum CircadianEngine {
         // the ESTIMATED temp-minimum sits from that ideal, in minutes (signed; + = clock later than schedule).
         let idealTempMin = wrap24(habitualWakeHour - cbtMinBeforeWakeHours)
         let offsetHours = signedHourDelta(from: idealTempMin, to: tempMinHour)
-        let offsetMinutes = offsetHours * 60.0
+        // Center out the population baseline bias so an average phenotype reads 0 (no lean); see
+        // baselineOffsetMinutes. The reported/leaned value is the centered offset.
+        let offsetMinutes = offsetHours * 60.0 - baselineOffsetMinutes
 
         let confidence: PhaseConfidence = daysObserved >= goodDaysForFit ? .solid : .wide
         let lean: String
