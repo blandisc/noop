@@ -9843,7 +9843,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Calculado de los latidos de anoche (Lomb-Scargle). Son potencias descriptivas para compararte contigo mismo — no un diagnóstico ni un «balance de estrés»."
+            "value": "Calculado de los latidos de anoche (Lomb-Scargle). Son potencias descriptivas para compararte contigo mismo, no un diagnóstico ni un «balance de estrés»."
           }
         }
       }
@@ -18852,7 +18852,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Anoche la lectura fue corta, así que solo alcanza para la parte respiratoria — no para las ondas lentas."
+            "value": "Anoche la lectura fue corta, así que solo alcanza para la parte respiratoria, no para las ondas lentas."
           }
         }
       }
