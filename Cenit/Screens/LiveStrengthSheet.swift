@@ -525,10 +525,7 @@ struct LiveStrengthSheet: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var confirmFinish = false
     @State private var confirmDiscard = false
-    /// Whether the optional «Foco» (big-button mode) sheet is up — opened by tapping a set's number badge,
-    /// or a time/distance row (which captures with the stopwatch). FER-497.
-    @State private var showFoco = false
-    /// Per-exercise time goal (seconds) for the `time` Foco — a display target, default 30s.
+    /// Per-exercise time goal (seconds) for a time set's inline stopwatch — a display target, default 30s.
     @State private var goals: [String: Int] = [:]
     /// The cell the custom keypad is editing (FER-716) — one at a time, so a single working buffer is
     /// enough. `nil` = no cell active (keypad hidden). Replaces the native keyboard + `@FocusState`.
@@ -586,15 +583,6 @@ struct LiveStrengthSheet: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .instrumentoTheme(theme)
-        .sheet(isPresented: $showFoco) {
-            focoSheet
-                .environmentObject(model)
-                .instrumentoTheme(theme)
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
-                .presentationBackground(theme.paper)
-                .preferredColorScheme(.light)
-        }
         .sheet(item: $detailExercise) { ex in
             NavigationStack {
                 ExerciseDetailScreen(exercise: ex)
@@ -973,8 +961,12 @@ struct LiveStrengthSheet: View {
     @ViewBuilder private func setRow(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun,
                                      set: StrengthSessionModel.WorkingSet, last: Bool) -> some View {
         let active = ei == session.currentIndex && si == run.currentSet && !set.done && session.summary == nil
+        // A time / distance set, when it's the active row, expands inline with a compact stopwatch +
+        // live HR zone (FER-716: this replaces the modal «Foco»). Other rows are the flat logging row.
+        let cardio = run.type == .time || run.type == .distance
         Group {
-            if reflow { reflowRow(ei: ei, si: si, run: run, set: set) }
+            if active && cardio { cardioInlineRow(ei: ei, si: si, run: run, set: set) }
+            else if reflow { reflowRow(ei: ei, si: si, run: run, set: set) }
             else { gridRow(ei: ei, si: si, run: run, set: set) }
         }
         .padding(.vertical, reflow ? 8 : 2)
@@ -1014,21 +1006,97 @@ struct LiveStrengthSheet: View {
         }
     }
 
-    /// The set-number badge — tap to open the optional Foco focused on this row. Always in the effort hue
-    /// inside a ring, as the approved render (FER-499).
-    private func badge(ei: Int, si: Int, number: Int) -> some View {
-        Button { openFoco(ei: ei, si: si) } label: {
-            Text("\(number)").font(StrandFont.caption).monospacedDigit()
-                .foregroundStyle(theme.dataStrain)
-                .frame(width: 26, height: 26)
-                .overlay(Circle().strokeBorder(theme.dataStrain, lineWidth: 1.5))
-                .frame(width: 44, height: 44)
-                .contentShape(Rectangle())
+    /// The active time / distance row, expanded inline (FER-716) — a compact stopwatch (the elapsed /
+    /// captured time as the dominant datum), a Start/Stop capsule (Stop registers the set and starts the
+    /// rest), a distance stepper for distance sets, and the strap's live HR zone on the right.
+    @ViewBuilder private func cardioInlineRow(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun,
+                                              set: StrengthSessionModel.WorkingSet) -> some View {
+        let running = session.timerStart != nil
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .center, spacing: 12) {
+                badge(ei: ei, si: si, number: si + 1)
+                // The clock — ticks live while running, else shows the captured time.
+                Group {
+                    if running {
+                        TimelineView(.periodic(from: Date(), by: 1)) { ctx in cardioClock(session.timerElapsed(now: ctx.date)) }
+                    } else {
+                        cardioClock(set.timeS ?? 0)
+                    }
+                }
+                Spacer(minLength: 8)
+                if let hr = model.bpm { compactZone(hr) }
+                startStopButton(running: running)
+                checkButton(ei: ei, si: si, set: set)
+            }
+            if run.type == .distance { distanceStepperRow(set.distanceM ?? 0) }
+        }
+        .frame(minHeight: run.type == .distance ? 96 : 64)
+        .accessibilityElement(children: .contain)
+    }
+
+    private func cardioClock(_ elapsed: Int) -> some View {
+        Text(Self.clock(elapsed))
+            .font(InstrumentoType.groteskSessionClock).tracking(InstrumentoType.groteskSessionClockTracking)
+            .foregroundStyle(elapsed > 0 ? theme.ink : theme.inkTertiary)
+            .monospacedDigit()
+    }
+
+    private func startStopButton(running: Bool) -> some View {
+        Button {
+            withAnimation(.snappy) {
+                running ? session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR)
+                        : session.startSetTimer()
+            }
+        } label: {
+            Text(running ? "Stop" : "Start").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .padding(.horizontal, 14).frame(height: 34)
+                .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                .contentShape(Capsule())
         }
         .buttonStyle(.plain)
-        .frame(width: reflow ? nil : 44, alignment: .center)
-        .accessibilityLabel(Text("Set \(number)"))
-        .accessibilityHint(Text("Opens the big-button mode"))
+        .accessibilityLabel(Text(running ? "Stop and register set" : "Start timer"))
+    }
+
+    /// Compact live HR zone (♥ bpm · Zn) in the zone hue — hidden when there's no strap (no dashes).
+    private func compactZone(_ hr: Int) -> some View {
+        let zone = hrZone(hr)
+        let hue = theme.hrZoneRamp[max(0, min(theme.hrZoneRamp.count - 1, zone - 1))]
+        return HStack(spacing: 5) {
+            Image(systemName: "heart.fill").font(.system(size: 12)).foregroundStyle(hue)
+            Text("\(hr)").font(StrandFont.subhead.monospacedDigit()).foregroundStyle(hue)
+            Text("Z\(zone)").font(StrandFont.caption).foregroundStyle(hue)
+                .padding(.horizontal, 6).padding(.vertical, 2)
+                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous)
+                    .strokeBorder(theme.hairline, lineWidth: 1))
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text("Heart rate \(hr), zone \(zone)"))
+    }
+
+    private func distanceStepperRow(_ meters: Double) -> some View {
+        HStack(spacing: 14) {
+            stepper(system: "minus", size: 26) { session.bumpDistance(byMeters: -distanceStepM) }
+                .accessibilityLabel(Text("Decrease distance"))
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(distanceNumber(meters)).font(StrandFont.number(18, weight: .regular)).monospacedDigit()
+                    .foregroundStyle(theme.ink)
+                Text(imperial ? "mi" : "km").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            }
+            stepper(system: "plus", size: 26) { session.bumpDistance(byMeters: distanceStepM) }
+                .accessibilityLabel(Text("Increase distance"))
+        }
+        .padding(.leading, 44)
+    }
+
+    /// The set-number badge — a non-interactive marker in the effort hue (FER-716: the Foco is gone; the
+    /// row itself is the interactive surface). A ring with the set number.
+    private func badge(ei: Int, si: Int, number: Int) -> some View {
+        Text("\(number)").font(StrandFont.caption).monospacedDigit()
+            .foregroundStyle(theme.dataStrain)
+            .frame(width: 26, height: 26)
+            .overlay(Circle().strokeBorder(theme.dataStrain, lineWidth: 1.5))
+            .frame(width: reflow ? 26 : 44, height: reflow ? 26 : 44, alignment: .center)
+            .accessibilityLabel(Text("Set \(number)"))
     }
 
     /// «ANTERIOR» — last time's value; tap to copy it into this row. «—» (and inert) when there's none.
@@ -1137,9 +1205,9 @@ struct LiveStrengthSheet: View {
         if !buffer.isEmpty { buffer.removeLast() }
         commitBuffer()
     }
-    /// Quick add a plate / rep with the ± pill (adds the step; decrement via editing).
+    /// Quick add a plate / rep with the ± pill (adds the step; decrement via editing). Acts on the active
+    /// cell's row, which `activeCell` has already made the current set.
     private func keypadStep(_ cell: CellRef) {
-        let (ei, si) = Self.indices(cell)
         switch cell {
         case .weight: session.bumpWeight(byKg: weightStepKg)
         case .reps:   session.bumpReps(1)
@@ -1158,9 +1226,10 @@ struct LiveStrengthSheet: View {
     /// Re-seed the buffer from the model after a mutation that didn't come from typing (± / copy last).
     private func syncBufferFromModel(_ cell: CellRef) { buffer = currentCellString(cell); bufferTyped = false }
 
-    /// A captured (non-typed) time / distance cell — tap to open the stopwatch Foco. Shows «—» until set.
+    /// A captured (non-typed) time / distance cell — tap to select the row, which expands it inline with the
+    /// stopwatch (FER-716: the Foco is gone). Shows «—» until set.
     private func capturedCell(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun, text: String?) -> some View {
-        Button { openFoco(ei: ei, si: si) } label: {
+        Button { withAnimation(StrandMotion.gentle) { session.select(exerciseIndex: ei, setIndex: si) } } label: {
             Group {
                 if let text {
                     Text(text).font(StrandFont.number(16, weight: .regular)).monospacedDigit().foregroundStyle(theme.ink)
@@ -1173,7 +1242,7 @@ struct LiveStrengthSheet: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(text ?? String(localized: "Not recorded")))
-        .accessibilityHint(Text("Opens the timer"))
+        .accessibilityHint(Text("Expands the timer"))
     }
 
     /// The done toggle (the datum's color — green when logged). 44pt touch target.
@@ -1222,46 +1291,7 @@ struct LiveStrengthSheet: View {
         .accessibilityLabel(Text("Discard workout"))
     }
 
-    // MARK: The optional Foco sheet (big-button mode + the fixed rest)
-
-    private var focoSheet: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
-                HStack {
-                    Text("Focus").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    Spacer()
-                    Button { showFoco = false } label: {
-                        HStack(spacing: 4) {
-                            Text("Close").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                            Image(systemName: "chevron.down").font(.system(size: 13, weight: .semibold))
-                                .foregroundStyle(theme.inkTertiary)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(Text("Close"))
-                }
-                if session.current == nil {
-                    completePhase
-                } else if session.phase == .resting, session.restEndsAt != nil {
-                    restPhase
-                } else {
-                    capturePhase
-                }
-            }
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.top, 18)
-            .padding(.bottom, NoopMetrics.screenPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .background(theme.paper.ignoresSafeArea())
-    }
-
     // MARK: Inline helpers (formatting / focus / actions)
-
-    private func openFoco(ei: Int, si: Int) {
-        session.select(exerciseIndex: ei, setIndex: si)
-        showFoco = true
-    }
 
     /// Tap-ANTERIOR: copy last time into this row. Time exercises set the goal; the rest prefill the datum.
     private func prefillTapped(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun) {
