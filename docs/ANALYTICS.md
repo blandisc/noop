@@ -648,6 +648,46 @@ Apple Health XML ──┘                                         │
 
 ---
 
+## `CyclePhaseEngine` — menstrual-cycle phase awareness (FER-672)
+
+Estimates the **current** cycle phase (follicular-lean vs luteal-lean) from the nightly skin-temperature
+deviation NOOP already stores (`DailyMetric.skinTempDevC`). Pure, DB-free, computed on the fly — no new
+decode, no persistence, no migration. Opt-in and off by default; surfaced only in the Experiments sheet.
+
+### Method
+
+A robust **luteal index** z over the trailing window: `z = 0.75·zTemp + 0.25·zRHR`, each term z-scored
+against the window's own median (centre) and robust σ (`IllnessWatch.robustSigma`, the repo's `× 1.253`
+mean-absolute-deviation convention). Skin temp is the dominant driver; resting HR corroborates. **HRV is
+NOT a term in the index** (decision H1): a DROP is luteal-ward, but for the RMSSD NOOP measures the
+effect is inconsistent, so HRV can only *raise confidence one notch* when it agrees with the temp+RHR
+lean — it never votes on the phase. A ≥42-night gate (`.learning` below it), a robust-σ noise floor and a
+minimum |z| guard the `.noClearPattern` state; confidence scales with |z| and night count.
+
+### Evidence (each an approximate, documented driver — not a reproduction of any algorithm)
+
+- **Skin temp ↑ in luteal (dominant).** Maijala et al. 2019, *BMC Women's Health* 19
+  (doi:10.1186/s12905-019-0844-9): nightly skin temp **+0.30 °C** (SD 0.12), p<0.001. Gombert-Labedens
+  et al. 2024, *J Biol Rhythms* 39(4):331–350 (doi:10.1177/07487304241247893): post-ovulatory thermal
+  shift detectable in **~85 %** of cycles with a wearable.
+- **Resting HR ↑ in luteal (corroboration).** Shilaih et al. 2017, *Sci Rep* 7
+  (doi:10.1038/s41598-017-01433-9): sleeping pulse **+1.8 bpm** (mid-luteal vs fertile), +3.8 vs menses.
+- **HRV ↓ in luteal (weak, mixed — confidence only).** Real on average (Schmalenberger et al. 2019
+  systematic review, PMID 31726666; 2020 *J Clin Med* 9(3):617, doi:10.3390/jcm9030617), but for RMSSD
+  specifically inconsistent/null: Yazar & Yazıcı 2016, *Med Princ Pract* 25(4)
+  (doi:10.1159/000444322): rMSSD 38±12 → 41±27 ms, **n.s.** This is why HRV is reinforcement, not a term.
+
+### Honesty
+
+The weights (0.75/0.25) and the ≥42-night gate are **product-calibration knobs, NOT derived from any
+publication** (decision H2) — they encode the evidence hierarchy (temp ≫ RHR), nothing more, and are
+pinned by `CyclePhaseEngineTests.testCalibrationConstantsPinned`. The estimate is **retrospective**: the
+temperature shift confirms a phase 1–3 days *after* it changes, so the copy never implies real-time
+detection (H3). Wellness / self-knowledge only — never fertility, ovulation, contraception, a period
+date, or any clinical claim.
+
+---
+
 ## Conventions & honesty notes
 
 - **Approximate by design.** Recovery, strain, sleep stages, workout intensity, and calories are transparent approximations of published methods — not reproductions of any proprietary algorithm. Each engine's source header states exactly where it approximates (e.g. Malik instead of Kubios; RMSSD-only parasympathetic tone).

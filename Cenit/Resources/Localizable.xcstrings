@@ -45320,6 +45320,406 @@
           }
         }
       }
+    },
+    "EXPERIMENT": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EXPERIMENTO"
+          }
+        }
+      }
+    },
+    "Cycle phase": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fase del ciclo"
+          }
+        }
+      }
+    },
+    "This is a self-knowledge tool: it looks for a pattern in your own body's temperature while you sleep. Before turning it on, read calmly what it does and what it doesn't.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esto es una herramienta de autoconocimiento: busca un patrón en la temperatura de tu propio cuerpo mientras duermes. Antes de activarla, lee con calma qué hace y qué no hace."
+          }
+        }
+      }
+    },
+    "Everything is computed on your iPhone and stays here. You can turn this experiment off whenever you like; nothing is lost. This is not medical advice.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todo se calcula en tu iPhone y se queda aquí. Puedes apagar este experimento cuando quieras; nada se pierde. Esto no es consejo médico."
+          }
+        }
+      }
+    },
+    "I understand this is a rough estimate to know myself better, not a contraceptive method or a medical tool.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entiendo que es una estimación aproximada para conocerme mejor, no un método anticonceptivo ni una herramienta médica."
+          }
+        }
+      }
+    },
+    "Turn on experiment": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activar experimento"
+          }
+        }
+      }
+    },
+    "What it does": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qué hace"
+          }
+        }
+      }
+    },
+    "With several weeks of nights, it learns the rhythm of your temperature and estimates which phase of your cycle you're probably in: follicular or luteal.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Con varias semanas de noches, aprende el ritmo de tu temperatura y estima en qué fase de tu ciclo probablemente estás: folicular o lútea."
+          }
+        }
+      }
+    },
+    "The reading is approximate and always comes with a «probably». Temperature confirms the phase one to three days after it changes, so this looks backward, not at this moment.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La lectura es aproximada y siempre va con un «probablemente». La temperatura confirma la fase uno a tres días después de que cambia, así que esto mira hacia atrás, no en el momento."
+          }
+        }
+      }
+    },
+    "What it doesn't do": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qué no hace"
+          }
+        }
+      }
+    },
+    "It is not a contraceptive method.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No es un método anticonceptivo."
+          }
+        }
+      }
+    },
+    "It doesn't predict your fertile days or your ovulation.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No predice tus días fértiles ni tu ovulación."
+          }
+        }
+      }
+    },
+    "It doesn't diagnose pregnancy or any health condition.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No diagnostica embarazo ni ninguna condición de salud."
+          }
+        }
+      }
+    },
+    "It doesn't tell you which day your next period starts.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No te dice qué día empieza tu siguiente periodo."
+          }
+        }
+      }
+    },
+    "What is this?": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Qué es esto?"
+          }
+        }
+      }
+    },
+    "Turn off experiment": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desactivar experimento"
+          }
+        }
+      }
+    },
+    "I'll stop estimating your phase. Your temperature data and everything else stay the same.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dejo de estimar tu fase. Tus datos de temperatura y todo lo demás se quedan igual."
+          }
+        }
+      }
+    },
+    "Turn off": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desactivar"
+          }
+        }
+      }
+    },
+    "NO BAND SIGNAL": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SIN SEÑAL DE BANDA"
+          }
+        }
+      }
+    },
+    "This reading needs your band.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta lectura necesita tu banda."
+          }
+        }
+      }
+    },
+    "The phase is estimated from the temperature your band measures while you sleep. When you sync nights with the band again, I'll pick the reading back up.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La fase se estima con la temperatura que tu banda mide mientras duermes. Cuando vuelvas a sincronizar noches con la banda, retomo la lectura."
+          }
+        }
+      }
+    },
+    "NO CLEAR PATTERN": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SIN PATRÓN CLARO"
+          }
+        }
+      }
+    },
+    "I don't see a clear pattern in your data.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No veo un patrón claro en tus datos."
+          }
+        }
+      }
+    },
+    "Your night-time temperature doesn't show a rhythm I can read with confidence. This is common and doesn't mean anything is wrong with you or your band. I'll keep watching in case it appears.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu temperatura nocturna no muestra un ritmo que pueda leer con confianza. Es algo común y no significa que algo ande mal contigo ni con tu banda. Sigo observando por si aparece."
+          }
+        }
+      }
+    },
+    "LEARNING": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "APRENDIENDO"
+          }
+        }
+      }
+    },
+    "I'm learning your pattern.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estoy aprendiendo tu patrón."
+          }
+        }
+      }
+    },
+    "I need several weeks of nights with your band on to read the rhythm of your temperature. Still watching.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Necesito varias semanas de noches con tu banda puesta para leer el ritmo de tu temperatura. Sigo observando."
+          }
+        }
+      }
+    },
+    "%lld of ~%lld nights": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld de ~%lld noches"
+          }
+        }
+      }
+    },
+    "The more nights you sleep with the band, the sooner I see it.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entre más noches duermas con la banda, antes lo veo."
+          }
+        }
+      }
+    },
+    "You're probably in the luteal phase.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Probablemente estás en fase lútea."
+          }
+        }
+      }
+    },
+    "You're probably in the follicular phase.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Probablemente estás en fase folicular."
+          }
+        }
+      }
+    },
+    "Low confidence · it's a faint signal.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confianza baja · es una señal tenue."
+          }
+        }
+      }
+    },
+    "Moderate confidence.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confianza moderada."
+          }
+        }
+      }
+    },
+    "Solid confidence for an estimate.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confianza sólida para ser una estimación."
+          }
+        }
+      }
+    },
+    "Temperature confirms the phase one to three days after the change, so this reflects your recent nights, not this instant.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La temperatura confirma la fase uno a tres días después del cambio, así que esto refleja tus noches recientes, no este instante."
+          }
+        }
+      }
+    },
+    "Based on your band's night-time temperature.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Basado en la temperatura nocturna de tu banda."
+          }
+        }
+      }
+    },
+    "APPROXIMATE READING": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "LECTURA APROXIMADA"
+          }
+        }
+      }
+    },
+    "%lld of ~%lld nights learned": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld de ~%lld noches aprendidas"
+          }
+        }
+      }
+    },
+    "Experiment · on": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Experimento · activo"
+          }
+        }
+      }
+    },
+    "Experiment · off": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Experimento · apagado"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

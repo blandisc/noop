@@ -108,6 +108,8 @@ private struct AjustesLanding: View {
     @State private var showMaxHR = false
     @State private var showStepsCal = false
     @State private var showStepTicks = false
+    @State private var showCyclePhase = false
+    @AppStorage(CyclePhaseExperiment.enabledKey) private var cyclePhaseOn = false
     @State private var showRitmo = false
     @State private var profileWheel: ProfileWheel? = nil
     @State private var darkScreen: AjustesDarkScreen? = nil
@@ -138,6 +140,9 @@ private struct AjustesLanding: View {
         }
         .sheet(isPresented: $showAdvanced) {
             AdvancedSheet().instrumentoTheme(theme).environmentObject(live).environmentObject(model)
+        }
+        .sheet(isPresented: $showCyclePhase) {
+            CyclePhaseSheet().instrumentoTheme(theme).environmentObject(repo)
         }
         .sheet(isPresented: $showMaxHR) {
             MaxHRSheet().instrumentoTheme(theme).environmentObject(profile)
@@ -317,6 +322,9 @@ private struct AjustesLanding: View {
             }
             section("Experimental") {
                 navRow("Ritmo", subtitle: Text("Your rhythm, beat to beat")) { showRitmo = true }
+                divider
+                navRow("Cycle phase",
+                       subtitle: Text(cyclePhaseOn ? "Experiment · on" : "Experiment · off")) { showCyclePhase = true }
             }
             section("More") {
                 navRow("Advanced", subtitle: Text("WHOOP 5/MG probes, frames")) { showAdvanced = true }
