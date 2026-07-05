@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import UserNotifications
 import WhoopProtocol
 import WhoopStore
 import StrandImport

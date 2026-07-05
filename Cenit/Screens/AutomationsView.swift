@@ -185,7 +185,8 @@ private struct AutomationsContent: View {
                     if inactivity.activeHoursEnabled {
                         divider
                         timeRangeRow("Active from", "to",
-                                     start: activeStartBinding, end: activeEndBinding)
+                                     start: timeBinding(\.activeStartMinutes),
+                                     end: timeBinding(\.activeEndMinutes))
                     }
                     divider
                     toggleRow("Quiet hours",
@@ -194,7 +195,8 @@ private struct AutomationsContent: View {
                     if inactivity.quietHoursEnabled {
                         divider
                         timeRangeRow("Quiet from", "to",
-                                     start: quietStartBinding, end: quietEndBinding)
+                                     start: timeBinding(\.quietStartMinutes),
+                                     end: timeBinding(\.quietEndMinutes))
                     }
                 }
             }
@@ -235,21 +237,12 @@ private struct AutomationsContent: View {
         .frame(minHeight: 42).padding(.vertical, 4)
     }
 
-    private var activeStartBinding: Binding<Date> {
-        Binding(get: { Self.date(fromMinutes: inactivity.activeStartMinutes) },
-                set: { inactivity.activeStartMinutes = Self.minutes(from: $0) })
-    }
-    private var activeEndBinding: Binding<Date> {
-        Binding(get: { Self.date(fromMinutes: inactivity.activeEndMinutes) },
-                set: { inactivity.activeEndMinutes = Self.minutes(from: $0) })
-    }
-    private var quietStartBinding: Binding<Date> {
-        Binding(get: { Self.date(fromMinutes: inactivity.quietStartMinutes) },
-                set: { inactivity.quietStartMinutes = Self.minutes(from: $0) })
-    }
-    private var quietEndBinding: Binding<Date> {
-        Binding(get: { Self.date(fromMinutes: inactivity.quietEndMinutes) },
-                set: { inactivity.quietEndMinutes = Self.minutes(from: $0) })
+    /// A `Date` binding over a minutes-of-day field on `inactivity`, so the four active/quiet-hours
+    /// pickers share one get/set instead of repeating it. (`alarmTimeBinding` targets `behavior`, so it
+    /// stays its own binding.)
+    private func timeBinding(_ kp: ReferenceWritableKeyPath<InactivityPrefs, Int>) -> Binding<Date> {
+        Binding(get: { Self.date(fromMinutes: inactivity[keyPath: kp]) },
+                set: { inactivity[keyPath: kp] = Self.minutes(from: $0) })
     }
 
     // MARK: - Smart alarm
