@@ -39275,19 +39275,19 @@
         }
       }
     },
-    "building fast (acute:chronic %@) — watch fatigue": {
+    "building fast (acute:chronic %@) — acute above chronic": {
       "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "building fast (acute:chronic %@) — watch fatigue"
+            "value": "building fast (acute:chronic %@) — acute above chronic"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "subiendo rápido (aguda:crónica %@) — cuida la fatiga"
+            "value": "subiendo rápido (aguda:crónica %@) — la aguda va por encima de la crónica"
           }
         }
       }
@@ -39920,19 +39920,19 @@
         }
       }
     },
-    "in the sweet spot (acute:chronic %@)": {
+    "in the sweet spot (acute:chronic %@) — acute in line with chronic": {
       "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "in the sweet spot (acute:chronic %@)"
+            "value": "in the sweet spot (acute:chronic %@) — acute in line with chronic"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "en el punto ideal (aguda:crónica %@)"
+            "value": "en el punto ideal (aguda:crónica %@) — la aguda va a la par de la crónica"
           }
         }
       }
@@ -41406,19 +41406,19 @@
         }
       }
     },
-    "ramping down (acute:chronic %@) — room to build": {
+    "ramping down (acute:chronic %@) — acute below chronic": {
       "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "ramping down (acute:chronic %@) — room to build"
+            "value": "ramping down (acute:chronic %@) — acute below chronic"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "bajando (aguda:crónica %@) — hay margen para subir"
+            "value": "bajando (aguda:crónica %@) — la aguda va por debajo de la crónica"
           }
         }
       }
@@ -42113,19 +42113,19 @@
         }
       }
     },
-    "spiking (acute:chronic %@) — ease off if fatigued": {
+    "spiking (acute:chronic %@) — acute well above chronic": {
       "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "spiking (acute:chronic %@) — ease off if fatigued"
+            "value": "spiking (acute:chronic %@) — acute well above chronic"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "disparada (aguda:crónica %@) — baja el ritmo si hay fatiga"
+            "value": "disparada (aguda:crónica %@) — la aguda va muy por encima de la crónica"
           }
         }
       }
