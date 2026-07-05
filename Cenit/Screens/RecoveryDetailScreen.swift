@@ -419,8 +419,8 @@ struct RecoveryDetailScreen: View {
         let above = s.z >= 0
         let strong = abs(s.z) >= 1.0
         return strong
-            ? (above ? ", well above your base, " : ", well below your base, ")
-            : (above ? ", above your base, "      : ", below your base, ")
+            ? (above ? ", well above your base" : ", well below your base")
+            : (above ? ", above your base"      : ", below your base")
     }
 
     // MARK: - 2b. Qué cambió vs ayer — el movimiento día-a-día (FER-642, motor RecoveryChange)
