@@ -530,10 +530,15 @@ struct LiveStrengthSheet: View {
     @State private var showFoco = false
     /// Per-exercise time goal (seconds) for the `time` Foco — a display target, default 30s.
     @State private var goals: [String: Int] = [:]
-    /// The inline editing focus + a per-cell text buffer, so an empty / unparseable entry keeps the
-    /// previous value instead of falling to zero (the buffer is dropped on blur, reformatting the datum).
-    @FocusState private var focusedCell: CellRef?
-    @State private var cellBuffers: [CellRef: String] = [:]
+    /// The cell the custom keypad is editing (FER-716) — one at a time, so a single working buffer is
+    /// enough. `nil` = no cell active (keypad hidden). Replaces the native keyboard + `@FocusState`.
+    @State private var activeCell: CellRef?
+    /// The working string of the active cell. Shown while editing; parsed into the model on every change,
+    /// so the value persists without an explicit commit. Empty / unparseable keeps the previous value.
+    @State private var buffer: String = ""
+    /// Whether the user has typed since activating this cell — enables «replace on first keystroke»
+    /// (tap a cell showing 60, type 6 → 6, not 606), the expected Hevy-style behavior.
+    @State private var bufferTyped: Bool = false
     /// The exercise whose detail sheet is open — set by tapping an exercise's name (FER-538). nil = closed.
     /// Resolving the full `Exercise` (catalog + custom) is deferred to the tap so the session model stays lean.
     @State private var detailExercise: Exercise?
@@ -670,19 +675,38 @@ struct LiveStrengthSheet: View {
         .background(theme.paper)
         .environment(\.defaultMinListRowHeight, 1)
         .safeAreaInset(edge: .top, spacing: 0) { sessionHeader }
-        .onChange(of: focusedCell) { _, newValue in
-            // Drop every stale buffer on blur / focus move (each cell reformats from its datum) and make
-            // the focused row the «active» one.
-            cellBuffers = cellBuffers.filter { $0.key == newValue }
-            if let f = newValue { let (ei, si) = Self.indices(f); session.select(exerciseIndex: ei, setIndex: si) }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if let cell = activeCell { keypad(for: cell) }
         }
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Button("Next") { focusNextCell() }
-                Spacer()
-                Button("Done") { focusedCell = nil }
+        .onChange(of: activeCell) { _, newValue in
+            // Seed the buffer from the newly-active cell's current value (replace-on-first-keystroke), and
+            // make its row the «active» one so the header/rest logic tracks it.
+            if let f = newValue {
+                let (ei, si) = Self.indices(f)
+                session.select(exerciseIndex: ei, setIndex: si)
+                buffer = currentCellString(f); bufferTyped = false
+            } else {
+                buffer = ""; bufferTyped = false
             }
         }
+    }
+
+    /// The custom keypad bound to the active cell (FER-716).
+    @ViewBuilder private func keypad(for cell: CellRef) -> some View {
+        let (ei, si) = Self.indices(cell)
+        let run = session.runs.indices.contains(ei) ? session.runs[ei] : nil
+        SessionKeypad(
+            theme: theme,
+            stepLabel: isWeightCell(cell) ? (imperial ? "±5" : "±2,5") : "±1",
+            canCopyPrevious: run.map { previousText($0) != nil } ?? false,
+            onDigit: { keypadInput(String($0)) },
+            onComma: { keypadComma() },
+            onBackspace: { keypadBackspace() },
+            onNext: { focusNextCell() },
+            onCopyPrevious: { if let run { prefillTapped(ei: ei, si: si, run: run); syncBufferFromModel(cell) } },
+            onStep: { keypadStep(cell) }
+        )
+        .transition(.move(edge: .bottom))
     }
 
     /// The first non-skipped exercise's index — its header skips the inter-exercise top gap.
@@ -1052,33 +1076,87 @@ struct LiveStrengthSheet: View {
 
     /// An editable numeric cell — a form field on paper (a faint underline you fill «with pen»). An empty or
     /// unparseable entry keeps the previous value (the buffer is dropped on blur). FER-497.
+    /// An editable numeric cell — a form field on paper filled «with the pen». Tapping it activates the
+    /// custom keypad (FER-716, no native keyboard, no «Foco»); while active it shows the working buffer
+    /// with a caret and a 2px ink underline, otherwise the formatted value with a hairline underline.
     private func numberCell(_ ref: CellRef, value: Double, isInt: Bool, done: Bool,
                             type: ExerciseType, width: CGFloat? = nil) -> some View {
-        let text = Binding<String>(
-            get: { cellBuffers[ref] ?? formatCell(value, isInt: isInt) },
-            set: { raw in
-                cellBuffers[ref] = raw
-                guard let v = Self.parseDouble(raw) else { return }   // empty / invalid → keep previous
-                switch ref {
-                case let .weight(ei, si): session.setWeight(exercise: ei, set: si, kg: storedKg(fromDisplay: v))
-                case let .reps(ei, si):   session.setReps(exercise: ei, set: si, reps: Int(v.rounded()))
+        let active = activeCell == ref
+        let shown = active ? buffer : formatCell(value, isInt: isInt)
+        return Button { activeCell = ref } label: {
+            HStack(spacing: 1) {
+                Text(shown.isEmpty ? " " : shown)
+                    .font(StrandFont.number(16, weight: .regular)).monospacedDigit()
+                    .foregroundStyle(done ? theme.inkSecondary : theme.ink)
+                if active {
+                    Rectangle().fill(theme.ink).frame(width: 2, height: 18)   // caret
+                        .opacity(0.9)
                 }
-            })
-        return TextField("", text: text)
-            .keyboardType(isInt ? .numberPad : .decimalPad)
-            .multilineTextAlignment(.center)
-            .font(StrandFont.number(16, weight: .regular)).monospacedDigit()
-            .foregroundStyle(done ? theme.inkSecondary : theme.ink)
-            .focused($focusedCell, equals: ref)
+            }
             .frame(width: width ?? (reflow ? 64 : cellWidth(type)), height: 44)
             .contentShape(Rectangle())
             .overlay(alignment: .bottom) {
-                Rectangle().fill(focusedCell == ref ? theme.ink : theme.hairlineStrong)
-                    .frame(height: focusedCell == ref ? 2 : 1)
+                Rectangle().fill(active ? theme.ink : theme.hairlineStrong)
+                    .frame(height: active ? 2 : 1)
                     .padding(.bottom, 6)
             }
-            .accessibilityLabel(Text(cellLabel(ref)))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(cellLabel(ref)))
+        .accessibilityValue(Text(shown))
     }
+
+    // MARK: Custom keypad input (FER-716)
+
+    /// The active cell's current model value as a display string (seeds the buffer on activate).
+    private func currentCellString(_ ref: CellRef) -> String {
+        let (ei, si) = Self.indices(ref)
+        guard session.runs.indices.contains(ei), session.runs[ei].sets.indices.contains(si) else { return "" }
+        let set = session.runs[ei].sets[si]
+        switch ref {
+        case .weight: return formatCell(displayWeight(set.weightKg), isInt: false)
+        case .reps:   return formatCell(Double(set.reps), isInt: true)
+        }
+    }
+    private func isWeightCell(_ ref: CellRef) -> Bool { if case .weight = ref { return true }; return false }
+
+    /// Append a digit — replacing the seeded value on the first keystroke (Hevy-style).
+    private func keypadInput(_ digit: String) {
+        if !bufferTyped { buffer = ""; bufferTyped = true }
+        buffer += digit
+        commitBuffer()
+    }
+    private func keypadComma() {
+        guard let cell = activeCell, isWeightCell(cell) else { return }   // reps are integers
+        if !bufferTyped { buffer = "0"; bufferTyped = true }
+        if !buffer.contains(",") && !buffer.contains(".") { buffer += "," }
+        commitBuffer()
+    }
+    private func keypadBackspace() {
+        if !bufferTyped { buffer = ""; bufferTyped = true }
+        if !buffer.isEmpty { buffer.removeLast() }
+        commitBuffer()
+    }
+    /// Quick add a plate / rep with the ± pill (adds the step; decrement via editing).
+    private func keypadStep(_ cell: CellRef) {
+        let (ei, si) = Self.indices(cell)
+        switch cell {
+        case .weight: session.bumpWeight(byKg: weightStepKg)
+        case .reps:   session.bumpReps(1)
+        }
+        syncBufferFromModel(cell)
+    }
+    /// Push the buffer's parsed value into the model — empty / invalid keeps the previous value.
+    private func commitBuffer() {
+        guard let cell = activeCell, let v = Self.parseDouble(buffer) else { return }
+        let (ei, si) = Self.indices(cell)
+        switch cell {
+        case .weight: session.setWeight(exercise: ei, set: si, kg: storedKg(fromDisplay: v))
+        case .reps:   session.setReps(exercise: ei, set: si, reps: Int(v.rounded()))
+        }
+    }
+    /// Re-seed the buffer from the model after a mutation that didn't come from typing (± / copy last).
+    private func syncBufferFromModel(_ cell: CellRef) { buffer = currentCellString(cell); bufferTyped = false }
 
     /// A captured (non-typed) time / distance cell — tap to open the stopwatch Foco. Shows «—» until set.
     private func capturedCell(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun, text: String?) -> some View {
@@ -1236,8 +1314,8 @@ struct LiveStrengthSheet: View {
     }
     private func focusNextCell() {
         let cells = editableCells
-        guard let cur = focusedCell, let idx = cells.firstIndex(of: cur) else { focusedCell = nil; return }
-        focusedCell = idx + 1 < cells.count ? cells[idx + 1] : nil
+        guard let cur = activeCell, let idx = cells.firstIndex(of: cur) else { activeCell = nil; return }
+        activeCell = idx + 1 < cells.count ? cells[idx + 1] : nil
     }
 
     private func distanceText(_ meters: Double) -> String {
