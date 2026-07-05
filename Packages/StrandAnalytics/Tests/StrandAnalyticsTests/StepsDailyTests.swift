@@ -6,7 +6,8 @@ import WhoopProtocol
 /// delta summation, u16 wraparound, sub-2-sample and cross-day filtering, and nil-when-no-movement.
 /// No DB; pure-function test. step_motion_counter@57 is a CUMULATIVE u16 counter, so the daily total
 /// is the sum of positive consecutive deltas (APPROXIMATE — @57 semantics unverified vs the app).
-/// Mirrors the Android StepsAnalyticsTest vectors value-for-value.
+/// A per-record delta >= 512 is a sync-gap / reboot boundary, not real steps, and is dropped
+/// (FER-658, upstream #132/#276/#316).
 final class StepsDailyTests: XCTestCase {
 
     private let profile = UserProfile()
@@ -47,11 +48,25 @@ final class StepsDailyTests: XCTestCase {
     }
 
     func testDropsImplausibleResetDeltaAsReboot() {
-        // 100 -> 1000 (=900 real steps), then 1000 -> 50 is a counter reset/reboot: the
-        // wrap-corrected delta is 64586, implausibly large, so it is dropped rather than
-        // injecting tens of thousands of phantom steps. Only the 900 counts.
-        let s = [step(0, 100), step(60, 1_000), step(120, 50)]
-        XCTAssertEqual(stepsFor(s), 900)
+        // 100 -> 400 (=300 real steps), then 400 -> 50 is a counter reset/reboot: the
+        // wrap-corrected delta is 65186, implausibly large, so it is dropped rather than
+        // injecting tens of thousands of phantom steps. Only the 300 counts.
+        let s = [step(0, 100), step(60, 400), step(120, 50)]
+        XCTAssertEqual(stepsFor(s), 300)
+    }
+
+    func testDropsSyncGapDeltaAboveThreshold() {
+        // A gap between sync sessions jumps the counter by thousands without a wrap. The
+        // 100 -> 5_000 delta (4_900) is a gap boundary, not steps — it must NOT count.
+        // The surrounding normal deltas (150 and 200) must still count. (FER-658)
+        let s = [step(0, 100), step(60, 250), step(7_200, 5_000), step(7_260, 5_200)]
+        XCTAssertEqual(stepsFor(s), 150 + 200)
+    }
+
+    func testGateBoundaryAt512() {
+        // 511 is the largest per-record delta that still counts; 512 is dropped (gap/reset).
+        XCTAssertEqual(stepsFor([step(0, 0), step(60, 511)]), 511)
+        XCTAssertNil(stepsFor([step(0, 0), step(60, 512)]))
     }
 
     func testIgnoresSamplesOutsideTheTargetDay() {
@@ -69,13 +84,13 @@ final class StepsDailyTests: XCTestCase {
         let nightWindow = [step(0, 100), step(60, 300)]  // early only
         let fullDay = [
             step(0, 100), step(60, 300),     // morning: 200
-            step(10 * 3_600, 1_000),         // evening samples only in the full-day stream
-            step(11 * 3_600, 1_700),
+            step(10 * 3_600, 700),           // evening samples only in the full-day stream
+            step(11 * 3_600, 1_100),
         ]
         let total = AnalyticsEngine.analyzeDay(
             day: dayUtc, steps: nightWindow, daySteps: fullDay, profile: profile).daily.steps
-        // deltas over the full day: 100->300=200, 300->1000=700, 1000->1700=700 => 1600.
-        XCTAssertEqual(total, 1_600)
+        // deltas over the full day: 100->300=200, 300->700=400, 700->1100=400 => 1000.
+        XCTAssertEqual(total, 1_000)
     }
 
     func testDayStepsNilFallsBackToWindowSteps() {

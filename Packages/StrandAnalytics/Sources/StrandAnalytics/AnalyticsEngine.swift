@@ -269,17 +269,16 @@ public enum AnalyticsEngine {
             // night-window stream when the caller didn't supply one (pure-function callers/tests).
             let sorted = (daySteps ?? steps).filter { dayString($0.ts, tzOffsetSeconds: tzOffsetSeconds) == day }.sorted { $0.ts < $1.ts }
             if sorted.count < 2 { return nil }
-            // A firmware reboot resets the counter and is byte-indistinguishable from a u16 wrap.
-            // A genuine wrap yields a SMALL corrected delta (the steps since the last record); a
-            // reset-from-low yields a huge one. Cap each corrected delta so a reboot can't inject
-            // tens of thousands of phantom steps. Heuristic — partial, since a reset from a HIGH
-            // prior count still looks like a small wrap; tune once @57's cadence is validated.
-            let maxStepDelta = 30_000
+            // A delta this large is a big time-gap / disconnect boundary between sync sessions (or a
+            // firmware reboot, byte-indistinguishable from a wrap), NOT real steps — drop it so gaps
+            // don't inflate the total. Real 1 Hz motion never ticks this fast between adjacent records.
+            // Upstream converged on 512 after real phantom-step bugs (#132/#276/#316).
+            let maxStepDelta = 512
             var total = 0
             for i in 1..<sorted.count {
                 var delta = sorted[i].counter - sorted[i - 1].counter
                 if delta < 0 { delta += 65_536 }  // u16 wraparound
-                if delta >= 1 && delta <= maxStepDelta { total += delta }  // drop resets
+                if delta >= 1 && delta < maxStepDelta { total += delta }  // ignore a delta >= 512 (gap/reset)
             }
             return total > 0 ? total : nil
         }()
