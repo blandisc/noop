@@ -69,12 +69,13 @@ public enum AppleRecoveryEstimator {
     static let buildingNights = 7
     // Below `Baselines.minNightsSeed` (4) the baseline isn't usable → no estimate at all.
 
-    /// Minimum measured sleep (minutes) to score a night at all. A loose proxy: Apple's
-    /// SDNN is all-day, so below this a night is too thin to stand as a recovery number
-    /// (it is OMITTED, UI shows "—"). This is also what suppresses the in-progress current
-    /// night just after midnight (only ~2 h logged), which otherwise scored an inflated
-    /// "estimado 100" off HRV alone (FER-697). Product-calibration knob, not a validated
-    /// threshold.
+    /// Minimum measured sleep (minutes) to score a night at all. This is a SLEEP-COVERAGE
+    /// floor, not an HRV-stability one: SDNN stabilizes in minutes (Task Force 1996), so 3 h
+    /// is not about the HRV window settling — it is a proxy that a genuine night is present
+    /// (essentially over), not a sliver of the current in-progress one. Below it the night
+    /// is OMITTED (UI shows "—"). This is what suppresses the just-after-midnight night
+    /// (~2 h logged), which otherwise scored an inflated "estimado 100" off HRV alone
+    /// (FER-697). Product-calibration knob, not a validated threshold.
     static let coverageSleepMinThreshold: Double = 180   // ~3 h
 
     // MARK: - Estimate
