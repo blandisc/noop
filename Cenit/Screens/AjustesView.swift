@@ -108,6 +108,8 @@ private struct AjustesLanding: View {
     @State private var showMaxHR = false
     @State private var showStepsCal = false
     @State private var showStepTicks = false
+    @State private var showCyclePhase = false
+    @AppStorage(CyclePhaseExperiment.enabledKey) private var cyclePhaseOn = false
     @State private var showRitmo = false
     @State private var showReloj = false
     /// Opt-in experimental body-clock reading (off by default). FER-712.
@@ -141,6 +143,9 @@ private struct AjustesLanding: View {
         }
         .sheet(isPresented: $showAdvanced) {
             AdvancedSheet().instrumentoTheme(theme).environmentObject(live).environmentObject(model)
+        }
+        .sheet(isPresented: $showCyclePhase) {
+            CyclePhaseSheet().instrumentoTheme(theme).environmentObject(repo)
         }
         .sheet(isPresented: $showMaxHR) {
             MaxHRSheet().instrumentoTheme(theme).environmentObject(profile)
@@ -322,7 +327,10 @@ private struct AjustesLanding: View {
                 navRow("Data & sources", subtitle: Text("WHOOP · Apple Health · backup")) { darkScreen = .dataSources }
             }
             section("Experimental") {
-                navRow("Ritmo", subtitle: Text("Regularidad de tu ritmo, latido a latido")) { showRitmo = true }
+                navRow("Ritmo", subtitle: Text("Your rhythm, beat to beat")) { showRitmo = true }
+                divider
+                navRow("Cycle phase",
+                       subtitle: Text(cyclePhaseOn ? "Experiment · on" : "Experiment · off")) { showCyclePhase = true }
                 divider
                 Toggle(isOn: $relojCorporalEnabled) {
                     Text("Lectura del reloj corporal").font(StrandFont.body).foregroundStyle(theme.ink)

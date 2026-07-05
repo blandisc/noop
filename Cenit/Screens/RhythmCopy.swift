@@ -2,93 +2,98 @@ import Foundation
 import CoreGraphics
 import StrandAnalytics
 
-// RhythmCopy.swift — the es-MX, NON-CLINICAL copy + presentation helpers for the «Ritmo» screen
-// (FER-666 F2). Every user-facing phrase for the experimental rhythm read lives here, in one place,
-// so the copy guard (`RhythmCopyGuardTests`) can sweep it for any word that would name a condition
-// or imply a diagnosis. The claim frame is the heart of this feature: only the four neutral labels,
-// a persistent "experimental · not an ECG · not a diagnosis" disclaimer, and calm state messages —
-// never a condition name, a probability-of-condition, or a "see a doctor" call-to-action.
+// RhythmCopy.swift — the NON-CLINICAL copy + presentation helpers for the «Ritmo» screen (FER-666).
+// Every user-facing phrase lives here as an ENGLISH key resolved via `String(localized:)`, so the
+// app's String Catalog (`sourceLanguage: en`) carries the es-MX translation and the screen switches
+// with the app language — bilingual like the rest of the app (the Spanish is authored in
+// `Tools/translate-es.py`, the single source of truth for the `es` values).
 //
-// Strings are es-MX literals (the app's language) rather than catalog lookups so the guard runs
-// deterministically over the exact words shipped, independent of locale resolution.
+// The claim frame is the heart of this feature: only the four neutral labels ever surface, a
+// persistent "experimental · not an ECG · not a diagnosis" disclaimer stays pinned, and every state
+// message is calm. No condition name, no probability-of-condition, no clinical call-to-action — in
+// EITHER language. `RhythmCopyGuardTests` resolves each key in both en and es and sweeps for that.
 
 enum RhythmCopy {
 
     // MARK: - The four neutral labels (the only verdict-shaped words that ever surface)
 
-    /// The dominant neutral phrase for a night's read. Descriptive only — no condition, no alarm.
     static func label(_ r: RhythmRegularity) -> String {
         switch r {
-        case .steady:           return "Se vio estable."
-        case .occasionalEctopy: return "Se vieron algunos latidos extra o salteados."
-        case .varied:           return "Varió más de lo usual."
-        case .unreadable:       return "No se pudo leer con claridad."
+        case .steady:           return String(localized: "Looked steady.")
+        case .occasionalEctopy: return String(localized: "A few extra or skipped beats showed up.")
+        case .varied:           return String(localized: "Varied more than usual.")
+        case .unreadable:       return String(localized: "Couldn't read it clearly.")
         }
     }
 
-    // MARK: - Persistent disclaimer (pinned, visible in every reading state)
+    // MARK: - Persistent disclaimer (pinned in every reading state)
 
-    static let disclaimer = "Experimental · No es un ECG ni un diagnóstico · No detecta enfermedades."
+    static var disclaimer: String {
+        String(localized: "Experimental · Not an ECG or a diagnosis · Doesn't detect disease.")
+    }
 
     // MARK: - Consent explainer (first time only)
 
-    static let consentOverline = "EXPERIMENTAL"
-    static let consentTitle    = "Un vistazo a tu ritmo"
-    static let consentBody     = "Mientras duermes, Cénit mira qué tan parejo late tu corazón, latido a latido, y te lo dibuja."
-    static let consentNoEcg    = "No es un ECG."
-    static let consentNoDx     = "No es un diagnóstico."
-    static let consentNoDisease = "No detecta enfermedades."
-    static let consentButton   = "Entendido"
+    static var consentOverline: String { String(localized: "EXPERIMENTAL") }
+    static var consentTitle: String { String(localized: "A glimpse of your rhythm") }
+    static var consentBody: String {
+        String(localized: "While you sleep, Cénit looks at how evenly your heart beats, beat to beat, and draws it for you.")
+    }
+    static var consentNoEcg: String { String(localized: "It's not an ECG.") }
+    static var consentNoDx: String { String(localized: "It's not a diagnosis.") }
+    static var consentNoDisease: String { String(localized: "It doesn't detect disease.") }
+    static var consentButton: String { String(localized: "Got it") }
 
     // MARK: - Screen chrome
 
-    static let screenOverline = "RITMO · ANOCHE"
-    static let tapHint        = "toca la nube para ver los detalles"
+    static var screenOverline: String { String(localized: "RHYTHM · LAST NIGHT") }
+    static var tapHint: String { String(localized: "tap the cloud for the details") }
 
-    // MARK: - Confidence line ("1,240 latidos · lectura sólida")
+    // MARK: - Confidence line
 
     static func confidence(beats: Int, tier: RhythmConfidence) -> String {
-        let n = beats.formatted(.number.grouping(.automatic))
         switch tier {
-        case .solid:       return "\(n) latidos · lectura sólida"
-        case .building:    return "\(n) latidos · lectura en formación"
-        case .calibrating: return "\(n) latidos · calibrando"
+        case .solid:       return String(localized: "\(beats) beats · solid read")
+        case .building:    return String(localized: "\(beats) beats · forming read")
+        case .calibrating: return String(localized: "\(beats) beats · calibrating")
         }
     }
 
-    // MARK: - Night line ("4 de 5 ventanas legibles se vieron estables")
+    // MARK: - Night line
 
     static func nightLine(_ s: RhythmScreener.NightRhythmSummary) -> String {
         let total = s.readableWindows
         switch s.overall {
         case .steady:
-            return "\(s.steadyWindows) de \(total) ventanas legibles se vieron estables."
+            return String(localized: "\(s.steadyWindows) of \(total) readable windows looked steady.")
         case .occasionalEctopy:
-            return "En \(s.occasionalWindows) de \(total) ventanas legibles se vieron latidos extra o salteados."
+            return String(localized: "\(s.occasionalWindows) of \(total) readable windows showed extra or skipped beats.")
         case .varied:
-            return "\(s.variedWindows) de \(total) ventanas legibles variaron más de lo usual."
+            return String(localized: "\(s.variedWindows) of \(total) readable windows varied more than usual.")
         case .unreadable:
-            return "Ninguna ventana de anoche se pudo leer con claridad."
+            return String(localized: "No window last night could be read clearly.")
         }
     }
 
     // MARK: - State messages (calm, no alarm)
 
-    static let calibratingLabel = "Aún calibrando."
-    static let calibratingHedge = "Aún estoy aprendiendo tu ritmo. Unas cuantas noches más y la lectura se afina."
-
-    static let unreadableTitle  = "No se pudo leer con claridad anoche."
-    static let unreadableWhy    = "Hubo mucho movimiento o poca señal en reposo. Es normal, vuelve a intentar mañana."
-
-    static let noDataTitle      = "Sin lectura de anoche."
-    static let noDataBody       = "Duerme con tu strap para ver tu ritmo aquí."
-
-    static let needsBandTitle   = "Ritmo necesita una banda WHOOP."
-    static let needsBandBody    = "El tacograma latido a latido solo viene de la banda; no está disponible con solo Apple Health."
+    static var calibratingLabel: String { String(localized: "Still calibrating.") }
+    static var calibratingHedge: String {
+        String(localized: "I'm still learning your rhythm. A few more nights and the read sharpens.")
+    }
+    static var unreadableTitle: String { String(localized: "Couldn't read it clearly last night.") }
+    static var unreadableWhy: String {
+        String(localized: "There was too much movement or too little signal at rest. It's normal, try again tomorrow.")
+    }
+    static var noDataTitle: String { String(localized: "No reading from last night.") }
+    static var noDataBody: String { String(localized: "Sleep with your strap to see your rhythm here.") }
+    static var needsBandTitle: String { String(localized: "Ritmo needs a WHOOP band.") }
+    static var needsBandBody: String {
+        String(localized: "The beat-to-beat tacogram only comes from the band; it isn't available with Apple Health only.")
+    }
 
     // MARK: - The six statistics (label + plain-language gloss)
 
-    /// One detail row: a plain label, a one-line gloss "in cristiano", and the formatted value.
     struct Stat: Identifiable {
         let id = UUID()
         let label: String
@@ -96,45 +101,57 @@ enum RhythmCopy {
         let value: String
     }
 
-    /// Build the six descriptive stats from a readable window. Values only — no interpretation.
     static func stats(_ w: RhythmScreener.WindowResult) -> [Stat] {
         func ms(_ v: Double?) -> String { v.map { "\(Int($0.rounded())) ms" } ?? "—" }
         func ratio(_ v: Double?) -> String { v.map { String(format: "%.2f", $0) } ?? "—" }
         func pct(_ v: Double?) -> String { v.map { String(format: "%.1f%%", $0 * 100) } ?? "—" }
         return [
-            Stat(label: "Forma de la nube (SD1:SD2)", gloss: "qué tan redonda vs. alargada", value: ratio(w.sd1sd2)),
-            Stat(label: "Ancho corto (SD1)", gloss: "variación de un latido al siguiente", value: ms(w.sd1)),
-            Stat(label: "Largo (SD2)", gloss: "variación a lo largo de la noche", value: ms(w.sd2)),
-            Stat(label: "Variación relativa", gloss: "respecto a tu latido promedio", value: pct(w.normRmssd)),
-            Stat(label: "Cambios de dirección", gloss: "qué tan «picudo» fue el ritmo", value: ratio(w.turningPointRate)),
-            Stat(label: "Latidos extra o salteados", gloss: "fracción del total", value: pct(w.ectopicFraction)),
+            Stat(label: String(localized: "Cloud shape (SD1:SD2)"),
+                 gloss: String(localized: "how round vs. elongated"), value: ratio(w.sd1sd2)),
+            Stat(label: String(localized: "Short width (SD1)"),
+                 gloss: String(localized: "variation from one beat to the next"), value: ms(w.sd1)),
+            Stat(label: String(localized: "Length (SD2)"),
+                 gloss: String(localized: "variation across the night"), value: ms(w.sd2)),
+            Stat(label: String(localized: "Relative variation"),
+                 gloss: String(localized: "against your average beat"), value: pct(w.normRmssd)),
+            Stat(label: String(localized: "Direction changes"),
+                 gloss: String(localized: "how jagged the rhythm was"), value: ratio(w.turningPointRate)),
+            Stat(label: String(localized: "Extra or skipped beats"),
+                 gloss: String(localized: "fraction of the total"), value: pct(w.ectopicFraction)),
         ]
     }
 
-    /// Every shipped string in one array, for the non-clinical copy guard to sweep. Includes the
-    /// four labels, the disclaimer, consent, chrome, state messages and the six stat labels/glosses.
-    static var allStrings: [String] {
-        var out = [RhythmRegularity.steady, .occasionalEctopy, .varied, .unreadable].map(label)
-        out += [disclaimer, consentOverline, consentTitle, consentBody, consentNoEcg, consentNoDx,
-                consentNoDisease, consentButton, screenOverline, tapHint,
-                calibratingLabel, calibratingHedge, unreadableTitle, unreadableWhy,
-                noDataTitle, noDataBody, needsBandTitle, needsBandBody]
-        // Interpolated lines: include a rendered sample of each branch so the guard sweeps their
-        // fixed fragments too (the confidence tiers and every night-line variant), not just literals.
-        out += [RhythmConfidence.solid, .building, .calibrating].map { confidence(beats: 1240, tier: $0) }
-        out += [RhythmRegularity.steady, .occasionalEctopy, .varied, .unreadable].map {
-            nightLine(RhythmScreener.NightRhythmSummary(readableWindows: 5, steadyWindows: 4,
-                                                        occasionalWindows: 1, variedWindows: 3,
-                                                        variationRecurred: true, overall: $0))
-        }
-        // Stat labels + glosses (values are numeric, not copy).
-        let demo = RhythmScreener.WindowResult(label: .steady, sd1: 20, sd2: 55, sd1sd2: 0.36,
-                                               normRmssd: 0.04, turningPointRate: 0.7, ectopicFraction: 0.01,
-                                               nBeats: 300, confidence: .solid, agreedAcrossSources: false,
-                                               poincare: [])
-        out += stats(demo).flatMap { [$0.label, $0.gloss] }
-        return out
-    }
+    /// English base keys of every shipped phrase, for the non-clinical guard to resolve in each
+    /// language and sweep. Includes the format-string keys (with `%lld`) of the interpolated lines.
+    /// Kept in lockstep with the `String(localized:)` literals above and seeded into the catalog.
+    static let allEnglishKeys: [String] = [
+        "Looked steady.", "A few extra or skipped beats showed up.",
+        "Varied more than usual.", "Couldn't read it clearly.",
+        "Experimental · Not an ECG or a diagnosis · Doesn't detect disease.",
+        "EXPERIMENTAL", "A glimpse of your rhythm",
+        "While you sleep, Cénit looks at how evenly your heart beats, beat to beat, and draws it for you.",
+        "It's not an ECG.", "It's not a diagnosis.", "It doesn't detect disease.", "Got it",
+        "RHYTHM · LAST NIGHT", "tap the cloud for the details",
+        "%lld beats · solid read", "%lld beats · forming read", "%lld beats · calibrating",
+        "%lld of %lld readable windows looked steady.",
+        "%lld of %lld readable windows showed extra or skipped beats.",
+        "%lld of %lld readable windows varied more than usual.",
+        "No window last night could be read clearly.",
+        "Still calibrating.",
+        "I'm still learning your rhythm. A few more nights and the read sharpens.",
+        "Couldn't read it clearly last night.",
+        "There was too much movement or too little signal at rest. It's normal, try again tomorrow.",
+        "No reading from last night.", "Sleep with your strap to see your rhythm here.",
+        "Ritmo needs a WHOOP band.",
+        "The beat-to-beat tacogram only comes from the band; it isn't available with Apple Health only.",
+        "Cloud shape (SD1:SD2)", "how round vs. elongated",
+        "Short width (SD1)", "variation from one beat to the next",
+        "Length (SD2)", "variation across the night",
+        "Relative variation", "against your average beat",
+        "Direction changes", "how jagged the rhythm was",
+        "Extra or skipped beats", "fraction of the total",
+        "Your rhythm, beat to beat",   // the Ajustes → Experimental row subtitle
+    ]
 }
 
 // MARK: - Presentation helpers over a night's read
