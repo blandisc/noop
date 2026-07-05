@@ -433,6 +433,13 @@ final class Repository: ObservableObject {
         return pts.map { ($0.day, $0.value) }
     }
 
+    /// Daily series for a metric written under the ON-DEVICE COMPUTED source (`-noop`, the
+    /// IntelligenceEngine outputs like `steps_est`). Derives `computedDeviceId` here so callers never
+    /// reconstruct the `-noop` suffix by hand (FER-663).
+    func computedSeries(key: String, days: Int = 4000) async -> [(day: String, value: Double)] {
+        await series(key: key, source: computedDeviceId, days: days)
+    }
+
     // MARK: - Intraday stress summaries (FER-378) — persisted in metricSeries, no new table
 
     private static let stressPartPrefix = "stress-part-"     // + PartOfDay.rawValue
