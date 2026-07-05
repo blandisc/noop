@@ -82,6 +82,10 @@ public enum StrandFont {
 
     /// The «Hoy» verdict phrase — the Daily Brief titular ("Vienes recuperando mejor."). Sized a
     /// touch above the old `title2` so the airier serif reads with the same presence (scales w/ `.title2`).
+    ///
+    /// DEPRECADO (FER-707, decisión del dueño 2026-07-05): la voz evolucionada retira la serif;
+    /// los veredictos migran a Space Grotesk (`InstrumentoType.groteskVerdict`). No adoptar en
+    /// pantallas nuevas; se elimina junto con la fuente al cerrar FER-710.
     public static let serifVerdict = serif(25, relativeTo: .title2)
 
     // MARK: Numeric variants (tabular digits)

@@ -307,9 +307,24 @@ hue against the live paper so this 3:1 floor holds at every hour (FER-131 handof
 | `critical` | `#BC3A34` | 4.9:1 | depleted / error — contained brick red |
 | `positiveText` | `#00774B` | 5.0:1 | positive delta on <24pt text — darkened verdict to clear text-AA (FER-131 · 02) |
 | `negativeText` | `#BC3A34` | 4.9:1 | negative delta on <24pt text (= critical) (FER-131 · 02) |
+| `inkMuted` | `#AFAA9D` | — | quietest chrome — inactive tabs, unlit marks; intentionally NOT AA text (FER-708) |
+| `patternBlock` | `#EFEAE0` | — | «patrón/conexión» block background (FER-708) |
+| `rangeBand` | `#EDE8DB` | — | personal-range band behind a trend line (FER-708) |
+| `rangeMidline` | `#C9C2AF` | — | dotted personal-median line inside the range band (FER-708) |
+| `dataSun` | `#D79567` | — | day/sun arc on the dial seal — context, not a datum (FER-708) |
+| `ctaAccent` | `#2FE6A8` | — | accent on the ink CTA bar — only ever on ink, never on paper (FER-708) |
+| `moderate` | `#E8C24B` | — | «moderado» lane fill (FER-708) |
+| `dataSleepDeep` | `#3F3C78` | — | deep-sleep stage fill (FER-708) |
+| `dataSleepLight` | `#8E8BC4` | — | light-sleep stage fill (FER-708) |
+| `originBand` | `#0C8F62` | — | data-origin dot — strap/band (= dataRecovery) (FER-708) |
+| `originApple` | `#3B6FA0` | — | data-origin dot — Apple Salud (= dataSpO2) (FER-708) |
+| `originComputed` | `#AFAA9D` | — | data-origin dot — computed on-device (= inkMuted) (FER-708) |
 <!-- GENERATED:INSTRUMENTO-COLORS:END -->
 
 ### 8.3 Type voice (`InstrumentoType`)
+
+> **Evolución 2026-07:** para pantallas nuevas o rediseñadas la voz canónica es la de §8.7
+> (Space Grotesk). Esta sección describe la voz que las pantallas aún no migradas conservan.
 
 Reuses SF Pro tabular digits (`StrandFont`); adds only the two opinionated moves:
 
@@ -366,3 +381,36 @@ shared components handle automatically once a subtree is themed with `.instrumen
   `ChartHaptics`). Controls (`SegmentedPillControl`, `QuietButton`) and the scrub plot meet the
   **44pt** touch minimum. The toolkit's public API carries no "hover" term (it's `showsScrub`,
   `ChartScrubMath`, `ChartScrub.swift`).
+
+### 8.7 Voz evolucionada — handoff «Hoy» 2026-07 (FER-707/708)
+
+El rediseño integral de «Hoy» (épico FER-707, decisiones del dueño 2026-07-05) evoluciona la
+voz del lenguaje diurno. **Canónica para pantallas nuevas o rediseñadas**; las pantallas aún
+no migradas conservan la voz de §8.3 hasta que les toque.
+
+- **Space Grotesk** (400/500/600/700, OFL, empaquetada en `StrandDesign/Resources`, registrada
+  vía CoreText) toma numerales, títulos de hoja, overlines, labels de carril, pestañas y
+  botones. El cuerpo de texto y el microcopy siguen en SF. Numerales SIEMPRE tabulares.
+  Tokens: `InstrumentoType.grotesk*` (`groteskHero` 124/700/ls −6 · `groteskSheetNumeral`
+  56/700/ls −2 · `groteskVerdict` 20/700 · `groteskSheetTitle` 12/700/ls 2.4 MAYÚS ·
+  `groteskOverline` 9–10/600/ls 2 MAYÚS · `groteskTileValue` 21/700 · `groteskTab` 11/700/ls 2
+  · `groteskLane` 12/700/ls 1.8).
+- **La serif se retira** (supersede FER-564): `StrandFont.serifVerdict` queda deprecada; los
+  veredictos migran a `groteskVerdict`. La fuente Instrument Serif sale del bundle al cerrar
+  FER-710.
+- **Color bajo 24pt, relajado a conciencia:** en las pantallas rediseñadas el color del dato
+  puede aparecer en labels de grupo (9pt) y valores de tile (21pt) **cuando el texto ES el
+  datum o su etiqueta directa** — es identidad de señal, no chrome. Sigue vigente: valence
+  (positivo/negativo) en texto chico usa `positiveText`/`negativeText` (piso 4.5:1); el chrome
+  nunca lleva hue; `inkMuted`/`inkDim` jamás para copy que deba leerse.
+- **Sin em dashes (—) en el copy de pantallas rediseñadas** — usar coma, dos puntos o «·».
+  Regla por pantalla, no barrido global (decisión del dueño): el copy existente migra cuando
+  su pantalla se rediseña.
+- **Tokens nuevos de color** (§8.2, generados): `inkMuted`, `patternBlock`, `rangeBand`,
+  `rangeMidline`, `dataSun`, `ctaAccent`, `moderate`, `dataSleepDeep`, `dataSleepLight`, y los
+  puntos de origen del dato `originBand`/`originApple`/`originComputed` (alias de roles
+  existentes: origen y hue de métrica no pueden divergir). El verde profundo de delta favorable
+  del handoff (`#00774B`) es exactamente `positiveText`: no hay rol nuevo.
+- **El dial 24h** deja de ser pieza central de «Hoy»: sobrevive como **sello de header**
+  (34 px, mini dial con arco de día `dataSun`, banda de sueño y punto «ahora») y como spinner
+  del pull-to-refresh (FER-709).
