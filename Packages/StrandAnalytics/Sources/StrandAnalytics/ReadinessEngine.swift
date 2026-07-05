@@ -77,12 +77,14 @@ public enum ReadinessEngine {
         case spiking       // ≥ 1.5  — load well above your usual; a context signal, not an injury claim
 
         /// Short, glanceable label for the verdict row. Localized against the host app catalog.
+        /// FER-705 unified the band vocabulary: one plain direction word per band, shared by the
+        /// verdict hero, «Your patterns», the Tendencias card and its explainer sheet.
         public var shortLabel: String {
             switch self {
-            case .rampingDown:  return String(localized: "Light load", bundle: .main)
-            case .sweetSpot:    return String(localized: "Balanced load", bundle: .main)
-            case .buildingFast: return String(localized: "Rising load", bundle: .main)
-            case .spiking:      return String(localized: "High load", bundle: .main)
+            case .rampingDown:  return String(localized: "Easing off", bundle: .main)
+            case .sweetSpot:    return String(localized: "In balance", bundle: .main)
+            case .buildingFast: return String(localized: "Ramping up", bundle: .main)
+            case .spiking:      return String(localized: "Ramping fast", bundle: .main)
             }
         }
 
@@ -338,15 +340,50 @@ public enum ReadinessEngine {
         return Signal(key: key, label: label, detail: text, flag: flag, value: valueText, z: dev.z)
     }
 
+    /// The acute:chronic thresholds, public so UI scales (the Tendencias sheet's band bar and the
+    /// mini-trend's shaded balance zone, FER-705) draw the SAME numbers `loadBand` cuts on and can
+    /// never drift from the engine.
+    public static let acwrSweetSpotLow  = 0.8
+    public static let acwrSweetSpotHigh = 1.3
+    public static let acwrSpikeAt       = 1.5
+
     /// The one place the acute:chronic thresholds live. `acwrSignal` and `Readiness.loadBand`
     /// both route through this, so the verdict word and the signal sentence can never disagree.
     public static func loadBand(forACWR ratio: Double) -> LoadBand {
         switch ratio {
-        case ..<0.8:    return .rampingDown
-        case 0.8..<1.3: return .sweetSpot
-        case 1.3..<1.5: return .buildingFast
-        default:        return .spiking
+        case ..<acwrSweetSpotLow:                  return .rampingDown
+        case acwrSweetSpotLow..<acwrSweetSpotHigh: return .sweetSpot
+        case acwrSweetSpotHigh..<acwrSpikeAt:      return .buildingFast
+        default:                                   return .spiking
         }
+    }
+
+    /// The acute:chronic ratio recomputed for each of the last `lastN` strain days — the series behind
+    /// the Tendencias «Training load» card's mini-trend (FER-705). Pure input→output: exactly the same
+    /// linear-load fold `evaluate` runs for today's `acwr` (7-day acute mean vs 28-day chronic mean over
+    /// `strainToLoad`-linearized strain — Gabbett 2016, Br J Sports Med 50:273), replayed as of each day,
+    /// so the last point always equals today's read. Days before `minChronic` strain readings exist are
+    /// skipped (the same calibration gate the single-day read applies); `days` may be in any order.
+    /// Descriptive context only, never an injury predictor (Impellizzeri et al. 2020).
+    public static func acwrSeries(days: [DailyMetric], lastN: Int = 28) -> [(day: String, ratio: Double)] {
+        let sorted = days.sorted { $0.day < $1.day }
+        let strains = sorted.compactMap { d in d.strain.map { (day: d.day, load: strainToLoad($0)) } }
+        guard strains.count >= minChronic else { return [] }
+        let loads = strains.map(\.load)
+        // Mean of the trailing `w` loads ending at index i — the same suffix mean `evaluate` folds,
+        // computed by index so the prefix is never copied per day (keeps a multi-year history O(n·w)).
+        func windowMean(endingAt i: Int, width w: Int) -> Double {
+            let lo = max(0, i - w + 1)
+            return loads[lo...i].reduce(0, +) / Double(i - lo + 1)
+        }
+        var out: [(day: String, ratio: Double)] = []
+        for i in (minChronic - 1)..<loads.count {
+            let chronic = windowMean(endingAt: i, width: chronicWindow)
+            guard chronic > 0 else { continue }
+            out.append((day: strains[i].day,
+                        ratio: windowMean(endingAt: i, width: acuteWindow) / chronic))
+        }
+        return Array(out.suffix(lastN))
     }
 
     private static func acwrSignal(_ ratio: Double) -> Signal {
@@ -358,21 +395,22 @@ public enum ReadinessEngine {
         let value = String(format: "%.1f", ratio)
         // Copy is PURELY DESCRIPTIVE of the acute↔chronic relationship — no injury-risk imperative
         // ("watch fatigue", "ease off"): Impellizzeri et al. 2020 (Br J Sports Med 54:1451–1462) show the
-        // ACWR does NOT predict injury, so the sentence states where your acute load sits vs your chronic,
-        // nothing more. See docs/ANALYTICS.md (Training Stress Balance).
+        // ACWR does NOT predict injury, so the sentence states where your recent load sits vs your usual,
+        // nothing more. See docs/ANALYTICS.md (Training Stress Balance). FER-705 de-jargoned the face:
+        // the band word + the glossed ratio lead; "acute:chronic (ACWR)" lives only in the ⓘ/method.
         switch band {
         case .rampingDown:
             return Signal(key: "acwr", label: label,
-                detail: String(localized: "ramping down (acute:chronic \(pct)) — acute below chronic", bundle: .main), flag: band.flag, value: value)
+                detail: String(localized: "easing off (\(pct)) — recent load below your usual", bundle: .main), flag: band.flag, value: value)
         case .sweetSpot:
             return Signal(key: "acwr", label: label,
-                detail: String(localized: "in the sweet spot (acute:chronic \(pct)) — acute in line with chronic", bundle: .main), flag: band.flag, value: value)
+                detail: String(localized: "in balance (\(pct)) — recent load in line with your usual", bundle: .main), flag: band.flag, value: value)
         case .buildingFast:
             return Signal(key: "acwr", label: label,
-                detail: String(localized: "building fast (acute:chronic \(pct)) — acute above chronic", bundle: .main), flag: band.flag, value: value)
+                detail: String(localized: "ramping up (\(pct)) — recent load above your usual", bundle: .main), flag: band.flag, value: value)
         case .spiking:
             return Signal(key: "acwr", label: label,
-                detail: String(localized: "spiking (acute:chronic \(pct)) — acute well above chronic", bundle: .main), flag: band.flag, value: value)
+                detail: String(localized: "ramping fast (\(pct)) — recent load well above your usual", bundle: .main), flag: band.flag, value: value)
         }
     }
 
