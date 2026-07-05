@@ -44134,6 +44134,22 @@
           }
         }
       }
+    },
+    "Estimated — %lld of %lld signals": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimated — %lld of %lld signals"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimado — %lld de %lld señales"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

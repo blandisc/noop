@@ -103,6 +103,10 @@ final class Repository: ObservableObject {
     func isRecoveryEstimated(_ day: String) -> Bool { dashboard.recoveryEstimates[day] != nil }
     /// Confidence grade for an estimated-recovery day; nil when the day isn't an Apple estimate.
     func recoveryConfidence(_ day: String) -> ScoreConfidence? { dashboard.recoveryEstimates[day]?.confidence }
+    /// How many of the 3 primary drivers (HRV, resting HR, sleep) backed an estimated-recovery day's
+    /// score (FER-700); nil when the day isn't an Apple estimate. Lets the UI say WHY an estimate is
+    /// conservative («N de 3 señales») rather than only showing the shrunk number.
+    func recoveryPrimaryDrivers(_ day: String) -> Int? { dashboard.recoveryEstimates[day]?.presentPrimaryDrivers }
 
     init(deviceId: String) { self.deviceId = deviceId }
 
