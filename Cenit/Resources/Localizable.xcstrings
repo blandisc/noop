@@ -2045,6 +2045,22 @@
         }
       }
     },
+    "avg %lld d": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "avg %lld d"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "prom. %lld d"
+          }
+        }
+      }
+    },
     "%lld overlapping days · %@ %@ correlation": {
       "localizations": {
         "en": {
