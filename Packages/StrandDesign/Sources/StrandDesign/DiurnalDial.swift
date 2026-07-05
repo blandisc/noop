@@ -74,6 +74,19 @@ enum DialGeometry {
     /// start of the opening sweep; the sweep animates this to 0 so the dot travels
     /// clockwise along the ring up to the current hour.
     static func sweepStartDegrees(forHour hour: Double) -> Double { -hour * 15.0 }
+
+    /// A clockwise arc between two clock hours (the day arc, the sleep band, the seal's arcs). Wraps
+    /// midnight via `spanHours`, so `from > to` sweeps forward through 0. Shared by `DiurnalDial` and
+    /// `DialSeal` so the arc geometry lives in exactly one place.
+    static func arc(center: CGPoint, radius: CGFloat, fromHour: Double, toHour: Double) -> Path {
+        let span = spanHours(from: fromHour, to: toHour)
+        var path = Path()
+        path.addArc(center: center, radius: radius,
+                    startAngle: angle(forHour: fromHour),
+                    endAngle: angle(forHour: fromHour + span),
+                    clockwise: false)
+        return path
+    }
 }
 
 // MARK: - DiurnalDial
@@ -383,13 +396,7 @@ public struct DiurnalDial: View {
     }
 
     private func arcPath(center: CGPoint, radius: CGFloat, fromHour: Double, toHour: Double) -> Path {
-        let span = DialGeometry.spanHours(from: fromHour, to: toHour)
-        var path = Path()
-        path.addArc(center: center, radius: radius,
-                    startAngle: DialGeometry.angle(forHour: fromHour),
-                    endAngle: DialGeometry.angle(forHour: fromHour + span),
-                    clockwise: false)
-        return path
+        DialGeometry.arc(center: center, radius: radius, fromHour: fromHour, toHour: toHour)
     }
 
     private func tickPath(center: CGPoint, hour: Double, inner: CGFloat, outer: CGFloat) -> Path {

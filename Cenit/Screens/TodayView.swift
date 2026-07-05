@@ -13,23 +13,26 @@ private struct TodayScrollOffsetKey: PreferenceKey {
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }
 
-// MARK: - Hoy «Instrumento diurno» (FER-135 redesign)
+// MARK: - Hoy «Instrumento» evolucionado (FER-709, handoff 2026-07)
 //
-// The home screen, written in the «Instrumento diurno» language (warm paper, theme by hour,
-// one dominant number, color only in the datum, hierarchy by space — see DESIGN.md §8).
+// The home screen in the EVOLVED «Instrumento diurno» voice (Space Grotesk numerals, warm paper,
+// one dominant number, arithmetic transparency — see DESIGN.md §8.7).
 //
 // Composition (top → bottom), all inside `iosBody`:
-//   (a) HEADER — compact date overline + strap battery (`headerBlock`).
-//   (b) DIAL   — the fixed instrument head (`dialHeader`): a 24h `DiurnalDial` with the recovery numeral
-//                concentric inside it. `heroNumeral`/`heroState` still pick the numeral per mode (verdict /
-//                Apple-seeded base / calibrating / waiting). The verdict WORD moved out of the dial.
-//   (c) PAGER  — a 2-page horizontal pager (`todayPager`) below the dial, with page dots (FER-465):
-//                · Page 1 (`verdictPage`) — the day's verdict in words (`heroBody` + `heroFooter`).
-//                · Page 2 (`metricsPage`) — «Métricas de hoy» (`iosMetricsSection`): a 2×4 grid of themed
-//                  tiles, each value in its data colour with a Δ-vs-7-day-average and a p25–p75 mini-band.
+//   (a) HEADER — date · strap battery · live BPM (tap → Latidos) · the 34pt `DialSeal` (the 24h
+//                signature AND the pull-to-refresh spinner), plus the freshness line (`headerBlock`).
+//   (b) HERO   — the 124pt recovery numeral in its verdict color + the right column (overline,
+//                verdict word with dotted underline + ⓘ → Recuperación, delta vs your average)
+//                (`heroBlock`). `heroState` still picks the numeral per mode: `··` calibrating,
+//                `—` no data, `~N` estimated. The big `DiurnalDial` was retired from this screen
+//                (owner's call; the component stays in StrandDesign until F3).
+//   (c) TABS   — SEÑALES / BRIEF with the elastic underline (`sectionTabs`) over a 2-page pager:
+//                · Page 0 (`senalesPage`) — «POR QUÉ N» (the five rules, `FiveRulesView` fed by
+//                  `RecoveryRules`) + the 2×4 tile grid with sparkbands (`iosMetricsSection`).
+//                · Page 1 (`verdictPage`) — the Daily Brief (headline, connection, actions, CTA).
 //
-// The dark legacy dashboard (RecoveryRing/StatTile grid/workouts) was removed once the redesign
-// shipped; this file is now «Instrumento»-only.
+// Pull-to-refresh: the seal winds up with the pull and spins while syncing; on completion the
+// numeral counts 0→N and the rule marks light in sequence — ONLY after a refresh, never on open.
 
 /// Identifiable wrapper so the light «Instrumento» Detalle de Sueño can ride `.sheet(item:)` from Today
 /// (the model itself isn't Identifiable). Mirrors the one Cuerpo uses. (FER-251)
@@ -153,12 +156,6 @@ struct TodayView: View {
     /// page dots lo leen con `?? 0`. Arranca en la página 1 del veredicto.
     @State private var pagerPage: Int? = 0
 
-    /// Ya se aplicó UNA vez el aterrizaje inicial en Métricas cuando no había veredicto (FER-475): de
-    /// madrugada, sin lectura de hoy, el pager abre en la página 2 (Métricas) porque el Brief aún no tiene
-    /// nada que decir. Una sola vez por aparición — luego respeta dónde deslice el usuario y no re-salta
-    /// cuando llega el veredicto matutino.
-    @State private var didAutoLandMetrics = false
-
     /// Arma el latido del punto «Ahora» del Daily Brief (FER-549/handoff): al aparecer pasa a `true` con una
     /// animación `repeatForever`, de modo que el halo concéntrico pulse. Estático bajo Reduce Motion.
     @State private var briefDotPulse = false
@@ -191,6 +188,25 @@ struct TodayView: View {
     /// evaluate` sobre la historia enmascarada a Apple, así que —como el veredicto (FER-172)— se siembra UNA
     /// vez por `refreshSeq` en `recomputeDerived`, nunca por frame. `nil` si hoy no es estimado o calibra.
     @State private var memoAppleHrvEstimated: DailyBrief.HrvEstimatedBullet?
+    /// Las cinco reglas de hoy (FER-709), memoizadas: `RecoveryRules` sobre el `RecoveryImpact` del día
+    /// (banda-only) + el score mostrado, de modo que la suma encendida == el numeral. Vacías sin
+    /// descomposición honesta (cold-start o día Apple-only estimado).
+    @State private var memoRules: [RecoveryRules.Rule]?
+    /// Los días de base para las medias de 7 días, memoizados (ver `baselineDays()`): el `filter+sort`
+    /// sobre `repo.displayDays` lo comparten el delta del héroe, el Daily Brief y los tiles.
+    @State private var memoBaselineDays: [DailyMetric]?
+
+    // MARK: - Celebración del pull-to-refresh (FER-709)
+    //
+    // SOLO tras un pull-to-refresh (nunca al abrir): el numeral cuenta 0→N (750 ms, dígitos tabulares
+    // vía `contentTransition(.numericText())`) y las marcas de las reglas se encienden en secuencia
+    // (~1.2 s, `FiveRulesView.reveal` animado con un `TimelineView`). Nada de esto corre bajo Reduce
+    // Motion ni sin veredicto.
+
+    /// Ancla temporal de la celebración en curso; nil = reposo (las reglas se dibujan asentadas).
+    @State private var celebrationStart: Date? = nil
+    /// El valor que muestra el numeral durante el conteo 0→N; nil = el score real.
+    @State private var countUpScore: Int? = nil
 
     /// Los tres conteos de noches que el héroe/veredicto leen, agrupados para sembrarlos de una sola
     /// pasada sobre `repo.days` (antes cada propiedad remapeaba la historia por su cuenta).
@@ -232,6 +248,19 @@ struct TodayView: View {
         memoYesterdayLevel = ReadinessEngine.evaluate(days: band, today: yKey).level
         // FER-623: la viñeta de HRV estimada (día sin banda) también se siembra aquí, no por frame.
         memoAppleHrvEstimated = computeAppleHrvEstimated()
+        // FER-709: la base de 7 días (filter+sort sobre displayDays) una vez por refresh, no 2–3 por render.
+        memoBaselineDays = computeBaselineDays()
+        // FER-709: las cinco reglas del día — el impacto por señal (banda-only, FER-519) mapeado a
+        // marcas cuya suma encendida == el numeral. `RecoveryImpact` devuelve nil en cold-start o en un
+        // día Apple-only (estimado): ahí el bloque se oculta en vez de inventar una descomposición.
+        let todayKey = Repository.localDayKey(Date())
+        if let score = repo.today?.recovery.map({ Int($0.rounded()) }),
+           let impact = RecoveryImpact.compute(days: repo.days, todayKey: todayKey,
+                                               appleDays: repo.appleHealthDays) {
+            memoRules = RecoveryRules.rules(impact: impact, score: score)
+        } else {
+            memoRules = []
+        }
         #if DEBUG
         // FER-172: prueba de que el veredicto se recalcula UNA vez por refresh. En scroll/animación/
         // ticks de HR esta línea NO debe reaparecer; solo sale una vez por `seq`. Compila fuera en release.
@@ -593,31 +622,21 @@ struct TodayView: View {
     private func todayScroll(_ proxy: GeometryProxy) -> some View {
         let scroll = ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                // Cabecera FIJA del instrumento (FER-465): fecha + alerta + dial 24h con numeral. Sigue
-                // dentro del scroll vertical, así que el pull-to-refresh propio (FER-222) NO cambia. La
-                // palabra del veredicto ya NO vive aquí: se mudó a la página 1 del pager (`verdictPage`).
+                // Bloque FIJO del instrumento (handoff «Hoy» 2026-07): header + héroe + pestañas. Sigue
+                // dentro del scroll vertical, así que el pull-to-refresh propio (FER-222) NO cambia.
+                // Todo lo demás desliza con el pager.
                 VStack(alignment: .leading, spacing: NoopMetrics.sectionGapCompact) {
                     headerBlock
                     HealthAlertBanner()
-                    dialHeader
+                    heroBlock
                 }
-                // Caption «toca para saber por qué» bajo el dial (handoff): en AMBAS páginas del pager
-                // mientras haya veredicto (Brief y «Métricas de hoy»), ya que vive bajo el dial —fijo—, no
-                // dentro de una página. Solo se oculta cuando no hay lectura de hoy (la página 1 del Brief
-                // trae su copy honesto).
-                if heroState == .verdict { whyCaption }
-                // Gap FLEXIBLE dial→pager: el sobrante vertical se reparte por igual ARRIBA y abajo del
-                // pager (este `Spacer` + el de abajo), así la rejilla de métricas baja a ocupar la pantalla
-                // en vez de quedar pegada al dial con todo el aire desperdiciado al fondo. El dial sigue
-                // fijo arriba y los page dots fijos cerca del dock; solo el bloque del pager flota al
-                // centro. El mínimo conserva el gap compacto de antes para que en pantalla chica (contenido
-                // que llena o excede) no se separe de más y el scroll siga igual.
-                Spacer(minLength: NoopMetrics.sectionGapCompact)
-                // Pager horizontal de 2 páginas (FER-465): ① el veredicto del día en palabras · ② «Métricas
-                // de hoy» tal cual. Ancho de página = ancho de contenido (proxy − screenPadding lateral) para
-                // que el snap pagine de a una. Ejes ortogonales al scroll vertical → el swipe horizontal y el
-                // pull-to-refresh no se pelean.
+                sectionTabs
+                    .padding(.top, NoopMetrics.sectionGapCompact)
+                // Pager horizontal de 2 páginas: ① SEÑALES (por qué + tiles) · ② BRIEF. Ancho de página =
+                // ancho de contenido (proxy − screenPadding lateral) para que el snap pagine de a una.
+                // Ejes ortogonales al scroll vertical → el swipe horizontal y el pull-to-refresh no se pelean.
                 todayPager(width: max(0, proxy.size.width - NoopMetrics.screenPadding * 2))
+                    .padding(.top, NoopMetrics.sectionGapCompact)
                 // La otra mitad del sobrante vive AQUÍ: mantiene los page dots al fondo, cerca del dock,
                 // mientras el `Spacer` de arriba baja la rejilla al centro.
                 Spacer(minLength: NoopMetrics.space2)
@@ -694,6 +713,9 @@ struct TodayView: View {
         // Sin banda conocida (`lastSyncedAt == nil`) no se escanea: cae directo al refresh local.
         try? await Task.sleep(for: .seconds(1.2))
         await repo.refresh()
+        // FER-709: la celebración de actualización — el conteo 0→N del numeral + las marcas en
+        // secuencia — corre SOLO aquí (tras un pull), nunca al abrir la pantalla.
+        celebrateSyncCompletion()
         // FER-293: el usuario ya ejecutó un pull-to-sync → ya aprendió el gesto; retira el microcopy y el
         // rebote (con desvanecido salvo Reduce Motion). El chevron permanece como cue sutil, así el gesto
         // sigue siendo descubrible (a diferencia de FER-270, que lo apagaba por completo para siempre).
@@ -739,6 +761,21 @@ struct TodayView: View {
         Task {
             await pullToSync()
             pullSyncing = false
+        }
+    }
+
+    /// Arranca la celebración de actualización (FER-709): resetea el numeral a 0 y lo deja rodar a su
+    /// valor con `.numericText` (750 ms), y ancla `celebrationStart` para que las marcas de las reglas
+    /// se enciendan en secuencia. Solo con veredicto y sin Reduce Motion; se auto-limpia al terminar.
+    @MainActor private func celebrateSyncCompletion() {
+        guard !reduceMotion, heroState == .verdict, let score = recoveryScore else { return }
+        celebrationStart = Date()
+        countUpScore = 0
+        withAnimation(.easeOut(duration: 0.75)) { countUpScore = score }
+        Task {
+            try? await Task.sleep(for: .seconds(1.6))
+            celebrationStart = nil
+            countUpScore = nil
         }
     }
 
@@ -843,49 +880,114 @@ struct TodayView: View {
         }
     }
 
-    /// Date + honesty line — the screen's calm header (overline date + quiet sync provenance).
-    /// FER-222: como el pull-to-refresh propio reemplaza al `.refreshable` nativo (que regalaba una
-    /// acción de refrescar accesible), aquí se reinstala esa afordancia para VoiceOver: la línea de
-    /// estado de sincronización —su hogar semántico— expone una acción personalizada «Sincronizar»
-    /// equivalente al gesto, vía `triggerPullSync`. Se combinan fecha + estado en un solo elemento
-    /// para que la acción sea descubrible al enfocar el encabezado.
+    /// El header del handoff «Hoy» 2026-07 (FER-709): fecha · batería de la banda · BPM vivo tocable ·
+    /// sello del dial (la firma de 24 h, que también es el spinner del pull-to-refresh). Debajo, en
+    /// reposo, la línea de frescura «última lectura hace N min»; sincronizando, «Sincronizando con tu
+    /// banda…». FER-222: la acción accesible «Sincronizar» reinstala para VoiceOver el gesto de jalar.
     private var headerBlock: some View {
-        // Hogar 1 de estado/procedencia (FER-278): UNA línea arriba reúne todo el estado del
-        // instrumento — fecha a la izquierda; a la derecha la sincronización (sube del encabezado de
-        // métricas, FER-265) + la batería del strap. Antes la frescura de sync vivía a media pantalla y
-        // la batería suelta arriba-derecha; aquí quedan juntas como «qué tan al día está tu instrumento».
-        HStack(alignment: .center, spacing: NoopMetrics.space2) {
-            utilityRow
-            // FER-590: la batería del strap va junto a la fecha (izquierda), con un divisor hairline entre
-            // ambas; la píldora de pulso queda sola a la derecha. El acento del glifo va POR NIVEL
-            // (`theme.batteryColor`: verde / ámbar ≤20% / rojo ≤10%); el «%» en tinta. Sin batería no se
-            // muestra ni el divisor.
-            if let pct = live.batteryPct {
-                Rectangle().fill(theme.hairlineStrong)
-                    .frame(width: 1, height: 11)
-                    .accessibilityHidden(true)
-                HStack(spacing: 4) {
-                    Image(systemName: batteryIcon(pct: pct, charging: live.charging == true))
-                        .font(StrandFont.overline)
-                        .foregroundStyle(theme.batteryColor(forLevel: pct))
-                    Text("\(Int(pct.rounded()))%")
-                        .font(StrandFont.overline)
-                        .tracking(StrandFont.overlineTracking)
-                        .foregroundStyle(theme.inkTertiary)
+        VStack(alignment: .leading, spacing: NoopMetrics.space1) {
+            HStack(alignment: .center, spacing: NoopMetrics.space2) {
+                Text(shortDate)
+                    .font(InstrumentoType.grotesk(11, weight: .semibold))
+                    .tracking(2)
+                    .foregroundStyle(theme.inkSecondary)
+                if let pct = live.batteryPct {
+                    Rectangle().fill(theme.hairlineStrong)
+                        .frame(width: 1, height: 11)
+                        .accessibilityHidden(true)
+                    HStack(spacing: 4) {
+                        Image(systemName: batteryIcon(pct: pct, charging: live.charging == true))
+                            .font(StrandFont.overline)
+                            .foregroundStyle(theme.batteryColor(forLevel: pct))
+                        Text("\(Int(pct.rounded()))%")
+                            .font(InstrumentoType.grotesk(11, weight: .medium).monospacedDigit())
+                            .foregroundStyle(theme.inkTertiary)
+                    }
+                    .accessibilityLabel(live.charging == true
+                        ? Text("Batería del strap: \(Int(pct.rounded()))%, cargando")
+                        : Text("Batería del strap: \(Int(pct.rounded()))%"))
                 }
-                .accessibilityLabel(live.charging == true
-                    ? Text("Batería del strap: \(Int(pct.rounded()))%, cargando")
-                    : Text("Batería del strap: \(Int(pct.rounded()))%"))
+                Spacer(minLength: NoopMetrics.space2)
+                if liveBpm != nil { bpmButton }
+                headerSeal
             }
-            Spacer(minLength: NoopMetrics.space2)
-            // La cápsula de pulso se mantiene SIEMPRE (reposo y sync); solo cambia su texto de frescura
-            // (⟳ hace 30 s → ⟳ Sincronizando… / N paquetes). Sin strap visto no hay cápsula. (FER-550/583)
-            if strapSeen || live.backfilling || live.draining {
-                pulsePill
-            }
+            syncStatusLine
         }
         .accessibilityElement(children: .combine)
         .accessibilityAction(named: Text("Sincronizar")) { triggerPullSync() }
+    }
+
+    /// El BPM del header: punto latiente (solo late con señal EN VIVO) + «62 BPM». Tocarlo abre la
+    /// hoja Latidos (el monitor latido a latido), como el resto de los datos de Hoy.
+    private var bpmButton: some View {
+        Button { showLiveMonitor = true } label: {
+            HStack(spacing: NoopMetrics.space1 + 1) {
+                BreathingDot(color: isLiveHR ? theme.dataHeart : theme.inkTertiary,
+                             radius: 3, breathes: isLiveHR)
+                Text(verbatim: "\(liveBpm ?? 0) BPM")
+                    .font(InstrumentoType.grotesk(11, weight: .semibold).monospacedDigit())
+                    .tracking(1)
+                    .foregroundStyle(theme.ink)
+            }
+            .frame(minHeight: 34)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(isLiveHR ? "Frecuencia cardiaca en vivo" : "Frecuencia cardiaca"))
+        .accessibilityValue(Text(liveBpm.map { "\($0) bpm" } ?? ""))
+        .accessibilityHint(Text("Abre el monitor latido a latido"))
+    }
+
+    /// El sello del dial (34 pt) — la firma del instrumento Y el spinner: al jalar se le «da cuerda»
+    /// (gira con `pullProgress`), sincronizando gira en loop, en reposo queda quieto con el punto
+    /// «ahora» en la hora real.
+    @ViewBuilder private var headerSeal: some View {
+        let seal = DialSeal(hour: clockHourNow, solar: solarWindow, sleep: sleepWindow)
+        if isSyncing && !reduceMotion {
+            TimelineView(.animation) { context in
+                let angle = (context.date.timeIntervalSinceReferenceDate * 257)
+                    .truncatingRemainder(dividingBy: 360)
+                seal.rotationEffect(.degrees(angle))
+            }
+        } else {
+            seal.rotationEffect(.degrees(pullProgress * 270))
+        }
+    }
+
+    /// La hora reloj actual (0…24) para el punto «ahora» del sello.
+    private var clockHourNow: Double {
+        let c = Calendar.current.dateComponents([.hour, .minute], from: Date())
+        return Double(c.hour ?? 0) + Double(c.minute ?? 0) / 60.0
+    }
+
+    /// La línea de estado bajo el header: «Sincronizando con tu banda…» durante el sync (con el conteo
+    /// de paquetes si ya fluyen), o la frescura «última lectura hace N min» en reposo. Nada sin banda vista.
+    @ViewBuilder private var syncStatusLine: some View {
+        if isSyncing {
+            Text(live.syncChunksThisSession > 0
+                 ? "Sincronizando con tu banda… \(live.syncChunksThisSession) paquetes"
+                 : "Sincronizando con tu banda…")
+                .font(StrandFont.caption).monospacedDigit()
+                .foregroundStyle(theme.verdict)
+        } else if let at = live.lastSyncedAt {
+            TimelineView(.periodic(from: .now, by: 60)) { context in
+                let secondsAgo = Swift.max(context.date.timeIntervalSince1970 - at, 1)
+                Text("última lectura \(Self.compactAgo(secondsAgo))")
+                    .font(StrandFont.caption).monospacedDigit()
+                    .foregroundStyle(theme.inkTertiary)
+            }
+        }
+    }
+
+    /// Tiempo relativo en unidades de UNA letra: «hace 30 s / 5 m / 2 h / 3 d».
+    private static func compactAgo(_ secondsAgo: Double) -> String {
+        let s = Int(secondsAgo.rounded())
+        let core: String
+        if s < 60 { core = "\(s) s" }
+        else if s < 3600 { core = "\(s / 60) m" }
+        else if s < 86_400 { core = "\(s / 3600) h" }
+        else { core = "\(s / 86_400) d" }
+        return String(localized: "\(core) ago")
     }
 
     /// SF Symbol del nivel de batería. Al CARGAR devuelve `battery.100.bolt` — el ÚNICO glifo
@@ -936,59 +1038,142 @@ struct TodayView: View {
     /// Whether a strap has ever been seen (drives the foot affordance: Scan before, live pulse after).
     private var strapSeen: Bool { live.lastSyncedAt != nil || liveBpm != nil }
 
-    /// Cabecera FIJA del instrumento (FER-465): overline + dial 24h con el numeral concéntrico. El cuerpo
-    /// del veredicto en palabras (`heroBody` + `heroFooter`) ya NO vive aquí — se mudó a `verdictPage`
-    /// (página 1 del pager), así que arriba queda solo el dial + número. Conserva el giro del sync
-    /// (FER-221) y el «armado» del arco con el tirón (FER-222), intactos.
-    @ViewBuilder private var dialHeader: some View {
+    /// El héroe del handoff «Hoy» 2026-07 (FER-709): el numeral de 124 pt en el color del veredicto +
+    /// la columna derecha (overline, palabra-veredicto con subrayado punteado + ⓘ que abre la hoja
+    /// Recuperación, y el delta «+3 vs tu promedio»). El dial de 240 pt y el numeral concéntrico SE
+    /// RETIRAN (decisión del dueño; `DiurnalDial` grande sigue en el paquete hasta F3) — el 24 h vive
+    /// ahora en el sello del header. El numeral nunca miente: `··` calibrando, `—` sin datos, `~N`
+    /// estimado.
+    @ViewBuilder private var heroBlock: some View {
         let state = heroState
-        // Ritmo vertical compacto (FER-205): gap a `space2` (8) entre overline y dial.
-        VStack(spacing: NoopMetrics.space2) {
-            // FER-283/284: la overline del héroe usa `instrumentoOverlineProminent` (14/medium) en tinta
-            // secundaria — más presencia sin competir con el numeral. Un nudge de aire arriba la baja un
-            // poco del estado/fecha, y queda centrada (también si el texto envuelve).
-            Text(heroOverline(state)).instrumentoOverlineProminent().foregroundStyle(theme.inkSecondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.top, NoopMetrics.space1)
-            // Instrumento concéntrico (FER-169): el numeral domina el CENTRO del dial de 24h. Sin número que
-            // medir (em-dash) el dial es el protagonista; con número, el dato vive dentro del reloj.
-            // `sleepWindow` ya es nil cuando anoche no hubo registro de strap, así que el dial omite la banda
-            // de sueño sola: contexto honesto en cada modo. Escala (FER-205): dial 180 con el numeral 60.
-            ZStack {
-                // Viñeta radial cálida detrás del dial (handoff «Hoy · Estados», el
-                // `radial-gradient(circle, rgba(255,255,255,.8) 0% … 72%)` del mock): un pozo de luz
-                // suave que asienta el dial sobre el papel sin una caja. Se deriva del papel vivo
-                // (`paperHi`, ya aclarado hacia blanco en OKLab y hora-consciente) → cálido, NUNCA blanco
-                // puro, así no destella de noche. Decorativa, detrás del dial y del numeral.
-                RadialGradient(
-                    gradient: Gradient(stops: [
-                        .init(color: theme.paperHi, location: 0),
-                        .init(color: theme.paperHi.opacity(0), location: 0.72)
-                    ]),
-                    center: .center, startRadius: 0, endRadius: 80
-                )
-                .frame(width: 160, height: 160)
-                .accessibilityHidden(true)
-                // FER-221: mientras la banda descarga (`backfilling`) el dial cobra vida —un arco
-                // verde gira sobre el bezel— y el numeral se atenúa («recalculando»). La honesty line
-                // del header no cambia. Al terminar, vuelve al reposo.
-                // FER-222: el mismo arco se «arma» con el tirón (`pullProgress`, 0→1) antes de girar; al
-                // disparar el sync por el gesto (`pullSyncing`) el dial gira de inmediato, sin esperar a
-                // que arranque el offload. `syncing` manda sobre `armProgress` cuando ambos coinciden.
-                DiurnalDial(now: Date(), solar: solarWindow, sleep: sleepWindow,
-                            diameter: 180, syncing: isSyncing,
-                            armProgress: pullProgress)
-                heroNumeral(state)
+        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+            HStack(alignment: .center, spacing: NoopMetrics.gap) {
+                heroNumeralText(state)
+                VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+                    Text(heroOverline(state))
+                        .groteskOverline()
+                        .foregroundStyle(theme.inkTertiary)
+                        .lineSpacing(2)
+                    heroVerdictColumn(state)
+                }
+                Spacer(minLength: 0)
             }
-            // FER-545: sello «estimado · confianza» bajo el dial cuando el veredicto de hoy es un estimado
-            // de Apple (noche sin banda). Vive en el camino PRINCIPAL (cabecera fija, ambas páginas), no
-            // solo en el fallback de página 1 — así el veredicto estimado nunca se ve idéntico al de banda.
+            // FER-545: sello «estimado · confianza» cuando el veredicto de hoy es un estimado de Apple
+            // (noche sin banda) — el veredicto estimado nunca se ve idéntico al de banda.
             if state == .verdict, repo.isRecoveryEstimated(Repository.localDayKey(Date())) {
                 estimatedTodayMarker
             }
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// El numeral dominante (124/700 tabular, tracking −6). Veredicto → el score en su color de nivel
+    /// (con `~` chico si es estimado); calibrando → «··»; descargando / sin lectura → «—». Tocarlo con
+    /// veredicto abre la hoja de Recuperación. El conteo 0→N del pull-to-refresh rueda con
+    /// `contentTransition(.numericText())` — SOLO al actualizar, nunca al abrir.
+    @ViewBuilder private func heroNumeralText(_ s: HeroState) -> some View {
+        switch s {
+        case .verdict:
+            let score = countUpScore ?? recoveryScore ?? 0
+            let lvl = readiness.level
+            let hasWord = lvl != .insufficient
+            let color = isSyncing ? theme.inkTertiary
+                : (hasWord ? verdictDataColor(lvl) : theme.ink)
+            let estimated = repo.isRecoveryEstimated(Repository.localDayKey(Date()))
+            HStack(alignment: .firstTextBaseline, spacing: 0) {
+                if estimated {
+                    Text(verbatim: "~").groteskSheetNumeral()
+                        .foregroundStyle(color.opacity(0.55))
+                }
+                Text("\(score)").groteskHero()
+                    .foregroundStyle(color)
+                    .contentTransition(.numericText(value: Double(score)))
+            }
+            .lineLimit(1).minimumScaleFactor(0.7)
+            .contentShape(Rectangle())
+            .onTapGesture { metricDetail = recoveryInfo }
+            .accessibilityLabel(Text("Recuperación de hoy: \(score)"))
+            .accessibilityAddTraits(.isButton)
+        case .calibrating:
+            Text(verbatim: "··").groteskHero().foregroundStyle(theme.inkTertiary)
+        case .importedBaseline, .waiting, .downloading:
+            Text(verbatim: "—").groteskHero().foregroundStyle(theme.inkTertiary)
+        }
+    }
+
+    /// La columna junto al numeral: con veredicto, la palabra del nivel (20/700, subrayado punteado +
+    /// ⓘ → hoja Recuperación) y el delta vs tu promedio; en los demás estados, la palabra honesta del
+    /// momento con su renglón de contexto.
+    @ViewBuilder private func heroVerdictColumn(_ s: HeroState) -> some View {
+        switch s {
+        case .verdict:
+            let lvl = readiness.level
+            if lvl != .insufficient {
+                Button { metricDetail = recoveryInfo } label: {
+                    HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
+                        Text(stateLabel(lvl))
+                            .font(InstrumentoType.groteskVerdict)
+                            .foregroundStyle(isSyncing ? theme.inkTertiary : verdictDataColor(lvl))
+                            .overlay(alignment: .bottom) {
+                                Line()
+                                    .stroke(verdictDataColor(lvl).opacity(0.5),
+                                            style: StrokeStyle(lineWidth: 1, dash: [2, 3]))
+                                    .frame(height: 1)
+                                    .offset(y: 2)
+                            }
+                        Image(systemName: "info.circle").font(.system(size: 13))
+                            .foregroundStyle(theme.inkTertiary)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint(Text("Abre el detalle de tu recuperación"))
+            } else {
+                Text("Sin contexto para un veredicto")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if let delta = recoveryVsAverage {
+                Text(verbatim: delta >= 0 ? "+\(delta) vs tu promedio" : "−\(abs(delta)) vs tu promedio")
+                    .font(StrandFont.caption).monospacedDigit()
+                    .foregroundStyle(delta >= 0 ? theme.positiveText : theme.inkSecondary)
+            }
+        case .calibrating(let nights):
+            Text("Calibrando")
+                .font(InstrumentoType.groteskVerdict).foregroundStyle(theme.ink)
+            Text("\(nights) de \(Baselines.minNightsSeed) noches")
+                .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+        case .downloading:
+            Text("Descargando")
+                .font(InstrumentoType.groteskVerdict).foregroundStyle(theme.ink)
+            Text("tu noche viene en camino")
+                .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+        case .importedBaseline, .waiting:
+            Text("Sin lectura")
+                .font(InstrumentoType.groteskVerdict).foregroundStyle(theme.ink)
+            Text(strapSeen ? "llega con el sync de la mañana" : "conecta tu banda o Apple Salud")
+                .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// El delta del héroe: la recuperación de hoy vs la media de 7 días (misma base que los tiles).
+    /// nil sin lectura o sin ≥4 días de base.
+    private var recoveryVsAverage: Int? {
+        guard let today = repo.today?.recovery else { return nil }
+        let base = history(baselineDays()) { $0.recovery }
+        guard base.count >= 4 else { return nil }
+        return Int((today - base.reduce(0, +) / Double(base.count)).rounded())
+    }
+
+    /// Una línea horizontal simple para el subrayado punteado del veredicto.
+    private struct Line: Shape {
+        func path(in rect: CGRect) -> Path {
+            var p = Path()
+            p.move(to: CGPoint(x: 0, y: rect.midY))
+            p.addLine(to: CGPoint(x: rect.width, y: rect.midY))
+            return p
+        }
     }
 
     // MARK: - Pager de 2 páginas (FER-465)
@@ -1046,11 +1231,11 @@ struct TodayView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// El puente a «Métricas de hoy» desde la página 1 transicional: desliza el pager a la página 2 (donde
+    /// El puente a Señales desde el Brief transicional: desliza el pager a la página de tiles (donde
     /// hay datos que ver mientras llega el veredicto). Cápsula en tinta — chrome, no dato (sin verde).
     private var metricsBridge: some View {
         Button {
-            withAnimation(reduceMotion ? nil : StrandMotion.interactive) { pagerPage = 1 }
+            withAnimation(reduceMotion ? nil : StrandMotion.interactive) { pagerPage = 0 }
         } label: {
             HStack(spacing: NoopMetrics.space2) {
                 Text("Ver tus métricas de hoy").font(StrandFont.subhead.weight(.semibold))
@@ -1065,16 +1250,6 @@ struct TodayView: View {
         .buttonStyle(.plain)
         .padding(.top, NoopMetrics.space2)
         .accessibilityHint(Text("Abre la página de métricas de hoy"))
-    }
-
-    /// Aterrizaje inicial del pager (FER-475): UNA sola vez, cuando los datos ya cargaron (`repo.loaded`),
-    /// si no hay veredicto abre en Métricas (página 2). Se llama desde `loadAll` tras sembrar el veredicto,
-    /// así que `heroState` ya es definitivo. El flag evita re-saltar cuando llega el veredicto matutino o el
-    /// usuario desliza a propósito — solo decide el destino de apertura, no pelea con sus gestos.
-    @MainActor private func maybeAutoLandMetrics() {
-        guard !didAutoLandMetrics, repo.loaded else { return }
-        didAutoLandMetrics = true
-        if heroState != .verdict { pagerPage = 1 }
     }
 
     /// El Daily Brief del día (FER-470), armado desde el veredicto memoizado + la recuperación de hoy y su
@@ -1120,60 +1295,41 @@ struct TodayView: View {
         DailyBriefEngine.dayConnection(insights: insights, experiment: activeExperiment)
     }
 
-    /// El Daily Brief renderizado: titular en TINTA (el color vive en el dato, no en la palabra) que
-    /// abre el porqué (`WhyVerdictSheet`, como antes la palabra del veredicto), el porqué, las viñetas
-    /// tocables (FER-475) y el bloque atenuado «Más tarde hoy».
+    /// El Daily Brief renderizado (handoff «Hoy» 2026-07): plano sobre el papel — encabezado con el
+    /// punto AHORA, titular 22/700 en grotesk (abre el porqué), cuerpo, «La conexión de hoy» sobre
+    /// `patternBlock`, las filas de acción y el CTA de entrenamiento. Las cinco reglas NO viven aquí
+    /// (pertenecen solo a Señales). Sin serif: la voz nueva es Space Grotesk (F0).
     private func dailyBriefView(_ brief: DailyBrief) -> some View {
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-            // El Daily Brief vive en una TARJETA `surface` (handoff): envuelve SOLO las filas pobladas —
-            // encabezado + titular + porqué + viñetas—. «Más tarde hoy» queda FUERA, debajo, sobre el papel.
-            // Mismo fondo/borde/sombra que los tiles de Métricas (surface + hairline + sombra sutil).
-            VStack(alignment: .leading, spacing: NoopMetrics.space2) {
-                briefHeader(now: true)
-                Button { showWhyVerdict = true } label: {
-                    HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space2) {
-                        Text(brief.titular)
-                            // §2 «Instrumento»: el veredicto va en serif (Instrument Serif, Regular 400).
-                            // Sin `.semibold` — la cara es solo Regular y forzar peso sintetiza un falso-bold.
-                            .font(StrandFont.serifVerdict)
-                            .foregroundStyle(theme.ink)
-                            .fixedSize(horizontal: false, vertical: true)
-                        Image(systemName: "info.circle").font(.system(size: 15))
-                            .foregroundStyle(theme.inkTertiary)
-                        Spacer(minLength: 0)
-                    }
-                    // FER-608 polish: sin `minHeight: 44` — el titular en serif grande ya da un blanco
-                    // táctil cómodo y el `minHeight` le metía aire muerto arriba/abajo dentro de la card.
-                    // El mismo «¿Por qué?» sigue accesible desde la palabra del dial y la caption.
-                    .contentShape(Rectangle())
+            briefHeader(now: true)
+            Button { showWhyVerdict = true } label: {
+                HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space2) {
+                    Text(brief.titular)
+                        .font(InstrumentoType.grotesk(22, weight: .bold, relativeTo: .title2))
+                        .tracking(-0.4)
+                        .foregroundStyle(theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Image(systemName: "info.circle").font(.system(size: 15))
+                        .foregroundStyle(theme.inkTertiary)
+                    Spacer(minLength: 0)
                 }
-                .buttonStyle(.plain)
-                .accessibilityHint(Text("Abre por qué el veredicto se lee así"))
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint(Text("Abre por qué el veredicto se lee así"))
 
-                Text(brief.why).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+            Text(brief.why).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
 
-                if let conn = dayConnection { dayConnectionView(conn) }
+            if let conn = dayConnection { dayConnectionView(conn) }
 
-                VStack(spacing: 0) {
-                    ForEach(Array(brief.bullets.enumerated()), id: \.offset) { i, b in
-                        briefBulletRow(b, showTopHairline: i > 0)
-                    }
+            VStack(spacing: 0) {
+                ForEach(Array(brief.bullets.enumerated()), id: \.offset) { i, b in
+                    briefBulletRow(b, showTopHairline: i > 0)
                 }
-                .padding(.top, NoopMetrics.space1)
             }
-            .padding(NoopMetrics.cardPadding)
-            .background {
-                RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                    .fill(theme.surface)
-                    .shadow(color: theme.ink.opacity(0.05), radius: 1.5, x: 0, y: 1)
-            }
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                .strokeBorder(theme.hairline, lineWidth: 1))
 
             if let tb = trainingBlock { trainingBlockView(tb) }
-
-            laterTodaySection
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -1225,7 +1381,12 @@ struct TodayView: View {
             .padding(.trailing, NoopMetrics.space2)
             .padding(.vertical, NoopMetrics.space2)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.paper)
+            // Bloque «patrón/conexión» del handoff: fondo `patternBlock` con la barra verde a la
+            // izquierda y esquinas redondeadas solo del lado derecho (radio 0 8 8 0).
+            .background(theme.patternBlock,
+                        in: UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 0,
+                                                   bottomTrailingRadius: 8, topTrailingRadius: 8,
+                                                   style: .continuous))
             .overlay(alignment: .leading) { Rectangle().fill(theme.verdict).frame(width: 2.5) }
             .contentShape(Rectangle())
         }
@@ -1260,11 +1421,28 @@ struct TodayView: View {
                     }
                     .accessibilityElement(children: .combine)
                 }
+                // CTA del handoff: barra en TINTA (radio 14) con la rutina en crema y «EMPEZAR →» en el
+                // acento `ctaAccent` — el único lugar donde ese verde eléctrico existe (solo sobre tinta).
                 Button { tabRouter.startTodayTraining() } label: {
-                    Text("Empezar").font(StrandFont.headline).foregroundStyle(theme.paperHi)
-                        .frame(maxWidth: .infinity).padding(.vertical, 14)
-                        .background(theme.ink, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .contentShape(Rectangle())
+                    HStack(spacing: NoopMetrics.space2) {
+                        Text(tb.routineName ?? String(localized: "Tu entrenamiento"))
+                            .font(InstrumentoType.grotesk(13, weight: .bold))
+                            .foregroundStyle(theme.paperHi)
+                            .lineLimit(1).minimumScaleFactor(0.8)
+                        Spacer(minLength: NoopMetrics.space2)
+                        HStack(spacing: NoopMetrics.space1) {
+                            Text("Empezar")
+                                .font(InstrumentoType.grotesk(11, weight: .semibold))
+                                .tracking(1.2)
+                                .textCase(.uppercase)
+                            Image(systemName: "arrow.right").font(.system(size: 11, weight: .semibold))
+                        }
+                        .foregroundStyle(theme.ctaAccent)
+                    }
+                    .padding(.horizontal, NoopMetrics.cardPadding)
+                    .padding(.vertical, 14)
+                    .background(theme.ink, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .padding(.top, NoopMetrics.space1)
@@ -1324,21 +1502,6 @@ struct TodayView: View {
         }
     }
 
-    /// Caption «toca para saber por qué» bajo el dial (handoff): visible en ambas páginas del pager
-    /// mientras haya veredicto. Toca → el mismo «¿Por qué?» (`WhyVerdictSheet`) que la palabra del dial.
-    private var whyCaption: some View {
-        Button { showWhyVerdict = true } label: {
-            Text("toca para saber por qué")
-                .font(StrandFont.caption)
-                .foregroundStyle(theme.inkTertiary)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .padding(.top, NoopMetrics.space2)
-        .accessibilityHint(Text("Abre por qué el veredicto se lee así"))
-    }
-
     /// El encabezado de la página 1 (FER-475): overline «DAILY BRIEF» · punto · «AHORA» (verde, con
     /// veredicto) o «EN ESPERA» (tinta, sin lectura) + una regla hairline. Fiel al handoff.
     private func briefHeader(now: Bool) -> some View {
@@ -1388,44 +1551,6 @@ struct TodayView: View {
                 .foregroundStyle(verdictDataColor(level))
         }
         .accessibilityElement(children: .combine)
-    }
-
-    /// El bloque «Más tarde hoy» (FER-475): un adelanto ATENUADO de lo que vendrá (tu comida, tu
-    /// entrenamiento del día). Son placeholders —no datos reales— con etiqueta «PRONTO», borde punteado
-    /// y `opacity .5`, no tocables. Separado del brief por una regla hairline arriba.
-    private var laterTodaySection: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-            Rectangle().fill(theme.hairline).frame(height: 0.5)
-            Text("Más tarde hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            VStack(spacing: NoopMetrics.space2) {
-                teaserCard(time: "13:00", title: "Tu comida de hoy")
-                // El teaser «Tu entrenamiento de hoy» se retiró: el bloque real «Hoy en tu plan» lo reemplaza
-                // (FER-613) — un placeholder «PRONTO» justo encima del bloque vivo era contradictorio.
-            }
-            .opacity(0.5)
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)   // adelanto no accionable: fuera del recorrido de VoiceOver
-        }
-        .padding(.top, NoopMetrics.space2)
-    }
-
-    /// Una tarjeta-teaser de «Más tarde hoy»: etiqueta de hora + título + «PRONTO», con borde PUNTEADO
-    /// (la señal visual de «aún no disponible»). Sin datos reales — es un adelanto de diseño.
-    private func teaserCard(time: String, title: LocalizedStringKey) -> some View {
-        HStack(spacing: NoopMetrics.gap) {
-            Text(time)
-                .font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
-                .padding(.horizontal, NoopMetrics.space2).padding(.vertical, NoopMetrics.space1)
-                .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous)
-                    .strokeBorder(theme.hairline, lineWidth: 0.5))
-            Text(title).font(StrandFont.subhead).foregroundStyle(theme.ink)
-            Spacer(minLength: 0)
-            Text("Pronto").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-        }
-        .padding(.horizontal, NoopMetrics.cardPadding).padding(.vertical, NoopMetrics.gap)
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-            .strokeBorder(theme.hairlineStrong, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
     }
 
     /// Una viñeta del Daily Brief: glifo SF tintado por el flag (misma fuente de color que la palabra del
@@ -1525,10 +1650,65 @@ struct TodayView: View {
         }
     }
 
-    /// Página 2 del pager: «Métricas de hoy» tal cual — o la tarjeta de fuentes si no hay ninguna
-    /// (FER-364). El grid de tiles NO cambia (decisión del dueño en FER-464).
-    @ViewBuilder private var metricsPage: some View {
-        if noSources { emptySourcesCard } else { iosMetricsSection }
+    /// Página 1 del pager: SEÑALES — el bloque «POR QUÉ N» (las cinco reglas, solo con veredicto) +
+    /// la retícula 2×4 de tiles; o la tarjeta de fuentes si no hay ninguna (FER-364).
+    @ViewBuilder private var senalesPage: some View {
+        VStack(alignment: .leading, spacing: NoopMetrics.sectionGapCompact) {
+            if heroState == .verdict, !rulesRows.isEmpty { fiveRulesBlock }
+            if noSources { emptySourcesCard } else { iosMetricsSection }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// El bloque «POR QUÉ 74 · las cinco reglas»: la suma visible del score. Overlines arriba
+    /// («POR QUÉ N» / «EL LARGO ES EL PESO»), el instrumento de marcas, y la leyenda de origen abajo.
+    /// Tras un pull-to-refresh las marcas se encienden en secuencia (`celebrationStart`); al abrir, nunca.
+    @ViewBuilder private var fiveRulesBlock: some View {
+        // Mapea las filas UNA vez por render (no por frame): durante la celebración el `TimelineView`
+        // solo debe recomputar `reveal`, no re-hacer los 5 `String(localized:)` del mapeo por cada frame.
+        let rows = rulesRows
+        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+            HStack {
+                Text("Por qué \(recoveryScore ?? 0)")
+                    .groteskOverline().foregroundStyle(theme.inkTertiary)
+                Spacer(minLength: NoopMetrics.space2)
+                Text("El largo es el peso")
+                    .groteskOverline(small: true).foregroundStyle(theme.inkMuted)
+            }
+            if let start = celebrationStart, !reduceMotion {
+                TimelineView(.animation) { context in
+                    FiveRulesView(rows: rows,
+                                  reveal: min(1, context.date.timeIntervalSince(start) / 1.2))
+                }
+            } else {
+                FiveRulesView(rows: rows)
+            }
+            HStack(spacing: NoopMetrics.space2) {
+                Text("Señales").groteskOverline(small: true).foregroundStyle(theme.inkMuted)
+                Spacer(minLength: NoopMetrics.space2)
+                sourceLegend
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text("Por qué \(recoveryScore ?? 0): la suma de tus cinco señales"))
+    }
+
+    /// Las filas del instrumento, del motor puro (`RecoveryRules`, memoizado en `recomputeDerived`) con
+    /// su etiqueta y color de dato por señal.
+    private var rulesRows: [FiveRulesView.Row] {
+        (memoRules ?? []).map { rule in
+            let (label, color): (String, Color) = {
+                switch rule.key {
+                case "hrv":      return (String(localized: "HRV"), theme.dataHrv)
+                case "rhr":      return (String(localized: "FC reposo"), theme.dataHeart)
+                case "sleep":    return (String(localized: "Sueño"), theme.dataSleep)
+                case "skinTemp": return (String(localized: "Temp. piel"), theme.dataStrain)
+                default:         return (String(localized: "Respiración"), theme.dataSpO2)
+                }
+            }()
+            return FiveRulesView.Row(id: rule.key, label: label, color: color,
+                                     marks: rule.marks, lit: rule.lit)
+        }
     }
 
     /// El pager horizontal de 2 páginas. `ScrollView(.horizontal)` con `.scrollTargetBehavior(.paging)`
@@ -1539,13 +1719,66 @@ struct TodayView: View {
     @ViewBuilder private func todayPager(width: CGFloat) -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(alignment: .top, spacing: 0) {
-                verdictPage.frame(width: width).id(0)
-                metricsPage.frame(width: width).id(1)
+                senalesPage.frame(width: width).id(0)
+                verdictPage.frame(width: width).id(1)
             }
             .scrollTargetLayout()
         }
         .scrollTargetBehavior(.paging)
         .scrollPosition(id: $pagerPage)
+    }
+
+    /// Las pestañas SEÑALES / BRIEF sobre el pager (handoff): 11/700 trackeadas, activa en tinta,
+    /// inactiva en `inkMuted`, con un subrayado elástico de 2 pt que se desliza con spring y cambia de
+    /// ancho entre palabras (`matchedGeometryEffect`). Tocar una pestaña anima el pager a su página.
+    @Namespace private var tabUnderlineNS
+    private var sectionTabs: some View {
+        HStack(spacing: NoopMetrics.cardPadding) {
+            tabButton("Señales", page: 0)
+            tabButton("Brief", page: 1)
+            Spacer(minLength: 0)
+        }
+        .animation(reduceMotion ? nil : StrandMotion.interactive, value: pagerPage)
+    }
+
+    private func tabButton(_ title: LocalizedStringKey, page: Int) -> some View {
+        let active = (pagerPage ?? 0) == page
+        return Button {
+            withAnimation(reduceMotion ? nil : .spring(response: 0.34, dampingFraction: 0.62)) {
+                pagerPage = page
+            }
+        } label: {
+            VStack(alignment: .leading, spacing: NoopMetrics.space1 + 1) {
+                Text(title)
+                    .font(InstrumentoType.groteskTab)
+                    .tracking(InstrumentoType.groteskTabTracking)
+                    .textCase(.uppercase)
+                    .foregroundStyle(active ? theme.ink : theme.inkMuted)
+                Rectangle()
+                    .fill(active ? theme.ink : Color.clear)
+                    .frame(height: 2)
+                    .modifier(TabUnderlineEffect(active: active, ns: tabUnderlineNS))
+            }
+            .fixedSize()
+            .contentShape(Rectangle())
+            .frame(minHeight: 34)
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(active ? [.isButton, .isSelected] : .isButton)
+    }
+
+    /// El subrayado elástico: `matchedGeometryEffect` UNA sola vez (en la pestaña activa) hace que la
+    /// barra viaje y cambie de ancho entre palabras con el spring del tap.
+    private struct TabUnderlineEffect: ViewModifier {
+        let active: Bool
+        let ns: Namespace.ID
+        func body(content: Content) -> some View {
+            if active {
+                content.matchedGeometryEffect(id: "tabUnderline", in: ns)
+            } else {
+                content
+            }
+        }
     }
 
     /// Page dots: punto 6×6 inactivo (`hairlineStrong`) · barra 18×6 activa (`ink`), centrados. Tocar un
@@ -1565,7 +1798,7 @@ struct TodayView: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(Text(i == 0 ? "Veredicto del día" : "Métricas de hoy"))
+                .accessibilityLabel(Text(i == 0 ? "Señales" : "Brief"))
                 .accessibilityAddTraits(active ? [.isButton, .isSelected] : .isButton)
             }
         }
@@ -1616,76 +1849,14 @@ struct TodayView: View {
         .onAppear { hintBob = true }
     }
 
+    /// La overline del héroe (dos líneas, MAYÚSCULAS trackeadas): qué es el numeral, honesto por estado.
     private func heroOverline(_ s: HeroState) -> LocalizedStringKey {
         switch s {
-        case .calibrating: return "Tu base se afina"
-        default:           return "El veredicto de hoy"
-        }
-    }
-
-    /// El color del numeral del héroe — tinta normal, atenuado a tertiary mientras sincroniza
-    /// (FER-221): «recalculando», en sintonía con el dial girando. Vuelve a tinta al terminar.
-    private var heroNumeralInk: Color { isSyncing ? theme.inkTertiary : theme.ink }
-
-    /// El numeral dominante — lo único que “grita” el estado. Veredicto (FER-549): número Y palabra van en
-    /// el MISMO color de nivel, así nunca se contradicen (a diferencia del caso que evitó FER-206: número
-    /// en color de banda ≠ color de nivel de la palabra). Sin palabra (`insufficient`) el número se queda
-    /// en tinta. Calibrando → «N/4» en tinta (progreso, no dato). Espera/base Apple → em-dash «—» en tinta.
-    /// Numeral 60 limpio (sin «/100», FER-608) con la palabra del nivel apilada bajo él (FER-549); solo
-    /// el modo calibrando conserva un denominador («/seed») por ser progreso, no dato.
-    @ViewBuilder private func heroNumeral(_ s: HeroState) -> some View {
-        switch s {
         case .verdict:
-            let score = recoveryScore
-            let lvl = readiness.level
-            // FER-549 (B1): la PALABRA del veredicto regresa al centro del dial, apilada bajo el numeral.
-            // Con palabra, el número se tiñe por nivel (MISMO color que la palabra — no se contradicen, a
-            // diferencia del caso FER-206 donde el número iba en color de banda ≠ color de nivel). Sin
-            // palabra (`insufficient`) el número se queda en tinta como antes.
-            let hasWord = lvl != .insufficient
-            let numColor = isSyncing ? theme.inkTertiary
-                : (hasWord ? verdictDataColor(lvl) : heroNumeralInk)
-            VStack(spacing: NoopMetrics.space2) {
-                // Concéntrico (FER-169): el NÚMERO queda centrado en el eje del dial (limpio, sin «/100»
-                // desde FER-608). El número abre la hoja RESUMIDA de recuperación (MetricInfoSheet), igual
-                // que las demás métricas de Hoy (FER-232).
-                Group {
-                    if let score {
-                        // FER-549/handoff: solo el numeral limpio en el centro del dial — sin el «/100» (su
-                        // denominador descentraba el número y el handoff lo muestra sin él). El número sigue
-                        // tocable (abre el resumen de Recuperación), solo pierde la pista en línea.
-                        Text("\(score)").instrumentoHero(60)
-                            .foregroundStyle(numColor)
-                    } else {
-                        Text("—").instrumentoHero(60).foregroundStyle(theme.inkTertiary)
-                    }
-                }
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    metricDetail = recoveryInfo
-                }
-                // La palabra del nivel en su color; toca → «¿Por qué?» (`WhyVerdictSheet`), la misma hoja
-                // que abren la «i» de Métricas y el titular del Brief. `insufficient` no tiene palabra.
-                if hasWord {
-                    Button { showWhyVerdict = true } label: {
-                        Text(stateLabel(lvl)).font(StrandFont.subhead).fontWeight(.semibold)
-                            .foregroundStyle(isSyncing ? theme.inkTertiary : verdictDataColor(lvl))
-                            .multilineTextAlignment(.center)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityHint(Text("Abre por qué el veredicto se lee así"))
-                }
-            }
-        case .calibrating(let nights):
-            // Apilado (FER-202), igual que el veredicto: «N» centrado en el eje del dial con el «/seed»
-            // pequeño y centrado debajo (antes a un lado con un «/seed» espejo invisible).
-            VStack(spacing: NoopMetrics.space1) {
-                Text("\(nights)").instrumentoHero(60).foregroundStyle(heroNumeralInk)
-                Text("/\(Baselines.minNightsSeed)").font(StrandFont.subhead)
-                    .foregroundStyle(theme.inkTertiary)
-            }
-        case .importedBaseline, .waiting, .downloading:
-            Text("—").instrumentoHero(60).foregroundStyle(theme.inkTertiary)
+            return repo.isRecoveryEstimated(Repository.localDayKey(Date()))
+                ? "Recuperación\nestimada" : "Recuperación\nde hoy"
+        case .calibrating: return "Tu base\nse afina"
+        default:           return "Recuperación\nde hoy"
         }
     }
 
@@ -1938,123 +2109,6 @@ struct TodayView: View {
         }
     }
 
-    /// La pastilla de pulso vivo del encabezado de «Métricas de hoy» (FER-194): corazón en tinta + punto
-    /// de pulso + bpm + «bpm», en una cápsula `surface` con hairline. Reemplaza la fila «Verlo latido a
-    /// latido» del pie (FER-189); es un Button compacto que abre el monitor latido a latido. Regla «color
-    /// solo en el dato»: únicamente el punto lleva color (`dataHeart` al transmitir), el resto va en tinta.
-    /// Sin lectura del strap → muestra «—» y el punto en tinta, pero sigue tappable.
-    private struct LivePulsePill: View {
-        var liveBpm: Int?
-        var isLiveHR: Bool
-        /// FER-549 (B6): instante del último sync, para mostrar «hace cuánto» dentro de la píldora.
-        var lastSyncedAt: Double?
-        /// FER-583: estado de sincronización. La cápsula se MANTIENE durante el sync (antes cedía su lugar a
-        /// una línea suelta sin bpm); solo su frescura pasa a «Sincronizando…» / «N paquetes» con el ⟳ girando.
-        var backfilling: Bool = false
-        var chunks: Int = 0
-        let onTap: () -> Void
-        @Environment(\.instrumentoTheme) private var theme
-        @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-        /// Tiempo relativo en unidades de UNA letra (FER-575/583): «hace 30 s / 5 m / 2 h / 3 d». Núcleo
-        /// neutro («30 s», idéntico es/en) envuelto en la clave bilingüe «%@ ago» (es: «hace %@»).
-        private static func compactAgo(_ secondsAgo: Double) -> String {
-            let s = Int(secondsAgo.rounded())
-            let core: String
-            if s < 60 { core = "\(s) s" }
-            else if s < 3600 { core = "\(s / 60) m" }
-            else if s < 86_400 { core = "\(s / 3600) h" }
-            else { core = "\(s / 86_400) d" }
-            return String(localized: "\(core) ago")
-        }
-
-        var body: some View {
-            Button(action: onTap) {
-                // Chip compacto (FER-265): punto que late + bpm + frescura/estado de sync + chevron. La
-                // cápsula + el chevron son el lenguaje iOS de «esto se toca»; el punto en color de dato
-                // (vivo) es el único color.
-                HStack(alignment: .center, spacing: NoopMetrics.space1) {
-                    Circle().fill(isLiveHR ? theme.dataHeart : theme.inkTertiary)
-                        .frame(width: 7, height: 7)
-                    Text(liveBpm.map { "\($0)" } ?? "—").font(StrandFont.number(13, weight: .semibold))
-                        .foregroundStyle(liveBpm == nil ? theme.inkTertiary : theme.ink)
-                    Text("bpm").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    // FER-549 (B6) + FER-583: separador + ⟳ + frescura/estado. El ⟳ gira mientras `backfilling`;
-                    // el texto es «Sincronizando…»/«N paquetes» en sync, o «hace 30 s» en reposo.
-                    if backfilling || lastSyncedAt != nil {
-                        Rectangle().fill(theme.hairline).frame(width: 1, height: 10)
-                            .padding(.horizontal, NoopMetrics.space1)
-                            .accessibilityHidden(true)
-                        syncGlyph
-                        freshness
-                    }
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 9, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-                }
-                .padding(.leading, NoopMetrics.space2).padding(.trailing, NoopMetrics.space1)
-                .padding(.vertical, 3)
-                .background(theme.surface, in: Capsule())
-                .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
-                // Objetivo táctil HIG de 44pt SIN agrandar la cápsula (FER-273): la cápsula compacta de
-                // FER-265 queda centrada en un área tocable de ≥44pt de alto. `contentShape` hace tocable
-                // todo el marco, no solo la cápsula.
-                .frame(minHeight: 44)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityElement(children: .ignore)
-            .accessibilityAddTraits(.isButton)
-            .accessibilityLabel(Text(isLiveHR ? "Frecuencia cardiaca en vivo" : "Frecuencia cardiaca"))
-            .accessibilityValue(backfilling
-                ? Text("Sincronizando")
-                : Text(liveBpm.map { "\($0) bpm" } ?? "Sin lectura"))
-            .accessibilityHint(Text("Abre el monitor latido a latido"))
-        }
-
-        /// El glifo ⟳: gira a velocidad constante mientras `backfilling` (ángulo = tiempo × 240°/s, ~1.5 s/
-        /// vuelta, como el header viejo de FER-267); estático en reposo o bajo Reduce Motion.
-        @ViewBuilder private var syncGlyph: some View {
-            let base = Image(systemName: "arrow.triangle.2.circlepath")
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(backfilling ? theme.verdict : theme.inkTertiary)
-            if backfilling && !reduceMotion {
-                TimelineView(.animation) { context in
-                    let angle = (context.date.timeIntervalSinceReferenceDate * 240)
-                        .truncatingRemainder(dividingBy: 360)
-                    base.rotationEffect(.degrees(angle))
-                }
-            } else {
-                base
-            }
-        }
-
-        /// La frescura/estado a la derecha del ⟳: en sync, «N paquetes» (o «Sincronizando…» con 0) en verde;
-        /// en reposo, «hace 30 s» en una letra. Mismas claves que el header viejo para conservar es/en.
-        @ViewBuilder private var freshness: some View {
-            if backfilling {
-                Text(chunks > 0 ? String(localized: "\(chunks) packets") : String(localized: "Syncing…"))
-                    .font(StrandFont.caption).monospacedDigit()
-                    .foregroundStyle(theme.verdict)
-            } else if let at = lastSyncedAt {
-                TimelineView(.periodic(from: .now, by: 60)) { context in
-                    let secondsAgo = Swift.max(context.date.timeIntervalSince1970 - at, 1)
-                    Text(verbatim: Self.compactAgo(secondsAgo))
-                        .font(StrandFont.number(11, weight: .regular)).monospacedDigit()
-                        .foregroundStyle(theme.inkTertiary)
-                }
-            }
-        }
-    }
-
-    /// Top utility row: compact date only — la sincronización + batería viven a su derecha en la línea
-    /// de estado del `headerBlock` (FER-278).
-    @ViewBuilder private var utilityRow: some View {
-        Text(shortDate)
-            .font(StrandFont.overline)
-            .tracking(StrandFont.overlineTracking)
-            .foregroundStyle(theme.inkTertiary)
-    }
-
     /// Whether the personal baseline draws on imported Apple Health history — drives the
     /// "Your baseline comes from Apple Health" note on the calibration row. (FER-105)
     private var baselineFromApple: Bool { !repo.appleHealthDays.isEmpty }
@@ -2169,50 +2223,42 @@ struct TodayView: View {
             : nil
         let stepsT      = (stepsFresh ?? stepsEstFresh).map(Double.init)
         let stressT     = stress?.score
+        let respR       = latestFromDisplay { $0.respRateBpm }
         // Base para la media de 7 días de cada tile (FER-258): días anteriores a hoy, ordenados,
         // computada una vez por render (no por tile).
         let base = baselineDays()
-        // Verde AA-en-texto-chico para el delta «mejora» (auditoría Hoy · P1): `theme.verdict` es
-        // AA-grande (3:1 ≥18pt) pero el delta va en caption 12pt, donde hace falta 4.5:1.
-        // `positiveText` oscurece el verdict lo justo para pasar AA contra el papel de la hora. Se
-        // resuelve UNA vez por render (su bisección OKLab no debe correr por-tile) y se pasa a cada tile.
+        // Verde AA-en-texto-chico para el delta favorable: `positiveText` (= el #00774B del handoff).
+        // Se resuelve UNA vez por render (su bisección OKLab no debe correr por-tile).
         let positiveDelta = theme.positiveText
-        // FER-550: recuperación y respiración para el Vistazo / la rejilla de 6. Como los demás vitales,
-        // el número = el último punto de su gráfica (`latestFromDisplay`), badgeado por su fuente (FER-546);
-        // la recuperación de hoy sale de `repo.today` (el mismo dato que el dial).
-        let recR    = repo.today?.recovery
-        let respR   = latestFromDisplay { $0.respRateBpm }
 
-        // FER-581: ritmo vertical un poco más apretado (gap→space2) para recortar el scroll de la página.
         VStack(alignment: .leading, spacing: NoopMetrics.space2) {
-            // FER-550 (fiel al handoff): «Vistazo» — Recuperación / HRV / Sueño en 3 pills compactas (el
-            // dato de un vistazo, sin mini-banda). El estado del día y la escala de 4 segmentos se retiraron
-            // de aquí (el dial ya lleva la palabra del veredicto, FER-549) y el pulso vivo se mudó al header
-            // de arriba; el «¿por qué?» se alcanza tocando la palabra del dial.
-            glanceRow(recovery: recR, hrv: hrvR, sleep: sleepR, base: base, positive: positiveDelta)
-            // Overline de la sección: la rejilla de hoy. Cada tile trae su tendencia de 14 días como
-            // mini-gráfica de área (FER-551) + su «vs media».
-            // FER-581: el rótulo de la sección y la leyenda de fuente comparten renglón. El lado derecho
-            // del overline estaba vacío y la leyenda al pie sumaba un renglón (con su gap) que empujaba el
-            // scroll; subirla aquí recupera ese alto sin perder la explicación de los puntos.
-            HStack(spacing: NoopMetrics.space2) {
-                Text("Métricas de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    .lineLimit(1)
-                Spacer(minLength: NoopMetrics.space2)
-                sourceLegend
-            }
-            .padding(.top, NoopMetrics.space1)
-            LazyVGrid(columns: tileGrid, alignment: .leading, spacing: NoopMetrics.gap) {
-                // Esfuerzo del día — carga del día, sin valencia (Δ en tinta neutra).
+            // La retícula 2×4 del handoff: los MISMOS 8 vitales de hoy, cada tile con su punto de
+            // origen, valor 21/700 en color, sparkband de 14 días contra el rango personal y la línea
+            // delta explícita. Recuperación NO es tile: ya es el numeral del héroe.
+            LazyVGrid(columns: tileGrid, alignment: .leading, spacing: NoopMetrics.space2 + 2) {
+                // Sueño — day-scoped (solo hoy); más es mejor dentro de lo razonable.
                 metricTile(TodayMetricTile(
-                    label: "Day Strain",
-                    icon: "bolt.fill",
-                    value: strainT.map { String(format: "%.1f", $0) } ?? "—",
-                    valueColor: theme.dataStrain,
-                    context: tileContext(today: strainT, history: history(base) { $0.strain },
-                                         betterHigher: nil, deadband: 0.3, positive: positiveDelta) { String(format: "%.1f", $0) },
-                    series: areaSeries(base, today: strainT) { $0.strain }
-                )) { metricDetail = .strain(strainT) }
+                    label: "Sleep",
+                    icon: "moon.fill",
+                    value: sleepR.map { sleepClockText($0.value) } ?? "—",
+                    valueColor: theme.dataSleep,
+                    source: sleepR?.fromApple == true ? .apple : .band,
+                    context: tileContext(today: sleepR?.value, history: history(base) { $0.totalSleepMin },
+                                         betterHigher: true, deadband: 5, positive: positiveDelta) { sleepDeltaText($0) },
+                    series: areaSeries(base, today: sleepR?.value) { $0.totalSleepMin },
+                    placeholder: "Esta noche"
+                )) { metricDetail = .sleep(sleepR.map { Int($0.value.rounded()) }) }
+                // HRV — más alta es mejor.
+                metricTile(TodayMetricTile(
+                    label: "HRV",
+                    icon: "waveform.path.ecg",
+                    value: hrvR.map { "\(Int($0.value.rounded()))" } ?? "—", unit: String(localized: "ms"),
+                    valueColor: theme.dataHrv,
+                    source: hrvR?.fromApple == true ? .apple : .band,
+                    context: tileContext(today: hrvR?.value, history: history(base) { $0.avgHrv },
+                                         betterHigher: true, deadband: 1, positive: positiveDelta) { "\(Int($0.rounded())) ms" },
+                    series: areaSeries(base, today: hrvR?.value) { $0.avgHrv }
+                )) { metricDetail = .hrv(hrvR?.value) }
                 // FC en reposo — más alta es PEOR.
                 metricTile(TodayMetricTile(
                     label: "Resting HR",
@@ -2224,22 +2270,20 @@ struct TodayView: View {
                                          betterHigher: false, deadband: 1, positive: positiveDelta) { "\(Int($0.rounded())) \(String(localized: "bpm"))" },
                     series: areaSeries(base, today: rhrR?.value) { $0.restingHr.map(Double.init) }
                 )) { metricDetail = .restingHR(rhrR.map { Int($0.value.rounded()) }) }
-                // Oxígeno en sangre — más alto es mejor.
+                // Esfuerzo del día — carga del día, sin valencia (Δ en tinta neutra).
                 metricTile(TodayMetricTile(
-                    label: "Blood Oxygen",
-                    icon: "drop.fill",
-                    value: spo2R.map { String(format: "%.0f", $0.value) } ?? "—", unit: "%",
-                    valueColor: theme.dataSpO2,
-                    source: spo2R?.fromApple == true ? .apple : .band,
-                    context: tileContext(today: spo2R?.value, history: history(base) { $0.spo2Pct },
-                                         betterHigher: true, deadband: 0.5, positive: positiveDelta) { "\(Int($0.rounded())) %" },
-                    series: areaSeries(base, today: spo2R?.value) { $0.spo2Pct }
-                )) { metricDetail = .spo2(spo2R?.value) }
+                    label: "Day Strain",
+                    icon: "bolt.fill",
+                    value: strainT.map { String(format: "%.1f", $0) } ?? "—",
+                    valueColor: theme.dataStrain,
+                    source: .calculated,
+                    context: tileContext(today: strainT, history: history(base) { $0.strain },
+                                         betterHigher: nil, deadband: 0.3, positive: positiveDelta) { String(format: "%.1f", $0) },
+                    series: areaSeries(base, today: strainT) { $0.strain }
+                )) { metricDetail = .strain(strainT) }
                 // Pasos — sin meta (no existe en la app); más es mejor. Con conteo real (Apple) el tile
                 // es el de siempre; en un día estimado (WHOOP 4.0, FER-663) el valor lleva «est.», el
-                // chip pasa a «calculado» y el contexto/serie comparan estimación-contra-estimación
-                // (nunca se mezcla la estimación con la media de conteos reales). Solo la historia y la
-                // serie difieren entre día real y estimado, así que las elige aquí y el tile es único.
+                // chip pasa a «calculado» y el contexto/serie comparan estimación-contra-estimación.
                 let stepsEstimated = stepsEstFresh != nil
                 let stepsTileHistory = stepsEstimated ? stepsEstHistory : history(base) { $0.steps.map(Double.init) }
                 let stepsTileSeries  = stepsEstimated
@@ -2256,6 +2300,28 @@ struct TodayView: View {
                                          betterHigher: true, deadband: 100, positive: positiveDelta) { intString($0) },
                     series: stepsTileSeries
                 )) { metricDetail = .steps(stepsFresh ?? stepsEstFresh) }
+                // Oxígeno en sangre — más alto es mejor.
+                metricTile(TodayMetricTile(
+                    label: "Blood Oxygen",
+                    icon: "drop.fill",
+                    value: spo2R.map { String(format: "%.0f", $0.value) } ?? "—", unit: "%",
+                    valueColor: theme.dataSpO2,
+                    source: spo2R?.fromApple == true ? .apple : .band,
+                    context: tileContext(today: spo2R?.value, history: history(base) { $0.spo2Pct },
+                                         betterHigher: true, deadband: 0.5, positive: positiveDelta) { "\(Int($0.rounded())) %" },
+                    series: areaSeries(base, today: spo2R?.value) { $0.spo2Pct }
+                )) { metricDetail = .spo2(spo2R?.value) }
+                // Respiración — «en rango» es lo normal; sin valencia simple (Δ en tinta neutra).
+                metricTile(TodayMetricTile(
+                    label: "Respiration",
+                    icon: "lungs.fill",
+                    value: respR.map { String(format: "%.1f", $0.value) } ?? "—", unit: String(localized: "rpm"),
+                    valueColor: theme.dataSpO2,
+                    source: respR?.fromApple == true ? .apple : .band,
+                    context: tileContext(today: respR?.value, history: history(base) { $0.respRateBpm },
+                                         betterHigher: nil, deadband: 0.5, positive: positiveDelta) { String(format: "%.1f", $0) },
+                    series: areaSeries(base, today: respR?.value) { $0.respRateBpm }
+                )) { metricDetail = .respiratory(respR?.value) }
                 // Estrés — más alto es PEOR; valor bandeado por nivel 0–3 (verde/ámbar/rojo).
                 metricTile(TodayMetricTile(
                     label: "Stress",
@@ -2269,19 +2335,13 @@ struct TodayView: View {
                     // El estrés no es campo de DailyMetric: su serie sale del proxy diario 0–3 (incluye hoy).
                     series: Array((stress?.fullTrend ?? []).suffix(14).map { $0.value })
                 )) { metricDetail = .stress(stressT) }
-                // Respiración — «en rango» es lo normal; sin valencia simple (Δ en tinta neutra). FER-550.
-                metricTile(TodayMetricTile(
-                    label: "Respiration",
-                    icon: "lungs.fill",
-                    value: respR.map { String(format: "%.1f", $0.value) } ?? "—", unit: String(localized: "rpm"),
-                    valueColor: theme.dataSpO2,
-                    source: respR?.fromApple == true ? .apple : .band,
-                    context: tileContext(today: respR?.value, history: history(base) { $0.respRateBpm },
-                                         betterHigher: nil, deadband: 0.5, positive: positiveDelta) { String(format: "%.1f", $0) },
-                    series: areaSeries(base, today: respR?.value) { $0.respRateBpm }
-                )) { metricDetail = .respiratory(respR?.value) }
             }
         }
+    }
+
+    /// Sueño en formato reloj del handoff: «7:12» (horas:minutos dormidos).
+    private func sleepClockText(_ mins: Double) -> String {
+        String(format: "%d:%02d", Int(mins) / 60, Int(mins) % 60)
     }
 
     /// Leyenda de fuente (FER-575, reubicada en FER-581 al renglón del rótulo «Métricas de hoy»): mapea
@@ -2304,182 +2364,6 @@ struct TodayView: View {
         }
     }
 
-    /// La pastilla de pulso vivo (FER-194), en el encabezado de «Métricas de hoy» (FER-467). Solo aparece
-    /// con strap visto; tocarla abre el monitor latido-a-latido. (El anclaje `withPulsePill` a la línea
-    /// del veredicto, FER-282, se retiró: el pulso ya no vive en el héroe / página 1.)
-    private var pulsePill: some View {
-        LivePulsePill(liveBpm: liveBpm, isLiveHR: isLiveHR, lastSyncedAt: live.lastSyncedAt,
-                      backfilling: live.backfilling || live.draining,
-                      chunks: live.syncChunksThisSession,
-                      onTap: { showLiveMonitor = true })
-    }
-
-    // MARK: - Vistazo (FER-550)
-
-    /// El «Vistazo» del handoff: Recuperación · HRV · Sueño en 3 pills compactas (icono + chevron arriba,
-    /// valor en color de métrica, «±N vs media»), cada una tocable hacia su detalle. Reusa el mismo cálculo
-    /// de delta vs media de 7 días que los tiles (`tileContext`), sin la mini-banda.
-    @ViewBuilder
-    private func glanceRow(recovery: Double?, hrv: (value: Double, fromApple: Bool)?,
-                           sleep: (value: Double, fromApple: Bool)?, base: [DailyMetric], positive: Color) -> some View {
-        // FER-552: la recuperación de hoy es de banda salvo que sea un estimado de Apple (noche sin banda).
-        let recSource: MetricSource = repo.isRecoveryEstimated(Repository.localDayKey(Date())) ? .apple : .band
-        return HStack(alignment: .top, spacing: NoopMetrics.gap) {
-            glancePill(label: "Recovery", icon: "heart.fill", color: theme.dataRecovery,
-                       value: recovery.map { "\(Int($0.rounded()))" } ?? "—", unit: nil, source: recSource,
-                       today: recovery, history: history(base) { $0.recovery },
-                       betterHigher: true, deadband: 2, positive: positive, format: { "\(Int($0.rounded()))" }) {
-                metricDetail = recoveryInfo
-            }
-            glancePill(label: "HRV", icon: "waveform.path.ecg", color: theme.dataHrv,
-                       value: hrv.map { "\(Int($0.value.rounded()))" } ?? "—", unit: String(localized: "ms"),
-                       source: hrv?.fromApple == true ? .apple : .band,
-                       today: hrv?.value, history: history(base) { $0.avgHrv },
-                       betterHigher: true, deadband: 1, positive: positive, format: { "\(Int($0.rounded()))" }) {
-                metricDetail = .hrv(hrv?.value)
-            }
-            glancePill(label: "Sleep", icon: "moon.fill", color: theme.dataSleep,
-                       value: sleep.map { sleepText($0.value) } ?? "—", unit: nil,
-                       source: sleep?.fromApple == true ? .apple : .band,
-                       today: sleep?.value, history: history(base) { $0.totalSleepMin },
-                       betterHigher: true, deadband: 5, positive: positive, format: { sleepDeltaText($0) }) {
-                metricDetail = .sleep(sleep.map { Int($0.value.rounded()) })
-            }
-        }
-        // `fixedSize(vertical:)` acota la fila a su alto NATURAL (el de la pill más alta), en vez de dejarla
-        // crecer al alto que le propone la página del pager. Sin esto, el `maxHeight: .infinity` de cada pill
-        // —que las iguala entre sí— las estiraba a TODA la altura disponible. Con el clamp, las tres quedan
-        // parejas y compactas.
-        .fixedSize(horizontal: false, vertical: true)
-    }
-
-    /// Una pill del Vistazo, envuelta en su `Button` tocable (mismo realce que los tiles). El delta vs media
-    /// se computa con `tileContext` (se ignora su banda) para no duplicar la lógica.
-    private func glancePill(label: LocalizedStringKey, icon: String, color: Color,
-                            value: String, unit: String?, source: MetricSource,
-                            today: Double?, history: [Double], betterHigher: Bool?, deadband: Double,
-                            positive: Color, format: @escaping (Double) -> String,
-                            onTap: @escaping () -> Void) -> some View {
-        let ctx = tileContext(today: today, history: history, betterHigher: betterHigher,
-                              deadband: deadband, positive: positive, format)
-        return Button(action: onTap) {
-            GlancePill(label: label, icon: icon, color: color, value: value, unit: unit, source: source, delta: ctx)
-        }
-        .buttonStyle(TileButtonStyle(liftBorder: theme.hairlineStrong))
-        .accessibilityHint(Text("Abre el detalle"))
-    }
-
-    /// Una pill compacta del Vistazo: icono + chevron arriba, valor grande en color de métrica, y «±N vs
-    /// media» (reusa las claves `vs avg` / `At your average` de los tiles → es «vs media» / «En tu media»).
-    private struct GlancePill: View {
-        let label: LocalizedStringKey
-        let icon: String
-        let color: Color
-        let value: String
-        var unit: String? = nil
-        var source: MetricSource = .band
-        let delta: TileContext?
-        @Environment(\.instrumentoTheme) private var theme
-
-        private var isEmpty: Bool { value == "—" }
-
-        /// El valor con los DÍGITOS al tamaño grande y las LETRAS de unidad inline (la «h»/«m» de «5h 31m»)
-        /// en chico — igual que el «ms» de HRV (FER-575 follow-up). Así un valor ancho como el de sueño
-        /// conserva sus dígitos al MISMO tamaño que «71»/«58» en vez de encoger toda la cadena por no caber
-        /// (el `minimumScaleFactor` solo encogía a sueño, rompiendo la paridad). Sin letras («71») = Text
-        /// normal. Las corridas se concatenan en un solo `Text`, así baseline-alinean como «58 ms».
-        private var valueText: Text {
-            var out = Text(verbatim: "")
-            var run = ""
-            var runIsLetter = false
-            func flush() {
-                guard !run.isEmpty else { return }
-                let f = runIsLetter ? StrandFont.caption : StrandFont.number(21, weight: .semibold)
-                out = out + Text(verbatim: run).font(f)
-                run = ""
-            }
-            for ch in value {
-                if !run.isEmpty && ch.isLetter != runIsLetter { flush() }
-                runIsLetter = ch.isLetter
-                run.append(ch)
-            }
-            flush()
-            return out
-        }
-
-        var body: some View {
-            VStack(alignment: .leading, spacing: NoopMetrics.space2) {
-                // FER-575: ícono + TÍTULO de la métrica (antes solo el ícono, con un chevron). El título da
-                // contexto sin depender de reconocer el glifo; en tinta (color solo en el dato). El chevron
-                // se retiró: en pills de 3-por-fila competía por el ancho con el título (la pill sigue siendo
-                // un botón tappable, igual que los tiles, que tampoco lo llevan).
-                HStack(spacing: NoopMetrics.space1) {
-                    Image(systemName: icon).font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(isEmpty ? theme.inkDim : color)
-                        .accessibilityHidden(true)
-                    Text(label).instrumentoOverline()
-                        .foregroundStyle(theme.inkSecondary)
-                        .lineLimit(1).minimumScaleFactor(0.6)
-                    Spacer(minLength: 0)
-                }
-                HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
-                    valueText
-                        .foregroundStyle(isEmpty ? theme.inkDim : color)
-                        .lineLimit(1).minimumScaleFactor(0.6)
-                    if let unit {
-                        Text(unit).font(StrandFont.caption).foregroundStyle(isEmpty ? theme.inkDim : theme.inkTertiary)
-                    }
-                }
-                HStack(spacing: NoopMetrics.space1) {
-                    deltaView
-                    Spacer(minLength: 0)
-                    if !isEmpty { SourceChip(source: source) }   // FER-552: fuente real del dato
-                }
-            }
-            // `maxHeight: .infinity` (contenido anclado arriba) para que las 3 pills del Vistazo queden del
-            // MISMO alto: cada una llena el alto de la más alta que impone el `HStack`, en vez de tomar su
-            // alto intrínseco —que difería porque el valor ancho de Sueño («5h 31m») encoge un pelo con el
-            // `minimumScaleFactor` y dejaba esa pill más baja que Recuperación/HRV.
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .padding(.horizontal, NoopMetrics.gap).padding(.vertical, NoopMetrics.space2)
-            .background {
-                RoundedRectangle(cornerRadius: NoopMetrics.tileRadius, style: .continuous)
-                    .fill(theme.surface)
-                    .shadow(color: theme.ink.opacity(0.05), radius: 1.5, x: 0, y: 1)
-            }
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.tileRadius, style: .continuous)
-                .strokeBorder(theme.hairline, lineWidth: 1))
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel(Text(label))
-        }
-
-        /// «+N vs media» / «−N vs media» / «En tu media». Mientras no hay base (≥4 días) o no hay valor de
-        /// hoy, reserva el alto con un renglón vacío para que las 3 pills queden parejas.
-        @ViewBuilder private var deltaView: some View {
-            switch delta {
-            case let .ready(change):
-                switch change {
-                case let .above(magnitude, c, _):
-                    HStack(spacing: NoopMetrics.space1) { Text(verbatim: "+\(magnitude)"); Text("vs avg") }
-                        .font(StrandFont.caption).foregroundStyle(c).lineLimit(1).minimumScaleFactor(0.6)
-                case let .below(magnitude, c, _):
-                    HStack(spacing: NoopMetrics.space1) { Text(verbatim: "−\(magnitude)"); Text("vs avg") }
-                        .font(StrandFont.caption).foregroundStyle(c).lineLimit(1).minimumScaleFactor(0.6)
-                case let .equal(c):
-                    Text("At your average").font(StrandFont.caption).foregroundStyle(c)
-                        .lineLimit(1).minimumScaleFactor(0.6)
-                }
-            case .building:
-                // Paridad con los tiles: aún sin ≥4 días de base para una media honesta.
-                Text("Still building your average").font(StrandFont.caption)
-                    .foregroundStyle(theme.inkTertiary).lineLimit(1).minimumScaleFactor(0.6)
-            case .none:
-                // Sin valor de hoy: el «—» del valor ya lo dice; el renglón vacío mantiene parejas las 3.
-                Text(verbatim: " ").font(StrandFont.caption)
-            }
-        }
-    }
-
     /// La rejilla de «Métricas de hoy»: dos columnas iguales → 8 tiles en 4 renglones de 2.
     private let tileGrid = [GridItem(.flexible(), spacing: NoopMetrics.gap),
                             GridItem(.flexible(), spacing: NoopMetrics.gap)]
@@ -2495,8 +2379,14 @@ struct TodayView: View {
     /// Los días de base para la media de 7 días (FER-258): las filas del dashboard de display
     /// ANTERIORES a hoy (la misma fuente en capas que resuelve el valor de hoy y la de la tendencia
     /// 14d), ordenadas y acotadas a las recientes. Excluir hoy hace que el delta sea «hoy vs tu
-    /// semana», no «hoy contra sí mismo». Se computa una vez por render, no por tile.
+    /// semana», no «hoy contra sí mismo». Memoizado en `memoBaselineDays` (FER-172): el `filter+sort`
+    /// sobre `repo.displayDays` corría 2–3 veces por render (héroe + Brief + tiles); ahora una vez por
+    /// refresh. Cae al cálculo en línea solo el primer frame (memo aún nil), nunca en el camino caliente.
     private func baselineDays() -> [DailyMetric] {
+        memoBaselineDays ?? computeBaselineDays()
+    }
+
+    private func computeBaselineDays() -> [DailyMetric] {
         let todayKey = Repository.localDayKey(Date())
         return Array(repo.displayDays.filter { $0.day < todayKey }.sorted { $0.day < $1.day }.suffix(30))
     }
@@ -2520,11 +2410,11 @@ struct TodayView: View {
         return Array(stepsEst.filter { $0.day < todayKey }.suffix(7).map { $0.value })
     }
 
-    /// El contexto de un tile (FER-258): compara hoy contra la media de 7 días de `history` y arma la
-    /// mini-banda del rango típico. nil cuando no hay valor de hoy → el tile pone «—» sin pie. Con <4
-    /// días válidos → `.building` (aún no hay base honesta). Dentro del `deadband` → `.equal`. Con
-    /// `betterHigher` nil la métrica no tiene valencia (carga / FC): dirección en tinta neutra, sin
-    /// pintar mejora/empeora.
+    /// El contexto de un tile: compara hoy contra la media de 7 días de `history` y arma la línea
+    /// delta EXPLÍCITA del handoff («+24 min vs promedio 7 d»). nil cuando no hay valor de hoy → el
+    /// tile pone «—» sin pie. Con <4 días válidos → `.building`. Dentro del `deadband` → «En tu
+    /// promedio 7 d». Favorable → `positiveText` (el verde profundo del handoff); desfavorable →
+    /// `negativeText`; sin valencia (carga / respiración) → tinta neutra.
     private func tileContext(today: Double?, history: [Double], betterHigher: Bool?, deadband: Double,
                              positive: Color, _ format: (Double) -> String) -> TileContext? {
         guard let t = today else { return nil }
@@ -2532,18 +2422,14 @@ struct TodayView: View {
         guard valid.count >= 4 else { return .building }
         let mean = valid.reduce(0, +) / Double(valid.count)
         let change = t - mean
-        if abs(change) <= deadband { return .ready(change: .equal(color: theme.inkTertiary)) }
+        if abs(change) <= deadband {
+            return .ready(text: String(localized: "En tu promedio 7 d"), color: theme.inkSecondary)
+        }
         let up = change > 0
-        // Mejora → `positive` (verde AA-en-texto-chico); empeora → `negativeText` (= critical, ya pasa
-        // 4.5:1); sin valencia (carga / FC) → tinta neutra. Ambos son los tokens de texto tintado <24pt.
-        // Solo las métricas CON valencia (mejora/empeora) llevan la pastilla tintada del handoff; las sin
-        // valencia (carga / FC, `betterHigher == nil`) van en tinta neutra sin pastilla (= «NEU» transparente
-        // del mock).
-        let valenced = betterHigher != nil
-        let color: Color = betterHigher.map { (up == $0) ? positive : theme.negativeText } ?? theme.inkTertiary
-        let mag = format(abs(change))
-        return .ready(change: up ? .above(magnitude: mag, color: color, tinted: valenced)
-                                 : .below(magnitude: mag, color: color, tinted: valenced))
+        let color: Color = betterHigher.map { (up == $0) ? positive : theme.negativeText } ?? theme.inkSecondary
+        let sign = up ? "+" : "\u{2212}"
+        return .ready(text: "\(sign)\(format(abs(change))) \(String(localized: "vs promedio 7 d"))",
+                      color: color)
     }
 
     /// FER-551: la serie de hasta 14 días para la mini-gráfica de ÁREA del tile — valores diarios válidos
@@ -2567,44 +2453,27 @@ struct TodayView: View {
         StressBand(score: score).dataColor(theme)
     }
 
-    /// El contexto de un tile/pill vs su media de 7 días (FER-258): el cambio en lenguaje. `building` = aún
+    /// El contexto de un tile vs su media de 7 días: la línea delta ya formateada. `building` = aún
     /// no hay ≥4 días de base para una media honesta. La ausencia (sin valor de hoy) se modela con el
-    /// Optional: nil → sin delta. (La mini-gráfica de área del tile va por su propia serie, FER-551.)
+    /// Optional: nil → sin delta.
     private enum TileContext {
         case building
-        case ready(change: TileChange)
+        case ready(text: String, color: Color)
     }
 
-    /// El cambio de hoy contra la media de 7 días, ya formateado + con color por polaridad. `equal` es
-    /// «En tu media de 7 días» (dentro del deadband).
-    private enum TileChange {
-        case above(magnitude: String, color: Color, tinted: Bool)
-        case below(magnitude: String, color: Color, tinted: Bool)
-        case equal(color: Color)
-    }
-
-
-    /// Un tile de «Métricas de hoy»: etiqueta (overline en tinta) · valor en color de dato + unidad ·
-    /// mini-banda del rango típico (p25–p75) con el tick de hoy · pie partido — cambio vs tu media de
-    /// 7 días (izquierda, FER-258) + badge de fuente (derecha): W = banda, ♥ = Apple Salud (FER-233).
-    /// Tematizado con tokens de `InstrumentoTheme` sobre el papel `surface` con hairline — sin el
-    /// `NoopCard` oscuro, que no lee sobre el papel claro. Lee el tema del entorno.
-    /// FER-552 (A1): de dónde vino un dato ESE día. Dinámico por-dato; lo resuelve cada call site desde
-    /// `fromApple` (ya filtrado por el modo activo) o, para los derivados, fijo. No toca el motor de fuentes.
+    /// De dónde vino un dato ESE día (FER-552): banda / Apple / calculado → el punto de origen del tile.
     private enum MetricSource { case band, apple, calculated }
 
-    /// Indicador de fuente como PUNTO de color (FER-575): banda (verde) · Apple (azul) · calculado (gris),
-    /// reusando los mismos colores que el chip-palabra anterior. Sustituir la palabra por un punto libera
-    /// el ancho que truncaba «+27 vs media»; su significado lo define la leyenda al pie de la sección.
-    /// Conserva la fuente para VoiceOver (etiqueta accesible) — la lee el `children: .combine` del padre.
+    /// El punto de origen (6 px) del handoff: banda (verde) · Apple (azul) · calculado (gris `inkMuted`).
+    /// Su significado lo da la leyenda de la sección; VoiceOver lo lee por su etiqueta.
     private struct SourceChip: View {
         let source: MetricSource
         @Environment(\.instrumentoTheme) private var theme
         private var dotColor: Color {
             switch source {
-            case .band:       return theme.dataRecovery
-            case .apple:      return theme.dataSpO2
-            case .calculated: return theme.inkTertiary
+            case .band:       return theme.originBand
+            case .apple:      return theme.originApple
+            case .calculated: return theme.originComputed
             }
         }
         private var sourceName: LocalizedStringKey {
@@ -2615,86 +2484,67 @@ struct TodayView: View {
             }
         }
         var body: some View {
-            Circle().fill(dotColor).frame(width: 7, height: 7)
+            Circle().fill(dotColor).frame(width: 6, height: 6)
                 .accessibilityElement()
                 .accessibilityLabel(sourceName)
         }
     }
 
+    /// Un tile de la retícula 2×4 (handoff «Hoy» 2026-07): icono + nombre + punto de origen arriba;
+    /// valor 21/700 tabular en el color del dato + unidad; **sparkband** de 14 días (franja de rango
+    /// personal + línea + punto final); y la línea delta explícita («+24 min vs promedio 7 d»).
+    /// Tematizado con tokens sobre `surface` + hairline; sin lectura el tile se apaga a `inkDim`.
     private struct TodayMetricTile: View {
         let label: LocalizedStringKey
-        /// SF Symbol de la métrica (handoff «Hoy · Estados»): un glifo junto a la etiqueta, en el color
-        /// del dato. Es otra licencia consciente sobre «color solo en el dato» (como las pastillas),
-        /// fiel al handoff; refuerza la identidad de la métrica de un vistazo. Declarado aquí (tras
-        /// `label`) para que el init sintetizado case con el orden de los call sites (icon tras label).
         var icon: String? = nil
         let value: String
         var unit: String? = nil
         let valueColor: Color
-        /// FER-552: la fuente real del dato de hoy (banda / Apple / calculado) → chip dinámico en el pie.
         var source: MetricSource = .band
         var context: TileContext? = nil
-        /// FER-551: los hasta 14 valores diarios para la mini-gráfica de área (la cabeza = hoy). Vacío o
-        /// con <3 puntos → no se dibuja el área (cae al placeholder/«armando»).
+        /// Los hasta 14 valores diarios del sparkband (la cabeza = hoy). Con <3 puntos no se dibuja.
         var series: [Double] = []
-        /// Hint shown in the footer when there's no value/context (e.g. «Esta noche» for a day-scoped
-        /// tile with no reading for today yet). FER-341.
+        /// Pie cuando no hay valor/contexto (p. ej. «Esta noche» en el tile day-scoped de Sueño). FER-341.
         var placeholder: LocalizedStringKey? = nil
         @Environment(\.instrumentoTheme) private var theme
 
-        /// Sin lectura de hoy → el valor es el em-dash «—». En ese caso el tile «no tiene nada»: el ícono
-        /// y el valor (y la unidad) se atenúan a `inkDim` (gris apagado del handoff) en vez del color de
-        /// la métrica. Es por-tile, así que en «Base Apple Salud» las filas prestadas siguen a color y las
-        /// strap-only se apagan. (handoff «Hoy · Estados»)
         private var isEmpty: Bool { value == "—" }
 
         var body: some View {
-            VStack(alignment: .leading, spacing: 0) {
-                // Glifo de la métrica + etiqueta a UNA línea (FER-189): el ícono en el color del dato
-                // (handoff) y un nombre largo (Frecuencia cardíaca) se encoge un poco en vez de envolver
-                // a 2 líneas y crecer el alto.
+            VStack(alignment: .leading, spacing: NoopMetrics.space2) {
                 HStack(spacing: NoopMetrics.space1) {
                     if let icon {
                         Image(systemName: icon)
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.system(size: 11, weight: .medium))
                             .foregroundStyle(isEmpty ? theme.inkDim : valueColor)
                             .accessibilityHidden(true)
                     }
-                    Text(label).instrumentoOverline()
-                        .foregroundStyle(theme.inkSecondary)
+                    Text(label)
+                        .font(InstrumentoType.grotesk(9, weight: .semibold))
+                        .tracking(1.4)
+                        .textCase(.uppercase)
+                        .foregroundStyle(theme.inkTertiary)
                         .lineLimit(1).minimumScaleFactor(0.7)
+                    Spacer(minLength: NoopMetrics.space1)
+                    if !isEmpty { SourceChip(source: source) }
                 }
-                Spacer(minLength: NoopMetrics.space1)
                 HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
-                    // Valor 23 (handoff «Hoy · Estados», antes 22). Piso de escala = 18/23 (FER-273): el
-                    // valor lleva color de DATO (3.5–3.6:1), que solo cumple AA como texto GRANDE (≥18pt,
-                    // 3:1). El piso nunca lo baja de 18pt, así el color de dato siempre cumple AA-grande.
-                    Text(value).font(StrandFont.number(23)).foregroundStyle(isEmpty ? theme.inkDim : valueColor)
-                        .lineLimit(1).minimumScaleFactor(18.0 / 23.0)
+                    Text(value)
+                        .font(InstrumentoType.groteskTileValue)
+                        .foregroundStyle(isEmpty ? theme.inkDim : valueColor)
+                        .lineLimit(1).minimumScaleFactor(18.0 / 21.0)
                     if let unit {
-                        Text(unit).font(StrandFont.subhead).foregroundStyle(isEmpty ? theme.inkDim : theme.inkTertiary)
+                        Text(unit).font(StrandFont.caption)
+                            .foregroundStyle(isEmpty ? theme.inkDim : theme.inkTertiary)
                     }
                 }
-                Spacer(minLength: NoopMetrics.space1)
-                // FER-551: mini-gráfica de ÁREA de 14 días (línea + relleno tenue), tintada por el hue de la
-                // métrica, con la cabeza en el valor de hoy. Reemplaza la banda p25–p75 de 7 días. Con <3
-                // puntos no se dibuja (el footer muestra «armando»/placeholder en su lugar).
                 if series.count >= 3 {
-                    MetricArea(series: series, color: isEmpty ? theme.inkDim : valueColor)
-                    Spacer(minLength: NoopMetrics.space1)
+                    TileSparkband(series: series, color: isEmpty ? theme.inkDim : valueColor)
                 }
                 footer
             }
-            .padding(.horizontal, NoopMetrics.gap).padding(.vertical, NoopMetrics.space2)
-            // Alto base 92: el área de 14 días (FER-551) suma un renglón sobre el layout compacto previo
-            // (label + valor + área + pie). Sigue siendo PISO, no tope (FER-394): el tile crece con Dynamic
-            // Type grande en vez de cortar texto.
-            .frame(maxWidth: .infinity, minHeight: 92, alignment: .topLeading)
-            // Tarjeta blanca con elevación sutil (handoff «Hoy · Estados»): radio 17 + una sombra cálida
-            // tenue (`ink` al 5 %, y:1) sobre el papel — la sombra va en la SILUETA del tile (la forma del
-            // fondo), no en el contenido, así no proyecta el texto. El relleno sigue siendo el `surface`
-            // del tema (blanco cálido por el día, hora-consciente — no `#fff` literal, que destellaría de
-            // noche). Borde hairline al ras.
+            .padding(.horizontal, NoopMetrics.gap).padding(.vertical, NoopMetrics.space2 + 2)
+            .frame(maxWidth: .infinity, minHeight: 96, alignment: .topLeading)
             .background {
                 RoundedRectangle(cornerRadius: NoopMetrics.tileRadius, style: .continuous)
                     .fill(theme.surface)
@@ -2705,128 +2555,25 @@ struct TodayView: View {
             .accessibilityElement(children: .combine)
         }
 
-        /// El pie del tile en UNA línea: el cambio vs la media de 7 días (izquierda, FER-258 — el dueño lo
-        /// pidió conservado) + el badge de fuente (derecha). La mini-gráfica ya no vive aquí: subió a su
-        /// propio renglón como ÁREA de 14 días (FER-551). Sin base → «armando»; sin valor → placeholder.
+        /// El pie: la línea delta explícita («+24 min vs promedio 7 d» / «En tu promedio 7 d»), en 9.5 pt
+        /// tabular; «armando» mientras no hay base; el placeholder sin valor.
         @ViewBuilder private var footer: some View {
-            HStack(spacing: NoopMetrics.space1) {
-                switch context {
-                case let .ready(change):
-                    changeText(change)
-                    Spacer(minLength: 0)
-                case .building:
-                    Text("Still building your average")
+            switch context {
+            case let .ready(text, color):
+                Text(verbatim: text)
+                    .font(StrandFont.number(10, weight: .medium)).monospacedDigit()
+                    .foregroundStyle(color)
+                    .lineLimit(1).minimumScaleFactor(0.75)
+            case .building:
+                Text("Aún sin promedio propio")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .lineLimit(1).minimumScaleFactor(0.75)
+            case .none:
+                if let placeholder {
+                    Text(placeholder)
                         .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                        .lineLimit(1).minimumScaleFactor(0.7)
-                    Spacer(minLength: 0)
-                case .none:
-                    if let placeholder {
-                        Text(placeholder)
-                            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                            .lineLimit(1).minimumScaleFactor(0.7)
-                    }
-                    Spacer(minLength: 0)
+                        .lineLimit(1).minimumScaleFactor(0.75)
                 }
-                sourceBadge
-            }
-        }
-
-        /// El cambio vs la media: deadband → «En tu media»; subir/bajar → flecha + magnitud + «vs media».
-        /// VoiceOver lee la frase completa «sobre/bajo tu media de 7 días» (la flecha va oculta).
-        @ViewBuilder private func changeText(_ change: TileChange) -> some View {
-            switch change {
-            case let .above(magnitude, color, tinted): deltaLabel(up: true, magnitude: magnitude, color: color, tinted: tinted)
-            case let .below(magnitude, color, tinted): deltaLabel(up: false, magnitude: magnitude, color: color, tinted: tinted)
-            case let .equal(color):
-                Text("At your average")
-                    .font(StrandFont.caption).foregroundStyle(color)
-                    .lineLimit(1).minimumScaleFactor(0.7).layoutPriority(1)
-            }
-        }
-
-        /// El cambio vs la media, en la pastilla tintada del handoff: flecha + magnitud + «vs avg». Con
-        /// valencia (`tinted`) el texto va en su color de delta sobre un lavado del mismo color al 12 % en
-        /// cápsula (verde para mejora, rojo para empeora); sin valencia va en tinta neutra SIN pastilla
-        /// (= «NEU» transparente del mock). La cápsula es la única excepción a «color solo en el dato» que
-        /// el dueño aprobó para este handoff.
-        private func deltaLabel(up: Bool, magnitude: String, color: Color, tinted: Bool) -> some View {
-            HStack(spacing: NoopMetrics.space1) {
-                Image(systemName: up ? "arrow.up" : "arrow.down")
-                    .font(.system(size: 10, weight: .semibold))
-                Text(verbatim: magnitude)
-                Text("vs avg")
-            }
-            .font(StrandFont.caption)
-            .foregroundStyle(color)
-            .lineLimit(1).minimumScaleFactor(0.7)
-            .padding(.horizontal, tinted ? 6 : 0)
-            .padding(.vertical, tinted ? 2 : 0)
-            .background { if tinted { Capsule().fill(color.opacity(0.12)) } }
-            // `layoutPriority` va en el modifier MÁS EXTERNO (tras el padding/cápsula): así el HStack del pie
-            // le da al pastillón su ancho intrínseco completo y la mini-banda cede — sin esto el pie partía
-            // el texto («17… vs…»). El piso de escala 0.7 sigue degradando con gracia en Dynamic Type grande.
-            .layoutPriority(1)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text(up ? "\(magnitude) above your 7-day average"
-                                         : "\(magnitude) below your 7-day average"))
-        }
-
-        /// Badge de fuente (FER-552, opción A): chip explícito BANDA / APPLE / CALCULADO con la fuente real
-        /// del dato del día. Se oculta sin lectura de hoy («—»): un dato ausente no tiene fuente que marcar.
-        @ViewBuilder private var sourceBadge: some View {
-            if !isEmpty { SourceChip(source: source) }
-        }
-    }
-
-    /// La mini-gráfica de ÁREA del tile (FER-551, handoff «Hoy · tendencia 14 días»): la línea de los
-    /// hasta 14 valores diarios + un relleno tenue del mismo hue, con un punto-cabeza en el último valor
-    /// (hoy). Normaliza al rango real (min…max) de la serie; con la serie plana traza una línea al centro.
-    /// Decorativa para VoiceOver (el delta del pie ya narra la tendencia en lenguaje).
-    private struct MetricArea: View {
-        let series: [Double]
-        let color: Color
-        private let vInset: CGFloat = 2
-
-        var body: some View {
-            GeometryReader { geo in content(size: geo.size) }
-                .frame(height: 22)
-                .accessibilityHidden(true)
-        }
-
-        private func content(size: CGSize) -> some View {
-            let pts = points(in: size)
-            let line = Path { p in
-                for (i, c) in pts.enumerated() { i == 0 ? p.move(to: c) : p.addLine(to: c) }
-            }
-            let fill = Path { p in
-                guard let first = pts.first, let last = pts.last else { return }
-                p.move(to: CGPoint(x: first.x, y: size.height))
-                for c in pts { p.addLine(to: c) }
-                p.addLine(to: CGPoint(x: last.x, y: size.height))
-                p.closeSubpath()
-            }
-            return ZStack {
-                fill.fill(color.opacity(0.12))
-                line.stroke(color, style: StrokeStyle(lineWidth: 1.5, lineJoin: .round))
-                if let last = pts.last {
-                    Circle().fill(color).frame(width: 3.5, height: 3.5).position(last)
-                }
-            }
-        }
-
-        /// Mapea la serie a puntos en el rectángulo, normalizando al rango real (min…max) con un inset
-        /// vertical para que el trazo y el punto-cabeza no se recorten. Serie plana → línea al centro.
-        private func points(in size: CGSize) -> [CGPoint] {
-            let lo = series.min() ?? 0, hi = series.max() ?? 1
-            let flat = (hi - lo) <= .ulpOfOne
-            let span = Swift.max(hi - lo, .ulpOfOne)
-            let n = series.count
-            return series.indices.map { i in
-                let x = n <= 1 ? size.width / 2 : size.width * CGFloat(i) / CGFloat(n - 1)
-                // Serie plana → línea al CENTRO (sin un valle al fondo por un span de ~cero).
-                let frac = flat ? 0.5 : CGFloat((series[i] - lo) / span)
-                let y = (size.height - vInset) - frac * (size.height - 2 * vInset)
-                return CGPoint(x: x, y: y)
             }
         }
     }
@@ -2895,9 +2642,6 @@ struct TodayView: View {
         // (FER-172). `recomputeDerived()` es síncrono y lee `repo.days`/`today`/`appleHealthDays`, ya
         // disponibles sin esperar las consultas de sparklines.
         recomputeDerived()
-        // FER-475: con los datos ya sembrados, decide UNA vez el aterrizaje del pager — si no hay veredicto
-        // (madrugada / esperando el sync), abre en Métricas (página 2), donde sí hay algo que ver.
-        maybeAutoLandMetrics()
         // Issue every query concurrently, then collect. The store is a serial DatabaseQueue so I/O still
         // serializes, but the memoized ensureStore() makes the parallel first-callers share ONE open, and
         // the queries run back-to-back with no main-actor ping-pong.
@@ -3133,11 +2877,6 @@ struct TodayView: View {
     }
 
     // MARK: - Derived text
-
-    /// Sleep minutes → "Xh Ym".
-    private func sleepText(_ mins: Double) -> String {
-        "\(Int(mins) / 60)h \(Int(mins) % 60)m"
-    }
 
     /// FER-546: the value a measured tile (HRV / resting HR / SpO₂) shows MUST match the LAST point of its
     /// own 14-day chart — both read `repo.displayDays` (the layered Apple-base + strap source `loadTrend`
