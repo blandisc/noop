@@ -29743,6 +29743,54 @@
         }
       }
     },
+    "Sources differ slightly": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sources differ slightly"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las fuentes difieren un poco"
+          }
+        }
+      }
+    },
+    "Sources in conflict": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sources in conflict"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fuentes en conflicto"
+          }
+        }
+      }
+    },
+    "Sources match": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sources match"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las fuentes coinciden"
+          }
+        }
+      }
+    },
     "Sparse — widened to %@ · %lld readings": {
       "localizations": {
         "en": {
@@ -34781,6 +34829,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "QUÉ ESPERAR"
+          }
+        }
+      }
+    },
+    "WHOOP": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WHOOP"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WHOOP"
           }
         }
       }
