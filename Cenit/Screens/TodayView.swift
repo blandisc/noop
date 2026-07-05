@@ -13,6 +13,17 @@ private struct TodayScrollOffsetKey: PreferenceKey {
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }
 
+/// El alto NATURAL de cada página del pager de «Hoy», por índice (FER-725). Deja que el pager mida su
+/// alto según la página ACTIVA en vez de la más alta: así Señales (más corta) no arrastra el alto de
+/// Brief y el scroll vertical solo aparece en Brief. `reduce` coalesce con el máximo por si un mismo
+/// índice reporta dos veces en un frame de transición.
+private struct TodayPageHeightKey: PreferenceKey {
+    static var defaultValue: [Int: CGFloat] = [:]
+    static func reduce(value: inout [Int: CGFloat], nextValue: () -> [Int: CGFloat]) {
+        value.merge(nextValue(), uniquingKeysWith: { Swift.max($0, $1) })
+    }
+}
+
 // MARK: - Hoy «Instrumento» evolucionado (FER-709, handoff 2026-07)
 //
 // The home screen in the EVOLVED «Instrumento diurno» voice (Space Grotesk numerals, warm paper,
@@ -155,6 +166,11 @@ struct TodayView: View {
     /// Optional porque es el binding de `.scrollPosition(id:)` (puede quedar nil a media transición); los
     /// page dots lo leen con `?? 0`. Arranca en la página 1 del veredicto.
     @State private var pagerPage: Int? = 0
+
+    /// El alto natural de cada página del pager, medido por `TodayPageHeightKey` (FER-725). El pager fija
+    /// su alto al de la página activa (`pageHeights[pagerPage]`), así Señales no hereda el alto de Brief y
+    /// el scroll vertical solo aparece en Brief. Vacío el primer frame → el pager cae a su alto natural.
+    @State private var pageHeights: [Int: CGFloat] = [:]
 
     /// Arma el latido del punto «Ahora» del Daily Brief (FER-549/handoff): al aparecer pasa a `true` con una
     /// animación `repeatForever`, de modo que el halo concéntrico pulse. Estático bajo Reduce Motion.
@@ -632,10 +648,11 @@ struct TodayView: View {
                 }
                 sectionTabs
                     .padding(.top, NoopMetrics.sectionGapCompact)
-                // Pager horizontal de 2 páginas: ① SEÑALES (por qué + tiles) · ② BRIEF. Ancho de página =
-                // ancho de contenido (proxy − screenPadding lateral) para que el snap pagine de a una.
-                // Ejes ortogonales al scroll vertical → el swipe horizontal y el pull-to-refresh no se pelean.
-                todayPager(width: max(0, proxy.size.width - NoopMetrics.screenPadding * 2))
+                // Pager horizontal de 2 páginas: ① SEÑALES (por qué + tiles) · ② BRIEF. Full-bleed (FER-725):
+                // se le pasa el ancho COMPLETO de la pantalla y el pager cancela el margen del padre por
+                // dentro, así cada hoja ocupa todo el ancho y se va limpia a un lado. Ejes ortogonales al
+                // scroll vertical → el swipe horizontal y el pull-to-refresh no se pelean.
+                todayPager(fullWidth: proxy.size.width)
                     .padding(.top, NoopMetrics.sectionGapCompact)
                 // La otra mitad del sobrante vive AQUÍ: mantiene los page dots al fondo, cerca del dock,
                 // mientras el `Spacer` de arriba baja la rejilla al centro.
@@ -1711,21 +1728,48 @@ struct TodayView: View {
         }
     }
 
-    /// El pager horizontal de 2 páginas. `ScrollView(.horizontal)` con `.scrollTargetBehavior(.paging)`
-    /// (snap a página) + `.scrollPosition` para reflejar la página activa en los dots; `.scrollTargetLayout()`
-    /// en el riel. Cada página mide `width` (= ancho de contenido) para que el snap pagine de a una. El alto
-    /// lo fija la página más alta (Métricas); en la página 1 el resto queda en blanco hasta que F3 la llene
-    /// con el Daily Brief. Ejes ortogonales al scroll vertical → no se pelea con el pull-to-refresh.
-    @ViewBuilder private func todayPager(width: CGFloat) -> some View {
+    /// El canalón entre Señales y Brief (FER-725): el hueco de papel que se ve al deslizar, para que las
+    /// hojas no se lean pegadas. Solo visible en la transición (en reposo la hoja activa llena la pantalla).
+    private var pagerGutter: CGFloat { NoopMetrics.screenPadding + NoopMetrics.space2 }   // 32
+
+    /// El pager horizontal de 2 páginas (FER-465, pulido FER-725). **Full-bleed:** cada página ocupa el
+    /// ANCHO COMPLETO de la pantalla (el `.padding(.horizontal, -screenPadding)` cancela el margen del
+    /// padre; cada página se re-inseta por dentro), así al deslizar la hoja se va hasta el borde en vez de
+    /// recortarse dentro de un «marco». Entre páginas va el `pagerGutter` y el snap es `.viewAligned` para
+    /// que respete ese hueco. **Alto por página activa:** el pager mide su alto según la hoja mostrada
+    /// (`pageHeights`), no la más alta, de modo que el scroll vertical externo solo crece en Brief; el
+    /// recorte de la hoja más alta durante el arrastre queda bajo el borde inferior (invisible). Ejes
+    /// ortogonales al scroll vertical → no se pelea con el pull-to-refresh.
+    @ViewBuilder private func todayPager(fullWidth: CGFloat) -> some View {
+        let activeHeight = pageHeights[pagerPage ?? 0]
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(alignment: .top, spacing: 0) {
-                senalesPage.frame(width: width).id(0)
-                verdictPage.frame(width: width).id(1)
+            HStack(alignment: .top, spacing: pagerGutter) {
+                pagerPageContent(senalesPage, index: 0, fullWidth: fullWidth)
+                pagerPageContent(verdictPage, index: 1, fullWidth: fullWidth)
             }
             .scrollTargetLayout()
         }
-        .scrollTargetBehavior(.paging)
+        .scrollTargetBehavior(.viewAligned)
         .scrollPosition(id: $pagerPage)
+        .onPreferenceChange(TodayPageHeightKey.self) { new in
+            for (k, v) in new where pageHeights[k] != v { pageHeights[k] = v }
+        }
+        .frame(height: activeHeight, alignment: .top)
+        .padding(.horizontal, -NoopMetrics.screenPadding)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: activeHeight)
+    }
+
+    /// Una página del pager (FER-725): ancho COMPLETO de pantalla con su contenido re-insetado por
+    /// `screenPadding` (para alinear con el header/héroe), y su alto natural publicado vía
+    /// `TodayPageHeightKey` para el «alto por página activa».
+    private func pagerPageContent<P: View>(_ page: P, index: Int, fullWidth: CGFloat) -> some View {
+        page
+            .padding(.horizontal, NoopMetrics.screenPadding)
+            .frame(width: fullWidth, alignment: .top)
+            .background(GeometryReader { geo in
+                Color.clear.preference(key: TodayPageHeightKey.self, value: [index: geo.size.height])
+            })
+            .id(index)
     }
 
     /// Las pestañas SEÑALES / BRIEF sobre el pager (handoff): 11/700 trackeadas, activa en tinta,
@@ -2235,7 +2279,8 @@ struct TodayView: View {
             // La retícula 2×4 del handoff: los MISMOS 8 vitales de hoy, cada tile con su punto de
             // origen, valor 21/700 en color, sparkband de 14 días contra el rango personal y la línea
             // delta explícita. Recuperación NO es tile: ya es el numeral del héroe.
-            LazyVGrid(columns: tileGrid, alignment: .leading, spacing: NoopMetrics.space2 + 2) {
+            // FER-725: gap de renglón `space2` (antes +2) para que la retícula 2×4 quepa en Señales sin scroll.
+            LazyVGrid(columns: tileGrid, alignment: .leading, spacing: NoopMetrics.space2) {
                 // Sueño — day-scoped (solo hoy); más es mejor dentro de lo razonable.
                 metricTile(TodayMetricTile(
                     label: "Sleep",
@@ -2543,8 +2588,10 @@ struct TodayView: View {
                 }
                 footer
             }
-            .padding(.horizontal, NoopMetrics.gap).padding(.vertical, NoopMetrics.space2 + 2)
-            .frame(maxWidth: .infinity, minHeight: 96, alignment: .topLeading)
+            .padding(.horizontal, NoopMetrics.gap).padding(.vertical, NoopMetrics.space2)
+            // FER-725: piso de alto 88 (antes 96) — recorta ~32 pt en los 4 renglones para que Señales
+            // quepa en una hoja. Sigue siendo PISO, no tope: el tile crece con Dynamic Type grande.
+            .frame(maxWidth: .infinity, minHeight: 88, alignment: .topLeading)
             .background {
                 RoundedRectangle(cornerRadius: NoopMetrics.tileRadius, style: .continuous)
                     .fill(theme.surface)
