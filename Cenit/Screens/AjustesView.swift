@@ -109,6 +109,9 @@ private struct AjustesLanding: View {
     @State private var showStepsCal = false
     @State private var showStepTicks = false
     @State private var showRitmo = false
+    @State private var showReloj = false
+    /// Opt-in experimental body-clock reading (off by default). FER-712.
+    @AppStorage("noop.relojCorporalEnabled") private var relojCorporalEnabled = false
     @State private var profileWheel: ProfileWheel? = nil
     @State private var darkScreen: AjustesDarkScreen? = nil
     @State private var confirmDisconnect = false
@@ -150,6 +153,9 @@ private struct AjustesLanding: View {
         }
         .sheet(isPresented: $showRitmo) {
             RitmoView().instrumentoTheme(theme).environmentObject(repo)
+        }
+        .sheet(isPresented: $showReloj) {
+            RelojCorporalSheet().instrumentoTheme(theme).environmentObject(repo)
         }
         .sheet(item: $profileWheel) { wheel in
             ProfileWheelSheet(wheel: wheel).instrumentoTheme(theme).environmentObject(profile)
@@ -317,6 +323,19 @@ private struct AjustesLanding: View {
             }
             section("Experimental") {
                 navRow("Ritmo", subtitle: Text("Regularidad de tu ritmo, latido a latido")) { showRitmo = true }
+                divider
+                Toggle(isOn: $relojCorporalEnabled) {
+                    Text("Lectura del reloj corporal").font(StrandFont.body).foregroundStyle(theme.ink)
+                }
+                .toggleStyle(.instrumento)
+                .frame(minHeight: 44)
+                Text("Estima si tu cuerpo tiende a madrugar o a desvelarse, a partir de tu patrón de actividad. Es una función experimental y aproximada; necesita varios días de uso para leerse bien.")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                if relojCorporalEnabled {
+                    divider
+                    navRow("Ver tu reloj corporal") { showReloj = true }
+                }
             }
             section("More") {
                 navRow("Advanced", subtitle: Text("WHOOP 5/MG probes, frames")) { showAdvanced = true }

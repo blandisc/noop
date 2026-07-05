@@ -471,6 +471,13 @@ final class Repository: ObservableObject {
         return (try? await store.gravitySamples(deviceId: deviceId, from: from, to: to, limit: limit)) ?? []
     }
 
+    /// The latest persisted body-clock phase (computed source), for the «Tu reloj corporal» surface
+    /// (FER-712). nil until the nightly IntelligenceEngine pass has written one.
+    func latestCircadianPhase() async -> CircadianPhaseRow? {
+        guard let store = await ensureStore() else { return nil }
+        return (try? await store.latestCircadianPhase(deviceId: computedDeviceId)) ?? nil
+    }
+
     /// Downsampled HR (mean bpm per `bucketSeconds`) for the strap, for a Today/24h trend chart.
     /// Aggregated in SQL so a full day never loads the raw ~1 Hz rows.
     func hrBuckets(from: Int, to: Int, bucketSeconds: Int = 300) async -> [HRBucket] {
