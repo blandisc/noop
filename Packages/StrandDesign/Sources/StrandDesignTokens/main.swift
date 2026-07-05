@@ -75,6 +75,18 @@ let roles: [Role] = [
     Role(key: "critical",       color: t.critical,       isSurface: false, desc: "depleted / error — contained brick red"),
     Role(key: "positiveText",   color: t.positiveText,   isSurface: false, desc: "positive delta on <24pt text — darkened verdict to clear text-AA (FER-131 · 02)"),
     Role(key: "negativeText",   color: t.negativeText,   isSurface: false, desc: "negative delta on <24pt text (= critical) (FER-131 · 02)"),
+    Role(key: "inkMuted",         color: t.inkMuted,         isSurface: true,  desc: "quietest chrome — inactive tabs, unlit marks; intentionally NOT AA text (FER-708)"),
+    Role(key: "patternBlock",     color: t.patternBlock,     isSurface: true,  desc: "«patrón/conexión» block background (FER-708)"),
+    Role(key: "rangeBand",        color: t.rangeBand,        isSurface: true,  desc: "personal-range band behind a trend line (FER-708)"),
+    Role(key: "rangeMidline",     color: t.rangeMidline,     isSurface: true,  desc: "dotted personal-median line inside the range band (FER-708)"),
+    Role(key: "dataSun",          color: t.dataSun,          isSurface: true,  desc: "day/sun arc on the dial seal — context, not a datum (FER-708)"),
+    Role(key: "ctaAccent",        color: t.ctaAccent,        isSurface: true,  desc: "accent on the ink CTA bar — only ever on ink, never on paper (FER-708)"),
+    Role(key: "moderate",         color: t.moderate,         isSurface: true,  desc: "«moderado» lane fill (FER-708)"),
+    Role(key: "dataSleepDeep",    color: t.dataSleepDeep,    isSurface: true,  desc: "deep-sleep stage fill (FER-708)"),
+    Role(key: "dataSleepLight",   color: t.dataSleepLight,   isSurface: true,  desc: "light-sleep stage fill (FER-708)"),
+    Role(key: "originBand",       color: t.originBand,       isSurface: true,  desc: "data-origin dot — strap/band (= dataRecovery) (FER-708)"),
+    Role(key: "originApple",      color: t.originApple,      isSurface: true,  desc: "data-origin dot — Apple Salud (= dataSpO2) (FER-708)"),
+    Role(key: "originComputed",   color: t.originComputed,   isSurface: true,  desc: "data-origin dot — computed on-device (= inkMuted) (FER-708)"),
 ]
 
 func ratioSuffix(_ r: Role) -> String { r.isSurface ? "" : " — \(String(format: "%.1f", ratio(r.color, paper))):1" }

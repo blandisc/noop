@@ -1867,6 +1867,20 @@ ES: dict[str, str] = {
     "Worked out without HRV or resting heart rate — the two heaviest signals. The number still holds, with less precision.": "Calculada sin HRV ni FC en reposo — las dos señales de mayor peso. El número sigue valiendo, con menos precisión.",
     "Worked out without HRV — one of the heaviest signals. The number still holds, with less precision.": "Calculada sin HRV — una de las señales de mayor peso. El número sigue valiendo, con menos precisión.",
     "Worked out without resting heart rate — one of the heaviest signals. The number still holds, with less precision.": "Calculada sin FC en reposo — una de las señales de mayor peso. El número sigue valiendo, con menos precisión.",
+    # FER-702 — «Tu HRV por frecuencia»: desglose espectral (LF/HF/total) en el Detalle de HRV.
+    "Your HRV by frequency": "Tu HRV por frecuencia",
+    "Respiratory": "Respiratoria",
+    "your calm signal, tied to your breathing": "tu señal de calma, ligada a la respiración",
+    "Slow": "Lenta",
+    "slow waves; a mix of signals": "ondas lentas; mezcla de varias señales",
+    "Total variation": "Variación total",
+    "everything together, the “volume” of your HRV": "todo junto, el «volumen» de tu HRV",
+    "Last night's reading was short, so it only covers the respiratory part — not the slow waves.": "Anoche la lectura fue corta, así que solo alcanza para la parte respiratoria — no para las ondas lentas.",
+    "Still learning your normal range. Once there are enough nights, I'll tell you whether a value is high or low for you.": "Todavía estoy aprendiendo tu rango normal. Cuando haya suficientes noches, te diré si un valor está alto o bajo para ti.",
+    "Computed from last night's heartbeats (Lomb-Scargle). These are descriptive band powers to compare against yourself — not a diagnosis or a “stress balance.”": "Calculado de los latidos de anoche (Lomb-Scargle). Son potencias descriptivas para compararte contigo mismo — no un diagnóstico ni un «balance de estrés».",
+    "higher than your normal": "más alta de lo normal",
+    "within your normal": "dentro de tu normal",
+    "lower than your normal": "más baja de lo normal",
 }
 
 

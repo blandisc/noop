@@ -212,6 +212,44 @@ public extension InstrumentoTheme {
     /// low-contrast — it signals "nothing here yet", so it is NOT held to the AA text floor (unlike the
     /// ink roles); never use it for information the user must read.
     var inkDim: Color { OKLab.mix(inkTertiary, paper, 0.5) }
+
+    // MARK: Evolved-language tokens — handoff «Hoy» 2026-07 (FER-707/708)
+    //
+    // The «Hoy» redesign's hi-fi handoff adds a small set of fixed roles on top of the
+    // `.base` anchor. Computed (like `hrZoneRamp`) so the theme's init/Equatable stay
+    // untouched. All are chrome/fill roles except `dataRecoveryDeep` (a text-tier green);
+    // none of the fills are held to the AA text floor.
+
+    /// The quietest chrome ink — inactive tabs, unlit rule marks, the computed-origin dot.
+    /// INTENTIONALLY below the AA text floor (like `inkDim`); never for copy the user must read.
+    var inkMuted: Color { Color(hex: "#AFAA9D") }
+    /// Background of the «patrón / conexión» block (with a data-color bar on its left edge).
+    var patternBlock: Color { Color(hex: "#EFEAE0") }
+    /// The personal-range band behind a trend line.
+    var rangeBand: Color { Color(hex: "#EDE8DB") }
+    /// The dotted personal-median line inside `rangeBand`.
+    var rangeMidline: Color { Color(hex: "#C9C2AF") }
+    /// The day/sun arc on the dial seal (context, not a datum).
+    var dataSun: Color { Color(hex: "#D79567") }
+    /// The accent on the ink CTA bar («EMPEZAR →») — only ever on `ink`, never on paper.
+    var ctaAccent: Color { Color(hex: "#2FE6A8") }
+    /// The «moderado» lane hue (gauge segments, lane squares) — a fill, not text.
+    var moderate: Color { Color(hex: "#E8C24B") }
+    // (The handoff's deep favorable-delta green `#00774B` is exactly what `positiveText`
+    // already computes on `.base` paper — use that token, no new role.)
+    /// Deep-sleep stage fill (stage bars / hypnogram).
+    var dataSleepDeep: Color { Color(hex: "#3F3C78") }
+    /// Light-sleep stage fill.
+    var dataSleepLight: Color { Color(hex: "#8E8BC4") }
+
+    // Data-origin dots (6px): where a reading comes from, always visible. Aliases of
+    // existing roles so origin and metric hues can never drift apart.
+    /// Origin dot — the strap/band.
+    var originBand: Color { dataRecovery }
+    /// Origin dot — Apple Salud.
+    var originApple: Color { dataSpO2 }
+    /// Origin dot — computed on-device.
+    var originComputed: Color { inkMuted }
 }
 
 // MARK: - Environment injection

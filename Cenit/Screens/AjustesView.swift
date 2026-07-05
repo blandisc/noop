@@ -110,6 +110,7 @@ private struct AjustesLanding: View {
     @State private var showStepTicks = false
     @State private var showCyclePhase = false
     @AppStorage(CyclePhaseExperiment.enabledKey) private var cyclePhaseOn = false
+    @State private var showRitmo = false
     @State private var profileWheel: ProfileWheel? = nil
     @State private var darkScreen: AjustesDarkScreen? = nil
     @State private var confirmDisconnect = false
@@ -151,6 +152,9 @@ private struct AjustesLanding: View {
         }
         .sheet(isPresented: $showStepTicks) {
             StepTicksSheet().instrumentoTheme(theme).environmentObject(profile)
+        }
+        .sheet(isPresented: $showRitmo) {
+            RitmoView().instrumentoTheme(theme).environmentObject(repo)
         }
         .sheet(item: $profileWheel) { wheel in
             ProfileWheelSheet(wheel: wheel).instrumentoTheme(theme).environmentObject(profile)
@@ -316,7 +320,9 @@ private struct AjustesLanding: View {
             section("Data") {
                 navRow("Data & sources", subtitle: Text("WHOOP · Apple Health · backup")) { darkScreen = .dataSources }
             }
-            section("Experiments") {
+            section("Experimental") {
+                navRow("Ritmo", subtitle: Text("Regularidad de tu ritmo, latido a latido")) { showRitmo = true }
+                divider
                 navRow("Cycle phase",
                        subtitle: Text(cyclePhaseOn ? "Experiment · on" : "Experiment · off")) { showCyclePhase = true }
             }

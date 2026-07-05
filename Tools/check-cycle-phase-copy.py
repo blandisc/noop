@@ -45,7 +45,7 @@ FEATURE_KEYS = {
     "Temperature confirms the phase one to three days after the change, so this reflects your recent nights, not this instant.",
     "Based on your band's night-time temperature.", "APPROXIMATE READING",
     "%lld of ~%lld nights learned",
-    "Experiments", "Experiment · on", "Experiment · off",
+    "Experiment · on", "Experiment · off",
 }
 
 FORBIDDEN = ["fertil", "fértil", "ovulac", "ovulat", "anticoncep", "contracept",

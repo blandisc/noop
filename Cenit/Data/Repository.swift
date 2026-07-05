@@ -66,6 +66,13 @@ final class Repository: ObservableObject {
         /// it is deliberately NOT folded into `days`/`displayDays`, so every recovery statistic over
         /// history stays band-measured (the house rule). Empty unless Apple covers a band-less night.
         var recoveryEstimates: [String: AppleRecoveryEstimator.DayEstimate] = [:]
+        /// FER-670: per-day single-construct fusion — day → metric key ("steps" / "sleep_total_min" /
+        /// "active_kcal") → the fused point, ONLY for days where ≥2 sources reported that metric (a
+        /// `.single` day has nothing to cross-check, so it's omitted and the dict stays small). Display
+        /// transparency only ("coinciden / en conflicto"); it never feeds `days`/`displayDays` or any
+        /// baseline. HRV/RHR/resp/stages never appear here — `FusionResolver` refuses them (SourceLens
+        /// governs those, FER-629).
+        var fusion: [String: [String: FusedMetricPoint]] = [:]
         var loaded = false
         var seq = 0
     }
@@ -94,6 +101,17 @@ final class Repository: ObservableObject {
     var refreshSeq: Int { dashboard.seq }
     /// Days surfaced from Apple Health (strap-uncovered) — Trends/Sleep badge these as "Apple Health". (FER-62)
     var appleHealthDays: Set<String> { dashboard.appleHealthDays }
+    /// FER-670: the fused single-construct point for a `(day, metric)` — nil unless ≥2 sources reported
+    /// that metric on that day. The detail screens read this to show "coinciden / en conflicto" for the
+    /// exact day they display; a nil simply shows nothing. `metric` may be any catalog series key — the
+    /// policy folds aliases (`energy_kcal`, `asleep_min`) onto the map's canonical key, so no caller has
+    /// to know the synonyms.
+    func fusionPoint(day: String, metric: String) -> FusedMetricPoint? {
+        dashboard.fusion[day]?[MetricArbitrationPolicy.canonicalKey(forKey: metric)]
+    }
+    /// FER-670: the whole per-day fusion map, for model builders that resolve their own day key
+    /// (`SleepDetailModel.build`). Same content `fusionPoint` reads.
+    var fusion: [String: [String: FusedMetricPoint]] { dashboard.fusion }
     /// Stored per-source day coverage, UNFILTERED by the mode — the diagnostic coverage on «Datos y
     /// fuentes» reads these so it stays honest in every mode (FER-485).
     var storedStrapDays: Set<String> { dashboard.storedStrapDays }
@@ -235,6 +253,12 @@ final class Repository: ObservableObject {
 
         // Export-verbatim sleep figures (long-format metricSeries rows from WhoopImporter).
         // The Detalle de Sueño prefers these per day over its APPROXIMATE recomputations.
+        // FER-670: single-construct fusion inputs the daily rows above don't carry — Apple's step/energy
+        // aggregates (appleDaily) and the WHOOP 4.0 on-device step estimate (steps_est). Gated on the
+        // mode like every other read, so an excluded source can never appear in a compare row.
+        let appleAggRaw = dataSourceMode.usesAppleHealth ? ((try? await store.appleDaily(deviceId: "apple-health", from: fromDay, to: toDay)) ?? []) : []
+        let stepsEstRaw = dataSourceMode.usesWhoop ? ((try? await store.metricSeries(deviceId: computedDeviceId, key: "steps_est", from: fromDay, to: toDay)) ?? []) : []
+
         let perf = dataSourceMode.usesWhoop ? ((try? await store.metricSeries(deviceId: deviceId, key: "sleep_performance", from: fromDay, to: toDay)) ?? []) : []
         let cons = dataSourceMode.usesWhoop ? ((try? await store.metricSeries(deviceId: deviceId, key: "sleep_consistency", from: fromDay, to: toDay)) ?? []) : []
         let need = dataSourceMode.usesWhoop ? ((try? await store.metricSeries(deviceId: deviceId, key: "sleep_need_min", from: fromDay, to: toDay)) ?? []) : []
@@ -262,6 +286,12 @@ final class Repository: ObservableObject {
         let storedStrap = Set(importedRaw.map(\.day)).union(computedRaw.map(\.day))
         let storedAppleOnly = Set(appleRaw.map(\.day)).subtracting(storedStrap)
         let storedSleeps = Self.mergeSleep(imported: impSleepRaw, computed: compSleepRaw).count
+        // FER-670: per-day single-construct fusion (steps / sleep total / active kcal) from the
+        // mode-filtered arrays — display transparency only, never a baseline input.
+        var stepsEstByDay: [String: Double] = [:]
+        for p in stepsEstRaw { stepsEstByDay[p.day] = p.value }
+        let fusion = Self.fusionByDay(imported: imported, computed: computed, apple: apple,
+                                      appleAgg: appleAggRaw, stepsEst: stepsEstByDay)
         self.dashboard = DashboardData(
             days: merged.days,
             displayDays: merged.displayDays,
@@ -273,6 +303,7 @@ final class Repository: ObservableObject {
             storedAppleOnlyDays: storedAppleOnly,
             storedSleepsCount: storedSleeps,
             recoveryEstimates: estimates,
+            fusion: fusion,
             loaded: true,
             seq: dashboard.seq + 1
         )
@@ -341,6 +372,61 @@ final class Repository: ObservableObject {
         var out: [String: AppleRecoveryEstimator.DayEstimate] = [:]
         for e in AppleRecoveryEstimator.estimate(nights: nights) where eligibleDays.contains(e.day) {
             out[e.day] = e   // surfaced only where the measured recovery is nil (band-less OR cold-start)
+        }
+        return out
+    }
+
+    /// FER-670: build the per-day single-construct fusion map from the mode-filtered per-source rows.
+    /// Three metrics only — steps, sleep total, active kcal (`MetricArbitrationPolicy` refuses the rest):
+    ///   • "steps"           — Apple's pedometer count (`appleAgg.steps`) vs the strap's on-device figure
+    ///                         (the 5.0/MG counter in `computed.steps`, else the 4.0 `steps_est` estimate —
+    ///                         real counter wins, mirroring FER-663).
+    ///   • "sleep_total_min" — imported / computed / Apple `totalSleepMin` (duration IS cross-source
+    ///                         comparable — same split `SourceLens.crossSourceMasked` draws; stages never
+    ///                         enter).
+    ///   • "active_kcal"     — Apple's aggregate (`appleAgg.activeKcal`) vs each strap row's HR-only
+    ///                         estimate (`activeKcalEst`).
+    /// Only days where ≥2 sources reported a metric produce an entry — a `.single` day has nothing to
+    /// cross-check and nothing to show. Pure + static so a unit test can pin it.
+    static func fusionByDay(imported: [DailyMetric], computed: [DailyMetric], apple: [DailyMetric],
+                            appleAgg: [AppleDaily], stepsEst: [String: Double])
+        -> [String: [String: FusedMetricPoint]] {
+        var impByDay: [String: DailyMetric] = [:]
+        var compByDay: [String: DailyMetric] = [:]
+        var appByDay: [String: DailyMetric] = [:]
+        var aggByDay: [String: AppleDaily] = [:]
+        for d in imported { impByDay[d.day] = d }
+        for d in computed { compByDay[d.day] = d }
+        for d in apple    { appByDay[d.day] = d }
+        for d in appleAgg { aggByDay[d.day] = d }
+
+        var out: [String: [String: FusedMetricPoint]] = [:]
+        let allDays = Set(impByDay.keys).union(compByDay.keys).union(appByDay.keys)
+            .union(aggByDay.keys).union(stepsEst.keys)
+        for day in allDays {
+            var points: [String: FusedMetricPoint] = [:]
+
+            var steps: [FusionInput] = []
+            if let s = aggByDay[day]?.steps { steps.append(FusionInput(source: .appleHealth, value: Double(s))) }
+            if let s = compByDay[day]?.steps.map(Double.init) ?? stepsEst[day] {
+                steps.append(FusionInput(source: .noopComputed, value: s))
+            }
+
+            var sleep: [FusionInput] = []
+            if let m = impByDay[day]?.totalSleepMin  { sleep.append(FusionInput(source: .whoopImport, value: m)) }
+            if let m = compByDay[day]?.totalSleepMin { sleep.append(FusionInput(source: .noopComputed, value: m)) }
+            if let m = appByDay[day]?.totalSleepMin  { sleep.append(FusionInput(source: .appleHealth, value: m)) }
+
+            var kcal: [FusionInput] = []
+            if let k = aggByDay[day]?.activeKcal          { kcal.append(FusionInput(source: .appleHealth, value: k)) }
+            if let k = impByDay[day]?.activeKcalEst       { kcal.append(FusionInput(source: .whoopImport, value: k)) }
+            if let k = compByDay[day]?.activeKcalEst      { kcal.append(FusionInput(source: .noopComputed, value: k)) }
+
+            for (key, inputs) in [("steps", steps), ("sleep_total_min", sleep), ("active_kcal", kcal)]
+            where inputs.count >= 2 {
+                if let p = FusionResolver.resolve(metricKey: key, inputs: inputs) { points[key] = p }
+            }
+            if !points.isEmpty { out[day] = points }
         }
         return out
     }

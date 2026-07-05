@@ -363,7 +363,7 @@ UI doesn't re-render on every beat.
 
 ## 7. Storage model (WhoopStore / SQLite)
 
-GRDB drives a migrator (`WhoopStoreInfo.schemaVersion`, currently `21`). The schema groups into four
+GRDB drives a migrator (`WhoopStoreInfo.schemaVersion`, currently `24`). The schema groups into four
 concerns:
 
 **Durable decoded streams** — natural key `(deviceId, ts)`, one row per sample:
@@ -405,7 +405,10 @@ concerns:
 
 **Generic metric series** — `metricSeries(deviceId, day, key, value REAL)`: a tall, long-format
 table so *any* scalar metric from *any* source can be queried/compared uniformly (the substrate for
-the Metric Explorer and correlations), indexed by `(deviceId, key, day)`.
+the Metric Explorer and correlations), indexed by `(deviceId, key, day)`. The nightly frequency-domain
+HRV powers (`hrv_lf` / `hrv_hf` / `hrv_totalpower`, ms², FER-702) persist here under the `-noop`
+computed source — an additive scalar cache with no schema change, alongside `steps_est` and the stress
+aggregates.
 
 **Raw outbox** — `rawBatch`: the compressed, **transient, prunable** record of original frames,
 captured only when the research toggle is on. Decoded data is always committed *before* raw is queued,
@@ -495,6 +498,13 @@ night), which is what the ring, the verdict and the recovery-detail hero read. `
 
 - **`SleepStager`** detects in-bed sessions and stages them (deep/REM/light), producing per-session
   efficiency, resting HR, average HRV, and a hypnogram.
+- **`HRVFreqDomain`** (FER-669) computes frequency-domain HRV (LF/HF/total power, ms²) from an R-R
+  series via the Lomb-Scargle periodogram (Lomb 1976; Scargle 1982) on the uneven tachogram — no
+  resampling — span-gated per Task Force (1996). **Additive**: feeds no recovery/strain/sleep output.
+  Surfaced in the HRV detail (FER-702): `analyzeDay` computes the nightly `Bands` over the SAME in-bed
+  session R-R as `avgHrv` (coherent by construction), the app persists the three powers to
+  `metricSeries` under `-noop`, and `HRVSpectralBaseline` labels each band vs "your normal" by reusing
+  `Baselines.foldHistory(logDomain:)` + z-score (log-normal HRV powers, Plews 2013) — no new estimator.
 - **`RecoveryScorer`** normalizes nightly HRV/RHR (and a sleep-performance proxy) against baselines
   into a `0–100` score.
 - **`AppleRecoveryEstimator`** (FER-153) scores an **estimated** recovery for a night that did not come
