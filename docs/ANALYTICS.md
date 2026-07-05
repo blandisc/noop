@@ -422,7 +422,7 @@ Source: `FitnessAgeEngine.swift`. A pure, **independent** implementation of the 
 
 ### The model
 
-- **VO₂max (ml/kg/min), Nes 2011 waist variant** — coefficients verified verbatim against Ball State / JAHA 2020 ([PMC7428991](https://pmc.ncbi.nlm.nih.gov/articles/PMC7428991/)); SEE ≈ 5.70 (men) / 5.14 (women):
+- **VO₂max (ml/kg/min), Nes 2011 waist variant** — coefficients from the primary Nes 2011 (PMID 21502897); a secondary "verbatim reproduction" ([PMC7428991](https://pmc.ncbi.nlm.nih.gov/articles/PMC7428991/)) could not be verified, so the primary source alone anchors them (FER-657). SEE ≈ 5.70 (men) / 5.14 (women):
 
 ```
 men:    100.27  − 0.296·age + 0.226·PA − 0.369·waist − 0.155·RHRseated
