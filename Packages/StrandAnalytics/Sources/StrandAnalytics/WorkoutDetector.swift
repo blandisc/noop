@@ -261,8 +261,9 @@ public enum WorkoutDetector {
             guard !bpms.isEmpty else { continue }   // skip a degenerate bout with no HR samples
             let avg = bpms.reduce(0, +) / Double(bpms.count)
             let peak = Int(bpms.max()!.rounded())
-            // NOTE: StrainScorer needs ≥ minReadings (600 ≈ 10 min @1 Hz); a detected bout shorter than
-            // that (span ~290–598 s) returns strain == nil by design. SessionRecoveryCost falls back to
+            // NOTE: StrainScorer scores once there's enough data — a dense bout (≥ minReadings, 600 ≈
+            // 10 min @1 Hz) OR a sparse-but-sustained one (≥20 samples spanning ≥600 s, FER-659). A
+            // shorter bout still returns strain == nil by design; SessionRecoveryCost falls back to
             // meanHRRPct, so the read degrades gracefully. Pinned by WorkoutDetectorTests.
             let strain = StrainScorer.strain(hrSamples, maxHR: effMaxHR, restingHR: restHR)
 
