@@ -253,7 +253,8 @@ final class RhythmScreenerTests: XCTestCase {
 
     func testNoLabelRawStringNamesACondition() {
         // The enum raw strings must never name a condition or imply diagnosis.
-        let banned = ["afib", "fibrillation", "arrhythmia", "diagnos", "ecg", "ekg",
+        let banned = ["afib", "fibrillation", "arrhythmia", "atrial", "palpitation",
+                      "tachycardia", "bradycardia", "diagnos", "ecg", "ekg",
                       "clinician", "disease", "cardiac", "alert"]
         for label in [RhythmRegularity.steady, .occasionalEctopy, .varied, .unreadable] {
             let raw = label.rawValue.lowercased()
