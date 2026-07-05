@@ -40,6 +40,11 @@ struct RootTabView: View {
     /// App-level cross-tab navigation (FER-378). A screen can ask to jump tabs; we apply + clear it.
     @EnvironmentObject private var tabRouter: TabRouter
 
+    /// The strength session lives here (FER-716): it presents as a full-screen cover (over the dock, no
+    /// grabber) from ANY tab, and its floating pill hovers over the bar on all five tabs. Owned by
+    /// AppModel so navigation never kills it — dismissing the cover only minimizes it (the pill re-opens).
+    @EnvironmentObject private var appModel: AppModel
+
     /// The visible tab. Starts on Today, the launch screen.
     @State private var selection: Tab = .today
     /// Tabs whose content has been shown at least once. Only Today is built at launch; the one heavy
@@ -160,6 +165,30 @@ struct RootTabView: View {
                         Color.clear.preference(key: BarHeightKey.self, value: proxy.size.height)
                     }
                 )
+        }
+        // The active-session pill (FER-716): floats over the dock on ALL five tabs while a session is
+        // running and the full-screen cover is minimized. Tapping it re-opens the session.
+        .overlay(alignment: .bottom) {
+            if appModel.strengthSession != nil && !appModel.strengthSheetPresented {
+                ActiveSessionPillHost(model: appModel)
+                    .padding(.bottom, barHeight + NoopMetrics.space2)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(StrandMotion.gentle, value: appModel.strengthSheetPresented)
+        .animation(StrandMotion.gentle, value: appModel.strengthSession == nil)
+        // The guided strength session (FER-347/716): a full-screen cover so it covers the dock with no
+        // grabber, opened from any tab. The session lives in AppModel, so dismissing the cover only hides
+        // it (the pill re-opens); the summary is ended by `closeStrengthSummary` on its «Listo».
+        .fullScreenCover(isPresented: $appModel.strengthSheetPresented, onDismiss: {
+            if appModel.strengthSession?.summary != nil { appModel.closeStrengthSummary() }
+        }) {
+            if let session = appModel.strengthSession {
+                LiveStrengthSheet(session: session, theme: .base)
+                    .environmentObject(appModel)
+                    .environmentObject(tabRouter)
+                    .preferredColorScheme(.light)
+            }
         }
         .onPreferenceChange(BarHeightKey.self) { barHeight = $0 }
         // Color scheme lo decide ContentView (cercano a la raíz) según `isTodayActive`; aquí solo lo
@@ -334,6 +363,35 @@ private extension View {
         safeAreaInset(edge: .bottom, spacing: 0) {
             Color.clear.frame(height: height)
         }
+    }
+}
+
+/// Hosts the `SessionPill` with a live-ticking clock (FER-716): a `TimelineView` recomputes the
+/// elapsed time each second, and the BPM comes from the session's latest strap sample (nil = no strap,
+/// so the pill drops its ♥ segment). Tapping re-opens the session. The routine hue is the effort ember
+/// (`dataStrain`) — the same hue the session screen and the approved previews use.
+private struct ActiveSessionPillHost: View {
+    @ObservedObject var model: AppModel
+    var body: some View {
+        if let session = model.strengthSession {
+            let theme = InstrumentoTheme.base
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                SessionPill(
+                    routineName: session.routineName,
+                    elapsed: Self.clock(startTs: session.startTs, now: context.date),
+                    bpm: session.hrSamples.last?.bpm,
+                    hue: theme.dataStrain,
+                    theme: theme
+                ) { model.resumeStrengthSession() }
+            }
+        }
+    }
+
+    /// «M:SS» / «H:MM:SS» from the session start to now (never negative).
+    static func clock(startTs: Int, now: Date) -> String {
+        let secs = max(0, Int(now.timeIntervalSince1970) - startTs)
+        let h = secs / 3600, m = (secs % 3600) / 60, s = secs % 60
+        return h > 0 ? String(format: "%d:%02d:%02d", h, m, s) : String(format: "%d:%02d", m, s)
     }
 }
 #endif

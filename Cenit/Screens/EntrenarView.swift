@@ -111,7 +111,6 @@ private struct EntrenarLanding: View {
                     if split.isEmpty {
                         emptyStateB
                     } else {
-                        if model.strengthSession != nil { resumeRow }
                         hoyCard          // ① hero «Hoy» — first now (F10)
                         suggestionRow    // ② contextual lighter/heavier nudge
                         weekStrip        // ③ week progress in one card
@@ -166,21 +165,9 @@ private struct EntrenarLanding: View {
         .sheet(item: $recoveryDetail) { item in
             RecoveryDetailScreen(theme: theme, model: item.model)
         }
-        // The guided strength session (FER-347), hosted at the landing root so it survives tab switches;
-        // the session lives in AppModel, so swiping the sheet down only hides it (the «Resume» row re-opens).
-        .sheet(isPresented: $model.strengthSheetPresented, onDismiss: {
-            if model.strengthSession?.summary != nil { model.closeStrengthSummary() }
-        }) {
-            if let session = model.strengthSession {
-                LiveStrengthSheet(session: session, theme: theme)
-                    .environmentObject(model)
-                    .environmentObject(tabRouter)
-                    .presentationDetents([.large])
-                    .presentationDragIndicator(.visible)
-                    .presentationBackground(theme.paper)
-                    .preferredColorScheme(.light)
-            }
-        }
+        // The guided strength session (FER-347) is now presented at the shell (`RootTabView`) as a
+        // full-screen cover with a floating pill on all five tabs (FER-716), so it survives tab switches
+        // and no longer needs a «Resume» row here. The session lives in AppModel.
         .task { await load() }
         // The Daily Brief's «Hoy en tu plan» → «Empezar» lands here via TabRouter: start today's session
         // reusing the slots this view prefetched on load (FER-613). Consumed once; if we're not loaded yet,
@@ -572,29 +559,6 @@ private struct EntrenarLanding: View {
             .padding(.horizontal, 2).padding(.top, 2).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-    }
-
-    // MARK: - Resume (in-progress guided session)
-
-    private var resumeRow: some View {
-        Button { model.resumeStrengthSession() } label: {
-            HStack(spacing: 12) {
-                Image(systemName: "figure.strengthtraining.functional").frame(width: 30)
-                    .font(.system(size: 17)).foregroundStyle(theme.dataStrain)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("Workout in progress").font(StrandFont.body).foregroundStyle(theme.ink)
-                    Text(model.strengthSession?.routineName ?? "").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                }
-                Spacer(minLength: 8)
-                Text("Resume").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-            }
-            .padding(.horizontal, 15).padding(.vertical, 13)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text("Resume workout in progress"))
     }
 
     // MARK: - Empty state B (no split yet → build the week)
