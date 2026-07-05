@@ -69,7 +69,19 @@
       "warning":         { "$value": "#9C5E10", "$description": "caution / strained — 4.6:1" },
       "critical":        { "$value": "#BC3A34", "$description": "depleted / error — contained brick red — 4.9:1" },
       "positiveText":    { "$value": "#00774B", "$description": "positive delta on <24pt text — darkened verdict to clear text-AA (FER-131 · 02) — 5.0:1" },
-      "negativeText":    { "$value": "#BC3A34", "$description": "negative delta on <24pt text (= critical) (FER-131 · 02) — 4.9:1" }
+      "negativeText":    { "$value": "#BC3A34", "$description": "negative delta on <24pt text (= critical) (FER-131 · 02) — 4.9:1" },
+      "inkMuted":        { "$value": "#AFAA9D", "$description": "quietest chrome — inactive tabs, unlit marks; intentionally NOT AA text (FER-708)" },
+      "patternBlock":    { "$value": "#EFEAE0", "$description": "«patrón/conexión» block background (FER-708)" },
+      "rangeBand":       { "$value": "#EDE8DB", "$description": "personal-range band behind a trend line (FER-708)" },
+      "rangeMidline":    { "$value": "#C9C2AF", "$description": "dotted personal-median line inside the range band (FER-708)" },
+      "dataSun":         { "$value": "#D79567", "$description": "day/sun arc on the dial seal — context, not a datum (FER-708)" },
+      "ctaAccent":       { "$value": "#2FE6A8", "$description": "accent on the ink CTA bar — only ever on ink, never on paper (FER-708)" },
+      "moderate":        { "$value": "#E8C24B", "$description": "«moderado» lane fill (FER-708)" },
+      "dataSleepDeep":   { "$value": "#3F3C78", "$description": "deep-sleep stage fill (FER-708)" },
+      "dataSleepLight":  { "$value": "#8E8BC4", "$description": "light-sleep stage fill (FER-708)" },
+      "originBand":      { "$value": "#0C8F62", "$description": "data-origin dot — strap/band (= dataRecovery) (FER-708)" },
+      "originApple":     { "$value": "#3B6FA0", "$description": "data-origin dot — Apple Salud (= dataSpO2) (FER-708)" },
+      "originComputed":  { "$value": "#AFAA9D", "$description": "data-origin dot — computed on-device (= inkMuted) (FER-708)" }
     }
   },
   "gradient": {
