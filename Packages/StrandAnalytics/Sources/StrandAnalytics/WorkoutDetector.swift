@@ -72,6 +72,15 @@ public enum WorkoutDetector {
     public static let minIntensityZ2Plus: Double = 0.50
     public static let alignToleranceS: Double = 5.0
     public static let restingPercentile: Double = 10.0
+    /// Second-pass bridge window (upstream #303). Two adjacent active runs separated by a
+    /// below-motion-threshold gap no longer than this are stitched into one workout — BUT ONLY
+    /// while HR stays elevated across the gap (see `bridgeRuns`). A sustained endurance effort
+    /// (a long bike ride) routinely dips below the motion gate for a few minutes — coasting a
+    /// descent, a junction, a brief sensor dropout — without the athlete resting; `mergeGapS`
+    /// (150 s) is too tight to ride through those, so the bout used to shatter into sub-bouts,
+    /// most of which then fell under `minExerciseMin` and vanished. A genuine rest between two
+    /// separate workouts is gated out by the HR check, not by this window.
+    public static let bridgeGapS: Double = 300.0
 
     // MARK: - Activity series (activity.py)
 
@@ -170,6 +179,49 @@ public enum WorkoutDetector {
         return (zonePct, avgHRR)
     }
 
+    // MARK: - Second-pass bridge (#303)
+
+    /// Stitch adjacent active runs across a brief, still-elevated-HR lull so a sustained effort
+    /// isn't shattered by coasting / junctions / sensor gaps.
+    ///
+    /// Run `i+1` is merged onto the current span when the inter-run gap (start of the next minus
+    /// end of the current) is ≤ `bridgeGapS` AND HR stays elevated across that gap — i.e. the
+    /// athlete kept working through a brief motion lull rather than resting. "Elevated" = the mean
+    /// of the HR samples strictly inside the gap is still above `hrFloor` (resting + HR_MARGIN_BPM).
+    /// A gap carrying NO HR samples is treated as a same-effort sensor dropout and bridged; a real
+    /// rest always lands HR samples in the gap (the strap streams 1 Hz), so its mean falls to
+    /// resting and the two workouts stay separate. Runs must arrive sorted by start (they do —
+    /// built from a sorted timeline).
+    static func bridgeRuns(_ runs: [(Int, Int)],
+                           hrSeg: [(ts: Int, bpm: Double)],
+                           hrFloor: Double) -> [(Int, Int)] {
+        guard runs.count > 1 else { return runs }
+        var merged: [(Int, Int)] = []
+        var curStart = runs[0].0
+        var curEnd = runs[0].1
+        for next in runs.dropFirst() {
+            var bridge = false
+            if Double(next.0 - curEnd) <= bridgeGapS {
+                // HR samples strictly between the two runs (the lull itself).
+                let gapHR = hrSeg.filter { $0.ts > curEnd && $0.ts < next.0 }.map { $0.bpm }
+                if gapHR.isEmpty {
+                    bridge = true   // sensor dropout mid-effort → same workout
+                } else {
+                    bridge = gapHR.reduce(0, +) / Double(gapHR.count) > hrFloor  // still working
+                }
+            }
+            if bridge {
+                curEnd = max(curEnd, next.1)
+            } else {
+                merged.append((curStart, curEnd))
+                curStart = next.0
+                curEnd = next.1
+            }
+        }
+        merged.append((curStart, curEnd))
+        return merged
+    }
+
     // MARK: - Public API
 
     /// Detect workouts from the 1 Hz HR + gravity store.
@@ -227,6 +279,11 @@ public enum WorkoutDetector {
             prev = ts
         }
         runs.append((runStart, prev))
+
+        // Second pass (#303): bridge adjacent runs across a brief, still-elevated-HR lull so a
+        // sustained effort isn't shattered by coasting / junctions / sensor gaps. Runs over a
+        // genuine rest (HR falls to resting in the gap) are NOT bridged.
+        runs = bridgeRuns(runs, hrSeg: hrSeg, hrFloor: hrFloor)
 
         let minDurS = minExerciseMin * 60.0
         var sessions: [ExerciseSession] = []

@@ -157,4 +157,80 @@ final class WorkoutDetectorTests: XCTestCase {
         // age 30 → hrmax 187, zone math available → z2+ fraction ≈ 0 < 0.50 → rejected.
         XCTAssertTrue(WorkoutDetector.detect(hr: hr, gravity: grav, age: 30).isEmpty)
     }
+
+    // MARK: - Second-pass bridge (#303, FER-660)
+
+    /// Two moving phases of `phaseDur` s each (HR `boutHR`), split by a still-motion gap of
+    /// `gapDur` s during which HR holds at `gapHR`. Embedded in a resting day (HR 55, still).
+    private func twoPhaseDay(start: Int, phaseDur: Int, gapDur: Int, boutHR: Int, gapHR: Int)
+        -> (hr: [HRSample], grav: [GravitySample]) {
+        var hr: [HRSample] = []
+        var grav: [GravitySample] = []
+        let p1End = start + phaseDur
+        let gapEnd = p1End + gapDur
+        let p2End = gapEnd + phaseDur
+        let dayStart = start - 30 * 60
+        let dayEnd = p2End + 30 * 60
+        for t in dayStart..<dayEnd {
+            let moving = (t >= start && t < p1End) || (t >= gapEnd && t < p2End)
+            let inGap = t >= p1End && t < gapEnd
+            hr.append(HRSample(ts: t, bpm: moving ? boutHR : (inGap ? gapHR : 55)))
+            if moving {
+                let phase = Double((t - start) % 2) * 0.5   // 0.5 g oscillation → moving
+                grav.append(GravitySample(ts: t, x: phase, y: 0, z: 1))
+            } else {
+                grav.append(GravitySample(ts: t, x: 0, y: 0, z: 1))  // still (gap + rest)
+            }
+        }
+        return (hr, grav)
+    }
+
+    func testBridgesRunsAcrossElevatedHRLull() {
+        // Two 4-min moving phases split by a 4-min still gap where HR STAYS at 165 (coasting a
+        // descent). Gap 240 s ≤ bridgeGapS and mean gap HR > floor → one continuous ~12-min bout.
+        // Each 4-min phase alone (240 s < the ~290 s onset floor) would be dropped, so WITHOUT
+        // bridging this day yields ZERO workouts — the exact fragmentation #303 fixes.
+        let (hr, grav) = twoPhaseDay(start: 10_000_000, phaseDur: 4 * 60, gapDur: 4 * 60,
+                                     boutHR: 165, gapHR: 165)
+        let sessions = WorkoutDetector.detect(hr: hr, gravity: grav, age: 30)
+        XCTAssertEqual(sessions.count, 1)
+        XCTAssertGreaterThan(sessions[0].durationS, Double(11 * 60))  // spans both phases + the gap
+    }
+
+    func testDoesNotBridgeAcrossGenuineRest() {
+        // Two 20-min moving phases split by a 4-min still gap where HR FALLS to resting (55): two
+        // genuinely separate workouts. The gap is within bridgeGapS, but the HR check sees rest and
+        // keeps them apart → two sessions. A naive gap-only bridge would wrongly merge them into one.
+        let (hr, grav) = twoPhaseDay(start: 11_000_000, phaseDur: 20 * 60, gapDur: 4 * 60,
+                                     boutHR: 165, gapHR: 55)
+        let sessions = WorkoutDetector.detect(hr: hr, gravity: grav, age: 30)
+        XCTAssertEqual(sessions.count, 2)
+    }
+
+    func testBridgesRunsAcrossSensorDropout() {
+        // Same two 4-min phases, but the 4-min gap carries NO HR samples at all (a sensor dropout
+        // mid-effort). With no HR to prove rest, the gap is treated as same-effort and bridged →
+        // one bout, not zero. Build the day, then strip the HR samples inside the gap window.
+        let start = 12_000_000
+        let p1End = start + 4 * 60, gapEnd = p1End + 4 * 60
+        var (hr, grav) = twoPhaseDay(start: start, phaseDur: 4 * 60, gapDur: 4 * 60,
+                                     boutHR: 165, gapHR: 165)
+        hr.removeAll { $0.ts >= p1End && $0.ts < gapEnd }   // sensor dropout: no HR in the lull
+        let sessions = WorkoutDetector.detect(hr: hr, gravity: grav, age: 30)
+        XCTAssertEqual(sessions.count, 1)
+        XCTAssertGreaterThan(sessions[0].durationS, Double(11 * 60))
+    }
+
+    func testBridgeRunsUnitElevatedVsRest() {
+        // Direct unit check of the bridge predicate on synthetic runs.
+        let runs = [(0, 100), (300, 400)]   // 200 s gap ≤ bridgeGapS
+        let elevated = (101...299).map { (ts: $0, bpm: 150.0) }   // gap HR well above floor 70
+        XCTAssertEqual(WorkoutDetector.bridgeRuns(runs, hrSeg: elevated, hrFloor: 70).count, 1)
+        let resting = (101...299).map { (ts: $0, bpm: 55.0) }     // gap HR at rest
+        XCTAssertEqual(WorkoutDetector.bridgeRuns(runs, hrSeg: resting, hrFloor: 70).count, 2)
+        // Gap wider than bridgeGapS is never bridged, even with elevated HR.
+        let farRuns = [(0, 100), (500, 600)]   // 400 s gap > bridgeGapS
+        let farHR = (101...499).map { (ts: $0, bpm: 150.0) }
+        XCTAssertEqual(WorkoutDetector.bridgeRuns(farRuns, hrSeg: farHR, hrFloor: 70).count, 2)
+    }
 }
