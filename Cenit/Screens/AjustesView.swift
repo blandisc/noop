@@ -106,6 +106,7 @@ private struct AjustesLanding: View {
     @State private var showAdvanced = false
     @State private var showMaxHR = false
     @State private var showStepsCal = false
+    @State private var showStepTicks = false
     @State private var profileWheel: ProfileWheel? = nil
     @State private var darkScreen: AjustesDarkScreen? = nil
     @State private var confirmDisconnect = false
@@ -141,6 +142,9 @@ private struct AjustesLanding: View {
         }
         .sheet(isPresented: $showStepsCal) {
             StepsCalibrationSheet().instrumentoTheme(theme).environmentObject(profile)
+        }
+        .sheet(isPresented: $showStepTicks) {
+            StepTicksSheet().instrumentoTheme(theme).environmentObject(profile)
         }
         .sheet(item: $profileWheel) { wheel in
             ProfileWheelSheet(wheel: wheel).instrumentoTheme(theme).environmentObject(profile)
@@ -218,13 +222,16 @@ private struct AjustesLanding: View {
             divider
             valueRow("Max heart rate", value: maxHRDisplay,
                      a11y: "Maximum heart rate, \(maxHRDisplay)") { showMaxHR = true }
-            // Estimación de pasos (FER-663) — solo aplica a la WHOOP 4.0 (sin contador nativo por BLE);
-            // en un 5/MG la fila no aparece: el contador del strap manda y no hay nada que calibrar. El
-            // mismo predicado `estimatesSteps` que activa el motor en IntelligenceEngine.
+            // Pasos por banda: la 4.0 ESTIMA pasos del movimiento (FER-663); el 5/MG lee un contador
+            // NATIVO que sobre-cuenta y se calibra con un divisor (FER-665). Cada banda ve solo la suya.
             if WhoopModel.persisted.deviceFamily.estimatesSteps {
                 divider
                 valueRow("Steps estimate", value: stepsCalDisplay,
                          a11y: "Steps estimate, \(stepsCalDisplay)") { showStepsCal = true }
+            } else {
+                divider
+                valueRow("Steps calibration", value: stepTicksDisplay,
+                         a11y: "Steps calibration, \(stepTicksDisplay)") { showStepTicks = true }
             }
         }
     }
@@ -247,6 +254,12 @@ private struct AjustesLanding: View {
         if profile.stepsManualCoefficient > 0 { return String(localized: "Manual") }
         if profile.stepsCalibrationCoefficient > 0 { return String(localized: "Auto") }
         return String(localized: "Not calibrated")
+    }
+    /// One-line state for the 5/MG «Steps calibration» row (FER-665): the divisor, or «Off» at 1.0.
+    private var stepTicksDisplay: String {
+        profile.stepTicksPerStep > 1.0
+            ? String(format: "÷ %.1f", profile.stepTicksPerStep)
+            : String(localized: "Off")
     }
 
     // MARK: - Your strap (A4: status + action + log only; A7: disconnect demoted)
@@ -731,6 +744,47 @@ private struct StepsCalibrationSheet: View {
         .background(theme.paper.ignoresSafeArea())
         .fittedSheet()
         .onAppear { manual = profile.stepsManualCoefficient > 0 }
+    }
+}
+
+// MARK: - Steps calibration (FER-665 — WHOOP 5/MG native counter divisor)
+
+/// «Calibración de pasos» — a focused sheet over `profile.stepTicksPerStep`, the divisor for the 5/MG
+/// native step counter, which over-counts. 1.0 = off (raw pass-through); raise it if the strap reads
+/// more steps than you took. Clamped 0.5–30 (observed overcount reaches ~24×). Distinct from the 4.0
+/// «Steps estimate» sheet — this scales a REAL counter, it doesn't fit one from motion.
+private struct StepTicksSheet: View {
+    @Environment(\.instrumentoTheme) private var theme
+    @EnvironmentObject private var profile: ProfileStore
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Profile").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("Steps calibration").font(StrandFont.title1).foregroundStyle(theme.ink)
+            }
+
+            VStack(alignment: .center, spacing: 4) {
+                Text(profile.stepTicksPerStep > 1.0 ? String(format: "÷ %.1f", profile.stepTicksPerStep)
+                                                    : String(localized: "Off"))
+                    .font(StrandFont.number(48))
+                    .foregroundStyle(profile.stepTicksPerStep > 1.0 ? theme.ink : theme.inkDim)
+                Text("counter ticks per real step").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            }
+            .frame(maxWidth: .infinity)
+
+            Slider(value: $profile.stepTicksPerStep, in: 1...30, step: 0.5)
+                .tint(theme.ink)
+                .accessibilityLabel(Text("Counter ticks per real step, \(String(format: "%.1f", profile.stepTicksPerStep))"))
+
+            Text("Your WHOOP 5.0/MG counts steps from a wrist counter that tends to read high. If it shows more steps than you actually took, raise this until it matches a day you can check. Leave it at Off (1.0) to use the raw count.")
+                .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(NoopMetrics.screenPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.paper.ignoresSafeArea())
+        .fittedSheet()
     }
 }
 

@@ -100,4 +100,36 @@ final class StepsDailyTests: XCTestCase {
         XCTAssertEqual(AnalyticsEngine.analyzeDay(day: dayUtc, steps: s, profile: profile).daily.steps,
                        120)
     }
+
+    // MARK: - stepTicksPerStep calibration (FER-665 — 5/MG native counter over-count)
+
+    private func stepsFor(_ samples: [StepSample], ticksPerStep: Double) -> Int? {
+        let p = UserProfile(stepTicksPerStep: ticksPerStep)
+        return AnalyticsEngine.analyzeDay(day: dayUtc, steps: samples, profile: p).daily.steps
+    }
+
+    func testDefaultDivisorIsRawPassThrough() {
+        // The default 1.0 must not change the count at all (no behaviour change until calibrated).
+        let s = [step(0, 100), step(60, 250)]  // 150 raw
+        XCTAssertEqual(stepsFor(s, ticksPerStep: 1.0), 150)
+    }
+
+    func testDivisorScalesDownAnOverCount() {
+        // A 5/MG that over-counts ~2× is corrected by a divisor of 2.0: 1000 raw ticks -> 500 steps.
+        let s = [step(0, 0), step(60, 400), step(120, 700), step(180, 1_000)]  // 400+300+300 = 1000 raw
+        XCTAssertEqual(stepsFor(s, ticksPerStep: 2.0), 500)
+    }
+
+    func testDivisorRoundsToNearestStep() {
+        // 150 raw / 4.0 = 37.5 -> rounds to 38.
+        let s = [step(0, 0), step(60, 150)]
+        XCTAssertEqual(stepsFor(s, ticksPerStep: 4.0), 38)
+    }
+
+    func testDivisorFlooredAtHalfSoItCannotInflate() {
+        // A degenerate divisor below the 0.5 floor is clamped to 0.5 (raw ×2 at most), never a
+        // huge multiplier: 100 raw / 0.1-clamped-to-0.5 = 200, not 1000.
+        let s = [step(0, 0), step(60, 100)]
+        XCTAssertEqual(stepsFor(s, ticksPerStep: 0.1), 200)
+    }
 }
