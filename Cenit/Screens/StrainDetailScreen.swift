@@ -50,6 +50,10 @@ struct StrainDetailScreen: View {
     /// Today's intraday curve, loaded in `.task` (loading well until then).
     @State private var curve: [TrendPoint] = []
     @State private var curveLoaded = false
+    /// The in-progress day's LIVE strain = the curve's LAST point, captured when the curve loads so the
+    /// hero equals the end of the curve BY CONSTRUCTION (they read the same array — FER-650). nil until the
+    /// curve loads, or when there's too little activity today; the hero then falls back to the settled score.
+    @State private var liveToday: Double?
     @State private var methodExpanded = false
     /// Level-3 disclosure: the period trend (+ «Media · periodo · Δ%») and «What moves your strain» live
     /// under «See your history», collapsed on open. Strain is the LIGHT cut — no Level 2 — so this is the
@@ -96,6 +100,10 @@ struct StrainDetailScreen: View {
             range = .month
             parsed = model.series.map { ($0.day, Repository.parseDayKey($0.day), $0.value) }
             curve = await curveLoader()
+            // The hero shows the curve's LAST point (the live in-progress-day value) so «ends on your score
+            // above» holds exactly — same array, no second derivation (FER-650). `.last` is the real endpoint
+            // (the prepended midnight anchor is `.first`).
+            liveToday = curve.last?.value
             curveLoaded = true
         }
     }
@@ -107,8 +115,14 @@ struct StrainDetailScreen: View {
 
     // MARK: - 1. Hero — el valor de hoy (0–21) en color del dato
 
+    /// The value shown as today's strain: the live curve endpoint once the curve loads (so hero == the
+    /// curve's last point by construction, FER-650), falling back to the settled `repo.today.strain` before
+    /// the curve loads or when there's too little activity to draw one. Drives the hero number, its plain-
+    /// language reading, and the highlighted level — one value, never a contradiction on-screen.
+    private var shownToday: Double? { liveToday ?? model.today }
+
     private var hero: some View {
-        let v = model.today
+        let v = shownToday
         // Serif in-screen title + ⓘ (the «Instrumento» detail identity, FER-581). Explanation stays behind
         // the ⓘ exactly as the old InfoAccordion had it.
         return VStack(alignment: .leading, spacing: 6) {
@@ -137,7 +151,7 @@ struct StrainDetailScreen: View {
     /// disagree if a boundary is ever retuned (single source of truth — no second copy of the thresholds).
     /// Source strings are English; the es values live in `Localizable.xcstrings`.
     private var heroReading: LocalizedStringKey {
-        guard let v = model.today else {
+        guard let v = shownToday else {
             if !model.series.isEmpty { return "No strain from today yet — your recent history is below." }
             return "No strain yet. Wear your strap through the day and open this again after it syncs."
         }
@@ -190,7 +204,7 @@ struct StrainDetailScreen: View {
     /// same source of truth the hero reading uses, so the table and the highlighted band can never disagree.
     /// This is now the SOLE levels block; the FER-572 `MetricLevelsExplorer` duplicated it. (FER-597)
     private var levelsTable: some View {
-        let bands = MetricInfo.strain(model.today).bands
+        let bands = MetricInfo.strain(shownToday).bands
         return InfoAccordion(
             title: "Levels",
             explanation: "Your heart rate falls into one of four intensity zones through the day. The highlighted row is where today's score lands on the 0–21 scale.",

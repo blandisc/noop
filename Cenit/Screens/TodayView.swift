@@ -310,6 +310,9 @@ struct TodayView: View {
                 let now   = Int(Date().timeIntervalSince1970)
                 let rows  = await repo.hrBuckets(from: start, to: now, bucketSeconds: 300)
                 hrPoints  = rows.map { TrendPoint(date: Date(timeIntervalSince1970: TimeInterval($0.ts)), value: $0.bpm) }
+                // Keep the Day Strain tile rising in lockstep with fresh HR — same live cadence as the
+                // heartbeat trace, so the tile == the Detalle curve's endpoint at all times (FER-650).
+                await model.refreshLiveDayStrain()
             }
             // «Hoy» nunca pedía la carga del strap por su cuenta: dependía del sondeo del keep-alive
             // (cada ~60 s, y SUSPENDIDO durante el offload), así que tras el sync matutino la batería
@@ -2138,7 +2141,10 @@ struct TodayView: View {
         let rhrR    = latestFromDisplay { $0.restingHr.map(Double.init) }
         let sleepR  = resolveMeasured(todayOnly: true) { $0.totalSleepMin }
         let spo2R   = latestFromDisplay { $0.spo2Pct }
-        let strainT = repo.today?.strain
+        // Esfuerzo del día en curso: el valor VIVO (fin de la curva intradía), no el score asentado —
+        // así el tile, el héroe del Detalle y la curva muestran UN solo número (FER-650). Cae al asentado
+        // `repo.today.strain` mientras el vivo aún no se computa. Los días pasados no lo tocan.
+        let strainT = model.liveDayStrain ?? repo.today?.strain
         // Pasos: sólo Apple Salud; acota a la ventana de 14 días para no mostrar pasos rancios bajo un
         // tile de "hoy".
         let stepsCutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -13, to: Date()) ?? Date())
@@ -2881,6 +2887,9 @@ struct TodayView: View {
         stress = StressModel(days: repo.displayDays, stored: await stressRows,
                              todayKey: Repository.localDayKey(Date()), appleDays: repo.appleHealthDays)
         await loadTrainingPlan()
+        // Esfuerzo del día en curso (FER-650): recomputa el valor VIVO en cada refresh del dashboard, para
+        // que el tile refleje la carga hasta ahora incluso sin abrir el Detalle.
+        await model.refreshLiveDayStrain()
         // «La conexión de hoy» (FER-614): los hallazgos rankeados, misma fuente que Patrones.
         insights = await InsightsProvider.generate(repo: repo, today: Repository.localDayKey(Date()))
         // El experimento N-of-1 en curso (FER-615): la 2ª fuente del mismo renglón.
@@ -3030,22 +3039,14 @@ struct TodayView: View {
     /// shown in the header. Loaded lazily when the sheet opens. Returns [] when there's no score yet or
     /// too little activity, so the sheet shows its "not enough activity" state.
     private func loadStrainCurve() async -> [TrendPoint] {
-        guard repo.today?.strain != nil else { return [] }
-        let startOfToday = Int(Calendar.current.startOfDay(for: Date()).timeIntervalSince1970)
-        let nowTs = Int(Date().timeIntervalSince1970)
-        let samples = await repo.hrSamples(from: startOfToday, to: nowTs, limit: 100_000)
-        let restHR = repo.today?.restingHr.map(Double.init) ?? StrainScorer.defaultRestingHR
-        let curve = StrainScorer.cumulativeStrain(
-            samples,
-            maxHR: Double(model.profile.hrMax),
-            restingHR: restHR,
-            sex: model.profile.sex
-        ).map { TrendPoint(date: $0.date, value: $0.strain) }
+        // Single canonical derivation (FER-650): AppModel owns the params + window so the tile, the hero
+        // and this curve can never disagree. It also publishes `model.liveDayStrain` (= the last point).
+        let curve = await model.liveDayStrainCurve()
         guard !curve.isEmpty else { return [] }
         // Anchor the x-axis to local midnight so the curve reads "from 00:00" even when the strap
         // wasn't worn until later — no recorded load before the first sample means strain 0.
-        let midnight = TrendPoint(date: Date(timeIntervalSince1970: TimeInterval(startOfToday)), value: 0)
-        return [midnight] + curve
+        let midnight = TrendPoint(date: Calendar.current.startOfDay(for: Date()), value: 0)
+        return [midnight] + curve.map { TrendPoint(date: $0.date, value: $0.strain) }
     }
     #endif
 
