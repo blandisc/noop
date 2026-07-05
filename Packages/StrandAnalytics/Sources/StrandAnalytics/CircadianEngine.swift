@@ -37,8 +37,12 @@ public enum CircadianEngine {
     /// into an estimated temperature-minimum clock time when the thermal series is thin.
     public static let cbtMinBeforeWakeHours: Double = 2.5
     /// Activity acrophase (peak activity) sits roughly this many hours after CBTmin in a typical day — the
-    /// offset used to convert the cosinor acrophase into an estimated temperature-minimum time. A coarse
-    /// population approximation: CBTmin ~05:00 and activity acrophase mid-afternoon ~17:00 → ~12 h.
+    /// offset used to convert the cosinor acrophase into an estimated temperature-minimum time. This is a
+    /// COARSE population knob, not a firm constant: measured actigraphy acrophase is early-to-mid afternoon
+    /// and CBTmin sits pre-dawn, so the true population offset is only approximate (~9–12 h). It affects
+    /// `tempMinHour` ONLY on the thin-thermal fallback path (when `observedTempMinHour` is nil); prefer the
+    /// measured temperature minimum whenever it exists. Flagged for refinement (with /estadistico) before
+    /// `tempMinHour` is ever surfaced in UI.
     public static let acrophaseAfterCbtMinHours: Double = 12.0
 
     // MARK: - Inputs
