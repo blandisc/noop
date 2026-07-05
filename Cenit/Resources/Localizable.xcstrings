@@ -15,7 +15,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aviso temprano — tómala con calma"
+            "value": "Aviso temprano, tómala con calma"
           }
         }
       }
@@ -31,7 +31,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Estimación en el dispositivo (aproximada) — no es un diagnóstico."
+            "value": "Estimación en el dispositivo (aproximada), no es un diagnóstico."
           }
         }
       }
@@ -47,7 +47,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": " Sin relación clara — se mueven de forma independiente."
+            "value": " Sin relación clara, se mueven de forma independiente."
           }
         }
       }
@@ -63,7 +63,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": " Cuando %1$@ sube, %2$@ %3$@ — un vínculo %5$@ %4$@."
+            "value": " Cuando %1$@ sube, %2$@ %3$@, un vínculo %5$@ %4$@."
           }
         }
       }
@@ -160,7 +160,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": " — dales un día antes de volver."
+            "value": ", dales un día antes de volver."
           }
         }
       }
@@ -448,7 +448,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ y %@ — %lld%% de tu necesidad, horario %@."
+            "value": "%@ y %@, %lld%% de tu necesidad, horario %@."
           }
         }
       }
@@ -917,7 +917,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ · pocas — se amplió a %@"
+            "value": "%@ · pocas, se amplió a %@"
           }
         }
       }
@@ -967,7 +967,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ — horario %@."
+            "value": "%@, horario %@."
           }
         }
       }
@@ -984,7 +984,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ — %lld%% de tu necesidad."
+            "value": "%@, %lld%% de tu necesidad."
           }
         }
       }
@@ -1001,7 +1001,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ — todos tus datos, nada en la nube."
+            "value": "%@, todos tus datos, nada en la nube."
           }
         }
       }
@@ -1018,7 +1018,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ — todos tus datos, nada en la nube. Es gratis y siempre lo será; aportar es opcional."
+            "value": "%@, todos tus datos, nada en la nube. Es gratis y siempre lo será; aportar es opcional."
           }
         }
       }
@@ -1229,7 +1229,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld %@ · pocos datos — ampliado a %@"
+            "value": "%lld %@ · pocos datos, ampliado a %@"
           }
         }
       }
@@ -3740,7 +3740,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "El 95% es el piso típico de un adulto sano — la misma referencia para todos, no tu base personal. Debajo de 90% se considera bajo (hipoxemia). El sensor de muñeca es menos preciso que un oxímetro médico, así que léelo como tendencia."
+            "value": "El 95% es el piso típico de un adulto sano, la misma referencia para todos, no tu base personal. Debajo de 90% se considera bajo (hipoxemia). El sensor de muñeca es menos preciso que un oxímetro médico, así que léelo como tendencia."
           }
         }
       }
@@ -3875,7 +3875,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Un zumbido suave cuando tu HRV baja mientras tu pulso está en calma — una señal para respirar con calma. Limitado a una vez cada 15 minutos; apagado por defecto."
+            "value": "Un zumbido suave cuando tu HRV baja mientras tu pulso está en calma, una señal para respirar con calma. Limitado a una vez cada 15 minutos; apagado por defecto."
           }
         }
       }
@@ -3942,7 +3942,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Una ventana privada a tu recuperación, sueño y esfuerzo — leída directo de tu banda y guardada solo en esta Mac."
+            "value": "Una ventana privada a tu recuperación, sueño y esfuerzo, leída directo de tu banda y guardada solo en esta Mac."
           }
         }
       }
@@ -3987,7 +3987,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Una proyección simple desde tu tendencia reciente de recuperación (un promedio móvil más una pendiente reciente amortiguada), ajustada un poco hacia abajo por la deuda de sueño acumulada. Es una tendencia, no una garantía —lo que hagas hoy es lo que más cuenta— y necesita unas dos semanas de historial antes de aparecer. (De Sabbata & Simonini, J Healthcare Informatics Research, 2025)"
+            "value": "Una proyección simple desde tu tendencia reciente de recuperación (un promedio móvil más una pendiente reciente amortiguada), ajustada un poco hacia abajo por la deuda de sueño acumulada. Es una tendencia, no una garantía, lo que hagas hoy es lo que más cuenta, y necesita unas dos semanas de historial antes de aparecer. (De Sabbata & Simonini, J Healthcare Informatics Research, 2025)"
           }
         }
       }
@@ -4015,7 +4015,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Un compañero independiente para tu WHOOP. Todo se queda en este dispositivo — tu historial, tu transmisión en vivo, tus números. Nada se sube. %@ es un proyecto independiente y experimental, no la app de WHOOP."
+            "value": "Un compañero independiente para tu WHOOP. Todo se queda en este dispositivo, tu historial, tu transmisión en vivo, tus números. Nada se sube. %@ es un proyecto independiente y experimental, no la app de WHOOP."
           }
         }
       }
@@ -4379,7 +4379,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Por encima de tu base — tu cuerpo está listo para un día fuerte."
+            "value": "Por encima de tu base, tu cuerpo está listo para un día fuerte."
           }
         }
       }
@@ -4454,7 +4454,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "En tus días recientes, este es un momento que tiende a estar más alto o más bajo en estrés. Es una tendencia que observamos, no una causa — y necesita varios días para aparecer. Se calcula en tu iPhone."
+            "value": "En tus días recientes, este es un momento que tiende a estar más alto o más bajo en estrés. Es una tendencia que observamos, no una causa, y necesita varios días para aparecer. Se calcula en tu iPhone."
           }
         }
       }
@@ -5156,7 +5156,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ya tienes las %lld noches — calculando tu primer veredicto."
+            "value": "Ya tienes las %lld noches, calculando tu primer veredicto."
           }
         }
       }
@@ -5303,7 +5303,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Día a tope — casi todo el esfuerzo que aguantas."
+            "value": "Día a tope, casi todo el esfuerzo que aguantas."
           }
         }
       }
@@ -5409,7 +5409,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Anoche dormiste %@, por debajo de las 6 h. Una noche corta deprime tu HRV e infla tu frecuencia en reposo aunque tu recuperación real sea mejor — así que hoy el número se lee con menos certeza. No es que estés peor: una noche corta se mide con menos confianza."
+            "value": "Anoche dormiste %@, por debajo de las 6 h. Una noche corta deprime tu HRV e infla tu frecuencia en reposo aunque tu recuperación real sea mejor, así que hoy el número se lee con menos certeza. No es que estés peor: una noche corta se mide con menos confianza."
           }
         }
       }
@@ -5426,7 +5426,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Anoche dormiste menos de 6 h. Una noche corta deprime tu HRV e infla tu frecuencia en reposo aunque tu recuperación real sea mejor — así que hoy el número se lee con menos certeza. No es que estés peor: una noche corta se mide con menos confianza."
+            "value": "Anoche dormiste menos de 6 h. Una noche corta deprime tu HRV e infla tu frecuencia en reposo aunque tu recuperación real sea mejor, así que hoy el número se lee con menos certeza. No es que estés peor: una noche corta se mide con menos confianza."
           }
         }
       }
@@ -5495,7 +5495,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Las respuestas se refieren a la noche y el día previos a esta mañana — la misma atribución que usa una exportación de WHOOP, para que los días registrados y los importados coincidan."
+            "value": "Las respuestas se refieren a la noche y el día previos a esta mañana, la misma atribución que usa una exportación de WHOOP, para que los días registrados y los importados coincidan."
           }
         }
       }
@@ -5778,7 +5778,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pregunta sobre tu recuperación, esfuerzo, sueño y entrenamientos — con base en tus propios números."
+            "value": "Pregunta sobre tu recuperación, esfuerzo, sueño y entrenamientos, con base en tus propios números."
           }
         }
       }
@@ -5892,7 +5892,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Asociación, no causa — moverse juntas no es que una empuje a la otra."
+            "value": "Asociación, no causa, moverse juntas no es que una empuje a la otra."
           }
         }
       }
@@ -5909,7 +5909,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Asociación, no causa — se mueven juntas, ninguna empuja a la otra."
+            "value": "Asociación, no causa, se mueven juntas, ninguna empuja a la otra."
           }
         }
       }
@@ -5926,7 +5926,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Asociación, no causa — estas señales se mueven juntas; ninguna hace que ocurra la otra."
+            "value": "Asociación, no causa, estas señales se mueven juntas; ninguna hace que ocurra la otra."
           }
         }
       }
@@ -6644,7 +6644,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Basado en una noche corta — confianza baja."
+            "value": "Basado en una noche corta, confianza baja."
           }
         }
       }
@@ -7942,7 +7942,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Calibrando — necesitamos unas noches más con tu banda."
+            "value": "Calibrando, necesitamos unas noches más con tu banda."
           }
         }
       }
@@ -8058,7 +8058,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "No se puede conectar — el emparejamiento de tu banda se restableció"
+            "value": "No se puede conectar, el emparejamiento de tu banda se restableció"
           }
         }
       }
@@ -8090,7 +8090,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Candidato — aún sin experimento"
+            "value": "Candidato, aún sin experimento"
           }
         }
       }
@@ -8308,7 +8308,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Falló la verificación — intenta resincronizar"
+            "value": "Falló la verificación, intenta resincronizar"
           }
         }
       }
@@ -8387,7 +8387,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Consulta GitHub por la versión más reciente cuando tocas — no se envía nada más."
+            "value": "Consulta GitHub por la versión más reciente cuando tocas, no se envía nada más."
           }
         }
       }
@@ -8477,7 +8477,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Elige cómo se muestran distancias, pesos, estaturas y temperaturas. Tus datos siempre se guardan igual — esto solo cambia la visualización."
+            "value": "Elige cómo se muestran distancias, pesos, estaturas y temperaturas. Tus datos siempre se guardan igual, esto solo cambia la visualización."
           }
         }
       }
@@ -9025,7 +9025,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Primero completa el emparejamiento seguro — la banda no descargará su historial hasta que se establezca el vínculo cifrado."
+            "value": "Primero completa el emparejamiento seguro, la banda no descargará su historial hasta que se establezca el vínculo cifrado."
           }
         }
       }
@@ -9093,7 +9093,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Confianza baja — noche corta"
+            "value": "Confianza baja, noche corta"
           }
         }
       }
@@ -10221,7 +10221,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cénit calcula tu recuperación, tus hallazgos y tus palancas aquí, en tu iPhone — sin nube, sin cuenta, sin servidor.\n\nLo único que sale a internet es «Pregúntale a tus datos», y solo si conectas tu propia clave de IA."
+            "value": "Cénit calcula tu recuperación, tus hallazgos y tus palancas aquí, en tu iPhone, sin nube, sin cuenta, sin servidor.\n\nLo único que sale a internet es «Pregúntale a tus datos», y solo si conectas tu propia clave de IA."
           }
         }
       }
@@ -10269,7 +10269,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cénit se empareja directamente con tu banda por Bluetooth — sin la app de WHOOP, sin nube."
+            "value": "Cénit se empareja directamente con tu banda por Bluetooth, sin la app de WHOOP, sin nube."
           }
         }
       }
@@ -10286,7 +10286,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cénit lee tu oxígeno en sangre desde Apple Salud — tu banda lo detecta ópticamente en la muñeca, pero Cénit no lo convierte en porcentaje por su cuenta. Un adulto sano suele estar en 95–100%; lecturas por debajo de 90% se consideran bajas (hipoxemia). Las noches bajas aisladas suelen ser ruido — altitud, un resfriado, o cómo quedó el sensor. Una racha sostenida de noches bajas es lo que amerita revisarse con un oxímetro de dedo."
+            "value": "Cénit lee tu oxígeno en sangre desde Apple Salud, tu banda lo detecta ópticamente en la muñeca, pero Cénit no lo convierte en porcentaje por su cuenta. Un adulto sano suele estar en 95–100%; lecturas por debajo de 90% se consideran bajas (hipoxemia). Las noches bajas aisladas suelen ser ruido, altitud, un resfriado, o cómo quedó el sensor. Una racha sostenida de noches bajas es lo que amerita revisarse con un oxímetro de dedo."
           }
         }
       }
@@ -10336,7 +10336,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cénit calcula por sí mismo tu recuperación, esfuerzo y sueño — en el dispositivo, sin nube."
+            "value": "Cénit calcula por sí mismo tu recuperación, esfuerzo y sueño, en el dispositivo, sin nube."
           }
         }
       }
@@ -10352,7 +10352,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cénit — todos tus datos, nada de nube."
+            "value": "Cénit, todos tus datos, nada de nube."
           }
         }
       }
@@ -10461,7 +10461,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu conteo de pasos del día. La actividad constante —aunque sea una caminata de 30 minutos— apoya tu salud cardiovascular, tu ánimo y la calidad de tu recuperación."
+            "value": "Tu conteo de pasos del día. La actividad constante, aunque sea una caminata de 30 minutos, apoya tu salud cardiovascular, tu ánimo y la calidad de tu recuperación."
           }
         }
       }
@@ -10540,7 +10540,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Llegan datos pero no se decodifican — repórtalo."
+            "value": "Llegan datos pero no se decodifican, repórtalo."
           }
         }
       }
@@ -10717,7 +10717,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Persistencia de un día a otro (r = %@, n = %lld) — la misma señal comparada consigo misma, así que no hay una significancia independiente que reportar."
+            "value": "Persistencia de un día a otro (r = %@, n = %lld), la misma señal comparada consigo misma, así que no hay una significancia independiente que reportar."
           }
         }
       }
@@ -11041,7 +11041,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Se deriva de tu frecuencia cardíaca en reposo y tu HRV nocturnas — un proxy transparente de la carga autonómica, no una medida clínica de estrés."
+            "value": "Se deriva de tu frecuencia cardíaca en reposo y tu HRV nocturnas, un proxy transparente de la carga autonómica, no una medida clínica de estrés."
           }
         }
       }
@@ -11914,7 +11914,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cada noche tu banda promedia la saturación de oxígeno medida en tu muñeca mientras duermes. Un adulto sano suele estar en 95–100%; lecturas por debajo de 90% se consideran bajas (hipoxemia). Las noches bajas aisladas suelen ser ruido — altitud, un resfriado, o cómo quedó el sensor. Una racha sostenida de noches bajas es lo que amerita revisarse con un oxímetro de dedo."
+            "value": "Cada noche tu banda promedia la saturación de oxígeno medida en tu muñeca mientras duermes. Un adulto sano suele estar en 95–100%; lecturas por debajo de 90% se consideran bajas (hipoxemia). Las noches bajas aisladas suelen ser ruido, altitud, un resfriado, o cómo quedó el sensor. Una racha sostenida de noches bajas es lo que amerita revisarse con un oxímetro de dedo."
           }
         }
       }
@@ -11931,7 +11931,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cada noche tu banda registra la temperatura de tu piel. La comparamos con una base móvil de tus propias noches recientes y reportamos la diferencia en °C — así el valor siempre es relativo a ti, no una temperatura absoluta. La tendencia y la dispersión se calculan de esa misma desviación nocturna."
+            "value": "Cada noche tu banda registra la temperatura de tu piel. La comparamos con una base móvil de tus propias noches recientes y reportamos la diferencia en °C, así el valor siempre es relativo a ti, no una temperatura absoluta. La tendencia y la dispersión se calculan de esa misma desviación nocturna."
           }
         }
       }
@@ -11965,7 +11965,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cada punto es la desviación de una noche respecto a tu base. La banda sombreada es tu propio vaivén típico de noche a noche (±1 DE alrededor de 0) — dentro de ella es lo normal; varias noches seguidas saliéndose por el mismo lado son la señal. El promedio y el rango salen del periodo que elijas; el chip compara el promedio de este mes con el del mes pasado, en °C."
+            "value": "Cada punto es la desviación de una noche respecto a tu base. La banda sombreada es tu propio vaivén típico de noche a noche (±1 DE alrededor de 0), dentro de ella es lo normal; varias noches seguidas saliéndose por el mismo lado son la señal. El promedio y el rango salen del periodo que elijas; el chip compara el promedio de este mes con el del mes pasado, en °C."
           }
         }
       }
@@ -11982,7 +11982,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cada punto es la desviación de una noche respecto a tu base. La banda sombreada es tu propio vaivén típico de noche a noche (±1 DE alrededor de 0) — dentro de ella es lo normal; varias noches seguidas saliéndose por el mismo lado son la señal. El promedio y el rango salen del periodo que elijas; el chip compara el promedio de este periodo con el del periodo anterior del mismo largo, en °C."
+            "value": "Cada punto es la desviación de una noche respecto a tu base. La banda sombreada es tu propio vaivén típico de noche a noche (±1 DE alrededor de 0), dentro de ella es lo normal; varias noches seguidas saliéndose por el mismo lado son la señal. El promedio y el rango salen del periodo que elijas; el chip compara el promedio de este periodo con el del periodo anterior del mismo largo, en °C."
           }
         }
       }
@@ -12016,7 +12016,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cada punto es tu índice de estrés diario. Las bandas detrás son las zonas fijas Bajo / Moderado / Alto (0–1 / 1–2 / 2–3). El porcentaje compara el promedio de este mes con el del mes pasado; Promedio, Mínimo y Máximo salen del rango que seleccionaste. Lo que importa no es un día suelto — son varios días seguidos subiendo de banda."
+            "value": "Cada punto es tu índice de estrés diario. Las bandas detrás son las zonas fijas Bajo / Moderado / Alto (0–1 / 1–2 / 2–3). El porcentaje compara el promedio de este mes con el del mes pasado; Promedio, Mínimo y Máximo salen del rango que seleccionaste. Lo que importa no es un día suelto, son varios días seguidos subiendo de banda."
           }
         }
       }
@@ -12060,7 +12060,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cada serie suma carga a los músculos que trabaja y decae a la mitad cada dos días — el curso de la síntesis de proteína muscular (MacDougall 1995). El color es relativo a tu músculo más cargado, así que lees cuáles de tus músculos están calientes ahora. El volumen semanal se compara con una banda de 10–20 series por músculo (Schoenfeld 2017). La recomendación lo cruza con la recuperación de tu banda: un día de baja recuperación lo manda todo a descansar."
+            "value": "Cada serie suma carga a los músculos que trabaja y decae a la mitad cada dos días, el curso de la síntesis de proteína muscular (MacDougall 1995). El color es relativo a tu músculo más cargado, así que lees cuáles de tus músculos están calientes ahora. El volumen semanal se compara con una banda de 10–20 series por músculo (Schoenfeld 2017). La recomendación lo cruza con la recuperación de tu banda: un día de baja recuperación lo manda todo a descansar."
           }
         }
       }
@@ -12094,7 +12094,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cada señal se convierte en un puntaje de qué tan por arriba o por abajo de tu promedio personal quedó (un z-score, en σ). Se promedian con pesos fijos —HRV 60%, FC en reposo 20%, sueño 15%, temperatura de la piel 10%, respiración 5%— y se mapean a una escala de 0 a 100, calibrada para que un día típico caiga cerca de 58. Si una señal falta una noche, su peso se reparte entre las demás."
+            "value": "Cada señal se convierte en un puntaje de qué tan por arriba o por abajo de tu promedio personal quedó (un z-score, en σ). Se promedian con pesos fijos, HRV 60%, FC en reposo 20%, sueño 15%, temperatura de la piel 10%, respiración 5%, y se mapean a una escala de 0 a 100, calibrada para que un día típico caiga cerca de 58. Si una señal falta una noche, su peso se reparte entre las demás."
           }
         }
       }
@@ -12145,7 +12145,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cada cuadro es un día, tintado por tu recuperación — rojo cuando es baja, ámbar en medio, verde cuando es alta. Los cuadros vacíos son días sin lectura. Es la forma de un vistazo de tus últimos tres meses. (Buchheit 2014)"
+            "value": "Cada cuadro es un día, tintado por tu recuperación, rojo cuando es baja, ámbar en medio, verde cuando es alta. Los cuadros vacíos son días sin lectura. Es la forma de un vistazo de tus últimos tres meses. (Buchheit 2014)"
           }
         }
       }
@@ -12356,7 +12356,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "El esfuerzo (escala 0–21) solo lo calcula tu banda — esta sesión no lo trae."
+            "value": "El esfuerzo (escala 0–21) solo lo calcula tu banda, esta sesión no lo trae."
           }
         }
       }
@@ -12795,7 +12795,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cada latido, cada noche, cada día — tejidos en un retrato silencioso de ti. Bienvenido a Cénit."
+            "value": "Cada latido, cada noche, cada día, tejidos en un retrato silencioso de ti. Bienvenido a Cénit."
           }
         }
       }
@@ -12812,7 +12812,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cada latido, cada noche, cada día — tejidos en un retrato silencioso de ti. Bienvenido a NOOP."
+            "value": "Cada latido, cada noche, cada día, tejidos en un retrato silencioso de ti. Bienvenido a NOOP."
           }
         }
       }
@@ -14579,7 +14579,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "La HRV es personal. No hay umbrales universales de bueno o malo —solo tu tendencia en el tiempo."
+            "value": "La HRV es personal. No hay umbrales universales de bueno o malo, solo tu tendencia en el tiempo."
           }
         }
       }
@@ -14722,7 +14722,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Esfuerzo fuerte hoy — buen trabajo."
+            "value": "Esfuerzo fuerte hoy, buen trabajo."
           }
         }
       }
@@ -15432,7 +15432,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Qué tan parecido es tu punto medio de sueño noche a noche — predice tu salud mejor que las horas totales."
+            "value": "Qué tan parecido es tu punto medio de sueño noche a noche, predice tu salud mejor que las horas totales."
           }
         }
       }
@@ -15449,7 +15449,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Qué tan parecidas son tus noches entre sí. «Estable» significa que se parecen unas a otras. Cuando tu HRV empieza a saltar de una noche a otra —aunque el promedio siga alto— suele adelantarse a la fatiga, antes de que el número baje."
+            "value": "Qué tan parecidas son tus noches entre sí. «Estable» significa que se parecen unas a otras. Cuando tu HRV empieza a saltar de una noche a otra, aunque el promedio siga alto, suele adelantarse a la fatiga, antes de que el número baje."
           }
         }
       }
@@ -15505,7 +15505,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Qué tanto se alejó la temperatura de tu piel anoche de tu propia base reciente, en °C. Aprendemos tu normal de las últimas noches, así que 0 es lo de siempre y el número es cuánto subió o bajó. Una sola noche cálida o fría rara vez significa algo — lo que vale la pena notar son varias noches seguidas moviéndose hacia el mismo lado. Es una señal de confort, no un termómetro ni un diagnóstico."
+            "value": "Qué tanto se alejó la temperatura de tu piel anoche de tu propia base reciente, en °C. Aprendemos tu normal de las últimas noches, así que 0 es lo de siempre y el número es cuánto subió o bajó. Una sola noche cálida o fría rara vez significa algo, lo que vale la pena notar son varias noches seguidas moviéndose hacia el mismo lado. Es una señal de confort, no un termómetro ni un diagnóstico."
           }
         }
       }
@@ -15590,7 +15590,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cuánto del último mes estuvo en la banda Baja (tiempo en calma — más es mejor), y qué tan constante es tu estrés diario semana a semana (su coeficiente de variación, CV — bajo = constante). Las bandas Baja / Moderada / Alta (0–1 / 1–2 / 2–3) son iguales para todos porque el índice ya está ajustado a tu propia línea base; se dibujan como la leyenda de la tendencia, abajo. (Plews 2013)"
+            "value": "Cuánto del último mes estuvo en la banda Baja (tiempo en calma, más es mejor), y qué tan constante es tu estrés diario semana a semana (su coeficiente de variación, CV, bajo = constante). Las bandas Baja / Moderada / Alta (0–1 / 1–2 / 2–3) son iguales para todos porque el índice ya está ajustado a tu propia línea base; se dibujan como la leyenda de la tendencia, abajo. (Plews 2013)"
           }
         }
       }
@@ -15997,7 +15997,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mantengo este proyecto anónimo, así que las cripto son la única forma de cooperar — sin Patreon, sin PayPal, sin nombres. Rápido, global y privado para ambos."
+            "value": "Mantengo este proyecto anónimo, así que las cripto son la única forma de cooperar, sin Patreon, sin PayPal, sin nombres. Rápido, global y privado para ambos."
           }
         }
       }
@@ -16076,7 +16076,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aún estoy aprendiendo tu ritmo — necesito unos días de lecturas de vigilia para marcar tus picos. Tus eventos ya están aquí."
+            "value": "Aún estoy aprendiendo tu ritmo, necesito unos días de lecturas de vigilia para marcar tus picos. Tus eventos ya están aquí."
           }
         }
       }
@@ -16093,7 +16093,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aún estoy aprendiendo tu horario: con %lld noches más sabré qué tan regular es tu punto medio de sueño — el dato que predice tu salud mejor que las horas."
+            "value": "Aún estoy aprendiendo tu horario: con %lld noches más sabré qué tan regular es tu punto medio de sueño, el dato que predice tu salud mejor que las horas."
           }
         }
       }
@@ -16335,7 +16335,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Importar sobrescribe todo lo que hay actualmente en Cénit. Tus datos anteriores se guardan en un archivo aparte por si acaso. Cénit necesita reiniciarse para que una importación surta efecto. Exportar CSV genera un zip en formato WHOOP de tus días, noches, entrenamientos y diario que se vuelve a importar en Cénit — las filas calculadas en el dispositivo se marcan como APROXIMADAS en su columna Origen; el respaldo completo sigue siendo la vía de restauración sin pérdidas."
+            "value": "Importar sobrescribe todo lo que hay actualmente en Cénit. Tus datos anteriores se guardan en un archivo aparte por si acaso. Cénit necesita reiniciarse para que una importación surta efecto. Exportar CSV genera un zip en formato WHOOP de tus días, noches, entrenamientos y diario que se vuelve a importar en Cénit, las filas calculadas en el dispositivo se marcan como APROXIMADAS en su columna Origen; el respaldo completo sigue siendo la vía de restauración sin pérdidas."
           }
         }
       }
@@ -16386,7 +16386,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Importar sobrescribe todo lo que hay actualmente en esta Mac. Tus datos anteriores se guardan en un archivo aparte por si acaso. NOOP necesita reiniciarse para que una importación surta efecto. Exportar CSV genera un zip en formato WHOOP de tus días, noches, entrenamientos y diario que se vuelve a importar en NOOP en Mac o Android — las filas calculadas en el dispositivo se marcan como APROXIMADAS en su columna Origen; el respaldo completo sigue siendo la vía de restauración sin pérdidas."
+            "value": "Importar sobrescribe todo lo que hay actualmente en esta Mac. Tus datos anteriores se guardan en un archivo aparte por si acaso. NOOP necesita reiniciarse para que una importación surta efecto. Exportar CSV genera un zip en formato WHOOP de tus días, noches, entrenamientos y diario que se vuelve a importar en NOOP en Mac o Android, las filas calculadas en el dispositivo se marcan como APROXIMADAS en su columna Origen; el respaldo completo sigue siendo la vía de restauración sin pérdidas."
           }
         }
       }
@@ -17215,7 +17215,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Parece que no hay datos en este dispositivo. Si ya usaste Cénit antes — en este teléfono u otro — restaura el historial de tu banda y tus ajustes desde un respaldo en iCloud Drive."
+            "value": "Parece que no hay datos en este dispositivo. Si ya usaste Cénit antes, en este teléfono u otro, restaura el historial de tu banda y tus ajustes desde un respaldo en iCloud Drive."
           }
         }
       }
@@ -17232,7 +17232,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Parece que no hay datos en este dispositivo. Si ya usaste NOOP antes — en este teléfono u otro — restaura el historial de tu banda y tus ajustes desde un respaldo en iCloud Drive."
+            "value": "Parece que no hay datos en este dispositivo. Si ya usaste NOOP antes, en este teléfono u otro, restaura el historial de tu banda y tus ajustes desde un respaldo en iCloud Drive."
           }
         }
       }
@@ -17360,7 +17360,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Está cargada y puesta — el sensor despierta con la piel."
+            "value": "Está cargada y puesta, el sensor despierta con la piel."
           }
         }
       }
@@ -17575,7 +17575,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sigue usando la banda unas noches y aparece sola — no mostramos un número a medias."
+            "value": "Sigue usando la banda unas noches y aparece sola, no mostramos un número a medias."
           }
         }
       }
@@ -17934,7 +17934,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Última sincronización — nunca"
+            "value": "Última sincronización, nunca"
           }
         }
       }
@@ -18112,7 +18112,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aprendiendo tu línea base — %lld de %lld noches."
+            "value": "Aprendiendo tu línea base, %lld de %lld noches."
           }
         }
       }
@@ -18288,7 +18288,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Carga ligera hoy — te queda mucho en el tanque."
+            "value": "Carga ligera hoy, te queda mucho en el tanque."
           }
         }
       }
@@ -18382,7 +18382,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "La FC en vivo funciona — libera la banda para desbloquear vibración, alarmas y sincronización"
+            "value": "La FC en vivo funciona, libera la banda para desbloquear vibración, alarmas y sincronización"
           }
         }
       }
@@ -18410,7 +18410,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "La frecuencia cardiaca en vivo ya funciona en una banda WHOOP 5/MG. Estas sondas van más allá e intentan sacarle más. Son conjeturas, vienen apagadas por defecto y solo tocan una banda 5/MG — WHOOP 4.0 nunca se ve afectada."
+            "value": "La frecuencia cardiaca en vivo ya funciona en una banda WHOOP 5/MG. Estas sondas van más allá e intentan sacarle más. Son conjeturas, vienen apagadas por defecto y solo tocan una banda 5/MG, WHOOP 4.0 nunca se ve afectada."
           }
         }
       }
@@ -18427,7 +18427,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Solo frecuencia en vivo — completa el emparejamiento seguro para guardar lo demás"
+            "value": "Solo frecuencia en vivo, completa el emparejamiento seguro para guardar lo demás"
           }
         }
       }
@@ -18611,7 +18611,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Registra comportamientos arriba — tras unos días de respuestas, Cénit clasifica cómo cada uno mueve tu recuperación, HRV y sueño. Importar una exportación de WHOOP (que incluye su diario) rellena el historial al instante."
+            "value": "Registra comportamientos arriba, tras unos días de respuestas, Cénit clasifica cómo cada uno mueve tu recuperación, HRV y sueño. Importar una exportación de WHOOP (que incluye su diario) rellena el historial al instante."
           }
         }
       }
@@ -18628,7 +18628,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Registra comportamientos arriba — tras unos días de respuestas, NOOP clasifica cómo cada uno mueve tu recuperación, HRV y sueño. Importar una exportación de WHOOP (que incluye su diario) rellena el historial al instante."
+            "value": "Registra comportamientos arriba, tras unos días de respuestas, NOOP clasifica cómo cada uno mueve tu recuperación, HRV y sueño. Importar una exportación de WHOOP (que incluye su diario) rellena el historial al instante."
           }
         }
       }
@@ -18839,7 +18839,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Baja — hoy prioriza el descanso."
+            "value": "Baja, hoy prioriza el descanso."
           }
         }
       }
@@ -18982,7 +18982,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Haz que la banda haga cosas — toca para actuar, entrena por sensación, despierta con un zumbido."
+            "value": "Haz que la banda haga cosas, toca para actuar, entrena por sensación, despierta con un zumbido."
           }
         }
       }
@@ -19579,7 +19579,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lo mide tu Apple Watch en caminatas y carreras al aire libre — la banda WHOOP no lo registra."
+            "value": "Lo mide tu Apple Watch en caminatas y carreras al aire libre, la banda WHOOP no lo registra."
           }
         }
       }
@@ -20204,7 +20204,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mueve todos tus datos de Cénit a otra máquina. Exportar guarda todo — historial, sueño, entrenamientos, ajustes — en un solo archivo que puedes copiar; importar reemplaza los datos de esta Mac con un respaldo."
+            "value": "Mueve todos tus datos de Cénit a otra máquina. Exportar guarda todo, historial, sueño, entrenamientos, ajustes, en un solo archivo que puedes copiar; importar reemplaza los datos de esta Mac con un respaldo."
           }
         }
       }
@@ -20221,7 +20221,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mueve todos tus datos de NOOP a otra máquina. Exportar guarda todo — historial, sueño, entrenamientos, ajustes — en un solo archivo que puedes copiar; importar reemplaza los datos de esta Mac con un respaldo."
+            "value": "Mueve todos tus datos de NOOP a otra máquina. Exportar guarda todo, historial, sueño, entrenamientos, ajustes, en un solo archivo que puedes copiar; importar reemplaza los datos de esta Mac con un respaldo."
           }
         }
       }
@@ -20495,7 +20495,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "NOOP se empareja directamente con tu WHOOP por Bluetooth — sin la app de WHOOP, sin nube."
+            "value": "NOOP se empareja directamente con tu WHOOP por Bluetooth, sin la app de WHOOP, sin nube."
           }
         }
       }
@@ -20512,7 +20512,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "NOOP calcula por sí mismo tu recuperación, esfuerzo y sueño — en el dispositivo, sin nube."
+            "value": "NOOP calcula por sí mismo tu recuperación, esfuerzo y sueño, en el dispositivo, sin nube."
           }
         }
       }
@@ -20529,7 +20529,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "NOOP — todos tus datos, nada de nube."
+            "value": "NOOP, todos tus datos, nada de nube."
           }
         }
       }
@@ -20579,7 +20579,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Necesita al menos 14 días de historial. Cuando dos o más señales se desvían juntas, recibes una notificación — máximo una vez al día."
+            "value": "Necesita al menos 14 días de historial. Cuando dos o más señales se desvían juntas, recibes una notificación, máximo una vez al día."
           }
         }
       }
@@ -21139,7 +21139,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hoy no hay eventos ni lecturas de estrés todavía — tu curva se llena conforme tu banda sincroniza."
+            "value": "Hoy no hay eventos ni lecturas de estrés todavía, tu curva se llena conforme tu banda sincroniza."
           }
         }
       }
@@ -21221,7 +21221,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aún no hay noches aquí. Importa tu exportación de WHOOP — o conecta Apple Health — en Fuentes de datos para ver tus etapas de sueño y tendencias. O abre Inteligencia para ver la noche anterior calculada desde la banda después de dormir con ella."
+            "value": "Aún no hay noches aquí. Importa tu exportación de WHOOP, o conecta Apple Health, en Fuentes de datos para ver tus etapas de sueño y tendencias. O abre Inteligencia para ver la noche anterior calculada desde la banda después de dormir con ella."
           }
         }
       }
@@ -21238,7 +21238,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aún no hay noches. Importa tu exportación de WHOOP — o conecta Apple Salud — en Fuentes de datos para ver tus etapas y tendencias de sueño. O usa la banda al dormir y ábrelo de nuevo cuando la banda se sincronice."
+            "value": "Aún no hay noches. Importa tu exportación de WHOOP, o conecta Apple Salud, en Fuentes de datos para ver tus etapas y tendencias de sueño. O usa la banda al dormir y ábrelo de nuevo cuando la banda se sincronice."
           }
         }
       }
@@ -21331,7 +21331,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aún no hay lectura de anoche — abajo está tu historial reciente."
+            "value": "Aún no hay lectura de anoche, abajo está tu historial reciente."
           }
         }
       }
@@ -21348,7 +21348,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sin lectura en los últimos días. Usa tu banda de noche y se actualizará cuando sincronice — tu historial está abajo."
+            "value": "Sin lectura en los últimos días. Usa tu banda de noche y se actualizará cuando sincronice, tu historial está abajo."
           }
         }
       }
@@ -21458,7 +21458,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aún no hay recuperación. Usa tu banda de noche y vuelve a abrir esto cuando sincronice — o importa tu historial de WHOOP en Fuentes de datos."
+            "value": "Aún no hay recuperación. Usa tu banda de noche y vuelve a abrir esto cuando sincronice, o importa tu historial de WHOOP en Fuentes de datos."
           }
         }
       }
@@ -21539,7 +21539,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aún no registras series — terminar va a descartar este entreno."
+            "value": "Aún no registras series, terminar va a descartar este entreno."
           }
         }
       }
@@ -21589,7 +21589,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aún no hay esfuerzo de hoy — abajo está tu historial reciente."
+            "value": "Aún no hay esfuerzo de hoy, abajo está tu historial reciente."
           }
         }
       }
@@ -21655,7 +21655,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aún no hay lectura de estrés. Usa tu banda de noche y vuelve a abrir esto cuando sincronice — o importa tu historial de WHOOP en Fuentes de datos. El estrés se lee de tu frecuencia en reposo y tu HRV."
+            "value": "Aún no hay lectura de estrés. Usa tu banda de noche y vuelve a abrir esto cuando sincronice, o importa tu historial de WHOOP en Fuentes de datos. El estrés se lee de tu frecuencia en reposo y tu HRV."
           }
         }
       }
@@ -21697,7 +21697,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aún no hay entrenamientos. Vienen de tu historial de WHOOP y Apple Health. Impórtalos en Fuentes de datos — o agrega uno que mediste en otro lado."
+            "value": "Aún no hay entrenamientos. Vienen de tu historial de WHOOP y Apple Health. Impórtalos en Fuentes de datos, o agrega uno que mediste en otro lado."
           }
         }
       }
@@ -21894,7 +21894,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aún no hay suficientes datos — sigue usando tu banda y vuelve en unas semanas."
+            "value": "Aún no hay suficientes datos, sigue usando tu banda y vuelve en unas semanas."
           }
         }
       }
@@ -22230,7 +22230,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nada confirmado aún — tus experimentos caerán aquí."
+            "value": "Nada confirmado aún, tus experimentos caerán aquí."
           }
         }
       }
@@ -22263,7 +22263,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nada está flaqueando. Entrena según te sientas — tu cuerpo se mantiene estable."
+            "value": "Nada está flaqueando. Entrena según te sientas, tu cuerpo se mantiene estable."
           }
         }
       }
@@ -22387,7 +22387,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apagado — el Coach responde de forma general y no envía ninguna de tus métricas."
+            "value": "Apagado, el Coach responde de forma general y no envía ninguna de tus métricas."
           }
         }
       }
@@ -22433,7 +22433,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "En WHOOP 5/MG esto es experimental — el armado está confirmado, pero aún no se ha verificado un despertar accionado por la banda, así que no dependas de ella como tu única alarma ahí. WHOOP 4 es la vía probada."
+            "value": "En WHOOP 5/MG esto es experimental, el armado está confirmado, pero aún no se ha verificado un despertar accionado por la banda, así que no dependas de ella como tu única alarma ahí. WHOOP 4 es la vía probada."
           }
         }
       }
@@ -22653,7 +22653,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "En tus días con %1$@, tu %2$@ promedió %3$lld — contra %4$lld sin."
+            "value": "En tus días con %1$@, tu %2$@ promedió %3$lld, contra %4$lld sin."
           }
         }
       }
@@ -22686,7 +22686,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Encendido — tu recuperación, sueño, HRV y entrenamientos se comparten con el proveedor para un coaching a tu medida."
+            "value": "Encendido, tu recuperación, sueño, HRV y entrenamientos se comparten con el proveedor para un coaching a tu medida."
           }
         }
       }
@@ -22712,7 +22712,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Una vez que Cénit tiene 14 noches de historial, «en rango» compara cada vital con tu propia línea base (aproximado — no es consejo médico); hasta entonces, aplican los rangos típicos de un adulto."
+            "value": "Una vez que Cénit tiene 14 noches de historial, «en rango» compara cada vital con tu propia línea base (aproximado, no es consejo médico); hasta entonces, aplican los rangos típicos de un adulto."
           }
         }
       }
@@ -22729,7 +22729,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Una vez que NOOP tiene 14 noches de historial, «en rango» compara cada vital con tu propia línea base (aproximado — no es consejo médico); hasta entonces, aplican los rangos típicos de un adulto."
+            "value": "Una vez que NOOP tiene 14 noches de historial, «en rango» compara cada vital con tu propia línea base (aproximado, no es consejo médico); hasta entonces, aplican los rangos típicos de un adulto."
           }
         }
       }
@@ -22797,7 +22797,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Una comida tiene días inválidos — usa números de día 1–7. Revisa el archivo e inténtalo de nuevo."
+            "value": "Una comida tiene días inválidos, usa números de día 1–7. Revisa el archivo e inténtalo de nuevo."
           }
         }
       }
@@ -22937,7 +22937,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Solo una lectura en este rango — aún no alcanza para trazar una línea."
+            "value": "Solo una lectura en este rango, aún no alcanza para trazar una línea."
           }
         }
       }
@@ -23107,7 +23107,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Abre la página de versiones de GitHub en tu navegador. Cénit en sí no hace conexiones de red — el sandbox de macOS no tiene permiso de red."
+            "value": "Abre la página de versiones de GitHub en tu navegador. Cénit en sí no hace conexiones de red, el sandbox de macOS no tiene permiso de red."
           }
         }
       }
@@ -23124,7 +23124,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Abre la página de versiones de GitHub en tu navegador. NOOP en sí no hace conexiones de red — el sandbox de macOS no tiene permiso de red."
+            "value": "Abre la página de versiones de GitHub en tu navegador. NOOP en sí no hace conexiones de red, el sandbox de macOS no tiene permiso de red."
           }
         }
       }
@@ -23660,7 +23660,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Se vincula directo con tu banda por Bluetooth — sin app de WHOOP, sin nube."
+            "value": "Se vincula directo con tu banda por Bluetooth, sin app de WHOOP, sin nube."
           }
         }
       }
@@ -24022,7 +24022,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "La Edad física mide solo el lado cardiorrespiratorio. Esta también pesa sueño, regularidad, HRV y pasos — por eso pueden no coincidir."
+            "value": "La Edad física mide solo el lado cardiorrespiratorio. Esta también pesa sueño, regularidad, HRV y pasos, por eso pueden no coincidir."
           }
         }
       }
@@ -24056,7 +24056,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Elige una carpeta en iCloud Drive y Cénit guarda ahí una copia fresca de todos tus datos. El historial de tu banda vive solo dentro de la app, así que esto es lo que lo protege si reinstalas Cénit o cambias de teléfono. Usa tu propio iCloud Drive — basta con un Apple ID gratis."
+            "value": "Elige una carpeta en iCloud Drive y Cénit guarda ahí una copia fresca de todos tus datos. El historial de tu banda vive solo dentro de la app, así que esto es lo que lo protege si reinstalas Cénit o cambias de teléfono. Usa tu propio iCloud Drive, basta con un Apple ID gratis."
           }
         }
       }
@@ -24073,7 +24073,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Elige una carpeta en iCloud Drive y NOOP guarda ahí una copia fresca de todos tus datos. El historial de tu banda vive solo dentro de la app, así que esto es lo que lo protege si reinstalas NOOP o cambias de teléfono. Usa tu propio iCloud Drive — basta con un Apple ID gratis."
+            "value": "Elige una carpeta en iCloud Drive y NOOP guarda ahí una copia fresca de todos tus datos. El historial de tu banda vive solo dentro de la app, así que esto es lo que lo protege si reinstalas NOOP o cambias de teléfono. Usa tu propio iCloud Drive, basta con un Apple ID gratis."
           }
         }
       }
@@ -24221,7 +24221,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Automatización de presencia — activa un modo de Concentración, pausa el audio, márcate ausente…"
+            "value": "Automatización de presencia, activa un modo de Concentración, pausa el audio, márcate ausente…"
           }
         }
       }
@@ -24389,7 +24389,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Proporciones, no minutos — el reloj acierta unas 2 de cada 3 etapas."
+            "value": "Proporciones, no minutos, el reloj acierta unas 2 de cada 3 etapas."
           }
         }
       }
@@ -24574,7 +24574,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Preguntas, comentarios, errores — %@"
+            "value": "Preguntas, comentarios, errores, %@"
           }
         }
       }
@@ -25103,7 +25103,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Listo cuando tu pulso vuelve cerca de tu reposo — tu banda lo lee."
+            "value": "Listo cuando tu pulso vuelve cerca de tu reposo, tu banda lo lee."
           }
         }
       }
@@ -25466,7 +25466,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recuperándote — entrena, pero con cabeza."
+            "value": "Recuperándote, entrena, pero con cabeza."
           }
         }
       }
@@ -25615,7 +25615,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "La recuperación combina varias señales de tu sistema nervioso —tu HRV sobre todo, más la frecuencia cardiaca en reposo, el sueño y la respiración— y las compara con tu propia base de las últimas semanas. Es una estimación de qué tan listo está tu cuerpo hoy, no un diagnóstico. (Buchheit 2014)"
+            "value": "La recuperación combina varias señales de tu sistema nervioso, tu HRV sobre todo, más la frecuencia cardiaca en reposo, el sueño y la respiración, y las compara con tu propia base de las últimas semanas. Es una estimación de qué tan listo está tu cuerpo hoy, no un diagnóstico. (Buchheit 2014)"
           }
         }
       }
@@ -25813,7 +25813,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "La recuperación pondera tu HRV contra tu línea base personal (~60%), la frecuencia cardiaca en reposo (~20%), el rendimiento de sueño (~15%) y la respiración (~5%). El esfuerzo del día es una carga cardiovascular de 0 a 21 según el tiempo en zonas de frecuencia cardiaca. El sueño se clasifica por etapas a partir del movimiento y la frecuencia cardiaca. Todo se calcula aquí con los datos crudos de la banda — funciona para cualquier día en que Cénit haya recolectado datos."
+            "value": "La recuperación pondera tu HRV contra tu línea base personal (~60%), la frecuencia cardiaca en reposo (~20%), el rendimiento de sueño (~15%) y la respiración (~5%). El esfuerzo del día es una carga cardiovascular de 0 a 21 según el tiempo en zonas de frecuencia cardiaca. El sueño se clasifica por etapas a partir del movimiento y la frecuencia cardiaca. Todo se calcula aquí con los datos crudos de la banda, funciona para cualquier día en que Cénit haya recolectado datos."
           }
         }
       }
@@ -25830,7 +25830,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "La recuperación pondera tu HRV contra tu línea base personal (~60%), la frecuencia cardiaca en reposo (~20%), el rendimiento de sueño (~15%) y la respiración (~5%). El esfuerzo del día es una carga cardiovascular de 0 a 21 según el tiempo en zonas de frecuencia cardiaca. El sueño se clasifica por etapas a partir del movimiento y la frecuencia cardiaca. Todo se calcula aquí con los datos crudos de la banda — funciona para cualquier día en que NOOP haya recolectado datos."
+            "value": "La recuperación pondera tu HRV contra tu línea base personal (~60%), la frecuencia cardiaca en reposo (~20%), el rendimiento de sueño (~15%) y la respiración (~5%). El esfuerzo del día es una carga cardiovascular de 0 a 21 según el tiempo en zonas de frecuencia cardiaca. El sueño se clasifica por etapas a partir del movimiento y la frecuencia cardiaca. Todo se calcula aquí con los datos crudos de la banda, funciona para cualquier día en que NOOP haya recolectado datos."
           }
         }
       }
@@ -25924,7 +25924,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Referencia: Kaminsky et al., Registro FRIEND (Mayo Clin Proc 2015). Asociación con longevidad: Mandsager et al. (JAMA 2018), Kodama et al. (JAMA 2009). Es una referencia poblacional aproximada, no una medición clínica — NOOP no es un dispositivo médico."
+            "value": "Referencia: Kaminsky et al., Registro FRIEND (Mayo Clin Proc 2015). Asociación con longevidad: Mandsager et al. (JAMA 2018), Kodama et al. (JAMA 2009). Es una referencia poblacional aproximada, no una medición clínica, NOOP no es un dispositivo médico."
           }
         }
       }
@@ -26006,7 +26006,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "La regularidad es la variabilidad noche a noche de tu punto medio de sueño (el punto medio entre dormirte y despertar) — un horario más parejo predice tu salud con más fuerza que cuánto duermes. Las siestas no cuentan: solo tu noche principal (de al menos 3 h) entra en la regularidad. Las etapas se estiman del movimiento, la frecuencia cardíaca y la HRV, así que son aproximadas; el sueño profundo repara el cuerpo, el REM consolida memoria y emociones. La «necesidad» es un objetivo poblacional de 7–9 h, no una medición tuya."
+            "value": "La regularidad es la variabilidad noche a noche de tu punto medio de sueño (el punto medio entre dormirte y despertar), un horario más parejo predice tu salud con más fuerza que cuánto duermes. Las siestas no cuentan: solo tu noche principal (de al menos 3 h) entra en la regularidad. Las etapas se estiman del movimiento, la frecuencia cardíaca y la HRV, así que son aproximadas; el sueño profundo repara el cuerpo, el REM consolida memoria y emociones. La «necesidad» es un objetivo poblacional de 7–9 h, no una medición tuya."
           }
         }
       }
@@ -26538,7 +26538,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Día libre — tu plan no tiene comidas hoy. Vuelve mañana o usa ‹ ›."
+            "value": "Día libre, tu plan no tiene comidas hoy. Vuelve mañana o usa ‹ ›."
           }
         }
       }
@@ -26695,7 +26695,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "La FC en reposo está elevada y la HRV está por debajo de tu línea base — dos señales clásicas de alta activación. Prioriza el descanso, la hidratación y un día tranquilo."
+            "value": "La FC en reposo está elevada y la HRV está por debajo de tu línea base, dos señales clásicas de alta activación. Prioriza el descanso, la hidratación y un día tranquilo."
           }
         }
       }
@@ -26777,7 +26777,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "La frecuencia cardiaca en reposo y la HRV están en tu línea base o por debajo — estrés fisiológico bajo. Estás en un estado tranquilo y recuperado."
+            "value": "La frecuencia cardiaca en reposo y la HRV están en tu línea base o por debajo, estrés fisiológico bajo. Estás en un estado tranquilo y recuperado."
           }
         }
       }
@@ -26793,7 +26793,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "La frecuencia cardiaca en reposo está baja y la HRV alta — tu sistema nervioso se ve recuperado y en calma. Un gran día para exigirte si quieres."
+            "value": "La frecuencia cardiaca en reposo está baja y la HRV alta, tu sistema nervioso se ve recuperado y en calma. Un gran día para exigirte si quieres."
           }
         }
       }
@@ -26809,7 +26809,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "La frecuencia cardiaca en reposo anda alta respecto a tu norma — tu cuerpo está bajo carga hoy. Mantén el esfuerzo ligero."
+            "value": "La frecuencia cardiaca en reposo anda alta respecto a tu norma, tu cuerpo está bajo carga hoy. Mantén el esfuerzo ligero."
           }
         }
       }
@@ -27260,7 +27260,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ejecuta un atajo cuando te quitas o te pones la banda — activa un modo de Concentración, pausa el audio, márcate ausente."
+            "value": "Ejecuta un atajo cuando te quitas o te pones la banda, activa un modo de Concentración, pausa el audio, márcate ausente."
           }
         }
       }
@@ -27566,7 +27566,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Guarda cada frame crudo 5/MG (con marca de tiempo y la frecuencia cardiaca en vivo) en un archivo JSON que puedes compartir para ayudar a mapear el formato biométrico. Solo graba frames que la banda ya envió — nunca escribe en tu banda — así que es seguro dejarlo encendido. Exporta el archivo y adjúntalo a un issue de mapeo de protocolo."
+            "value": "Guarda cada frame crudo 5/MG (con marca de tiempo y la frecuencia cardiaca en vivo) en un archivo JSON que puedes compartir para ayudar a mapear el formato biométrico. Solo graba frames que la banda ya envió, nunca escribe en tu banda, así que es seguro dejarlo encendido. Exporta el archivo y adjúntalo a un issue de mapeo de protocolo."
           }
         }
       }
@@ -28341,7 +28341,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Varias señales están bajas a la vez. Toma hoy como recuperación — movimiento ligero y buen sueño esta noche."
+            "value": "Varias señales están bajas a la vez. Toma hoy como recuperación, movimiento ligero y buen sueño esta noche."
           }
         }
       }
@@ -28390,7 +28390,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Proporción del tiempo en zona importado, ponderado por duración entre sesiones — aproximado."
+            "value": "Proporción del tiempo en zona importado, ponderado por duración entre sesiones, aproximado."
           }
         }
       }
@@ -28489,7 +28489,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Noche corta — confianza baja"
+            "value": "Noche corta, confianza baja"
           }
         }
       }
@@ -28666,7 +28666,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "HIIT háptico silencioso — la banda vibra en las transiciones"
+            "value": "HIIT háptico silencioso, la banda vibra en las transiciones"
           }
         }
       }
@@ -28683,7 +28683,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Esfuerzo parecido casi todos los días — un poco de variedad ayuda."
+            "value": "Esfuerzo parecido casi todos los días, un poco de variedad ayuda."
           }
         }
       }
@@ -29111,7 +29111,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ligeramente fuera de tu línea base — %@ — así que estás moderadamente activado. Nada alarmante; solo no te excedas."
+            "value": "Ligeramente fuera de tu línea base, %@, así que estás moderadamente activado. Nada alarmante; solo no te excedas."
           }
         }
       }
@@ -29356,7 +29356,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pocos datos — ampliado a %@ · %lld lecturas"
+            "value": "Pocos datos, ampliado a %@ · %lld lecturas"
           }
         }
       }
@@ -29877,7 +29877,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Los pasos vienen de Apple Salud — el strap WHOOP no los registra. El detalle toma el total de cada día y lo suaviza en una tendencia de 7 días, para que los altibajos entre semana y fin de semana no tapen hacia dónde vas. La investigación asocia entre 7,000 y 9,000 pasos al día con menor mortalidad, y el beneficio se aplana más allá de eso: no hay nada mágico en los 10,000 exactos."
+            "value": "Los pasos vienen de Apple Salud, el strap WHOOP no los registra. El detalle toma el total de cada día y lo suaviza en una tendencia de 7 días, para que los altibajos entre semana y fin de semana no tapen hacia dónde vas. La investigación asocia entre 7,000 y 9,000 pasos al día con menor mortalidad, y el beneficio se aplana más allá de eso: no hay nada mágico en los 10,000 exactos."
           }
         }
       }
@@ -29945,7 +29945,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pasos, corazón, sueño, composición corporal y VO₂ máx — leídos localmente en este iPhone."
+            "value": "Pasos, corazón, sueño, composición corporal y VO₂ máx, leídos localmente en este iPhone."
           }
         }
       }
@@ -30472,7 +30472,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "El estrés sube cuando tu frecuencia en reposo está más alta de lo usual O tu HRV cae por debajo de lo usual — ambas son señales clásicas de que tu sistema nervioso está activado. Medimos cada una contra tu propia base de 30 días. RMSSD para la HRV (Task Force, 1996)."
+            "value": "El estrés sube cuando tu frecuencia en reposo está más alta de lo usual O tu HRV cae por debajo de lo usual, ambas son señales clásicas de que tu sistema nervioso está activado. Medimos cada una contra tu propia base de 30 días. RMSSD para la HRV (Task Force, 1996)."
           }
         }
       }
@@ -30718,7 +30718,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apoya a Cénit — dona o ponte en contacto"
+            "value": "Apoya a Cénit, dona o ponte en contacto"
           }
         }
       }
@@ -30735,7 +30735,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apoya a NOOP — dona o ponte en contacto"
+            "value": "Apoya a NOOP, dona o ponte en contacto"
           }
         }
       }
@@ -30824,7 +30824,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sincroniza las últimas semanas en ambos sentidos, en el dispositivo: Cénit lee tu FC, HRV, sueño, SpO₂ y pasos de Apple Health, y escribe de vuelta sus propias métricas derivadas de la banda. Estrictamente opcional — nada sale de tu iPhone. (Para un historial masivo de una vez, usa la importación de export de arriba.)"
+            "value": "Sincroniza las últimas semanas en ambos sentidos, en el dispositivo: Cénit lee tu FC, HRV, sueño, SpO₂ y pasos de Apple Health, y escribe de vuelta sus propias métricas derivadas de la banda. Estrictamente opcional, nada sale de tu iPhone. (Para un historial masivo de una vez, usa la importación de export de arriba.)"
           }
         }
       }
@@ -31412,7 +31412,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "El ciclo de ese plan no es válido — debe ser diario o semanal."
+            "value": "El ciclo de ese plan no es válido, debe ser diario o semanal."
           }
         }
       }
@@ -31446,7 +31446,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "El cociente de carga aguda:crónica (tu última semana vs tu último mes) y la monotonía describen cómo viene tu carga. Son contexto para tu recuperación — NO predicen lesiones; esa evidencia no se sostiene. (Impellizzeri 2020)"
+            "value": "El cociente de carga aguda:crónica (tu última semana vs tu último mes) y la monotonía describen cómo viene tu carga. Son contexto para tu recuperación, NO predicen lesiones; esa evidencia no se sostiene. (Impellizzeri 2020)"
           }
         }
       }
@@ -31548,7 +31548,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "El motor se afina cada noche — ya llevas %lld."
+            "value": "El motor se afina cada noche, ya llevas %lld."
           }
         }
       }
@@ -31721,7 +31721,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "La línea muestra cómo se fue acumulando tu esfuerzo durante el día — cada segundo de frecuencia cardiaca suma al total, así que solo sube. Termina en tu puntaje de hoy, arriba."
+            "value": "La línea muestra cómo se fue acumulando tu esfuerzo durante el día, cada segundo de frecuencia cardiaca suma al total, así que solo sube. Termina en tu puntaje de hoy, arriba."
           }
         }
       }
@@ -31835,7 +31835,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "El máximo de oxígeno que tu cuerpo puede usar en ejercicio intenso, por kilo de peso. Es la mejor medida de tu condición cardiorrespiratoria — y uno de los predictores de salud a largo plazo mejor fundamentados."
+            "value": "El máximo de oxígeno que tu cuerpo puede usar en ejercicio intenso, por kilo de peso. Es la mejor medida de tu condición cardiorrespiratoria, y uno de los predictores de salud a largo plazo mejor fundamentados."
           }
         }
       }
@@ -31885,7 +31885,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "El idioma del plan no es compatible — debe ser español o inglés."
+            "value": "El idioma del plan no es compatible, debe ser español o inglés."
           }
         }
       }
@@ -31902,7 +31902,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "La unidad del plan no es compatible — debe ser kg o lb."
+            "value": "La unidad del plan no es compatible, debe ser kg o lb."
           }
         }
       }
@@ -31950,7 +31950,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "El creador de rutinas —elige ejercicios, define tus series de trabajo y guarda rutinas reutilizables o empieza desde una plantilla— llega en una próxima actualización."
+            "value": "El creador de rutinas, elige ejercicios, define tus series de trabajo y guarda rutinas reutilizables o empieza desde una plantilla, llega en una próxima actualización."
           }
         }
       }
@@ -31984,7 +31984,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "La proporción de tus días recientes que cayeron en la banda Baja (menos de 1.0). Más alto es mejor — significa que tu cuerpo tuvo margen para recuperarse. Es un conteo de días, no una medida de qué tan bajo llegó un día en particular."
+            "value": "La proporción de tus días recientes que cayeron en la banda Baja (menos de 1.0). Más alto es mejor, significa que tu cuerpo tuvo margen para recuperarse. Es un conteo de días, no una medida de qué tan bajo llegó un día en particular."
           }
         }
       }
@@ -32062,7 +32062,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "La desviación estándar de tus desviaciones nocturnas — cuánto se mueve la temperatura de tu piel alrededor de tu base de noche a noche, en °C. Un número chico significa una termorregulación estable; uno más grande, más vaivén de noche a noche. (Mostramos la dispersión en °C y no en porcentaje porque el promedio queda cerca de cero, donde un porcentaje no significaría nada.)"
+            "value": "La desviación estándar de tus desviaciones nocturnas, cuánto se mueve la temperatura de tu piel alrededor de tu base de noche a noche, en °C. Un número chico significa una termorregulación estable; uno más grande, más vaivén de noche a noche. (Mostramos la dispersión en °C y no en porcentaje porque el promedio queda cerca de cero, donde un porcentaje no significaría nada.)"
           }
         }
       }
@@ -32122,7 +32122,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Las barras «vs tu base» muestran la desviación de cada señal en σ (por encima de tu base = derecha). La VFC, la frecuencia cardiaca en reposo y la respiración se miden así (z-score); el sueño y la temperatura de la piel no tienen σ, así que muestran su estado, no una posición. Tu rango normal es tu promedio reciente ± una σ. La estabilidad es el coeficiente de variación (CV). La carga de entrenamiento es la razón aguda:crónica (ACWR) — contexto para la recuperación, nunca una afirmación de lesión."
+            "value": "Las barras «vs tu base» muestran la desviación de cada señal en σ (por encima de tu base = derecha). La VFC, la frecuencia cardiaca en reposo y la respiración se miden así (z-score); el sueño y la temperatura de la piel no tienen σ, así que muestran su estado, no una posición. Tu rango normal es tu promedio reciente ± una σ. La estabilidad es el coeficiente de variación (CV). La carga de entrenamiento es la razón aguda:crónica (ACWR), contexto para la recuperación, nunca una afirmación de lesión."
           }
         }
       }
@@ -32188,7 +32188,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Estas bandas son iguales para todos porque el índice ya viene ajustado a tu propia base, no a la población — un 1.5 cae en TU normal. Por eso no hay un rango personal ± que calcular: lo que vale la pena vigilar es pasar a «Alto» varios días seguidos."
+            "value": "Estas bandas son iguales para todos porque el índice ya viene ajustado a tu propia base, no a la población, un 1.5 cae en TU normal. Por eso no hay un rango personal ± que calcular: lo que vale la pena vigilar es pasar a «Alto» varios días seguidos."
           }
         }
       }
@@ -32220,7 +32220,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vienen de tu historial de WHOOP y Apple Salud. Impórtalos en Orígenes de datos — o agrega uno que registraste en otro lado."
+            "value": "Vienen de tu historial de WHOOP y Apple Salud. Impórtalos en Orígenes de datos, o agrega uno que registraste en otro lado."
           }
         }
       }
@@ -32279,7 +32279,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Esto borra todo lo que aportaste — tu diario y todos tus experimentos (con sus veredictos). Los patrones detectados de tu cuerpo se quedan, y tu historial importado de WHOOP no se toca. No se puede deshacer."
+            "value": "Esto borra todo lo que aportaste, tu diario y todos tus experimentos (con sus veredictos). Los patrones detectados de tu cuerpo se quedan, y tu historial importado de WHOOP no se toca. No se puede deshacer."
           }
         }
       }
@@ -32311,7 +32311,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Esta es la única función que sale de tu Mac — envía un resumen de tus métricas a %@ usando tu propia clave. No se envía nada hasta que tú preguntes."
+            "value": "Esta es la única función que sale de tu Mac, envía un resumen de tus métricas a %@ usando tu propia clave. No se envía nada hasta que tú preguntes."
           }
         }
       }
@@ -32328,7 +32328,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Esta es la única función que sale de tu teléfono — manda un resumen de tus métricas a %@ usando tu propia clave. No se envía nada hasta que preguntas."
+            "value": "Esta es la única función que sale de tu teléfono, manda un resumen de tus métricas a %@ usando tu propia clave. No se envía nada hasta que preguntas."
           }
         }
       }
@@ -32379,7 +32379,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Este recovery es ESTIMADO a partir del HRV (SDNN) y el sueño de tu Apple Watch en una noche que tu banda no registró, comparado con tu propia base de Apple Salud. El SDNN no es la misma medida que el HRV de la banda, así que es una estimación de menor confianza — tómalo como guía, no como una lectura de la banda. No es un diagnóstico."
+            "value": "Este recovery es ESTIMADO a partir del HRV (SDNN) y el sueño de tu Apple Watch en una noche que tu banda no registró, comparado con tu propia base de Apple Salud. El SDNN no es la misma medida que el HRV de la banda, así que es una estimación de menor confianza, tómalo como guía, no como una lectura de la banda. No es un diagnóstico."
           }
         }
       }
@@ -32396,7 +32396,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Este recovery es ESTIMADO a partir del HRV (SDNN) y el sueño de tu Apple Watch mientras tu banda aún calibra su propia base, comparado con tu propia base de Apple Salud. El SDNN no es la misma medida que el HRV de la banda, así que es una estimación de menor confianza — tómalo como guía, no como una lectura de la banda. Cambia a tu banda automáticamente en cuanto calibra. No es un diagnóstico."
+            "value": "Este recovery es ESTIMADO a partir del HRV (SDNN) y el sueño de tu Apple Watch mientras tu banda aún calibra su propia base, comparado con tu propia base de Apple Salud. El SDNN no es la misma medida que el HRV de la banda, así que es una estimación de menor confianza, tómalo como guía, no como una lectura de la banda. Cambia a tu banda automáticamente en cuanto calibra. No es un diagnóstico."
           }
         }
       }
@@ -32662,7 +32662,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hoy tu día es %@ — %@"
+            "value": "Hoy tu día es %@, %@"
           }
         }
       }
@@ -33068,7 +33068,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Registra un entrenamiento manualmente — graba la frecuencia cardiaca y el esfuerzo hasta que lo termines."
+            "value": "Registra un entrenamiento manualmente, graba la frecuencia cardiaca y el esfuerzo hasta que lo termines."
           }
         }
       }
@@ -33117,7 +33117,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Entrena por sensación — la banda zumba para que no tengas que mirar una pantalla."
+            "value": "Entrena por sensación, la banda zumba para que no tengas que mirar una pantalla."
           }
         }
       }
@@ -33333,7 +33333,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Las tendencias necesitan historial para dibujarse. Importa tu exportación de WHOOP — o conecta Apple Health — en Fuentes de datos para ver semanas, meses y años."
+            "value": "Las tendencias necesitan historial para dibujarse. Importa tu exportación de WHOOP, o conecta Apple Health, en Fuentes de datos para ver semanas, meses y años."
           }
         }
       }
@@ -34389,7 +34389,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Las bandas WHOOP no aparecen en Configuración del Sistema → Bluetooth de macOS. Se anuncian con un perfil personalizado que solo apps como Cénit pueden encontrar — así que no hay nada que emparejar ahí, y no deberías intentarlo."
+            "value": "Las bandas WHOOP no aparecen en Configuración del Sistema → Bluetooth de macOS. Se anuncian con un perfil personalizado que solo apps como Cénit pueden encontrar, así que no hay nada que emparejar ahí, y no deberías intentarlo."
           }
         }
       }
@@ -34406,7 +34406,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Las bandas WHOOP no aparecen en Configuración del Sistema → Bluetooth de macOS. Se anuncian con un perfil personalizado que solo apps como NOOP pueden encontrar — así que no hay nada que emparejar ahí, y no deberías intentarlo."
+            "value": "Las bandas WHOOP no aparecen en Configuración del Sistema → Bluetooth de macOS. Se anuncian con un perfil personalizado que solo apps como NOOP pueden encontrar, así que no hay nada que emparejar ahí, y no deberías intentarlo."
           }
         }
       }
@@ -34423,7 +34423,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Las bandas no salen en Ajustes › Bluetooth de tu iPhone — usan un perfil propio que solo apps como Cénit pueden ver. No hay nada que emparejar ahí."
+            "value": "Las bandas no salen en Ajustes › Bluetooth de tu iPhone, usan un perfil propio que solo apps como Cénit pueden ver. No hay nada que emparejar ahí."
           }
         }
       }
@@ -34568,7 +34568,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vigila tu FC en reposo, HRV, temperatura de la piel y respiración contra tu propia base de 28 días. En el dispositivo y aproximado — solo informativo, no un diagnóstico."
+            "value": "Vigila tu FC en reposo, HRV, temperatura de la piel y respiración contra tu propia base de 28 días. En el dispositivo y aproximado, solo informativo, no un diagnóstico."
           }
         }
       }
@@ -34584,7 +34584,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Promediamos tu frecuencia cardiaca en tramos de 5 minutos a lo largo del día, desde medianoche. Tu frecuencia en reposo —la más baja mientras duermes— es una métrica aparte. Las zonas dividen el día según qué tan fuerte trabajó tu corazón, como porcentaje de tu frecuencia cardiaca máxima estimada (la zona 1 es 50–60%, la zona 5 es 90–100%)."
+            "value": "Promediamos tu frecuencia cardiaca en tramos de 5 minutos a lo largo del día, desde medianoche. Tu frecuencia en reposo, la más baja mientras duermes, es una métrica aparte. Las zonas dividen el día según qué tan fuerte trabajó tu corazón, como porcentaje de tu frecuencia cardiaca máxima estimada (la zona 1 es 50–60%, la zona 5 es 90–100%)."
           }
         }
       }
@@ -34650,7 +34650,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Comparamos la frecuencia cardiaca en reposo y la HRV de hoy con tu propia línea base de 30 días. Una FC en reposo más alta de lo normal y una HRV más baja de lo normal empujan la puntuación hacia arriba — señales clásicas de que el cuerpo está activado. El cambio combinado se mapea a una escala de 0 a 3: 0 es calma, 1.5 es tu línea base y 3 es muy activado."
+            "value": "Comparamos la frecuencia cardiaca en reposo y la HRV de hoy con tu propia línea base de 30 días. Una FC en reposo más alta de lo normal y una HRV más baja de lo normal empujan la puntuación hacia arriba, señales clásicas de que el cuerpo está activado. El cambio combinado se mapea a una escala de 0 a 3: 0 es calma, 1.5 es tu línea base y 3 es muy activado."
           }
         }
       }
@@ -34667,7 +34667,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Comparamos tu frecuencia en reposo y tu HRV de hoy con tu propia base de 30 días. Una frecuencia en reposo más alta de lo usual y una HRV más baja de lo usual empujan el número hacia arriba — señales clásicas de que el cuerpo está activado. El desplazamiento combinado se vuelve una suma de z-scores, comprimida a 0–3 por una curva logística: 0 en calma, 1.5 en tu base, 3 muy activado."
+            "value": "Comparamos tu frecuencia en reposo y tu HRV de hoy con tu propia base de 30 días. Una frecuencia en reposo más alta de lo usual y una HRV más baja de lo usual empujan el número hacia arriba, señales clásicas de que el cuerpo está activado. El desplazamiento combinado se vuelve una suma de z-scores, comprimida a 0–3 por una curva logística: 0 en calma, 1.5 en tu base, 3 muy activado."
           }
         }
       }
@@ -34729,7 +34729,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "No contamos tu siesta de %@ — la regularidad usa solo tu noche principal."
+            "value": "No contamos tu siesta de %@, la regularidad usa solo tu noche principal."
           }
         }
       }
@@ -34746,7 +34746,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "No contamos tus siestas (menos de %@) — la regularidad usa solo tu noche principal."
+            "value": "No contamos tus siestas (menos de %@), la regularidad usa solo tu noche principal."
           }
         }
       }
@@ -34763,7 +34763,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Alineamos este vital con tu propio sueño y con el esfuerzo del día anterior, noche por noche a lo largo de tu historial, y leemos hacia dónde se inclina (correlación de Pearson). Solo mostramos una dirección cuando hay suficientes noches pareadas (unas seis semanas) y la relación es lo bastante fuerte como para que sea poco probable que sea azar — nunca el número, y nunca como causa. (Plews 2013)"
+            "value": "Alineamos este vital con tu propio sueño y con el esfuerzo del día anterior, noche por noche a lo largo de tu historial, y leemos hacia dónde se inclina (correlación de Pearson). Solo mostramos una dirección cuando hay suficientes noches pareadas (unas seis semanas) y la relación es lo bastante fuerte como para que sea poco probable que sea azar, nunca el número, y nunca como causa. (Plews 2013)"
           }
         }
       }
@@ -34780,7 +34780,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Comparamos tu esfuerzo del día contra tu propia recuperación y el esfuerzo del día anterior, día con día a lo largo de tu historial, y leemos hacia dónde se inclina (correlación de Pearson). Solo mostramos una dirección cuando hay suficientes días emparejados (unas seis semanas) y la relación es lo bastante fuerte para que sea poco probable que sea azar — nunca el número, y nunca como causa. (Plews 2013; Vesterinen 2016)"
+            "value": "Comparamos tu esfuerzo del día contra tu propia recuperación y el esfuerzo del día anterior, día con día a lo largo de tu historial, y leemos hacia dónde se inclina (correlación de Pearson). Solo mostramos una dirección cuando hay suficientes días emparejados (unas seis semanas) y la relación es lo bastante fuerte para que sea poco probable que sea azar, nunca el número, y nunca como causa. (Plews 2013; Vesterinen 2016)"
           }
         }
       }
@@ -34863,7 +34863,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ponemos tu curva de estrés del día junto a tus eventos para que veas con qué coincidieron tus momentos más y menos activados. Aquí cada momento se mide contra tu calma reciente —tus lecturas de vigilia de más o menos los últimos 7 días—, así que esto mapea cuándo te disparaste hoy, una lente distinta a la del número del día de arriba (tu día completo frente a tu base de 30 días). Tú eliges qué calendarios entran; los eventos de todo el día no se cruzan con un momento. Es una observación de coincidencias, no de causas: ver dos cosas juntas no significa que una haya causado la otra. Todo se calcula en tu iPhone; nada se comparte."
+            "value": "Ponemos tu curva de estrés del día junto a tus eventos para que veas con qué coincidieron tus momentos más y menos activados. Aquí cada momento se mide contra tu calma reciente, tus lecturas de vigilia de más o menos los últimos 7 días, así que esto mapea cuándo te disparaste hoy, una lente distinta a la del número del día de arriba (tu día completo frente a tu base de 30 días). Tú eliges qué calendarios entran; los eventos de todo el día no se cruzan con un momento. Es una observación de coincidencias, no de causas: ver dos cosas juntas no significa que una haya causado la otra. Todo se calcula en tu iPhone; nada se comparte."
           }
         }
       }
@@ -34964,7 +34964,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Póntela ajustada — el sensor necesita contacto con la piel."
+            "value": "Póntela ajustada, el sensor necesita contacto con la piel."
           }
         }
       }
@@ -34998,7 +34998,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ponte la banda esta noche — la primera de %lld noches que tu propia base necesita."
+            "value": "Ponte la banda esta noche, la primera de %lld noches que tu propia base necesita."
           }
         }
       }
@@ -35015,7 +35015,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ponte la banda esta noche — la primera de %lld noches que tu veredicto necesita."
+            "value": "Ponte la banda esta noche, la primera de %lld noches que tu veredicto necesita."
           }
         }
       }
@@ -35868,7 +35868,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dónde suele caer tu recuperación (el promedio de tus días recientes ± una banda de tu propia variación, σ), qué tan constante es semana a semana (su coeficiente de variación, CV), y hacia dónde va tu carga de entrenamiento (la razón de carga aguda:crónica, ACWR — contexto para la recuperación, nunca un diagnóstico de lesión). (Buchheit 2014; Plews 2013; Impellizzeri 2020)"
+            "value": "Dónde suele caer tu recuperación (el promedio de tus días recientes ± una banda de tu propia variación, σ), qué tan constante es semana a semana (su coeficiente de variación, CV), y hacia dónde va tu carga de entrenamiento (la razón de carga aguda:crónica, ACWR, contexto para la recuperación, nunca un diagnóstico de lesión). (Buchheit 2014; Plews 2013; Impellizzeri 2020)"
           }
         }
       }
@@ -36202,7 +36202,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Calculada sin HRV ni FC en reposo — las dos señales de mayor peso. El número sigue valiendo, con menos precisión."
+            "value": "Calculada sin HRV ni FC en reposo, las dos señales de mayor peso. El número sigue valiendo, con menos precisión."
           }
         }
       }
@@ -36219,7 +36219,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Calculada sin HRV — una de las señales de mayor peso. El número sigue valiendo, con menos precisión."
+            "value": "Calculada sin HRV, una de las señales de mayor peso. El número sigue valiendo, con menos precisión."
           }
         }
       }
@@ -36236,7 +36236,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Calculada sin FC en reposo — una de las señales de mayor peso. El número sigue valiendo, con menos precisión."
+            "value": "Calculada sin FC en reposo, una de las señales de mayor peso. El número sigue valiendo, con menos precisión."
           }
         }
       }
@@ -36393,7 +36393,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "La entrega en la muñeca aún no está activa — necesita un pequeño observador en el dispositivo (llegará en una actualización) para leer las notificaciones de macOS. Todo se queda en esta Mac. Tus elecciones quedan guardadas y se aplicarán automáticamente cuando la entrega esté lista."
+            "value": "La entrega en la muñeca aún no está activa, necesita un pequeño observador en el dispositivo (llegará en una actualización) para leer las notificaciones de macOS. Todo se queda en esta Mac. Tus elecciones quedan guardadas y se aplicarán automáticamente cuando la entrega esté lista."
           }
         }
       }
@@ -36410,7 +36410,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Los sensores ópticos de muñeca son menos precisos que un oxímetro médico — léelo como tendencia, no como una medición clínica. NOOP no es un dispositivo médico."
+            "value": "Los sensores ópticos de muñeca son menos precisos que un oxímetro médico, léelo como tendencia, no como una medición clínica. NOOP no es un dispositivo médico."
           }
         }
       }
@@ -36555,7 +36555,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "No tienes que esperar — un experimento acelera lo que aprendo de ti."
+            "value": "No tienes que esperar, un experimento acelera lo que aprendo de ti."
           }
         }
       }
@@ -36771,7 +36771,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Estás alrededor de tu línea base autonómica típica — estrés moderado, un día normal y equilibrado."
+            "value": "Estás alrededor de tu línea base autonómica típica, estrés moderado, un día normal y equilibrado."
           }
         }
       }
@@ -36850,7 +36850,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu Apple Watch estima el VO₂max en caminatas y carreras al aire libre con buena señal de GPS — la banda WHOOP no lo registra."
+            "value": "Tu Apple Watch estima el VO₂max en caminatas y carreras al aire libre con buena señal de GPS, la banda WHOOP no lo registra."
           }
         }
       }
@@ -36867,7 +36867,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu Apple Watch estima el VO₂max a partir de tu frecuencia cardiaca y tu ritmo en caminatas y carreras al aire libre con buena señal de GPS, así que se actualiza de vez en cuando, no a diario. Leemos dónde cae entre adultos sanos de tu edad y sexo (la mediana de referencia FRIEND) y lo traducimos en una banda sencilla. Un VO₂max más alto se asocia con menor riesgo de mortalidad por todas las causas — es uno de los marcadores de salud a largo plazo mejor fundamentados."
+            "value": "Tu Apple Watch estima el VO₂max a partir de tu frecuencia cardiaca y tu ritmo en caminatas y carreras al aire libre con buena señal de GPS, así que se actualiza de vez en cuando, no a diario. Leemos dónde cae entre adultos sanos de tu edad y sexo (la mediana de referencia FRIEND) y lo traducimos en una banda sencilla. Un VO₂max más alto se asocia con menor riesgo de mortalidad por todas las causas, es uno de los marcadores de salud a largo plazo mejor fundamentados."
           }
         }
       }
@@ -36933,7 +36933,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu carga autonómica del día: qué tan activado está tu cuerpo. Tomamos tu frecuencia en reposo y tu HRV de hoy, comparamos cada una con tu propia base de 30 días como z-score, y mapeamos el desplazamiento combinado a una escala 0–3 con una curva logística (0 en calma · 1.5 tu base · 3 muy activado). Este número es tu día completo frente a tu base de los últimos ~30 días — una lente distinta a la del mapa del día de abajo, que marca los momentos en que te disparaste. Es una estimación, no un diagnóstico."
+            "value": "Tu carga autonómica del día: qué tan activado está tu cuerpo. Tomamos tu frecuencia en reposo y tu HRV de hoy, comparamos cada una con tu propia base de 30 días como z-score, y mapeamos el desplazamiento combinado a una escala 0–3 con una curva logística (0 en calma · 1.5 tu base · 3 muy activado). Este número es tu día completo frente a tu base de los últimos ~30 días, una lente distinta a la del mapa del día de abajo, que marca los momentos en que te disparaste. Es una estimación, no un diagnóstico."
           }
         }
       }
@@ -36950,7 +36950,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu carga autonómica de hoy, del 0 al 3. La estimamos comparando tu frecuencia cardíaca en reposo y tu HRV con tu propia línea base de 30 días: una FC en reposo más alta de lo normal y una HRV más baja empujan el número hacia arriba — señales clásicas de que tu cuerpo está activado."
+            "value": "Tu carga autonómica de hoy, del 0 al 3. La estimamos comparando tu frecuencia cardíaca en reposo y tu HRV con tu propia línea base de 30 días: una FC en reposo más alta de lo normal y una HRV más baja empujan el número hacia arriba, señales clásicas de que tu cuerpo está activado."
           }
         }
       }
@@ -37075,7 +37075,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu cuerpo se ve exigido — %@. Considera tomártelo con calma."
+            "value": "Tu cuerpo se ve exigido, %@. Considera tomártelo con calma."
           }
         }
       }
@@ -37378,7 +37378,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu frecuencia cardiaca a lo largo del día, en promedios de 5 minutos. Tu frecuencia en reposo —la más baja mientras duermes— es una métrica aparte."
+            "value": "Tu frecuencia cardiaca a lo largo del día, en promedios de 5 minutos. Tu frecuencia en reposo, la más baja mientras duermes, es una métrica aparte."
           }
         }
       }
@@ -37560,7 +37560,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tus niveles salen de tu propia base — con unas noches más aparecen."
+            "value": "Tus niveles salen de tu propia base, con unas noches más aparecen."
           }
         }
       }
@@ -37609,7 +37609,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu punto medio de sueño es de los más constantes — predice tu salud mejor que el total de horas."
+            "value": "Tu punto medio de sueño es de los más constantes, predice tu salud mejor que el total de horas."
           }
         }
       }
@@ -37626,7 +37626,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu punto medio de sueño aún cambia de una noche a otra — predice tu salud mejor que el total de horas."
+            "value": "Tu punto medio de sueño aún cambia de una noche a otra, predice tu salud mejor que el total de horas."
           }
         }
       }
@@ -37778,7 +37778,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu propia base se afina cada noche — ya llevas %lld."
+            "value": "Tu propia base se afina cada noche, ya llevas %lld."
           }
         }
       }
@@ -38018,7 +38018,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu recuperación está despejada — frescos para entrenar:"
+            "value": "Tu recuperación está despejada, frescos para entrenar:"
           }
         }
       }
@@ -38051,7 +38051,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu recuperación va alta, pero %@ trae una señal abajo — ojo con eso hoy."
+            "value": "Tu recuperación va alta, pero %@ trae una señal abajo, ojo con eso hoy."
           }
         }
       }
@@ -38125,7 +38125,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu recuperación es moderada — frescos para entrenar:"
+            "value": "Tu recuperación es moderada, frescos para entrenar:"
           }
         }
       }
@@ -38142,7 +38142,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu recuperación resume qué tan listo está tu cuerpo hoy, del 0 al 100. Combina varias señales de tu noche —sobre todo tu HRV— y las compara con tu propio promedio de las últimas semanas, no con el de nadie más."
+            "value": "Tu recuperación resume qué tan listo está tu cuerpo hoy, del 0 al 100. Combina varias señales de tu noche, sobre todo tu HRV, y las compara con tu propio promedio de las últimas semanas, no con el de nadie más."
           }
         }
       }
@@ -38175,7 +38175,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tus rutinas se crean en tu iPhone. NOOP nunca se conecta — el paso de la IA lo haces tú."
+            "value": "Tus rutinas se crean en tu iPhone. NOOP nunca se conecta, el paso de la IA lo haces tú."
           }
         }
       }
@@ -38275,7 +38275,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu conteo de pasos de hoy. La actividad constante —aunque sea una caminata corta— apoya tu corazón, tu ánimo y tu recuperación."
+            "value": "Tu conteo de pasos de hoy. La actividad constante, aunque sea una caminata corta, apoya tu corazón, tu ánimo y tu recuperación."
           }
         }
       }
@@ -38325,7 +38325,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu banda en tiempo real — frecuencia cardiaca y frames conforme llegan."
+            "value": "Tu banda en tiempo real, frecuencia cardiaca y frames conforme llegan."
           }
         }
       }
@@ -38920,7 +38920,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "por arriba de tu línea base — bien recuperado"
+            "value": "por arriba de tu línea base, bien recuperado"
           }
         }
       }
@@ -39335,7 +39335,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "subiendo rápido (aguda:crónica %@) — la aguda va por encima de la crónica"
+            "value": "subiendo rápido (aguda:crónica %@), la aguda va por encima de la crónica"
           }
         }
       }
@@ -39604,7 +39604,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "elevada — el sobreentrenamiento o una enfermedad pueden causarlo"
+            "value": "elevada, el sobreentrenamiento o una enfermedad pueden causarlo"
           }
         }
       }
@@ -39947,7 +39947,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Falló el respaldo en iCloud — toca para reintentar"
+            "value": "Falló el respaldo en iCloud, toca para reintentar"
           }
         }
       }
@@ -39980,7 +39980,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "en el punto ideal (aguda:crónica %@) — la aguda va a la par de la crónica"
+            "value": "en el punto ideal (aguda:crónica %@), la aguda va a la par de la crónica"
           }
         }
       }
@@ -40419,7 +40419,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "baja — un esfuerzo similar cada día aumenta el riesgo de sobrecarga o enfermedad"
+            "value": "baja, un esfuerzo similar cada día aumenta el riesgo de sobrecarga o enfermedad"
           }
         }
       }
@@ -41466,7 +41466,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "bajando (aguda:crónica %@) — la aguda va por debajo de la crónica"
+            "value": "bajando (aguda:crónica %@), la aguda va por debajo de la crónica"
           }
         }
       }
@@ -41768,7 +41768,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "rutina · intervalos · respira · en vivo — eliges al empezar"
+            "value": "rutina · intervalos · respira · en vivo, eliges al empezar"
           }
         }
       }
@@ -42173,7 +42173,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "disparada (aguda:crónica %@) — la aguda va muy por encima de la crónica"
+            "value": "disparada (aguda:crónica %@), la aguda va muy por encima de la crónica"
           }
         }
       }
@@ -42289,7 +42289,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "suprimida — señal de fatiga autonómica"
+            "value": "suprimida, señal de fatiga autonómica"
           }
         }
       }
@@ -42609,7 +42609,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "elevada vs. línea base — a veces una señal temprana de enfermedad"
+            "value": "elevada vs. línea base, a veces una señal temprana de enfermedad"
           }
         }
       }
@@ -43307,7 +43307,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "«Tiempo en calma» es la parte del último mes que pasó en la banda Baja; «estabilidad» es cuánto varía tu índice diario de una semana a otra (su coeficiente de variación — más bajo, más estable). Las bandas Baja / Moderada / Alta (0–1 / 1–2 / 2–3) son iguales para todos porque el índice ya está ajustado a tu propia base. (Plews 2013)"
+            "value": "«Tiempo en calma» es la parte del último mes que pasó en la banda Baja; «estabilidad» es cuánto varía tu índice diario de una semana a otra (su coeficiente de variación, más bajo, más estable). Las bandas Baja / Moderada / Alta (0–1 / 1–2 / 2–3) son iguales para todos porque el índice ya está ajustado a tu propia base. (Plews 2013)"
           }
         }
       }
@@ -43555,7 +43555,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "—"
+            "value": ", "
           }
         }
       }
@@ -43566,7 +43566,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "— — media antes"
+            "value": ", media antes"
           }
         }
       }
@@ -43604,7 +43604,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "“%@” no movió tu %@ en esta semana. Una semana es poca evidencia — puedes volver a intentarlo."
+            "value": "“%@” no movió tu %@ en esta semana. Una semana es poca evidencia, puedes volver a intentarlo."
           }
         }
       }
@@ -43910,7 +43910,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Faltan %lld días en que tu iPhone también cuente pasos — o fija el coeficiente manualmente."
+            "value": "Faltan %lld días en que tu iPhone también cuente pasos, o fija el coeficiente manualmente."
           }
         }
       }
@@ -44010,7 +44010,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tras un rato largo sentado sin caminar, la banda zumba en su próxima sincronización. Mide la falta de caminata, no la quietud de la muñeca — teclear en el escritorio sigue contando como estar sentado."
+            "value": "Tras un rato largo sentado sin caminar, la banda zumba en su próxima sincronización. Mide la falta de caminata, no la quietud de la muñeca, teclear en el escritorio sigue contando como estar sentado."
           }
         }
       }
@@ -44080,7 +44080,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Silencia los avisos en una franja que elijas — un bloque de juntas, la calma de la noche."
+            "value": "Silencia los avisos en una franja que elijas, un bloque de juntas, la calma de la noche."
           }
         }
       }
@@ -44120,7 +44120,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hora de moverte — llevas un rato sentado."
+            "value": "Hora de moverte, llevas un rato sentado."
           }
         }
       }
@@ -44146,7 +44146,211 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Estimado — %lld de %lld señales"
+            "value": "Estimado, %lld de %lld señales"
+          }
+        }
+      }
+    },
+    ", well above your base": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", well above your base"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", muy por encima de tu base"
+          }
+        }
+      }
+    },
+    ", well below your base": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", well below your base"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", muy por debajo de tu base"
+          }
+        }
+      }
+    },
+    ", above your base": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", above your base"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", por encima de tu base"
+          }
+        }
+      }
+    },
+    ", below your base": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", below your base"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", por debajo de tu base"
+          }
+        }
+      }
+    },
+    "well above baseline — often an early sign of illness": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "well above baseline — often an early sign of illness"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "muy por encima de tu línea base, a veces una señal temprana de enfermedad"
+          }
+        }
+      }
+    },
+    "running warm vs baseline": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "running warm vs baseline"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cálida vs. tu línea base"
+          }
+        }
+      }
+    },
+    "Equipment": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Equipment"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Equipo"
+          }
+        }
+      }
+    },
+    "Muscle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muscle"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Músculo"
+          }
+        }
+      }
+    },
+    "Pick a muscle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick a muscle"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elige un músculo"
+          }
+        }
+      }
+    },
+    "Pick equipment": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick equipment"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elige el equipo"
+          }
+        }
+      }
+    },
+    "ml/kg": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ml/kg"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ml/kg"
+          }
+        }
+      }
+    },
+    "ms": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ms"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ms"
           }
         }
       }
