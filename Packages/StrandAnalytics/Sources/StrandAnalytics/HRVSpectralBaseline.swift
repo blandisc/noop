@@ -9,9 +9,11 @@ import Foundation
 // threshold at ±`VitalBands.sigmaK`).
 //
 // WHY LOG-DOMAIN. Frequency-domain HRV powers (LF / HF / total) are strongly right-skewed and
-// approximately log-normal — the same reason the time-domain HRV baseline is taken in ln(RMSSD)
-// (Plews et al. 2013). Folding in log-domain gives a geometric center and a dispersion in ln-units,
-// the appropriate scale for a skewed power; a raw-ms² fold would let a single high night dominate.
+// approximately log-normal — the standard reason HRV spectral norms are reported as ln(power) (Task
+// Force 1996 notes the non-normal distribution of the powers). It is the same log scale on which the
+// time-domain HRV baseline is taken as ln(RMSSD) for training monitoring (Plews et al. 2013). Folding
+// in log-domain gives a geometric center and a dispersion in ln-units, the appropriate scale for a
+// skewed power; a raw-ms² fold would let a single high night dominate.
 //
 // NOT autonomic balance. These are descriptive band POWERS compared to your own recent nights, never
 // a "sympatho-vagal balance" claim (LF/HF as autonomic balance is contested — Billman 2013). The
@@ -31,10 +33,13 @@ public enum HRVSpectralBaseline {
     public static let historyNights = 30
 
     /// Per-band baseline config, in log-domain (powers are log-normal). `minVal`/`maxVal` are a
-    /// generous ms² plausibility guard so an artifact night can't poison the fold; `floorSpread` is a
-    /// dispersion floor in ln-units (~a 15% night-to-night band). These bounds are a science decision
-    /// audited by `/cso` against the real ms² range of nightly LF/HF powers.
-    public static let bandCfg = MetricCfg(minVal: 1.0, maxVal: 50_000.0, floorSpread: 0.15,
+    /// physiological-plausibility guard so an artifact night can't poison the fold — healthy nightly
+    /// short-term powers rarely exceed a few thousand ms² (Task Force 1996: total power ≈ 3466 ± 1018
+    /// ms²), so a 20,000 ms² ceiling still clears any real night while rejecting gross artifacts.
+    /// `floorSpread` is a dispersion floor in ln-units (~a 15% night-to-night band) — wider than the
+    /// time-domain HRV floor because frequency-domain powers are the least reproducible HRV measures,
+    /// so we demand a wider "normal" band before flagging a night high or low.
+    public static let bandCfg = MetricCfg(minVal: 1.0, maxVal: 20_000.0, floorSpread: 0.15,
                                           halfLifeB: 14.0, halfLifeS: 21.0, logDomain: true)
 
     /// Label a band's `value` (ms²) against the user's own recent nightly powers.
