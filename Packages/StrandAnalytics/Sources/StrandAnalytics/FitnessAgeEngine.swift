@@ -49,7 +49,10 @@ import Foundation
 // All coefficients below are literal published values. Do not change without re-verifying the source.
 public enum FitnessAgeEngine {
 
-    // MARK: - Nes 2011 waist-circumference coefficients (JAHA PMC7428991, confirmed vs CERG)
+    // MARK: - Nes 2011 waist-circumference coefficients (Nes et al. 2011, Med Sci Sports Exerc
+    // 43(11):2024–2030, PMID 21502897 — the HUNT non-exercise VO₂peak model, the primary source). An
+    // earlier note cited a secondary "verbatim reproduction" (PMC7428991) that could not be verified;
+    // the primary Nes 2011 alone anchors these coefficients (FER-657).
     // VO₂max = intercept − ageC·age + paiC·PA − wcC·waist − rhrC·RHR
     static let menIntercept = 100.27, menAge = 0.296, menWC = 0.369, menRHR = 0.155, menPAI = 0.226
     static let womenIntercept = 74.736, womenAge = 0.247, womenWC = 0.259, womenRHR = 0.114, womenPAI = 0.198

@@ -48,6 +48,9 @@ import Foundation
 //      form `ln(norm/rmssd)` (aligns with Hillebrand's log-linear "+1% RMSSD ≈ −1% risk") instead of
 //      the old fraction-of-mean, and require adequate nocturnal coverage upstream (orchestration,
 //      FER-145). No mortality HR has ever been validated for nocturnal-PPG RMSSD — a soft, capped input.
+//      CITATION SCOPE (FER-657): Hillebrand 2013 (Europace 15(5):742–749) is a FIRST-CARDIOVASCULAR-EVENT
+//      endpoint, NOT all-cause mortality — we borrow only its log-linear dose-response SHAPE; the
+//      all-cause direction this factor is framed against rests on Jarczok 2022 and Dekker/ARIC 2000.
 //
 //   5. SLEEP REGULARITY — reference. Slope kept (0.450). The SRI p5-vs-median all-cause-mortality
 //      HR 1.53 (95% CI 1.41–1.66) and the population median SRI ≈60 (→0.60 on an SRI/100 scale) are
@@ -225,13 +228,21 @@ public enum VitalityEngine {
             // Correction #5: slope kept; reference 0.75 → 0.60 (the population median on an SRI/100
             // scale, not the p95) — median SRI ≈60 and the HR 1.53 are from Cribb 2023 (eLife
             // 12:RP88359). Less regular than the median ages you.
+            // COMPARABILITY CAVEAT (FER-657): Cribb's median 60 is from 24/7 accelerometry, but our SRI
+            // (`SleepRegularityIndex`) is scored only over ±12 h windows around each night — a night
+            // wearable, not round-the-clock actigraphy. That restricted timeline tends to read HIGHER
+            // than a full 24/7 SRI, so scoring it against 60 is if anything OPTIMISTIC (biased toward
+            // "regular", i.e. conservative in the ages-you direction). We keep the 0.450 slope rather
+            // than widening the band: the factor is already soft (a real SRI only when coverage exists,
+            // else the CV proxy) and the bias does not over-penalize. Documented in docs/ANALYTICS.md.
             out.append(Contribution(key: "consistency", label: "Sleep regularity",
                                     lnHazard: (0.60 - clamp(c, 0, 1)) * 0.450))
         }
         if let h = inputs.rmssd, h > 0, let norm = inputs.rmssdNorm, norm > 0 {
             // Correction #4: attenuated (0.160 → 0.110) for ECG→nocturnal-PPG domain uncertainty, in log
-            // form (Hillebrand 2013 log-linear) instead of fraction-of-mean. Lower HRV than the age norm
-            // ages you; clamped to ±~2× ratio.
+            // form (Hillebrand 2013 log-linear — a FIRST-CV-EVENT dose-response, Europace 15(5):742–749,
+            // not all-cause; the all-cause direction rests on Jarczok 2022 / Dekker-ARIC 2000) instead of
+            // fraction-of-mean. Lower HRV than the age norm ages you; clamped to ±~2× ratio.
             out.append(Contribution(key: "hrv", label: "Heart-rate variability",
                                     lnHazard: clamp(log(norm / h), -0.7, 0.7) * 0.110))
         }

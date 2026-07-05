@@ -356,19 +356,23 @@ public enum ReadinessEngine {
         // The compact read-out is the bare acute:chronic ratio (one decimal) — a load of 1.0 means acute
         // == chronic. No σ here: load is already a normalized ratio, not a deviation from a baseline.
         let value = String(format: "%.1f", ratio)
+        // Copy is PURELY DESCRIPTIVE of the acute↔chronic relationship — no injury-risk imperative
+        // ("watch fatigue", "ease off"): Impellizzeri et al. 2020 (Br J Sports Med 54:1451–1462) show the
+        // ACWR does NOT predict injury, so the sentence states where your acute load sits vs your chronic,
+        // nothing more. See docs/ANALYTICS.md (Training Stress Balance).
         switch band {
         case .rampingDown:
             return Signal(key: "acwr", label: label,
-                detail: String(localized: "ramping down (acute:chronic \(pct)) — room to build", bundle: .main), flag: band.flag, value: value)
+                detail: String(localized: "ramping down (acute:chronic \(pct)) — acute below chronic", bundle: .main), flag: band.flag, value: value)
         case .sweetSpot:
             return Signal(key: "acwr", label: label,
-                detail: String(localized: "in the sweet spot (acute:chronic \(pct))", bundle: .main), flag: band.flag, value: value)
+                detail: String(localized: "in the sweet spot (acute:chronic \(pct)) — acute in line with chronic", bundle: .main), flag: band.flag, value: value)
         case .buildingFast:
             return Signal(key: "acwr", label: label,
-                detail: String(localized: "building fast (acute:chronic \(pct)) — watch fatigue", bundle: .main), flag: band.flag, value: value)
+                detail: String(localized: "building fast (acute:chronic \(pct)) — acute above chronic", bundle: .main), flag: band.flag, value: value)
         case .spiking:
             return Signal(key: "acwr", label: label,
-                detail: String(localized: "spiking (acute:chronic \(pct)) — ease off if fatigued", bundle: .main), flag: band.flag, value: value)
+                detail: String(localized: "spiking (acute:chronic \(pct)) — acute well above chronic", bundle: .main), flag: band.flag, value: value)
         }
     }
 
