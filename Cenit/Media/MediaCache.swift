@@ -58,11 +58,10 @@ struct MediaCache {
         try FileManager.default.createDirectory(at: videosDir, withIntermediateDirectories: true)
     }
 
+    /// `.atomic` already writes to a temp file and renames into place (same primitive as
+    /// `PuffinFrameRecorder`'s capture writes) — no need to hand-roll it.
     private static func writeAtomically(_ data: Data, to destination: URL) throws {
-        let tmp = destination.appendingPathExtension("tmp")
-        try data.write(to: tmp, options: .atomic)
-        _ = try? FileManager.default.removeItem(at: destination)
-        try FileManager.default.moveItem(at: tmp, to: destination)
+        try data.write(to: destination, options: .atomic)
     }
 
     /// Exercise catalog ids are already filesystem-safe (`3_4_Sit-Up`), but normalize defensively

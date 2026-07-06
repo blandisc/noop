@@ -10,11 +10,11 @@ import Foundation
 // (`Cenit/Secrets.xcconfig`, gitignored), the client can't even be built, so a fork with no key
 // never sends a request even if the toggle is on.
 
-/// The exercise media this app cares about from an ExerciseDB v2 lookup: a still thumbnail and a
-/// short looping clip (video or GIF). Either may be absent for a given exercise.
+/// The exercise media this app cares about from an ExerciseDB v2 lookup. EDB v2 exposes one URL
+/// (`gifUrl`) that serves as both the still thumbnail and the looping clip — if a future version
+/// splits those into distinct fields, add a second property here instead of duplicating this one.
 struct EDBExerciseMedia: Decodable, Sendable {
-    let thumbURL: URL?
-    let loopURL: URL?
+    let mediaURL: URL?
 }
 
 /// Thin client for ExerciseDB v2 (RapidAPI). Looks up media by free-text exercise name — see
@@ -56,14 +56,10 @@ struct ExerciseDBClient {
 
         let results = try JSONDecoder().decode([EDBExerciseEntry].self, from: data)
         guard let first = results.first else { return nil }
-        return EDBExerciseMedia(
-            thumbURL: first.gifUrl.flatMap(URL.init(string:)),
-            loopURL: first.gifUrl.flatMap(URL.init(string:))
-        )
+        return EDBExerciseMedia(mediaURL: first.gifUrl.flatMap(URL.init(string:)))
     }
 
-    /// Raw wire shape from EDB v2. `gifUrl` doubles as both the still thumb and the looping clip
-    /// source today; if the live API exposes a dedicated thumbnail field, split it here.
+    /// Raw wire shape from EDB v2.
     private struct EDBExerciseEntry: Decodable {
         let gifUrl: String?
     }

@@ -20,10 +20,11 @@ final class MediaDownloadCoordinator: ObservableObject {
     /// (≤873 strings), non-critical — UserDefaults is fine; re-derivable by re-running the bulk pass.
     private static let missedIdsKey = "noop.exerciseMediaMissedIds"
 
-    private let cache: MediaCache?
     private let userDefaults: UserDefaults
     private let session: URLSession
-    /// Built lazily, only once a download actually needs to happen — never while the toggle is off.
+    /// Both built lazily, only once actually needed — never while the toggle is off, so a disabled
+    /// coordinator (the default, at every app launch) never touches disk or `URLSession`.
+    private lazy var cache: MediaCache? = try? MediaCache()
     private var client: ExerciseDBClient?
 
     /// Exposed for tests: true only once `bulkDownloadThumbsIfNeeded`/`loopIfNeeded` have actually
@@ -35,23 +36,25 @@ final class MediaDownloadCoordinator: ObservableObject {
     init(userDefaults: UserDefaults = .standard, session: URLSession = .shared) {
         self.userDefaults = userDefaults
         self.session = session
-        self.cache = try? MediaCache()
     }
 
     /// Bulk-download every catalog exercise's thumb, skipping ones already cached or already known
     /// to miss. Bounded concurrency (6 in flight) so a fresh opt-in doesn't fire 873 requests at once.
     func bulkDownloadThumbsIfNeeded() async {
-        guard isEnabled, let cache else { return }
-        guard let client = client ?? ExerciseDBClient() else { return }
-        self.client = client
+        guard isEnabled, let cache, let client = ensureClient() else { return }
 
         let missed = missedIds
-        await withTaskGroup(of: Void.self) { group in
+        let toDownload = ExerciseCatalog.all.filter { !cache.hasThumb(for: $0.id) && !missed.contains($0.id) }
+        guard !toDownload.isEmpty else { return }
+
+        // Misses are collected here and persisted once at the end, not per-download — up to ~873
+        // individual UserDefaults read-modify-writes would otherwise pile up during one bulk run.
+        let newMisses = await withTaskGroup(of: String?.self) { group -> Set<String> in
             var inFlight = 0
-            for exercise in ExerciseCatalog.all {
-                if cache.hasThumb(for: exercise.id) || missed.contains(exercise.id) { continue }
+            var newMisses: Set<String> = []
+            for exercise in toDownload {
                 if inFlight >= 6 {
-                    await group.next()
+                    if let missedId = await group.next(), let missedId { newMisses.insert(missedId) }
                     inFlight -= 1
                 }
                 group.addTask { [weak self] in
@@ -59,8 +62,12 @@ final class MediaDownloadCoordinator: ObservableObject {
                 }
                 inFlight += 1
             }
-            await group.waitForAll()
+            for await missedId in group {
+                if let missedId { newMisses.insert(missedId) }
+            }
+            return newMisses
         }
+        if !newMisses.isEmpty { recordMisses(newMisses) }
     }
 
     /// The cached thumb for `exercise`, if the bulk download already fetched it. Never triggers a
@@ -75,12 +82,11 @@ final class MediaDownloadCoordinator: ObservableObject {
     func loopIfNeeded(for exercise: Exercise) async -> URL? {
         guard isEnabled, let cache else { return nil }
         if let cached = cache.videoURL(for: exercise.id) { return cached }
-        guard let client = client ?? ExerciseDBClient() else { return nil }
-        self.client = client
+        guard let client = ensureClient() else { return nil }
 
         guard let media = try? await client.lookup(name: exercise.name),
-              let loopURL = media.loopURL else {
-            recordMiss(exercise.id)
+              let loopURL = media.mediaURL else {
+            recordMisses([exercise.id])
             return nil
         }
         return try? await cache.storeVideo(from: loopURL, for: exercise.id, session: session)
@@ -93,27 +99,31 @@ final class MediaDownloadCoordinator: ObservableObject {
         userDefaults.removeObject(forKey: Self.missedIdsKey)
     }
 
-    private func downloadThumb(_ exercise: Exercise, client: ExerciseDBClient, cache: MediaCache) async {
+    /// Returns the network client, building (and caching) it the first time it's actually needed.
+    private func ensureClient() -> ExerciseDBClient? {
+        if let client { return client }
+        client = ExerciseDBClient()
+        return client
+    }
+
+    /// Downloads one exercise's thumb; returns its id if EDB had no media / the download failed, so
+    /// the caller can batch that into a single miss-list write instead of one write per exercise.
+    private func downloadThumb(_ exercise: Exercise, client: ExerciseDBClient, cache: MediaCache) async -> String? {
         guard let media = try? await client.lookup(name: exercise.name),
-              let thumbURL = media.thumbURL else {
-            recordMiss(exercise.id)
-            return
-        }
+              let thumbURL = media.mediaURL else { return exercise.id }
         guard let (data, response) = try? await session.data(from: thumbURL),
-              (response as? HTTPURLResponse)?.statusCode == 200 else {
-            recordMiss(exercise.id)
-            return
-        }
+              (response as? HTTPURLResponse)?.statusCode == 200 else { return exercise.id }
         try? cache.storeThumb(data, for: exercise.id)
+        return nil
     }
 
     private var missedIds: Set<String> {
         Set(userDefaults.stringArray(forKey: Self.missedIdsKey) ?? [])
     }
 
-    private func recordMiss(_ exerciseId: String) {
+    private func recordMisses<S: Sequence>(_ exerciseIds: S) where S.Element == String {
         var current = missedIds
-        current.insert(exerciseId)
+        current.formUnion(exerciseIds)
         userDefaults.set(Array(current), forKey: Self.missedIdsKey)
     }
 }
