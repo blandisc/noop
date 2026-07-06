@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Al terminar un entreno de fuerza, eliges guardar o descartar en el mismo lugar / Finishing a strength workout now lets you save or discard in one place.**
+  **ES** — Antes, el botón **Terminar** guardaba directo y para descartar había que buscar otra opción aparte. Ahora, al tocar **Terminar**, el aviso te ofrece **Guardar entrenamiento** o **Descartar entrenamiento** (o seguir), con la advertencia de que descartar borra lo que registraste.
+  **EN** — Before, the **Finish** button saved right away and discarding meant hunting for a separate option. Now, tapping **Finish** offers **Save workout** or **Discard workout** (or keep going), warning that discarding deletes what you logged.
+  ([LiveStrengthSheet.swift](Cenit/Screens/LiveStrengthSheet.swift))
+
 - **«Hoy» ya no se congela ni calienta el teléfono / "Today" no longer freezes or heats up your phone.**
   **ES** — Se corrigió un cuelgue en el que la pantalla de **Hoy** trababa toda la app con el CPU al 99% (el teléfono se calentaba). El alto del carrusel Señales/Brief se animaba con un valor que se **mide en cada pasada de dibujado** y tiembla una fracción de punto, lo que reactivaba el dibujado en bucle infinito. Ahora la transición de alto se anima solo al **cambiar de página**, que es cuando de verdad debe moverse.
   **EN** — Fixed a hang where the **Today** screen locked up the whole app at 99% CPU (the phone got hot). The Signals/Brief pager height was being animated off a value that is **measured every layout pass** and jitters by a sub-point, which re-triggered layout in an infinite loop. The height transition now animates only when the **page actually changes**, which is when it should move.
