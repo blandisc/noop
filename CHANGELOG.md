@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Los nombres largos del entrenamiento de hoy ya caben mejor / Long workout names on today's card now fit better.**
+  **ES** — En **Entrenar**, el título del entrenamiento de hoy (p. ej. «Día A — Empuje y cuádriceps») ahora **se ajusta solo**: los nombres cortos se ven igual de grandes que antes, y los largos se encogen un poco para caber en dos líneas en vez de apretarse.
+  **EN** — In **Train**, today's workout title (e.g. "Día A — Empuje y cuádriceps") now **scales itself**: short names stay full size, and long ones shrink slightly to fit two lines instead of cramping.
+  ([EntrenarView.swift](Cenit/Screens/EntrenarView.swift))
+
 - **La ficha de cada ejercicio ahora muestra los músculos como etiquetas y sugiere variantes / Each exercise's sheet now shows its muscles as tags and suggests variants.**
   **ES** — La pestaña **Guía** de la hoja de un ejercicio se rediseñó para leerse más clara: los músculos aparecen como **etiquetas** (el principal en tinta llena, los que asisten con contorno) en vez del muñeco anatómico con barras; abajo hay una nueva sección de **Variantes** con otros ejercicios del mismo patrón, y al tocar uno se abre su ficha; el selector **«Medir por»** baja discreto al pie, junto al enlace de YouTube. También se corrigió el encabezado, que repetía el equipo dos veces («Peso corporal · Peso corporal»), y quedó todo en español.
   **EN** — The **Guide** tab of an exercise's sheet was redesigned to read more clearly: the muscles now show as **tags** (the primary one in full ink, the assisting ones outlined) instead of the anatomical figure with bars; below there's a new **Variants** section with other exercises of the same pattern, and tapping one opens its sheet; the **«Measured by»** control moves quietly to the foot, next to the YouTube link. The header that repeated the equipment twice («Bodyweight · Bodyweight») is fixed, and the whole screen now reads in Spanish.
