@@ -23,6 +23,12 @@ struct MisRutinasScreen: View {
     @State private var loaded = false
     @State private var routines: [Routine] = []
     @State private var exerciseCounts: [String: Int] = [:]
+    /// Top primary muscles per routine (Spanish labels) for the one-line metadata (mock 1c).
+    @State private var routineMuscles: [String: [String]] = [:]
+    /// The weekly split (`weekday → routineId`), so today's routine reads «hoy».
+    @State private var schedule: [Int: String] = [:]
+    /// Days since each routine was last trained (`routineId → whole days`), for the «hace N d» column.
+    @State private var lastTrainedDays: [String: Int] = [:]
     @State private var builderTarget: BuilderTarget? = nil
     @State private var showTemplates = false
     @State private var showImport = false
@@ -80,12 +86,19 @@ struct MisRutinasScreen: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("My routines").font(StrandFont.title1).foregroundStyle(theme.ink)
-            Text("Create, edit and organize the routines you assign to your week.")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
+        Text("My routines").font(StrandFont.title1).foregroundStyle(theme.ink)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// The handoff's per-routine tint (mock 1c/1a): push → ember, pull → teal, leg → indigo, keyed off the
+    /// routine name's split keyword with a stable fallback so each routine keeps one consistent dot.
+    private func routineTint(_ name: String) -> Color {
+        let n = name.lowercased()
+        if n.contains("empuj") || n.contains("push") || n.contains("pecho") { return theme.dataStrain }
+        if n.contains("tir") || n.contains("pull") || n.contains("espalda") { return theme.dataHrv }
+        if n.contains("pierna") || n.contains("leg") || n.contains("quad") || n.contains("glúteo") { return theme.dataSleep }
+        let tints = [theme.dataStrain, theme.dataHrv, theme.dataSleep]
+        return tints[abs(name.hashValue) % tints.count]
     }
 
     // MARK: - The list
@@ -115,12 +128,13 @@ struct MisRutinasScreen: View {
                 divider
                 actionRow("plus", "New routine") { builderTarget = .new }
                 divider
-                actionRow("folder.badge.plus", "New folder") { startNewFolder(moving: nil) }
-                divider
-                actionRow("square.stack.3d.up", "Start from a template") { showTemplates = true }
-                    .accessibilityHint(Text("Copy a starter routine into My routines"))
-                divider
-                actionRow("square.and.arrow.down", "Import plan") { showImport = true }
+                // The mock folds templates / import / folders into one row; the menu keeps all three
+                // functions (choque 9: conserve plantillas, import, carpetas).
+                actionMenuRow("rectangle.stack", "Templates · Import · Folders") {
+                    Button { showTemplates = true } label: { Label("Start from a template", systemImage: "square.stack.3d.up") }
+                    Button { showImport = true } label: { Label("Import plan", systemImage: "square.and.arrow.down") }
+                    Button { startNewFolder(moving: nil) } label: { Label("New folder", systemImage: "folder.badge.plus") }
+                }
                 divider
                 actionRow("book", "Exercise library", action: openLibrary)
             }
@@ -170,6 +184,41 @@ struct MisRutinasScreen: View {
         .buttonStyle(.plain)
     }
 
+    /// Like `actionRow` but reveals a menu (mock 1c's «Plantillas · Importar · Carpetas»), with a chevron.
+    private func actionMenuRow<Menu: View>(_ symbol: String, _ title: LocalizedStringKey,
+                                           @ViewBuilder menu: () -> Menu) -> some View {
+        SwiftUI.Menu {
+            menu()
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: symbol).frame(width: 30)
+                    .font(.system(size: 17)).foregroundStyle(theme.inkSecondary)
+                Text(title).font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+            }
+            .frame(minHeight: 44).contentShape(Rectangle())
+        }
+    }
+
+    /// The one-line metadata under a routine name (mock 1c): exercise count, then its top primary muscles.
+    private func metadataLine(_ r: Routine) -> String {
+        var parts = [exerciseCountText(exerciseCounts[r.id] ?? 0)]
+        let m = routineMuscles[r.id] ?? []
+        if !m.isEmpty { parts.append(m.joined(separator: ", ")) }
+        return parts.joined(separator: " · ")
+    }
+
+    /// Trailing status (mock 1c): «hoy» in green if it's today's scheduled routine, else «hace N d» from
+    /// the last time this routine was trained (nil if never).
+    private func statusText(_ r: Routine) -> (text: String, isToday: Bool)? {
+        let today = Calendar.current.component(.weekday, from: Date())
+        if schedule[today] == r.id { return (String(localized: "today"), true) }
+        guard let d = lastTrainedDays[r.id] else { return nil }
+        if d <= 0 { return (String(localized: "today"), false) }
+        return (d == 1 ? String(localized: "1 d ago") : String(localized: "\(d) d ago"), false)
+    }
+
     @ViewBuilder
     private func routineActions(_ r: Routine) -> some View {
         Button { builderTarget = .edit(r) } label: { Label("Edit routine", systemImage: "slider.horizontal.3") }
@@ -198,12 +247,20 @@ struct MisRutinasScreen: View {
             HStack(spacing: 8) {
                 Button { openRoutine(r.id) } label: {
                     HStack(spacing: 12) {
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(r.name).font(StrandFont.body).foregroundStyle(theme.ink)
-                            Text(exerciseCountText(exerciseCounts[r.id] ?? 0))
-                                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: 7) {
+                                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                                    .fill(routineTint(r.name)).frame(width: 8, height: 8)
+                                Text(r.name).font(StrandFont.body).fontWeight(.semibold).foregroundStyle(theme.ink)
+                            }
+                            Text(metadataLine(r)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                                .padding(.leading, 15)
                         }
                         Spacer(minLength: 8)
+                        if let status = statusText(r) {
+                            Text(status.text).font(StrandFont.caption)
+                                .foregroundStyle(status.isToday ? theme.dataRecovery : theme.inkTertiary)
+                        }
                     }
                     .frame(minHeight: 48).contentShape(Rectangle())
                 }
@@ -434,14 +491,49 @@ struct MisRutinasScreen: View {
     private func load() async {
         guard let store = await repo.storeHandle() else { loaded = true; return }
         let rs = (try? await store.routines()) ?? []
+        let all = await repo.allExercises()
+        let byId = Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         var counts: [String: Int] = [:]
+        var muscles: [String: [String]] = [:]
         for r in rs {
-            counts[r.id] = (try? await store.routineExercises(routineId: r.id))?.count ?? 0
+            let exs = (try? await store.routineExercises(routineId: r.id)) ?? []
+            counts[r.id] = exs.count
+            muscles[r.id] = Self.topMuscles(exs, byId: byId)
         }
+        let sched = (try? await store.routineSchedule()) ?? []
+        let sessions = (try? await store.recentSessions(limit: 200)) ?? []
         routines = rs
         exerciseCounts = counts
+        routineMuscles = muscles
+        schedule = Dictionary(sched.map { ($0.weekday, $0.routineId) }, uniquingKeysWith: { a, _ in a })
+        lastTrainedDays = Self.daysSinceLast(sessions)
         folders = (try? await store.routineFolders()) ?? []
         loaded = true
+    }
+
+    /// Top primary muscles for a routine as Spanish labels (`MuscleVocabulary`), frequency-ranked.
+    private static func topMuscles(_ exs: [RoutineExercise], byId: [String: Exercise]) -> [String] {
+        var tally: [String: Int] = [:]; var order: [String] = []
+        for re in exs {
+            guard let ex = byId[re.exerciseId] else { continue }
+            for m in ex.primaryMuscles { if tally[m] == nil { order.append(m) }; tally[m, default: 0] += 1 }
+        }
+        let idx = Dictionary(uniqueKeysWithValues: order.enumerated().map { ($1, $0) })
+        return order.sorted { let a = tally[$0] ?? 0, b = tally[$1] ?? 0
+            return a != b ? a > b : (idx[$0] ?? 0) < (idx[$1] ?? 0) }
+            .prefix(3).map { MuscleVocabulary.es[$0] ?? $0.capitalized }
+    }
+
+    /// Whole days since each routine was last completed (newest session per routine wins).
+    private static func daysSinceLast(_ sessions: [StrengthSession]) -> [String: Int] {
+        let cal = Calendar.current; let today = cal.startOfDay(for: Date())
+        var out: [String: Int] = [:]
+        for s in sessions where s.endTs != nil {
+            guard let rid = s.routineId, out[rid] == nil else { continue }
+            let d = cal.startOfDay(for: Date(timeIntervalSince1970: TimeInterval(s.startTs)))
+            out[rid] = cal.dateComponents([.day], from: d, to: today).day ?? 0
+        }
+        return out
     }
 
     private func refreshFoldersAndRoutines() async {

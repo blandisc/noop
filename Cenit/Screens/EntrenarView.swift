@@ -60,6 +60,9 @@ private struct EntrenarLanding: View {
     @State private var loaded = false
     @State private var routines: [Routine] = []
     @State private var exerciseCounts: [String: Int] = [:]
+    /// Top primary muscles per routine (Spanish display labels), built from the same per-routine exercise
+    /// fetch that feeds `exerciseCounts` — drives the hero muscle line and the «También en tu plan» subtitles.
+    @State private var routineMuscles: [String: [String]] = [:]
     /// The weekly split, `weekday → routineId` (Calendar convention, 1 = Sun … 7 = Sat). FER-531.
     @State private var split: [Int: String] = [:]
     /// Completed strength sessions (newest first), for the week strip's day states and the daily streak.
@@ -77,8 +80,6 @@ private struct EntrenarLanding: View {
     @State private var pendingRest: RestAction? = nil
     /// Drives the live-workout sheet (the chooser's / rest sheet's «En vivo»).
     @State private var showLive = false
-    /// Whether «Tu plan» is expanded. Collapsed each visit (not persisted) so the landing stays short.
-    @State private var planExpanded = false
     /// Drives the templates sheet opened straight on the mobility routine from the ③ «softer» suggestion
     /// (a TRAINING-day nudge; the rest sheet starts mobility directly instead). FER-554.
     @State private var showMobilityTemplate = false
@@ -111,12 +112,10 @@ private struct EntrenarLanding: View {
                     if split.isEmpty {
                         emptyStateB
                     } else {
-                        hoyCard          // ① hero «Hoy» — first now (F10)
-                        suggestionRow    // ② contextual lighter/heavier nudge
-                        weekStrip        // ③ week progress in one card
-                        streakStrip      // ③′ the daily-adherence streak graph
-                        tuPlan           // ④ plan, collapsible, single «Editar» (F5)
-                        dietFooter       // ⑤ Diet as a quiet footer link (F10)
+                        hoyCard          // ① hero «Hoy · {día}» — routine tint + recovery bullet (mock 1a)
+                        suggestionRow    // ② contextual FER-532 nudge (shown only when the engine fires)
+                        tambienEnTuPlan  // ③ the rest of the plan + utility rows (otra forma, Dieta)
+                        weekInstrument   // ④ compact week progress + streak above the dock
                     }
                 }
             }
@@ -225,8 +224,19 @@ private struct EntrenarLanding: View {
         card {
             Text(hoyOverline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
             if let r = todayRoutine {
-                Text(r.name).font(StrandFont.title2).foregroundStyle(theme.ink).padding(.top, 3)
-                metaText(r.id).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary).padding(.top, 2)
+                // Name + a routine-tinted square (the handoff's per-routine color), with the exercise/time
+                // meta trailing on the same line. The tint is the ONE point of color the mock allows here.
+                HStack(alignment: .center, spacing: 9) {
+                    RoundedRectangle(cornerRadius: 3, style: .continuous)
+                        .fill(routineTint(r.name)).frame(width: 8, height: 8)
+                    Text(r.name).font(StrandFont.title2).foregroundStyle(theme.ink)
+                    Spacer(minLength: 8)
+                    metaText(r.id).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                }
+                .padding(.top, 3)
+                if let muscles = routineMuscleLine(r.id) {
+                    Text(muscles).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary).padding(.top, 2)
+                }
             } else {
                 Text("Rest").font(StrandFont.title2).foregroundStyle(theme.inkSecondary).padding(.top, 3)
                 Text("Your plan doesn't schedule today. A good day to recover.")
@@ -242,17 +252,20 @@ private struct EntrenarLanding: View {
                 }
             }
             empezarButton.padding(.top, 12)
-            // The secondary chooser only makes sense when there's a session to start instead — on a rest
-            // day the door itself opens the rest sheet, which already lists the other options.
-            if todayRoutine != nil {
-                Button { showChooser = true } label: {
-                    Text("Another type? · intervals · breathe · live")
-                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                        .frame(maxWidth: .infinity, alignment: .center).padding(.top, 7).contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
         }
+    }
+
+    /// The handoff's per-routine tint (mock 1a). The four flow colors coincide with existing Instrumento
+    /// data tokens, so we reuse them rather than hand-editing the generated theme: push → `dataStrain`
+    /// (ember), pull → `dataHrv` (teal), leg → `dataSleep` (indigo). We map by the routine name's split
+    /// keyword (es/en); anything else gets a stable pick so each routine keeps one consistent dot.
+    private func routineTint(_ name: String) -> Color {
+        let n = name.lowercased()
+        if n.contains("empuj") || n.contains("push") || n.contains("pecho") { return theme.dataStrain }
+        if n.contains("tir") || n.contains("pull") || n.contains("espalda") { return theme.dataHrv }
+        if n.contains("pierna") || n.contains("leg") || n.contains("quad") || n.contains("glúteo") { return theme.dataSleep }
+        let tints = [theme.dataStrain, theme.dataHrv, theme.dataSleep]
+        return tints[abs(name.hashValue) % tints.count]
     }
 
     /// Exercise count + a rough time estimate for the hero meta line. The estimate is a transparent
@@ -299,6 +312,27 @@ private struct EntrenarLanding: View {
         model.startStrengthSession(routineId: r.id, routineName: r.name, slots: todaySlots)
     }
 
+    /// «Empezar» on a «También en tu plan» routine (mock 1a): load that routine's slots on demand (same
+    /// catalog + override + «la última vez» resolution as today's prefetch) and start the guided session.
+    /// An empty routine opens its plan to edit instead of an empty session.
+    private func startRoutine(_ rid: String, name: String) {
+        Task {
+            guard let store = await repo.storeHandle() else { return }
+            let exs = (try? await store.routineExercises(routineId: rid)) ?? []
+            guard !exs.isEmpty else { openRoutine(rid); return }
+            let custom = (try? await store.customExercises()) ?? []
+            let customByID = Dictionary(custom.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+            let overrides = (try? await store.exerciseTypeOverrides()) ?? [:]
+            var slots: [StrengthSessionModel.PlanSlot] = []
+            for re in exs {
+                let ex = (ExerciseCatalog.byID(re.exerciseId) ?? customByID[re.exerciseId])?.applying(overrides)
+                let last = (try? await store.lastWorkSets(exerciseId: re.exerciseId, limit: 4)) ?? []
+                slots.append(.init(re: re, exercise: ex, lastSets: last))
+            }
+            model.startStrengthSession(routineId: rid, routineName: name, slots: slots)
+        }
+    }
+
     // MARK: - ② Suggestion (engine is FER-532 — TrainingRegulation.lightAlternative)
     //
     // A CONTEXTUAL lighter/heavier alternative, derived from today's recovery against your personal
@@ -308,33 +342,20 @@ private struct EntrenarLanding: View {
     @ViewBuilder private var suggestionRow: some View {
         if let alt = TrainingRegulation.lightAlternative(recovery: recovery) {
             Button { suggestionAction(alt) } label: {
-                suggestionRowBody(icon: suggestionIcon(alt), label: suggestionLabel(alt),
-                                  iconTint: theme.inkSecondary, labelTint: theme.ink, showsChevron: true, dashed: false)
+                HStack(spacing: 11) {
+                    Image(systemName: suggestionIcon(alt)).font(.system(size: 17)).foregroundStyle(theme.inkSecondary)
+                    Text(suggestionLabel(alt)).font(StrandFont.subhead).foregroundStyle(theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                }
+                .padding(.horizontal, 15).padding(.vertical, 13)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(theme.hairlineStrong, lineWidth: 1))
             }
             .buttonStyle(.plain)
-        } else {
-            suggestionRowBody(icon: "sparkles",
-                              label: "Suggestions will appear here based on your recovery",
-                              iconTint: theme.inkDim, labelTint: theme.inkTertiary, showsChevron: false, dashed: true)
         }
-    }
-
-    private func suggestionRowBody(icon: String, label: LocalizedStringKey, iconTint: Color,
-                                   labelTint: Color, showsChevron: Bool, dashed: Bool) -> some View {
-        HStack(spacing: 11) {
-            Image(systemName: icon).font(.system(size: 17)).foregroundStyle(iconTint)
-            Text(label).font(StrandFont.subhead).foregroundStyle(labelTint)
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 8)
-            if showsChevron {
-                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-            }
-        }
-        .padding(.horizontal, 15).padding(.vertical, 13)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .strokeBorder(style: dashed ? StrokeStyle(lineWidth: 1, dash: [3, 3]) : StrokeStyle(lineWidth: 1))
-            .foregroundStyle(theme.hairlineStrong))
     }
 
     private func suggestionIcon(_ alt: TrainingRegulation.LightAlternative) -> String {
@@ -360,20 +381,97 @@ private struct EntrenarLanding: View {
 
     // MARK: - ③ Week strip + streak (one card now — F10)
 
-    private var weekStrip: some View {
+    // MARK: - ③ «También en tu plan» — the rest of the plan + utility rows (mock 1a)
+    //
+    // Today's routine is the hero; every OTHER routine in the split lists here with its tint, its
+    // «day · muscles» line and an «Empezar» pill that starts THAT session directly (loading its slots on
+    // demand). Below the routines, two utility rows: «otra forma de entrenar» (the secondary chooser
+    // until 3e lands in F3) and Diet. The section overline keeps a quiet «Editar» into the weekly plan.
+
+    private var tambienEnTuPlan: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("Also in your plan").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Spacer(minLength: 8)
+                Button { openWeeklyPlan() } label: {
+                    Text("Edit").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.bottom, 4)
+            ForEach(otherPlanRoutines, id: \.routineId) { row in
+                planRoutineRow(row)
+            }
+            utilityRow(icon: "figure.cooldown",
+                       title: String(localized: "Mobility · intervals · breathe · live")) { showChooser = true }
+            utilityRow(icon: "fork.knife",
+                       title: String(localized: "Diet · log today's meals"), last: true) { openDiet() }
+        }
+    }
+
+    /// One «También en tu plan» routine: tint + name + «day · muscles», with an «Empezar» pill that starts
+    /// that routine's session (its slots load on tap). Tapping the rest of the row opens the routine.
+    private func planRoutineRow(_ row: (routineId: String, name: String, days: String)) -> some View {
+        HStack(spacing: 12) {
+            Button { openRoutine(row.routineId) } label: {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 7) {
+                        RoundedRectangle(cornerRadius: 3, style: .continuous)
+                            .fill(routineTint(row.name)).frame(width: 8, height: 8)
+                        Text(row.name).font(StrandFont.body).foregroundStyle(theme.ink)
+                    }
+                    Text(planRowSubtitle(row)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        .padding(.leading, 15)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            Button { startRoutine(row.routineId, name: row.name) } label: {
+                Text("Empezar").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                    .padding(.horizontal, 14).padding(.vertical, 6)
+                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.vertical, 9)
+        .overlay(alignment: .bottom) { Divider().overlay(theme.hairline) }
+    }
+
+    /// A utility row in «También en tu plan» (otra forma de entrenar, Diet): glyph + label + chevron.
+    private func utilityRow(icon: String, title: String, last: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: icon).font(.system(size: 15)).foregroundStyle(theme.inkSecondary).frame(width: 18)
+                Text(title).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+            }
+            .padding(.vertical, 12).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .overlay(alignment: .bottom) { if !last { Divider().overlay(theme.hairline) } }
+    }
+
+    /// «day · muscles» for a plan routine: the weekdays it trains, then its top primary muscles (if known).
+    private func planRowSubtitle(_ row: (routineId: String, name: String, days: String)) -> String {
+        let muscles = routineMuscles[row.routineId] ?? []
+        return muscles.isEmpty ? row.days : ([row.days] + muscles).joined(separator: " · ")
+    }
+
+    // MARK: - ④ Week instrument — compact progress + streak above the dock (mock 1a)
+
+    private var weekInstrument: some View {
         let states = WeeklySplit.weekStates(split: split, completedWeekdays: completedWeekdays,
                                             todayWeekday: todayWeekday, orderedWeekdays: orderedWeekdays)
-        return card {
-            HStack {
-                Text("Your week").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Spacer()
-                // Progress + streak in one line; the whole right side opens the full history (FER-574).
+        return VStack(alignment: .leading, spacing: 0) {
+            Divider().overlay(theme.hairline).padding(.bottom, 12)
+            HStack(alignment: .firstTextBaseline) {
+                (Text("Your week") + Text(verbatim: " · ") + weekSummary)
+                    .instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Spacer(minLength: 8)
                 Button { openHistory() } label: {
-                    HStack(spacing: 5) {
-                        weekSummary.font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                        Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-                    }
-                    .contentShape(Rectangle())
+                    Text(streakText).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityHint(Text("See full history"))
@@ -381,64 +479,18 @@ private struct EntrenarLanding: View {
             HStack(spacing: 6) {
                 ForEach(states, id: \.weekday) { st in dayToken(st) }
             }
-            .padding(.top, 13)
-            Text("Tap today to start · a done day to see the session")
-                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                .padding(.top, 9)
+            .padding(.top, 9)
         }
     }
 
-    /// This week's progress («2 of 4»). The streak lives in its own `streakStrip` graph below, so it's no
-    /// longer folded in here. Built as `Text` so the chevron sits flush after it.
+    /// This week's progress («2 of 4»), as `Text` so it composes flush inside the overline.
     private var weekSummary: Text {
         Text("\(weekDoneCount) of \(weekPlannedCount)")
     }
 
-    // MARK: - ③′ Streak strip (the daily-adherence graph)
-    //
-    // A thin DAY-level strip (no card): the count + a row of cells, one per recent day. The streak is
-    // «days keeping your plan» — you trained on a training day OR rested on a rest day (`WeeklySplit`).
-    // A rest day is kept (faint green); only a missed training day breaks the run. Tapping opens history.
-
-    private var streakStrip: some View {
-        Button { openHistory() } label: {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .firstTextBaseline, spacing: 7) {
-                    Text("\(streakDays)").font(StrandFont.number(20, weight: .semibold)).foregroundStyle(theme.ink)
-                    Text(streakUnit).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    Spacer(minLength: 8)
-                    Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-                }
-                HStack(spacing: 3) {
-                    ForEach(Array(streakStripStates.enumerated()), id: \.offset) { _, st in streakCell(st) }
-                }
-            }
-            .padding(.horizontal, 2)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .combine)
-        .accessibilityHint(Text("See full history"))
-    }
-
-    @ViewBuilder
-    private func streakCell(_ state: WeeklySplit.DayAdherence) -> some View {
-        let shape = RoundedRectangle(cornerRadius: 4, style: .continuous)
-        Group {
-            switch state {
-            case .metTrained:   shape.fill(theme.dataRecovery)                 // trained → kept (strong)
-            case .metRest:      shape.fill(theme.dataRecovery).opacity(0.28)   // rested → kept (faint)
-            case .missed:       shape.fill(theme.hairlineStrong)               // skipped a training day
-            case .pendingToday: shape.fill(theme.paperHi).overlay(shape.strokeBorder(theme.ink, lineWidth: 1.2))  // today, awaiting
-            }
-        }
-        .frame(maxWidth: .infinity).frame(height: 18)
-    }
-
-    /// The strip shows the trailing fortnight; the count headline carries any longer run.
-    private var streakStripStates: [WeeklySplit.DayAdherence] { Array(adherenceStates.suffix(14)) }
-    private var streakUnit: String {
-        streakDays == 1 ? String(localized: "day on your plan") : String(localized: "days on your plan")
+    /// The adherence streak in the mock's «12 días en racha» voice.
+    private var streakText: String {
+        streakDays == 1 ? String(localized: "1 day on streak") : String(localized: "\(streakDays) days on streak")
     }
 
     private func dayToken(_ st: WeeklySplit.DayStatus) -> some View {
@@ -482,83 +534,6 @@ private struct EntrenarLanding: View {
             }
         }
         .frame(height: 46)
-    }
-
-    // MARK: - ④ Tu plan — a collapsible disclosure with a single «Editar» action (F5)
-    //
-    // The day list folds behind the «Tu plan» header (collapsed by default each visit) so the landing
-    // stays short. The header is the toggle; expanded it reveals the day rows and an «Editar» action.
-    // Create / import / templates / library no longer live here — they're consolidated in «Mis rutinas»
-    // (F4), reached from the editor's «Gestionar rutinas».
-
-    private var tuPlan: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            planHeader
-            if planExpanded {
-                card {
-                    ForEach(Array(planRows.enumerated()), id: \.offset) { idx, row in
-                        if idx > 0 { Divider().overlay(theme.hairline) }
-                        Button { openRoutine(row.routineId) } label: {
-                            HStack(spacing: 10) {
-                                Text(row.name).font(StrandFont.body).foregroundStyle(theme.ink)
-                                Spacer(minLength: 8)
-                                Text(row.days).font(StrandFont.mono).foregroundStyle(theme.inkTertiary)
-                            }
-                            .frame(minHeight: 44).contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-        }
-    }
-
-    /// The «Tu plan» disclosure header. The whole row toggles the day list; «Editar» (only when expanded)
-    /// is a distinct button that captures its own tap, the rest of the row toggles.
-    private var planHeader: some View {
-        HStack {
-            Text("Your plan").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Spacer(minLength: 8)
-            if planExpanded {
-                Button { openWeeklyPlan() } label: {
-                    Text("Edit").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                }
-                .buttonStyle(.plain)
-            } else {
-                Text(planDaysText).font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
-            }
-            Image(systemName: "chevron.down")
-                .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-                .rotationEffect(.degrees(planExpanded ? 180 : 0))
-        }
-        .contentShape(Rectangle())
-        .onTapGesture { withAnimation(.easeInOut(duration: 0.22)) { planExpanded.toggle() } }
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
-        .accessibilityHint(Text(planExpanded ? "Collapse your plan" : "Expand your plan"))
-    }
-
-    /// Collapsed-header hint: how many days the split trains.
-    private var planDaysText: String {
-        let n = split.keys.count
-        return n == 1 ? String(localized: "1 day") : String(localized: "\(n) days")
-    }
-
-    // MARK: - ⑤ Diet footer (parking — F10)
-
-    private var dietFooter: some View {
-        Button { openDiet() } label: {
-            HStack(spacing: 7) {
-                Image(systemName: "fork.knife").font(.system(size: 13)).foregroundStyle(theme.inkTertiary)
-                Text("Diet").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                Text("for now").font(StrandFont.footnote).foregroundStyle(theme.inkDim)
-                Spacer(minLength: 8)
-                Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(theme.inkDim)
-            }
-            .padding(.horizontal, 2).padding(.top, 2).contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: - Empty state B (no split yet → build the week)
@@ -813,6 +788,17 @@ private struct EntrenarLanding: View {
         }
     }
 
+    /// «También en tu plan» lists every scheduled routine EXCEPT today's (which is the hero).
+    private var otherPlanRoutines: [(routineId: String, name: String, days: String)] {
+        planRows.filter { $0.routineId != todayRoutineId }
+    }
+
+    /// The hero's muscle line: today's routine's top primary muscles, «·»-joined (nil when unknown).
+    private func routineMuscleLine(_ rid: String) -> String? {
+        let m = routineMuscles[rid] ?? []
+        return m.isEmpty ? nil : m.joined(separator: " · ")
+    }
+
     private var hoyOverline: String {
         let day = Calendar.current.standaloneWeekdaySymbols[(todayWeekday - 1) % 7]
         return String(localized: "Today · \(day)")
@@ -831,8 +817,15 @@ private struct EntrenarLanding: View {
     private func load() async {
         guard let store = await repo.storeHandle() else { loaded = true; return }
         let rs = (try? await store.routines()) ?? []
+        let customAll = (try? await store.customExercises()) ?? []
+        let customAllByID = Dictionary(customAll.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         var counts: [String: Int] = [:]
-        for r in rs { counts[r.id] = (try? await store.routineExercises(routineId: r.id))?.count ?? 0 }
+        var muscles: [String: [String]] = [:]
+        for r in rs {
+            let exs = (try? await store.routineExercises(routineId: r.id)) ?? []
+            counts[r.id] = exs.count
+            muscles[r.id] = Self.topMuscles(exs, customByID: customAllByID)
+        }
         let sched = (try? await store.routineSchedule()) ?? []
         let splitMap = Dictionary(sched.map { ($0.weekday, $0.routineId) }, uniquingKeysWith: { a, _ in a })
         // Prefetch today's routine into guided-session slots so «Empezar» starts in one tap (F1). Only
@@ -852,12 +845,34 @@ private struct EntrenarLanding: View {
         }
         routines = rs
         exerciseCounts = counts
+        routineMuscles = muscles
         split = splitMap
         todaySlots = slots
         sessions = (try? await store.recentSessions(limit: 200)) ?? []
         loaded = true
         // A «Empezar» from the Daily Brief that arrived before the prefetch finished now has its slots (FER-613).
         if startWhenLoaded { startWhenLoaded = false; startToday() }
+    }
+
+    /// Tally the primary muscles across a routine's exercises → the top three, as Spanish display labels
+    /// (`MuscleVocabulary`). Frequency-ranked; ties keep first-seen order. Feeds the hero muscle line and
+    /// the «También en tu plan» subtitles from the same per-routine fetch that counts exercises.
+    private static func topMuscles(_ exs: [RoutineExercise], customByID: [String: Exercise]) -> [String] {
+        var tally: [String: Int] = [:]
+        var order: [String] = []
+        for re in exs {
+            guard let ex = ExerciseCatalog.byID(re.exerciseId) ?? customByID[re.exerciseId] else { continue }
+            for m in ex.primaryMuscles {
+                if tally[m] == nil { order.append(m) }
+                tally[m, default: 0] += 1
+            }
+        }
+        let idx = Dictionary(uniqueKeysWithValues: order.enumerated().map { ($1, $0) })
+        let top = order.sorted {
+            let a = tally[$0] ?? 0, b = tally[$1] ?? 0
+            return a != b ? a > b : (idx[$0] ?? 0) < (idx[$1] ?? 0)
+        }.prefix(3)
+        return top.map { MuscleVocabulary.es[$0] ?? $0.capitalized }
     }
 }
 

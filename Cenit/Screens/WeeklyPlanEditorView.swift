@@ -26,6 +26,9 @@ struct WeeklyPlanEditorView: View {
     @State private var folders: [RoutineFolder] = []
     /// The split as `weekday → routineId` (Calendar weekday convention, 1 = Sun … 7 = Sat).
     @State private var schedule: [Int: String] = [:]
+    /// Planned work-set volume per routine, split into the four coarse groups (mock 1b's mini-bars +
+    /// weekly footer). Built from each routine's exercises' primary muscles. `[routineId: [group: sets]]`.
+    @State private var routineVolume: [String: [MuscleGroup: Int]] = [:]
 
     /// Monday-first display order in the Calendar weekday convention (2 = Mon … 1 = Sun).
     private let weekdays = [2, 3, 4, 5, 6, 7, 1]
@@ -47,6 +50,7 @@ struct WeeklyPlanEditorView: View {
                         emptyState
                     } else {
                         weekSection
+                        volumeFooter
                         manageSection
                     }
                 }
@@ -65,17 +69,32 @@ struct WeeklyPlanEditorView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Train").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text("Weekly plan").font(StrandFont.title1).foregroundStyle(theme.ink)
+            Text("Your week, in balance").font(StrandFont.title1).foregroundStyle(theme.ink)
             if loaded && !routines.isEmpty {
-                Text(summaryText)
+                Text(balanceOpinion)
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
 
-    private var summaryText: String {
-        String(localized: "\(assignedCount) of 7 days planned · tap a day to change it")
+    /// This week's planned volume per group, summed across the scheduled days (drives the opinion + footer).
+    private var weeklyVolume: [MuscleGroup: Int] {
+        var out: [MuscleGroup: Int] = [:]
+        for rid in schedule.values { for (g, n) in routineVolume[rid] ?? [:] { out[g, default: 0] += n } }
+        return out
+    }
+
+    /// The sub that opines on the week's balance (mock 1b): how many training days, and whether the big
+    /// three (push/pull/legs) are each covered.
+    private var balanceOpinion: String {
+        let days = assignedCount
+        if days == 0 { return String(localized: "No training days yet · assign a routine to a day.") }
+        let uncovered = [MuscleGroup.push, .pull, .legs].contains { (weeklyVolume[$0] ?? 0) == 0 }
+        let daysText = days == 1 ? String(localized: "1 training day") : String(localized: "\(days) training days")
+        return uncovered
+            ? String(localized: "\(daysText) · some groups are still uncovered.")
+            : String(localized: "\(daysText) · push, pull and legs each covered.")
     }
 
     // MARK: - The week (one row per day)
@@ -115,22 +134,54 @@ struct WeeklyPlanEditorView: View {
                         .font(StrandFont.mono)
                         .foregroundStyle(wd == today ? theme.ink : theme.inkSecondary)
                     if wd == today {
-                        Text("today").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                        Text("today").textCase(.uppercase)
+                            .font(StrandFont.footnote).fontWeight(.semibold).foregroundStyle(theme.dataRecovery)
                     }
                 }
                 .frame(width: 52, alignment: .leading)
 
                 if let rid = schedule[wd], let r = routines.first(where: { $0.id == rid }) {
-                    Text(r.name).font(StrandFont.body).foregroundStyle(theme.ink)
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(r.name).font(StrandFont.body).fontWeight(wd == today ? .semibold : .regular)
+                            .foregroundStyle(theme.ink)
+                        miniBars(rid)
+                    }
+                    Spacer(minLength: 8)
+                    Text(seriesText(rid)).font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary)
                 } else {
                     Text("Rest").font(StrandFont.body).foregroundStyle(theme.inkDim)
+                    Spacer(minLength: 8)
                 }
-                Spacer(minLength: 8)
                 Image(systemName: "chevron.down")
                     .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
-            .frame(minHeight: 52).contentShape(Rectangle())
+            .frame(minHeight: 52)
+            .padding(.horizontal, wd == today ? 10 : 0)
+            .background {
+                if wd == today {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous).fill(theme.surface)
+                }
+            }
+            .contentShape(Rectangle())
         }
+    }
+
+    /// Up to three tinted mini-bars (mock 1b): the routine's top groups by planned set volume, widths
+    /// proportional to their share.
+    @ViewBuilder private func miniBars(_ rid: String) -> some View {
+        let vol = (routineVolume[rid] ?? [:]).sorted { $0.value > $1.value }.prefix(3)
+        let maxV = vol.map(\.value).max() ?? 1
+        HStack(spacing: 3) {
+            ForEach(Array(vol.enumerated()), id: \.offset) { _, e in
+                Capsule().fill(e.key.tint(theme))
+                    .frame(width: max(12, CGFloat(e.value) / CGFloat(maxV) * 34), height: 4)
+            }
+        }
+    }
+
+    private func seriesText(_ rid: String) -> String {
+        let n = (routineVolume[rid] ?? [:]).values.reduce(0, +)
+        return String(localized: "\(n) sets")
     }
 
     /// A routine in the picker — a checkmark marks the one currently assigned to this day. `r.name` is
@@ -140,6 +191,30 @@ struct WeeklyPlanEditorView: View {
             if schedule[wd] == r.id { Label(r.name, systemImage: "checkmark") }
             else { Text(r.name) }
         }
+    }
+
+    // MARK: - Weekly volume footer (mock 1b) — planned sets bucketed into the four groups
+
+    private var volumeFooter: some View {
+        let vol = weeklyVolume
+        let maxV = MuscleGroup.allCases.map { vol[$0] ?? 0 }.max() ?? 1
+        return VStack(alignment: .leading, spacing: 10) {
+            Text("Weekly volume by group").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            HStack(alignment: .bottom, spacing: 14) {
+                ForEach(MuscleGroup.allCases, id: \.self) { g in
+                    let v = vol[g] ?? 0
+                    VStack(spacing: 5) {
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .fill(v == 0 ? theme.hairlineStrong : g.tint(theme))
+                            .frame(height: max(8, CGFloat(v) / CGFloat(max(1, maxV)) * 34))
+                            .frame(maxWidth: .infinity)
+                        Text(g.label).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    }
+                }
+            }
+        }
+        .padding(.top, 6)
+        .overlay(alignment: .top) { Divider().overlay(theme.hairline) }
     }
 
     // MARK: - Manage (single link to the routine home — F4/F5)
@@ -209,8 +284,31 @@ struct WeeklyPlanEditorView: View {
         guard let store = await repo.storeHandle() else { loaded = true; return }
         routines = (try? await store.routines()) ?? []
         folders = (try? await store.routineFolders()) ?? []
+        // Planned volume per routine, bucketed into the four groups (mock 1b mini-bars + footer). Each
+        // exercise's work sets are attributed to its dominant group, so the per-routine sum is total sets.
+        let all = await repo.allExercises()
+        let byId = Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        var out: [String: [MuscleGroup: Int]] = [:]
+        for r in routines {
+            let exs = await repo.routineExercises(routineId: r.id)
+            var byGrp: [MuscleGroup: Int] = [:]
+            for re in exs {
+                guard let ex = byId[re.exerciseId], let g = exerciseGroup(ex) else { continue }
+                let work = re.sets.filter { $0.kind == .work }.count
+                byGrp[g, default: 0] += work > 0 ? work : re.targetSets
+            }
+            out[r.id] = byGrp
+        }
+        routineVolume = out
         await reloadSchedule()
         loaded = true
+    }
+
+    /// An exercise's dominant group: the most-represented group across its primary muscles (nil if none map).
+    private func exerciseGroup(_ ex: Exercise) -> MuscleGroup? {
+        var tally: [MuscleGroup: Int] = [:]
+        for m in ex.primaryMuscles { if let g = MuscleGroup.of(m) { tally[g, default: 0] += 1 } }
+        return tally.max { $0.value < $1.value }?.key
     }
 
     private func reloadSchedule() async {
@@ -232,6 +330,45 @@ struct WeeklyPlanEditorView: View {
             guard let store = await repo.storeHandle() else { return }
             try? await store.clearRoutineSchedule(weekday: wd)
             await reloadSchedule()
+        }
+    }
+}
+
+// MARK: - Coarse muscle grouping (mock 1b mini-bars + weekly volume footer)
+//
+// A planning-level bucketing of the catalog's 17 primary muscles into the four groups the mock draws.
+// It's a display convention for the planner, not a physiological claim (no /cso surface): it colors the
+// per-day mini-bars and sums the weekly «Volumen por grupo». Push/pull/legs take the routine tints;
+// core stays ink-gray so a core deficit reads as absence, not another color.
+enum MuscleGroup: CaseIterable {
+    case push, pull, legs, core
+
+    var label: String {
+        switch self {
+        case .push: return String(localized: "PUSH")
+        case .pull: return String(localized: "PULL")
+        case .legs: return String(localized: "LEGS")
+        case .core: return String(localized: "CORE")
+        }
+    }
+
+    func tint(_ theme: InstrumentoTheme) -> Color {
+        switch self {
+        case .push: return theme.dataStrain
+        case .pull: return theme.dataHrv
+        case .legs: return theme.dataSleep
+        case .core: return theme.inkTertiary
+        }
+    }
+
+    /// Map a catalog primary-muscle key (lowercased English) to its group; nil for anything unmapped.
+    static func of(_ muscle: String) -> MuscleGroup? {
+        switch muscle {
+        case "chest", "shoulders", "triceps": return .push
+        case "lats", "middle back", "lower back", "traps", "biceps", "forearms", "neck": return .pull
+        case "quadriceps", "hamstrings", "glutes", "calves", "abductors", "adductors": return .legs
+        case "abdominals": return .core
+        default: return nil
         }
     }
 }
