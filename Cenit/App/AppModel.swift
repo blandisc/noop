@@ -525,11 +525,32 @@ final class AppModel: ObservableObject {
     /// the one Activity from that. Cheap and idempotent, so it's safe to call on any relevant change.
     /// FER-740: the same snapshot feeds the Apple Watch mirrored session (no-op without a watch).
     private func reconcileRestActivity() {
+        // FER-758: an HR-guided rest ends the instant the pulse has recovered to target (past the 20s
+        // floor), not only when the fallback clock runs out — and the watch buzzes «ready» to say so.
+        // Only the honest HR-recovery path ends early here; the clock ceiling stays the watch's own timer.
+        if let s = strengthSession, s.summary == nil, s.phase == .resting,
+           s.currentRestMode == .heartRate, let started = s.restStartedAt {
+            let elapsed = max(0, Int(Date().timeIntervalSince(started)))
+            let hr = (live.connected && live.worn) ? bpm : nil
+            let v = RestReadinessRule.evaluate(currentHR: hr, worn: live.worn,
+                                               restingHR: restingHrBaseline, elapsedS: elapsed,
+                                               targetHR: s.currentRestTarget)
+            if v.ready, v.reason == .hrRecovered {
+                s.skipRest()
+                restActivity.reconcile(nil)
+                mirroringBridge?.pushRestEnded(sessionId: s.id, recovered: true)
+                return
+            }
+        }
         let snapshot = computeRestSnapshot()
         restActivity.reconcile(snapshot)
         if let snapshot { mirroringBridge?.pushRest(snapshot) }
         else if let sid = strengthSession?.id { mirroringBridge?.pushRestEnded(sessionId: sid) }
     }
+
+    /// The most recent nightly resting HR — the baseline for HR-guided rest targets (FER-348/FER-758).
+    /// Same source the live sheet reads, so both compute the identical «recovered» target.
+    private var restingHrBaseline: Double? { repo.days.compactMap(\.restingHr).last.map(Double.init) }
 
     /// The display-ready rest snapshot, or nil when there's nothing to show (no session, showing the
     /// receipt, not resting, or the focused set is gone).

@@ -119,4 +119,21 @@ final class RestReadinessTests: XCTestCase {
         XCTAssertTrue(r.ready)            // at/under target and the floor (20s) elapsed
         XCTAssertEqual(r.reason, .hrRecovered)
     }
+
+    // FER-758: the pulse is already well below target when the rest starts (e.g. HR 60 with resting 78 →
+    // target 98). Before the 20s floor it must NOT be ready; at the floor it flips to ready/hrRecovered —
+    // that transition is exactly what lets the session end the rest early and buzz the watch.
+    func testAlreadyBelowTargetReadyOnlyAfterFloor() {
+        let restingHigh: Double = 78   // target = 78 + 20 (default margin) = 98
+        let before = RestReadinessRule.evaluate(currentHR: 60, worn: true, restingHR: restingHigh, elapsedS: 10)
+        XCTAssertEqual(before.targetReadyHR, 98)
+        XCTAssertEqual(before.bpmToReady, 0)
+        XCTAssertFalse(before.ready)                 // floor not met yet
+        XCTAssertEqual(before.state, .almostReady)
+
+        let atFloor = RestReadinessRule.evaluate(currentHR: 60, worn: true, restingHR: restingHigh, elapsedS: 20)
+        XCTAssertTrue(atFloor.ready)
+        XCTAssertEqual(atFloor.reason, .hrRecovered)
+        XCTAssertEqual(atFloor.state, .ready)
+    }
 }

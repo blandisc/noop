@@ -20,8 +20,10 @@ public enum WorkoutMirrorMessage: Codable, Equatable {
     /// iPhone → watch: a rest window opened / changed. Reuses the existing `RestActivitySnapshot`.
     case rest(RestActivitySnapshot)
 
-    /// iPhone → watch: left the rest window (back to the set) without ending the session.
-    case restEnded(sessionId: String)
+    /// iPhone → watch: the rest window ended without ending the session. `recovered == true` means the
+    /// pulse dropped back to target (FER-758) → the watch fires the «ready» buzz + banner; `false` means
+    /// the user simply returned to the set → the watch cancels its local timer silently, no buzz.
+    case restEnded(sessionId: String, recovered: Bool)
 
     /// iPhone → watch: end the session. `save == false` = the session was discarded (nothing logged)
     /// → the watch ends WITHOUT saving a workout. `externalUUID` is the shared idempotency key.
