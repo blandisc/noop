@@ -1081,8 +1081,10 @@ struct TodayView: View {
     // (re-scoring del numeral), cambio de huso horario (exención de regularidad) y permisos PARCIALES
     // de Apple Salud— se difieren a issues propios de /pm; la tarjeta ya soporta su forma.
 
-    /// Umbral de batería crítica del strap (%). Debajo de esto, la noche corre peligro de perderse.
-    private static let criticalBatteryPct: Double = 12
+    /// Umbral de batería crítica del strap (%): la MISMA zona roja que `theme.batteryColor(forLevel:)`
+    /// (`≤10 %` → `critical`), para que el banner y el color del icono no discrepen. En esta zona la
+    /// noche corre peligro de perderse.
+    private static let criticalBatteryPct: Double = 10
 
     /// ¿Horario diurno (8–22)? Puro reloj: no gritamos «banda desconectada» mientras duermes.
     private var isDaytime: Bool { clockHourNow >= 8 && clockHourNow < 22 }
@@ -1102,7 +1104,7 @@ struct TodayView: View {
     /// El banner de estado activo (mayor prioridad primero), o nada. Presentacional: cada rama arma un
     /// `TodayBanner` con copy es-MX. Orden = urgencia descendente (batería antes que hueco de base).
     @ViewBuilder private var todayStatusBanner: some View {
-        if let pct = live.batteryPct, pct < Self.criticalBatteryPct, live.charging != true {
+        if let pct = live.batteryPct, pct <= Self.criticalBatteryPct, live.charging != true {
             TodayBanner(label: "Critical battery", dot: theme.critical,
                         title: "Band at \(Int(pct.rounded()))%",
                         subtitle: "charge it before bed or you lose the night")
