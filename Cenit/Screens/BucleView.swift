@@ -1278,13 +1278,13 @@ enum ExperimentDates {
     /// Whole days from `a` to `b` ("yyyy-MM-dd"), 0 when same day, clamped at 0.
     static func dayspan(from a: String, to b: String) -> Int {
         guard let da = parse.date(from: a), let db = parse.date(from: b) else { return 0 }
-        return max(0, Calendar.current.dateComponents([.day], from: da, to: db).day ?? 0)
+        return max(0, DayKey.utcCalendar.dateComponents([.day], from: da, to: db).day ?? 0)
     }
 
     /// Ascending calendar day-keys from `a` to `b` inclusive; empty if `a` > `b` or parse fails.
     static func dayKeys(from a: String, to b: String) -> [String] {
         guard let da = parse.date(from: a), let db = parse.date(from: b), da <= db else { return [] }
-        let cal = Calendar.current
+        let cal = DayKey.utcCalendar
         var out: [String] = []
         var d = da
         while d <= db {
@@ -1300,13 +1300,13 @@ enum ExperimentDates {
         parse.date(from: key).map { longES.string(from: $0) }
     }
 
-    static let parse: DateFormatter = {
-        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; f.locale = Locale(identifier: "en_US_POSIX")
-        return f
-    }()
+    /// Canonical UTC day-key formatter (FER-754). The label formatter below is pinned to the SAME
+    /// zone so parse→format round-trips never straddle a midnight (the old pair was local+local;
+    /// UTC+UTC is the canon and is DST-stable).
+    static let parse = DayKey.utcFormatter
 
     static let longES: DateFormatter = {
-        let f = DateFormatter(); f.locale = .current; f.dateFormat = "EEE d MMM"
+        let f = DateFormatter(); f.locale = .current; f.timeZone = TimeZone(identifier: "UTC"); f.dateFormat = "EEE d MMM"
         return f
     }()
 }

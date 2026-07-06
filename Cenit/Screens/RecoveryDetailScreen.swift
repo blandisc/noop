@@ -912,13 +912,8 @@ struct RecoveryDetailScreen: View {
             .padding(.top, 2)
     }
 
-    static let dayParser: DateFormatter = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "UTC")
-        f.dateFormat = "yyyy-MM-dd"
-        return f
-    }()
+    /// The canonical UTC day-key formatter — read side of the day-key contract (FER-754).
+    static let dayParser = DayKey.utcFormatter
 
     /// Locale-aware "Wed 14 May" for the calendar read-out (orders/abbreviates per device locale). (FER-235)
     static let heatDateFmt: DateFormatter = {

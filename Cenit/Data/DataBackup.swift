@@ -124,10 +124,7 @@ enum DataBackup {
 
     /// "Cénit-backup-2026-06-07.sqlite"
     private static func defaultBackupName() -> String {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.dateFormat = "yyyy-MM-dd"
-        return "Cénit-backup-\(f.string(from: Date())).sqlite"
+        return "Cénit-backup-\(DayKey.local(Date())).sqlite"
     }
 
     private static func timestamp() -> String {

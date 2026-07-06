@@ -407,13 +407,8 @@ struct SkinTempDetailScreen: View {
         return (lo - pad)...(hi + pad)
     }
 
-    static let dayParser: DateFormatter = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "UTC")
-        f.dateFormat = "yyyy-MM-dd"
-        return f
-    }()
+    /// The canonical UTC day-key formatter — read side of the day-key contract (FER-754).
+    static let dayParser = DayKey.utcFormatter
 }
 
 // MARK: - SkinTempDetailModel — the data the screen draws, built ONCE from the repo (DB-free presentation)

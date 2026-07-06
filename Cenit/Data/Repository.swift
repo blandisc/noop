@@ -148,21 +148,14 @@ final class Repository: ObservableObject {
     }
 
     /// `yyyy-MM-dd` in the device's local zone, matching how `DailyMetric.day` is stored.
-    private static let dayKeyFormatter: DateFormatter = {
-        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; f.locale = Locale(identifier: "en_US_POSIX"); return f
-    }()
+    /// Canonical instance lives in `WhoopStore.DayKey` (FER-754); this is the same object.
+    private static let dayKeyFormatter = DayKey.localFormatter
     static func localDayKey(_ date: Date) -> String { dayKeyFormatter.string(from: date) }
 
     /// Parse a stored `yyyy-MM-dd` day key back to a Date in UTC (en_US_POSIX). Charts parse keys in
     /// UTC for DST-stable positions — distinct from `localDayKey` (which WRITES keys in local zone).
     /// The single shared inverse of the day-key contract (FER-325).
-    nonisolated private static let dayKeyParser: DateFormatter = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "UTC")
-        f.dateFormat = "yyyy-MM-dd"
-        return f
-    }()
+    nonisolated private static let dayKeyParser = DayKey.utcFormatter
     nonisolated static func parseDayKey(_ s: String) -> Date? { dayKeyParser.date(from: s) }
 
     /// Format a chart date BACK to its `yyyy-MM-dd` key in UTC — the exact inverse of `parseDayKey`,

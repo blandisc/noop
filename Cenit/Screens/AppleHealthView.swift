@@ -692,10 +692,7 @@ extension AppleHealthView {
 @MainActor
 private func appleHealthPreviewData() -> AppleHealthView.PreviewData {
     let cal = Calendar(identifier: .gregorian)
-    let fmt = DateFormatter()
-    fmt.locale = Locale(identifier: "en_US_POSIX")
-    fmt.timeZone = TimeZone(identifier: "UTC")
-    fmt.dateFormat = "yyyy-MM-dd"
+    let fmt = DayKey.utcFormatter
     let today = Date()
 
     var rows: [AppleDaily] = []

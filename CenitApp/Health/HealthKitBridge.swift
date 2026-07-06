@@ -738,10 +738,9 @@ final class HealthKitBridge: ObservableObject {
     // travel day, never silent duplicates. These helpers are `nonisolated` so they can run on
     // HealthKit's query-callback queue without hopping to the main actor (`HealthKitBridge` is
     // `@MainActor`); the formatter is an immutable, Sendable constant, safe to read from any context.
-    nonisolated private static let dayFormatter: DateFormatter = {
-        let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX")
-        f.dateFormat = "yyyy-MM-dd"; return f   // no timeZone → device-local, matching Repository.dayKeyFormatter
-    }()
+    // Device-local on purpose (HealthKit sample dates are civil-day concepts) — the canonical
+    // WRITE-side formatter, matching how DailyMetric.day keys are minted (FER-754).
+    nonisolated private static let dayFormatter = DayKey.localFormatter
     nonisolated private static func dayString(_ date: Date) -> String { dayFormatter.string(from: date) }
     nonisolated private static func date(from day: String) -> Date? { dayFormatter.date(from: day) }
 }

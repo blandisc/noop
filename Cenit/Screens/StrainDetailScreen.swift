@@ -502,8 +502,7 @@ struct StrainDetailModel {
 private func sampleStrainSeries(days: Int = 60) -> [(day: String, value: Double)] {
     let cal = Calendar(identifier: .gregorian)
     let today = cal.startOfDay(for: Date())
-    let f = DateFormatter()
-    f.locale = Locale(identifier: "en_US_POSIX"); f.timeZone = TimeZone(identifier: "UTC"); f.dateFormat = "yyyy-MM-dd"
+    let f = DayKey.utcFormatter
     return (0..<days).map { i in
         let date = cal.date(byAdding: .day, value: -(days - 1 - i), to: today)!
         let v = 11 + 5 * sin(Double(i) / 5.0) + Double((i * 7) % 5) - 2

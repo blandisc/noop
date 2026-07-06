@@ -685,9 +685,6 @@ final class AICoachEngine: ObservableObject {
     }
 
     private func dateString(_ ts: Int) -> String {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.dateFormat = "yyyy-MM-dd"
-        return f.string(from: Date(timeIntervalSince1970: TimeInterval(ts)))
+        return DayKey.local(Date(timeIntervalSince1970: TimeInterval(ts)))
     }
 }
