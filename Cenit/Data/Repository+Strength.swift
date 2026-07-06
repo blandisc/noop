@@ -40,6 +40,15 @@ extension Repository {
             reference: reference, value: value, updatedTs: Int(Date().timeIntervalSince1970))
     }
 
+    /// Pinpoint-update one planned set's rest override (FER-715, per-set scope) — `rest == nil` clears it
+    /// back to inheriting the exercise. No-op when the store can't be opened.
+    func updateRoutineSetRest(routineSetId: String, routineId: String, rest: RestConfig?) async {
+        guard let store = await storeHandle() else { return }
+        try? await store.updateRoutineSetRest(
+            routineSetId: routineSetId, routineId: routineId, rest: rest,
+            updatedTs: Int(Date().timeIntervalSince1970))
+    }
+
     func deleteRoutine(id: String) async throws {
         guard let store = await storeHandle() else { return }
         try await store.deleteRoutine(id: id)

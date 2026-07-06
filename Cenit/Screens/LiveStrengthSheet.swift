@@ -17,18 +17,17 @@ private func massString(_ kg: Double, units: UnitSystem) -> String {
     return "\(plateNumber(v)) \(UnitFormatter.massUnit(units))"
 }
 
-// MARK: - Guided strength session (FER-347)
+// MARK: - Guided strength session (FER-347, full-screen since FER-716)
 //
-// The heart of the strength tracker: the guided, set-by-set execution. A «Foco» (the dominant weight in
-// the effort hue, a «register set» button, the «la última vez» reference + a suggested bump) plus a
-// «cajón» — the full editable set table behind a detented sheet (`presentationDetents`) — and a rest
-// phase that doubles as the «change exercise» bridge (the plan navigator: skip / reorder).
+// The heart of the strength tracker: the guided, set-by-set execution as ONE continuous logging table
+// («Flujo Entrenar v3 · 1j»). No modal «Foco» — the active row edits inline with the custom keypad, a
+// time/distance row expands with a compact stopwatch, and the rest slots in as the inline 1k card.
+// Finishing renders the 1l receipt in place.
 //
-// Following the `LiveWorkoutSheet` pattern (FER-197): the session lives in `AppModel` (global), so
-// closing the sheet or switching tabs never loses it; the Train hub re-presents it. No nested
-// NavigationStack — the drawer is a SHEET with detents, not a pushed screen (FER-171). The fixed
-// countdown is shipped here; the smart, HR-driven rest is FER-348 (W3·descanso) — its slot is the
-// rest chip. Runs fully offline and without HealthKit (logging strength is manual).
+// The session lives in `AppModel` (global) and is presented as a `fullScreenCover` at the RootTabView
+// shell, so minimizing («‹») or switching tabs never loses it; the floating `SessionPill` re-opens it
+// from any tab. No nested NavigationStack (FER-171). Runs fully offline and without HealthKit
+// (logging strength is manual).
 
 // MARK: - Session model (the durable, observable state owned by AppModel)
 
@@ -37,6 +36,8 @@ private func massString(_ kg: Double, units: UnitSystem) -> String {
 /// carries strap HR (FER-399); the view omits those blocks rather than inventing a zero.
 struct StrengthSummary: Equatable {
     var routineName: String
+    /// When the session was saved (drives the receipt's «Sesión guardada · {fecha}» overline).
+    var endTs: Int
     var durationS: Int
     var volumeKg: Double
     var setCount: Int
@@ -55,14 +56,48 @@ struct StrengthSummary: Equatable {
     var prs: [PR]
     var muscles: [String]
     var isFirstTime: Bool
+    /// The previous completed session of the SAME routine (FER-716), for the «Contra tu última {rutina}»
+    /// bars. `nil` when this routine has no earlier session (or the session was routine-less).
+    var comparison: Comparison?
+    /// One row per exercise with logged sets, in plan order — the receipt's «Por ejercicio» list.
+    var exercises: [ExerciseLine]
 
     /// One new record set this session (already filtered to those that strictly beat a prior PR).
+    /// `priorValueKg`/`priorReps` carry the beaten record, for the «100 → 102,5 kg» framing.
     struct PR: Equatable, Identifiable {
         var id: String { "\(exercise):\(metric.rawValue)" }
         let exercise: String
         let metric: PRMetric
         let valueKg: Double?
         let reps: Int?
+        var priorValueKg: Double? = nil
+        var priorReps: Int? = nil
+    }
+
+    /// The last same-routine session's aggregates the bars compare against.
+    struct Comparison: Equatable {
+        var prevVolumeKg: Double
+        var prevSetCount: Int
+        var prevDurationS: Int
+
+        /// The volume change vs last time, as a rounded percent — single-sourced so the headline and
+        /// the comparison bar never disagree. `nil` when there's no prior volume to compare against.
+        func volumeDeltaPct(_ currentVolumeKg: Double) -> Int? {
+            guard prevVolumeKg > 0 else { return nil }
+            return Int((((currentVolumeKg - prevVolumeKg) / prevVolumeKg) * 100).rounded())
+        }
+    }
+
+    /// One «Por ejercicio» row: logged sets, the session's top datum for its type, and the trend
+    /// against «la última vez» (+1 up / 0 even / −1 down; nil = nothing to compare).
+    struct ExerciseLine: Equatable, Identifiable {
+        var id: String { name }
+        let name: String
+        let setCount: Int
+        let topWeightKg: Double?
+        let topTimeS: Int?
+        let topDistanceM: Double?
+        let trend: Int?
     }
 }
 
@@ -190,8 +225,6 @@ final class StrengthSessionModel: ObservableObject {
 
     // MARK: Editing the current set
 
-    func setCurrentWeight(_ kg: Double) { mutateCurrentSet { $0.weightKg = max(0, kg) } }
-    func setCurrentReps(_ reps: Int) { mutateCurrentSet { $0.reps = max(0, reps) } }
     func bumpWeight(byKg delta: Double) { mutateCurrentSet { $0.weightKg = max(0, $0.weightKg + delta) } }
     func bumpReps(_ delta: Int) { mutateCurrentSet { $0.reps = max(0, $0.reps + delta) } }
     func bumpDistance(byMeters delta: Double) { mutateCurrentSet { $0.distanceM = max(0, ($0.distanceM ?? 0) + delta) } }
@@ -489,8 +522,9 @@ final class StrengthSessionModel: ObservableObject {
             let sets: [WorkingSet] = slot.re.plannedSets.filter { $0.kind == .work }.map { p in
                 let weight = p.weightKg ?? lastWeight ?? 0
                 let reps = usesReps ? (p.reps ?? lastReps ?? 8) : 0
-                // FER-715: carry the set's own rest override (nil = inherit the exercise at rest time).
-                return WorkingSet(id: UUID().uuidString, weightKg: weight, reps: reps, done: false, rest: p.rest)
+                // FER-715: keep the planned `RoutineSet` id (so a per-set rest edit can persist back to the
+                // routine) and carry the set's own rest override (nil = inherit the exercise at rest time).
+                return WorkingSet(id: p.id, weightKg: weight, reps: reps, done: false, rest: p.rest)
             }
             return ExerciseRun(id: slot.re.id, exerciseId: slot.re.exerciseId,
                                name: slot.exercise.map(StrengthDisplay.name) ?? String(localized: "Exercise"),
@@ -522,25 +556,30 @@ struct LiveStrengthSheet: View {
     var theme: InstrumentoTheme = .base
 
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var confirmFinish = false
     @State private var confirmDiscard = false
-    /// Whether the optional «Foco» (big-button mode) sheet is up — opened by tapping a set's number badge,
-    /// or a time/distance row (which captures with the stopwatch). FER-497.
-    @State private var showFoco = false
-    /// Per-exercise time goal (seconds) for the `time` Foco — a display target, default 30s.
-    @State private var goals: [String: Int] = [:]
-    /// The inline editing focus + a per-cell text buffer, so an empty / unparseable entry keeps the
-    /// previous value instead of falling to zero (the buffer is dropped on blur, reformatting the datum).
-    @FocusState private var focusedCell: CellRef?
-    @State private var cellBuffers: [CellRef: String] = [:]
+    /// The cell the custom keypad is editing (FER-716) — one at a time, so a single working buffer is
+    /// enough. `nil` = no cell active (keypad hidden). Replaces the native keyboard + `@FocusState`.
+    @State private var activeCell: CellRef?
+    /// The working string of the active cell. Shown while editing; parsed into the model on every change,
+    /// so the value persists without an explicit commit. Empty / unparseable keeps the previous value.
+    @State private var buffer: String = ""
+    /// Whether the user has typed since activating this cell — enables «replace on first keystroke»
+    /// (tap a cell showing 60, type 6 → 6, not 606), the expected Hevy-style behavior.
+    @State private var bufferTyped: Bool = false
     /// The exercise whose detail sheet is open — set by tapping an exercise's name (FER-538). nil = closed.
     /// Resolving the full `Exercise` (catalog + custom) is deferred to the tap so the session model stays lean.
     @State private var detailExercise: Exercise?
     /// The exercise whose rest editor is open — set by tapping its rest chip (FER-540). nil = closed.
     @State private var restEdit: RestEdit?
+    /// Whether the receipt numerals show their final values (FER-716). Starts false so the first
+    /// appearance rolls 0 → value; `playReceiptCountUp` flips it (animated only the first time).
+    @State private var receiptCountUp = false
 
-    /// Identifies which exercise's rest is being edited; the editor sheet seeds itself from `runs[id]`.
-    struct RestEdit: Identifiable { let id: Int }
+    /// Identifies which exercise's rest is being edited (FER-716); `setIndex` non-nil = a per-set edit
+    /// (from the rest card), nil = exercise-scope (from the rest chip). The editor seeds from `runs[id]`.
+    struct RestEdit: Identifiable { let id: Int; var setIndex: Int? = nil }
 
     /// Identifies an editable inline cell: a weight or reps field at (exerciseIndex, setIndex).
     enum CellRef: Hashable { case weight(Int, Int), reps(Int, Int) }
@@ -580,15 +619,6 @@ struct LiveStrengthSheet: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .instrumentoTheme(theme)
-        .sheet(isPresented: $showFoco) {
-            focoSheet
-                .environmentObject(model)
-                .instrumentoTheme(theme)
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
-                .presentationBackground(theme.paper)
-                .preferredColorScheme(.light)
-        }
         .sheet(item: $detailExercise) { ex in
             NavigationStack {
                 ExerciseDetailScreen(exercise: ex)
@@ -603,21 +633,24 @@ struct LiveStrengthSheet: View {
         .sheet(item: $restEdit) { edit in
             if session.runs.indices.contains(edit.id) {
                 let run = session.runs[edit.id]
-                NavigationStack {
-                    RestEditorSheet(mode: run.restMode, seconds: run.restSeconds,
-                                    reference: run.hrRestReference, value: run.hrRestValue,
-                                    persistsToRoutine: session.routineId != nil) { mode, seconds, ref, value in
-                        commitRest(ei: edit.id, mode: mode, seconds: seconds, reference: ref, value: value)
+                let si = edit.setIndex
+                let current: RestConfig = (si.flatMap { run.sets.indices.contains($0) ? run.sets[$0].rest : nil }) ?? run.restConfig
+                RestEditorScreen(
+                    theme: theme, exerciseName: run.name,
+                    setNumber: si.map { $0 + 1 },
+                    current: current,
+                    persistsToRoutine: session.routineId != nil,
+                    restingHR: restingBaseline, maxHR: profileMaxHR,
+                    defaultApplyToAll: si == nil,
+                    onCancel: { restEdit = nil },
+                    onApply: { config, applyToAll, saveToRoutine in
+                        applyRestEdit(ei: edit.id, si: si, config: config, applyToAll: applyToAll, saveToRoutine: saveToRoutine)
+                        restEdit = nil
                     }
-                    .navigationTitle(Text(run.name))
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar { ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") { restEdit = nil }.foregroundStyle(theme.inkSecondary)
-                    } }
-                    .toolbarBackground(theme.paper, for: .navigationBar)
-                }
-                .instrumentoTheme(theme).preferredColorScheme(.light)
-                .presentationDetents([.medium])
+                )
+                .preferredColorScheme(.light)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.hidden)
                 .presentationBackground(theme.paper)
             }
         }
@@ -658,6 +691,10 @@ struct LiveStrengthSheet: View {
                                 } label: { Label("Delete", systemImage: "trash") }
                             }
                     }
+                    // The rest card (1k) slots between this exercise's rows and the next, while resting here.
+                    if session.phase == .resting, ei == session.currentIndex, session.summary == nil {
+                        restInlineCard.plainRow(top: 4)
+                    }
                     addSetButton(ei).plainRow(top: 4)
                 }
             }
@@ -669,19 +706,38 @@ struct LiveStrengthSheet: View {
         .background(theme.paper)
         .environment(\.defaultMinListRowHeight, 1)
         .safeAreaInset(edge: .top, spacing: 0) { sessionHeader }
-        .onChange(of: focusedCell) { _, newValue in
-            // Drop every stale buffer on blur / focus move (each cell reformats from its datum) and make
-            // the focused row the «active» one.
-            cellBuffers = cellBuffers.filter { $0.key == newValue }
-            if let f = newValue { let (ei, si) = Self.indices(f); session.select(exerciseIndex: ei, setIndex: si) }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if let cell = activeCell { keypad(for: cell) }
         }
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Button("Next") { focusNextCell() }
-                Spacer()
-                Button("Done") { focusedCell = nil }
+        .onChange(of: activeCell) { _, newValue in
+            // Seed the buffer from the newly-active cell's current value (replace-on-first-keystroke), and
+            // make its row the «active» one so the header/rest logic tracks it.
+            if let f = newValue {
+                let (ei, si) = Self.indices(f)
+                session.select(exerciseIndex: ei, setIndex: si)
+                buffer = currentCellString(f); bufferTyped = false
+            } else {
+                buffer = ""; bufferTyped = false
             }
         }
+    }
+
+    /// The custom keypad bound to the active cell (FER-716).
+    @ViewBuilder private func keypad(for cell: CellRef) -> some View {
+        let (ei, si) = Self.indices(cell)
+        let run = session.runs.indices.contains(ei) ? session.runs[ei] : nil
+        SessionKeypad(
+            theme: theme,
+            stepLabel: isWeightCell(cell) ? (imperial ? "±5" : "±2,5") : "±1",
+            canCopyPrevious: run.map { previousText($0) != nil } ?? false,
+            onDigit: { keypadInput(String($0)) },
+            onComma: { keypadComma() },
+            onBackspace: { keypadBackspace() },
+            onNext: { focusNextCell() },
+            onCopyPrevious: { if let run { prefillTapped(ei: ei, si: si, run: run); syncBufferFromModel(cell) } },
+            onStep: { keypadStep(cell) }
+        )
+        .transition(.move(edge: .bottom))
     }
 
     /// The first non-skipped exercise's index — its header skips the inter-exercise top gap.
@@ -695,7 +751,15 @@ struct LiveStrengthSheet: View {
 
     private var sessionHeader: some View {
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-            HStack(alignment: .firstTextBaseline) {
+            // Row 1: minimize «‹» (session stays alive, the pill re-opens it) · routine name · «Terminar».
+            HStack(spacing: 10) {
+                Button { model.strengthSheetPresented = false } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 19, weight: .semibold)).foregroundStyle(theme.ink)
+                        .frame(width: 44, height: 44).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("Minimize session"))
                 Text(session.routineName).font(StrandFont.title2).foregroundStyle(theme.ink)
                     .lineLimit(1).minimumScaleFactor(0.7)
                 Spacer(minLength: 8)
@@ -708,17 +772,39 @@ struct LiveStrengthSheet: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Finish workout"))
             }
-            // The autoregulation line that «Rutina de hoy» used to carry (F6): now that the session starts
-            // in one tap, the «push / hold / ease» implication of today's recovery rides here instead of a
-            // duplicated band. Quiet, one line, hidden while calibrating. The cited rule is `TrainingRegulation`.
-            if let rec = recovery {
-                HStack(alignment: .firstTextBaseline, spacing: 7) {
-                    Circle().fill(theme.dataRecovery).frame(width: 7, height: 7)
-                    Text(recoveryLine(rec)).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+            .padding(.leading, -10)   // pull the 44pt chevron target back to the 24pt margin edge
+
+            // Row 2: per-exercise progress, filled by how done each exercise is.
+            SessionProgressBar(segments: progressSegments, hue: theme.dataStrain, track: theme.hairline)
+                .accessibilityLabel(Text("Session progress"))
+                .accessibilityValue(Text("\(session.doneCount) of \(sessionSetsTotal) sets"))
+
+            // Row 3: the big running clock (the session's dominant datum in the header).
+            TimelineView(.periodic(from: Date(), by: 1)) { ctx in
+                Text(Self.clock(max(0, Int(ctx.date.timeIntervalSince1970) - session.startTs)))
+                    .font(InstrumentoType.groteskSessionClock)
+                    .tracking(InstrumentoType.groteskSessionClockTracking)
+                    .foregroundStyle(theme.ink)
+                    .accessibilityLabel(Text("Elapsed \(Self.clock(max(0, Int(ctx.date.timeIntervalSince1970) - session.startTs)))"))
             }
-            sessionCounters
+
+            // Row 4: quiet counters — volume · sets · (kcal only when the strap is streaming, no dashes).
+            Text(counterLine).font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkSecondary)
+                .accessibilityElement(children: .combine)
+
+            // Row 5: live BPM with the one always-on pulse of the app — hidden (not dashed) with no strap.
+            if let bpm = model.bpm {
+                HStack(spacing: 6) {
+                    BpmPulseDot(color: theme.dataHeart, animated: !reduceMotion)
+                    Text("\(bpm)").font(StrandFont.caption.monospacedDigit()).foregroundStyle(theme.dataHeart)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(Text("Heart rate \(bpm)"))
+            } else if let rec = recovery {
+                // No strap: keep the «push / hold / ease» autoregulation line (F6), discreet, in place of BPM.
+                Text(recoveryLine(rec)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .padding(.horizontal, NoopMetrics.screenPadding)
         .padding(.top, 14)
@@ -727,34 +813,41 @@ struct LiveStrengthSheet: View {
         .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
     }
 
-    /// Duración · Volumen · Series — plain counters in ink (no color: they're not verdicts). The session
-    /// clock ticks live; volume is the sum of done weight×reps; series is the done count.
-    private var sessionCounters: some View {
-        let cells = Group {
-            TimelineView(.periodic(from: Date(), by: 1)) { ctx in
-                counterCell("Duration", Self.clock(max(0, Int(ctx.date.timeIntervalSince1970) - session.startTs)))
-            }
-            counterCell("Volume", massText(sessionVolumeKg))
-            counterCell("Sets", "\(session.doneCount)")
-            // Live HR from the strap, shown for EVERY exercise (not just cardio) so you can see the
-            // session is actually reading your pulse — "—" until a fresh sample lands (FER-498).
-            counterCell("HR", model.bpm.map { "\($0)" } ?? "—")
-        }
-        return Group {
-            if reflow {
-                VStack(alignment: .leading, spacing: 8) { cells }
-            } else {
-                HStack(alignment: .top, spacing: 22) { cells; Spacer(minLength: 0) }
-            }
+    /// One progress segment per non-skipped exercise: width ∝ its set count, fill = fraction of its sets done.
+    private var progressSegments: [SessionProgressBar.Segment] {
+        session.runs.filter { !$0.skipped }.map { run in
+            let total = max(run.sets.count, 1)
+            let done = run.sets.filter(\.done).count
+            return .init(sets: total, done: Double(done) / Double(total))
         }
     }
 
-    private func counterCell(_ label: LocalizedStringKey, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text(value).font(StrandFont.number(19, weight: .regular)).monospacedDigit().foregroundStyle(theme.ink)
-        }
-        .accessibilityElement(children: .combine)
+    /// Total planned sets across non-skipped exercises (the progress denominator).
+    private var sessionSetsTotal: Int {
+        session.runs.filter { !$0.skipped }.reduce(0) { $0 + $1.sets.count }
+    }
+
+    /// «2.480 kg · 8/17 series · ~312 kcal» — the kcal clause is dropped entirely when there's no strap
+    /// HR (no dashes, no zero): the receipt is where the estimate lands.
+    private var counterLine: String {
+        var parts = ["\(massText(sessionVolumeKg))",
+                     "\(session.doneCount)/\(sessionSetsTotal) " + String(localized: "series")]
+        if let kcal = liveKcal { parts.append("~\(kcal) kcal") }
+        return parts.joined(separator: " · ")
+    }
+
+    /// Live energy estimate (kcal) from the strap samples captured so far — nil (so the clause is hidden)
+    /// until the strap has streamed HR. Same Keytel entry point as the receipt/persist path (FER-715).
+    private var liveKcal: Int? {
+        let samples = session.hrSamples
+        guard samples.count >= Calories.strengthEnergyMinSamples else { return nil }
+        let now = Int(Date().timeIntervalSince1970)
+        let profile = UserProfile(weightKg: model.profile.weightKg, heightCm: model.profile.heightCm,
+                                  age: Double(model.profile.age), sex: model.profile.sex)
+        let kcal = Calories.estimateStrengthEnergy(
+            hrSamples: samples, durationSeconds: Double(max(0, now - session.startTs)),
+            profile: profile, hrMax: Double(model.profile.hrMax))
+        return Int(kcal.rounded())
     }
 
     /// Done weight×reps volume across non-skipped exercises (bodyweight adds lastre×reps; time/distance 0).
@@ -843,31 +936,37 @@ struct LiveStrengthSheet: View {
         }
     }
 
-    /// Open the rest editor for an exercise (FER-540).
-    private func openRestEditor(ei: Int) {
+    /// Open the rest editor (FER-540/716). `setIndex` non-nil → a per-set edit (from the rest card);
+    /// nil → exercise-scope (from the rest chip).
+    private func openRestEditor(ei: Int, setIndex: Int? = nil) {
         guard session.runs.indices.contains(ei) else { return }
-        restEdit = RestEdit(id: ei)
+        restEdit = RestEdit(id: ei, setIndex: setIndex)
     }
 
-    /// Apply an edited rest to the session (remaining rests of that exercise) and, when the session is
-    /// backed by a saved routine, persist it so next time the routine remembers it (FER-540).
-    private func commitRest(ei: Int, mode: RestMode, seconds: Int,
-                            reference: HRRestReference, value: Double) {
-        session.updateRest(exercise: ei, mode: mode, seconds: seconds, reference: reference, value: value)
+    /// Apply an edited rest from the 1e editor (FER-716): to the live session at the chosen scope, and —
+    /// when «save to routine» is on and the session is backed by a saved routine — persist it (per-set via
+    /// `updateRoutineSetRest`, or the whole exercise via the cascading `updateRoutineExerciseRest`).
+    private func applyRestEdit(ei: Int, si: Int?, config: RestConfig, applyToAll: Bool, saveToRoutine: Bool) {
         guard session.runs.indices.contains(ei) else { return }
-        persistRestToRoutine(session.runs[ei])
-    }
-
-    /// Persist the run's edited rest to its backing `RoutineExercise` (matched by id) via a pinpoint
-    /// repo update — leaves the routine's other exercises and per-set rows untouched. No-op for a
-    /// freestyle session (no routine to write to).
-    private func persistRestToRoutine(_ run: StrengthSessionModel.ExerciseRun) {
-        guard let routineId = session.routineId else { return }
-        Task {
-            await model.repo.updateRoutineExerciseRest(
-                routineExerciseId: run.id, routineId: routineId,
-                mode: run.restMode, seconds: run.restSeconds,
-                reference: run.hrRestReference, value: run.hrRestValue)
+        if applyToAll || si == nil {
+            session.updateRest(exercise: ei, mode: config.mode, seconds: config.seconds,
+                               reference: config.hrReference, value: config.hrValue)
+            if saveToRoutine, let routineId = session.routineId {
+                let reId = session.runs[ei].id
+                Task {
+                    await model.repo.updateRoutineExerciseRest(
+                        routineExerciseId: reId, routineId: routineId,
+                        mode: config.mode, seconds: config.seconds,
+                        reference: config.hrReference, value: config.hrValue)
+                }
+            }
+        } else if let si {
+            session.updateRest(exercise: ei, set: si, rest: config)
+            if saveToRoutine, let routineId = session.routineId,
+               session.runs[ei].sets.indices.contains(si) {
+                let routineSetId = session.runs[ei].sets[si].id   // seeded from the planned RoutineSet id
+                Task { await model.repo.updateRoutineSetRest(routineSetId: routineSetId, routineId: routineId, rest: config) }
+            }
         }
     }
 
@@ -876,7 +975,8 @@ struct LiveStrengthSheet: View {
         let titles = columnTitles(type)
         return HStack(spacing: 8) {
             Text("SET").instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 44, alignment: .center)
-            Text("PREVIOUS").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("PREVIOUS · REST").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                .lineLimit(1).minimumScaleFactor(0.8)
                 .frame(maxWidth: .infinity, alignment: .leading)
             ForEach(titles.indices, id: \.self) { i in
                 Text(titles[i]).instrumentoOverline().foregroundStyle(theme.inkTertiary)
@@ -911,8 +1011,12 @@ struct LiveStrengthSheet: View {
     @ViewBuilder private func setRow(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun,
                                      set: StrengthSessionModel.WorkingSet, last: Bool) -> some View {
         let active = ei == session.currentIndex && si == run.currentSet && !set.done && session.summary == nil
+        // A time / distance set, when it's the active row, expands inline with a compact stopwatch +
+        // live HR zone (FER-716: this replaces the modal «Foco»). Other rows are the flat logging row.
+        let cardio = run.type == .time || run.type == .distance
         Group {
-            if reflow { reflowRow(ei: ei, si: si, run: run, set: set) }
+            if active && cardio { cardioInlineRow(ei: ei, si: si, run: run, set: set) }
+            else if reflow { reflowRow(ei: ei, si: si, run: run, set: set) }
             else { gridRow(ei: ei, si: si, run: run, set: set) }
         }
         .padding(.vertical, reflow ? 8 : 2)
@@ -952,28 +1056,237 @@ struct LiveStrengthSheet: View {
         }
     }
 
-    /// The set-number badge — tap to open the optional Foco focused on this row. Always in the effort hue
-    /// inside a ring, as the approved render (FER-499).
-    private func badge(ei: Int, si: Int, number: Int) -> some View {
-        Button { openFoco(ei: ei, si: si) } label: {
-            Text("\(number)").font(StrandFont.caption).monospacedDigit()
-                .foregroundStyle(theme.dataStrain)
-                .frame(width: 26, height: 26)
-                .overlay(Circle().strokeBorder(theme.dataStrain, lineWidth: 1.5))
-                .frame(width: 44, height: 44)
-                .contentShape(Rectangle())
+    /// The active time / distance row, expanded inline (FER-716) — a compact stopwatch (the elapsed /
+    /// captured time as the dominant datum), a Start/Stop capsule (Stop registers the set and starts the
+    /// rest), a distance stepper for distance sets, and the strap's live HR zone on the right.
+    @ViewBuilder private func cardioInlineRow(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun,
+                                              set: StrengthSessionModel.WorkingSet) -> some View {
+        let running = session.timerStart != nil
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .center, spacing: 12) {
+                badge(ei: ei, si: si, number: si + 1)
+                // The clock — ticks live while running, else shows the captured time.
+                Group {
+                    if running {
+                        TimelineView(.periodic(from: Date(), by: 1)) { ctx in cardioClock(session.timerElapsed(now: ctx.date)) }
+                    } else {
+                        cardioClock(set.timeS ?? 0)
+                    }
+                }
+                Spacer(minLength: 8)
+                if let hr = model.bpm { compactZone(hr) }
+                startStopButton(running: running)
+                checkButton(ei: ei, si: si, set: set)
+            }
+            if run.type == .distance { distanceStepperRow(set.distanceM ?? 0) }
         }
-        .buttonStyle(.plain)
-        .frame(width: reflow ? nil : 44, alignment: .center)
-        .accessibilityLabel(Text("Set \(number)"))
-        .accessibilityHint(Text("Opens the big-button mode"))
+        .frame(minHeight: run.type == .distance ? 96 : 64)
+        .accessibilityElement(children: .contain)
     }
 
-    /// «ANTERIOR» — last time's value; tap to copy it into this row. «—» (and inert) when there's none.
+    private func cardioClock(_ elapsed: Int) -> some View {
+        Text(Self.clock(elapsed))
+            .font(InstrumentoType.groteskSessionClock).tracking(InstrumentoType.groteskSessionClockTracking)
+            .foregroundStyle(elapsed > 0 ? theme.ink : theme.inkTertiary)
+            .monospacedDigit()
+    }
+
+    private func startStopButton(running: Bool) -> some View {
+        Button {
+            withAnimation(.snappy) {
+                running ? session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR)
+                        : session.startSetTimer()
+            }
+        } label: {
+            Text(running ? "Stop" : "Start").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .padding(.horizontal, 14).frame(height: 34)
+                .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(running ? "Stop and register set" : "Start timer"))
+    }
+
+    /// Compact live HR zone (♥ bpm · Zn) in the zone hue — hidden when there's no strap (no dashes).
+    private func compactZone(_ hr: Int) -> some View {
+        let zone = hrZone(hr)
+        let hue = theme.hrZoneRamp[max(0, min(theme.hrZoneRamp.count - 1, zone - 1))]
+        return HStack(spacing: 5) {
+            Image(systemName: "heart.fill").font(.system(size: 12)).foregroundStyle(hue)
+            Text("\(hr)").font(StrandFont.subhead.monospacedDigit()).foregroundStyle(hue)
+            Text("Z\(zone)").font(StrandFont.caption).foregroundStyle(hue)
+                .padding(.horizontal, 6).padding(.vertical, 2)
+                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous)
+                    .strokeBorder(theme.hairline, lineWidth: 1))
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text("Heart rate \(hr), zone \(zone)"))
+    }
+
+    private func distanceStepperRow(_ meters: Double) -> some View {
+        HStack(spacing: 14) {
+            stepper(system: "minus", size: 26) { session.bumpDistance(byMeters: -distanceStepM) }
+                .accessibilityLabel(Text("Decrease distance"))
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(distanceNumber(meters)).font(StrandFont.number(18, weight: .regular)).monospacedDigit()
+                    .foregroundStyle(theme.ink)
+                Text(imperial ? "mi" : "km").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            }
+            stepper(system: "plus", size: 26) { session.bumpDistance(byMeters: distanceStepM) }
+                .accessibilityLabel(Text("Increase distance"))
+        }
+        .padding(.leading, 44)
+    }
+
+    // MARK: - Inline rest card (1k, FER-716)
+
+    /// The rest card — the ONE surface in the flow that lifts off the paper (`floatShadow`), because it's
+    /// literally above the session's time. Slots between the marked set and the next; the table never
+    /// disappears. By-HR: the live pulse drops toward the threshold; by-time: a countdown. No strap on an
+    /// HR rest → it degrades to a capped timer with an honest notice (no dashes, no red).
+    @ViewBuilder private var restInlineCard: some View {
+        let hrMode = session.currentRestMode == .heartRate
+        VStack(alignment: .leading, spacing: 12) {
+            if hrMode, let started = session.restStartedAt {
+                TimelineView(.periodic(from: started, by: 1)) { ctx in
+                    let elapsed = max(0, Int(ctx.date.timeIntervalSince(started)))
+                    let v = RestReadinessRule.evaluate(
+                        currentHR: model.bpm, worn: model.live.worn, restingHR: restingBaseline,
+                        elapsedS: elapsed, targetHR: session.currentRestTarget)
+                    if v.state == .noSignal {
+                        restCardTimeBody(end: session.restEndsAt, now: ctx.date, noStrapFallback: true)
+                    } else {
+                        restCardHRBody(elapsed: elapsed, readiness: v)
+                    }
+                }
+                .sensoryFeedback(.success, trigger: model.bpm != nil && session.currentRestTarget != nil)
+            } else if let end = session.restEndsAt, let started = session.restStartedAt {
+                TimelineView(.periodic(from: started, by: 1)) { ctx in
+                    restCardTimeBody(end: end, now: ctx.date, noStrapFallback: false)
+                }
+            }
+            restCardPills
+        }
+        .padding(.horizontal, 17).padding(.vertical, 15)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+            .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+        .floatShadow(theme)
+        .padding(.horizontal, -4).padding(.vertical, 10)
+        .accessibilityElement(children: .combine)
+    }
+
+    /// By-HR rest body: the live pulse dropping toward the threshold, with a gradient track + ink tick.
+    private func restCardHRBody(elapsed: Int, readiness v: RestReadiness) -> some View {
+        let bpm = model.bpm ?? 0
+        let target = session.currentRestTarget
+        let ready = v.ready
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Resting · by HR").font(StrandFont.caption).fontWeight(.semibold)
+                    .tracking(0.8).textCase(.uppercase).foregroundStyle(theme.dataStrain)
+                Spacer()
+                Text("\(Self.clock(elapsed)) elapsed").font(StrandFont.caption).monospacedDigit()
+                    .foregroundStyle(theme.inkTertiary)
+            }
+            Text(ready ? String(localized: "Ready") : "\(bpm)")
+                .font(InstrumentoType.groteskRestPulse).tracking(InstrumentoType.groteskRestPulseTracking)
+                .monospacedDigit()
+                .foregroundStyle(theme.dataRecovery)
+                .contentTransition(.numericText())
+            restHRTrack(bpm: bpm, target: target)
+            if let target, !ready {
+                (Text(String(localized: "dropping toward "))
+                 + Text("\(target) bpm").foregroundColor(theme.dataRecovery).bold()
+                 + Text(" · " + String(localized: "the strap will buzz")))
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// The FC track: a linear scale from a warm start toward the threshold; the ink tick is the threshold
+    /// (position is the channel), the `dataHeart → dataRecovery` gradient reinforces hot → goal.
+    private func restHRTrack(bpm: Int, target: Int?) -> some View {
+        GeometryReader { geo in
+            let w = geo.size.width
+            // Progress toward ready: from a nominal peak (~target+40) down to the target.
+            let hi = Double((target ?? bpm) + 40)
+            let lo = Double(target ?? bpm)
+            let frac = hi > lo ? max(0, min(1, (hi - Double(bpm)) / (hi - lo))) : 1
+            ZStack(alignment: .leading) {
+                Capsule().fill(theme.hairline)
+                Capsule().fill(LinearGradient(colors: [theme.dataHeart, theme.dataRecovery],
+                                              startPoint: .leading, endPoint: .trailing))
+                    .frame(width: w * frac)
+                Rectangle().fill(theme.ink).frame(width: 2, height: 14)
+                    .offset(x: w - 1)   // threshold tick at the ready end
+            }
+        }
+        .frame(height: 6)
+    }
+
+    /// By-time rest body (also the no-strap fallback for an HR rest, capped at 5 min with a notice).
+    private func restCardTimeBody(end: Date?, now: Date, noStrapFallback: Bool) -> some View {
+        let cappedEnd = noStrapFallback ? min(end ?? now, (session.restStartedAt ?? now).addingTimeInterval(300)) : end
+        let remaining = cappedEnd.map { max(0, Int($0.timeIntervalSince(now).rounded(.up))) } ?? 0
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(noStrapFallback ? "Resting · by time" : "Resting")
+                    .font(StrandFont.caption).fontWeight(.semibold)
+                    .tracking(0.8).textCase(.uppercase).foregroundStyle(theme.dataStrain)
+                Spacer()
+            }
+            Text(Self.clock(remaining))
+                .font(InstrumentoType.groteskRestPulse).tracking(InstrumentoType.groteskRestPulseTracking)
+                .monospacedDigit()
+                .foregroundStyle(remaining == 0 ? theme.dataRecovery : theme.ink)
+                .contentTransition(.numericText())
+            if noStrapFallback {
+                Text("No strap signal: resting by time, 5 min cap")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var restCardPills: some View {
+        HStack(spacing: 10) {
+            Button { openRestEditor(ei: session.currentIndex,
+                                    setIndex: session.runs.indices.contains(session.currentIndex) ? session.runs[session.currentIndex].currentSet : nil) } label: {
+                Label("Change rest", systemImage: "pencil").font(StrandFont.caption).foregroundStyle(theme.ink)
+                    .padding(.horizontal, 13).padding(.vertical, 6)
+                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            Button { withAnimation(StrandMotion.gentle) { session.skipRest() } } label: {
+                Text("Skip").font(StrandFont.caption).foregroundStyle(theme.ink)
+                    .padding(.horizontal, 13).padding(.vertical, 6)
+                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            Spacer()
+        }
+    }
+
+    /// The set-number badge — a non-interactive marker in the effort hue (FER-716: the Foco is gone; the
+    /// row itself is the interactive surface). A ring with the set number.
+    private func badge(ei: Int, si: Int, number: Int) -> some View {
+        Text("\(number)").font(StrandFont.caption).monospacedDigit()
+            .foregroundStyle(theme.dataStrain)
+            .frame(width: 26, height: 26)
+            .overlay(Circle().strokeBorder(theme.dataStrain, lineWidth: 1.5))
+            .frame(width: reflow ? 26 : 44, height: reflow ? 26 : 44, alignment: .center)
+            .accessibilityLabel(Text("Set \(number)"))
+    }
+
+    /// «ANTERIOR · DESCANSO» — last time's value + this set's own rest (FER-716, per-set since F0);
+    /// tap to copy last time into this row. «—» (and inert) when there's neither.
     @ViewBuilder private func previousCell(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun) -> some View {
+        let rest = shortRest(run.effectiveRest(forSet: si))
         if let text = previousText(run) {
             Button { prefillTapped(ei: ei, si: si, run: run) } label: {
-                Text(reflow ? "Previous: \(text)" : text)
+                Text(reflow ? "Previous: \(text)" : "\(text) · \(rest)")
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     .lineLimit(1).minimumScaleFactor(0.8)
                     .contentShape(Rectangle())
@@ -982,9 +1295,17 @@ struct LiveStrengthSheet: View {
             .accessibilityLabel(Text("Previous, \(text)"))
             .accessibilityHint(Text("Copies it to this set"))
         } else {
-            Text("—").font(StrandFont.caption).foregroundStyle(theme.inkDim)
+            Text(verbatim: "— · \(rest)").font(StrandFont.caption).foregroundStyle(theme.inkDim)
+                .lineLimit(1).minimumScaleFactor(0.8)
                 .accessibilityLabel(Text("No previous record"))
         }
+    }
+
+    /// A set's rest, compressed for the ANTERIOR cell: «2 min» / «90 s» / «por FC».
+    private func shortRest(_ config: RestConfig) -> String {
+        guard config.mode != .heartRate else { return String(localized: "by HR") }
+        if config.seconds >= 60, config.seconds % 60 == 0 { return "\(config.seconds / 60) min" }
+        return "\(config.seconds) s"
     }
 
     /// The editable / captured data columns, by exercise type.
@@ -1014,37 +1335,92 @@ struct LiveStrengthSheet: View {
 
     /// An editable numeric cell — a form field on paper (a faint underline you fill «with pen»). An empty or
     /// unparseable entry keeps the previous value (the buffer is dropped on blur). FER-497.
+    /// An editable numeric cell — a form field on paper filled «with the pen». Tapping it activates the
+    /// custom keypad (FER-716, no native keyboard, no «Foco»); while active it shows the working buffer
+    /// with a caret and a 2px ink underline, otherwise the formatted value with a hairline underline.
     private func numberCell(_ ref: CellRef, value: Double, isInt: Bool, done: Bool,
                             type: ExerciseType, width: CGFloat? = nil) -> some View {
-        let text = Binding<String>(
-            get: { cellBuffers[ref] ?? formatCell(value, isInt: isInt) },
-            set: { raw in
-                cellBuffers[ref] = raw
-                guard let v = Self.parseDouble(raw) else { return }   // empty / invalid → keep previous
-                switch ref {
-                case let .weight(ei, si): session.setWeight(exercise: ei, set: si, kg: storedKg(fromDisplay: v))
-                case let .reps(ei, si):   session.setReps(exercise: ei, set: si, reps: Int(v.rounded()))
+        let active = activeCell == ref
+        let shown = active ? buffer : formatCell(value, isInt: isInt)
+        return Button { activeCell = ref } label: {
+            HStack(spacing: 1) {
+                Text(shown.isEmpty ? " " : shown)
+                    .font(StrandFont.number(16, weight: .regular)).monospacedDigit()
+                    .foregroundStyle(done ? theme.inkSecondary : theme.ink)
+                if active {
+                    Rectangle().fill(theme.ink).frame(width: 2, height: 18)   // caret
+                        .opacity(0.9)
                 }
-            })
-        return TextField("", text: text)
-            .keyboardType(isInt ? .numberPad : .decimalPad)
-            .multilineTextAlignment(.center)
-            .font(StrandFont.number(16, weight: .regular)).monospacedDigit()
-            .foregroundStyle(done ? theme.inkSecondary : theme.ink)
-            .focused($focusedCell, equals: ref)
+            }
             .frame(width: width ?? (reflow ? 64 : cellWidth(type)), height: 44)
             .contentShape(Rectangle())
             .overlay(alignment: .bottom) {
-                Rectangle().fill(focusedCell == ref ? theme.ink : theme.hairlineStrong)
-                    .frame(height: focusedCell == ref ? 2 : 1)
+                Rectangle().fill(active ? theme.ink : theme.hairlineStrong)
+                    .frame(height: active ? 2 : 1)
                     .padding(.bottom, 6)
             }
-            .accessibilityLabel(Text(cellLabel(ref)))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(cellLabel(ref)))
+        .accessibilityValue(Text(shown))
     }
 
-    /// A captured (non-typed) time / distance cell — tap to open the stopwatch Foco. Shows «—» until set.
+    // MARK: Custom keypad input (FER-716)
+
+    /// The active cell's current model value as a display string (seeds the buffer on activate).
+    private func currentCellString(_ ref: CellRef) -> String {
+        let (ei, si) = Self.indices(ref)
+        guard session.runs.indices.contains(ei), session.runs[ei].sets.indices.contains(si) else { return "" }
+        let set = session.runs[ei].sets[si]
+        switch ref {
+        case .weight: return formatCell(displayWeight(set.weightKg), isInt: false)
+        case .reps:   return formatCell(Double(set.reps), isInt: true)
+        }
+    }
+    private func isWeightCell(_ ref: CellRef) -> Bool { if case .weight = ref { return true }; return false }
+
+    /// Append a digit — replacing the seeded value on the first keystroke (Hevy-style).
+    private func keypadInput(_ digit: String) {
+        if !bufferTyped { buffer = ""; bufferTyped = true }
+        buffer += digit
+        commitBuffer()
+    }
+    private func keypadComma() {
+        guard let cell = activeCell, isWeightCell(cell) else { return }   // reps are integers
+        if !bufferTyped { buffer = "0"; bufferTyped = true }
+        if !buffer.contains(",") && !buffer.contains(".") { buffer += "," }
+        commitBuffer()
+    }
+    private func keypadBackspace() {
+        if !bufferTyped { buffer = ""; bufferTyped = true }
+        if !buffer.isEmpty { buffer.removeLast() }
+        commitBuffer()
+    }
+    /// Quick add a plate / rep with the ± pill (adds the step; decrement via editing). Acts on the active
+    /// cell's row, which `activeCell` has already made the current set.
+    private func keypadStep(_ cell: CellRef) {
+        switch cell {
+        case .weight: session.bumpWeight(byKg: weightStepKg)
+        case .reps:   session.bumpReps(1)
+        }
+        syncBufferFromModel(cell)
+    }
+    /// Push the buffer's parsed value into the model — empty / invalid keeps the previous value.
+    private func commitBuffer() {
+        guard let cell = activeCell, let v = Self.parseDouble(buffer) else { return }
+        let (ei, si) = Self.indices(cell)
+        switch cell {
+        case .weight: session.setWeight(exercise: ei, set: si, kg: storedKg(fromDisplay: v))
+        case .reps:   session.setReps(exercise: ei, set: si, reps: Int(v.rounded()))
+        }
+    }
+    /// Re-seed the buffer from the model after a mutation that didn't come from typing (± / copy last).
+    private func syncBufferFromModel(_ cell: CellRef) { buffer = currentCellString(cell); bufferTyped = false }
+
+    /// A captured (non-typed) time / distance cell — tap to select the row, which expands it inline with the
+    /// stopwatch (FER-716: the Foco is gone). Shows «—» until set.
     private func capturedCell(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun, text: String?) -> some View {
-        Button { openFoco(ei: ei, si: si) } label: {
+        Button { withAnimation(StrandMotion.gentle) { session.select(exerciseIndex: ei, setIndex: si) } } label: {
             Group {
                 if let text {
                     Text(text).font(StrandFont.number(16, weight: .regular)).monospacedDigit().foregroundStyle(theme.ink)
@@ -1057,12 +1433,21 @@ struct LiveStrengthSheet: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(text ?? String(localized: "Not recorded")))
-        .accessibilityHint(Text("Opens the timer"))
+        .accessibilityHint(Text("Expands the timer"))
     }
 
-    /// The done toggle (the datum's color — green when logged). 44pt touch target.
+    /// The done toggle (the datum's color — green when logged). 44pt touch target. Checking the ACTIVE
+    /// pending set registers it and starts the rest (FER-716: the rest card appears inline); any other
+    /// tap is a plain toggle (a correction that starts no rest).
     private func checkButton(ei: Int, si: Int, set: StrengthSessionModel.WorkingSet) -> some View {
-        Button { withAnimation(.snappy) { session.toggleDone(exercise: ei, set: si) } } label: {
+        let curSet = session.runs.indices.contains(ei) ? session.runs[ei].currentSet : -1
+        let isActivePending = ei == session.currentIndex && si == curSet && !set.done
+        return Button {
+            withAnimation(.snappy) {
+                if isActivePending { activeCell = nil; session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR) }
+                else { session.toggleDone(exercise: ei, set: si) }
+            }
+        } label: {
             Image(systemName: set.done ? "checkmark.circle.fill" : "circle")
                 .font(.system(size: 22))
                 .foregroundStyle(set.done ? theme.dataRecovery : theme.inkDim)
@@ -1106,51 +1491,11 @@ struct LiveStrengthSheet: View {
         .accessibilityLabel(Text("Discard workout"))
     }
 
-    // MARK: The optional Foco sheet (big-button mode + the fixed rest)
-
-    private var focoSheet: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
-                HStack {
-                    Text("Focus").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    Spacer()
-                    Button { showFoco = false } label: {
-                        HStack(spacing: 4) {
-                            Text("Close").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                            Image(systemName: "chevron.down").font(.system(size: 13, weight: .semibold))
-                                .foregroundStyle(theme.inkTertiary)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(Text("Close"))
-                }
-                if session.current == nil {
-                    completePhase
-                } else if session.phase == .resting, session.restEndsAt != nil {
-                    restPhase
-                } else {
-                    capturePhase
-                }
-            }
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.top, 18)
-            .padding(.bottom, NoopMetrics.screenPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .background(theme.paper.ignoresSafeArea())
-    }
-
     // MARK: Inline helpers (formatting / focus / actions)
 
-    private func openFoco(ei: Int, si: Int) {
-        session.select(exerciseIndex: ei, setIndex: si)
-        showFoco = true
-    }
-
-    /// Tap-ANTERIOR: copy last time into this row. Time exercises set the goal; the rest prefill the datum.
+    /// Tap-ANTERIOR: copy last time into this row (weight/reps/distance; a time set captures live).
     private func prefillTapped(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun) {
-        if run.type == .time, let last = run.lastTimeS { goals[run.id] = last }
-        else { session.prefillPrevious(exercise: ei, set: si) }
+        session.prefillPrevious(exercise: ei, set: si)
     }
 
     private func previousText(_ run: StrengthSessionModel.ExerciseRun) -> String? {
@@ -1198,58 +1543,13 @@ struct LiveStrengthSheet: View {
     }
     private func focusNextCell() {
         let cells = editableCells
-        guard let cur = focusedCell, let idx = cells.firstIndex(of: cur) else { focusedCell = nil; return }
-        focusedCell = idx + 1 < cells.count ? cells[idx + 1] : nil
+        guard let cur = activeCell, let idx = cells.firstIndex(of: cur) else { activeCell = nil; return }
+        activeCell = idx + 1 < cells.count ? cells[idx + 1] : nil
     }
 
     private func distanceText(_ meters: Double) -> String {
         let v = imperial ? meters / Self.metersPerMile : meters / 1000
         return String(format: "%.2f %@", v, imperial ? "mi" : "km")
-    }
-
-    // MARK: Capture phase (the «Foco»)
-
-    @ViewBuilder private var capturePhase: some View {
-        if let run = session.current {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text(run.name).font(StrandFont.title1).foregroundStyle(theme.ink)
-                            .fixedSize(horizontal: false, vertical: true)
-                        Spacer(minLength: 8)
-                        // The same tappable rest chip as the inline header — edit rest mid-session (FER-540).
-                        restChip(run, ei: session.currentIndex)
-                    }
-                    if run.type == .weightReps { referenceLine(run) } else { setTypeLine(run) }
-                }
-
-                // The Foco adapts to the exercise type (FER-351): weight×reps, reps(+lastre), a
-                // stopwatch with a goal, or distance/time with the strap's live HR.
-                switch run.type {
-                case .weightReps:
-                    weightFoco(run)
-                    repsRow
-                    registerButton
-                case .bodyweight:
-                    repsFoco(run)
-                    lastreRow(run)
-                    registerButton
-                case .time:
-                    timeControls(run)
-                case .distance:
-                    distanceControls(run)
-                }
-            }
-        }
-    }
-
-    /// Set counter + the measure word, for the non-weight×reps variants (which don't show «la última vez»).
-    private func setTypeLine(_ run: StrengthSessionModel.ExerciseRun) -> some View {
-        HStack(spacing: 8) {
-            Text(setCounterText(run)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-            Spacer(minLength: 8)
-            Text(typeWord(run.type)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-        }
     }
 
     private func typeWord(_ t: ExerciseType) -> LocalizedStringKey {
@@ -1258,275 +1558,6 @@ struct LiveStrengthSheet: View {
         case .bodyweight: return "Bodyweight"
         case .time:       return "Time"
         case .distance:   return "Distance"
-        }
-    }
-
-    private func referenceLine(_ run: StrengthSessionModel.ExerciseRun) -> some View {
-        HStack(spacing: 8) {
-            Text(setCounterText(run)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-            Spacer(minLength: 8)
-            if let lw = run.lastWeightKg, let lr = run.lastReps {
-                Text("Last · \(massText(lw)) × \(lr)")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                if let suggested = suggestedWeight(run) {
-                    Button { session.setCurrentWeight(suggested) } label: {
-                        Text("+\(plateNumber(displayWeight(weightStepKg)))")
-                            .font(StrandFont.caption).foregroundStyle(theme.dataRecovery)
-                            .padding(.horizontal, 6).padding(.vertical, 2)
-                            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(Text("Use suggested weight \(massText(suggested))"))
-                }
-            } else {
-                Text("First time").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            }
-        }
-    }
-
-    /// The dominant datum: the weight, in the effort hue, flanked by minus/plus steppers.
-    private func weightFoco(_ run: StrengthSessionModel.ExerciseRun) -> some View {
-        HStack {
-            stepper(system: "minus") { session.bumpWeight(byKg: -weightStepKg) }
-                .accessibilityLabel(Text("Decrease weight"))
-            Spacer(minLength: 8)
-            VStack(spacing: 0) {
-                Text(plateNumber(displayWeight(session.currentSet?.weightKg ?? 0)))
-                    .instrumentoHero(76).foregroundStyle(theme.dataStrain)
-                    .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
-                Text(UnitFormatter.massUnit(units)).font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
-            }
-            Spacer(minLength: 8)
-            stepper(system: "plus") { session.bumpWeight(byKg: weightStepKg) }
-                .accessibilityLabel(Text("Increase weight"))
-        }
-        .accessibilityElement(children: .contain)
-    }
-
-    private var repsRow: some View {
-        HStack {
-            Text("Reps").font(StrandFont.body).foregroundStyle(theme.inkSecondary)
-            Spacer()
-            HStack(spacing: 16) {
-                stepper(system: "minus", size: 34) { session.bumpReps(-1) }
-                    .accessibilityLabel(Text("Decrease reps"))
-                Text("\(session.currentSet?.reps ?? 0)")
-                    .font(StrandFont.title2).monospacedDigit().foregroundStyle(theme.ink)
-                    .frame(minWidth: 34)
-                stepper(system: "plus", size: 34) { session.bumpReps(1) }
-                    .accessibilityLabel(Text("Increase reps"))
-            }
-        }
-        .accessibilityElement(children: .contain)
-    }
-
-    private var registerButton: some View {
-        Button { withAnimation(.snappy) { session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR) } } label: {
-            Label("Register set", systemImage: "checkmark")
-                .font(StrandFont.headline).foregroundStyle(theme.paper)
-                .frame(maxWidth: .infinity).padding(.vertical, 15)
-                .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: Bodyweight Foco (reps lead; lastre optional)
-
-    /// The dominant datum for a bodyweight exercise: the reps, in the effort hue, flanked by steppers.
-    private func repsFoco(_ run: StrengthSessionModel.ExerciseRun) -> some View {
-        HStack {
-            stepper(system: "minus") { session.bumpReps(-1) }
-                .accessibilityLabel(Text("Decrease reps"))
-            Spacer(minLength: 8)
-            VStack(spacing: 0) {
-                Text("\(session.currentSet?.reps ?? 0)")
-                    .instrumentoHero(76).foregroundStyle(theme.dataStrain)
-                    .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
-                Text("reps").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
-            }
-            Spacer(minLength: 8)
-            stepper(system: "plus") { session.bumpReps(1) }
-                .accessibilityLabel(Text("Increase reps"))
-        }
-        .accessibilityElement(children: .contain)
-    }
-
-    /// Optional added load («lastre») for a bodyweight set — starts at zero (bodyweight only).
-    private func lastreRow(_ run: StrengthSessionModel.ExerciseRun) -> some View {
-        let kg = session.currentSet?.weightKg ?? 0
-        return HStack {
-            VStack(alignment: .leading, spacing: 1) {
-                Text("Added weight").font(StrandFont.body).foregroundStyle(theme.inkSecondary)
-                Text(kg > 0 ? "optional" : "optional · bodyweight only")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            }
-            Spacer()
-            HStack(spacing: 16) {
-                stepper(system: "minus", size: 34) { session.bumpWeight(byKg: -weightStepKg) }
-                    .accessibilityLabel(Text("Decrease added weight"))
-                Text("+\(plateNumber(displayWeight(kg))) \(UnitFormatter.massUnit(units))")
-                    .font(StrandFont.title2).monospacedDigit()
-                    .foregroundStyle(kg > 0 ? theme.ink : theme.inkTertiary)
-                stepper(system: "plus", size: 34) { session.bumpWeight(byKg: weightStepKg) }
-                    .accessibilityLabel(Text("Increase added weight"))
-            }
-        }
-        .accessibilityElement(children: .contain)
-    }
-
-    // MARK: Time Foco (stopwatch with a goal; registers on stop)
-
-    @ViewBuilder private func timeControls(_ run: StrengthSessionModel.ExerciseRun) -> some View {
-        let running = session.timerStart != nil
-        if running {
-            TimelineView(.periodic(from: Date(), by: 1)) { ctx in
-                timeReadout(elapsed: session.timerElapsed(now: ctx.date), run: run)
-            }
-        } else {
-            timeReadout(elapsed: session.currentSet?.timeS ?? 0, run: run)
-        }
-        Button { withAnimation(.snappy) { running ? session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR) : session.startSetTimer() } } label: {
-            Label(running ? "Stop and save" : "Start", systemImage: running ? "stop.fill" : "play.fill")
-                .font(StrandFont.headline).foregroundStyle(theme.paper)
-                .frame(maxWidth: .infinity).padding(.vertical, 15)
-                .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func timeReadout(elapsed: Int, run: StrengthSessionModel.ExerciseRun) -> some View {
-        let goal = goalSeconds(run)
-        let met = elapsed >= goal && elapsed > 0
-        let isRunning = session.timerStart != nil
-        return VStack(spacing: 8) {
-            Text(Self.clock(elapsed))
-                .instrumentoHero(72).monospacedDigit()
-                .foregroundStyle(elapsed > 0 ? theme.dataStrain : theme.inkTertiary)
-                .minimumScaleFactor(0.5).lineLimit(1)
-            HStack(spacing: 14) {
-                stepper(system: "minus", size: 30) { adjustGoal(run, -15) }
-                    .accessibilityLabel(Text("Decrease goal"))
-                Text(met ? "Goal \(Self.clock(goal)) · reached" : "Goal \(Self.clock(goal))")
-                    .font(StrandFont.subhead).monospacedDigit()
-                    .foregroundStyle(met ? theme.dataRecovery : theme.inkSecondary)
-                stepper(system: "plus", size: 30) { adjustGoal(run, 15) }
-                    .accessibilityLabel(Text("Increase goal"))
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text(isRunning ? "Timing, \(elapsed) seconds. Goal \(goal) seconds."
-                                 : "\(elapsed) seconds. Goal \(goal) seconds."))
-    }
-
-    private func goalSeconds(_ run: StrengthSessionModel.ExerciseRun) -> Int { goals[run.id] ?? 30 }
-    private func adjustGoal(_ run: StrengthSessionModel.ExerciseRun, _ delta: Int) {
-        goals[run.id] = max(5, goalSeconds(run) + delta)
-    }
-
-    // MARK: Distance / cardio Foco (distance + time in ink; strap HR + zone in color)
-
-    @ViewBuilder private func distanceControls(_ run: StrengthSessionModel.ExerciseRun) -> some View {
-        let dist = session.currentSet?.distanceM ?? 0
-        let running = session.timerStart != nil
-        if reflow {
-            VStack(spacing: 12) { distanceCard(dist); timeCard(running: running) }
-        } else {
-            HStack(spacing: 12) { distanceCard(dist); timeCard(running: running) }
-        }
-        hrZoneRow
-        let captured = dist > 0 || (session.currentSet?.timeS ?? 0) > 0 || running
-        Button { withAnimation(.snappy) { session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR) } } label: {
-            Label("Register set", systemImage: "checkmark")
-                .font(StrandFont.headline).foregroundStyle(theme.paper)
-                .frame(maxWidth: .infinity).padding(.vertical, 15)
-                .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .disabled(!captured)
-        .opacity(captured ? 1 : 0.5)
-    }
-
-    private func distanceCard(_ meters: Double) -> some View {
-        cardioCard {
-            Text(distanceNumber(meters))
-                .instrumentoHero(40).foregroundStyle(theme.ink)
-                .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
-            Text(imperial ? "mi" : "km").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            HStack(spacing: 18) {
-                stepper(system: "minus", size: 34) { session.bumpDistance(byMeters: -distanceStepM) }
-                    .accessibilityLabel(Text("Decrease distance"))
-                stepper(system: "plus", size: 34) { session.bumpDistance(byMeters: distanceStepM) }
-                    .accessibilityLabel(Text("Increase distance"))
-            }
-            .padding(.top, 2)
-        }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(Text("Distance \(distanceNumber(meters)) \(imperial ? String(localized: "miles") : String(localized: "kilometers"))"))
-    }
-
-    @ViewBuilder private func timeCard(running: Bool) -> some View {
-        if running {
-            TimelineView(.periodic(from: Date(), by: 1)) { ctx in
-                timeCardBody(elapsed: session.timerElapsed(now: ctx.date), running: true)
-            }
-        } else {
-            timeCardBody(elapsed: session.currentSet?.timeS ?? 0, running: false)
-        }
-    }
-
-    private func timeCardBody(elapsed: Int, running: Bool) -> some View {
-        cardioCard {
-            Text(Self.clock(elapsed))
-                .instrumentoHero(40).foregroundStyle(theme.ink)
-                .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
-            Text("time").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            Button { withAnimation(.snappy) { running ? session.stopSetTimer() : session.startSetTimer() } } label: {
-                Text(running ? "Stop" : "Start")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    .frame(maxWidth: .infinity).padding(.vertical, 7)
-                    .background(theme.paper, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
-                        .strokeBorder(theme.hairlineStrong, lineWidth: 1))
-            }
-            .buttonStyle(.plain)
-            .padding(.top, 2)
-            .accessibilityLabel(Text(running ? "Stop the timer" : "Start the timer"))
-        }
-    }
-
-    /// A surface card used by the cardio two-up (distance / time).
-    private func cardioCard<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
-        VStack(spacing: 6) { content() }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14).padding(.horizontal, 10)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                .strokeBorder(theme.hairline, lineWidth: 1))
-    }
-
-    /// The strap's live HR + zone, in the zone hue. Absent (degraded) when no strap is streaming.
-    @ViewBuilder private var hrZoneRow: some View {
-        if let hr = model.bpm {
-            let zone = hrZone(hr)
-            let hue = theme.hrZoneRamp[max(0, min(theme.hrZoneRamp.count - 1, zone - 1))]
-            HStack(spacing: 10) {
-                Image(systemName: "heart.fill").font(.system(size: 17)).foregroundStyle(hue)
-                Text("\(hr)").font(StrandFont.title2).monospacedDigit().foregroundStyle(hue)
-                Text("bpm").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                Spacer()
-                Text("Zone \(zone)").font(StrandFont.caption).foregroundStyle(hue)
-                    .padding(.horizontal, 9).padding(.vertical, 3)
-                    .background(theme.paper, in: RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous)
-                        .strokeBorder(theme.hairline, lineWidth: 1))
-            }
-            .padding(.horizontal, 14).padding(.vertical, 11)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                .strokeBorder(theme.hairline, lineWidth: 1))
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel(Text("Heart rate \(hr) beats per minute, zone \(zone)"))
         }
     }
 
@@ -1564,7 +1595,7 @@ struct LiveStrengthSheet: View {
                     .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
             }
             .buttonStyle(.plain).padding(.top, 4)
-            // Keep the way back: tapping an exercise returns to its capture screen to edit (or add sets).
+            // Keep the way back: tapping an exercise re-focuses its rows to edit (or add sets).
             if !session.activeExercises.isEmpty {
                 planNavigator.padding(.top, 4)
             }
@@ -1572,138 +1603,355 @@ struct LiveStrengthSheet: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    // MARK: Summary phase (the post-session receipt · FER-409)
+    // MARK: Summary phase (the post-session receipt · FER-409, redesigned per «Flujo Entrenar v3 · 1l»)
 
     @ViewBuilder
     private func summaryPhase(_ s: StrengthSummary) -> some View {
         VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Summary").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Text(s.routineName).font(StrandFont.title1).foregroundStyle(theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            // Hero: effort (strain) when the session was long enough; else the average HR if we captured
-            // any (a short session reads HR but can't score a meaningful effort, FER-498); else duration
-            // when there genuinely was no HR.
-            if let strain = s.strain {
-                summaryHero(label: "Effort", value: Self.strainText(strain), unit: nil,
-                            color: theme.dataStrain, caption: "What this session cost your body.")
-            } else if let avgHr = s.avgHr {
-                summaryHero(label: "Avg HR", value: "\(avgHr)", unit: "bpm",
-                            color: theme.dataStrain, caption: "Heart rate recorded; too short for an effort score.")
-            } else {
-                summaryHero(label: "Duration", value: "\(s.durationS / 60)", unit: "min",
-                            color: theme.ink, caption: "No heart rate this session.")
-            }
-
-            Divider().overlay(theme.hairline)
-            summarySecondaries(s)
+            receiptHeader(s)
+            receiptHeadline(s)
+            receiptStats(s)
+            if let kcal = s.energyKcal { receiptDietBlock(kcal: kcal, estimated: s.energySource == .estimated) }
+            if let c = s.comparison { receiptComparison(s, c) }
 
             if !s.prs.isEmpty {
-                Divider().overlay(theme.hairline)
-                summaryRecords(s.prs)
+                receiptRecords(s.prs)
             } else if s.isFirstTime {
-                Divider().overlay(theme.hairline)
                 Text("First time logging these. From here on you'll see your progress.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            if let band = s.costBand {
-                Divider().overlay(theme.hairline)
-                summaryCost(band, tomorrowPct: s.costTomorrowPct)
-            }
+            if !s.exercises.isEmpty { receiptExercises(s.exercises) }
 
-            if !s.muscles.isEmpty {
-                Divider().overlay(theme.hairline)
-                summaryMuscles(s.muscles)
-            }
+            // Conserved from FER-409 (not in the 1l mock, but it's the only path to the fatigue map).
+            if !s.muscles.isEmpty { summaryMuscles(s.muscles) }
+
+            if let band = s.costBand { receiptCost(band, tomorrowPct: s.costTomorrowPct) }
 
             Button { model.closeStrengthSummary() } label: {
                 Text("Done")
-                    .font(StrandFont.headline).foregroundStyle(theme.paper)
+                    .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
+                    .foregroundStyle(theme.paper)
                     .frame(maxWidth: .infinity).padding(.vertical, 15)
-                    .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+                    .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous))
             }
             .buttonStyle(.plain).padding(.top, 6)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .onAppear { playReceiptCountUp() }
     }
 
-    private func summaryHero(label: LocalizedStringKey, value: String, unit: String?,
-                             color: Color, caption: LocalizedStringKey) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(value).instrumentoHero(64).foregroundStyle(color)
-                    .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
-                if let unit { Text(unit).font(StrandFont.unit).foregroundStyle(theme.inkTertiary) }
-            }
-            Text(caption).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    @ViewBuilder
-    private func summarySecondaries(_ s: StrengthSummary) -> some View {
-        // Duration is the hero when there's no strain → don't repeat it as a secondary. At large type
-        // sizes the row reflows to a column so the three numbers never clip.
-        let cells = Group {
-            summaryStat("Volume", massText(s.volumeKg))
-            summaryStat("Sets", "\(s.setCount)")
-            if s.strain != nil { summaryStat("Duration", "\(s.durationS / 60) min") }
-        }
-        if reflow {
-            VStack(alignment: .leading, spacing: 12) { cells }
+    /// The 0→value count-up (FER-716): the numerals roll up over 750 ms ONLY the first time the receipt
+    /// appears (at save). `receiptCountUpPlayed` lives on the session, so re-opening (or re-scrolling)
+    /// renders the final values immediately. Reduce Motion skips the roll entirely.
+    private func playReceiptCountUp() {
+        if session.receiptCountUpPlayed || reduceMotion {
+            receiptCountUp = true
         } else {
-            HStack(alignment: .top, spacing: 18) { cells; Spacer(minLength: 0) }
+            withAnimation(StrandMotion.countUp) { receiptCountUp = true }
+        }
+        session.receiptCountUpPlayed = true
+    }
+
+    /// «Sesión guardada · jue 2 jul» + the data-origin dot for the energy figure (strap Keytel vs MET).
+    private func receiptHeader(_ s: StrengthSummary) -> some View {
+        HStack(spacing: 8) {
+            Text("\(String(localized: "Session saved")) · \(receiptDate(s.endTs))")
+                .groteskOverline().foregroundStyle(theme.inkTertiary)
+            Spacer(minLength: 8)
+            if let src = s.energySource { originRow(src) }
         }
     }
 
-    private func summaryStat(_ label: LocalizedStringKey, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text(value).font(StrandFont.number(19, weight: .semibold)).foregroundStyle(theme.ink).monospacedDigit()
-            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+    private func receiptDate(_ ts: Int) -> String {
+        Date(timeIntervalSince1970: TimeInterval(ts))
+            .formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated))
+    }
+
+    /// The data-origin row on the receipt (FER-716): where this session's energy figure came from — the
+    /// strap (Keytel) or an estimate (MET fallback).
+    private func originRow(_ src: EnergySource) -> some View {
+        HStack(spacing: 5) {
+            Circle().fill(src == .bandCalculated ? theme.originBand : theme.originComputed)
+                .frame(width: 6, height: 6)
+            Text(src == .bandCalculated ? "Band + calculated" : "Estimated")
+                .font(.system(size: 10)).foregroundStyle(theme.inkTertiary)
         }
-        .frame(minWidth: reflow ? nil : 60, alignment: .leading)
         .accessibilityElement(children: .combine)
     }
 
-    private func summaryRecords(_ prs: [StrengthSummary.PR]) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("New records").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            ForEach(prs) { pr in
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("Record").font(StrandFont.caption).foregroundStyle(theme.dataRecovery)
-                    Text(pr.exercise).font(StrandFont.subhead).foregroundStyle(theme.ink)
-                    Spacer(minLength: 8)
-                    (Text(Self.prMetricLabel(pr.metric)) + Text(verbatim: " · \(prValue(pr))"))
-                        .font(StrandFont.caption).foregroundStyle(theme.inkSecondary).monospacedDigit()
+    /// The editorial headline: «{rutina}, hecha.» + the session's one honest achievement.
+    private func receiptHeadline(_ s: StrengthSummary) -> some View {
+        (Text("\(s.routineName), done.") + Text(verbatim: "\n") + Text(verbatim: achievementLine(s)))
+            .font(InstrumentoType.groteskReceiptHeadline)
+            .tracking(InstrumentoType.groteskReceiptHeadlineTracking)
+            .foregroundStyle(theme.ink)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// One achievement, best available first: new records → more volume than last time → first time →
+    /// the plain set count. Never invents a comparison that isn't there.
+    private func achievementLine(_ s: StrengthSummary) -> String {
+        if s.prs.count == 1 { return String(localized: "A new personal record.") }
+        if s.prs.count > 1 { return String(localized: "\(s.prs.count) new personal records.") }
+        if let pct = s.comparison?.volumeDeltaPct(s.volumeKg), pct >= 1 {
+            return String(localized: "+\(pct)% volume vs your last one.")
+        }
+        if s.isFirstTime { return String(localized: "First time with this routine.") }
+        return String(localized: "\(s.setCount) sets logged.")
+    }
+
+    /// The four receipt metrics (duración · volumen · strain · kcal). Strain is the one colored datum;
+    /// with no strain but captured HR, the avg-HR slot proves the strap was read (FER-498). No dashes:
+    /// a metric without data simply isn't rendered.
+    private func receiptStats(_ s: StrengthSummary) -> some View {
+        let cells = Group {
+            receiptStat("Duration", value: Self.clock(s.durationS), zero: "0:00")
+            receiptStat("Volume", value: plateNumber(displayWeight(s.volumeKg)), zero: "0",
+                        unit: UnitFormatter.massUnit(units))
+            if let strain = s.strain {
+                receiptStat("Strain", value: Self.strainText(strain), zero: Self.strainText(0),
+                            color: theme.dataStrain)
+            } else if let avgHr = s.avgHr {
+                receiptStat("Avg HR", value: "\(avgHr)", zero: "0", unit: String(localized: "bpm"))
+            }
+            if let kcal = s.energyKcal {
+                receiptStat(s.energySource == .estimated ? "Calories · estimated" : "Calories",
+                            value: "\(Int(kcal.rounded()))", zero: "0", unit: "kcal")
+            }
+        }
+        return Group {
+            if reflow {
+                VStack(alignment: .leading, spacing: 12) { cells }
+            } else {
+                HStack(alignment: .top, spacing: 20) { cells; Spacer(minLength: 0) }
+            }
+        }
+        .padding(.bottom, 12)
+        .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
+    }
+
+    private func receiptStat(_ label: LocalizedStringKey, value: String, zero: String,
+                             unit: String? = nil, color: Color? = nil) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label).groteskOverline(small: true).foregroundStyle(theme.inkTertiary)
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text(receiptCountUp ? value : zero)
+                    .font(InstrumentoType.groteskReceiptStat)
+                    .tracking(InstrumentoType.groteskReceiptStatTracking)
+                    .monospacedDigit().contentTransition(.numericText())
+                    .foregroundStyle(color ?? theme.ink)
+                    .lineLimit(1).minimumScaleFactor(0.7)
+                if let unit { Text(unit).font(StrandFont.caption).foregroundStyle(theme.inkTertiary) }
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// The Diet block (decision: link ONLY, no target-% math): the session's kcal in prose + «Dieta →».
+    /// Until the Diet section lands, the link parks the user on «Entrenar» (where it will live).
+    private func receiptDietBlock(kcal: Double, estimated: Bool) -> some View {
+        Button {
+            tabRouter.select(.train)
+            model.closeStrengthSummary()
+        } label: {
+            HStack(spacing: 10) {
+                (Text(verbatim: "\(Int(kcal.rounded())) kcal ").fontWeight(.semibold).foregroundColor(theme.ink)
+                    + Text(estimated ? "estimated from this session." : "logged from this session.")
+                        .foregroundColor(theme.inkSecondary))
+                    .font(StrandFont.caption)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                HStack(spacing: 3) {
+                    Text("Diet").font(StrandFont.caption).fontWeight(.semibold)
+                    Image(systemName: "arrow.right").font(.system(size: 11, weight: .semibold))
+                }
+                .foregroundStyle(theme.dataRecovery)
+                .fixedSize()
+            }
+            .padding(.leading, 12).padding(.trailing, 12).padding(.vertical, 9)
+            .patternBlock(theme, bar: theme.dataStrain)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+    }
+
+    /// «Contra tu última {rutina}» — three bars (volumen / series / duración) against the previous
+    /// session of the SAME routine. The tick marks last time; the bar is this session.
+    private func receiptComparison(_ s: StrengthSummary, _ c: StrengthSummary.Comparison) -> some View {
+        let volDelta: String = {
+            guard let pct = c.volumeDeltaPct(s.volumeKg) else { return "=" }
+            return pct == 0 ? "=" : (pct > 0 ? "+\(pct)%" : "−\(-pct)%")
+        }()
+        let setsDelta = s.setCount == c.prevSetCount
+            ? "\(s.setCount) = \(c.prevSetCount)"
+            : (s.setCount > c.prevSetCount ? "+\(s.setCount - c.prevSetCount)" : "−\(c.prevSetCount - s.setCount)")
+        let minDiff = Int((Double(s.durationS - c.prevDurationS) / 60).rounded())
+        let durDelta = minDiff == 0 ? "=" : (minDiff > 0
+            ? String(localized: "+\(minDiff) min") : String(localized: "−\(-minDiff) min"))
+        return VStack(alignment: .leading, spacing: 10) {
+            Text("Against your last \(s.routineName)").groteskOverline().foregroundStyle(theme.inkTertiary)
+            comparisonRow("Volume", current: s.volumeKg, prev: c.prevVolumeKg,
+                          delta: volDelta, positive: s.volumeKg > c.prevVolumeKg)
+            comparisonRow("Sets", current: Double(s.setCount), prev: Double(c.prevSetCount),
+                          delta: setsDelta, positive: s.setCount > c.prevSetCount)
+            comparisonRow("Duration", current: Double(s.durationS), prev: Double(c.prevDurationS),
+                          delta: durDelta, positive: false, neutral: true)
+        }
+    }
+
+    /// One comparison bar: label · track with this session's fill + an ink tick at last time · delta.
+    /// Duration is `neutral` (longer isn't better) — gray fill, quiet delta.
+    private func comparisonRow(_ label: LocalizedStringKey, current: Double, prev: Double,
+                               delta: String, positive: Bool, neutral: Bool = false) -> some View {
+        let maxV = max(current, prev, 1)
+        return HStack(spacing: 10) {
+            Text(label).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                .frame(width: 64, alignment: .leading)
+            GeometryReader { geo in
+                let w = geo.size.width
+                ZStack(alignment: .leading) {
+                    Capsule().fill(theme.hairline)
+                    Capsule().fill(neutral ? theme.hairlineStrong : theme.dataRecovery)
+                        .opacity(neutral || positive ? 1 : 0.75)
+                        .frame(width: max(4, w * (current / maxV)))
+                    Rectangle().fill(theme.ink).frame(width: 2, height: 14)
+                        .offset(x: min(w - 2, max(0, w * (prev / maxV) - 1)))
+                }
+            }
+            .frame(height: 8)
+            Text(delta).font(StrandFont.caption).monospacedDigit()
+                .foregroundStyle(positive ? theme.positiveText : theme.inkSecondary)
+                .frame(width: 56, alignment: .trailing)
+                .lineLimit(1).minimumScaleFactor(0.8)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(label))
+        .accessibilityValue(Text(delta))
+    }
+
+    /// The records card — the one `surface` card of the receipt. Each row frames the beaten record:
+    /// «100 → 102,5 kg».
+    private func receiptRecords(_ prs: [StrengthSummary.PR]) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                Image(systemName: "star").font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(theme.dataRecovery)
+                Text(prs.count == 1 ? String(localized: "A personal record")
+                     : String(localized: "\(prs.count) personal records"))
+                    .font(StrandFont.subhead).fontWeight(.semibold).foregroundStyle(theme.ink)
+            }
+            .padding(.bottom, 4)
+            ForEach(Array(prs.enumerated()), id: \.element.id) { i, pr in
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    (Text(verbatim: pr.exercise) + Text(verbatim: " · ") + Text(Self.prMetricLabel(pr.metric)))
+                        .font(StrandFont.caption).foregroundStyle(theme.ink)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    (Text(verbatim: prPriorText(pr)).foregroundColor(theme.inkTertiary)
+                        + Text(verbatim: " → ")
+                        + Text(verbatim: prValue(pr)).fontWeight(.semibold).foregroundColor(theme.ink))
+                        .font(StrandFont.caption).monospacedDigit()
+                }
+                .frame(minHeight: 38)
+                .overlay(alignment: .bottom) {
+                    if i < prs.count - 1 { Rectangle().fill(theme.hairline).frame(height: 1) }
+                }
+                .accessibilityElement(children: .combine)
+            }
+        }
+        .padding(.horizontal, 16).padding(.vertical, 14)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+            .strokeBorder(theme.hairline, lineWidth: 1))
+    }
+
+    /// «Por ejercicio»: one quiet row per exercise — sets · top datum · trend vs «la última vez».
+    private func receiptExercises(_ lines: [StrengthSummary.ExerciseLine]) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("By exercise").groteskOverline().foregroundStyle(theme.inkTertiary)
+                .padding(.bottom, 2)
+            ForEach(Array(lines.enumerated()), id: \.element.id) { i, line in
+                HStack(spacing: 12) {
+                    Text(line.name).font(StrandFont.subhead).foregroundStyle(theme.ink)
+                        .lineLimit(1).minimumScaleFactor(0.8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Text(exerciseLineDetail(line))
+                        .font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkSecondary)
+                    exerciseTrendGlyph(line.trend)
+                }
+                .frame(minHeight: 40)
+                .overlay(alignment: .bottom) {
+                    if i < lines.count - 1 { Rectangle().fill(theme.hairline).frame(height: 1) }
                 }
                 .accessibilityElement(children: .combine)
             }
         }
     }
 
-    private func summaryCost(_ band: SessionRecoveryCost.Band, tomorrowPct: Int?) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Recovery cost").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text(Self.bandLabel(band)).font(StrandFont.title2).foregroundStyle(bandColor(band))
-            Text(Self.bandDetail(band)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+    private func exerciseLineDetail(_ line: StrengthSummary.ExerciseLine) -> String {
+        let top: String? = {
+            if let w = line.topWeightKg, w > 0 { return massText(w) }
+            if let t = line.topTimeS, t > 0 { return Self.clock(t) }
+            if let d = line.topDistanceM, d > 0 { return distanceText(d) }
+            return nil
+        }()
+        guard let top else { return String(localized: "\(line.setCount) sets") }
+        return String(localized: "\(line.setCount) sets · \(top)")
+    }
+
+    @ViewBuilder private func exerciseTrendGlyph(_ trend: Int?) -> some View {
+        switch trend {
+        case .some(1):
+            Image(systemName: "arrow.up").font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(theme.positiveText)
+                .accessibilityLabel(Text("Up vs last time"))
+        case .some(-1):
+            Image(systemName: "arrow.down").font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(theme.inkTertiary)
+                .accessibilityLabel(Text("Down vs last time"))
+        case .some:
+            Text(verbatim: "=").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                .accessibilityLabel(Text("Same as last time"))
+        case nil:
+            Color.clear.frame(width: 12, height: 1)
+        }
+    }
+
+    /// Recovery cost + tomorrow's projection (conserves FER-409/442) as a «patrón» block whose left bar
+    /// wears the band's color.
+    private func receiptCost(_ band: SessionRecoveryCost.Band, tomorrowPct: Int?) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Recovery cost").groteskOverline(small: true).foregroundStyle(theme.inkTertiary)
+            Text(Self.bandLabel(band)).font(StrandFont.subhead).fontWeight(.semibold)
+                .foregroundStyle(bandColor(band))
+            Text(Self.bandDetail(band)).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             // Tomorrow's projection given today's cost (FER-442): the prose in ink, the datum in
             // recovery green. Hidden when there isn't ~2 weeks of base (the engine returns nil).
             if let pct = tomorrowPct {
                 (Text("Tomorrow, if you rest well, you should be around ").foregroundColor(theme.inkSecondary)
-                    + Text("~\(pct)%").foregroundColor(theme.dataRecovery).fontWeight(.semibold))
+                    + Text("~\(pct)%").foregroundColor(theme.positiveText).fontWeight(.semibold))
                     .font(StrandFont.caption)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            Text("Estimate · you decide").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            Text("Estimate · you decide").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                .padding(.top, 2)
         }
+        .padding(.horizontal, 12).padding(.vertical, 11)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .patternBlock(theme, bar: bandColor(band))
         .accessibilityElement(children: .combine)
+    }
+
+    /// The beaten record, for the «prior → new» framing. Volume compares totals (kg), matching `prValue`.
+    private func prPriorText(_ pr: StrengthSummary.PR) -> String {
+        switch pr.metric {
+        case .maxWeight: return plateNumber(displayWeight(pr.priorValueKg ?? 0))
+        case .maxReps:   return "\(pr.priorReps ?? 0)"
+        case .maxVolume: return plateNumber(displayWeight(pr.priorValueKg ?? 0))
+        }
     }
 
     private func summaryMuscles(_ muscles: [String]) -> some View {
@@ -1742,7 +1990,8 @@ struct LiveStrengthSheet: View {
         switch pr.metric {
         case .maxWeight: return massText(pr.valueKg ?? 0)
         case .maxReps:   return "\(pr.reps ?? 0)"
-        case .maxVolume: return "\(massText(pr.valueKg ?? 0)) × \(pr.reps ?? 0)"
+        // Volume frames TOTALS («2.070 → 2.160 kg»), matching `prPriorText`.
+        case .maxVolume: return massText((pr.valueKg ?? 0) * Double(pr.reps ?? 0))
         }
     }
 
@@ -1770,88 +2019,7 @@ struct LiveStrengthSheet: View {
         switch b { case .light: return theme.dataRecovery; case .moderate: return theme.dataStrain; case .high: return theme.dataHeart }
     }
 
-    // MARK: Rest phase (fixed countdown + the «change exercise» bridge)
-
-    private var restPhase: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
-            Text("Rest").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-
-            // By-HR rest (FER-348/495/506): the dominant number is «N bpm to ready → Ready», computed live
-            // from the strap. Losing the signal mid-rest falls to the honest fixed clock — no invented HR.
-            if session.currentRestMode == .heartRate, let started = session.restStartedAt {
-                TimelineView(.periodic(from: started, by: 1)) { ctx in
-                    let v = RestReadinessRule.evaluate(
-                        currentHR: model.bpm, worn: model.live.worn, restingHR: restingBaseline,
-                        elapsedS: max(0, Int(ctx.date.timeIntervalSince(started))),
-                        targetHR: session.currentRestTarget)
-                    Group {
-                        if v.state == .noSignal { fixedRestHero(end: session.restEndsAt, now: ctx.date, hrFallback: true) }
-                        else { hrRestHero(v) }
-                    }
-                    .sensoryFeedback(.success, trigger: v.ready && model.live.bonded)
-                }
-            } else if let end = session.restEndsAt {
-                TimelineView(.periodic(from: end, by: 1)) { ctx in
-                    fixedRestHero(end: end, now: ctx.date, hrFallback: false)
-                }
-            }
-
-            HStack(spacing: 10) {
-                restAdjust("−15") { session.extendRest(byseconds: -15) }
-                Button { withAnimation(.snappy) { session.skipRest() } } label: {
-                    Label("Skip rest", systemImage: "forward.fill")
-                        .font(StrandFont.headline).foregroundStyle(theme.paper)
-                        .frame(maxWidth: .infinity).padding(.vertical, 13)
-                        .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-                }
-                .buttonStyle(.plain)
-                restAdjust("+15") { session.extendRest(byseconds: 15) }
-            }
-
-            planNavigator
-        }
-    }
-
-    /// The HR rest HUD (variant C2): «N bpm to ready» in the heart hue while resting, «Ready» in the
-    /// recovery hue once your pulse settles. The bpm number is the only colored datum.
-    private func hrRestHero(_ v: RestReadiness) -> some View {
-        let hue = v.ready ? theme.dataRecovery : theme.dataHeart
-        return VStack(alignment: .leading, spacing: 8) {
-            if v.ready {
-                Text("Ready").instrumentoHero(56).foregroundStyle(theme.dataRecovery)
-                Text("\(String(localized: "Your pulse recovered")) · \(nextUpText)")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-            } else {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("\(v.bpmToReady ?? 0)").instrumentoHero(64).monospacedDigit().foregroundStyle(theme.dataHeart)
-                    Text("bpm").font(StrandFont.headline).foregroundStyle(theme.inkSecondary)
-                }
-                Text("\(String(localized: "to ready")) · \(nextUpText)")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-            }
-            ECGWave(color: hue, animate: true, bpm: model.bpm).frame(height: 26)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text(v.ready ? "Ready. \(nextUpText)"
-                                 : "\(v.bpmToReady ?? 0) beats per minute to ready. \(nextUpText)"))
-    }
-
-    /// The fixed countdown hero — the normal `.fixed` rest, and the honest fallback when an HR rest loses
-    /// the strap mid-set (`hrFallback`: appends the «connect your strap» hint, never invents a number).
-    private func fixedRestHero(end: Date?, now: Date, hrFallback: Bool) -> some View {
-        let remaining = end.map { max(0, Int($0.timeIntervalSince(now).rounded(.up))) } ?? 0
-        let sub = hrFallback ? "\(nextUpText) · \(String(localized: "connect your strap for HR rest"))" : nextUpText
-        return VStack(alignment: .leading, spacing: 4) {
-            Text(Self.clock(remaining)).instrumentoHero(64)
-                .monospacedDigit().foregroundStyle(remaining == 0 ? theme.dataRecovery : theme.ink)
-            Text(sub).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text(remaining == 0 ? "Rest done. \(nextUpText)"
-                                 : "Resting, \(remaining) seconds left. \(nextUpText)"))
-    }
+    // MARK: The «change exercise» bridge (hosted by the complete footer)
 
     private var planNavigator: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -1910,22 +2078,6 @@ struct LiveStrengthSheet: View {
         .accessibilityElement(children: .contain)
     }
 
-    private var nextUpText: String {
-        guard let run = session.current, let set = session.currentSet else { return String(localized: "Workout complete") }
-        let n = (run.sets.firstIndex { $0.id == set.id } ?? 0) + 1
-        return String(localized: "Up next · Set \(n) · \(upNextMeasure(run, set))")
-    }
-
-    /// The «up next» measure for the rest screen, by exercise type.
-    private func upNextMeasure(_ run: StrengthSessionModel.ExerciseRun, _ set: StrengthSessionModel.WorkingSet) -> String {
-        switch run.type {
-        case .weightReps: return "\(massText(set.weightKg)) × \(set.reps)"
-        case .bodyweight: return set.weightKg > 0 ? "\(set.reps) reps · +\(massText(set.weightKg))" : String(localized: "\(set.reps) reps")
-        case .time:       return Self.clock(goalSeconds(run))
-        case .distance:   return String(localized: "distance")
-        }
-    }
-
     // MARK: Small builders
 
     private func stepper(system: String, size: CGFloat = 42, _ action: @escaping () -> Void) -> some View {
@@ -1940,25 +2092,8 @@ struct LiveStrengthSheet: View {
         .buttonStyle(.plain)
     }
 
-    private func restAdjust(_ label: String, _ action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(label).font(StrandFont.headline).monospacedDigit().foregroundStyle(theme.inkSecondary)
-                .frame(width: 56).padding(.vertical, 13)
-                .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                    .strokeBorder(theme.hairline, lineWidth: 1))
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text(label == "−15" ? "Subtract 15 seconds" : "Add 15 seconds"))
-    }
-
     private func finishTapped() {
         confirmFinish = true
-    }
-
-    private func setCounterText(_ run: StrengthSessionModel.ExerciseRun) -> String {
-        let n = run.currentSet + 1
-        return String(localized: "Set \(n) of \(run.sets.count)")
     }
 
     private func restChipText(_ seconds: Int) -> String {
@@ -1966,19 +2101,12 @@ struct LiveStrengthSheet: View {
         return String(localized: "Rest \(seconds)s")
     }
 
-    private func suggestedWeight(_ run: StrengthSessionModel.ExerciseRun) -> Double? {
-        guard let lw = run.lastWeightKg, run.type == .weightReps || run.type == .bodyweight else { return nil }
-        return lw + weightStepKg
-    }
-
     // MARK: Units / formatting
 
     private func displayWeight(_ kg: Double) -> Double { imperial ? UnitFormatter.kgToPounds(kg) : kg }
     private func massText(_ kg: Double) -> String { massString(kg, units: units) }
 
-    static func clock(_ seconds: Int) -> String {
-        String(format: "%d:%02d", seconds / 60, seconds % 60)
-    }
+    static func clock(_ seconds: Int) -> String { SessionClock.format(seconds) }
 }
 
 /// Strips a `List` row down to the warm-paper language: one screen margin, no native background, no native
@@ -2035,6 +2163,23 @@ extension HRRestReference {
         case .karvonenReserve: return .karvonenReserve
         case .fixedBpm:        return .fixedBpm
         }
+    }
+}
+
+// MARK: - Live BPM dot (FER-716)
+
+/// The one always-on pulse of the app: the session header's live-BPM dot, breathing at 1.1 s. Falls
+/// back to a static dot under Reduce Motion (the preset does not self-disable).
+private struct BpmPulseDot: View {
+    let color: Color
+    var animated: Bool = true
+    @State private var pulsing = false
+    var body: some View {
+        Circle().fill(color).frame(width: 7, height: 7)
+            .scaleEffect(animated && pulsing ? 1.35 : 1.0)
+            .opacity(animated && pulsing ? 0.65 : 1.0)
+            .onAppear { if animated { withAnimation(StrandMotion.livePulse) { pulsing = true } } }
+            .accessibilityHidden(true)
     }
 }
 #endif

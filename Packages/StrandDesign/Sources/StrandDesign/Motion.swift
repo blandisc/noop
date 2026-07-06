@@ -68,6 +68,19 @@ public enum StrandMotion {
     public static var bob: Animation {
         .easeInOut(duration: 1.2).repeatForever(autoreverses: true)
     }
+
+    // MARK: Entrenar v3 session (FER-716)
+
+    /// The one always-on pulse of the app: the live BPM dot in the strength session header
+    /// (1.1 s breath). Everything else on the session screen is still. Callers must gate it off
+    /// under Reduce Motion (fall back to a static dot) — this preset does not self-disable.
+    public static var livePulse: Animation {
+        .easeInOut(duration: 1.1).repeatForever(autoreverses: true)
+    }
+
+    /// The receipt's numerals counting 0 → value, ONCE, on save (paired with
+    /// `.contentTransition(.numericText())` and an "already-played" flag so re-opening never re-animates).
+    public static let countUp = Animation.easeOut(duration: 0.75)
 }
 
 #if DEBUG

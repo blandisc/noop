@@ -28,6 +28,7 @@ public enum NoopMetrics {
     public static let controlRadius: CGFloat = 12      // buttons / CTAs
     public static let chipRadius: CGFloat = 8          // small inline chips / pills
     public static let tileRadius: CGFloat = 17         // «Hoy» metric tile corner (handoff «Hoy · Estados»)
+    public static let ctaRadius: CGFloat = 14          // the ink CTA bar («Aplicar»/«Listo», FER-716 handoff)
 
     public static let sourceGlyph: CGFloat = 13  // point size of a data-source SF Symbol glyph
     public static let tileHeight: CGFloat = 104  // every metric tile is this tall
@@ -52,8 +53,14 @@ public struct SegmentedPillControl<T: Hashable>: View {
     /// on warm paper: a quiet track, an active segment that's a subtle ink-tinted capsule (no
     /// bright green), and ink labels. (FER-211)
     var theme: InstrumentoTheme?
-    public init(_ items: [T], selection: Binding<T>, theme: InstrumentoTheme? = nil, label: @escaping (T) -> String) {
-        self.items = items; self._selection = selection; self.theme = theme; self.label = label
+    /// «Ink thumb» variant (FER-716 handoff «Entrenar»): a `patternBlock` track with an `ink` active
+    /// capsule and `paper` Grotesk label — the bolder segmented look the session's editor uses. Only
+    /// meaningful with a `theme`; the default (`false`) keeps the quiet surface-thumb look.
+    var inkThumb: Bool = false
+    public init(_ items: [T], selection: Binding<T>, theme: InstrumentoTheme? = nil,
+                inkThumb: Bool = false, label: @escaping (T) -> String) {
+        self.items = items; self._selection = selection; self.theme = theme
+        self.inkThumb = inkThumb; self.label = label
     }
     public var body: some View {
         HStack(spacing: theme == nil ? 4 : 2) {
@@ -77,7 +84,20 @@ public struct SegmentedPillControl<T: Hashable>: View {
     /// 44pt min (the full segment width stays the tap target). Legacy (theme == nil) keeps the exact
     /// dark-palette look — UNCHANGED. (FER-439 / Detalle de Vital fix)
     @ViewBuilder private func segment(_ item: T, _ sel: Bool) -> some View {
-        if let theme {
+        if let theme, inkThumb {
+            // Ink-thumb: bolder handoff look — Grotesk label, ink capsule / paper text when active.
+            Text(label(item))
+                .font(InstrumentoType.grotesk(12, weight: sel ? .bold : .medium))
+                .lineLimit(1).minimumScaleFactor(0.85)
+                .foregroundStyle(sel ? theme.paper : theme.inkSecondary)
+                .padding(.horizontal, 12)
+                .frame(height: 34)
+                .background {
+                    if sel { Capsule(style: .continuous).fill(theme.ink) }
+                }
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
+        } else if let theme {
             Text(label(item))
                 .font(StrandFont.subhead)
                 .fontWeight(sel ? .semibold : .regular)
@@ -108,8 +128,14 @@ public struct SegmentedPillControl<T: Hashable>: View {
 
     // Instrumento track is a recessed `hairline` groove (so the lighter thumb reads as raised); legacy
     // keeps its original fill. The border stays for both.
-    private var trackFill: Color { theme?.hairline ?? InstrumentoTheme.base.hairline }
-    private var trackStroke: Color { theme?.hairlineStrong ?? InstrumentoTheme.base.hairline }
+    private var trackFill: Color {
+        if inkThumb, let theme { return theme.patternBlock }
+        return theme?.hairline ?? InstrumentoTheme.base.hairline
+    }
+    private var trackStroke: Color {
+        if inkThumb { return .clear }
+        return theme?.hairlineStrong ?? InstrumentoTheme.base.hairline
+    }
 }
 
 // MARK: - Badges
