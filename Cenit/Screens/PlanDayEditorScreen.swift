@@ -245,7 +245,8 @@ struct PlanDayEditorScreen: View {
     @ViewBuilder
     private func columnHeader(_ type: ExerciseType) -> some View {
         HStack(spacing: 8) {
-            Text("SET").groteskOverline(small: true).foregroundStyle(theme.inkTertiary).frame(width: 30, alignment: .center)
+            Text("SET").groteskOverline(small: true).foregroundStyle(theme.inkTertiary)
+                .lineLimit(1).minimumScaleFactor(0.7).frame(width: 40, alignment: .center)
             if showsWeight(type) {
                 Text(StrengthDisplay.weightUnit(system)).groteskOverline(small: true).foregroundStyle(theme.inkTertiary).frame(width: 78)
             }
@@ -265,7 +266,7 @@ struct PlanDayEditorScreen: View {
         let set = items[idx].re.sets[si]
         let type = items[idx].exercise.type
         return HStack(spacing: 8) {
-            numeralRing(idx: idx, si: si).frame(width: 30)
+            numeralRing(idx: idx, si: si).frame(width: 40)
             if showsWeight(type) {
                 cellField(weightText(idx: idx, si: si), id: "\(set.id)-w", keyboard: .decimalPad, width: 78)
             }
@@ -444,12 +445,20 @@ struct PlanDayEditorScreen: View {
     }
 
     /// The day's dominant coarse group — the most-represented across the exercises' primary muscles.
+    /// The tie-break is DETERMINISTIC: we scan `MuscleGroup.allCases` in its fixed order and only take a
+    /// group when it's strictly ahead, so a tie always resolves to the same group. (A `Dictionary.max` by
+    /// value is unstable across accesses, which made the hue + label flicker between re-renders, FER-750.)
     private var dominantGroup: MuscleGroup? {
         var tally: [MuscleGroup: Int] = [:]
         for item in items {
             for m in item.exercise.primaryMuscles { if let g = MuscleGroup.of(m) { tally[g, default: 0] += 1 } }
         }
-        return tally.max { $0.value < $1.value }?.key
+        var best: MuscleGroup?
+        var bestCount = 0
+        for g in MuscleGroup.allCases where (tally[g] ?? 0) > bestCount {
+            best = g; bestCount = tally[g] ?? 0
+        }
+        return best
     }
     private var routineTint: Color { dominantGroup?.tint(theme) ?? theme.inkTertiary }
     private var groupTitle: String { dominantGroup?.title ?? String(localized: "Mixed") }
