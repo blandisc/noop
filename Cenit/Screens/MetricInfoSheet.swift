@@ -25,9 +25,6 @@ struct MetricInfo: Identifiable {
     /// against the band-only baseline (the same slice the persisted score folds — FER-519/FER-629).
     /// nil hides the block (calibrating, no band reading today, or any non-recovery metric).
     var impact: RecoveryImpact.Result? = nil
-    /// FER-642 · «Vs ayer»: the day-over-day recovery change + top movers, shown as one compact line under
-    /// the level attribution. nil hides it (no band yesterday, calibrating, or any non-recovery metric).
-    var change: RecoveryChange.Result? = nil
     var method: Method? = nil
     var disclaimer: LocalizedStringKey? = nil
     var calibration: Calibration? = nil
@@ -472,8 +469,7 @@ extension MetricInfo {
     /// header numeral is tinted by the WHOOP recovery band (green ≥67 · yellow 34–67 · red <34),
     /// mirroring TodayView's `recoveryDataColor`. (FER-108 / FER-162)
     static func recovery(score: Int?, calibrationNights: Int?, nightsNeeded: Int,
-                         impact: RecoveryImpact.Result? = nil,
-                         change: RecoveryChange.Result? = nil) -> MetricInfo {
+                         impact: RecoveryImpact.Result? = nil) -> MetricInfo {
         let disclaimer: LocalizedStringKey = "It's an estimate, not a diagnosis."
 
         if let done = calibrationNights {
@@ -512,7 +508,6 @@ extension MetricInfo {
             bands: [],
             note: nil,
             impact: impact,
-            change: change,
             method: Method(
                 prose: "Each signal becomes a score of how far above or below your personal average it sits (a z-score, in σ). They're averaged with fixed weights — HRV 60%, resting heart rate 20%, sleep 15%, skin temperature 10%, respiration 5% — and mapped onto a 0–100 scale, calibrated so a typical day lands near 58. If a signal is missing on a given night, its weight is shared among the others.",
                 citation: "A composite of z-scores through a logistic curve. HRV via RMSSD (Task Force, 1996)."
@@ -567,6 +562,16 @@ struct MetricInfoSheet: View {
     /// cutoff, so the range selector (S/M/3M/6M/1A/Todo) can re-window. Supplied only for metrics whose
     /// `info.usesLevels`; nil otherwise. Loaded lazily on appear.
     var levelsSeriesLoader: (() async -> [(day: String, value: Double)])? = nil
+
+    /// FER-710 · «Tu patrón»: the WhatMovesIt findings for this metric, supplied by the caller. Only HRV
+    /// and resting HR carry any (the engine returns [] for the rest), so the block hides itself on the
+    /// other vitals. Default empty → hidden.
+    var whatMovesIt: [WhatMovesItFinding] = []
+
+    /// FER-710 · the sleep summary's rich data (stages, regularity, times) — the SAME model the detail
+    /// builds, supplied by the caller only for the sleep sheet. nil (or a night-less model) → the sheet
+    /// falls back to the shared single-value layout, so no-data / Apple-only states stay unchanged.
+    var sleepDetail: SleepDetailModel? = nil
 
     @State private var strainCurve: [TrendPoint] = []
     @State private var strainLoading = false
@@ -639,36 +644,65 @@ struct MetricInfoSheet: View {
         ScrollView {
             VStack(alignment: .leading, spacing: NoopMetrics.gap) {
                 header
-                if headlineExpanded {
-                    Text(info.headline)
-                        .font(StrandFont.subhead)
-                        .foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                }
-                if info.usesLevels {
-                    // FER-607: the F6 levels instrument (selector + tappable levels + chart over the
-                    // active band) replaces the static 14-day trend + bands table for migrated metrics.
+                if isRecoverySummary {
+                    // F2 (FER-710): the redesigned recovery summary — verdict word + zone meter under the
+                    // hero, then «Hoy, vs tu normal» ABOVE the level instrument, no vs-ayer line. The
+                    // detail (RecoveryDetailScreen, opened by «Ver más en Tendencias») keeps every block.
+                    recoveryReading
+                    recoveryZoneMeter
+                    headlineText
+                    if let impact = info.impact, !impact.signals.isEmpty { impactBlock(impact) }
+                    levelsBlock
+                } else if isVitalTemplate {
+                    // F2 (FER-710): the six vitals — data-driven verdict reading under the hero, the level
+                    // instrument, then «Tu patrón» (only where WhatMovesIt has an honest finding: HRV / FC).
+                    vitalReading
+                    headlineText
+                    levelsBlock
+                    vitalPatternBlock
+                } else if isSleepSummary {
+                    // F2 (FER-710) §4: doble dato (in place of the numeral) + verdict + «Anoche» stage bar,
+                    // the active lane label moved above the selector, then the level instrument + «Para esta
+                    // noche». No-night / Apple-only-without-stages fall through to the classic layout below.
+                    sleepDobleDato
+                    sleepReading
+                    headlineText
+                    sleepAnocheBlock
+                    sleepActiveLaneLabel
+                    levelsBlock
+                    sleepParaEstaNoche
+                } else if isStrainSummary {
+                    // F2 (FER-710): Day Strain — verdict by level + the level instrument. (The intraday
+                    // accumulated curve of §5 is a later refinement; the sheet reads the levels today.)
+                    vitalReading
+                    headlineText
                     levelsBlock
                 } else {
-                    if trendLoader != nil { trendSection }
-                    // Day Strain's intraday "How today added up" curve sits in the SAME middle slot as
-                    // the 14-day trend on every other metric — after the headline, before the reference
-                    // bands — so chart placement reads consistently across all sheets. (strain has no
-                    // trendLoader, so the two never both appear.)
-                    if info.id == "strain" { strainSection }
-                    // Heart Rate's 24h curve sits in the same middle slot (it has no 14-day trendLoader,
-                    // so the two never both appear). (FER-137)
-                    if info.id == "heart_rate" { heartRateSection }
-                    if !info.bands.isEmpty {
-                        bandsTable
+                    headlineText
+                    if info.usesLevels {
+                        // FER-607: the F6 levels instrument (selector + tappable levels + chart over the
+                        // active band) replaces the static 14-day trend + bands table for migrated metrics.
+                        levelsBlock
+                    } else {
+                        if trendLoader != nil { trendSection }
+                        // Day Strain's intraday "How today added up" curve sits in the SAME middle slot as
+                        // the 14-day trend on every other metric — after the headline, before the reference
+                        // bands — so chart placement reads consistently across all sheets. (strain has no
+                        // trendLoader, so the two never both appear.)
+                        if info.id == "strain" { strainSection }
+                        // Heart Rate's 24h curve sits in the same middle slot (it has no 14-day trendLoader,
+                        // so the two never both appear). (FER-137)
+                        if info.id == "heart_rate" { heartRateSection }
+                        if !info.bands.isEmpty {
+                            bandsTable
+                        }
                     }
+                    // Recovery's calibration card + today's impact block ride alongside BOTH layouts — only
+                    // Recovery sets them, so they stay invisible on every other metric. With the levels
+                    // instrument they sit just below it («qué la movió hoy»). (FER-620 / FER-628)
+                    if let calibration = info.calibration { calibrationCard(calibration) }
+                    if let impact = info.impact, !impact.signals.isEmpty { impactBlock(impact) }
                 }
-                // Recovery's calibration card + today's impact block ride alongside BOTH layouts — only
-                // Recovery sets them, so they stay invisible on every other metric. With the levels
-                // instrument they sit just below it («qué la movió hoy»). (FER-620 / FER-628)
-                if let calibration = info.calibration { calibrationCard(calibration) }
-                if let impact = info.impact, !impact.signals.isEmpty { impactBlock(impact) }
                 if let method = info.method { methodDisclosure(method) }
                 if appleConnectHint {
                     appleConnectLine
@@ -742,7 +776,16 @@ struct MetricInfoSheet: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: NoopMetrics.space2) {
             HStack(alignment: .firstTextBaseline) {
-                if info.usesLevels {
+                if isRedesignedHeader {
+                    // F2 (FER-710): recovery / strain / the six vitals / sleep share the Grotesk uppercase
+                    // title + ⓘ, retiring the serif title + boxed source chip. A calculated score shows a
+                    // «Calculated» origin dot; a measured signal shows its band/Apple dot.
+                    Text(info.name).groteskSheetTitle().foregroundStyle(theme.ink)
+                    infoButton
+                    Spacer()
+                    if isCalculatedSummary { originDot("Calculated", color: theme.inkTertiary) }
+                    else { vitalOriginDot }
+                } else if info.usesLevels {
                     // FER-607 (migrated metric): the title leads in serif (headline role only), with the
                     // ⓘ beside it and the source chip trailing — the handoff header.
                     Text(info.name)
@@ -759,17 +802,367 @@ struct MetricInfoSheet: View {
                     infoButton
                 }
             }
+            // The rich sleep summary replaces the single numeral with its own doble-dato (in the body). (FER-710)
+            if !isSleepSummary {
             HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
-                Text(info.displayValue)
-                    .instrumentoHero(46)
-                    .foregroundStyle(tintColor(info.headerTint))
-                if let unit = info.unit {
-                    Text(unit)
-                        .font(StrandFont.unit)
-                        .foregroundStyle(theme.inkTertiary)
+                if isCalculatedSummary || isVitalTemplate {
+                    // Grotesk 56 numeral + suffix: «/ 100» (recovery, scored) · «/ 21» (strain, scored) ·
+                    // the unit (a vital). (FER-710)
+                    Text(info.displayValue)
+                        .groteskSheetNumeral()
+                        .foregroundStyle(tintColor(info.headerTint))
+                    if let suffix = calculatedNumeralSuffix {
+                        Text(verbatim: suffix).font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
+                    } else if isVitalTemplate, let unit = info.unit {
+                        Text(unit).font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
+                    }
+                } else {
+                    Text(info.displayValue)
+                        .instrumentoHero(46)
+                        .foregroundStyle(tintColor(info.headerTint))
+                    if let unit = info.unit {
+                        Text(unit)
+                            .font(StrandFont.unit)
+                            .foregroundStyle(theme.inkTertiary)
+                    }
                 }
             }
+            }
         }
+    }
+
+    /// Recovery + Day Strain: calculated scores that share the Grotesk header with a «Calculated» origin
+    /// dot and a «/ max» numeral suffix. (FER-710)
+    private var isCalculatedSummary: Bool { info.id == "recovery" || info.id == "strain" }
+    /// Any F2-redesigned sheet (recovery / strain / the six vitals / sleep): Grotesk uppercase title, no
+    /// serif, an origin dot instead of the boxed source chip. (FER-710)
+    private var isRedesignedHeader: Bool { isCalculatedSummary || isVitalTemplate || info.id == "sleep" }
+    /// The «/ N» ceiling suffix for a calculated summary's numeral, only when there's a real score. nil for
+    /// vitals (they show a unit instead) and for a calibrating/no-data calculated score. (FER-710)
+    private var calculatedNumeralSuffix: String? {
+        if info.id == "recovery" { return isRecoverySummary ? "/ 100" : nil }
+        if info.id == "strain"   { return info.displayValue != "—" ? "/ 21" : nil }
+        return nil
+    }
+
+    /// The redesigned recovery summary path (F2): a scored recovery reading. Calibrating / no-data
+    /// recovery falls through to the shared layout, so those states stay unchanged. (FER-710)
+    private var isRecoverySummary: Bool {
+        info.id == "recovery" && info.calibration == nil && info.displayValue != "—"
+    }
+
+    /// The ⓘ-toggled plain-language explanation, shared by the recovery and classic body layouts.
+    @ViewBuilder private var headlineText: some View {
+        if headlineExpanded {
+            Text(info.headline)
+                .font(StrandFont.subhead)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+        }
+    }
+
+    /// The redesigned vital template path (F2 §6-11): the six single-signal vitals (HRV · resting HR ·
+    /// SpO₂ · steps · stress · respiration) share one Grotesk header + hero skin. Sleep and strain carry
+    /// bespoke blocks, so they keep their own layout; recovery has its own path above. (FER-710)
+    private static let vitalTemplateIDs: Set<String> = ["hrv", "rhr", "spo2", "steps", "stress", "resp_rate"]
+    private var isVitalTemplate: Bool { info.usesLevels && Self.vitalTemplateIDs.contains(info.id) }
+
+    /// The data-origin dot for a redesigned header: a 6px dot in the origin's colour + a short label. The
+    /// dot replaces the boxed source chip on these sheets. (FER-710)
+    private func originDot(_ label: LocalizedStringKey, color: Color) -> some View {
+        HStack(spacing: 5) {
+            Circle().fill(color).frame(width: 6, height: 6)
+            Text(label).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text("Source"))
+        .accessibilityValue(Text(label))
+    }
+
+    /// The vital header's origin dot: the metric hue for a band reading («Band · last night» for a nightly
+    /// signal, «Band» otherwise) or the heart hue for an Apple reading — the same provenance signal the
+    /// foot line + old chip resolved per reading, so it never lies about where the number came from. (FER-710)
+    @ViewBuilder private var vitalOriginDot: some View {
+        if appleSource {
+            originDot("Apple Health", color: theme.dataHeart)
+        } else if BandSummaryCopy.isNightly(metricID: info.id) {
+            originDot("Band · last night", color: metricHue)
+        } else {
+            originDot("Band", color: metricHue)
+        }
+    }
+
+    /// The active level for today's reading — the same classification the level instrument highlights —
+    /// resolved from the metric's levels + today's value. nil with no reading or no levels yet. (FER-710)
+    private var activeLevelKey: String? {
+        guard let levels = resolvedLevels, let v = info.levelsTodayValue else { return nil }
+        return levels.first { lvl in
+            (lvl.lower.map { v >= $0 } ?? true) && (lvl.upper.map { v < $0 } ?? true)
+        }?.key
+    }
+
+    /// The vital's data-driven verdict under the hero: a short honest phrase for WHERE today's reading sits
+    /// on the metric's own levels — never a fixed direction claim, so it can't contradict the day's data
+    /// (repo rule: transparent, honest copy). nil hides it (no reading / no level yet). (FER-710)
+    @ViewBuilder private var vitalReading: some View {
+        if let phrase = vitalReadingText {
+            Text(phrase)
+                .font(StrandFont.headline)
+                .foregroundStyle(theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var vitalReadingText: LocalizedStringKey? {
+        guard let key = activeLevelKey else { return nil }
+        switch (info.id, key) {
+        case ("hrv", "above"):        return "Above your base, a good sign."
+        case ("hrv", "inBase"):       return "In your usual range."
+        case ("hrv", "below"):        return "Below your base, worth a look."
+        case ("rhr", "athlete"):      return "Very low, athlete range."
+        case ("rhr", "excellent"):    return "Low, a strong sign."
+        case ("rhr", "normal"):       return "In a normal range."
+        case ("rhr", "elevated"):     return "Above your usual, worth a look."
+        case ("spo2", "normal"):      return "In a normal range."
+        case ("spo2", "low"):         return "Below the typical range."
+        case ("steps", "veryActive"): return "Very active today."
+        case ("steps", "active"):     return "Active, a solid day."
+        case ("steps", "sedentary"):  return "Quiet so far today."
+        case ("stress", "low"):       return "Low, a calm day so far."
+        case ("stress", "medium"):    return "Moderate so far today."
+        case ("stress", "high"):      return "Running high today."
+        case ("resp_rate", "normal"):   return "In a normal range."
+        case ("resp_rate", "elevated"): return "Above your usual."
+        case ("strain", "rest"):     return "Very light day so far."
+        case ("strain", "light"):    return "A light day so far."
+        case ("strain", "moderate"): return "A solid, moderate day."
+        case ("strain", "hard"):     return "A hard day of load."
+        case ("strain", "extreme"):  return "An all-out day."
+        default: return nil
+        }
+    }
+
+    /// The Day Strain summary path (F2 §5): a scored day. No-reading falls through to the classic layout.
+    private var isStrainSummary: Bool { info.id == "strain" && info.displayValue != "—" }
+
+    /// «Tu patrón» (FER-710): one honest line per WhatMovesIt finding — a paper block with the metric-hue
+    /// left bar (the handoff's «patrón/conexión» shape). Only HRV and resting HR carry findings; for the
+    /// other vitals `whatMovesIt` is empty and the block disappears. Copy shared with the detail. (FER-209)
+    @ViewBuilder private var vitalPatternBlock: some View {
+        if !whatMovesIt.isEmpty {
+            HStack(spacing: 0) {
+                Rectangle().fill(metricHue).frame(width: 2.5)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Your pattern").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    ForEach(whatMovesIt) { f in
+                        Text(Self.whatMovesItPhrase(f))
+                            .font(StrandFont.subhead)
+                            .foregroundStyle(theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding(14)
+                Spacer(minLength: 0)
+            }
+            .background(theme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+    }
+
+    /// The metric-agnostic «Tu patrón» sentence per finding — same copy the detail uses (FER-209), so both
+    /// surfaces read identically.
+    private static func whatMovesItPhrase(_ f: WhatMovesItFinding) -> LocalizedStringKey {
+        switch (f.relationship, f.trend) {
+        case (.sleepDuration, .rises): return "Tends to run higher on nights you sleep more."
+        case (.sleepDuration, .falls): return "Tends to run lower on nights you sleep more."
+        case (.priorStrain, .rises):   return "Tends to rise the day after a hard effort."
+        case (.priorStrain, .falls):   return "Tends to dip the day after a hard effort."
+        }
+    }
+
+    // MARK: - Sleep summary (F2 §4, FER-710) — doble dato + stage bar + «para esta noche»
+
+    /// The rich sleep path: a night with stage data. No-night / Apple-only-without-stages fall through to
+    /// the shared single-value layout, so those states stay unchanged.
+    private var isSleepSummary: Bool { info.id == "sleep" && sleepDetail?.night != nil }
+
+    /// «7:12» from minutes asleep.
+    private static func sleepHM(_ minutes: Double) -> String {
+        let m = Int(minutes.rounded()); return String(format: "%d:%02d", m / 60, m % 60)
+    }
+
+    /// A locale clock «23:38» from a unix timestamp.
+    private static func clock(_ ts: Int) -> String { clockFmt.string(from: Date(timeIntervalSince1970: TimeInterval(ts))) }
+    private static let clockFmt: DateFormatter = {
+        let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("Hmm"); return f
+    }()
+
+    /// The two hero numerals — hours asleep | regularity /100 — split by a vertical hairline. Regularity
+    /// reads «··» until the engine has enough nights (the numeral never lies). (FER-710)
+    private var sleepDobleDato: some View {
+        HStack(alignment: .top, spacing: 18) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(Self.sleepHM(sleepDetail?.night?.stages.asleep ?? 0))
+                    .groteskSheetNumeral().foregroundStyle(theme.dataSleep)
+                Text("hours asleep").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            }
+            Rectangle().fill(theme.hairlineStrong).frame(width: 1, height: 46)
+            VStack(alignment: .leading, spacing: 4) {
+                if let r = sleepDetail?.regularity {
+                    Text(verbatim: "\(r.score)").groteskSheetNumeral().foregroundStyle(theme.dataSleep)
+                } else {
+                    Text(verbatim: "··").groteskSheetNumeral().foregroundStyle(theme.inkTertiary)
+                }
+                Text("regularity").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// A short honest sleep verdict from the active duration lane, without an em dash. (FER-710)
+    @ViewBuilder private var sleepReading: some View {
+        if let phrase = sleepReadingText {
+            Text(phrase).font(StrandFont.headline).foregroundStyle(theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+    private var sleepReadingText: LocalizedStringKey? {
+        switch activeLevelKey {
+        case "optimal":  return "Right in your target range."
+        case "adequate": return "Enough, close to your target."
+        case "short":    return "Short of your target last night."
+        case "extended": return "Longer than usual last night."
+        default:         return nil
+        }
+    }
+
+    /// «Anoche»: the stage bar (deep / REM / light / awake) + the onset→wake clock. Deep→REM→Light are one
+    /// indigo graded by opacity (no new tokens); awake is quiet ink. (FER-710)
+    @ViewBuilder private var sleepAnocheBlock: some View {
+        if let night = sleepDetail?.night {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Last night").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Spacer()
+                    Text(verbatim: "\(Self.clock(night.startTs)) → \(Self.clock(night.endTs))")
+                        .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                }
+                SleepStageBar(stages: [
+                    .init(minutes: night.stages.deep,  color: theme.dataSleep,               label: String(localized: "Deep")),
+                    .init(minutes: night.stages.rem,   color: theme.dataSleep.opacity(0.78), label: String(localized: "REM")),
+                    .init(minutes: night.stages.light, color: theme.dataSleep.opacity(0.52), label: String(localized: "Light")),
+                    .init(minutes: night.stages.awake, color: theme.hairlineStrong,          label: String(localized: "Awake")),
+                ], theme: theme)
+            }
+        }
+    }
+
+    /// The active duration lane label, moved just ABOVE the period selector for sleep (owner's call). (FER-710)
+    @ViewBuilder private var sleepActiveLaneLabel: some View {
+        if let name = sleepLaneName {
+            (Text(name) + Text(verbatim: " · ") + Text("last night"))
+                .font(InstrumentoType.groteskLane).tracking(InstrumentoType.groteskLaneTracking)
+                .textCase(.uppercase).foregroundStyle(theme.dataSleep)
+        }
+    }
+    private var sleepLaneName: LocalizedStringKey? {
+        switch activeLevelKey {
+        case "optimal":  return "Optimal"
+        case "adequate": return "Adequate"
+        case "short":    return "Short"
+        case "extended": return "Extended"
+        default:         return nil
+        }
+    }
+
+    /// «Para esta noche»: an honest, non-prescriptive line from regularity — the paper block with the sleep
+    /// hue left bar. (FER-710)
+    private var sleepParaEstaNoche: some View {
+        HStack(spacing: 0) {
+            Rectangle().fill(theme.dataSleep).frame(width: 2.5)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("For tonight").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text(sleepTonightText).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(14)
+            Spacer(minLength: 0)
+        }
+        .background(theme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+    private var sleepTonightText: LocalizedStringKey {
+        if let r = sleepDetail?.regularity, r.score >= 80 {
+            return "Keep to your usual bedtime to hold this rhythm."
+        }
+        return "A steadier bedtime tonight helps your rhythm."
+    }
+
+    /// The plain-language recovery reading under the hero, banded like the detail's (green ready / yellow
+    /// controlled / red rest) and written WITHOUT em dashes for the redesigned sheet. (FER-710)
+    private var recoveryReading: some View {
+        Text(recoveryReadingText)
+            .font(StrandFont.headline)
+            .foregroundStyle(theme.ink)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var recoveryReadingText: LocalizedStringKey {
+        switch info.headerTint {
+        case .good: return "Above your baseline, ready for a strong day."
+        case .warn: return "Recovering, train but keep it controlled."
+        case .bad:  return "Low, prioritize rest today."
+        default:    return ""
+        }
+    }
+
+    /// The zone meter (FER-710): today's score placed on the fixed recovery zones (Agotado / Bajo /
+    /// Moderado / Alto / Pleno), segment widths ∝ each zone's span of 0–100, the active zone highlighted,
+    /// an ink tick at score/100. Colours map the 5 zones onto recovery's 3 band roles (red / amber /
+    /// green) so no new tokens are minted; labels reuse the level list's localized names (FER-638: the
+    /// 70–88 zone is «Alto», not «A punto»).
+    private var recoveryZoneMeter: some View {
+        let levels = MetricLevels.levels(for: .recovery)
+        let score = info.levelsTodayValue ?? 0
+        let activeIndex = levels.firstIndex { lvl in
+            let aboveLo = lvl.lower.map { score >= $0 } ?? true
+            let belowHi = lvl.upper.map { score < $0 } ?? true
+            return aboveLo && belowHi
+        }
+        let segments = levels.enumerated().map { i, lvl in
+            ZoneMeter.Segment(
+                weight: (lvl.upper ?? 100) - (lvl.lower ?? 0),
+                color: recoveryZoneColor(i),
+                isActive: i == activeIndex,
+                label: recoveryLevelLabel(lvl.key))
+        }
+        return ZoneMeter(segments: segments, fraction: score / 100, theme: theme)
+    }
+
+    /// The 5 recovery zones mapped onto the 3 band roles: depleted/low → critical, moderate → warning,
+    /// primed/peak → verdict. Keeps colour meaningful (red→amber→green) without minting new tokens.
+    private func recoveryZoneColor(_ index: Int) -> Color {
+        switch index {
+        case 0, 1: return theme.critical
+        case 2:    return theme.warning
+        default:   return theme.verdict
+        }
+    }
+
+    /// The localized, uppercased zone label, from the SAME keys the level list uses so the two never
+    /// drift (FER-638 keeps the 70–88 key "primed" reading «Alto», never «A punto»). (FER-710)
+    private func recoveryLevelLabel(_ key: String) -> String {
+        let name: String
+        switch key {
+        case "depleted": name = String(localized: "Depleted")
+        case "low":      name = String(localized: "Low")
+        case "moderate": name = String(localized: "Moderate")
+        case "primed":   name = String(localized: "High")
+        case "peak":     name = String(localized: "Peak")
+        default:         name = key
+        }
+        return name.localizedUppercase
     }
 
     /// The ⓘ that toggles the plain-language explanation in place: quiet ink when closed, the metric hue
@@ -1353,76 +1746,10 @@ struct MetricInfoSheet: View {
                 ForEach(impact.signals) { impactRow($0) }
             }
             impactLegend
-            if let change = info.change {
-                Divider().overlay(theme.hairline)
-                changeLine(change)
-            }
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
-
-    /// FER-642 · «Vs ayer»: one compact line — «Vs ayer: subiste N pts — tu HRV y tu sueño mejoraron.» —
-    /// naming the day-over-day delta and the 1–2 signals that moved most. Adapts to up / down / flat and
-    /// to how many movers there are.
-    @ViewBuilder private func changeLine(_ change: RecoveryChange.Result) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 6) {
-            changeLead(change)
-                .font(StrandFont.caption)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    /// The compact «Vs ayer» sentence, built from fragments so it localizes: a delta lead in its direction
-    /// color + a movers tail. The movers phrase groups by whether they improved. (FER-642)
-    private func changeLead(_ change: RecoveryChange.Result) -> Text {
-        let n = abs(change.deltaScore)
-        let lead: Text
-        if change.deltaScore > 0 {
-            lead = Text("Vs yesterday: up \(n) pts").foregroundColor(theme.verdict)
-        } else if change.deltaScore < 0 {
-            lead = Text("Vs yesterday: down \(n) pts").foregroundColor(theme.critical)
-        } else {
-            lead = Text("Vs yesterday: no change")
-        }
-        guard let tail = Self.moversTail(change.movers) else { return lead + Text(verbatim: ".") }
-        return lead + Text(verbatim: ", ") + Text(verbatim: tail)
-    }
-
-    /// The movers tail with correct verb agreement (D1/CSO#2): a SINGLE localized sentence per grammatical
-    /// case, so English and es-MX each conjugate correctly. One mover → singular («tu HRV mejoró»); two
-    /// movers in the SAME direction → conjoined plural («tu HRV y tu sueño mejoraron»); two in OPPOSITE
-    /// directions → name only the leader in singular («tu HRV mejoró»), never one verb over both. nil when
-    /// there are no movers (the lead stands alone). (FER-642)
-    private static func moversTail(_ movers: [RecoveryChange.Change]) -> String? {
-        guard let first = movers.first else { return nil }
-        let n1 = labelString(first.key)
-        // One mover, or two that disagree → speak only to the leader, singular.
-        let bothSameDirection = movers.count == 2 && (movers[0].improved == movers[1].improved)
-        if !bothSameDirection {
-            return first.improved
-                ? String(localized: "your \(n1) improved.")
-                : String(localized: "your \(n1) eased off.")
-        }
-        let n2 = labelString(movers[1].key)
-        return first.improved
-            ? String(localized: "your \(n1) and your \(n2) improved.")
-            : String(localized: "your \(n1) and your \(n2) eased off.")
-    }
-
-    /// The signal's display name as a localized String (for interpolation into the movers-tail sentence).
-    private static func labelString(_ key: String) -> String {
-        switch key {
-        case "hrv":      return String(localized: "HRV")
-        case "rhr":      return String(localized: "Resting HR")
-        case "sleep":    return String(localized: "Sleep")
-        case "skinTemp": return String(localized: "Skin temp")
-        case "respRate": return String(localized: "Respiration")
-        default:         return key
-        }
     }
 
     /// The plain-language headline names the signal with the LARGEST contribution to today's score
@@ -1576,8 +1903,9 @@ struct MetricInfoSheet: View {
             // border — drills into the same rich detail Cuerpo opens (the handoff foot button).
             Button(action: action) {
                 HStack(spacing: 7) {
-                    Image(systemName: "chart.line.uptrend.xyaxis")
-                        .font(.system(size: 14, weight: .medium))
+                    // The actual «Tendencias» screen glyph (curve-with-nodes), not a generic chart icon. (FER-710)
+                    TendenciasGlyph(color: theme.ink, lineWidth: 1.8)
+                        .frame(width: 15, height: 15)
                     Text("See more in Trends")
                         .font(StrandFont.subhead.weight(.medium))
                 }

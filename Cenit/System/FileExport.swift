@@ -33,6 +33,21 @@ enum FileExport {
         present(activityItems: [src], cleanup: [])
     }
 
+    /// Share an image (a rendered receipt card, FER-720 · 3c) through the system share sheet — the user
+    /// can save it to Photos, AirDrop it, or send it on. Nothing leaves the app until they pick a target.
+    @MainActor
+    static func exportImage(_ image: UIImage) {
+        present(activityItems: [image], cleanup: [])
+    }
+
+    /// Save an image straight to the user's photo library (FER-720 · 3c «Guardar»). iOS shows its own
+    /// add-only permission prompt on first use; best-effort (a denied prompt just no-ops). Requires the
+    /// `NSPhotoLibraryAddUsageDescription` key.
+    @MainActor
+    static func saveImageToPhotos(_ image: UIImage) {
+        UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+    }
+
     /// Present `UIActivityViewController` and, once it closes, best-effort remove the URLs in
     /// `cleanup` so staged exports don't accumulate in `temporaryDirectory` across runs.
     @MainActor

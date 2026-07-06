@@ -121,6 +121,10 @@ final class StrengthSessionModel: ObservableObject {
         /// This set's own rest override (FER-715); `nil` = inherit the exercise's rest. Seeded from the
         /// planned `RoutineSet.rest`; `computeRestTarget`/`startRest` resolve it with an exercise fallback.
         var rest: RestConfig?
+        /// Warm-up vs work (FER-720). Defaults to `.work` so every existing construction site is unchanged;
+        /// `insertWarmup` sets `.warmup`. Persisted through to `SetEntry.kind`, so warm-ups are excluded
+        /// from volume/PRs (which already filter `kind == .work`) without any other change.
+        var kind: SetKind = .work
     }
 
     /// One exercise's run: its plan, the editable sets, which set the Foco is on, and whether it was skipped.
@@ -355,6 +359,18 @@ final class StrengthSessionModel: ObservableObject {
                                         weightKg: template?.weightKg ?? 0,
                                         reps: template?.reps ?? 8, done: false))
     }
+    /// Insert warm-up sets at the FRONT of an exercise (FER-720 · 3a) — warm-ups precede the work sets.
+    /// Marked `.warmup` so they're excluded from volume/PRs but still logged. Keeps the current set
+    /// focused by shifting its index past the inserted rows.
+    func insertWarmup(exercise ei: Int, sets warmups: [(weightKg: Double, reps: Int)]) {
+        guard runs.indices.contains(ei), !warmups.isEmpty else { return }
+        let rows = warmups.map {
+            WorkingSet(id: UUID().uuidString, weightKg: $0.weightKg, reps: $0.reps, done: false, kind: .warmup)
+        }
+        runs[ei].sets.insert(contentsOf: rows, at: 0)
+        runs[ei].currentSet += rows.count
+    }
+
     /// Remove a set from a specific exercise (the inline swipe / accessible delete action).
     func removeSet(exercise ei: Int, set si: Int) {
         guard runs.indices.contains(ei), runs[ei].sets.indices.contains(si) else { return }
@@ -475,9 +491,9 @@ final class StrengthSessionModel: ObservableObject {
 
     // MARK: Persistence
 
-    /// Build the `StrengthSession` + its done `SetEntry` rows for saving (work sets only). Each set
-    /// persists only the fields its exercise type measures, so a time/distance set never carries the
-    /// model's placeholder reps and the weight×reps path stays exactly as it was.
+    /// Build the `StrengthSession` + its done `SetEntry` rows for saving, each carrying its own `kind`
+    /// (`.work`/`.warmup`, FER-720). Each set persists only the fields its exercise type measures, so a
+    /// time/distance set never carries the model's placeholder reps and the weight×reps path stays as it was.
     func buildForSave(deviceId: String?, endTs: Int) -> (StrengthSession, [SetEntry]) {
         let session = StrengthSession(id: id, routineId: routineId, startTs: startTs,
                                       endTs: endTs, deviceId: deviceId)
@@ -488,7 +504,7 @@ final class StrengthSessionModel: ObservableObject {
                 let f = SetCapture.fields(type: run.type, weightKg: set.weightKg, reps: set.reps,
                                           timeS: set.timeS, distanceM: set.distanceM)
                 entries.append(SetEntry(id: set.id, sessionId: id, exerciseId: run.exerciseId,
-                                        position: position, kind: .work,
+                                        position: position, kind: set.kind,
                                         weightKg: f.weightKg, reps: f.reps, timeS: f.timeS, distanceM: f.distanceM,
                                         done: true, ts: set.doneTs ?? endTs))
                 position += 1
@@ -576,10 +592,19 @@ struct LiveStrengthSheet: View {
     /// Whether the receipt numerals show their final values (FER-716). Starts false so the first
     /// appearance rolls 0 → value; `playReceiptCountUp` flips it (animated only the first time).
     @State private var receiptCountUp = false
+    /// The plate calculator (FER-720 · 3a), opened from the keypad's «⛓ discos» for a weight cell. nil = closed.
+    @State private var platesTarget: PlatesTarget?
+    /// The share-receipt screen (FER-720 · 3c), opened from the 1l receipt. nil = closed.
+    @State private var shareReceipt: ShareRef?
 
     /// Identifies which exercise's rest is being edited (FER-716); `setIndex` non-nil = a per-set edit
     /// (from the rest card), nil = exercise-scope (from the rest chip). The editor seeds from `runs[id]`.
     struct RestEdit: Identifiable { let id: Int; var setIndex: Int? = nil }
+
+    /// The exercise + work weight (kg) the plate calculator was opened for (FER-720 · 3a).
+    struct PlatesTarget: Identifiable { let id = UUID(); let ei: Int; let weightKg: Double }
+    /// A marker to present the share screen (FER-720 · 3c); the summary comes from `session.summary`.
+    struct ShareRef: Identifiable { let id = UUID() }
 
     /// Identifies an editable inline cell: a weight or reps field at (exerciseIndex, setIndex).
     enum CellRef: Hashable { case weight(Int, Int), reps(Int, Int) }
@@ -652,6 +677,30 @@ struct LiveStrengthSheet: View {
                 .presentationDetents([.large])
                 .presentationDragIndicator(.hidden)
                 .presentationBackground(theme.paper)
+            }
+        }
+        .sheet(item: $platesTarget) { target in
+            PlatesScreen(
+                theme: theme,
+                targetKg: target.weightKg,
+                exerciseName: session.runs.indices.contains(target.ei) ? session.runs[target.ei].name : "",
+                store: model.plates,
+                onInsertWarmup: { sets in
+                    session.insertWarmup(exercise: target.ei, sets: sets)
+                    platesTarget = nil
+                },
+                onClose: { platesTarget = nil }
+            )
+            .presentationDetents([.large])
+            .presentationDragIndicator(.hidden)
+            .presentationBackground(theme.paper)
+        }
+        .sheet(item: $shareReceipt) { _ in
+            if let summary = session.summary {
+                ShareReceiptScreen(theme: theme, summary: summary, onClose: { shareReceipt = nil })
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.hidden)
+                    .presentationBackground(theme.paper)
             }
         }
         .alert("Finish workout?", isPresented: $confirmFinish) {
@@ -730,14 +779,22 @@ struct LiveStrengthSheet: View {
             theme: theme,
             stepLabel: isWeightCell(cell) ? (imperial ? "±5" : "±2,5") : "±1",
             canCopyPrevious: run.map { previousText($0) != nil } ?? false,
+            platesEnabled: isWeightCell(cell),
             onDigit: { keypadInput(String($0)) },
             onComma: { keypadComma() },
             onBackspace: { keypadBackspace() },
             onNext: { focusNextCell() },
             onCopyPrevious: { if let run { prefillTapped(ei: ei, si: si, run: run); syncBufferFromModel(cell) } },
-            onStep: { keypadStep(cell) }
+            onStep: { keypadStep(cell) },
+            onPlates: { openPlates(ei: ei, si: si) }
         )
         .transition(.move(edge: .bottom))
+    }
+
+    /// Open the plate calculator (FER-720 · 3a) for a weight cell, seeded with that set's current load.
+    private func openPlates(ei: Int, si: Int) {
+        guard session.runs.indices.contains(ei), session.runs[ei].sets.indices.contains(si) else { return }
+        platesTarget = PlatesTarget(ei: ei, weightKg: session.runs[ei].sets[si].weightKg)
     }
 
     /// The first non-skipped exercise's index — its header skips the inter-exercise top gap.
@@ -1629,6 +1686,16 @@ struct LiveStrengthSheet: View {
 
             if let band = s.costBand { receiptCost(band, tomorrowPct: s.costTomorrowPct) }
 
+            Button { shareReceipt = ShareRef() } label: {
+                Label("Share…", systemImage: "square.and.arrow.up")
+                    .font(StrandFont.subhead).fontWeight(.medium)
+                    .foregroundStyle(theme.ink)
+                    .frame(maxWidth: .infinity).padding(.vertical, 13)
+                    .background(RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous)
+                        .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            }
+            .buttonStyle(.plain).padding(.top, 6)
+
             Button { model.closeStrengthSummary() } label: {
                 Text("Done")
                     .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
@@ -1636,7 +1703,7 @@ struct LiveStrengthSheet: View {
                     .frame(maxWidth: .infinity).padding(.vertical, 15)
                     .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous))
             }
-            .buttonStyle(.plain).padding(.top, 6)
+            .buttonStyle(.plain)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .onAppear { playReceiptCountUp() }

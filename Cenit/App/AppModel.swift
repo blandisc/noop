@@ -42,6 +42,8 @@ final class AppModel: ObservableObject {
     let inactivity = InactivityPrefs()
     /// The Bucle's goal (metric + optional date) — a single user preference, UserDefaults-backed (FER-311).
     let goal = GoalStore()
+    /// The user's barbell + owned plate denominations, for the session's «⛓ discos» calculator (FER-720).
+    let plates = PlatesStore()
     /// Which data sources feed the dashboard + baseline (combined / WHOOP-only / Apple-Health-only) —
     /// a user preference; capture stays active in every mode (FER-484).
     let sources = SourceModeStore()
