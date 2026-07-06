@@ -24,12 +24,12 @@ struct MuscleVolumeScreen: View {
     /// The span the average runs over. Raw value = trailing days.
     private enum Span: Int, CaseIterable {
         case d30 = 30, d90 = 90, m6 = 182, y1 = 365
-        var label: LocalizedStringKey {
+        var label: String {
             switch self {
-            case .d30: return "30 d"
-            case .d90: return "90 d"
-            case .m6:  return "6 m"
-            case .y1:  return "1 y"
+            case .d30: return String(localized: "30 d")
+            case .d90: return String(localized: "90 d")
+            case .m6:  return String(localized: "6 m")
+            case .y1:  return String(localized: "1 y")
             }
         }
     }
@@ -40,7 +40,7 @@ struct MuscleVolumeScreen: View {
     @State private var loaded = false
 
     /// The band rail draws 0…30 sets/week, like the muscle detail (band at 10–20 sits centered).
-    private static let railTop = 30.0
+    private var railTop: Double { MuscleFatigueMap.weeklyVolumeRailTop }
 
     private var volumes: [MuscleFatigueMap.MuscleWeeklyVolume] {
         MuscleFatigueMap.weeklyVolumes(events: events, days: span.rawValue)
@@ -79,26 +79,10 @@ struct MuscleVolumeScreen: View {
         .task { await load() }
     }
 
-    // MARK: - Span picker (30 d / 90 d / 6 m / 1 y)
+    // MARK: - Span picker (30 d / 90 d / 6 m / 1 y) — the shared Instrumento segmented control
 
     private var spanPicker: some View {
-        HStack(spacing: 0) {
-            ForEach(Span.allCases, id: \.rawValue) { s in
-                Button { withAnimation(StrandMotion.interactive) { span = s } } label: {
-                    Text(s.label)
-                        .font(InstrumentoType.grotesk(11, weight: span == s ? .bold : .semibold))
-                        .foregroundStyle(span == s ? theme.paper : theme.inkSecondary)
-                        .padding(.horizontal, 14).padding(.vertical, 5)
-                        .background(
-                            Capsule().fill(span == s ? theme.ink : .clear)
-                        )
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(span == s ? [.isSelected] : [])
-            }
-        }
-        .padding(3)
-        .background(Capsule().fill(theme.hairline.opacity(0.6)))
+        SegmentedPillControl(Span.allCases, selection: $span, theme: theme) { $0.label }
     }
 
     // MARK: - Rows — one muscle per row, bar over the 10–20 band rail
@@ -120,8 +104,8 @@ struct MuscleVolumeScreen: View {
                 .frame(width: 96, alignment: .leading)
             GeometryReader { geo in
                 let w = geo.size.width
-                let lo = MuscleFatigueMap.weeklyBandLow / Self.railTop
-                let hi = MuscleFatigueMap.weeklyBandHigh / Self.railTop
+                let lo = MuscleFatigueMap.weeklyBandLow / railTop
+                let hi = MuscleFatigueMap.weeklyBandHigh / railTop
                 ZStack(alignment: .leading) {
                     // the 10–20 band, the fixed reference
                     RoundedRectangle(cornerRadius: 3).fill(theme.hairline)
@@ -130,7 +114,7 @@ struct MuscleVolumeScreen: View {
                     // the datum
                     RoundedRectangle(cornerRadius: 3)
                         .fill(below ? theme.warning : theme.ink)
-                        .frame(width: max(4, w * min(v.setsPerWeek, Self.railTop) / Self.railTop), height: 6)
+                        .frame(width: max(4, w * min(v.setsPerWeek, railTop) / railTop), height: 6)
                 }
                 .frame(height: 14, alignment: .leading)
             }
@@ -198,30 +182,15 @@ struct MuscleVolumeScreen: View {
 
     // MARK: - Data
 
-    private func setsText(_ v: Double) -> String {
-        v.formatted(.number.precision(.fractionLength(v == v.rounded() ? 0 : 1)))
-    }
+    private func setsText(_ v: Double) -> String { MuscleFatigueMap.formattedSets(v) }
 
+    /// Fetch the max span (a year) once; the span picker re-slices in memory (`volumes`) with no more I/O.
     private func load() async {
         let cal = Calendar.current
-        let startToday = cal.startOfDay(for: Date())
-        guard let since = cal.date(byAdding: .day, value: -Span.y1.rawValue, to: startToday) else {
+        guard let since = cal.date(byAdding: .day, value: -Span.y1.rawValue, to: cal.startOfDay(for: Date())) else {
             loaded = true; return
         }
-        let rawSets = await repo.recentWorkSets(sinceTs: Int(since.timeIntervalSince1970))
-        let exercises = await repo.allExercises()
-        let byId = Dictionary(exercises.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
-
-        var ev: [MuscleFatigueMap.MuscleSetEvent] = []
-        for set in rawSets {
-            guard let ex = byId[set.exerciseId] else { continue }
-            let setDay = cal.startOfDay(for: Date(timeIntervalSince1970: TimeInterval(set.startTs)))
-            let daysAgo = cal.dateComponents([.day], from: setDay, to: startToday).day ?? 0
-            for inv in ex.muscleInvolvement {
-                ev.append(.init(muscle: inv.muscle, involvement: inv.weight, daysAgo: daysAgo))
-            }
-        }
-        events = ev
+        events = await repo.muscleSetEvents(sinceTs: Int(since.timeIntervalSince1970))
         loaded = true
     }
 }

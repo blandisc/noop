@@ -1204,6 +1204,12 @@
             "state": "translated",
             "value": " y "
           }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " and "
+          }
         }
       }
     },

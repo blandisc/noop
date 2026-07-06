@@ -65,10 +65,11 @@ struct MuscleMapScreen: View {
     private var loads: [MuscleFatigueMap.MuscleLoad] {
         MuscleFatigueMap.loads(events: events)
     }
-    /// The «Más cargados» ranking is fixed to the last 7 days (the mock), independent of how far
-    /// back the decayed tint reaches.
+    /// The «Más cargados» ranking is fixed to the last 7 days (the mock), independent of how far back
+    /// the decayed tint reaches. `weeklySets` is the engine's 7-day count — the same window the row
+    /// displays — so membership and the shown number are single-sourced.
     private var rankingLoads: [MuscleFatigueMap.MuscleLoad] {
-        loads.filter { $0.daysSinceLast <= 7 }
+        loads.filter { $0.weeklySets > 0 }
     }
     private var loadByMuscle: [String: MuscleFatigueMap.MuscleLoad] {
         Dictionary(loads.map { ($0.muscle, $0) }, uniquingKeysWith: { a, _ in a })
@@ -142,7 +143,7 @@ struct MuscleMapScreen: View {
                 Text("What to train today")
             } else if recommendation.gatedBySystemic {
                 Text("Today calls for rest.\nRecover first.")
-            } else if loads.isEmpty || loadedMuscles.isEmpty && recommendation.readyMuscles.count == loads.count {
+            } else if loads.isEmpty || recommendation.readyMuscles.count == loads.count {
                 Text("All fresh.\nTrain what you like.")
             } else if recommendation.readyMuscles.isEmpty {
                 Text("Everything still carries load.\nGive it a day or go light.")
@@ -478,9 +479,7 @@ struct MuscleMapScreen: View {
         return buckets
     }
 
-    private func setsText(_ v: Double) -> String {
-        v.formatted(.number.precision(.fractionLength(v == v.rounded() ? 0 : 1)))
-    }
+    private func setsText(_ v: Double) -> String { MuscleFatigueMap.formattedSets(v) }
 
     private func load() async {
         let cal = Calendar.current
@@ -614,7 +613,7 @@ private struct MuscleDetailView: View {
                 Text(MuscleAtlas.name(muscle)).instrumentoOverlineProminent().foregroundStyle(theme.inkSecondary)
 
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(weeklySets.formatted(.number.precision(.fractionLength(weeklySets == weeklySets.rounded() ? 0 : 1))))
+                    Text(MuscleFatigueMap.formattedSets(weeklySets))
                         .font(StrandFont.number(52)).foregroundStyle(stateColor)
                     Text("sets · 7 d").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 }
@@ -651,7 +650,8 @@ private struct MuscleDetailView: View {
 
     // Weekly volume vs the Schoenfeld 10–20 band, scaled to a 0–30 track.
     private var volumeBand: some View {
-        let lo = MuscleFatigueMap.weeklyBandLow, hi = MuscleFatigueMap.weeklyBandHigh, top = 30.0
+        let lo = MuscleFatigueMap.weeklyBandLow, hi = MuscleFatigueMap.weeklyBandHigh
+        let top = MuscleFatigueMap.weeklyVolumeRailTop
         return VStack(alignment: .leading, spacing: 6) {
             GeometryReader { geo in
                 let w = geo.size.width

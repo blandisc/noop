@@ -11,9 +11,13 @@ import Foundation
 //     where involvement is the muscle-involvement convention (primary 1.0 / secondary 0.5,
 //     see `Exercise.muscleInvolvement`) and the decay is exponential by days since the set:
 //        decay(d) = 2^(−d / halfLife),  halfLife = 2 days.
-//     A set today counts ~1.0; two days ago ~0.5; four days ago ~0.25. The 2-day half-life
-//     tracks the time course of muscle protein synthesis (MPS), which is elevated ~24–48 h
-//     after a resistance bout and returns toward baseline by ~48–72 h:
+//     A set today counts ~1.0; two days ago ~0.5; four days ago ~0.25. The 2-day half-life is a
+//     calibration knob anchored to muscle recovery, not a constant read off one experiment: muscle
+//     protein synthesis (MPS) is elevated ~24 h and back near baseline by ~36 h after a bout
+//     (MacDougall 1995), and its exact duration shortens with training state and "remains unknown"
+//     (Damas 2015); functional recovery (strength, soreness) typically runs longer, ~48–96 h. A
+//     2-day half-life sits between those — a defensible middle for perceived load, not a claim that
+//     any single process has that time constant:
 //        MacDougall JD et al. "The time course for elevated muscle protein synthesis following
 //        heavy resistance exercise." Can J Appl Physiol 20(4):480–6, 1995.
 //        Damas F, Phillips S, Vechin FC, Ugrinowitsch C. "A review of resistance training-induced
@@ -61,6 +65,16 @@ public enum MuscleFatigueMap {
     /// Hypertrophy weekly-volume guideline (involvement-weighted sets per muscle), Schoenfeld 2017.
     public static let weeklyBandLow: Double = 10
     public static let weeklyBandHigh: Double = 20
+
+    /// The top of the 0…N sets/week rail the band (10–20) is drawn on, shared by the muscle detail and
+    /// the «Volume per muscle» screen so the two rails can't diverge.
+    public static let weeklyVolumeRailTop: Double = 30
+
+    /// Format an involvement-weighted set count for display: whole when integral, one decimal otherwise
+    /// (secondary muscles contribute 0.5). Shared so the map, the detail and the volume screen agree.
+    public static func formattedSets(_ v: Double) -> String {
+        v.formatted(.number.precision(.fractionLength(v == v.rounded() ? 0 : 1)))
+    }
 
     /// Relative-load thresholds for the fresh / moderate / loaded buckets (fraction of the user's
     /// most-loaded muscle).
