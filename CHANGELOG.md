@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **«Señales» de «Hoy» cabe sin ese scroll de sobra / The "Signals" page on "Today" fits without that leftover scroll.**
+  **ES** — Se recuperó un poco de aire vertical en la página de **Señales** para cerrar el scroll ligero que quedaba a tipografía normal: las filas de «Por qué N» pasan de 20 a 18 pt, el espacio entre ese bloque y la retícula de 16 a 12 pt, y el aire arriba del carrusel de 16 a 8 pt. Ningún número ni texto se encoge. (A tamaños de letra muy grandes la página sigue haciendo scroll, como debe ser.)
+  **EN** — Reclaimed a little vertical room on the **Signals** page to close the slight leftover scroll at default text size: the "Why N" rows go from 20 to 18 pt, the gap between that block and the tile grid from 16 to 12 pt, and the space above the pager from 16 to 8 pt. No number or text shrinks. (At very large text sizes the page still scrolls, as it should.)
+  ([TodayView.swift](Cenit/Screens/TodayView.swift), [FiveRules.swift](Packages/StrandDesign/Sources/StrandDesign/FiveRules.swift))
+
 - **Al terminar un entreno de fuerza, eliges guardar o descartar en el mismo lugar / Finishing a strength workout now lets you save or discard in one place.**
   **ES** — Antes, el botón **Terminar** guardaba directo y para descartar había que buscar otra opción aparte. Ahora, al tocar **Terminar**, el aviso te ofrece **Guardar entrenamiento** o **Descartar entrenamiento** (o seguir), con la advertencia de que descartar borra lo que registraste.
   **EN** — Before, the **Finish** button saved right away and discarding meant hunting for a separate option. Now, tapping **Finish** offers **Save workout** or **Discard workout** (or keep going), warning that discarding deletes what you logged.

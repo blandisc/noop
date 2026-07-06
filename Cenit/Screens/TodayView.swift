@@ -702,7 +702,7 @@ struct TodayView: View {
                 // dentro, así cada hoja ocupa todo el ancho y se va limpia a un lado. Ejes ortogonales al
                 // scroll vertical → el swipe horizontal y el pull-to-refresh no se pelean.
                 todayPager(fullWidth: proxy.size.width)
-                    .padding(.top, NoopMetrics.sectionGapCompact)
+                    .padding(.top, NoopMetrics.space2)
                 // La otra mitad del sobrante vive AQUÍ: mantiene los page dots al fondo, cerca del dock,
                 // mientras el `Spacer` de arriba baja la rejilla al centro.
                 Spacer(minLength: NoopMetrics.space2)
@@ -1742,7 +1742,9 @@ struct TodayView: View {
     /// Página 1 del pager: SEÑALES — el bloque «POR QUÉ N» (las cinco reglas, solo con veredicto) +
     /// la retícula 2×4 de tiles; o la tarjeta de fuentes si no hay ninguna (FER-364).
     @ViewBuilder private var senalesPage: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGapCompact) {
+        // Gap `gap` (12) en vez de `sectionGapCompact` (16) entre «Por qué N» y la retícula: aire
+        // suficiente entre ambos bloques y −4 pt para que SEÑALES quepa sin scroll (solo esta página).
+        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
             if heroState == .verdict, !rulesRows.isEmpty { fiveRulesBlock }
             if noSources { emptySourcesCard } else { iosMetricsSection }
         }
