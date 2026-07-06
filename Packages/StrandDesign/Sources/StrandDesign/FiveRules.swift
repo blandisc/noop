@@ -38,7 +38,9 @@ public struct FiveRulesView: View {
     }
 
     // FER-743: 23 → 20 para compactar SEÑALES sin scroll (las marcas de 12/7 pt siguen cabiendo).
-    private static let rowHeight: CGFloat = 20
+    // Un pase más (20 → 18) para cerrar el scroll residual: la marca lit mide 12 pt sobre la
+    // baseline (`rowHeight − 5` = 13), así que el trazo top queda en y=1 y sigue cabiendo entero.
+    private static let rowHeight: CGFloat = 18
     private static let labelWidth: CGFloat = 74
     private static let valueWidth: CGFloat = 40
 

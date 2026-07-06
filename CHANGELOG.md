@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **«Señales» de «Hoy» cabe sin ese scroll de sobra / The "Signals" page on "Today" fits without that leftover scroll.**
+  **ES** — Se recuperó un poco de aire vertical en la página de **Señales** para cerrar el scroll ligero que quedaba a tipografía normal: las filas de «Por qué N» pasan de 20 a 18 pt, el espacio entre ese bloque y la retícula de 16 a 12 pt, y el aire arriba del carrusel de 16 a 8 pt. Ningún número ni texto se encoge. (A tamaños de letra muy grandes la página sigue haciendo scroll, como debe ser.)
+  **EN** — Reclaimed a little vertical room on the **Signals** page to close the slight leftover scroll at default text size: the "Why N" rows go from 20 to 18 pt, the gap between that block and the tile grid from 16 to 12 pt, and the space above the pager from 16 to 8 pt. No number or text shrinks. (At very large text sizes the page still scrolls, as it should.)
+  ([TodayView.swift](Cenit/Screens/TodayView.swift), [FiveRules.swift](Packages/StrandDesign/Sources/StrandDesign/FiveRules.swift))
+
 - **«Hoy» ya no se congela ni calienta el teléfono / "Today" no longer freezes or heats up your phone.**
   **ES** — Se corrigió un cuelgue en el que la pantalla de **Hoy** trababa toda la app con el CPU al 99% (el teléfono se calentaba). El alto del carrusel Señales/Brief se animaba con un valor que se **mide en cada pasada de dibujado** y tiembla una fracción de punto, lo que reactivaba el dibujado en bucle infinito. Ahora la transición de alto se anima solo al **cambiar de página**, que es cuando de verdad debe moverse.
   **EN** — Fixed a hang where the **Today** screen locked up the whole app at 99% CPU (the phone got hot). The Signals/Brief pager height was being animated off a value that is **measured every layout pass** and jitters by a sub-point, which re-triggered layout in an infinite loop. The height transition now animates only when the **page actually changes**, which is when it should move.
