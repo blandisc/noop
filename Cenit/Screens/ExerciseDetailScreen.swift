@@ -69,6 +69,10 @@ struct ExerciseDetailScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                 header
+                // Reserved media hero (FER-751, handoff 1g/1h): sits between the title and the
+                // segmented control. Placeholder-first today; FER-722 fills this same slot with the
+                // cached loop/thumb (auto-play + top-right play/pause) without shifting the layout.
+                ExerciseThumbnail(heroHeight: 168)
                 Picker("View", selection: $tab) {
                     ForEach(DetailTab.allCases) { t in Text(t.label).tag(t) }
                 }

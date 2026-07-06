@@ -183,7 +183,8 @@ struct RoutineBuilderScreen: View {
     private func exerciseHeader(_ idx: Int) -> some View {
         let item = items[idx]
         return VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-            HStack(spacing: 8) {
+            HStack(spacing: 11) {
+                ExerciseThumbnail(side: 40)   // reserved media slot (FER-751); FER-722 fills it
                 VStack(alignment: .leading, spacing: 1) {
                     if item.exercise.type != .weightReps {
                         Text(StrengthDisplay.subtitle(item.exercise)).instrumentoOverline().foregroundStyle(theme.inkTertiary)

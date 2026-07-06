@@ -182,6 +182,7 @@ struct ExerciseLibraryScreen: View {
             if addMode { toggle(ex) } else { detail = ex }
         } label: {
             HStack(spacing: 13) {
+                ExerciseThumbnail(side: 48)   // reserved media slot (FER-751); FER-722 fills it
                 VStack(alignment: .leading, spacing: 2) {
                     Text(StrengthDisplay.name(ex)).font(StrandFont.body).foregroundStyle(theme.ink)
                         .multilineTextAlignment(.leading)
