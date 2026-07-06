@@ -1268,25 +1268,13 @@ struct MetricDetailScreen: View {
                 } else {
                     InlineFlagChip("trend, not cause", color: theme.inkTertiary)
                     ForEach(whatMovesItFindings) { finding in
-                        Text(Self.whatMovesItPhrase(finding))
+                        Text(finding.phrase)
                             .font(StrandFont.caption)
                             .foregroundStyle(theme.inkSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
             }
-        }
-    }
-
-    /// The directional sentence for a finding. Shared by HRV and resting HR — both "la variabilidad"
-    /// and "la frecuencia" are feminine, so the same es-MX wording agrees in gender. The direction
-    /// comes from the user's data; no number is ever shown.
-    private static func whatMovesItPhrase(_ f: WhatMovesItFinding) -> LocalizedStringKey {
-        switch (f.relationship, f.trend) {
-        case (.sleepDuration, .rises): return "Tends to run higher on nights you sleep more."
-        case (.sleepDuration, .falls): return "Tends to run lower on nights you sleep more."
-        case (.priorStrain, .rises):   return "Tends to rise the day after a hard effort."
-        case (.priorStrain, .falls):   return "Tends to dip the day after a hard effort."
         }
     }
 
@@ -2141,7 +2129,7 @@ struct MetricDetailScreen: View {
                     HStack(alignment: .top, spacing: 8) {
                         Text(Self.whatMovesArrow(f)).font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(whatMovesColor(f))
-                        Text(Self.whatMovesItPhrase(f)).font(StrandFont.caption)
+                        Text(f.phrase).font(StrandFont.caption)
                             .foregroundStyle(theme.inkSecondary).fixedSize(horizontal: false, vertical: true)
                     }
                 }

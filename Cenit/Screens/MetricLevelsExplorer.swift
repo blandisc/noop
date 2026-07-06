@@ -235,46 +235,12 @@ struct MetricLevelsExplorer: View {
         }
     }
 
-    /// The es-MX/en label for any F6a level key (fixed metrics + relative-to-base). The English source
-    /// keys already carry their es translations in `Localizable.xcstrings` (reused from the existing
-    /// screens). (FER-572)
+    /// The es-MX/en label for any F6a level key (fixed metrics + relative-to-base). The English name is
+    /// the single source (`MetricLevels.name(for:)`, FER-731 — including the FER-638 rule that `primed`
+    /// reads «Alto»/"High", never «A punto»); it doubles as the `Localizable.xcstrings` key, so es-MX
+    /// resolves at render. (FER-572)
     private func label(_ key: String) -> LocalizedStringKey {
-        switch key {
-        // Recovery
-        case "depleted":   return "Depleted"
-        // FER-638: the 70–88 recovery zone is «Alto» (key "High", es «Alto»), NOT «A punto» — that word
-        // belongs to the dial's verdict (level `primed`, key "Primed"). Same-word collision confused a 61
-        // («A punto» on the dial, «Moderado» here). The internal level key stays "primed".
-        case "primed":     return "High"
-        case "peak":       return "Peak"
-        // Strain
-        case "rest":       return "Rest"
-        case "hard":       return "Hard"
-        case "extreme":    return "Extreme"
-        // Sleep
-        case "short":      return "Short"
-        case "adequate":   return "Adequate"
-        case "optimal":    return "Optimal"
-        case "extended":   return "Extended"
-        // Stress
-        case "medium":     return "Medium"
-        case "high":       return "High"
-        // Shared / vitals (also used by F6b)
-        case "light":      return "Light"
-        case "low":        return "Low"
-        case "moderate":   return "Moderate"
-        case "normal":     return "Normal"
-        case "elevated":   return "Elevated"
-        case "athlete":    return "Athlete"
-        case "excellent":  return "Excellent"
-        case "sedentary":  return "Sedentary"
-        case "active":     return "Active"
-        case "veryActive": return "Very active"
-        case "below":      return "Below your base"
-        case "inBase":     return "In your base"
-        case "above":      return "Above your base"
-        default:           return LocalizedStringKey(key)
-        }
+        LocalizedStringKey(MetricLevels.name(for: key))
     }
 }
 #endif
