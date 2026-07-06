@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La tarjeta "Hoy" de Entrenar respira mejor / The "Today" card in Train breathes better.**
+  **ES** — En la pestaña Entrenar, la tarjeta del día ya no apelmaza el nombre de la rutina contra el meta ("N ejercicios · ~NN min") cuando el nombre es largo: el meta ahora baja a su propia línea. También se corrigió un bug donde la línea de veredicto de recuperación ("Recuperación en tu rango · entrena con tu carga de siempre.") dejaba un hueco en blanco a la derecha antes de envolver, en vez de usar todo el ancho de la tarjeta. Sin cambios de datos ni de comportamiento.
+  **EN** — In the Train tab, the "today" card no longer crowds a long routine name against its meta ("N exercises · ~NN min") — the meta now drops to its own line. Also fixed a layout bug where the recovery verdict line ("Recovery in your range · train at your usual load.") left a blank gap on the right before wrapping, instead of using the card's full width. No data or behavior changes.
+  ([EntrenarView.swift](Cenit/Screens/EntrenarView.swift))
+
 - **La sincronización matutina ya no congela la app / The morning sync no longer freezes the app.**
   **ES** — Durante el jalón de historial de la banda (el catch-up de la mañana), cada paquete se interpreta **una sola vez** (antes hasta tres) y la decodificación de cada bloque de ~50 registros ahora corre **fuera del hilo de la interfaz**. La app se siente fluida mientras sincroniza; el orden de seguridad no cambia: nada se confirma a la banda hasta que quedó guardado en tu iPhone.
   **EN** — During the strap's history offload (the morning catch-up), each packet is parsed **exactly once** (previously up to three times) and each ~50-record chunk now decodes **off the UI thread**. The app stays smooth while syncing; the safety ordering is unchanged: nothing is acknowledged to the strap until it's durably stored on your iPhone.
