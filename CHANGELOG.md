@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El número de recuperación se queda quieto y con color mientras sincroniza / The recovery number stays still and in color while syncing.**
+  **ES** — En **Hoy**, mientras la banda sincroniza, el número grande de recuperación ya **no se apaga a gris ni brinca**: conserva su color de veredicto y se queda en su lugar. Quitamos la animación de «celebración» que reseteaba el número a 0 y lo hacía rodar de vuelta a su valor, y la que encendía las **cinco reglas** en secuencia; ahora tanto el número como las reglas se muestran asentados de una vez. Además apretamos un poco el espacio arriba y abajo del bloque de recuperación.
+  **EN** — On **Today**, while the band syncs, the big recovery number no longer **greys out or jumps**: it keeps its verdict color and stays put. We removed the "celebration" animation that reset the number to 0 and rolled it back up, and the one that lit the **five rules** in sequence; the number and the rules now settle straight to their values. We also tightened the spacing above and below the recovery block a little.
+  ([TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **Los nombres largos del entrenamiento de hoy ya caben mejor / Long workout names on today's card now fit better.**
   **ES** — En **Entrenar**, el título del entrenamiento de hoy (p. ej. «Día A — Empuje y cuádriceps») ahora **se ajusta solo**: los nombres cortos se ven igual de grandes que antes, y los largos se encogen un poco para caber en dos líneas en vez de apretarse.
   **EN** — In **Train**, today's workout title (e.g. "Día A — Empuje y cuádriceps") now **scales itself**: short names stay full size, and long ones shrink slightly to fit two lines instead of cramping.

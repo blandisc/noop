@@ -42,8 +42,8 @@ private struct TodayPageHeightKey: PreferenceKey {
 //                  `RecoveryRules`) + the 2×4 tile grid with sparkbands (`iosMetricsSection`).
 //                · Page 1 (`verdictPage`) — the Daily Brief (headline, connection, actions, CTA).
 //
-// Pull-to-refresh: the seal winds up with the pull and spins while syncing; on completion the
-// numeral counts 0→N and the rule marks light in sequence — ONLY after a refresh, never on open.
+// Pull-to-refresh: the seal winds up with the pull and spins while syncing; the numeral and the
+// rule marks settle straight to their values (no count-up or reveal sequence on completion).
 
 /// Identifiable wrapper so the light «Instrumento» Detalle de Sueño can ride `.sheet(item:)` from Today
 /// (the model itself isn't Identifiable). Mirrors the one Cuerpo uses. (FER-251)
@@ -220,18 +220,6 @@ struct TodayView: View {
     /// Los días de base para las medias de 7 días, memoizados (ver `baselineDays()`): el `filter+sort`
     /// sobre `repo.displayDays` lo comparten el delta del héroe, el Daily Brief y los tiles.
     @State private var memoBaselineDays: [DailyMetric]?
-
-    // MARK: - Celebración del pull-to-refresh (FER-709)
-    //
-    // SOLO tras un pull-to-refresh (nunca al abrir): el numeral cuenta 0→N (750 ms, dígitos tabulares
-    // vía `contentTransition(.numericText())`) y las marcas de las reglas se encienden en secuencia
-    // (~1.2 s, `FiveRulesView.reveal` animado con un `TimelineView`). Nada de esto corre bajo Reduce
-    // Motion ni sin veredicto.
-
-    /// Ancla temporal de la celebración en curso; nil = reposo (las reglas se dibujan asentadas).
-    @State private var celebrationStart: Date? = nil
-    /// El valor que muestra el numeral durante el conteo 0→N; nil = el score real.
-    @State private var countUpScore: Int? = nil
 
     /// Los tres conteos de noches que el héroe/veredicto leen, agrupados para sembrarlos de una sola
     /// pasada sobre `repo.days` (antes cada propiedad remapeaba la historia por su cuenta).
@@ -691,14 +679,14 @@ struct TodayView: View {
                 // Bloque FIJO del instrumento (handoff «Hoy» 2026-07): header + héroe + pestañas. Sigue
                 // dentro del scroll vertical, así que el pull-to-refresh propio (FER-222) NO cambia.
                 // Todo lo demás desliza con el pager.
-                VStack(alignment: .leading, spacing: NoopMetrics.sectionGapCompact) {
+                VStack(alignment: .leading, spacing: NoopMetrics.gap) {
                     headerBlock
                     HealthAlertBanner()
                     todayStatusBanner
                     heroBlock
                 }
                 sectionTabs
-                    .padding(.top, NoopMetrics.sectionGapCompact)
+                    .padding(.top, NoopMetrics.gap)
                 // Franja de carga (FER-705 · handoff «Carga»): vive en el bloque FIJO, bajo las pestañas, así
                 // que es visible en AMBAS páginas del pager (Señales y Brief) y no viaja con el swipe. No
                 // respira ni participa del pull-to-refresh; tocarla abre la hoja. Si `trainingLoad` aún no
@@ -791,9 +779,6 @@ struct TodayView: View {
         // Sin banda conocida (`lastSyncedAt == nil`) no se escanea: cae directo al refresh local.
         try? await Task.sleep(for: .seconds(1.2))
         await repo.refresh()
-        // FER-709: la celebración de actualización — el conteo 0→N del numeral + las marcas en
-        // secuencia — corre SOLO aquí (tras un pull), nunca al abrir la pantalla.
-        celebrateSyncCompletion()
         // FER-293: el usuario ya ejecutó un pull-to-sync → ya aprendió el gesto; retira el microcopy y el
         // rebote (con desvanecido salvo Reduce Motion). El chevron permanece como cue sutil, así el gesto
         // sigue siendo descubrible (a diferencia de FER-270, que lo apagaba por completo para siempre).
@@ -839,21 +824,6 @@ struct TodayView: View {
         Task {
             await pullToSync()
             pullSyncing = false
-        }
-    }
-
-    /// Arranca la celebración de actualización (FER-709): resetea el numeral a 0 y lo deja rodar a su
-    /// valor con `.numericText` (750 ms), y ancla `celebrationStart` para que las marcas de las reglas
-    /// se enciendan en secuencia. Solo con veredicto y sin Reduce Motion; se auto-limpia al terminar.
-    @MainActor private func celebrateSyncCompletion() {
-        guard !reduceMotion, heroState == .verdict, let score = recoveryScore else { return }
-        celebrationStart = Date()
-        countUpScore = 0
-        withAnimation(.easeOut(duration: 0.75)) { countUpScore = score }
-        Task {
-            try? await Task.sleep(for: .seconds(1.6))
-            celebrationStart = nil
-            countUpScore = nil
         }
     }
 
@@ -1189,16 +1159,15 @@ struct TodayView: View {
 
     /// El numeral dominante (96/700 tabular, tracking −4.5). Veredicto → el score en su color de nivel
     /// (con `~` chico si es estimado); calibrando → «··»; descargando / sin lectura → «—». Tocarlo con
-    /// veredicto abre la hoja de Recuperación. El conteo 0→N del pull-to-refresh rueda con
-    /// `contentTransition(.numericText())` — SOLO al actualizar, nunca al abrir.
+    /// veredicto abre la hoja de Recuperación. El score se asienta directo (sin conteo de arranque);
+    /// un cambio real de valor rueda con `contentTransition(.numericText())`.
     @ViewBuilder private func heroNumeralText(_ s: HeroState) -> some View {
         switch s {
         case .verdict:
-            let score = countUpScore ?? recoveryScore ?? 0
+            let score = recoveryScore ?? 0
             let lvl = readiness.level
             let hasWord = lvl != .insufficient
-            let color = isSyncing ? theme.inkTertiary
-                : (hasWord ? verdictDataColor(lvl) : theme.ink)
+            let color = hasWord ? verdictDataColor(lvl) : theme.ink
             let estimated = repo.isRecoveryEstimated(Repository.localDayKey(Date()))
             HStack(alignment: .firstTextBaseline, spacing: 0) {
                 if estimated {
@@ -1233,7 +1202,7 @@ struct TodayView: View {
                     HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
                         Text(stateLabel(lvl))
                             .font(InstrumentoType.groteskVerdict)
-                            .foregroundStyle(isSyncing ? theme.inkTertiary : verdictDataColor(lvl))
+                            .foregroundStyle(verdictDataColor(lvl))
                             .overlay(alignment: .bottom) {
                                 Line()
                                     .stroke(verdictDataColor(lvl).opacity(0.5),
@@ -1783,10 +1752,8 @@ struct TodayView: View {
     /// El bloque «POR QUÉ 74 · las cinco reglas»: la suma visible del score. Overlines arriba
     /// («POR QUÉ N» / «EL LARGO ES EL PESO») y el instrumento de marcas. (FER-743 retiró la leyenda de
     /// fuentes de abajo: la fuente ya se lee en el punto de origen de cada tile.)
-    /// Tras un pull-to-refresh las marcas se encienden en secuencia (`celebrationStart`); al abrir, nunca.
+    /// Las marcas se dibujan asentadas siempre (sin secuencia de encendido en el sync).
     @ViewBuilder private var fiveRulesBlock: some View {
-        // Mapea las filas UNA vez por render (no por frame): durante la celebración el `TimelineView`
-        // solo debe recomputar `reveal`, no re-hacer los 5 `String(localized:)` del mapeo por cada frame.
         let rows = rulesRows
         VStack(alignment: .leading, spacing: NoopMetrics.space2) {
             HStack {
@@ -1796,14 +1763,7 @@ struct TodayView: View {
                 Text("Length is weight")
                     .groteskOverline(small: true).foregroundStyle(theme.inkMuted)
             }
-            if let start = celebrationStart, !reduceMotion {
-                TimelineView(.animation) { context in
-                    FiveRulesView(rows: rows,
-                                  reveal: min(1, context.date.timeIntervalSince(start) / 1.2))
-                }
-            } else {
-                FiveRulesView(rows: rows)
-            }
+            FiveRulesView(rows: rows)
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("Why \(recoveryScore ?? 0): the sum of your five signals"))
