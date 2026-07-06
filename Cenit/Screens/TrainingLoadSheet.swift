@@ -54,43 +54,26 @@ private enum LoadScale {
     ]
 }
 
-// MARK: - Chip de carga (en la fila de pestañas SEÑALES/BRIEF · FER-743)
+// MARK: - Franja de carga (bloque fijo de «Hoy»)
 
-/// El chip compacto de carga a la derecha de las pestañas SEÑALES/BRIEF (FER-743): «CARGA» + la escala de
-/// 4 cápsulas con la banda de hoy encendida + el ratio. Reemplaza la franja de dos filas para compactar
-/// SEÑALES sin scroll; sigue visible en AMBAS páginas del pager (las pestañas son fijas) y al tocarlo abre
-/// la hoja. No respira ni participa del pull-to-refresh. La palabra de banda y el chevron migran a la hoja.
-struct TrainingLoadChip: View {
+/// La franja de dos filas bajo las pestañas SEÑALES/BRIEF: label + palabra de banda + ratio + chevron,
+/// y una escala de 4 cápsulas con el punto de hoy. Tocarla abre la hoja. No respira (no es un dato vivo
+/// intradía) y no participa del pull-to-refresh; solo el punto se reposiciona si el ratio cambió al sincronizar.
+struct TrainingLoadStrip: View {
     let model: TrainingLoadModel
     var theme: InstrumentoTheme = .base
     let onTap: () -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var band: ReadinessEngine.LoadBand? { model.band }
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 6) {
-                Text("Load")
-                    .groteskOverline(small: true)
-                    .foregroundStyle(theme.inkMuted)
-                HStack(spacing: 2) {
-                    ForEach(LoadScale.bounds, id: \.lo) { seg in
-                        Capsule()
-                            .fill(seg.band == band ? seg.band.flag.color(theme) : theme.hairlineStrong)
-                            .frame(width: 13, height: 5)
-                    }
-                }
-                if let acwr = model.acwr {
-                    Text(String(format: "%.2f", acwr))
-                        .font(InstrumentoType.groteskNumber(11, weight: .semibold))
-                        .foregroundStyle(theme.ink)
-                } else {
-                    Text(verbatim: "··")
-                        .font(InstrumentoType.groteskNumber(11, weight: .semibold))
-                        .foregroundStyle(theme.inkMuted)
-                }
+            VStack(alignment: .leading, spacing: 6) {
+                labelRow
+                scaleRow
             }
-            .frame(minHeight: 34)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -99,6 +82,66 @@ struct TrainingLoadChip: View {
         .accessibilityValue(model.acwr == nil ? Text("Calibrating")
                             : Text(band?.shortLabel ?? ""))
         .accessibilityAddTraits(.isButton)
+    }
+
+    private var labelRow: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 0) {
+            Text("Load")
+                .groteskOverline(small: true)
+                .foregroundStyle(theme.inkMuted)
+            Spacer(minLength: 8)
+            if let band, let acwr = model.acwr {
+                Text(band.shortLabel)
+                    .font(InstrumentoType.grotesk(10, weight: .bold))
+                    .tracking(1.2)
+                    .textCase(.uppercase)
+                    .foregroundStyle(band.flag.color(theme))
+                Text(String(format: "%.2f", acwr))
+                    .font(InstrumentoType.groteskNumber(10, weight: .medium))
+                    .foregroundStyle(theme.inkMuted)
+                    .padding(.leading, 6)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(theme.inkMuted)
+                    .padding(.leading, 6)
+            } else {
+                Text("Calibrating")
+                    .font(InstrumentoType.grotesk(10, weight: .bold))
+                    .tracking(1.2)
+                    .textCase(.uppercase)
+                    .foregroundStyle(theme.inkMuted)
+                Text(verbatim: "··")
+                    .font(InstrumentoType.groteskNumber(10, weight: .medium))
+                    .foregroundStyle(theme.inkMuted)
+                    .padding(.leading, 6)
+            }
+        }
+    }
+
+    private var scaleRow: some View {
+        GeometryReader { g in
+            let w = g.size.width
+            ZStack(alignment: .topLeading) {
+                HStack(spacing: 2) {
+                    ForEach(LoadScale.bounds, id: \.lo) { seg in
+                        Capsule()
+                            .fill(seg.band == band ? seg.band.flag.color(theme) : theme.hairline)
+                            .frame(width: max(0, w * (seg.hi - seg.lo) / LoadScale.max - 2), height: 6)
+                    }
+                }
+                .frame(height: 12, alignment: .center)
+                if let acwr = model.acwr {
+                    let x = min(max(acwr / LoadScale.max, 0.05), 0.95)
+                    Circle()
+                        .fill(theme.surface)
+                        .overlay(Circle().strokeBorder(theme.ink, lineWidth: 3))
+                        .frame(width: 12, height: 12)
+                        .offset(x: w * x - 6, y: 0)
+                        .animation(reduceMotion ? nil : .spring(response: 0.5, dampingFraction: 0.8), value: acwr)
+                }
+            }
+        }
+        .frame(height: 12)
     }
 }
 
@@ -592,11 +635,11 @@ private func demoDays(strainCurve: (Int) -> Double) -> [DailyMetric] {
     TrainingLoadSheet(model: TrainingLoadModel(acwr: nil, series: []))
 }
 
-#Preview("Chip") {
-    VStack(alignment: .leading, spacing: 24) {
-        TrainingLoadChip(model: TrainingLoadModel(acwr: 1.09, series: [], days: []), theme: .base, onTap: {})
-        TrainingLoadChip(model: TrainingLoadModel(acwr: nil, series: [], days: []), theme: .base, onTap: {})
-        TrainingLoadChip(model: TrainingLoadModel(acwr: 1.62, series: [], days: []), theme: .base, onTap: {})
+#Preview("Franja") {
+    VStack(spacing: 24) {
+        TrainingLoadStrip(model: TrainingLoadModel(acwr: 1.09, series: [], days: []), theme: .base, onTap: {})
+        TrainingLoadStrip(model: TrainingLoadModel(acwr: nil, series: [], days: []), theme: .base, onTap: {})
+        TrainingLoadStrip(model: TrainingLoadModel(acwr: 1.62, series: [], days: []), theme: .base, onTap: {})
     }
     .padding(24).background(InstrumentoTheme.base.paper)
 }

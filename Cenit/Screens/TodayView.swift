@@ -697,11 +697,18 @@ struct TodayView: View {
                     todayStatusBanner
                     heroBlock
                 }
-                // Pestañas SEÑALES/BRIEF + chip de CARGA en la MISMA fila (FER-743): la carga se colapsó de
-                // franja a chip a la derecha del selector para compactar SEÑALES sin scroll. Sigue en el
-                // bloque FIJO (visible en ambas páginas del pager) y tocar el chip abre la hoja de carga.
                 sectionTabs
                     .padding(.top, NoopMetrics.sectionGapCompact)
+                // Franja de carga (FER-705 · handoff «Carga»): vive en el bloque FIJO, bajo las pestañas, así
+                // que es visible en AMBAS páginas del pager (Señales y Brief) y no viaja con el swipe. No
+                // respira ni participa del pull-to-refresh; tocarla abre la hoja. Si `trainingLoad` aún no
+                // sembró (primer refresh) se omite; una vez con datos muestra la banda o «calibrando».
+                if let trainingLoad {
+                    TrainingLoadStrip(model: trainingLoad, theme: theme) {
+                        trainingLoadItem = makeTrainingLoadItem(trainingLoad)
+                    }
+                    .padding(.top, NoopMetrics.sectionGapCompact)
+                }
                 // Pager horizontal de 2 páginas: ① SEÑALES (por qué + tiles) · ② BRIEF. Full-bleed (FER-725):
                 // se le pasa el ancho COMPLETO de la pantalla y el pager cancela el margen del padre por
                 // dentro, así cada hoja ocupa todo el ancho y se va limpia a un lado. Ejes ortogonales al
@@ -1872,13 +1879,7 @@ struct TodayView: View {
         HStack(spacing: NoopMetrics.cardPadding) {
             tabButton("Signals", page: 0)
             tabButton("Brief", page: 1)
-            Spacer(minLength: NoopMetrics.space2)
-            // Chip de CARGA a la derecha del selector (FER-743): visible en ambas páginas, abre la hoja.
-            if let trainingLoad {
-                TrainingLoadChip(model: trainingLoad, theme: theme) {
-                    trainingLoadItem = makeTrainingLoadItem(trainingLoad)
-                }
-            }
+            Spacer(minLength: 0)
         }
         .animation(reduceMotion ? nil : StrandMotion.interactive, value: pagerPage)
     }
