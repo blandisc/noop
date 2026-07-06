@@ -18,10 +18,15 @@ import os
 ///
 /// The one-HKWorkout invariant lives in `AppModel`: this bridge only surfaces the watch's save state
 /// via callbacks; `WorkoutSaveGate` decides. HealthKit is never a source of truth here.
+
+/// The live status of the watch's mirrored recording, for the iPhone's in-session status line (FER-742).
+/// `.inactive`/`.waiting` paint nothing; the other three each map to one tertiary line in `LiveStrengthSheet`.
+enum WatchSessionStatus: Equatable { case inactive, waiting, recording, notResponding, unavailable }
+
 @MainActor
 final class WorkoutMirroringBridge: NSObject, ObservableObject {
-    /// Read once at session start: whether to attempt mirroring to the watch at all. Defaults ON so the
-    /// loop works end-to-end for hardware testing; the user-facing Settings toggle is FER-C.
+    /// Read at session start: whether to mirror to the watch at all. Opt-in (default off) — flipped on by
+    /// the Settings «Grabar en el Apple Watch» toggle (FER-742); until then the iPhone owns the estimate.
     static let mirrorToWatchKey = "noop.mirrorStrengthToWatch"
 
     private let healthStore = HKHealthStore()
@@ -40,6 +45,24 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
     var onWatchEndedSession: ((_ sessionId: String, _ save: Bool) -> Void)?
     /// The watch declined to save (no permission / error / mirror lost) → the iPhone takes over.
     var onWatchWillNotSave: ((_ sessionId: String) -> Void)?
+
+    // FER-742: state the iPhone UI paints, pushed to `AppModel` (which the Settings row + the strength
+    // sheet already observe) via these closures — same fire-on-main-actor pattern as the ones above.
+    /// Paired-watch availability changed → the Settings «Grabar en el Apple Watch» row shows/hides + enables.
+    var onPairingChanged: ((_ paired: Bool, _ appInstalled: Bool) -> Void)?
+    /// The live mirror status changed during a session → the sheet's tertiary watch line.
+    var onSessionStatusChanged: ((WatchSessionStatus) -> Void)?
+
+    /// How many times we've asked the watch to mirror THIS session — the retry cap is one (2 total).
+    private var mirrorAttempts = 0
+    /// The pending start parameters, kept so «Reintentar» can re-issue the same start (FER-742).
+    private var pendingStart: (sessionId: String, routineName: String, startedAt: Date)?
+    /// The timeout that flips a silent watch to «no respondió» when no mirror begins in time (FER-742).
+    private var waitTimeout: Task<Void, Never>?
+    /// The live mirror status; publishing goes through the closure so `AppModel` re-renders (FER-742).
+    private var sessionStatus: WatchSessionStatus = .inactive {
+        didSet { if sessionStatus != oldValue { onSessionStatusChanged?(sessionStatus) } }
+    }
 
     /// Whether a watch session is currently mirroring to the iPhone. Read at end-of-session to decide
     /// whether to wait for the watch's save decision.
@@ -60,6 +83,9 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
                 self.mirroredSession = mirrored
                 mirrored.delegate = self
                 self.log.log("Mirrored watch session started")
+                // FER-742: the watch confirmed it's recording → the sheet shows «Reloj grabando».
+                self.waitTimeout?.cancel(); self.waitTimeout = nil
+                self.sessionStatus = .recording
                 // Inject the shared sessionId so the watch derives the same idempotency key.
                 if let sid = self.activeSessionId {
                     self.sendOverHealthKit(.start(sessionId: sid, routineName: "", startedAt: Date()))
@@ -72,6 +98,14 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
         }
     }
 
+    /// Recompute + publish whether a watch is paired and whether our app is installed on it (FER-742) —
+    /// drives the Settings row's three states (hidden / disabled+nudge / on). Safe to call anytime.
+    func refreshPairingState() {
+        guard WCSession.isSupported() else { onPairingChanged?(false, false); return }
+        let s = WCSession.default
+        onPairingChanged?(s.isPaired, s.isWatchAppInstalled)
+    }
+
     /// Whether a paired watch with our app installed is available to mirror to.
     private var watchAvailable: Bool {
         guard WCSession.isSupported() else { return false }
@@ -82,25 +116,61 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
     // MARK: - Session lifecycle (called by AppModel)
 
     /// Attempt to start a mirrored session on the watch. Fire-and-forget: never blocks or throws to the
-    /// caller — the iPhone's own session has already started. A no-op when mirroring is disabled or no
-    /// watch is available (the iPhone then saves the estimated workout as it does today).
+    /// caller — the iPhone's own session has already started. A no-op (status `.inactive`, no line) when
+    /// mirroring is opt-out or no watch is available: the iPhone then saves the estimated workout as today.
     func beginMirroredSessionIfEnabled(sessionId: String, routineName: String, startedAt: Date) {
-        guard UserDefaults.standard.object(forKey: Self.mirrorToWatchKey) as? Bool ?? true else { return }
-        guard watchAvailable else { log.log("No watch available — iPhone owns the workout"); return }
-        activeSessionId = sessionId
+        guard UserDefaults.standard.object(forKey: Self.mirrorToWatchKey) as? Bool ?? false else {
+            sessionStatus = .inactive; return
+        }
+        guard watchAvailable else { sessionStatus = .inactive; log.log("No watch available — iPhone owns the workout"); return }
+        mirrorAttempts = 0
+        pendingStart = (sessionId, routineName, startedAt)
+        attemptMirror()
+    }
+
+    /// Issue (or re-issue) the watch-start request and arm the no-response timeout (FER-742). A throw or a
+    /// silent watch flips the status to `.notResponding` (offers «Reintentar») or `.unavailable` once the
+    /// one retry is spent. The session itself never waits on any of this.
+    private func attemptMirror() {
+        guard let start = pendingStart else { return }
+        mirrorAttempts += 1
+        sessionStatus = .waiting
+        activeSessionId = start.sessionId
         let config = HKWorkoutConfiguration()
         config.activityType = .traditionalStrengthTraining
         Task {
             do {
                 try await healthStore.startWatchApp(toHandle: config)
-                log.log("Requested watch app start for session \(sessionId, privacy: .public)")
+                log.log("Requested watch app start for session \(start.sessionId, privacy: .public)")
             } catch {
-                // Watch unreachable / declined → the iPhone stays the sole saver. No user-facing error
-                // in F1.1 (degraded states are FER-B/FER-C).
                 self.activeSessionId = nil
                 log.error("startWatchApp failed: \(error.localizedDescription, privacy: .public)")
+                self.failedToMirror()
             }
         }
+        armWaitTimeout()
+    }
+
+    /// Flip a silent/failed watch to «no respondió», or «sin reloj esta sesión» once the retry is spent.
+    private func failedToMirror() {
+        waitTimeout?.cancel(); waitTimeout = nil
+        sessionStatus = mirrorAttempts >= 2 ? .unavailable : .notResponding
+    }
+
+    /// If no mirror has begun within the window, treat the watch as non-responding (FER-742).
+    private func armWaitTimeout() {
+        waitTimeout?.cancel()
+        waitTimeout = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 8_000_000_000)   // 8 s to begin mirroring
+            guard let self, !Task.isCancelled else { return }
+            if self.sessionStatus == .waiting { self.failedToMirror() }
+        }
+    }
+
+    /// «Reintentar» from the sheet's watch line — one more attempt at the same pending session (FER-742).
+    func retryMirroring() {
+        guard sessionStatus == .notResponding, pendingStart != nil else { return }
+        attemptMirror()
     }
 
     /// Push the current rest window to the watch (best-effort HealthKit channel).
@@ -123,6 +193,11 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
                                        save: save, externalUUID: externalUUID))
         mirroredSession = nil
         activeSessionId = nil
+        // FER-742: the session is over → clear the status line and any pending retry/timeout.
+        pendingStart = nil
+        mirrorAttempts = 0
+        waitTimeout?.cancel(); waitTimeout = nil
+        sessionStatus = .inactive
     }
 
     // MARK: - Send
@@ -197,9 +272,15 @@ extension WorkoutMirroringBridge: HKWorkoutSessionDelegate {
 // MARK: - WCSessionDelegate (guaranteed control channel)
 extension WorkoutMirroringBridge: WCSessionDelegate {
     nonisolated func session(_ session: WCSession, activationDidCompleteWith state: WCSessionActivationState,
-                             error: Error?) {}
+                             error: Error?) {
+        Task { @MainActor in self.refreshPairingState() }   // FER-742: pairing is valid once activated
+    }
     nonisolated func sessionDidBecomeInactive(_ session: WCSession) {}
     nonisolated func sessionDidDeactivate(_ session: WCSession) { WCSession.default.activate() }
+
+    nonisolated func sessionWatchStateDidChange(_ session: WCSession) {
+        Task { @MainActor in self.refreshPairingState() }   // FER-742: watch (un)paired or app (un)installed
+    }
 
     nonisolated func session(_ session: WCSession, didReceiveMessageData messageData: Data) {
         Task { @MainActor in

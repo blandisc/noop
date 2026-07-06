@@ -67,6 +67,13 @@ final class AppModel: ObservableObject {
     /// path where the iPhone owns the estimated workout as before.
     weak var mirroringBridge: WorkoutMirroringBridge?
 
+    /// FER-742: live watch state, mirrored off `WorkoutMirroringBridge` via `CenitApp`, so the views that
+    /// already observe AppModel (the Settings row, and the strength sheet behind a fullScreenCover that
+    /// strips EnvironmentObjects) can paint it. `.inactive` paints no line.
+    @Published var watchSessionStatus: WatchSessionStatus = .inactive
+    @Published var watchPaired = false
+    @Published var watchAppInstalled = false
+
     /// Session ids for which the watch already saved the real `HKWorkout`. The one-workout invariant
     /// gate (`WorkoutSaveGate`) reads this so the iPhone omits its own save. Ephemeral — the workout is
     /// already in HealthKit and idempotent by `externalUUID`, so it need not survive a relaunch.
@@ -656,6 +663,11 @@ final class AppModel: ObservableObject {
     /// over and saves its estimated workout. Installed as a callback on the mirroring bridge. (FER-740)
     func noteWatchWillNotSave(_ sessionId: String) { watchDeclinedSessionIds.insert(sessionId) }
 
+    /// FER-742: ask the bridge to recompute paired-watch availability (drives the Settings row's states).
+    func refreshWatchPairing() { mirroringBridge?.refreshPairingState() }
+    /// FER-742: «Reintentar» from the strength sheet's watch status line.
+    func retryWatchMirroring() { mirroringBridge?.retryMirroring() }
+
     private func endStrengthSession(save: Bool, notifyWatch: Bool) {
         guard let session = strengthSession else { strengthSheetPresented = false; return }
         let endTs = Int(Date().timeIntervalSince1970)
@@ -712,6 +724,8 @@ final class AppModel: ObservableObject {
             // decision: it saved the real FC/kcal workout → the iPhone omits its estimate; it declined
             // or never answered → the iPhone saves as before. Without a watch, save immediately (no wait).
             let watchSaved = wasMirroring ? await self.awaitWatchSaveDecision(sessionId: record.id) : false
+            // FER-742: the receipt's origin line says the watch saved the real FC/kcal to Health.
+            if watchSaved { session.summary?.watchRecorded = true }
             guard WorkoutSaveGate.iPhoneShouldSaveWorkout(watchDidSaveWorkout: watchSaved) else { return }
             // Opt-in mirror to Apple Health (FER-390): a no-op unless the user enabled it. Runs AFTER
             // the local save (the source of truth) and never throws — Health is strictly best-effort.

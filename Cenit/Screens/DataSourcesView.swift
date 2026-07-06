@@ -38,6 +38,9 @@ struct DataSourcesView: View {
     @State private var hkBusy = false
     /// Opt-in mirror of finished strength sessions into Apple Health (FER-390). Off by default.
     @AppStorage(HealthKitBridge.saveStrengthWorkoutsKey) private var saveStrengthWorkouts = false
+    /// FER-742: opt-in — record the strength session on the paired Apple Watch (real HR + calories, closes
+    /// the rings). Off by default; the row only appears when a watch is paired.
+    @AppStorage(WorkoutMirroringBridge.mirrorToWatchKey) private var recordOnWatch = false
     #endif
 
     // Backup & restore + automatic iCloud backup — migrated here from SettingsView for FER-337 so no
@@ -362,6 +365,7 @@ struct DataSourcesView: View {
 
             divider
             strengthWorkoutToggle
+            watchRecordingRow
 
             // Reachability for the per-source Apple Health viewer. Pushed within this screen's
             // NavigationStack — «Ver datos importados ›».
@@ -381,6 +385,40 @@ struct DataSourcesView: View {
         // Load coverage + write permissions on appear so opening the screen shows "X days imported"
         // and the per-metric list without forcing a re-import first.
         .task { await health.refreshStatus() }
+        // FER-742: recompute paired-watch availability so the «Grabar en el Apple Watch» row shows its
+        // right state (hidden / disabled+nudge / on) as soon as the screen opens.
+        .task { model.refreshWatchPairing() }
+    }
+
+    /// FER-742: opt-in — record the strength session on the paired Apple Watch (real HR + calories, closes
+    /// the rings). Hidden without a paired watch; disabled with an install nudge when the watch has no
+    /// Cénit app. Enabling it requests the same workout-share scope as the neighbor toggle.
+    @ViewBuilder
+    private var watchRecordingRow: some View {
+        if model.watchPaired {
+            divider
+            VStack(alignment: .leading, spacing: 8) {
+                Toggle(isOn: $recordOnWatch) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Record on Apple Watch")
+                            .font(StrandFont.body).foregroundStyle(theme.ink)
+                        Text("When you start a strength session, your watch records real heart rate and calories and closes your rings. It replaces the estimated save for that session.")
+                            .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .toggleStyle(.instrumento)
+                .disabled(!model.watchAppInstalled)
+                .onChange(of: recordOnWatch) { _, on in
+                    if on { Task { await health.requestWorkoutShareAuthorization() } }
+                }
+                if !model.watchAppInstalled {
+                    Text("Install Cénit on your watch from the Watch app.")
+                        .font(StrandFont.footnote).foregroundStyle(theme.warning)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
     }
 
     /// Opt-in: write finished strength sessions to Apple Health as workouts so they show in Health /
