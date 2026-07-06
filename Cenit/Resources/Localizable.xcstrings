@@ -17191,6 +17191,57 @@
         }
       }
     },
+    "Today, hour by hour": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today, hour by hour"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoy, hora a hora"
+          }
+        }
+      }
+    },
+    "lived": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lived"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "vivido"
+          }
+        }
+      }
+    },
+    "projected": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "projected"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "proyección"
+          }
+        }
+      }
+    },
     "How well": {
       "extractionState": "manual",
       "localizations": {
