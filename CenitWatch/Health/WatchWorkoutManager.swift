@@ -10,17 +10,46 @@ import os
 /// duplicate the iPhone's write. There is no database on the watch; state crosses the pairing over the
 /// HealthKit mirror channel and `WatchConnectivity`.
 ///
-/// F1.1 is cimientos: the UI is minimal (elapsed + pulse + rest countdown). Polished watch UI, haptics,
-/// and a visual summary are FER-B.
+/// FER-740 laid the session/mirror/save plumbing (unchanged below). FER-741 adds the **presentation
+/// layer** the watch face observes — `phase`, the rest-end haptic scheduler, the end-of-session
+/// `summary`, iPhone reachability and Health-access state, and a wrist-initiated end — without touching
+/// the save invariant.
 @MainActor
 final class WatchWorkoutManager: NSObject, ObservableObject {
     static let shared = WatchWorkoutManager()
 
-    /// Live values the minimal UI observes.
+    /// The coarse screen the watch face renders (FER-741). Rest vs. no-rest and the degraded overlays
+    /// (no reading / no permission / no iPhone) are derived from the finer published state below.
+    enum Phase: Equatable {
+        /// No session — the waiting face, or the «couldn't connect» variant after a failed wake.
+        case idle(couldNotConnect: Bool)
+        /// Woken by the iPhone; the session hasn't started yet. Falls to `.idle(couldNotConnect: true)`
+        /// after 15s with no session.
+        case connecting
+        /// A session is running (the live face — pulse, rest countdown, degraded overlays).
+        case running
+        /// The session ended — the minimal summary card.
+        case summary
+    }
+
+    // MARK: Live values the UI observes
+    @Published var phase: Phase = .idle(couldNotConnect: false)
     @Published var startDate: Date?
     @Published var heartRate: Int = 0
     @Published var rest: RestActivitySnapshot?
     @Published var sessionActive = false
+    /// The routine's display name, adopted from the rest snapshots the iPhone sends.
+    @Published var routineName: String = ""
+    /// Whether the paired iPhone is currently reachable. The face shows a quiet «no connection» line
+    /// when false; heart rate and elapsed time keep running regardless.
+    @Published var iPhoneReachable = true
+    /// True when Health sharing is denied on the wrist → the face warns and drops to «--», but the
+    /// session (timer + rests + haptics) keeps serving. Never blocks.
+    @Published var healthAccessDenied = false
+    /// True for the ~3s «Descanso terminado» transition after a rest naturally expires.
+    @Published var restEndedBanner = false
+    /// The end-of-session summary, set when the session ends with something saved.
+    @Published var summary: WatchSessionSummary?
 
     private let healthStore = HKHealthStore()
     private let log = Logger(subsystem: "com.noopapp.noop.watch", category: "WatchWorkout")
@@ -30,6 +59,12 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
     /// The shared session identity, injected by the iPhone's `.start`. Drives the idempotency key.
     private var sessionId: String?
     private var externalUUID: String?
+
+    /// Fires the rest-end haptic locally at `restEndsAt` (survives an iPhone disconnect). Cancelled if
+    /// the iPhone leaves the rest early (user returned to the set) → no haptic.
+    private var restEndTask: Task<Void, Never>?
+    /// Falls back to «couldn't connect» if a wake never produces a session within 15s.
+    private var connectWatchdog: Task<Void, Never>?
 
     private let typesToShare: Set<HKSampleType> = [HKQuantityType.workoutType(),
                                                    HKQuantityType(.activeEnergyBurned)]
@@ -45,18 +80,28 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
         }
     }
 
-    /// Request HealthKit share/read up front (the watch has no in-app rationale screen in F1.1).
+    /// Request HealthKit share/read up front (the watch has no in-app rationale screen).
     func requestAuthorization() {
         Task {
             do { try await healthStore.requestAuthorization(toShare: typesToShare, read: typesToRead) }
             catch { log.error("Auth failed: \(error.localizedDescription, privacy: .public)") }
+            self.refreshHealthAccess()
         }
+    }
+
+    /// Whether Health *sharing* is denied — the one authorization the wrist can read (read permission is
+    /// deliberately opaque). Drives the no-permission face; without share access there is no saved
+    /// workout, and heart rate falls back to «--».
+    private func refreshHealthAccess() {
+        healthAccessDenied = healthStore.authorizationStatus(for: HKObjectType.workoutType()) == .sharingDenied
     }
 
     // MARK: - Session lifecycle
 
-    /// Called from the `WKApplicationDelegate` when the iPhone wakes the app with a workout config.
+    /// Called from the `WKApplicationDelegate` when the iPhone wakes the app with a workout config. Marks
+    /// the brief «Conectando» window and arms the 15s watchdog before starting the real session.
     func start(configuration: HKWorkoutConfiguration) async throws {
+        beginConnecting()
         let session = try HKWorkoutSession(healthStore: healthStore, configuration: configuration)
         let builder = session.associatedWorkoutBuilder()
         session.delegate = self
@@ -71,10 +116,32 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
         try await builder.beginCollection(at: start)
         startDate = start
         sessionActive = true
+        enterRunning()
+        refreshHealthAccess()
+        WatchHaptic.sessionStart.play()
         log.log("Watch workout started")
     }
 
-    /// Re-adopt a session that outlived the app (killed / rebooted mid-session). Called at launch.
+    /// Enter the brief «Conectando» state and arm the watchdog. If no session materializes in 15s (the
+    /// wake was declined / dropped), fall to the idle face with the «couldn't connect» line.
+    private func beginConnecting() {
+        phase = .connecting
+        connectWatchdog?.cancel()
+        connectWatchdog = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 15_000_000_000)
+            guard let self, !Task.isCancelled else { return }
+            if case .connecting = self.phase { self.phase = .idle(couldNotConnect: true) }
+        }
+    }
+
+    private func enterRunning() {
+        connectWatchdog?.cancel()
+        connectWatchdog = nil
+        phase = .running
+    }
+
+    /// Re-adopt a session that outlived the app (killed / rebooted mid-session). Called at launch. The
+    /// user lands back on the running face (state 3/4), not a special screen.
     func recoverIfNeeded() {
         healthStore.recoverActiveWorkoutSession { [weak self] recovered, error in
             guard let self else { return }
@@ -88,19 +155,39 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
                 self.builder = builder
                 self.sessionActive = recovered.state.isActive
                 self.startDate = recovered.startDate
+                self.refreshHealthAccess()
+                if recovered.state.isActive { self.phase = .running }
                 self.log.log("Recovered active watch session")
             }
         }
+    }
+
+    /// End the session from the wrist (FER-741). Reuses the existing `.end` contract: the iPhone's bridge
+    /// reads a watch-sent `.end` as «ended from the wrist» (`onWatchEndedSession`) and closes its own
+    /// session — no new message type needed. We also end locally so the summary appears immediately.
+    func endFromWrist() {
+        guard let sid = sessionId else { return }
+        let ext = externalUUID ?? WorkoutMirrorKey.externalUUID(for: sid)
+        let now = Date()
+        send(.end(sessionId: sid, endedAt: now, save: true, externalUUID: ext))
+        Task { await endSession(endedAt: now, save: true) }
+    }
+
+    /// Dismiss the summary card (via «Listo», or auto after ~30s when saved) → back to the idle face.
+    func dismissSummary() {
+        summary = nil
+        phase = .idle(couldNotConnect: false)
     }
 
     /// End the session on the iPhone's order (`.end`). Saves the real workout when `save`, stamped with
     /// the shared `externalUUID`, then acks `watchDidSaveWorkout` so the iPhone omits its estimate.
     private func endSession(endedAt: Date, save: Bool) async {
         defer { cleanup() }
+        restEndTask?.cancel()
         guard let session, let builder else { sessionActive = false; return }
         let sid = sessionId ?? ""
         let ext = externalUUID ?? WorkoutMirrorKey.externalUUID(for: sid)
-        guard save else { session.end(); return }   // discarded session → end without a workout
+        guard save else { session.end(); return }   // discarded session → end without a workout or summary
         // No workout-share permission on the wrist → let the iPhone save its estimate instead.
         guard healthStore.authorizationStatus(for: HKObjectType.workoutType()) == .sharingAuthorized else {
             send(.watchWillNotSave(sessionId: sid, reason: .noPermission))
@@ -108,15 +195,49 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
         }
         do {
             try await builder.endCollection(at: endedAt)
+            let stats = summaryStatistics(from: builder, endedAt: endedAt)
             try await builder.addMetadata([HKMetadataKeyExternalUUID: ext])
             let workout = try await builder.finishWorkout()
             session.end()
-            if workout != nil { send(.watchDidSaveWorkout(sessionId: sid, externalUUID: ext)) }
-            else { send(.watchWillNotSave(sessionId: sid, reason: .sessionError)) }
+            if workout != nil {
+                send(.watchDidSaveWorkout(sessionId: sid, externalUUID: ext))
+                presentSummary(stats, saveState: .saved)
+            } else {
+                send(.watchWillNotSave(sessionId: sid, reason: .sessionError))
+                presentSummary(stats, saveState: .failed)
+            }
         } catch {
             log.error("Finish failed: \(error.localizedDescription, privacy: .public)")
             send(.watchWillNotSave(sessionId: sid, reason: .sessionError))
+            let stats = summaryStatistics(from: builder, endedAt: endedAt)
             session.end()
+            presentSummary(stats, saveState: .failed)
+        }
+    }
+
+    /// Read average heart rate + active energy off the builder for the summary card. Best-effort: any
+    /// missing statistic is `nil` and the card omits it.
+    private func summaryStatistics(from builder: HKLiveWorkoutBuilder,
+                                   endedAt: Date) -> (duration: TimeInterval, hr: Int?, kcal: Int?) {
+        let bpmUnit = HKUnit.count().unitDivided(by: .minute())
+        let hr = builder.statistics(for: HKQuantityType(.heartRate))?.averageQuantity()?.doubleValue(for: bpmUnit)
+        let kcal = builder.statistics(for: HKQuantityType(.activeEnergyBurned))?.sumQuantity()?.doubleValue(for: .kilocalorie())
+        let duration = startDate.map { endedAt.timeIntervalSince($0) } ?? 0
+        return (duration, hr.map { Int($0.rounded()) }, kcal.map { Int($0.rounded()) })
+    }
+
+    private func presentSummary(_ stats: (duration: TimeInterval, hr: Int?, kcal: Int?),
+                                saveState: WatchSessionSummary.SaveState) {
+        summary = WatchSessionSummary(duration: stats.duration, averageHeartRate: stats.hr,
+                                      activeEnergyKcal: stats.kcal, saveState: saveState)
+        phase = .summary
+        WatchHaptic.sessionEnded.play()
+        // A saved card may clear itself after ~30s; a failed one waits for «Listo».
+        guard saveState == .saved else { return }
+        Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 30_000_000_000)
+            guard let self, !Task.isCancelled else { return }
+            if case .summary = self.phase { self.dismissSummary() }
         }
     }
 
@@ -126,20 +247,52 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
         sessionActive = false
         rest = nil
         startDate = nil
+        restEndTask?.cancel()
+        restEndTask = nil
+    }
+
+    // MARK: - Rest window (FER-741)
+
+    /// Arm the local rest-end haptic for `endsAt`. The countdown and its haptic run on the wrist, so they
+    /// survive an iPhone disconnect. Re-arming (a rest extended by the iPhone) cancels the prior timer.
+    private func scheduleRestEnd(at endsAt: Date) {
+        restEndTask?.cancel()
+        restEndTask = Task { [weak self] in
+            let delay = endsAt.timeIntervalSinceNow
+            if delay > 0 { try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000)) }
+            guard !Task.isCancelled else { return }
+            await self?.fireRestEnded()
+        }
+    }
+
+    /// The rest window expired on its own → the primary haptic + the ~3s «Descanso terminado» transition,
+    /// then back to the live face. Guarded so a late/cancelled timer can't fire twice.
+    private func fireRestEnded() async {
+        guard rest != nil else { return }
+        rest = nil
+        restEndedBanner = true
+        WatchHaptic.restEnded.play()
+        try? await Task.sleep(nanoseconds: 3_000_000_000)
+        restEndedBanner = false
     }
 
     // MARK: - Message handling
 
     private func handle(_ message: WorkoutMirrorMessage) {
         switch message {
-        case let .start(sid, _, _):
+        case let .start(sid, routine, _):
             sessionId = sid
             externalUUID = WorkoutMirrorKey.externalUUID(for: sid)
+            if !routine.isEmpty { routineName = routine }
         case let .rest(snapshot):
             adoptIdentity(snapshot.sessionId)
+            if !snapshot.routineName.isEmpty { routineName = snapshot.routineName }
             rest = snapshot
             heartRate = snapshot.bpm ?? heartRate
+            scheduleRestEnd(at: snapshot.restEndsAt)
         case .restEnded:
+            // The iPhone left the rest early (user returned to the set): cancel the haptic, no banner.
+            restEndTask?.cancel()
             rest = nil
         case let .end(sid, endedAt, save, ext):
             sessionId = sid
@@ -217,7 +370,15 @@ extension WatchWorkoutManager: HKLiveWorkoutBuilderDelegate {
 // MARK: - WCSessionDelegate (guaranteed control channel)
 extension WatchWorkoutManager: WCSessionDelegate {
     nonisolated func session(_ session: WCSession, activationDidCompleteWith state: WCSessionActivationState,
-                             error: Error?) {}
+                             error: Error?) {
+        let reachable = session.isReachable
+        Task { @MainActor in self.iPhoneReachable = reachable }
+    }
+
+    nonisolated func sessionReachabilityDidChange(_ session: WCSession) {
+        let reachable = session.isReachable
+        Task { @MainActor in self.iPhoneReachable = reachable }
+    }
 
     nonisolated func session(_ session: WCSession, didReceiveMessageData messageData: Data) {
         Task { @MainActor in if let m = WorkoutMirrorMessage.decode(messageData) { self.handle(m) } }
