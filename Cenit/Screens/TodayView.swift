@@ -995,14 +995,14 @@ struct TodayView: View {
     private var noSignalHeader: some View {
         HStack(spacing: NoopMetrics.space1 + 1) {
             BreathingDot(color: theme.inkMuted, radius: 3, breathes: false)
-            Text("SIN SEÑAL")
+            Text("NO SIGNAL")
                 .font(InstrumentoType.grotesk(11, weight: .semibold))
                 .tracking(1)
                 .foregroundStyle(theme.inkTertiary)
         }
         .frame(minHeight: 34)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text("Banda sin señal"))
+        .accessibilityLabel(Text("Band with no signal"))
     }
 
     /// El sello del dial (34 pt) — la firma del instrumento Y el spinner: al jalar se le «da cuerda»
@@ -1103,18 +1103,18 @@ struct TodayView: View {
     /// `TodayBanner` con copy es-MX. Orden = urgencia descendente (batería antes que hueco de base).
     @ViewBuilder private var todayStatusBanner: some View {
         if let pct = live.batteryPct, pct < Self.criticalBatteryPct, live.charging != true {
-            TodayBanner(label: "Batería crítica", dot: theme.critical,
-                        title: "Banda al \(Int(pct.rounded()))%",
-                        subtitle: "cárgala antes de dormir o pierdes la noche")
+            TodayBanner(label: "Critical battery", dot: theme.critical,
+                        title: "Band at \(Int(pct.rounded()))%",
+                        subtitle: "charge it before bed or you lose the night")
         } else if bandDisconnectedDaytime {
-            TodayBanner(label: "Banda desconectada de día", dot: theme.inkMuted,
-                        title: "Sin señal de tu banda",
-                        subtitle: "el veredicto de hoy no cambia; la noche sí la necesita",
-                        cta: "Conectar →", ctaColor: theme.verdict) { triggerPullSync() }
+            TodayBanner(label: "Band disconnected during the day", dot: theme.inkMuted,
+                        title: "No signal from your band",
+                        subtitle: "today's verdict doesn't change, the night needs it",
+                        cta: "Connect →", ctaColor: theme.verdict) { triggerPullSync() }
         } else if let d = daysSinceLastSync, d >= 6 {
-            TodayBanner(label: "Línea base envejecida · 6+ días sin banda", dot: theme.warning,
-                        title: "Tu línea base tiene \(d) días de hueco",
-                        subtitle: "esta semana el veredicto vuelve a llevar «~»")
+            TodayBanner(label: "Aged baseline · 6+ days without band", dot: theme.warning,
+                        title: "Your baseline has a \(d)-day gap",
+                        subtitle: "this week the verdict carries «~» again")
         }
     }
 
