@@ -177,7 +177,7 @@ struct LiveView: View {
 
     private var header: some View {
         HStack(alignment: .center) {
-            Text("Heartbeats").font(StrandFont.title1).foregroundStyle(theme.ink)
+            Text("Heartbeats").groteskSheetTitle().foregroundStyle(theme.ink)
             Spacer()
             connectionPill
         }
@@ -194,8 +194,11 @@ struct LiveView: View {
             : showsReconnecting ? (String(localized: "Reconnecting…"), theme.warning)
             : live.encryptedBond ? (String(localized: "Paired · idle"), theme.warning)
             : (String(localized: "Disconnected"), theme.critical)
+        // The one live marker: the dot breathes on the shared cadence while a strap is actually
+        // streaming (bonded + connected); static otherwise (idle / reconnecting / disconnected). It's
+        // the DNA's «punto que respira» (FER-709), auto-static under Reduce Motion.
         return HStack(spacing: 7) {
-            Circle().fill(color).frame(width: 8, height: 8)
+            BreathingDot(color: color, radius: 4, breathes: activeConnection)
             Text(label).font(StrandFont.caption).foregroundStyle(theme.ink)
                 .lineLimit(1)
         }
@@ -209,11 +212,12 @@ struct LiveView: View {
     private var hero: some View {
         VStack(alignment: .leading, spacing: 10) {
             ECGWave(color: isLiveHR ? theme.dataHeart : theme.inkTertiary,
-                    flat: displayHR == nil, animate: isLiveHR, bpm: displayHR)
+                    flat: displayHR == nil, lineWidth: 1.8, animate: isLiveHR, bpm: displayHR)
                 .frame(maxWidth: .infinity)
             HStack(alignment: .firstTextBaseline, spacing: 7) {
                 Text(displayHR.map(String.init) ?? "—")
-                    .font(.system(size: 56, weight: .semibold).monospacedDigit())
+                    .font(InstrumentoType.groteskLiveBpm)
+                    .tracking(InstrumentoType.groteskLiveBpmTracking)
                     .lineLimit(1).minimumScaleFactor(0.6)   // FER-394: never overflow on 375pt
                     .foregroundStyle(displayHR == nil ? theme.inkTertiary : theme.dataHeart)
                     .contentTransition(.numericText())
@@ -256,7 +260,7 @@ struct LiveView: View {
                 ForEach(Array(recent.enumerated()), id: \.offset) { idx, ms in
                     Capsule()
                         .fill(idx == recent.count - 1 ? theme.dataHeart
-                                                       : theme.dataHeart.opacity(0.45))
+                                                       : theme.dataHeart.opacity(0.40))
                         .frame(maxWidth: .infinity)
                         .frame(height: rrBarHeight(ms))
                 }
