@@ -45,13 +45,7 @@ struct ExerciseDBClient {
     /// nothing matched. Network errors propagate to the caller, which treats any failure as "no
     /// media available right now" and falls back to the YouTube hand-off row.
     func lookup(name: String) async throws -> EDBExerciseMedia? {
-        let normalized = name.lowercased().replacingOccurrences(of: "-", with: " ")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        var components = URLComponents()
-        components.scheme = "https"
-        components.host = host
-        components.path = "/exercises/name/\(normalized)"
-        guard let url = components.url else { return nil }
+        guard let url = Self.lookupURL(forName: name, host: host) else { return nil }
 
         var request = URLRequest(url: url, timeoutInterval: 15)
         request.setValue(apiKey, forHTTPHeaderField: "x-rapidapi-key")
@@ -72,5 +66,22 @@ struct ExerciseDBClient {
     /// source today; if the live API exposes a dedicated thumbnail field, split it here.
     private struct EDBExerciseEntry: Decodable {
         let gifUrl: String?
+    }
+
+    /// Builds the search URL for a free-text exercise name — split out (and `internal`, not
+    /// `private`) so a test can pin the encoding without any network. `URLComponents.path` treats
+    /// "/" as a path separator, which would silently truncate real catalog names like "3/4 Sit-Up"
+    /// at the first slash; this percent-encodes the whole name as one opaque path segment instead,
+    /// explicitly escaping "/" (and "?"/"#", which `.urlPathAllowed` otherwise lets through
+    /// unescaped inside a segment).
+    static func lookupURL(forName name: String, host: String) -> URL? {
+        let normalized = name.lowercased().replacingOccurrences(of: "-", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        var allowedInSegment = CharacterSet.urlPathAllowed
+        allowedInSegment.remove(charactersIn: "/?#")
+        guard let encodedName = normalized.addingPercentEncoding(withAllowedCharacters: allowedInSegment) else {
+            return nil
+        }
+        return URL(string: "https://\(host)/exercises/name/\(encodedName)")
     }
 }
