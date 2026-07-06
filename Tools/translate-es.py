@@ -2014,6 +2014,9 @@ ES: dict[str, str] = {
     'Opens the detail': 'Abre el detalle',
     'vs your 7-day average': 'vs tu media de 7 días',
     'No average of your own yet': 'Aún sin promedio propio',
+
+    # FER-744 follow-up — accessibility label de SEÑALES (FiveRules), antes verbatim en español.
+    '%1$@: %2$lld of %3$lld points': '%1$@: %2$lld de %3$lld puntos',
 }
 
 

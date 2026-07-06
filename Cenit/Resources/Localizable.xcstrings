@@ -50852,6 +50852,23 @@
           }
         }
       }
+    },
+    "%1$@: %2$lld of %3$lld points": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@: %2$lld of %3$lld points"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@: %2$lld de %3$lld puntos"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

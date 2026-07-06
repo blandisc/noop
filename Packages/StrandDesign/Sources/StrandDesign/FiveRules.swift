@@ -85,7 +85,7 @@ public struct FiveRulesView: View {
             Rectangle().fill(theme.hairline).frame(height: 0.5)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(verbatim: "\(row.label): \(row.lit) de \(row.marks) puntos"))
+        .accessibilityLabel(Text(String(format: String(localized: "%1$@: %2$lld of %3$lld points", bundle: .main), row.label, row.lit, row.marks)))
     }
 
     private func marksCanvas(_ row: Row, visibleLit: Int, maxMarks: Int) -> some View {

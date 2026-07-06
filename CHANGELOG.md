@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La etiqueta de VoiceOver de «Señales» ahora se traduce / «Signals» VoiceOver label is now localized.**
+  **ES** — En un dispositivo en inglés, VoiceOver leía cada regla de «Señales» en español (texto fijo, sin traducir, que llegó con la compactación de FER-743). Ahora usa la vía localizada del app (`String(localized:)`), así que respeta el idioma del dispositivo.
+  **EN** — On an English device, VoiceOver read each «Signals» rule in Spanish (a hardcoded, untranslated label introduced by the FER-743 compaction). It now goes through the app's localized path (`String(localized:)`), so it honors the device language.
+  ([FiveRules.swift](Packages/StrandDesign/Sources/StrandDesign/FiveRules.swift))
+
 - **Editar un día del plan es ahora una pantalla, no un menú / Editing a day of your plan is now a screen, not a menu.**
   **ES** — En «Plan de la semana», tocar un día que ya tiene rutina abre una **pantalla para editar ese día**: su nombre, la tabla **Serie · Kg · Reps · Descanso** de cada ejercicio con celdas editables al toque, el numeral de cada serie en el **color de la rutina** (Empuje, Tirón o Pierna) y el chip de descanso por serie que abre el editor de descanso (tiempo fijo o umbral de frecuencia cardiaca, en verde). Arriba, una línea de resumen «{grupo} · N ejercicios · M series · ~T min». Cambiar la rutina del día o marcarlo como descanso vive en el «···» del encabezado; «Guardar día» persiste los cambios. Un día vacío sigue abriendo el selector de rutina como antes. Sin sheets: todo navega con push.
   **EN** — In "Weekly plan", tapping a day that already has a routine opens a **screen to edit that day**: its name, each exercise's **Set · Kg · Reps · Rest** table with tap-to-edit cells, every set's numeral in the **routine's color** (Push, Pull or Legs), and the per-set rest chip that opens the rest editor (fixed time or a heart-rate threshold, in green). Up top, a summary line "{group} · N exercises · M sets · ~T min". Changing the day's routine or marking it as rest lives in the header "···"; "Save day" persists your changes. An empty day still opens the routine picker as before. No sheets: everything navigates by push.
