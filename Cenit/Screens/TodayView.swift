@@ -689,6 +689,7 @@ struct TodayView: View {
                 VStack(alignment: .leading, spacing: NoopMetrics.sectionGapCompact) {
                     headerBlock
                     HealthAlertBanner()
+                    todayStatusBanner
                     heroBlock
                 }
                 sectionTabs
@@ -959,6 +960,7 @@ struct TodayView: View {
                 }
                 Spacer(minLength: NoopMetrics.space2)
                 if liveBpm != nil { bpmButton }
+                else if bandDisconnectedDaytime { noSignalHeader }
                 headerSeal
             }
             syncStatusLine
@@ -986,6 +988,21 @@ struct TodayView: View {
         .accessibilityLabel(Text(isLiveHR ? "Frecuencia cardiaca en vivo" : "Frecuencia cardiaca"))
         .accessibilityValue(Text(liveBpm.map { "\($0) bpm" } ?? ""))
         .accessibilityHint(Text("Abre el monitor latido a latido"))
+    }
+
+    /// El header cuando la banda se desconectó de día (FER-711): en lugar del BPM vivo, un punto gris
+    /// quieto + «SIN SEÑAL». El punto NO late (no hay señal), a diferencia del BPM.
+    private var noSignalHeader: some View {
+        HStack(spacing: NoopMetrics.space1 + 1) {
+            BreathingDot(color: theme.inkMuted, radius: 3, breathes: false)
+            Text("SIN SEÑAL")
+                .font(InstrumentoType.grotesk(11, weight: .semibold))
+                .tracking(1)
+                .foregroundStyle(theme.inkTertiary)
+        }
+        .frame(minHeight: 34)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text("Banda sin señal"))
     }
 
     /// El sello del dial (34 pt) — la firma del instrumento Y el spinner: al jalar se le «da cuerda»
@@ -1052,6 +1069,52 @@ struct TodayView: View {
         case 50..<75: return "battery.75"
         case 25..<50: return "battery.50"
         default:      return "battery.25"
+        }
+    }
+
+    // MARK: - Banners de estado (handoff «Hoy · Estados» · FER-711)
+    //
+    // La tarjeta estándar reutilizable (`StrandDesign.TodayBanner`) montada bajo el header, sobre el
+    // día normal. Se dibuja SOLO el banner de mayor prioridad activo, y SOLO desde señales que la app
+    // YA tiene (batería del strap, enlace BLE, antigüedad del último sync + reloj) — sin inventar
+    // detección nueva (regla del issue). Los banners que exigen detección/matemática nueva —siesta
+    // (re-scoring del numeral), cambio de huso horario (exención de regularidad) y permisos PARCIALES
+    // de Apple Salud— se difieren a issues propios de /pm; la tarjeta ya soporta su forma.
+
+    /// Umbral de batería crítica del strap (%). Debajo de esto, la noche corre peligro de perderse.
+    private static let criticalBatteryPct: Double = 12
+
+    /// ¿Horario diurno (8–22)? Puro reloj: no gritamos «banda desconectada» mientras duermes.
+    private var isDaytime: Bool { clockHourNow >= 8 && clockHourNow < 22 }
+
+    /// La banda se vio antes, ahora está desconectada, es de día y no está sincronizando. Apaga el BPM
+    /// del header («SIN SEÑAL») y enciende el banner de banda desconectada.
+    private var bandDisconnectedDaytime: Bool {
+        strapSeen && !live.connected && !isSyncing && isDaytime
+    }
+
+    /// Días enteros desde el último sync COMPLETO, o nil si nunca hubo. Puro diff de fechas (no math).
+    private var daysSinceLastSync: Int? {
+        guard let at = live.lastSyncedAt else { return nil }
+        return Int((Date().timeIntervalSince1970 - at) / 86_400)
+    }
+
+    /// El banner de estado activo (mayor prioridad primero), o nada. Presentacional: cada rama arma un
+    /// `TodayBanner` con copy es-MX. Orden = urgencia descendente (batería antes que hueco de base).
+    @ViewBuilder private var todayStatusBanner: some View {
+        if let pct = live.batteryPct, pct < Self.criticalBatteryPct, live.charging != true {
+            TodayBanner(label: "Batería crítica", dot: theme.critical,
+                        title: "Banda al \(Int(pct.rounded()))%",
+                        subtitle: "cárgala antes de dormir o pierdes la noche")
+        } else if bandDisconnectedDaytime {
+            TodayBanner(label: "Banda desconectada de día", dot: theme.inkMuted,
+                        title: "Sin señal de tu banda",
+                        subtitle: "el veredicto de hoy no cambia; la noche sí la necesita",
+                        cta: "Conectar →", ctaColor: theme.verdict) { triggerPullSync() }
+        } else if let d = daysSinceLastSync, d >= 6 {
+            TodayBanner(label: "Línea base envejecida · 6+ días sin banda", dot: theme.warning,
+                        title: "Tu línea base tiene \(d) días de hueco",
+                        subtitle: "esta semana el veredicto vuelve a llevar «~»")
         }
     }
 
