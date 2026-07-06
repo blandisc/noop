@@ -520,13 +520,8 @@ struct StressDetailScreen: View {
     /// Format a 0–3 stress value at one decimal (the index's precision).
     private func fmt(_ v: Double) -> String { String(format: "%.1f", v) }
 
-    static let dayParser: DateFormatter = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "UTC")
-        f.dateFormat = "yyyy-MM-dd"
-        return f
-    }()
+    /// The canonical UTC day-key formatter — read side of the day-key contract (FER-754).
+    static let dayParser = DayKey.utcFormatter
 
     /// Short localized date for the fallback-hero chip ("sáb 20 jun"). UTC zone matches the day key so
     /// the rendered day never drifts at the midnight boundary; the format template localizes per the

@@ -801,10 +801,7 @@ struct DietCaptureView: View {
     }
 
     private static let dayKeyParser: DateFormatter = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.dateFormat = "yyyy-MM-dd"
-        return f
+        DayKey.localFormatter
     }()
 
     private static let dayLabelFormatter: DateFormatter = {

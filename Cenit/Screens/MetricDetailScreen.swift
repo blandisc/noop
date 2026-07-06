@@ -1,5 +1,6 @@
 #if os(iOS)
 import SwiftUI
+import WhoopStore
 import StrandDesign
 import StrandAnalytics
 import Foundation
@@ -2355,13 +2356,8 @@ struct MetricDetailScreen: View {
         let f = NumberFormatter(); f.numberStyle = .decimal; f.maximumFractionDigits = 0; return f
     }()
 
-    static let dayParser: DateFormatter = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "UTC")
-        f.dateFormat = "yyyy-MM-dd"
-        return f
-    }()
+    /// The canonical UTC day-key formatter — read side of the day-key contract (FER-754).
+    static let dayParser = DayKey.utcFormatter
 }
 
 // MARK: - Mini sparkline (steady vs variable visual for the consistency disclosure)

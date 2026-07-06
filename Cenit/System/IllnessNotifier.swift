@@ -1,4 +1,5 @@
 import Foundation
+import WhoopStore
 import UserNotifications
 
 /// Surfaces the illness early-warning as a macOS user notification when the banner transitions
@@ -39,9 +40,5 @@ enum IllnessNotifier {
         }
     }
 
-    private static func dayKey(_ date: Date) -> String {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        return f.string(from: date)
-    }
+    private static func dayKey(_ date: Date) -> String { DayKey.local(date) }
 }
