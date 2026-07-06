@@ -68,6 +68,12 @@ public extension InstrumentoType {
     /// Tracking for the 56pt sheet numeral.
     static let groteskSheetNumeralTracking: CGFloat = -2
 
+    /// The live-monitor BPM numeral in «Latidos» — 52/700 tabular, tracking −1.5. Slightly quieter than
+    /// a scored sheet's hero (the ECG is the hero here). FIXED (geometry-driven). (FER-729)
+    static let groteskLiveBpm = groteskNumber(52)
+    /// Tracking for the live BPM numeral.
+    static let groteskLiveBpmTracking: CGFloat = -1.5
+
     /// The verdict word next to the hero («Equilibrado») — 20/700, scales with `.title3`.
     static let groteskVerdict = grotesk(20, weight: .bold, relativeTo: .title3)
 
