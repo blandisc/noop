@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Limpieza interna: la matemática pura se mueve a los paquetes / Internal cleanup: pure math moves into the packages.**
+  **ES** — Sin cambios visibles. La matemática del estrés diario (el proxy 0–3 y sus baselines por fuente) ahora vive en `StrandAnalytics`, y tres piezas de nivel de cable (el parser del pulso estándar 0x2A37, la validación del rango de datos de la banda y el payload de SET_CLOCK) viven en `WhoopProtocol` — todas con sus tests en el paquete, incluido un test *golden* que fija byte por byte el SET_CLOCK. Cero cambios de fórmulas ni de bytes salientes.
+  **EN** — No visible changes. The daily-stress math (the 0–3 proxy and its per-source baselines) now lives in `StrandAnalytics`, and three wire-level pieces (the standard 0x2A37 heart-rate parser, the band's data-range validation and the SET_CLOCK payload) live in `WhoopProtocol` — each covered by package tests, including a golden test pinning SET_CLOCK byte-for-byte. Zero formula or outbound-byte changes.
+  ([DailyStressModel.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/DailyStressModel.swift), [SetClock.swift](Packages/WhoopProtocol/Sources/WhoopProtocol/SetClock.swift), [DataRange.swift](Packages/WhoopProtocol/Sources/WhoopProtocol/DataRange.swift), [StandardHeartRate.swift](Packages/WhoopProtocol/Sources/WhoopProtocol/StandardHeartRate.swift))
+
 - **Puedes bajar el objetivo del descanso por pulso / You can now lower the heart-rate rest target.**
   **ES** — En el editor de descanso, el modo **Por frecuencia** ahora tiene dos métodos: **Sobre tu reposo** (un margen en bpm sobre tu pulso en reposo, de +5 a +30, con atajos Cerca +10 / Normal +15 / Suave +20) y **Reserva** (el método Karvonen de antes). El primero te deja **bajar** el objetivo hacia tu reposo y siempre lo muestra en bpm. Las rutinas que ya tenías no cambian hasta que lo ajustes.
   **EN** — In the rest editor, the **By heart rate** mode now offers two methods: **Over your rest** (a bpm margin above your resting pulse, +5 to +30, with Close +10 / Normal +15 / Easy +20 shortcuts) and **Reserve** (the previous Karvonen method). The first lets you **lower** the target toward your resting HR and always shows it in bpm. Your existing routines don't change until you adjust them.
