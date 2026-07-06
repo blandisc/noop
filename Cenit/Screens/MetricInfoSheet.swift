@@ -753,7 +753,14 @@ struct MetricInfoSheet: View {
                     Text(info.name).groteskSheetTitle().foregroundStyle(theme.ink)
                     infoButton
                     Spacer()
-                    originDot
+                    originDot("Calculated", color: theme.inkTertiary)
+                } else if isVitalTemplate {
+                    // F2 (FER-710): the six vitals share the recovery header skin — Grotesk uppercase title
+                    // + ⓘ + an origin dot (band/Apple), retiring the serif title + boxed source chip here.
+                    Text(info.name).groteskSheetTitle().foregroundStyle(theme.ink)
+                    infoButton
+                    Spacer()
+                    vitalOriginDot
                 } else if info.usesLevels {
                     // FER-607 (migrated metric): the title leads in serif (headline role only), with the
                     // ⓘ beside it and the source chip trailing — the handoff header.
@@ -779,6 +786,14 @@ struct MetricInfoSheet: View {
                         .foregroundStyle(tintColor(info.headerTint))
                     if isRecoverySummary {
                         Text(verbatim: "/ 100").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
+                    }
+                } else if isVitalTemplate {
+                    // Grotesk 56 sheet numeral + unit — the vital's value of today as the one datum. (FER-710)
+                    Text(info.displayValue)
+                        .groteskSheetNumeral()
+                        .foregroundStyle(tintColor(info.headerTint))
+                    if let unit = info.unit {
+                        Text(unit).font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
                     }
                 } else {
                     Text(info.displayValue)
@@ -811,15 +826,34 @@ struct MetricInfoSheet: View {
         }
     }
 
-    /// The data-origin dot for the recovery header: a muted 6px dot + «Calculated». Recovery is a derived
-    /// score, not a raw band/Apple reading, so its origin is always «calculated». (FER-710)
-    private var originDot: some View {
+    /// The redesigned vital template path (F2 §6-11): the six single-signal vitals (HRV · resting HR ·
+    /// SpO₂ · steps · stress · respiration) share one Grotesk header + hero skin. Sleep and strain carry
+    /// bespoke blocks, so they keep their own layout; recovery has its own path above. (FER-710)
+    private static let vitalTemplateIDs: Set<String> = ["hrv", "rhr", "spo2", "steps", "stress", "resp_rate"]
+    private var isVitalTemplate: Bool { info.usesLevels && Self.vitalTemplateIDs.contains(info.id) }
+
+    /// The data-origin dot for a redesigned header: a 6px dot in the origin's colour + a short label. The
+    /// dot replaces the boxed source chip on these sheets. (FER-710)
+    private func originDot(_ label: LocalizedStringKey, color: Color) -> some View {
         HStack(spacing: 5) {
-            Circle().fill(theme.inkTertiary).frame(width: 6, height: 6)
-            Text("Calculated").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+            Circle().fill(color).frame(width: 6, height: 6)
+            Text(label).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text("Source · calculated"))
+        .accessibilityLabel(Text("Source"))
+    }
+
+    /// The vital header's origin dot: the metric hue for a band reading («Band · last night» for a nightly
+    /// signal, «Band» otherwise) or the heart hue for an Apple reading — the same provenance signal the
+    /// foot line + old chip resolved per reading, so it never lies about where the number came from. (FER-710)
+    @ViewBuilder private var vitalOriginDot: some View {
+        if appleSource {
+            originDot("Apple Health", color: theme.dataHeart)
+        } else if BandSummaryCopy.isNightly(metricID: info.id) {
+            originDot("Band · last night", color: metricHue)
+        } else {
+            originDot("Band", color: metricHue)
+        }
     }
 
     /// The plain-language recovery reading under the hero, banded like the detail's (green ready / yellow

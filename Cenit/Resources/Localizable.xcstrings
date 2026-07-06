@@ -1,6 +1,22 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Band · last night": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Band · last night"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Banda · anoche"
+          }
+        }
+      }
+    },
     "Above your baseline, ready for a strong day.": {
       "localizations": {
         "en": {
