@@ -20,6 +20,10 @@ struct WeeklyPlanEditorView: View {
 
     /// Push «Mis rutinas» — the single home for create / import / templates / library + folders (F4).
     var openRoutines: () -> Void
+    /// Push «Editar día del plan» (1o, FER-747) for a weekday that has a routine. Tapping an assigned day
+    /// edits its prescription; an empty day still opens the assign menu (decision A). Change-routine and
+    /// mark-rest for an assigned day live inside 1o's header «···».
+    var openDay: (Int) -> Void = { _ in }
 
     @State private var loaded = false
     @State private var routines: [Routine] = []
@@ -108,62 +112,75 @@ struct WeeklyPlanEditorView: View {
         }
     }
 
-    /// One day: its weekday label (today marked), the assigned routine or «Rest», and a chevron. The whole
-    /// row is the label of a `Menu` that picks a routine (grouped by folder) or clears the day.
+    /// One day: its weekday label (today marked), the assigned routine or «Rest». Decision A (FER-747):
+    /// a day WITH a routine pushes 1o to edit its prescription (chevron ›); an EMPTY day still opens the
+    /// assign `Menu` (chevron ▾) that picks a routine (grouped by folder) or leaves it as rest.
+    @ViewBuilder
     private func dayRow(_ wd: Int) -> some View {
-        Menu {
-            Button { clear(wd) } label: {
-                Label("Rest", systemImage: schedule[wd] == nil ? "checkmark" : "moon.zzz")
-            }
-            ForEach(folders) { folder in
-                let rs = routines.filter { $0.folderId == folder.id }
-                if !rs.isEmpty {
-                    Section(folder.name) { ForEach(rs) { routinePick(wd, $0) } }
-                }
-            }
-            // Everything not in a listed folder (including a routine whose folder was deleted) so no
-            // routine is ever un-pickable.
-            let unfiled = unfiledRoutines
-            if !unfiled.isEmpty {
-                Section { ForEach(unfiled) { routinePick(wd, $0) } }
-            }
-        } label: {
-            HStack(spacing: 14) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(weekdayLabel(wd))
-                        .font(StrandFont.mono)
-                        .foregroundStyle(wd == today ? theme.ink : theme.inkSecondary)
-                    if wd == today {
-                        Text("today").textCase(.uppercase)
-                            .font(StrandFont.footnote).fontWeight(.semibold).foregroundStyle(theme.dataRecovery)
-                    }
-                }
-                .frame(width: 52, alignment: .leading)
-
-                if let rid = schedule[wd], let r = routines.first(where: { $0.id == rid }) {
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text(r.name).font(StrandFont.body).fontWeight(wd == today ? .semibold : .regular)
-                            .foregroundStyle(theme.ink)
-                        miniBars(rid)
-                    }
-                    Spacer(minLength: 8)
-                    Text(seriesText(rid)).font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary)
-                } else {
-                    Text("Rest").font(StrandFont.body).foregroundStyle(theme.inkDim)
-                    Spacer(minLength: 8)
-                }
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-            }
-            .frame(minHeight: 52)
-            .padding(.horizontal, wd == today ? 10 : 0)
-            .background {
-                if wd == today {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous).fill(theme.surface)
-                }
-            }
-            .contentShape(Rectangle())
+        if schedule[wd] != nil {
+            Button { openDay(wd) } label: { rowLabel(wd, chevron: "chevron.right") }
+                .buttonStyle(.plain)
+        } else {
+            Menu { assignMenu(wd) } label: { rowLabel(wd, chevron: "chevron.down") }
         }
+    }
+
+    /// The assign menu content (empty days): pick a routine (grouped by folder) or keep it as rest.
+    @ViewBuilder
+    private func assignMenu(_ wd: Int) -> some View {
+        Button { clear(wd) } label: {
+            Label("Rest", systemImage: schedule[wd] == nil ? "checkmark" : "moon.zzz")
+        }
+        ForEach(folders) { folder in
+            let rs = routines.filter { $0.folderId == folder.id }
+            if !rs.isEmpty {
+                Section(folder.name) { ForEach(rs) { routinePick(wd, $0) } }
+            }
+        }
+        // Everything not in a listed folder (including a routine whose folder was deleted) so no
+        // routine is ever un-pickable.
+        let unfiled = unfiledRoutines
+        if !unfiled.isEmpty {
+            Section { ForEach(unfiled) { routinePick(wd, $0) } }
+        }
+    }
+
+    private func rowLabel(_ wd: Int, chevron: String) -> some View {
+        HStack(spacing: 14) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(weekdayLabel(wd))
+                    .font(StrandFont.mono)
+                    .foregroundStyle(wd == today ? theme.ink : theme.inkSecondary)
+                if wd == today {
+                    Text("today").textCase(.uppercase)
+                        .font(StrandFont.footnote).fontWeight(.semibold).foregroundStyle(theme.dataRecovery)
+                }
+            }
+            .frame(width: 52, alignment: .leading)
+
+            if let rid = schedule[wd], let r = routines.first(where: { $0.id == rid }) {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(r.name).font(StrandFont.body).fontWeight(wd == today ? .semibold : .regular)
+                        .foregroundStyle(theme.ink)
+                    miniBars(rid)
+                }
+                Spacer(minLength: 8)
+                Text(seriesText(rid)).font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary)
+            } else {
+                Text("Rest").font(StrandFont.body).foregroundStyle(theme.inkDim)
+                Spacer(minLength: 8)
+            }
+            Image(systemName: chevron)
+                .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+        }
+        .frame(minHeight: 52)
+        .padding(.horizontal, wd == today ? 10 : 0)
+        .background {
+            if wd == today {
+                RoundedRectangle(cornerRadius: 12, style: .continuous).fill(theme.surface)
+            }
+        }
+        .contentShape(Rectangle())
     }
 
     /// Up to three tinted mini-bars (mock 1b): the routine's top groups by planned set volume, widths
@@ -349,6 +366,17 @@ enum MuscleGroup: CaseIterable {
         case .pull: return String(localized: "PULL")
         case .legs: return String(localized: "LEGS")
         case .core: return String(localized: "CORE")
+        }
+    }
+
+    /// Title-case name for prose (the day editor's meta line, 1o) — «Empuje · N ejercicios …». Explicit
+    /// keys so they don't collide with the existing «Push» button string (which localizes to «Sube»).
+    var title: String {
+        switch self {
+        case .push: return String(localized: "muscleGroup.push", defaultValue: "Push", comment: "routine group, title case")
+        case .pull: return String(localized: "muscleGroup.pull", defaultValue: "Pull", comment: "routine group, title case")
+        case .legs: return String(localized: "muscleGroup.legs", defaultValue: "Legs", comment: "routine group, title case")
+        case .core: return String(localized: "muscleGroup.core", defaultValue: "Core", comment: "routine group, title case")
         }
     }
 
