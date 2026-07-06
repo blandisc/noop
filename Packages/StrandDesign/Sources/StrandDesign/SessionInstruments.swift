@@ -70,12 +70,19 @@ public struct SessionPill: View {
     let bpm: Int?              // nil = no strap → the ♥ segment is hidden
     let hue: Color
     let theme: InstrumentoTheme
+    /// VoiceOver label + hint, provided by the CALLER — the package has no string catalog, so the
+    /// app layer localizes them (FER-716).
+    let accessibilityLabel: Text
+    let accessibilityHint: Text
     let action: () -> Void
 
     public init(routineName: String, elapsed: String, bpm: Int?, hue: Color,
-                theme: InstrumentoTheme, action: @escaping () -> Void) {
+                theme: InstrumentoTheme, accessibilityLabel: Text, accessibilityHint: Text,
+                action: @escaping () -> Void) {
         self.routineName = routineName; self.elapsed = elapsed; self.bpm = bpm
-        self.hue = hue; self.theme = theme; self.action = action
+        self.hue = hue; self.theme = theme
+        self.accessibilityLabel = accessibilityLabel; self.accessibilityHint = accessibilityHint
+        self.action = action
     }
 
     public var body: some View {
@@ -105,19 +112,13 @@ public struct SessionPill: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(a11y)
-        .accessibilityHint(Text("Toca para volver a la sesión"))
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityHint(accessibilityHint)
         .accessibilityAddTraits(.isButton)
     }
 
     private var dot: some View {
         Text("·").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
-    }
-    private var a11y: Text {
-        if let bpm {
-            return Text("Sesión activa: \(routineName), \(elapsed), pulso \(bpm)")
-        }
-        return Text("Sesión activa: \(routineName), \(elapsed)")
     }
 }
 
@@ -130,9 +131,11 @@ public struct SessionPill: View {
                            hue: t.dataSleep, track: t.hairline)
             .padding(.horizontal, 24)
         SessionPill(routineName: "Pierna", elapsed: "24:10", bpm: 118, hue: t.dataSleep,
-                    theme: t) {}
+                    theme: t, accessibilityLabel: Text(verbatim: "Sesión activa"),
+                    accessibilityHint: Text(verbatim: "Vuelve a la sesión")) {}
         SessionPill(routineName: "Pierna", elapsed: "24:10", bpm: nil, hue: t.dataSleep,
-                    theme: t) {}
+                    theme: t, accessibilityLabel: Text(verbatim: "Sesión activa"),
+                    accessibilityHint: Text(verbatim: "Vuelve a la sesión")) {}
     }
     .padding(32)
     .frame(maxWidth: .infinity)

@@ -56,7 +56,7 @@ struct RestEditorScreen: View {
             VStack(alignment: .leading, spacing: 20) {
                 header
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(setNumber.map { "\(exerciseName) · set \($0)" } ?? exerciseName)
+                    Text(setNumber.map { String(localized: "\(exerciseName) · set \($0)") } ?? exerciseName)
                         .groteskOverline().foregroundStyle(theme.inkTertiary)
                     Text("Rest when you finish")
                         .font(InstrumentoType.groteskScreenTitle)
@@ -107,14 +107,14 @@ struct RestEditorScreen: View {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(thresholdBpm.map { "\($0)" } ?? "\(Int(reserve * 100))")
                     .groteskSheetNumeral().monospacedDigit().foregroundStyle(theme.dataRecovery)
-                Text(thresholdBpm != nil ? "lpm · \(Int(reserve * 100))% of your reserve" : "% of your reserve")
+                Text(thresholdBpm != nil ? "bpm · \(Int(reserve * 100))% of your reserve" : "% of your reserve")
                     .font(StrandFont.headline).foregroundStyle(theme.inkSecondary)
             }
             Slider(value: $reserve, in: 0.30...0.55, step: 0.01).tint(theme.dataRecovery)
             HStack(spacing: 8) {
-                reservePreset("Easy · 50%", 0.50)
-                reservePreset("Normal · 41%", 0.41)
-                reservePreset("Hard · 35%", 0.35)
+                reservePreset(String(localized: "Easy · 50%"), 0.50)
+                reservePreset(String(localized: "Normal · 41%"), 0.41)
+                reservePreset(String(localized: "Hard · 35%"), 0.35)
             }
         }
     }

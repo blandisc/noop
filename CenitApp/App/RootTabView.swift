@@ -367,8 +367,9 @@ private extension View {
 }
 
 /// Hosts the `SessionPill` with a live-ticking clock (FER-716): a `TimelineView` recomputes the
-/// elapsed time each second, and the BPM comes from the session's latest strap sample (nil = no strap,
-/// so the pill drops its ♥ segment). Tapping re-opens the session. The routine hue is the effort ember
+/// elapsed time each second, and the BPM is the app's LIVE smoothed value (`model.bpm` — the same
+/// source as the session header; nil = no strap streaming, so the pill drops its ♥ segment instead
+/// of freezing a stale sample). Tapping re-opens the session. The routine hue is the effort ember
 /// (`dataStrain`) — the same hue the session screen and the approved previews use.
 private struct ActiveSessionPillHost: View {
     @ObservedObject var model: AppModel
@@ -376,15 +377,24 @@ private struct ActiveSessionPillHost: View {
         if let session = model.strengthSession {
             let theme = InstrumentoTheme.base
             TimelineView(.periodic(from: .now, by: 1)) { context in
+                let elapsed = Self.clock(startTs: session.startTs, now: context.date)
                 SessionPill(
                     routineName: session.routineName,
-                    elapsed: Self.clock(startTs: session.startTs, now: context.date),
-                    bpm: session.hrSamples.last?.bpm,
+                    elapsed: elapsed,
+                    bpm: model.bpm,
                     hue: theme.dataStrain,
-                    theme: theme
+                    theme: theme,
+                    accessibilityLabel: pillLabel(session.routineName, elapsed, model.bpm),
+                    accessibilityHint: Text("Returns to the session")
                 ) { model.resumeStrengthSession() }
             }
         }
+    }
+
+    /// VoiceOver label for the pill — localized here because the StrandDesign package has no catalog.
+    private func pillLabel(_ name: String, _ elapsed: String, _ bpm: Int?) -> Text {
+        if let bpm { return Text("Active session: \(name), \(elapsed), heart rate \(bpm)") }
+        return Text("Active session: \(name), \(elapsed)")
     }
 
     /// «M:SS» / «H:MM:SS» from the session start to now (never negative).
