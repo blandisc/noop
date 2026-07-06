@@ -45,6 +45,10 @@ NOOP.app/
 *.log
 .env
 secrets.*
+# FER-722: EDB API key for the opt-in exercise-media downloader. The .example placeholder is
+# versioned; the real file is local-only.
+Cenit/Secrets.xcconfig
+!Cenit/Secrets.xcconfig.example
 
 # ── Personal data — NEVER publish (real WHOOP/Apple Health exports) ──
 Fixtures/

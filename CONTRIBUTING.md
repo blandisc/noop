@@ -3,7 +3,10 @@
 Thanks for your interest in contributing. NOOP is a standalone, fully **offline**
 companion app for WHOOP 4.0 and 5.0 / MG straps — it pairs over Bluetooth, stores
 everything on-device in SQLite, and computes recovery / strain / HRV / sleep
-locally. No servers, no accounts, no data leaving the device.
+locally. No servers, no accounts, no data leaving the device — with exactly two
+narrow, opt-in, off-by-default exceptions: the bring-your-own-key AI Coach, and
+the exercise media downloader (thumbnails/loops cached from ExerciseDB, FER-722).
+Both are documented in [`README.md`](README.md#privacy).
 
 This file is a quick orientation. The **full contributing guide** —
 repository layout, the design-system rules, the BLE safety contract, how to add a
