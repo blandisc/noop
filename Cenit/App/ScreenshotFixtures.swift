@@ -20,10 +20,12 @@ enum ScreenshotFixtures {
 
     /// The requested fixture state, or nil when not in fixture mode. `-noop.fixture empty` (and an
     /// absent argument) both return nil so the app takes its normal empty/first-launch path.
+    /// FER-711 adds `calibrating` (the `··` numeral — a strap seen, base not yet seeded) so the
+    /// «numeral nunca miente» discipline of the states map is deterministically capturable.
     static func activeState() -> String? {
         guard let raw = UserDefaults.standard.string(forKey: "noop.fixture")?
             .trimmingCharacters(in: .whitespaces).lowercased(),
-              raw == "primed" || raw == "strained" else { return nil }
+              raw == "primed" || raw == "strained" || raw == "calibrating" else { return nil }
         return raw
     }
 
@@ -34,6 +36,28 @@ enum ScreenshotFixtures {
     static func seed(_ model: AppModel, state: String) async {
         let cal = Calendar(identifier: .gregorian)
         let today = cal.startOfDay(for: Date())
+
+        // FER-711 · calibrating (`··`): a strap has been seen but only a couple of nights are banked,
+        // below the recovery seed gate — so `heroState` lands on `.calibrating` and the hero numeral
+        // is «··» (never a fake number). Seed a short strap history with usable HRV and NO recovery on
+        // any row (recovery stays nil until the baseline seeds), and mark the strap as seen.
+        if state == "calibrating" {
+            model.live.lastSyncedAt = Date().timeIntervalSince1970   // strapSeen == true
+            let nights = 2
+            var days: [DailyMetric] = []
+            for ago in stride(from: nights, through: 0, by: -1) {
+                let dayKey = Repository.localDayKey(cal.date(byAdding: .day, value: -ago, to: today)!)
+                days.append(DailyMetric(
+                    day: dayKey, totalSleepMin: 430, efficiency: 0.9,
+                    deepMin: 95, remMin: 110, lightMin: 225, disturbances: 4,
+                    restingHr: 51, avgHrv: 56, recovery: nil, strain: 8,
+                    exerciseCount: 0, spo2Pct: 97.4, skinTempDevC: 0.05,
+                    respRateBpm: 14.4, steps: 5200, activeKcalEst: 420))
+            }
+            model.repo.setDashboard(days: days)
+            return
+        }
+
         let primed = (state == "primed")
 
         // Small, deterministic per-day wobble so trends/sparklines look real (no RNG → reproducible).

@@ -96,6 +96,35 @@ final class RecoveryRulesTests: XCTestCase {
         XCTAssertTrue(RecoveryRules.rules(impact: RecoveryImpact.Result(signals: []), score: 74).isEmpty)
     }
 
+    // MARK: - Reglas × banners: el numeral == la suma visible en TODOS los estados (FER-711)
+
+    /// F3's core invariant for «reglas × banners»: the five-rules graph always squares with the
+    /// numeral. The banners F3 ships (batería crítica, banda desconectada, base envejecida) are
+    /// PRESENTATIONAL — they never touch the recovery decomposition — so for every displayed numeral,
+    /// across full and missing-signal impacts, Σ lit must still equal the numeral EXACTLY. (The one
+    /// banner that would move the numeral, «siesta», is deferred to its own /pm issue precisely
+    /// because it needs new detection + a re-score; when it lands, this same invariant must hold on
+    /// its re-scored numeral.)
+    func testNumeralEqualsVisibleSumAcrossStates() {
+        // Numerals representative of the verdict states the screen can show (low/strained → high/primed,
+        // plus the calibrating/estimated edges where a numeral is present).
+        let stateScores = [12, 28, 45, 58, 71, 74, 82, 91, 96]
+        let impacts: [RecoveryImpact.Result] = [
+            impact(allFive),                                        // full band night
+            impact(Array(allFive.prefix(3))),                       // HRV+RHR+Sleep only (Apple-less)
+            impact([("hrv", -1.4, RecoveryScorer.wHRV),             // an estimated-ish two-signal day
+                    ("sleep", 0.6, RecoveryScorer.wSleep)]),
+        ]
+        for imp in impacts {
+            for score in stateScores {
+                let rules = RecoveryRules.rules(impact: imp, score: score)
+                XCTAssertEqual(rules.map(\.lit).reduce(0, +), score, "score \(score)")
+                XCTAssertEqual(rules.map(\.marks).reduce(0, +), 100, "marks @ \(score)")
+                for r in rules { XCTAssertLessThanOrEqual(r.lit, r.marks) }
+            }
+        }
+    }
+
     // MARK: - Integration with the real decomposition
 
     func testRealImpactDecompositionSumsToScore() {
