@@ -49438,6 +49438,91 @@
           }
         }
       }
+    },
+    "Accumulated day strain, rising through the day and projected flat to midnight.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accumulated day strain, rising through the day and projected flat to midnight."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esfuerzo acumulado del día; sube durante el día y se proyecta plano hasta medianoche."
+          }
+        }
+      }
+    },
+    "ceiling": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ceiling"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "techo"
+          }
+        }
+      }
+    },
+    "your training": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "your training"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tu entreno"
+          }
+        }
+      }
+    },
+    "A dashed line marks your recommended ceiling for today.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A dashed line marks your recommended ceiling for today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La línea punteada marca tu techo recomendado para hoy."
+          }
+        }
+      }
+    },
+    "An amber band marks when you usually train.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An amber band marks when you usually train."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La banda ámbar marca a qué hora sueles entrenar."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

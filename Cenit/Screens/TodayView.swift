@@ -132,6 +132,9 @@ struct TodayView: View {
     @State private var hasSplit = false
     @State private var todayRoutineName: String? = nil
     @State private var trainingStreak = 0
+    /// FER-732 · the habitual training window (median session-start hour ± 1 SD) for the strain sheet's
+    /// amber band. nil until enough past sessions exist. Loaded with the plan block from the same store.
+    @State private var trainingWindow: TrainingHabit.Window? = nil
 
     // «La conexión de hoy» — la correlación más relevante del día (FER-614). Cargados en `loadAll` vía el
     // loader compartido `InsightsProvider`, así la conexión del brief == la que muestra Patrones (mismo FDR).
@@ -525,6 +528,8 @@ struct TodayView: View {
             strainCurveLoader: info.id == "strain" ? { await loadStrainCurve() } : nil,
             trainingBlock: info.id == "strain" ? trainingBlock : nil,
             onStartTraining: info.id == "strain" ? { tabRouter.startTodayTraining() } : nil,
+            strainCeiling: info.id == "strain" ? strainCeiling : nil,
+            trainingWindow: info.id == "strain" ? trainingWindow : nil,
             heartRateCurveLoader: info.id == "heart_rate" ? { hrPoints } : nil,
             trendLoader: trendLoader(for: info.id),
             onSeeMore: seeMoreAction(for: info.id),
@@ -2852,6 +2857,22 @@ struct TodayView: View {
         hasSplit = !split.isEmpty
         todayRoutineName = tid.flatMap { byId[$0]?.name }
         trainingStreak = TrainingStreak.streak(sessions: sessions, split: split)
+        // FER-732 · habitual training window from past session START hours (local clock). The split holds
+        // no time, so this habit is the only honest source; TrainingHabit returns nil below its minimum.
+        let cal = Calendar.current
+        let startHours = sessions.map { s -> Double in
+            let comps = cal.dateComponents([.hour, .minute], from: Date(timeIntervalSince1970: TimeInterval(s.startTs)))
+            return Double(comps.hour ?? 0) + Double(comps.minute ?? 0) / 60
+        }
+        trainingWindow = TrainingHabit.window(startHours: startHours)
+    }
+
+    /// FER-732 · today's recommended day-strain ceiling for the strain sheet — a personal, recovery-scaled
+    /// guardrail (`StrainCeiling`), nil until there is enough chronic history and a recovery score. Reads the
+    /// SAME `repo.days` + surfaced recovery the tiles use, so it never disagrees with the shown numbers.
+    private var strainCeiling: Double? {
+        StrainCeiling.recommend(days: repo.days, recovery: repo.today?.recovery,
+                                today: Repository.localDayKey(Date()))?.strain
     }
 
     // MARK: - 14-day trend loader (all platforms)
