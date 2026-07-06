@@ -1122,7 +1122,8 @@ private struct CuerpoLanding: View {
         let readiness = ReadinessEngine.evaluate(days: bandMasked, today: Repository.localDayKey(Date()))
         trainingLoad = TrainingLoadModel(
             acwr: readiness.acwr,
-            series: ReadinessEngine.acwrSeries(days: bandMasked).map { (day: $0.day, value: $0.ratio) })
+            series: ReadinessEngine.acwrSeries(days: bandMasked).map { (day: $0.day, value: $0.ratio) },
+            days: bandMasked)
 
         // Longevity (FER-145 + FER-214): Body Age + Vitality from a 28-night window. Regularity uses the
         // real Sleep Regularity Index when there's coverage (FER-214), else the documented duration proxy;

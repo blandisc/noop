@@ -161,6 +161,12 @@ struct TodayView: View {
     /// from Today — so it shows the SAME chart + moments + patterns as Cuerpo (FER-452).
     @State private var stressDayMap: CalendarDayMap? = nil
     @State private var metricSpec: MetricDetailSpec? = nil
+    /// Carga de entrenamiento (FER-705 · handoff «Carga»): el ACWR + la serie band-masked que alimenta la
+    /// franja fija bajo las pestañas y su hoja. Se siembra en `recomputeDerived` (misma fuente que la
+    /// tarjeta de Tendencias, `CuerpoView.loadAll`, para que nunca discrepen de la banda).
+    @State private var trainingLoad: TrainingLoadModel? = nil
+    /// La hoja de carga (montada al tocar la franja).
+    @State private var trainingLoadItem: TrainingLoadItem? = nil
 
     /// Página activa del pager de 2 páginas (FER-465): 0 = veredicto (Daily Brief) · 1 = «Métricas de hoy».
     /// Optional porque es el binding de `.scrollPosition(id:)` (puede quedar nil a media transición); los
@@ -266,6 +272,16 @@ struct TodayView: View {
         memoAppleHrvEstimated = computeAppleHrvEstimated()
         // FER-709: la base de 7 días (filter+sort sobre displayDays) una vez por refresh, no 2–3 por render.
         memoBaselineDays = computeBaselineDays()
+        // Carga de entrenamiento (FER-705 · handoff «Carga»): el ACWR + serie desde el dashboard BAND-masked
+        // — el mismo corte que la tarjeta de Tendencias (`CuerpoView.loadAll`) y el detalle de recuperación
+        // (FER-632), para que la franja, la tarjeta y el veredicto nunca discrepen de la banda. Una vez por
+        // refresh (no por frame). `acwr == nil` → la franja muestra «calibrando» sin punto.
+        let acwrMasked = SourceLens.maskForBaseline(repo.days, keep: .band, appleDays: repo.appleHealthDays)
+        let acwrReadiness = ReadinessEngine.evaluate(days: acwrMasked, today: Repository.localDayKey(Date()))
+        trainingLoad = TrainingLoadModel(
+            acwr: acwrReadiness.acwr,
+            series: ReadinessEngine.acwrSeries(days: acwrMasked).map { (day: $0.day, value: $0.ratio) },
+            days: acwrMasked)
         // FER-709: las cinco reglas del día — el impacto por señal (banda-only, FER-519) mapeado a
         // marcas cuya suma encendida == el numeral. `RecoveryImpact` devuelve nil en cold-start o en un
         // día Apple-only (estimado): ahí el bloque se oculta en vez de inventar una descomposición.
@@ -451,6 +467,26 @@ struct TodayView: View {
                     fusion: repo.fusionPoint(day: Repository.localDayKey(Date()), metric: spec.descriptor.key)
                 )
             }
+            .sheet(item: $trainingLoadItem) { item in
+                // Hoja «Carga de entrenamiento» (FER-705 · handoff «Carga») — tema explícito (no cruza `.sheet`),
+                // sin NavigationStack anidado (FER-171). «Tu patrón» y «Ver más en Tendencias» llegan como
+                // closures que despachan por el `TabRouter` (Patrones / Cuerpo).
+                TrainingLoadSheet(model: item.model, theme: theme,
+                                  patternText: item.patternText,
+                                  onSeePattern: item.onSeePattern,
+                                  onSeeTrends: item.onSeeTrends)
+            }
+    }
+
+    /// Arma la hoja de carga desde la franja: engancha «Tu patrón» al hallazgo de carga (si existe, de la
+    /// misma fuente que Patrones) y «Ver más en Tendencias» al tab Cuerpo, ambos vía `TabRouter`.
+    private func makeTrainingLoadItem(_ model: TrainingLoadModel) -> TrainingLoadItem {
+        let loadInsight = insights.first { $0.kind == .trainingLoad }
+        return TrainingLoadItem(
+            model: model,
+            patternText: loadInsight?.reading,
+            onSeePattern: loadInsight.map { i in { tabRouter.openInsight(key: InsightFreshness.key(for: i)) } },
+            onSeeTrends: { tabRouter.select(.body) })
     }
 
     private var platformBody: some View {
@@ -655,6 +691,16 @@ struct TodayView: View {
                 }
                 sectionTabs
                     .padding(.top, NoopMetrics.sectionGapCompact)
+                // Franja de carga (FER-705 · handoff «Carga»): vive en el bloque FIJO, bajo las pestañas, así
+                // que es visible en AMBAS páginas del pager (Señales y Brief) y no viaja con el swipe. No
+                // respira ni participa del pull-to-refresh; tocarla abre la hoja. Si `trainingLoad` aún no
+                // sembró (primer refresh) se omite; una vez con datos muestra la banda o «calibrando».
+                if let trainingLoad {
+                    TrainingLoadStrip(model: trainingLoad, theme: theme) {
+                        trainingLoadItem = makeTrainingLoadItem(trainingLoad)
+                    }
+                    .padding(.top, NoopMetrics.sectionGapCompact)
+                }
                 // Pager horizontal de 2 páginas: ① SEÑALES (por qué + tiles) · ② BRIEF. Full-bleed (FER-725):
                 // se le pasa el ancho COMPLETO de la pantalla y el pager cancela el margen del padre por
                 // dentro, así cada hoja ocupa todo el ancho y se va limpia a un lado. Ejes ortogonales al
