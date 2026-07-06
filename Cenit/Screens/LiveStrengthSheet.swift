@@ -854,17 +854,20 @@ struct LiveStrengthSheet: View {
                 .accessibilityElement(children: .combine)
 
             // Row 5: live BPM with the one always-on pulse of the app — hidden (not dashed) with no strap.
-            if let bpm = model.bpm {
-                HStack(spacing: 6) {
-                    BpmPulseDot(color: theme.dataHeart, animated: !reduceMotion)
-                    Text("\(bpm)").font(StrandFont.caption.monospacedDigit()).foregroundStyle(theme.dataHeart)
+            // PulseReader: only this row re-evaluates per heartbeat, including its presence (FER-755).
+            PulseReader(model.live.pulse) { p in
+                if let bpm = p.smoothedBpm {
+                    HStack(spacing: 6) {
+                        BpmPulseDot(color: theme.dataHeart, animated: !reduceMotion)
+                        Text("\(bpm)").font(StrandFont.caption.monospacedDigit()).foregroundStyle(theme.dataHeart)
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel(Text("Heart rate \(bpm)"))
+                } else if let rec = recovery {
+                    // No strap: keep the «push / hold / ease» autoregulation line (F6), discreet, in place of BPM.
+                    Text(recoveryLine(rec)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel(Text("Heart rate \(bpm)"))
-            } else if let rec = recovery {
-                // No strap: keep the «push / hold / ease» autoregulation line (F6), discreet, in place of BPM.
-                Text(recoveryLine(rec)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
 
             // Row 6: the Apple Watch mirror status (FER-742) — one tertiary line, silent unless the watch
@@ -1174,7 +1177,9 @@ struct LiveStrengthSheet: View {
                     }
                 }
                 Spacer(minLength: 8)
-                if let hr = model.bpm { compactZone(hr) }
+                PulseReader(model.live.pulse) { p in
+                    if let hr = p.smoothedBpm { compactZone(hr) }
+                }
                 startStopButton(running: running)
                 checkButton(ei: ei, si: si, set: set)
             }
@@ -1248,18 +1253,22 @@ struct LiveStrengthSheet: View {
         let hrMode = session.currentRestMode == .heartRate
         VStack(alignment: .leading, spacing: 12) {
             if hrMode, let started = session.restStartedAt {
-                TimelineView(.periodic(from: started, by: 1)) { ctx in
-                    let elapsed = max(0, Int(ctx.date.timeIntervalSince(started)))
-                    let v = RestReadinessRule.evaluate(
-                        currentHR: model.bpm, worn: model.live.worn, restingHR: restingBaseline,
-                        elapsedS: elapsed, targetHR: session.currentRestTarget)
-                    if v.state == .noSignal {
-                        restCardTimeBody(end: session.restEndsAt, now: ctx.date, noStrapFallback: true)
-                    } else {
-                        restCardHRBody(elapsed: elapsed, readiness: v)
+                // PulseReader: the by-HR rest card follows the live pulse per beat (the TimelineView
+                // alone would cap it at 1 s), and the haptic trigger keeps its per-beat evaluation (FER-755).
+                PulseReader(model.live.pulse) { p in
+                    TimelineView(.periodic(from: started, by: 1)) { ctx in
+                        let elapsed = max(0, Int(ctx.date.timeIntervalSince(started)))
+                        let v = RestReadinessRule.evaluate(
+                            currentHR: p.smoothedBpm, worn: model.live.worn, restingHR: restingBaseline,
+                            elapsedS: elapsed, targetHR: session.currentRestTarget)
+                        if v.state == .noSignal {
+                            restCardTimeBody(end: session.restEndsAt, now: ctx.date, noStrapFallback: true)
+                        } else {
+                            restCardHRBody(elapsed: elapsed, readiness: v)
+                        }
                     }
+                    .sensoryFeedback(.success, trigger: p.smoothedBpm != nil && session.currentRestTarget != nil)
                 }
-                .sensoryFeedback(.success, trigger: model.bpm != nil && session.currentRestTarget != nil)
             } else if let end = session.restEndsAt, let started = session.restStartedAt {
                 TimelineView(.periodic(from: started, by: 1)) { ctx in
                     restCardTimeBody(end: end, now: ctx.date, noStrapFallback: false)

@@ -23,13 +23,35 @@ public final class LiveState: ObservableObject {
     /// connect/disconnect. Drives the Live pill's two-state distinction; the encrypted channel (buzz,
     /// alarm, double-tap, history offload) only works when this is true.
     @Published public var encryptedBond: Bool = false
-    @Published public var heartRate: Int? = nil
-    @Published public var rr: [Int] = [] {
-        didSet { beatsThisSession += rr.count }  // each notification carries the beats since the last → running session total
+
+    /// The per-heartbeat slice (heartRate/rr/beats/smoothed bpm) lives in its own observable so the
+    /// ~1 Hz cadence doesn't invalidate every screen observing LiveState (FER-755). The properties
+    /// below forward reads/writes so call sites keep their old spelling; only observation moved —
+    /// views that display the pulse observe `pulse` (via PulseReader), not LiveState.
+    public let pulse = LivePulse()
+
+    /// Publishes ONLY the nil↔value transitions of `heartRate`, so container views can key
+    /// visibility ("show the live pill?") off LiveState without subscribing to every beat.
+    @Published public private(set) var hrStreaming = false
+
+    public var heartRate: Int? {
+        get { pulse.heartRate }
+        set {
+            let was = pulse.heartRate != nil
+            pulse.heartRate = newValue
+            if was != (newValue != nil) { hrStreaming = (newValue != nil) }
+        }
+    }
+    public var rr: [Int] {
+        get { pulse.rr }
+        set { pulse.rr = newValue }
     }
     /// Beats captured live this connection session (sum of R-R intervals received). Zeroed on a fresh
     /// connect — drives the Live monitor's "beats this session" tally as the user watches data accrue.
-    @Published public var beatsThisSession: Int = 0
+    public var beatsThisSession: Int {
+        get { pulse.beatsThisSession }
+        set { pulse.beatsThisSession = newValue }
+    }
     @Published public var batteryPct: Double? = nil
     /// Charging flag from the strap's BATTERY_LEVEL events — wire observation: u8 bit0 in the
     /// event payload (4.0 @26 / 5.0 @30), pushed ~every 8 min on captured links. nil until the

@@ -948,16 +948,23 @@ struct TodayView: View {
     /// hoja Latidos (el monitor latido a latido), como el resto de los datos de Hoy.
     private var bpmButton: some View {
         Button { showLiveMonitor = true } label: {
-            HStack(spacing: NoopMetrics.space1 + 1) {
-                BreathingDot(color: isLiveHR ? theme.dataHeart : theme.inkTertiary,
-                             radius: 3, breathes: isLiveHR)
-                Text(verbatim: "\(liveBpm ?? 0) BPM")
-                    .font(InstrumentoType.grotesk(11, weight: .semibold).monospacedDigit())
-                    .tracking(1)
-                    .foregroundStyle(theme.ink)
+            // PulseReader: only this label re-evaluates per heartbeat; TodayView's body no longer
+            // ticks at beat rate (FER-755). Presence (`liveBpm != nil`) is checked by the container,
+            // which re-runs on LiveState's nil↔value transitions (`hrStreaming`).
+            PulseReader(live.pulse) { p in
+                let liveNow = p.heartRate != nil && live.worn
+                let shown = liveNow ? p.heartRate : hrPoints.last.map { Int($0.value.rounded()) }
+                HStack(spacing: NoopMetrics.space1 + 1) {
+                    BreathingDot(color: liveNow ? theme.dataHeart : theme.inkTertiary,
+                                 radius: 3, breathes: liveNow)
+                    Text(verbatim: "\(shown ?? 0) BPM")
+                        .font(InstrumentoType.grotesk(11, weight: .semibold).monospacedDigit())
+                        .tracking(1)
+                        .foregroundStyle(theme.ink)
+                }
+                .frame(minHeight: 34)
+                .contentShape(Rectangle())
             }
-            .frame(minHeight: 34)
-            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(isLiveHR ? "Frecuencia cardiaca en vivo" : "Frecuencia cardiaca"))

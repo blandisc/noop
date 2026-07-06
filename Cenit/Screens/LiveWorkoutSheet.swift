@@ -159,7 +159,10 @@ struct LiveWorkoutSheet: View {
                 }
 
                 HStack(spacing: 28) {
-                    stat("Rate", model.bpm.map(String.init) ?? "—")
+                    // PulseReader: the live rate ticks per beat without re-rendering the sheet (FER-755).
+                    PulseReader(model.live.pulse) { p in
+                        stat("Rate", p.smoothedBpm.map(String.init) ?? "—")
+                    }
                     stat("Avg", statValue(model.activeWorkout?.avgHr))
                     stat("Peak", statValue(model.activeWorkout?.peakHr))
                 }

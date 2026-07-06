@@ -191,7 +191,12 @@ final class AppModel: ObservableObject {
 
     /// Smoothed, display-ready live heart rate — median over a short window, spike-filtered.
     /// Every screen should show THIS, not the raw per-beat value (which swings with HRV).
-    @Published var bpm: Int?
+    /// Stored on `live.pulse` (FER-755) so the ~1 Hz publish invalidates only the views that
+    /// display it (via PulseReader), not every screen observing AppModel.
+    var bpm: Int? {
+        get { live.pulse.smoothedBpm }
+        set { live.pulse.smoothedBpm = newValue }
+    }
     /// The in-progress day's LIVE Day Strain (0–21): today's HR (local civil day → now) run through the
     /// SAME canonical parameters the intraday curve uses, so it equals the curve's LAST point by
     /// construction (FER-650). This is the DISPLAY value for the CURRENT day on the Hoy tile and the
@@ -212,14 +217,14 @@ final class AppModel: ObservableObject {
         self.intelligence = IntelligenceEngine(repo: repo, profile: profile, deviceId: "my-whoop",
                                                family: WhoopModel.persisted.deviceFamily)
         // Smooth HR centrally so it's solid everywhere it's shown.
-        live.$heartRate.sink { [weak self] _ in self?.ingestHR() }.store(in: &hrCancellables)
-        live.$rr.sink { [weak self] _ in self?.ingestHR() }.store(in: &hrCancellables)
+        live.pulse.$heartRate.sink { [weak self] _ in self?.ingestHR() }.store(in: &hrCancellables)
+        live.pulse.$rr.sink { [weak self] _ in self?.ingestHR() }.store(in: &hrCancellables)
 
         // Physical-input + wear hooks (fired live by FrameRouter).
         live.onDoubleTap = { [weak self] in self?.handleDoubleTap() }
         live.onWristChange = { [weak self] worn in self?.handleWristChange(worn) }
         // HR-zone haptic coaching watches the smoothed bpm.
-        $bpm.sink { [weak self] hr in self?.coachZone(hr) }.store(in: &hrCancellables)
+        live.pulse.$smoothedBpm.sink { [weak self] hr in self?.coachZone(hr) }.store(in: &hrCancellables)
         // FER-721: the lock-screen «+30 s»/«Saltar» actions come back through the controller; apply them
         // to the live session. Any rest Activity orphaned by a prior kill (session is memory-only) is
         // ended at launch so none lingers on the lock screen.

@@ -121,8 +121,9 @@ struct BreathingView: View {
             guard running else { return }
             sessionSeconds += 1
         }
-        // Pull new R-R intervals into the rolling buffer as they arrive.
-        .onChange(of: live.rr) { _, rr in
+        // Pull new R-R intervals into the rolling buffer as they arrive. onReceive (not onChange):
+        // the body no longer re-renders per beat, so a render-driven onChange would starve (FER-755).
+        .onReceive(live.pulse.$rr.dropFirst()) { rr in
             ingest(rr)
         }
         // Changing pace mid-session re-arms the current phase cleanly.
@@ -282,16 +283,19 @@ struct BreathingView: View {
                     .frame(width: diameter, height: diameter)
 
                 // Centre readout — live HR is the measured datum, so it carries color.
-                VStack(spacing: 2) {
-                    Text(model.bpm.map(String.init) ?? "—")
-                        .font(StrandFont.number(40))
-                        .foregroundStyle(model.bpm == nil ? theme.inkTertiary : theme.dataHeart)
-                        .contentTransition(.numericText())
-                        .animation(.snappy, value: model.bpm)
-                    Text("BPM")
-                        .font(StrandFont.footnote)
-                        .tracking(0.8)
-                        .foregroundStyle(theme.inkTertiary)
+                // PulseReader: only this readout re-evaluates per heartbeat (FER-755).
+                PulseReader(live.pulse) { p in
+                    VStack(spacing: 2) {
+                        Text(p.smoothedBpm.map(String.init) ?? "—")
+                            .font(StrandFont.number(40))
+                            .foregroundStyle(p.smoothedBpm == nil ? theme.inkTertiary : theme.dataHeart)
+                            .contentTransition(.numericText())
+                            .animation(.snappy, value: p.smoothedBpm)
+                        Text("BPM")
+                            .font(StrandFont.footnote)
+                            .tracking(0.8)
+                            .foregroundStyle(theme.inkTertiary)
+                    }
                 }
             }
             .frame(width: geo.size.width, height: geo.size.height)
@@ -341,11 +345,13 @@ struct BreathingView: View {
 
     private var readoutRow: some View {
         HStack(spacing: NoopMetrics.gap) {
-            readoutTile(label: "Heart rate",
-                        value: model.bpm.map { "\($0)" } ?? "—",
-                        unit: String(localized: "bpm"),
-                        accent: theme.dataHeart,
-                        caption: live.worn ? "Live" : "Strap not worn")
+            PulseReader(live.pulse) { p in
+                readoutTile(label: "Heart rate",
+                            value: p.smoothedBpm.map { "\($0)" } ?? "—",
+                            unit: String(localized: "bpm"),
+                            accent: theme.dataHeart,
+                            caption: live.worn ? "Live" : "Strap not worn")
+            }
 
             readoutTile(label: "HRV (RMSSD)",
                         value: rmssd.map { String(format: "%.0f", $0) } ?? "—",
