@@ -970,7 +970,8 @@ struct LiveStrengthSheet: View {
         let titles = columnTitles(type)
         return HStack(spacing: 8) {
             Text("SET").instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 44, alignment: .center)
-            Text("PREVIOUS").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("PREVIOUS · REST").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                .lineLimit(1).minimumScaleFactor(0.8)
                 .frame(maxWidth: .infinity, alignment: .leading)
             ForEach(titles.indices, id: \.self) { i in
                 Text(titles[i]).instrumentoOverline().foregroundStyle(theme.inkTertiary)
@@ -1274,11 +1275,13 @@ struct LiveStrengthSheet: View {
             .accessibilityLabel(Text("Set \(number)"))
     }
 
-    /// «ANTERIOR» — last time's value; tap to copy it into this row. «—» (and inert) when there's none.
+    /// «ANTERIOR · DESCANSO» — last time's value + this set's own rest (FER-716, per-set since F0);
+    /// tap to copy last time into this row. «—» (and inert) when there's neither.
     @ViewBuilder private func previousCell(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun) -> some View {
+        let rest = shortRest(run.effectiveRest(forSet: si))
         if let text = previousText(run) {
             Button { prefillTapped(ei: ei, si: si, run: run) } label: {
-                Text(reflow ? "Previous: \(text)" : text)
+                Text(reflow ? "Previous: \(text)" : "\(text) · \(rest)")
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     .lineLimit(1).minimumScaleFactor(0.8)
                     .contentShape(Rectangle())
@@ -1287,9 +1290,17 @@ struct LiveStrengthSheet: View {
             .accessibilityLabel(Text("Previous, \(text)"))
             .accessibilityHint(Text("Copies it to this set"))
         } else {
-            Text("—").font(StrandFont.caption).foregroundStyle(theme.inkDim)
+            Text(verbatim: "— · \(rest)").font(StrandFont.caption).foregroundStyle(theme.inkDim)
+                .lineLimit(1).minimumScaleFactor(0.8)
                 .accessibilityLabel(Text("No previous record"))
         }
+    }
+
+    /// A set's rest, compressed for the ANTERIOR cell: «2 min» / «90 s» / «por FC».
+    private func shortRest(_ config: RestConfig) -> String {
+        guard config.mode != .heartRate else { return String(localized: "by HR") }
+        if config.seconds >= 60, config.seconds % 60 == 0 { return "\(config.seconds / 60) min" }
+        return "\(config.seconds) s"
     }
 
     /// The editable / captured data columns, by exercise type.

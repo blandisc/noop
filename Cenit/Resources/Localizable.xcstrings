@@ -47228,6 +47228,40 @@
           }
         }
       }
+    },
+    "PREVIOUS · REST": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PREVIOUS · REST"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ANTERIOR · DESCANSO"
+          }
+        }
+      }
+    },
+    "Previous: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previous: %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anterior: %@"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
