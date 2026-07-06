@@ -697,18 +697,11 @@ struct TodayView: View {
                     todayStatusBanner
                     heroBlock
                 }
+                // Pestañas SEÑALES/BRIEF + chip de CARGA en la MISMA fila (FER-743): la carga se colapsó de
+                // franja a chip a la derecha del selector para compactar SEÑALES sin scroll. Sigue en el
+                // bloque FIJO (visible en ambas páginas del pager) y tocar el chip abre la hoja de carga.
                 sectionTabs
                     .padding(.top, NoopMetrics.sectionGapCompact)
-                // Franja de carga (FER-705 · handoff «Carga»): vive en el bloque FIJO, bajo las pestañas, así
-                // que es visible en AMBAS páginas del pager (Señales y Brief) y no viaja con el swipe. No
-                // respira ni participa del pull-to-refresh; tocarla abre la hoja. Si `trainingLoad` aún no
-                // sembró (primer refresh) se omite; una vez con datos muestra la banda o «calibrando».
-                if let trainingLoad {
-                    TrainingLoadStrip(model: trainingLoad, theme: theme) {
-                        trainingLoadItem = makeTrainingLoadItem(trainingLoad)
-                    }
-                    .padding(.top, NoopMetrics.sectionGapCompact)
-                }
                 // Pager horizontal de 2 páginas: ① SEÑALES (por qué + tiles) · ② BRIEF. Full-bleed (FER-725):
                 // se le pasa el ancho COMPLETO de la pantalla y el pager cancela el margen del padre por
                 // dentro, así cada hoja ocupa todo el ancho y se va limpia a un lado. Ejes ortogonales al
@@ -1158,7 +1151,7 @@ struct TodayView: View {
     /// Whether a strap has ever been seen (drives the foot affordance: Scan before, live pulse after).
     private var strapSeen: Bool { live.lastSyncedAt != nil || liveBpm != nil }
 
-    /// El héroe del handoff «Hoy» 2026-07 (FER-709): el numeral de 124 pt en el color del veredicto +
+    /// El héroe del handoff «Hoy» 2026-07 (FER-709; numeral 96 pt desde FER-743): en el color del veredicto +
     /// la columna derecha (overline, palabra-veredicto con subrayado punteado + ⓘ que abre la hoja
     /// Recuperación, y el delta «+3 vs tu promedio»). El dial de 240 pt y el numeral concéntrico SE
     /// RETIRAN (decisión del dueño; `DiurnalDial` grande sigue en el paquete hasta F3) — el 24 h vive
@@ -1187,7 +1180,7 @@ struct TodayView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// El numeral dominante (124/700 tabular, tracking −6). Veredicto → el score en su color de nivel
+    /// El numeral dominante (96/700 tabular, tracking −4.5). Veredicto → el score en su color de nivel
     /// (con `~` chico si es estimado); calibrando → «··»; descargando / sin lectura → «—». Tocarlo con
     /// veredicto abre la hoja de Recuperación. El conteo 0→N del pull-to-refresh rueda con
     /// `contentTransition(.numericText())` — SOLO al actualizar, nunca al abrir.
@@ -1781,7 +1774,8 @@ struct TodayView: View {
     }
 
     /// El bloque «POR QUÉ 74 · las cinco reglas»: la suma visible del score. Overlines arriba
-    /// («POR QUÉ N» / «EL LARGO ES EL PESO»), el instrumento de marcas, y la leyenda de origen abajo.
+    /// («POR QUÉ N» / «EL LARGO ES EL PESO») y el instrumento de marcas. (FER-743 retiró la leyenda de
+    /// fuentes de abajo: la fuente ya se lee en el punto de origen de cada tile.)
     /// Tras un pull-to-refresh las marcas se encienden en secuencia (`celebrationStart`); al abrir, nunca.
     @ViewBuilder private var fiveRulesBlock: some View {
         // Mapea las filas UNA vez por render (no por frame): durante la celebración el `TimelineView`
@@ -1802,11 +1796,6 @@ struct TodayView: View {
                 }
             } else {
                 FiveRulesView(rows: rows)
-            }
-            HStack(spacing: NoopMetrics.space2) {
-                Text("Señales").groteskOverline(small: true).foregroundStyle(theme.inkMuted)
-                Spacer(minLength: NoopMetrics.space2)
-                sourceLegend
             }
         }
         .accessibilityElement(children: .contain)
@@ -1883,7 +1872,13 @@ struct TodayView: View {
         HStack(spacing: NoopMetrics.cardPadding) {
             tabButton("Señales", page: 0)
             tabButton("Brief", page: 1)
-            Spacer(minLength: 0)
+            Spacer(minLength: NoopMetrics.space2)
+            // Chip de CARGA a la derecha del selector (FER-743): visible en ambas páginas, abre la hoja.
+            if let trainingLoad {
+                TrainingLoadChip(model: trainingLoad, theme: theme) {
+                    trainingLoadItem = makeTrainingLoadItem(trainingLoad)
+                }
+            }
         }
         .animation(reduceMotion ? nil : StrandMotion.interactive, value: pagerPage)
     }
@@ -2380,9 +2375,10 @@ struct TodayView: View {
 
         VStack(alignment: .leading, spacing: NoopMetrics.space2) {
             // La retícula 2×4 del handoff: los MISMOS 8 vitales de hoy, cada tile con su punto de
-            // origen, valor 21/700 en color, sparkband de 14 días contra el rango personal y la línea
-            // delta explícita. Recuperación NO es tile: ya es el numeral del héroe.
-            // FER-725: gap de renglón `space2` (antes +2) para que la retícula 2×4 quepa en Señales sin scroll.
+            // origen, valor 21/700 en color y la línea delta explícita («+24 min vs promedio 7 d»).
+            // Recuperación NO es tile: ya es el numeral del héroe.
+            // FER-743: tile de 3 renglones sin sparkband (la tendencia 14 d vive en el Detalle) para que
+            // la retícula 2×4 quepa en SEÑALES sin scroll.
             LazyVGrid(columns: tileGrid, alignment: .leading, spacing: NoopMetrics.space2) {
                 // Sueño — day-scoped (solo hoy); más es mejor dentro de lo razonable.
                 metricTile(TodayMetricTile(
@@ -2393,7 +2389,6 @@ struct TodayView: View {
                     source: sleepR?.fromApple == true ? .apple : .band,
                     context: tileContext(today: sleepR?.value, history: history(base) { $0.totalSleepMin },
                                          betterHigher: true, deadband: 5, positive: positiveDelta) { sleepDeltaText($0) },
-                    series: areaSeries(base, today: sleepR?.value) { $0.totalSleepMin },
                     placeholder: "Esta noche"
                 )) { metricDetail = .sleep(sleepR.map { Int($0.value.rounded()) }) }
                 // HRV — más alta es mejor.
@@ -2404,8 +2399,7 @@ struct TodayView: View {
                     valueColor: theme.dataHrv,
                     source: hrvR?.fromApple == true ? .apple : .band,
                     context: tileContext(today: hrvR?.value, history: history(base) { $0.avgHrv },
-                                         betterHigher: true, deadband: 1, positive: positiveDelta) { "\(Int($0.rounded())) ms" },
-                    series: areaSeries(base, today: hrvR?.value) { $0.avgHrv }
+                                         betterHigher: true, deadband: 1, positive: positiveDelta) { "\(Int($0.rounded())) ms" }
                 )) { metricDetail = .hrv(hrvR?.value) }
                 // FC en reposo — más alta es PEOR.
                 metricTile(TodayMetricTile(
@@ -2415,8 +2409,7 @@ struct TodayView: View {
                     valueColor: theme.dataHeart,
                     source: rhrR?.fromApple == true ? .apple : .band,
                     context: tileContext(today: rhrR?.value, history: history(base) { $0.restingHr.map(Double.init) },
-                                         betterHigher: false, deadband: 1, positive: positiveDelta) { "\(Int($0.rounded())) \(String(localized: "bpm"))" },
-                    series: areaSeries(base, today: rhrR?.value) { $0.restingHr.map(Double.init) }
+                                         betterHigher: false, deadband: 1, positive: positiveDelta) { "\(Int($0.rounded())) \(String(localized: "bpm"))" }
                 )) { metricDetail = .restingHR(rhrR.map { Int($0.value.rounded()) }) }
                 // Esfuerzo del día — carga del día, sin valencia (Δ en tinta neutra).
                 metricTile(TodayMetricTile(
@@ -2426,17 +2419,13 @@ struct TodayView: View {
                     valueColor: theme.dataStrain,
                     source: .calculated,
                     context: tileContext(today: strainT, history: history(base) { $0.strain },
-                                         betterHigher: nil, deadband: 0.3, positive: positiveDelta) { String(format: "%.1f", $0) },
-                    series: areaSeries(base, today: strainT) { $0.strain }
+                                         betterHigher: nil, deadband: 0.3, positive: positiveDelta) { String(format: "%.1f", $0) }
                 )) { metricDetail = .strain(strainT) }
                 // Pasos — sin meta (no existe en la app); más es mejor. Con conteo real (Apple) el tile
                 // es el de siempre; en un día estimado (WHOOP 4.0, FER-663) el valor lleva «est.», el
-                // chip pasa a «calculado» y el contexto/serie comparan estimación-contra-estimación.
+                // chip pasa a «calculado» y el contexto compara estimación-contra-estimación.
                 let stepsEstimated = stepsEstFresh != nil
                 let stepsTileHistory = stepsEstimated ? stepsEstHistory : history(base) { $0.steps.map(Double.init) }
-                let stepsTileSeries  = stepsEstimated
-                    ? Array(stepsEst.suffix(14).map { $0.value })
-                    : areaSeries(base, today: stepsT) { $0.steps.map(Double.init) }
                 metricTile(TodayMetricTile(
                     label: "Steps",
                     icon: "figure.walk",
@@ -2445,8 +2434,7 @@ struct TodayView: View {
                     valueColor: theme.dataSteps,
                     source: stepsEstimated ? .calculated : .apple,
                     context: tileContext(today: stepsT, history: stepsTileHistory,
-                                         betterHigher: true, deadband: 100, positive: positiveDelta) { intString($0) },
-                    series: stepsTileSeries
+                                         betterHigher: true, deadband: 100, positive: positiveDelta) { intString($0) }
                 )) { metricDetail = .steps(stepsFresh ?? stepsEstFresh) }
                 // Oxígeno en sangre — más alto es mejor.
                 metricTile(TodayMetricTile(
@@ -2456,8 +2444,7 @@ struct TodayView: View {
                     valueColor: theme.dataSpO2,
                     source: spo2R?.fromApple == true ? .apple : .band,
                     context: tileContext(today: spo2R?.value, history: history(base) { $0.spo2Pct },
-                                         betterHigher: true, deadband: 0.5, positive: positiveDelta) { "\(Int($0.rounded())) %" },
-                    series: areaSeries(base, today: spo2R?.value) { $0.spo2Pct }
+                                         betterHigher: true, deadband: 0.5, positive: positiveDelta) { "\(Int($0.rounded())) %" }
                 )) { metricDetail = .spo2(spo2R?.value) }
                 // Respiración — «en rango» es lo normal; sin valencia simple (Δ en tinta neutra).
                 metricTile(TodayMetricTile(
@@ -2467,8 +2454,7 @@ struct TodayView: View {
                     valueColor: theme.dataSpO2,
                     source: respR?.fromApple == true ? .apple : .band,
                     context: tileContext(today: respR?.value, history: history(base) { $0.respRateBpm },
-                                         betterHigher: nil, deadband: 0.5, positive: positiveDelta) { String(format: "%.1f", $0) },
-                    series: areaSeries(base, today: respR?.value) { $0.respRateBpm }
+                                         betterHigher: nil, deadband: 0.5, positive: positiveDelta) { String(format: "%.1f", $0) }
                 )) { metricDetail = .respiratory(respR?.value) }
                 // Estrés — más alto es PEOR; valor bandeado por nivel 0–3 (verde/ámbar/rojo).
                 metricTile(TodayMetricTile(
@@ -2479,9 +2465,7 @@ struct TodayView: View {
                     valueColor: stressT.map(stressDataColor) ?? theme.inkTertiary,
                     source: .calculated,
                     context: tileContext(today: stressT, history: stressHistory,
-                                         betterHigher: false, deadband: 0.1, positive: positiveDelta) { String(format: "%.1f", $0) },
-                    // El estrés no es campo de DailyMetric: su serie sale del proxy diario 0–3 (incluye hoy).
-                    series: Array((stress?.fullTrend ?? []).suffix(14).map { $0.value })
+                                         betterHigher: false, deadband: 0.1, positive: positiveDelta) { String(format: "%.1f", $0) }
                 )) { metricDetail = .stress(stressT) }
             }
         }
@@ -2490,26 +2474,6 @@ struct TodayView: View {
     /// Sueño en formato reloj del handoff: «7:12» (horas:minutos dormidos).
     private func sleepClockText(_ mins: Double) -> String {
         String(format: "%d:%02d", Int(mins) / 60, Int(mins) % 60)
-    }
-
-    /// Leyenda de fuente (FER-575, reubicada en FER-581 al renglón del rótulo «Métricas de hoy»): mapea
-    /// cada punto de color a su fuente. Oculta a VoiceOver — cada pill/tile ya anuncia su fuente vía el
-    /// `accessibilityLabel` del punto (`SourceChip`), así que repetirla aquí sería ruido.
-    private var sourceLegend: some View {
-        HStack(spacing: NoopMetrics.space2) {
-            legendDot(theme.dataRecovery, "Band")
-            legendDot(theme.dataSpO2, "Apple Health source")
-            legendDot(theme.inkTertiary, "Calculated")
-        }
-        .accessibilityHidden(true)
-    }
-
-    private func legendDot(_ color: Color, _ label: LocalizedStringKey) -> some View {
-        HStack(spacing: NoopMetrics.space1) {
-            Circle().fill(color).frame(width: 6, height: 6)
-            Text(label).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                .lineLimit(1).minimumScaleFactor(0.8)
-        }
     }
 
     /// La rejilla de «Métricas de hoy»: dos columnas iguales → 8 tiles en 4 renglones de 2.
@@ -2580,14 +2544,6 @@ struct TodayView: View {
                       color: color)
     }
 
-    /// FER-551: la serie de hasta 14 días para la mini-gráfica de ÁREA del tile — valores diarios válidos
-    /// (sin huecos: `compactMap` los salta, así no se dibujan valles en cero falsos) terminando en el valor
-    /// de hoy cuando existe (la cabeza de la línea). Lee de la misma base de display que el delta.
-    private func areaSeries(_ base: [DailyMetric], today: Double?, _ pick: (DailyMetric) -> Double?) -> [Double] {
-        let prior = Array(base.compactMap(pick).suffix(today == nil ? 14 : 13))
-        return today.map { prior + [$0] } ?? prior
-    }
-
     /// Δ de sueño en unidades de una letra: «18m» bajo una hora, «1h 5m» a partir de una (FER-575 follow-up:
     /// «18 min» era más ancho que «+27» y el `minimumScaleFactor` encogía solo el delta de sueño).
     private func sleepDeltaText(_ minutes: Double) -> String {
@@ -2638,10 +2594,10 @@ struct TodayView: View {
         }
     }
 
-    /// Un tile de la retícula 2×4 (handoff «Hoy» 2026-07): icono + nombre + punto de origen arriba;
-    /// valor 21/700 tabular en el color del dato + unidad; **sparkband** de 14 días (franja de rango
-    /// personal + línea + punto final); y la línea delta explícita («+24 min vs promedio 7 d»).
-    /// Tematizado con tokens sobre `surface` + hairline; sin lectura el tile se apaga a `inkDim`.
+    /// Un tile de la retícula 2×4 (handoff «Hoy» 2026-07 · compactado FER-743): 3 renglones — icono +
+    /// nombre + punto de origen arriba; valor 21/700 tabular en el color del dato + unidad; y la línea
+    /// delta explícita («+24 min vs promedio 7 d»). La tendencia 14 d migró al Detalle (sin sparkband en
+    /// el resumen). Tematizado con tokens sobre `surface` + hairline; sin lectura el tile se apaga a `inkDim`.
     private struct TodayMetricTile: View {
         let label: LocalizedStringKey
         var icon: String? = nil
@@ -2650,8 +2606,6 @@ struct TodayView: View {
         let valueColor: Color
         var source: MetricSource = .band
         var context: TileContext? = nil
-        /// Los hasta 14 valores diarios del sparkband (la cabeza = hoy). Con <3 puntos no se dibuja.
-        var series: [Double] = []
         /// Pie cuando no hay valor/contexto (p. ej. «Esta noche» en el tile day-scoped de Sueño). FER-341.
         var placeholder: LocalizedStringKey? = nil
         @Environment(\.instrumentoTheme) private var theme
@@ -2659,7 +2613,7 @@ struct TodayView: View {
         private var isEmpty: Bool { value == "—" }
 
         var body: some View {
-            VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+            VStack(alignment: .leading, spacing: NoopMetrics.space1 + 1) {
                 HStack(spacing: NoopMetrics.space1) {
                     if let icon {
                         Image(systemName: icon)
@@ -2686,15 +2640,13 @@ struct TodayView: View {
                             .foregroundStyle(isEmpty ? theme.inkDim : theme.inkTertiary)
                     }
                 }
-                if series.count >= 3 {
-                    TileSparkband(series: series, color: isEmpty ? theme.inkDim : valueColor)
-                }
                 footer
             }
             .padding(.horizontal, NoopMetrics.gap).padding(.vertical, NoopMetrics.space2)
-            // FER-725: piso de alto 88 (antes 96) — recorta ~32 pt en los 4 renglones para que Señales
-            // quepa en una hoja. Sigue siendo PISO, no tope: el tile crece con Dynamic Type grande.
-            .frame(maxWidth: .infinity, minHeight: 88, alignment: .topLeading)
+            // FER-743: piso de alto 72 (antes 88) y sin sparkband — el tile pasa a 3 renglones (etiqueta /
+            // valor / delta explícito) para que SEÑALES quepa sin scroll; la tendencia 14 d vive en el
+            // Detalle. Sigue siendo PISO, no tope: el tile crece con Dynamic Type grande.
+            .frame(maxWidth: .infinity, minHeight: 72, alignment: .topLeading)
             .background {
                 RoundedRectangle(cornerRadius: NoopMetrics.tileRadius, style: .continuous)
                     .fill(theme.surface)
