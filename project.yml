@@ -85,6 +85,7 @@ targets:
         NSBluetoothAlwaysUsageDescription: "Cénit connects directly to your WHOOP strap over Bluetooth to read heart rate, R-R intervals, battery, and sensor data locally on your iPhone. Nothing leaves your device."
         NSHealthShareUsageDescription: "Cénit reads your own Apple Health data on-device to compute recovery, strain, and sleep. Nothing leaves your device."
         NSHealthUpdateUsageDescription: "Cénit writes the metrics it computes from your strap back into Apple Health, on-device and only when you allow it."
+        NSPhotoLibraryAddUsageDescription: "Cénit saves the workout card you choose to share to your photo library. It only saves the image you explicitly ask it to."
         NSCalendarsFullAccessUsageDescription: "Cénit crosses your calendar events with your day's stress, on your iPhone, to show what your most activated moments coincided with. Nothing leaves your device."
         NSCalendarsUsageDescription: "Cénit crosses your calendar events with your day's stress, on your iPhone, to show what your most activated moments coincided with. Nothing leaves your device."
         # Debug-only URL scheme for screenshot automation (simulator navigation via xcrun simctl openurl)
