@@ -1,6 +1,150 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "hours asleep": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hours asleep"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "horas dormidas"
+          }
+        }
+      }
+    },
+    "last night": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "last night"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "anoche"
+          }
+        }
+      }
+    },
+    "For tonight": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For tonight"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Para esta noche"
+          }
+        }
+      }
+    },
+    "Right in your target range.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Right in your target range."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Justo en tu rango meta."
+          }
+        }
+      }
+    },
+    "Enough, close to your target.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enough, close to your target."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suficiente, cerca de tu meta."
+          }
+        }
+      }
+    },
+    "Short of your target last night.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Short of your target last night."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Corto para tu meta anoche."
+          }
+        }
+      }
+    },
+    "Longer than usual last night.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Longer than usual last night."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Más de lo habitual anoche."
+          }
+        }
+      }
+    },
+    "Keep to your usual bedtime to hold this rhythm.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep to your usual bedtime to hold this rhythm."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acuéstate a tu hora de siempre para mantener este ritmo."
+          }
+        }
+      }
+    },
+    "A steadier bedtime tonight helps your rhythm.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A steadier bedtime tonight helps your rhythm."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una hora de dormir más pareja hoy ayuda a tu ritmo."
+          }
+        }
+      }
+    },
     "Above your base, a good sign.": {
       "localizations": {
         "en": {

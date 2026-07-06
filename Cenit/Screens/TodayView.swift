@@ -491,7 +491,13 @@ struct TodayView: View {
             trendLoader: trendLoader(for: info.id),
             onSeeMore: seeMoreAction(for: info.id),
             levelsSeriesLoader: levelsSeriesLoader(for: info.id),
-            whatMovesIt: whatMovesItFindings(for: info.id)
+            whatMovesIt: whatMovesItFindings(for: info.id),
+            sleepDetail: info.id == "sleep" ? SleepDetailModel.build(
+                days: repo.days, sleeps: repo.sleeps, appleSleeps: repo.appleSleeps,
+                importedSleep: repo.importedSleep,
+                appleHealthDays: repo.appleHealthDays, loaded: repo.loaded,
+                todayKey: Repository.localDayKey(Date()),
+                fusion: repo.fusion) : nil
         )
     }
 

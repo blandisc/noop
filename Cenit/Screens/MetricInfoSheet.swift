@@ -573,6 +573,11 @@ struct MetricInfoSheet: View {
     /// other vitals. Default empty → hidden.
     var whatMovesIt: [WhatMovesItFinding] = []
 
+    /// FER-710 · the sleep summary's rich data (stages, regularity, times) — the SAME model the detail
+    /// builds, supplied by the caller only for the sleep sheet. nil (or a night-less model) → the sheet
+    /// falls back to the shared single-value layout, so no-data / Apple-only states stay unchanged.
+    var sleepDetail: SleepDetailModel? = nil
+
     @State private var strainCurve: [TrendPoint] = []
     @State private var strainLoading = false
     @State private var heartRateCurve: [TrendPoint] = []
@@ -660,6 +665,17 @@ struct MetricInfoSheet: View {
                     headlineText
                     levelsBlock
                     vitalPatternBlock
+                } else if isSleepSummary {
+                    // F2 (FER-710) §4: doble dato (in place of the numeral) + verdict + «Anoche» stage bar,
+                    // the active lane label moved above the selector, then the level instrument + «Para esta
+                    // noche». No-night / Apple-only-without-stages fall through to the classic layout below.
+                    sleepDobleDato
+                    sleepReading
+                    headlineText
+                    sleepAnocheBlock
+                    sleepActiveLaneLabel
+                    levelsBlock
+                    sleepParaEstaNoche
                 } else {
                     headlineText
                     if info.usesLevels {
@@ -766,9 +782,9 @@ struct MetricInfoSheet: View {
                     infoButton
                     Spacer()
                     originDot("Calculated", color: theme.inkTertiary)
-                } else if isVitalTemplate {
-                    // F2 (FER-710): the six vitals share the recovery header skin — Grotesk uppercase title
-                    // + ⓘ + an origin dot (band/Apple), retiring the serif title + boxed source chip here.
+                } else if isVitalTemplate || info.id == "sleep" {
+                    // F2 (FER-710): the six vitals + sleep share the recovery header skin — Grotesk uppercase
+                    // title + ⓘ + an origin dot (band/Apple), retiring the serif title + boxed source chip.
                     Text(info.name).groteskSheetTitle().foregroundStyle(theme.ink)
                     infoButton
                     Spacer()
@@ -790,6 +806,8 @@ struct MetricInfoSheet: View {
                     infoButton
                 }
             }
+            // The rich sleep summary replaces the single numeral with its own doble-dato (in the body). (FER-710)
+            if !isSleepSummary {
             HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
                 if info.id == "recovery" {
                     // Grotesk 56 sheet numeral + «/ 100» (only when there's a real score). (FER-710)
@@ -817,6 +835,7 @@ struct MetricInfoSheet: View {
                             .foregroundStyle(theme.inkTertiary)
                     }
                 }
+            }
             }
         }
     }
@@ -946,6 +965,124 @@ struct MetricInfoSheet: View {
         case (.priorStrain, .rises):   return "Tends to rise the day after a hard effort."
         case (.priorStrain, .falls):   return "Tends to dip the day after a hard effort."
         }
+    }
+
+    // MARK: - Sleep summary (F2 §4, FER-710) — doble dato + stage bar + «para esta noche»
+
+    /// The rich sleep path: a night with stage data. No-night / Apple-only-without-stages fall through to
+    /// the shared single-value layout, so those states stay unchanged.
+    private var isSleepSummary: Bool { info.id == "sleep" && sleepDetail?.night != nil }
+
+    /// «7:12» from minutes asleep.
+    private static func sleepHM(_ minutes: Double) -> String {
+        let m = Int(minutes.rounded()); return String(format: "%d:%02d", m / 60, m % 60)
+    }
+
+    /// A locale clock «23:38» from a unix timestamp.
+    private static func clock(_ ts: Int) -> String { clockFmt.string(from: Date(timeIntervalSince1970: TimeInterval(ts))) }
+    private static let clockFmt: DateFormatter = {
+        let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("Hmm"); return f
+    }()
+
+    /// The two hero numerals — hours asleep | regularity /100 — split by a vertical hairline. Regularity
+    /// reads «··» until the engine has enough nights (the numeral never lies). (FER-710)
+    private var sleepDobleDato: some View {
+        HStack(alignment: .top, spacing: 18) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(Self.sleepHM(sleepDetail?.night?.stages.asleep ?? 0))
+                    .groteskSheetNumeral().foregroundStyle(theme.dataSleep)
+                Text("hours asleep").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            }
+            Rectangle().fill(theme.hairlineStrong).frame(width: 1, height: 46)
+            VStack(alignment: .leading, spacing: 4) {
+                if let r = sleepDetail?.regularity {
+                    Text(verbatim: "\(r.score)").groteskSheetNumeral().foregroundStyle(theme.dataSleep)
+                } else {
+                    Text(verbatim: "··").groteskSheetNumeral().foregroundStyle(theme.inkTertiary)
+                }
+                Text("regularity").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// A short honest sleep verdict from the active duration lane, without an em dash. (FER-710)
+    @ViewBuilder private var sleepReading: some View {
+        if let phrase = sleepReadingText {
+            Text(phrase).font(StrandFont.headline).foregroundStyle(theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+    private var sleepReadingText: LocalizedStringKey? {
+        switch activeLevelKey {
+        case "optimal":  return "Right in your target range."
+        case "adequate": return "Enough, close to your target."
+        case "short":    return "Short of your target last night."
+        case "extended": return "Longer than usual last night."
+        default:         return nil
+        }
+    }
+
+    /// «Anoche»: the stage bar (deep / REM / light / awake) + the onset→wake clock. Deep→REM→Light are one
+    /// indigo graded by opacity (no new tokens); awake is quiet ink. (FER-710)
+    @ViewBuilder private var sleepAnocheBlock: some View {
+        if let night = sleepDetail?.night {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Last night").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Spacer()
+                    Text(verbatim: "\(Self.clock(night.startTs)) → \(Self.clock(night.endTs))")
+                        .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                }
+                SleepStageBar(stages: [
+                    .init(minutes: night.stages.deep,  color: theme.dataSleep,               label: String(localized: "Deep")),
+                    .init(minutes: night.stages.rem,   color: theme.dataSleep.opacity(0.78), label: String(localized: "REM")),
+                    .init(minutes: night.stages.light, color: theme.dataSleep.opacity(0.52), label: String(localized: "Light")),
+                    .init(minutes: night.stages.awake, color: theme.hairlineStrong,          label: String(localized: "Awake")),
+                ], theme: theme)
+            }
+        }
+    }
+
+    /// The active duration lane label, moved just ABOVE the period selector for sleep (owner's call). (FER-710)
+    @ViewBuilder private var sleepActiveLaneLabel: some View {
+        if let name = sleepLaneName {
+            (Text(name) + Text(verbatim: " · ") + Text("last night"))
+                .font(InstrumentoType.groteskLane).tracking(InstrumentoType.groteskLaneTracking)
+                .textCase(.uppercase).foregroundStyle(theme.dataSleep)
+        }
+    }
+    private var sleepLaneName: LocalizedStringKey? {
+        switch activeLevelKey {
+        case "optimal":  return "Optimal"
+        case "adequate": return "Adequate"
+        case "short":    return "Short"
+        case "extended": return "Extended"
+        default:         return nil
+        }
+    }
+
+    /// «Para esta noche»: an honest, non-prescriptive line from regularity — the paper block with the sleep
+    /// hue left bar. (FER-710)
+    private var sleepParaEstaNoche: some View {
+        HStack(spacing: 0) {
+            Rectangle().fill(theme.dataSleep).frame(width: 2.5)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("For tonight").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text(sleepTonightText).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(14)
+            Spacer(minLength: 0)
+        }
+        .background(theme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+    private var sleepTonightText: LocalizedStringKey {
+        if let r = sleepDetail?.regularity, r.score >= 80 {
+            return "Keep to your usual bedtime to hold this rhythm."
+        }
+        return "A steadier bedtime tonight helps your rhythm."
     }
 
     /// The plain-language recovery reading under the hero, banded like the detail's (green ready / yellow
