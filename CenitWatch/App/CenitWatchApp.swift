@@ -14,7 +14,7 @@ struct CenitWatchApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RestMirrorView()
+            WatchSessionRootView()
                 .environmentObject(manager)
                 .onAppear {
                     manager.requestAuthorization()

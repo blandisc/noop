@@ -1,0 +1,162 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%lld kcal" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld kcal" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "%lld kcal" } }
+      }
+    },
+    "Active" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Active" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Activas" } }
+      }
+    },
+    "Avg HR" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Avg HR" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "FC prom" } }
+      }
+    },
+    "bpm" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "bpm" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "lpm" } }
+      }
+    },
+    "Connecting" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Connecting" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Conectando" } }
+      }
+    },
+    "Couldn't connect to the session. Keep going on your iPhone." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Couldn't connect to the session. Keep going on your iPhone." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "No se pudo conectar con la sesión. Sigue en tu iPhone." } }
+      }
+    },
+    "Couldn't save to Health" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Couldn't save to Health" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "No se pudo guardar en Salud" } }
+      }
+    },
+    "Done" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Done" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Listo" } }
+      }
+    },
+    "Duration, %lld minutes" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Duration, %lld minutes" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Duración, %lld minutos" } }
+      }
+    },
+    "End" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "End" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Terminar" } }
+      }
+    },
+    "End the session?" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "End the session?" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "¿Terminar la sesión?" } }
+      }
+    },
+    "Keep going" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Keep going" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Seguir" } }
+      }
+    },
+    "No access to Health. Without it there's no pulse and nothing saved." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No access to Health. Without it there's no pulse and nothing saved." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Sin acceso a Salud. Sin él no hay pulso ni guardado." } }
+      }
+    },
+    "No connection to iPhone" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No connection to iPhone" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Sin conexión con el iPhone" } }
+      }
+    },
+    "No session" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No session" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Sin sesión" } }
+      }
+    },
+    "Pulse" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pulse" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Pulso" } }
+      }
+    },
+    "Pulse, %lld beats per minute" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pulse, %lld beats per minute" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Pulso, %lld latidos por minuto" } }
+      }
+    },
+    "Pulse, no reading" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pulse, no reading" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Pulso, sin lectura" } }
+      }
+    },
+    "Rest" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rest" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Descanso" } }
+      }
+    },
+    "Rest over" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rest over" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Descanso terminado" } }
+      }
+    },
+    "Rest, %lld seconds left" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rest, %lld seconds left" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Descanso, quedan %lld segundos" } }
+      }
+    },
+    "Saved to Health" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Saved to Health" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Guardado en Salud" } }
+      }
+    },
+    "Session" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Session" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Sesión" } }
+      }
+    },
+    "Start a strength routine on your iPhone and the watch joins in." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Start a strength routine on your iPhone and the watch joins in." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Inicia una rutina de fuerza en tu iPhone y el reloj se suma solo." } }
+      }
+    },
+    "Strength" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Strength" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Fuerza" } }
+      }
+    },
+    "Turn it on in Settings, Health, on your iPhone." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Turn it on in Settings, Health, on your iPhone." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Actívalo en Ajustes, Salud, en tu iPhone." } }
+      }
+    }
+  },
+  "version" : "1.0"
+}
