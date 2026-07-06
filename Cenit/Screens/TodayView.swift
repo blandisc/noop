@@ -330,13 +330,13 @@ struct TodayView: View {
         guard state != .verdict else { return nil }
         switch state {
         case .calibrating:
-            return "Tu base aún se afina: con un par de noches más de sueño sincronizado con la banda, tu veredicto del día empieza a aparecer aquí."
+            return "Your baseline is still settling. A couple more nights of sleep synced with your band, and your day's verdict starts to show here."
         case .downloading:
-            return "Estamos descargando tu noche. En cuanto termine el sync, calculamos tu veredicto del día y aparece aquí."
+            return "We're downloading your night. As soon as the sync finishes, we compute your day's verdict and it shows here."
         default:   // waiting / importedBaseline
             return strapSeen
-                ? "Tu lectura del día sale de cómo dormiste. Aún no hay datos de esta noche — cuando duermas con tu banda y sincronices en la mañana, tu veredicto aparece aquí."
-                : "Conecta tu banda o Apple Salud y, con tu sueño de la noche, tu veredicto del día empieza a leerse aquí."
+                ? "Your day's reading comes from how you slept. There's no data for last night yet — sleep with your band and sync in the morning, and your verdict shows here."
+                : "Connect your band or Apple Health and, with your night's sleep, your day's verdict starts to read here."
         }
     }
 
@@ -953,8 +953,8 @@ struct TodayView: View {
                             .foregroundStyle(theme.inkTertiary)
                     }
                     .accessibilityLabel(live.charging == true
-                        ? Text("Batería del strap: \(Int(pct.rounded()))%, cargando")
-                        : Text("Batería del strap: \(Int(pct.rounded()))%"))
+                        ? Text("Strap battery: \(Int(pct.rounded()))%, charging")
+                        : Text("Strap battery: \(Int(pct.rounded()))%"))
                 }
                 Spacer(minLength: NoopMetrics.space2)
                 if liveBpm != nil { bpmButton }
@@ -964,7 +964,7 @@ struct TodayView: View {
             syncStatusLine
         }
         .accessibilityElement(children: .combine)
-        .accessibilityAction(named: Text("Sincronizar")) { triggerPullSync() }
+        .accessibilityAction(named: Text("Sync")) { triggerPullSync() }
     }
 
     /// El BPM del header: punto latiente (solo late con señal EN VIVO) + «62 BPM». Tocarlo abre la
@@ -985,7 +985,7 @@ struct TodayView: View {
         .buttonStyle(.plain)
         .accessibilityLabel(Text(isLiveHR ? "Frecuencia cardiaca en vivo" : "Frecuencia cardiaca"))
         .accessibilityValue(Text(liveBpm.map { "\($0) bpm" } ?? ""))
-        .accessibilityHint(Text("Abre el monitor latido a latido"))
+        .accessibilityHint(Text("Opens the beat-by-beat monitor"))
     }
 
     /// El header cuando la banda se desconectó de día (FER-711): en lugar del BPM vivo, un punto gris
@@ -1030,14 +1030,14 @@ struct TodayView: View {
     @ViewBuilder private var syncStatusLine: some View {
         if isSyncing {
             Text(live.syncChunksThisSession > 0
-                 ? "Sincronizando con tu banda… \(live.syncChunksThisSession) paquetes"
-                 : "Sincronizando con tu banda…")
+                 ? "Syncing with your band… \(live.syncChunksThisSession) packets"
+                 : "Syncing with your band…")
                 .font(StrandFont.caption).monospacedDigit()
                 .foregroundStyle(theme.verdict)
         } else if let at = live.lastSyncedAt {
             TimelineView(.periodic(from: .now, by: 60)) { context in
                 let secondsAgo = Swift.max(context.date.timeIntervalSince1970 - at, 1)
-                Text("última lectura \(Self.compactAgo(secondsAgo))")
+                Text("last read \(Self.compactAgo(secondsAgo))")
                     .font(StrandFont.caption).monospacedDigit()
                     .foregroundStyle(theme.inkTertiary)
             }
@@ -1205,7 +1205,7 @@ struct TodayView: View {
             .lineLimit(1).minimumScaleFactor(0.7)
             .contentShape(Rectangle())
             .onTapGesture { metricDetail = recoveryInfo }
-            .accessibilityLabel(Text("Recuperación de hoy: \(score)"))
+            .accessibilityLabel(Text("Today's recovery: \(score)"))
             .accessibilityAddTraits(.isButton)
         case .calibrating:
             Text(verbatim: "··").groteskHero().foregroundStyle(theme.inkTertiary)
@@ -1240,31 +1240,31 @@ struct TodayView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityHint(Text("Abre el detalle de tu recuperación"))
+                .accessibilityHint(Text("Opens your recovery detail"))
             } else {
-                Text("Sin contexto para un veredicto")
+                Text("Not enough context for a verdict")
                     .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             if let delta = recoveryVsAverage {
-                Text(verbatim: delta >= 0 ? "+\(delta) vs tu promedio" : "−\(abs(delta)) vs tu promedio")
+                Text(delta >= 0 ? "+\(delta) vs your average" : "−\(abs(delta)) vs your average")
                     .font(StrandFont.caption).monospacedDigit()
                     .foregroundStyle(delta >= 0 ? theme.positiveText : theme.inkSecondary)
             }
         case .calibrating(let nights):
-            Text("Calibrando")
+            Text("Calibrating")
                 .font(InstrumentoType.groteskVerdict).foregroundStyle(theme.ink)
-            Text("\(nights) de \(Baselines.minNightsSeed) noches")
+            Text("\(nights) of \(Baselines.minNightsSeed) nights")
                 .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
         case .downloading:
-            Text("Descargando")
+            Text("Downloading")
                 .font(InstrumentoType.groteskVerdict).foregroundStyle(theme.ink)
-            Text("tu noche viene en camino")
+            Text("your night is on its way")
                 .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
         case .importedBaseline, .waiting:
-            Text("Sin lectura")
+            Text("No reading")
                 .font(InstrumentoType.groteskVerdict).foregroundStyle(theme.ink)
-            Text(strapSeen ? "llega con el sync de la mañana" : "conecta tu banda o Apple Salud")
+            Text(strapSeen ? "arrives with the morning sync" : "connect your band or Apple Health")
                 .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -1329,12 +1329,12 @@ struct TodayView: View {
     private func waitingBrief(_ state: HeroState) -> some View {
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
             briefHeader(now: false)
-            Text("Aún no hay lectura de hoy")
+            Text("No reading for today yet")
                 .font(StrandFont.title2).fontWeight(.semibold).foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
             Text(strapSeen
-                 ? "Tu veredicto llega con el primer sync de la mañana, cuando sincronices la noche."
-                 : "Conecta tu banda o Apple Salud y tu veredicto empezará a leerse cada mañana.")
+                 ? "Your verdict arrives with the first morning sync, once you sync the night."
+                 : "Connect your band or Apple Health and your verdict will read every morning.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             if let y = yesterdayVerdict { yesterdayLine(y) }
@@ -1351,7 +1351,7 @@ struct TodayView: View {
             withAnimation(reduceMotion ? nil : StrandMotion.interactive) { pagerPage = 0 }
         } label: {
             HStack(spacing: NoopMetrics.space2) {
-                Text("Ver tus métricas de hoy").font(StrandFont.subhead.weight(.semibold))
+                Text("See your metrics for today").font(StrandFont.subhead.weight(.semibold))
                 Image(systemName: "arrow.right").font(.system(size: 13, weight: .semibold))
             }
             .foregroundStyle(theme.inkSecondary)
@@ -1362,7 +1362,7 @@ struct TodayView: View {
         }
         .buttonStyle(.plain)
         .padding(.top, NoopMetrics.space2)
-        .accessibilityHint(Text("Abre la página de métricas de hoy"))
+        .accessibilityHint(Text("Opens today's metrics page"))
     }
 
     /// El Daily Brief del día (FER-470), armado desde el veredicto memoizado + la recuperación de hoy y su
@@ -1429,7 +1429,7 @@ struct TodayView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityHint(Text("Abre por qué el veredicto se lee así"))
+            .accessibilityHint(Text("Opens why the verdict reads this way"))
 
             Text(brief.why).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -1456,16 +1456,16 @@ struct TodayView: View {
     private func dayConnectionView(_ conn: DailyBrief.DayConnection) -> some View {
         switch conn {
         case .correlation(let c):
-            connectionLineView(text: c.text, cta: "Ver patrón",
-                               hint: "Abre este patrón en Patrones") {
+            connectionLineView(text: c.text, cta: "See pattern",
+                               hint: "Opens this pattern in Patrones") {
                 tabRouter.openInsight(key: InsightFreshness.key(for: c.insight))
             }
         case .experiment(let line):
             connectionLineView(text: line.text,
-                               cta: line.pendingCheckIn ? "Registra check-in" : "Ver experimento",
+                               cta: line.pendingCheckIn ? "Log check-in" : "See experiment",
                                hint: line.pendingCheckIn
-                                   ? "Abre tu experimento en Patrones para registrar el check-in de hoy"
-                                   : "Abre tu experimento en Patrones") {
+                                   ? "Opens your experiment in Patrones to log today's check-in"
+                                   : "Opens your experiment in Patrones") {
                 tabRouter.openExperiment()
             }
         }
@@ -1477,7 +1477,7 @@ struct TodayView: View {
                                     action: @escaping () -> Void) -> some View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: NoopMetrics.space1) {
-                Text("La conexión de hoy").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("Today's connection").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space2) {
                     Text(text).font(StrandFont.subhead).foregroundStyle(theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
@@ -1516,7 +1516,7 @@ struct TodayView: View {
     /// del «Instrumento». «Empezar» enruta a Entrenar y arranca la sesión vía `TabRouter` (reusa el prefetch).
     private func trainingBlockView(_ tb: DailyBrief.TrainingBlock) -> some View {
         VStack(alignment: .leading, spacing: NoopMetrics.space2) {
-            Text("Hoy en tu plan").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("Today in your plan").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             switch tb.state {
             case .training:
                 HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space2) {
@@ -1538,13 +1538,13 @@ struct TodayView: View {
                 // acento `ctaAccent` — el único lugar donde ese verde eléctrico existe (solo sobre tinta).
                 Button { tabRouter.startTodayTraining() } label: {
                     HStack(spacing: NoopMetrics.space2) {
-                        Text(tb.routineName ?? String(localized: "Tu entrenamiento"))
+                        Text(tb.routineName ?? String(localized: "Your workout"))
                             .font(InstrumentoType.grotesk(13, weight: .bold))
                             .foregroundStyle(theme.paperHi)
                             .lineLimit(1).minimumScaleFactor(0.8)
                         Spacer(minLength: NoopMetrics.space2)
                         HStack(spacing: NoopMetrics.space1) {
-                            Text("Empezar")
+                            Text("Start")
                                 .font(InstrumentoType.grotesk(11, weight: .semibold))
                                 .tracking(1.2)
                                 .textCase(.uppercase)
@@ -1559,13 +1559,13 @@ struct TodayView: View {
                 }
                 .buttonStyle(.plain)
                 .padding(.top, NoopMetrics.space1)
-                .accessibilityHint(Text("Abre Entrenar y arranca la sesión de hoy"))
+                .accessibilityHint(Text("Opens Train and starts today's session"))
             case .rest:
                 HStack(spacing: NoopMetrics.gap) {
                     Image(systemName: "moon.fill").font(.system(size: 16)).foregroundStyle(theme.inkSecondary)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text("Hoy descansas").font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
-                        Text("tu split no asigna rutina hoy").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        Text("Rest day today").font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
+                        Text("your split has no routine today").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     }
                     Spacer(minLength: 0)
                 }
@@ -1585,16 +1585,16 @@ struct TodayView: View {
 
     /// El chip de racha: glifo de llama + «racha N días» (singular «día» en 1). Mismo número que Entrenar.
     private func streakChip(_ days: Int) -> some View {
-        let unit = days == 1 ? "día" : "días"
+        let unit = days == 1 ? String(localized: "day") : String(localized: "days")
         return HStack(spacing: 4) {
             Image(systemName: "flame.fill").font(.system(size: 11)).foregroundStyle(theme.warning)
-            Text("racha \(days) \(unit)").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+            Text("streak \(days) \(unit)").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
         }
         .padding(.horizontal, NoopMetrics.space2).padding(.vertical, 2)
         .background(theme.paper, in: Capsule())
         .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 0.5))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text("Racha de \(days) \(unit) en tu plan"))
+        .accessibilityLabel(Text("Streak of \(days) \(unit) in your plan"))
     }
 
     /// El color del ajuste de ritmo: verde «sube», ámbar «baja», tinta secundaria «mantén» — color en el dato.
@@ -1625,7 +1625,7 @@ struct TodayView: View {
                 // FER-549/handoff: el estado va a la DERECHA (space-between) y el punto «Ahora» PULSA (halo)
                 // cuando hay veredicto; estático en espera o bajo Reduce Motion.
                 nowDot(now: now)
-                Text(now ? "Ahora" : "En espera").instrumentoOverline()
+                Text(now ? "Now" : "Waiting").instrumentoOverline()
                     .foregroundStyle(now ? theme.verdict : theme.inkTertiary)
             }
             Rectangle().fill(theme.hairline).frame(height: 0.5)
@@ -1702,7 +1702,7 @@ struct TodayView: View {
             if showTopHairline { Rectangle().fill(theme.hairline).frame(height: 0.5) }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityHint(Text("Abre el detalle de tus señales de hoy"))
+        .accessibilityHint(Text("Opens today's signals detail"))
     }
 
     /// FER-589: cada viñeta del Brief abre el DETALLE de su señal (el mismo destino que la pill/tile de
@@ -1736,7 +1736,7 @@ struct TodayView: View {
                 .font(StrandFont.footnote)
         }
         .foregroundStyle(theme.inkTertiary)
-        .accessibilityLabel(Text("HRV estimada de Apple Salud"))
+        .accessibilityLabel(Text("HRV estimated from Apple Health"))
     }
 
     /// SF Symbol por tema de viñeta (la presentación vive en la app, no en el motor puro).
@@ -1783,10 +1783,10 @@ struct TodayView: View {
         let rows = rulesRows
         VStack(alignment: .leading, spacing: NoopMetrics.space2) {
             HStack {
-                Text("Por qué \(recoveryScore ?? 0)")
+                Text("Why \(recoveryScore ?? 0)")
                     .groteskOverline().foregroundStyle(theme.inkTertiary)
                 Spacer(minLength: NoopMetrics.space2)
-                Text("El largo es el peso")
+                Text("Length is weight")
                     .groteskOverline(small: true).foregroundStyle(theme.inkMuted)
             }
             if let start = celebrationStart, !reduceMotion {
@@ -1799,7 +1799,7 @@ struct TodayView: View {
             }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(Text("Por qué \(recoveryScore ?? 0): la suma de tus cinco señales"))
+        .accessibilityLabel(Text("Why \(recoveryScore ?? 0): the sum of your five signals"))
     }
 
     /// Las filas del instrumento, del motor puro (`RecoveryRules`, memoizado en `recomputeDerived`) con
@@ -1809,10 +1809,10 @@ struct TodayView: View {
             let (label, color): (String, Color) = {
                 switch rule.key {
                 case "hrv":      return (String(localized: "HRV"), theme.dataHrv)
-                case "rhr":      return (String(localized: "FC reposo"), theme.dataHeart)
-                case "sleep":    return (String(localized: "Sueño"), theme.dataSleep)
-                case "skinTemp": return (String(localized: "Temp. piel"), theme.dataStrain)
-                default:         return (String(localized: "Respiración"), theme.dataSpO2)
+                case "rhr":      return (String(localized: "Resting HR"), theme.dataHeart)
+                case "sleep":    return (String(localized: "Sleep"), theme.dataSleep)
+                case "skinTemp": return (String(localized: "Skin temp"), theme.dataStrain)
+                default:         return (String(localized: "Respiration"), theme.dataSpO2)
                 }
             }()
             return FiveRulesView.Row(id: rule.key, label: label, color: color,
@@ -1870,7 +1870,7 @@ struct TodayView: View {
     @Namespace private var tabUnderlineNS
     private var sectionTabs: some View {
         HStack(spacing: NoopMetrics.cardPadding) {
-            tabButton("Señales", page: 0)
+            tabButton("Signals", page: 0)
             tabButton("Brief", page: 1)
             Spacer(minLength: NoopMetrics.space2)
             // Chip de CARGA a la derecha del selector (FER-743): visible en ambas páginas, abre la hoja.
@@ -1940,7 +1940,7 @@ struct TodayView: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(Text(i == 0 ? "Señales" : "Brief"))
+                .accessibilityLabel(Text(i == 0 ? "Signals" : "Brief"))
                 .accessibilityAddTraits(active ? [.isButton, .isSelected] : .isButton)
             }
         }
@@ -1981,7 +1981,7 @@ struct TodayView: View {
                 .offset(y: bobbing ? 4 : 0)
                 .animation(bobbing ? StrandMotion.bob : nil, value: bobbing)
             if learning {
-                Text("Desliza para actualizar")
+                Text("Pull to refresh")
                     .font(StrandFont.caption)
                     .foregroundStyle(theme.inkTertiary)
             }
@@ -1996,9 +1996,9 @@ struct TodayView: View {
         switch s {
         case .verdict:
             return repo.isRecoveryEstimated(Repository.localDayKey(Date()))
-                ? "Recuperación\nestimada" : "Recuperación\nde hoy"
-        case .calibrating: return "Tu base\nse afina"
-        default:           return "Recuperación\nde hoy"
+                ? "Recovery\nestimated" : "Recovery\ntoday"
+        case .calibrating: return "Your baseline\nis settling"
+        default:           return "Recovery\ntoday"
         }
     }
 
@@ -2023,10 +2023,10 @@ struct TodayView: View {
         case .importedBaseline:
             VStack(alignment: .center, spacing: NoopMetrics.space2) {
                 appleBaseChip   // FER-467: el pulso vivo se mudó al encabezado de Métricas (página 2)
-                Text("Falta la lectura de hoy")
+                Text("Today's reading is missing")
                     .font(StrandFont.headline).foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
-                Text("Usa tu banda para sumar lo único que Apple Salud no puede: la lectura de hoy.")
+                Text("Use your band to add the one thing Apple Health can't: today's reading.")
                     .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -2044,11 +2044,11 @@ struct TodayView: View {
         case .waiting:
             VStack(alignment: .center, spacing: NoopMetrics.space2) {
                 // FER-467: el pulso vivo se mudó al encabezado de Métricas (página 2); aquí solo el titular.
-                Text(strapSeen ? "Aún no hay lectura de hoy" : "Aún no hay lectura")
+                Text(strapSeen ? "No reading for today yet" : "No reading yet")
                     .font(StrandFont.headline).foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
                 Text(strapSeen
-                     ? "Tu base está lista. Usa el strap esta noche y la recuperación, el esfuerzo y el sueño de la mañana aparecen al sincronizar."
+                     ? "Your baseline is ready. Wear the strap tonight and your morning recovery, strain and sleep appear once it syncs."
                      : "Connect Apple Health to start. Your WHOOP strap sharpens the reading.")
                     .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -2088,7 +2088,7 @@ struct TodayView: View {
         } else {
             // Hay número pero sin contexto para una palabra (ex-anillo / estado 6). El numeral ya va en
             // tinta; aquí, la razón honesta — nunca un veredicto pintado de color sin respaldo. (FER-160)
-            Text("Aún sin contexto suficiente para un veredicto del día.")
+            Text("Not enough context yet for a day's verdict.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
@@ -2133,7 +2133,7 @@ struct TodayView: View {
     /// El único CTA del estado de espera sin strap: texto en el papel sobre el verde del veredicto.
     private var scanButton: some View {
         Button { model.scan() } label: {
-            Text("Buscar strap")
+            Text("Find your strap")
                 .font(StrandFont.headline)
                 .foregroundStyle(theme.paper)
                 .frame(maxWidth: .infinity)
@@ -2154,7 +2154,7 @@ struct TodayView: View {
     private var emptySourcesCard: some View {
         VStack(spacing: 0) {
             sourceRow(icon: "heart.fill", tint: theme.dataSpO2,
-                      title: "Conectar Apple Health", subtitle: "the base of your data") { showDataSources = true }
+                      title: "Connect Apple Health", subtitle: "the base of your data") { showDataSources = true }
             Divider().overlay(theme.hairline).padding(.leading, NoopMetrics.cardPadding)
             sourceRow(icon: "applewatch.side.right", tint: theme.inkTertiary,
                       title: "Pair WHOOP strap", subtitle: "sharpens the signal · optional") { model.scan() }
@@ -2188,7 +2188,7 @@ struct TodayView: View {
     private var appleBaseChip: some View {
         HStack(spacing: NoopMetrics.space2) {
             Image(systemName: "heart.fill").font(.system(size: 12))
-            Text("Base · Apple Salud").font(StrandFont.subhead)
+            Text("Baseline · Apple Health").font(StrandFont.subhead)
         }
         .foregroundStyle(theme.dataSpO2)
         .padding(.horizontal, NoopMetrics.space2).padding(.vertical, NoopMetrics.space1)
@@ -2204,21 +2204,21 @@ struct TodayView: View {
                     .fill(i < nights ? theme.dataRecovery : theme.hairline)
                     .frame(width: 10, height: 10)
             }
-            Text("\(nights) de \(total) noches")
+            Text("\(nights) of \(total) nights")
                 .font(StrandFont.captionNumber)
                 .foregroundStyle(theme.inkSecondary)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("\(nights) de \(total) noches calibradas"))
+        .accessibilityLabel(Text("\(nights) of \(total) nights calibrated"))
     }
 
     /// Copy de calibración por momento: noche cero, media calibración, y «todas las noches, computando».
     /// Enmarca el conteo como las noches que tu PROPIA base necesita, nunca «tu veredicto».
     private func calibrationDetailCopy(nights: Int) -> LocalizedStringKey {
         let total = Baselines.minNightsSeed
-        if nights == 0 { return "Usa el strap esta noche — la primera de \(total) noches que tu propia base necesita." }
-        if nights >= total { return "Las \(total) noches están — computando tu primer veredicto." }
-        return "Tu propia base afina cada noche — ya llevas \(nights)."
+        if nights == 0 { return "Wear the strap tonight — the first of \(total) nights your own baseline needs." }
+        if nights >= total { return "All \(total) nights are in — computing your first verdict." }
+        return "Your own baseline sharpens each night — you're at \(nights)."
     }
 
     /// Atajo de adelanto por Apple Health (solo en calibración): un usuario con historial puede sembrar la
@@ -2232,7 +2232,7 @@ struct TodayView: View {
                 HStack(spacing: NoopMetrics.space2) {
                     Image(systemName: "heart.fill")
                         .font(.system(size: 12)).foregroundStyle(theme.dataSpO2)
-                    Text("¿Tienes historial en Apple Salud? Conéctalo y tu base arranca con ventaja.")
+                    Text("Got history in Apple Health? Connect it and your baseline starts ahead.")
                         .font(StrandFont.caption)
                         .foregroundStyle(theme.inkSecondary)
                         .multilineTextAlignment(.leading)
@@ -2246,8 +2246,8 @@ struct TodayView: View {
             .buttonStyle(.plain)
             .accessibilityElement(children: .ignore)
             .accessibilityAddTraits(.isButton)
-            .accessibilityLabel(Text("Conectar Apple Salud"))
-            .accessibilityHint(Text("Abre Fuentes de datos para adelantar tu base"))
+            .accessibilityLabel(Text("Connect Apple Health"))
+            .accessibilityHint(Text("Opens Data Sources to get your baseline ahead"))
         }
     }
 
@@ -2267,11 +2267,11 @@ struct TodayView: View {
                     Image(systemName: "sparkles").font(.system(size: 10))
                     // Compacto (FER-202): la procedencia «base Apple Salud» se pliega aquí, en la misma línea
                     // de la etiqueta, en vez de un tercer renglón aparte — recorta alto para que Hoy quepa.
-                    Text("Afinando con tu strap")
+                    Text("Sharpening with your strap")
                         .font(StrandFont.caption)
                         .fixedSize(horizontal: false, vertical: true)   // wrap, never truncate, at large Dynamic Type
                     if baselineFromApple {
-                        Text("· base Apple Salud")
+                        Text("· Apple Health baseline")
                             .font(StrandFont.caption)
                             .foregroundStyle(theme.inkTertiary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -2279,7 +2279,7 @@ struct TodayView: View {
                 }
                 .foregroundStyle(theme.inkSecondary)
                 Spacer(minLength: NoopMetrics.space2)
-                Text("\(ownNights) de \(Baselines.minNightsTrust) noches")
+                Text("\(ownNights) of \(Baselines.minNightsTrust) nights")
                     .font(StrandFont.captionNumber)
                     .foregroundStyle(theme.inkSecondary)
                     .fixedSize()
@@ -2297,10 +2297,10 @@ struct TodayView: View {
         }
         .padding(.top, NoopMetrics.space2)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("Confianza de calibración"))
+        .accessibilityLabel(Text("Calibration confidence"))
         .accessibilityValue(Text(baselineFromApple
-            ? "Afinando con tu strap, \(ownNights) de \(Baselines.minNightsTrust) noches. Tu base viene de Apple Salud."
-            : "Afinando con tu strap, \(ownNights) de \(Baselines.minNightsTrust) noches."))
+            ? "Sharpening with your strap, \(ownNights) of \(Baselines.minNightsTrust) nights. Your baseline comes from Apple Health."
+            : "Sharpening with your strap, \(ownNights) of \(Baselines.minNightsTrust) nights."))
     }
 
     /// El rótulo de la sección «Métricas de hoy» (handoff «Hoy · Estados»): un overline en tinta seguido de
@@ -2389,7 +2389,7 @@ struct TodayView: View {
                     source: sleepR?.fromApple == true ? .apple : .band,
                     context: tileContext(today: sleepR?.value, history: history(base) { $0.totalSleepMin },
                                          betterHigher: true, deadband: 5, positive: positiveDelta) { sleepDeltaText($0) },
-                    placeholder: "Esta noche"
+                    placeholder: "Tonight"
                 )) { metricDetail = .sleep(sleepR.map { Int($0.value.rounded()) }) }
                 // HRV — más alta es mejor.
                 metricTile(TodayMetricTile(
@@ -2485,7 +2485,7 @@ struct TodayView: View {
     private func metricTile(_ tile: TodayMetricTile, open: @escaping () -> Void) -> some View {
         Button(action: open) { tile }
             .buttonStyle(TileButtonStyle(liftBorder: theme.hairlineStrong))
-            .accessibilityHint(Text("Abre el detalle"))
+            .accessibilityHint(Text("Opens the detail"))
     }
 
     /// Los días de base para la media de 7 días (FER-258): las filas del dashboard de display
@@ -2535,12 +2535,12 @@ struct TodayView: View {
         let mean = valid.reduce(0, +) / Double(valid.count)
         let change = t - mean
         if abs(change) <= deadband {
-            return .ready(text: String(localized: "En tu promedio 7 d"), color: theme.inkSecondary)
+            return .ready(text: String(localized: "At your 7-day average"), color: theme.inkSecondary)
         }
         let up = change > 0
         let color: Color = betterHigher.map { (up == $0) ? positive : theme.negativeText } ?? theme.inkSecondary
         let sign = up ? "+" : "\u{2212}"
-        return .ready(text: "\(sign)\(format(abs(change))) \(String(localized: "vs promedio 7 d"))",
+        return .ready(text: "\(sign)\(format(abs(change))) \(String(localized: "vs your 7-day average"))",
                       color: color)
     }
 
@@ -2667,7 +2667,7 @@ struct TodayView: View {
                     .foregroundStyle(color)
                     .lineLimit(1).minimumScaleFactor(0.75)
             case .building:
-                Text("Aún sin promedio propio")
+                Text("No average of your own yet")
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     .lineLimit(1).minimumScaleFactor(0.75)
             case .none:
