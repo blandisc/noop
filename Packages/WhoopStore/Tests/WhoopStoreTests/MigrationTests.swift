@@ -62,7 +62,7 @@ final class MigrationTests: XCTestCase {
                               "\(table) keeps synced (not rebuilt)")
             }
         }
-        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 25)
+        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 26)
     }
 
     /// v23 (FER-531): the weekly-split table exists with `weekday` as its PRIMARY KEY (one routine per
@@ -124,7 +124,7 @@ final class MigrationTests: XCTestCase {
         }
         let pk = try await store.primaryKeyColumns("circadianPhase")
         XCTAssertEqual(pk, ["deviceId", "day"], "PK is (deviceId, day) → at most one record per day")
-        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 25)
+        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 26)
     }
 
     /// v25 upsert is idempotent by (deviceId, day): writing the same day twice keeps one row, latest wins.
