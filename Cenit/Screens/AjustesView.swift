@@ -114,6 +114,11 @@ private struct AjustesLanding: View {
     @State private var showReloj = false
     /// Opt-in experimental body-clock reading (off by default). FER-712.
     @AppStorage("noop.relojCorporalEnabled") private var relojCorporalEnabled = false
+    /// FER-722: opt-in exercise media download (default off — the first/only exception to offline
+    /// for exercise thumbs/loops, gated end-to-end by `MediaDownloadCoordinator`).
+    @AppStorage(MediaDownloadCoordinator.enabledKey) private var exerciseMediaEnabled = false
+    @EnvironmentObject private var mediaCoordinator: MediaDownloadCoordinator
+    @State private var confirmDeleteMedia = false
     @State private var profileWheel: ProfileWheel? = nil
     @State private var darkScreen: AjustesDarkScreen? = nil
     @State private var confirmDisconnect = false
@@ -343,6 +348,28 @@ private struct AjustesLanding: View {
                 if relojCorporalEnabled {
                     divider
                     navRow("Ver tu reloj corporal") { showReloj = true }
+                }
+                divider
+                Toggle(isOn: $exerciseMediaEnabled) {
+                    Text("Descargar biblioteca de ejercicios").font(StrandFont.body).foregroundStyle(theme.ink)
+                }
+                .toggleStyle(.instrumento)
+                .frame(minHeight: 44)
+                .onChange(of: exerciseMediaEnabled) { _, enabled in
+                    if enabled { Task { await mediaCoordinator.bulkDownloadThumbsIfNeeded() } }
+                }
+                Text("Descarga miniaturas y un video corto por ejercicio desde ExerciseDB (RapidAPI), un servicio externo. Se guardan en tu iPhone para siempre y funcionan sin señal después. Esta es la única excepción a la regla de NOOP de cero red — tu IP y el nombre del ejercicio se comparten con ese servicio; ningún otro dato tuyo sale jamás. Apagar esto detiene descargas futuras, no borra lo ya guardado.")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                divider
+                Button(role: .destructive) { confirmDeleteMedia = true } label: {
+                    Text("Borrar media descargada").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                }
+                .buttonStyle(.plain)
+                .frame(minHeight: 32)
+                .confirmationDialog("¿Borrar toda la media de ejercicios descargada?", isPresented: $confirmDeleteMedia, titleVisibility: .visible) {
+                    Button("Borrar", role: .destructive) { mediaCoordinator.deleteAllCachedMedia() }
+                    Button("Cancelar", role: .cancel) {}
                 }
             }
             section("More") {

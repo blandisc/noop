@@ -27,6 +27,9 @@ struct CenitApp: App {
     @StateObject private var autoBackup = AutoBackup()
     /// App-level cross-tab navigation (FER-378 «Explóralo en el Coach»).
     @StateObject private var tabRouter = TabRouter()
+    /// Opt-in exercise media (thumbs/loop) downloader + disk cache (FER-722). Shared across Ajustes
+    /// (the toggle + "borrar" button) and every exercise detail screen (the on-demand loop fetch).
+    @StateObject private var mediaCoordinator = MediaDownloadCoordinator()
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
@@ -64,6 +67,7 @@ struct CenitApp: App {
                 .environmentObject(health)
                 .environmentObject(autoBackup)
                 .environmentObject(tabRouter)
+                .environmentObject(mediaCoordinator)
                 // El color scheme ya NO se fuerza global aquí: lo decide ContentView según la pestaña
                 // activa (Hoy = papel claro → barra de estado en tinta oscura; resto = oscuro), con el
                 // gate de onboarding/terms en oscuro. Ponerlo aquí (lo más cercano a la raíz) ganaba

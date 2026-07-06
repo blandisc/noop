@@ -627,6 +627,27 @@ the opt-in, on-device behaviours (HR smoothing, illness/strain early-warning, st
 haptic coaching, double-tap actions, wrist-wear automation, smart alarm) — all default-off and all
 computed locally.
 
+### Network exceptions (opt-in, off by default)
+
+NOOP is offline by construction (§11.1) with exactly **two** deliberate, user-controlled exceptions,
+both living in `Cenit/` (never in `Packages/`, which stays 100% offline so `swift test` over packages
+is hermetic in CI):
+
+- **AI Coach** (`Cenit/AI/AICoach.swift`) — bring-your-own-key LLM chat; nothing leaves the device
+  until the user pastes their own provider key and asks a question.
+- **Exercise media** (`Cenit/Media/`, FER-722) — opt-in thumb/video-loop cache from ExerciseDB
+  (RapidAPI), gated by `noop.exerciseMediaEnabled` (default off). `MediaDownloadCoordinator` is the
+  single point where the toggle is read; both its entry points (`bulkDownloadThumbsIfNeeded`,
+  `loopIfNeeded(for:)`) guard on `isEnabled` before constructing `ExerciseDBClient` or touching
+  `URLSession`, so toggle-off is zero requests by construction, not by convention. Media downloads
+  once per exercise into `Application Support/OpenWhoop/MediaCache/{thumbs,videos}/` — presence of the
+  file on disk **is** the "downloaded" record, no GRDB table — and stays there (offline-readable)
+  until the user taps "Borrar media descargada"; turning the toggle off stops future downloads but
+  never deletes the cache. `ExerciseDBClient`'s key is injected via a gitignored
+  `Cenit/Secrets.xcconfig` → `Info.plist` → `Bundle.main.object(forInfoDictionaryKey:)`, never
+  committed. Catalog→EDB mapping is a runtime name lookup (`exercise.name`), not a static id table —
+  see the file header for why.
+
 ### The «Instrumento diurno» theme (single warm day paper)
 
 `StrandDesign` carries a second, light-mode visual language («Instrumento diurno», warm paper) whose
@@ -659,7 +680,9 @@ never imported — `StrandDesign` remains the dependency-free leaf of the packag
 ## 11. Design principles, restated
 
 1. **Offline by construction.** There is no network client anywhere in the data path. The strap, the
-   SQLite file, and the UI are the whole system.
+   SQLite file, and the UI are the whole system. Two narrow, user-controlled exceptions exist outside
+   the data path — AI Coach and exercise media (FER-722) — both bring-your-own-key/off-by-default and
+   documented in §10.
 2. **Decoded-first durability.** Metrics are committed before raw is queued; the raw outbox is a
    prunable convenience, never the source of truth.
 3. **Resumable safe-trim.** The strap forgets historical data only after NOOP has it durably and has

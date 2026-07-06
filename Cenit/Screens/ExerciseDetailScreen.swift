@@ -1,5 +1,6 @@
 #if os(iOS)
 import SwiftUI
+import UIKit
 import StrandDesign
 import StrandTraining
 import StrandAnalytics
@@ -15,8 +16,13 @@ struct ExerciseDetailScreen: View {
     @Environment(\.instrumentoTheme) private var theme
     @Environment(\.openURL) private var openURL
     @EnvironmentObject private var repo: Repository
+    @EnvironmentObject private var mediaCoordinator: MediaDownloadCoordinator
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var system: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
+    /// FER-722: the cached thumb (if any) and, once tapped, the on-demand loop for this exercise.
+    @State private var thumbURL: URL?
+    @State private var loopURL: URL?
+    @State private var loadingLoop = false
 
     /// Work sets across sessions (oldest→newest), the raw material for the progress chart + PRs.
     @State private var history: [(startTs: Int, weightKg: Double, reps: Int)] = []
@@ -86,6 +92,8 @@ struct ExerciseDetailScreen: View {
             (history, prs) = await (h, p)
             hasTypeOverride = await ov != nil
             loaded = true
+            thumbURL = mediaCoordinator.cachedThumbURL(for: exercise)
+            loopURL = nil
         }
     }
 
@@ -95,8 +103,53 @@ struct ExerciseDetailScreen: View {
     @ViewBuilder private var guideTab: some View {
         measurementSection
         musclesSection
+        if mediaCoordinator.isEnabled, thumbURL != nil { mediaSection }
         if !exercise.displayCues(localized: StrengthDisplay.localized).isEmpty { howToSection }
         youtubeRow
+    }
+
+    // MARK: - Cached exercise media (opt-in · FER-722)
+    // Same card slot/style as `youtubeRow` below, which stays as the always-available fallback.
+    // Toggle off or no cached thumb (default) → this section doesn't render at all, so the layout
+    // is pixel-identical to before FER-722.
+
+    @ViewBuilder private var mediaSection: some View {
+        Button {
+            guard loopURL == nil, !loadingLoop else { return }
+            loadingLoop = true
+            Task {
+                loopURL = await mediaCoordinator.loopIfNeeded(for: exercise)
+                loadingLoop = false
+            }
+        } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                if let loopURL {
+                    LoopingVideoView(url: loopURL)
+                        .frame(height: 180)
+                        .clipShape(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+                } else if let thumbURL, let uiImage = UIImage(contentsOfFile: thumbURL.path) {
+                    Image(uiImage: uiImage)
+                        .resizable().scaledToFill()
+                        .frame(height: 180)
+                        .clipShape(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+                        .overlay(alignment: .center) {
+                            if loadingLoop {
+                                ProgressView().tint(theme.ink)
+                            } else {
+                                Image(systemName: "play.circle.fill")
+                                    .font(.system(size: 34)).foregroundStyle(.white)
+                            }
+                        }
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                .strokeBorder(theme.hairline, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .disabled(loopURL != nil)
+        .accessibilityLabel("\(exercise.name) preview")
     }
 
     /// «Progreso» — the metric trend + personal records (or an honest empty when nothing's logged).
