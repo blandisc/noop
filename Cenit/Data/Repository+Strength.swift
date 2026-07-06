@@ -1,4 +1,5 @@
 import Foundation
+import StrandAnalytics
 import StrandTraining
 import WhoopStore
 
@@ -193,6 +194,28 @@ extension Repository {
     func recentWorkSets(sinceTs: Int) async -> [(exerciseId: String, startTs: Int)] {
         guard let store = await storeHandle() else { return [] }
         return (try? await store.workSetsSince(sinceTs)) ?? []
+    }
+
+    /// Work sets since `sinceTs`, already expanded to per-muscle `MuscleSetEvent`s (one per muscle each
+    /// set hits, weighted by involvement, aged in whole local-calendar days from today). The shared
+    /// fetch-and-expand «Volume per muscle» (FER-719) feeds on; the muscle map (FER-350) keeps its own
+    /// loop because it also layers a recovery-reset filter and per-muscle exercise hits. Unknown
+    /// exercise ids are skipped.
+    func muscleSetEvents(sinceTs: Int) async -> [MuscleFatigueMap.MuscleSetEvent] {
+        let rawSets = await recentWorkSets(sinceTs: sinceTs)
+        let byId = Dictionary(await allExercises().map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        let cal = Calendar.current
+        let startToday = cal.startOfDay(for: Date())
+        var events: [MuscleFatigueMap.MuscleSetEvent] = []
+        for set in rawSets {
+            guard let ex = byId[set.exerciseId] else { continue }
+            let setDay = cal.startOfDay(for: Date(timeIntervalSince1970: TimeInterval(set.startTs)))
+            let daysAgo = cal.dateComponents([.day], from: setDay, to: startToday).day ?? 0
+            for inv in ex.muscleInvolvement {
+                events.append(.init(muscle: inv.muscle, involvement: inv.weight, daysAgo: daysAgo))
+            }
+        }
+        return events
     }
 }
 

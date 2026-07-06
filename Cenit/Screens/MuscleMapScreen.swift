@@ -17,15 +17,17 @@ import StrandTraining
 // recovery gate. THIS screen is the glue: it reads work sets from the store, expands each over its
 // exercise's `muscleInvolvement`, computes whole-day ages in the local calendar, and draws the result.
 //
-// Redesign (no math change — only how it's presented):
-//   • The ANSWER leads — a hero card right under the header (ready muscles + the recovery gate, anchored
-//     with bands), so the actionable line is first, not fourth. The map is the proof, the hero the
-//     conclusion.
-//   • The window picker is relabeled «Lens · tint recency» (it only recolors freshness; the weekly band
-//     stays fixed at 7 d).
-//   • The figures are detailed anatomical silhouettes (front/back muscle groups) with a floating label
-//     naming the most-loaded muscle.
-//   • A «See the method» disclosure at the foot.
+// Entrenar v3 · 1n (FER-719) — the handoff skin («Rediseño Hoy» voice):
+//   • A grotesk VERDICT headline leads (what's fresh, what still carries load), with the recovery
+//     bullet right under it — the old hero card and gate bar collapse into these two lines.
+//   • The 3/7/14-day lens is RETIRED: the decay itself carries time (see `MuscleFatigueMap`), so a
+//     window filter double-encoded recency. The ranking is fixed to the last 7 days, showing each
+//     muscle's weekly sets.
+//   • The figures stay the detailed anatomical silhouettes tinted by the 5-stop fresh→loaded ramp,
+//     with the continuous legend under them.
+//   • The foot states the method in one line and expands into the cited paragraph («Ver el método»).
+//   • The manual «mark all recovered» reset (FER-525) is PRESERVED: it filters which sets feed the
+//     map (nothing deleted), which is orthogonal to the decay math.
 //
 // Presented as a light `.sheet` from Cuerpo (theme passed explicitly — it doesn't cross the `.sheet`
 // boundary, FER-162); the per-muscle detail rides a nested `.sheet(item:)`, NO nested NavigationStack
@@ -35,9 +37,8 @@ struct MuscleMapScreen: View {
     let theme: InstrumentoTheme
     @EnvironmentObject var repo: Repository
 
-    @State private var window: MuscleFatigueMap.Window = .d7
     /// All completed work sets in the trailing 84 days, expanded to per-muscle events (one fetch). The
-    /// map slices by `window`; the detail's weekly trend buckets the whole span.
+    /// decay carries recency (no window, FER-719); the detail's weekly trend buckets the whole span.
     @State private var events: [MuscleFatigueMap.MuscleSetEvent] = []
     /// muscle → the exercises the user actually did that hit it (dedup, strongest involvement kept).
     @State private var hitsByMuscle: [String: [MuscleHit]] = [:]
@@ -62,7 +63,13 @@ struct MuscleMapScreen: View {
     private var recovery: Double? { repo.today?.recovery }
 
     private var loads: [MuscleFatigueMap.MuscleLoad] {
-        MuscleFatigueMap.loads(events: events, window: window)
+        MuscleFatigueMap.loads(events: events)
+    }
+    /// The «Más cargados» ranking is fixed to the last 7 days (the mock), independent of how far back
+    /// the decayed tint reaches. `weeklySets` is the engine's 7-day count — the same window the row
+    /// displays — so membership and the shown number are single-sourced.
+    private var rankingLoads: [MuscleFatigueMap.MuscleLoad] {
+        loads.filter { $0.weeklySets > 0 }
     }
     private var loadByMuscle: [String: MuscleFatigueMap.MuscleLoad] {
         Dictionary(loads.map { ($0.muscle, $0) }, uniquingKeysWith: { a, _ in a })
@@ -88,11 +95,9 @@ struct MuscleMapScreen: View {
                     if loads.isEmpty && !hasHistory {
                         emptyState
                     } else {
-                        hero
                         figures
-                        if !loads.isEmpty { ranking }
+                        if !rankingLoads.isEmpty { ranking }
                         method
-                        lensFooter
                     }
                 }
             }
@@ -116,199 +121,85 @@ struct MuscleMapScreen: View {
         }
     }
 
-    // MARK: - Header
+    // MARK: - Header — the grotesk verdict leads, the recovery bullet explains the gate
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text("Muscle map").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text("What to train today")
-                .font(StrandFont.serif(23)).foregroundStyle(theme.ink)   // serif in-screen title (FER-581)
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Muscle map").groteskOverline().foregroundStyle(theme.inkTertiary)
+            verdictHeadline
+                .padding(.top, 4)
+            if loaded && !(loads.isEmpty && !hasHistory) {
+                recoveryBullet
+                    .padding(.top, 10)
+            }
         }
     }
 
-    // MARK: - Hero — the recommendation leads, with the recovery gate anchored
+    /// The two-line verdict in the handoff's grotesk voice: what's fresh to train, what still
+    /// carries load. Ink only — the color lives in the figures (Instrumento).
+    @ViewBuilder private var verdictHeadline: some View {
+        Group {
+            if !loaded || (loads.isEmpty && !hasHistory) {
+                Text("What to train today")
+            } else if recommendation.gatedBySystemic {
+                Text("Today calls for rest.\nRecover first.")
+            } else if loads.isEmpty || recommendation.readyMuscles.count == loads.count {
+                Text("All fresh.\nTrain what you like.")
+            } else if recommendation.readyMuscles.isEmpty {
+                Text("Everything still carries load.\nGive it a day or go light.")
+            } else {
+                freshLine + Text("\n") + stillLoadedLine
+            }
+        }
+        .font(InstrumentoType.grotesk(25, weight: .bold, relativeTo: .title2))
+        .foregroundStyle(theme.ink)
+        .fixedSize(horizontal: false, vertical: true)
+    }
 
-    private var hero: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(heroLead)
+    /// «Fresh: Chest · Shoulders.» — the ready muscles, most-fresh first.
+    private var freshLine: Text {
+        let ready = Array(recommendation.readyMuscles.prefix(2))
+        let names = ready.indices.reduce(Text(verbatim: "")) { acc, i in
+            let sep = i == 0 ? Text(verbatim: "") : Text(verbatim: " · ")
+            return acc + sep + Text(MuscleAtlas.name(ready[i]))
+        }
+        return Text("Fresh: ") + names + Text(verbatim: ".")
+    }
+
+    /// «Glutes still carries load.» — the most-loaded muscle; or a neutral tail when nothing is
+    /// in the loaded band.
+    private var stillLoadedLine: Text {
+        guard let top = loadedMuscles.first else { return Text("The rest can wait.") }
+        return Text(MuscleAtlas.name(top.muscle)) + Text(" still carries load.")
+    }
+
+    /// The recovery bullet — dot in the band's color, one honest line. Replaces the old gate bar.
+    private var recoveryBullet: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 7) {
+            Circle().fill(recovery.map(recoveryColor) ?? theme.inkTertiary)
+                .frame(width: 8, height: 8)
+                .alignmentGuide(.firstTextBaseline) { d in d[.bottom] - 1 }
+            Text(recoveryBulletText)
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
-            heroAnswer
-                .padding(.top, 6)
-            if recovery != nil {
-                recoveryGate
-                    .padding(.top, 17)
-            }
-            if !loadedMuscles.isEmpty {
-                Rectangle().fill(theme.hairline).frame(height: 1)
-                    .padding(.vertical, 14)
-                stillLoadedLine
-            }
         }
-        .padding(NoopMetrics.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-            .strokeBorder(theme.hairline, lineWidth: 1))
+        .accessibilityElement(children: .combine)
     }
 
-    /// The lead line, honest about the recovery band (or its absence).
-    private var heroLead: LocalizedStringKey {
-        if recommendation.gatedBySystemic { return "Your recovery is low today." }
-        if loads.isEmpty { return "You're recovered — everything's fresh." }
-        if recommendation.readyMuscles.isEmpty { return "Everything you train is still loaded." }
-        guard let r = recovery else { return "Fresh to train today:" }
-        if r >= MuscleFatigueMap.recoveryYellowMax { return "Your recovery is clear — fresh to train:" }
-        return "Your recovery is moderate — fresh to train:"
-    }
-
-    @ViewBuilder private var heroAnswer: some View {
-        if recommendation.gatedBySystemic {
-            Text("Take it easy — recover first.")
-                .font(StrandFont.title2).foregroundStyle(theme.ink)
-        } else if loads.isEmpty {
-            Text("Fresh to train — pick anything.")
-                .font(StrandFont.title2).foregroundStyle(theme.ink)
-        } else if recommendation.readyMuscles.isEmpty {
-            Text("Give it a day or train light.")
-                .font(StrandFont.title2).foregroundStyle(theme.ink)
-        } else {
-            let ready = Array(recommendation.readyMuscles.prefix(3))
-            ready.indices.reduce(Text("")) { acc, i in
-                let sep = i == 0 ? Text("") : Text("  ·  ").font(StrandFont.title2).foregroundColor(theme.inkTertiary)
-                return acc + sep + Text(MuscleAtlas.name(ready[i])).font(StrandFont.title2).fontWeight(.bold).foregroundColor(theme.verdict)
-            }
-            .fixedSize(horizontal: false, vertical: true)
+    private var recoveryBulletText: LocalizedStringKey {
+        guard let r = recovery else {
+            return "No recovery reading today · the map shows muscle load only."
         }
-    }
-
-    /// The recovery gate, anchored with bands — the «why» behind the whole recommendation.
-    @ViewBuilder private var recoveryGate: some View {
-        if let r = recovery {
-            let score = Int(r.rounded())
-            VStack(alignment: .leading, spacing: 7) {
-                HStack {
-                    Text("Recovery · today's gate").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    Spacer()
-                    Text(gateLabel(r, score)).font(StrandFont.captionNumber).fontWeight(.semibold)
-                        .foregroundStyle(recoveryColor(r))
-                }
-                GeometryReader { geo in
-                    let w = geo.size.width
-                    ZStack(alignment: .leading) {
-                        gateTrack
-                        // marker at the score's position (0…100)
-                        RoundedRectangle(cornerRadius: 2).fill(theme.ink)
-                            .frame(width: 3, height: 16)
-                            .overlay(RoundedRectangle(cornerRadius: 2).strokeBorder(theme.surface, lineWidth: 2))
-                            .offset(x: max(0, min(w - 3, w * min(max(r, 0), 100) / 100)) - 1.5, y: -4)
-                    }
-                    .frame(height: 8)
-                }
-                .frame(height: 8)
-                HStack {
-                    Text(String(localized: "muscleMap.gateTick.low")).font(StrandFont.footnote).fontWeight(.semibold).foregroundStyle(theme.critical)
-                    Spacer()
-                    Text(String(localized: "muscleMap.gateTick.base")).font(StrandFont.footnote).fontWeight(.semibold).foregroundStyle(theme.inkTertiary)
-                    Spacer()
-                    Text(String(localized: "muscleMap.gateTick.clear")).font(StrandFont.footnote).fontWeight(.semibold).foregroundStyle(theme.verdict)
-                }
-            }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text("Recovery \(score), today's gate"))
-            .accessibilityValue(Text(gateBand(r)))
-        }
-    }
-
-    /// The tricolor gate bar with hard band cuts at the model's recovery thresholds (34 / 67).
-    private var gateTrack: some View {
-        let red = MuscleFatigueMap.recoveryRedMax / 100      // 0.34
-        let yellow = MuscleFatigueMap.recoveryYellowMax / 100 // 0.67
-        return LinearGradient(
-            stops: [
-                .init(color: theme.critical, location: 0),
-                .init(color: theme.critical, location: red),
-                .init(color: theme.warning, location: red),
-                .init(color: theme.warning, location: yellow),
-                .init(color: theme.verdict, location: yellow),
-                .init(color: theme.verdict, location: 1),
-            ],
-            startPoint: .leading, endPoint: .trailing
-        )
-        .frame(height: 8)
-        .clipShape(RoundedRectangle(cornerRadius: 4))
-        .opacity(0.9)
-    }
-
-    @ViewBuilder private var stillLoadedLine: some View {
-        let names = loadedMuscles.prefix(2).map { MuscleAtlas.name($0.muscle) }
-        let lead = Text("Still loaded today: ").font(StrandFont.subhead).foregroundColor(theme.inkSecondary)
-        let muscles: Text = {
-            if names.count >= 2 {
-                return Text(names[0]).font(StrandFont.subhead).fontWeight(.semibold).foregroundColor(theme.ink)
-                    + Text(" and ").font(StrandFont.subhead).foregroundColor(theme.inkSecondary)
-                    + Text(names[1]).font(StrandFont.subhead).fontWeight(.semibold).foregroundColor(theme.ink)
-            } else {
-                return Text(names[0]).font(StrandFont.subhead).fontWeight(.semibold).foregroundColor(theme.ink)
-            }
-        }()
-        (lead + muscles
-            + Text(" — give it a day before training them again.").font(StrandFont.subhead).foregroundColor(theme.inkSecondary))
-            .fixedSize(horizontal: false, vertical: true)
+        let score = Int(r.rounded())
+        if r < MuscleFatigueMap.recoveryRedMax { return "Recovery \(score) · today calls for rest." }
+        if r < MuscleFatigueMap.recoveryYellowMax { return "Recovery \(score) · keep it moderate today." }
+        return "Recovery \(score) · today's gate doesn't hold you back."
     }
 
     private func recoveryColor(_ r: Double) -> Color {
         if r < MuscleFatigueMap.recoveryRedMax { return theme.critical }
         if r < MuscleFatigueMap.recoveryYellowMax { return theme.warning }
         return theme.verdict
-    }
-
-    /// The score + band word as one interpolated key (e.g. "72 · Clear") — unique keys so the band word
-    /// localizes in this context (avoiding the standalone "Clear" → "Limpiar" collision).
-    private func gateLabel(_ r: Double, _ score: Int) -> LocalizedStringKey {
-        if r < MuscleFatigueMap.recoveryRedMax { return "\(score) · Low" }
-        if r < MuscleFatigueMap.recoveryYellowMax { return "\(score) · Base" }
-        return "\(score) · Clear"
-    }
-
-    /// The recovery band, spelled out for VoiceOver (unique keys, AA-irrelevant — text-to-speech).
-    private func gateBand(_ r: Double) -> LocalizedStringKey {
-        if r < MuscleFatigueMap.recoveryRedMax { return "Recovery is low" }
-        if r < MuscleFatigueMap.recoveryYellowMax { return "Recovery is at base" }
-        return "Recovery is clear"
-    }
-
-    // MARK: - Lens (recency of the tint) — discreet, at the foot
-
-    /// A quiet inline control at the foot: the 3/7/14-day lens only recolors the figure's tint recency
-    /// (the weekly band stays fixed at 7 d), so it lives out of the main path — the sheet leads with
-    /// today's state, not a control.
-    private var lensFooter: some View {
-        HStack {
-            Text("Tint lens").font(StrandFont.body).foregroundStyle(theme.inkSecondary)
-            Spacer()
-            HStack(spacing: 5) {
-                ForEach(MuscleFatigueMap.Window.allCases, id: \.rawValue) { w in
-                    Button { withAnimation(StrandMotion.interactive) { window = w } } label: {
-                        Text("\(w.days) d")
-                            .font(StrandFont.caption)
-                            .fontWeight(window == w ? .semibold : .regular)
-                            .foregroundStyle(window == w ? theme.ink : theme.inkTertiary)
-                            .padding(.horizontal, 8).padding(.vertical, 3)
-                            .background(
-                                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                    .fill(window == w ? theme.paper : .clear)
-                                    .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                        .strokeBorder(window == w ? theme.hairlineStrong : .clear, lineWidth: 1))
-                            )
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(Text("Window \(w.days) days"))
-                }
-            }
-        }
-        .padding(.top, 11)
-        .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 1) }
     }
 
     // MARK: - Figures (detailed anatomical silhouettes)
@@ -486,10 +377,12 @@ struct MuscleMapScreen: View {
 
     // MARK: - Ranking
 
+    /// «Más cargados · 7 días» — fixed to the last 7 days (the mock); each row carries its weekly
+    /// sets, the raw number the Schoenfeld band judges.
     private var ranking: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Most loaded").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            ForEach(loads, id: \.muscle) { m in
+            Text("Most loaded · 7 days").groteskOverline().foregroundStyle(theme.inkTertiary)
+            ForEach(rankingLoads, id: \.muscle) { m in
                 Button { selected = MuscleSelection(muscle: m.muscle) } label: {
                     VStack(spacing: 6) {
                         HStack(alignment: .firstTextBaseline) {
@@ -502,7 +395,8 @@ struct MuscleMapScreen: View {
                             if m.state == .fresh {
                                 Text("fresh").font(StrandFont.caption).fontWeight(.semibold).foregroundStyle(theme.verdict)
                             } else {
-                                Text(lastText(m.daysSinceLast)).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                                Text("\(setsText(m.weeklySets)) sets")
+                                    .font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
                             }
                         }
                         GeometryReader { geo in
@@ -522,33 +416,32 @@ struct MuscleMapScreen: View {
         }
     }
 
-    // MARK: - Method disclosure
+    // MARK: - Method foot — the one-line method with its cite, expanding into the full paragraph
 
     private var method: some View {
         VStack(alignment: .leading, spacing: 0) {
             Button { withAnimation(StrandMotion.interactive) { showMethod.toggle() } } label: {
-                HStack {
-                    Text("See the method").font(StrandFont.body).foregroundStyle(theme.ink)
-                    Spacer()
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 12, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-                        .rotationEffect(.degrees(showMethod ? 180 : 0))
-                }
-                .padding(14)
+                (Text("Each set loads the muscles it works and fades by half every 2 days · ")
+                    .font(StrandFont.caption).foregroundColor(theme.inkTertiary)
+                 + Text("See the method ›")
+                    .font(StrandFont.caption).fontWeight(.semibold).foregroundColor(theme.inkSecondary))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 12)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(Text("See the method"))
             .accessibilityAddTraits(showMethod ? [.isSelected] : [])
             if showMethod {
-                Text("Each set adds load to the muscles it works, decaying by half every two days — the time course of muscle protein synthesis (MacDougall 1995). Color is relative to your most-loaded muscle, so it reads which of your muscles are hot right now. Weekly volume is judged against a 10–20 sets-per-muscle band (Schoenfeld 2017). The recommendation crosses this with your strap recovery: a low-recovery day gates everything to rest.")
+                Text("Each set adds load to the muscles it works, decaying by half every two days: the time course of muscle protein synthesis (MacDougall 1995; Damas 2015). Color is relative to your most-loaded muscle, so it reads which of your muscles are hot right now. Weekly volume is judged against a 10–20 sets-per-muscle band (Schoenfeld 2017). The recommendation crosses this with your strap recovery: a low-recovery day gates everything to rest.")
                     .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(EdgeInsets(top: 0, leading: 14, bottom: 14, trailing: 14))
+                    .padding(.top, 10)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+        .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 1) }
     }
 
     // MARK: - Empty
@@ -586,9 +479,7 @@ struct MuscleMapScreen: View {
         return buckets
     }
 
-    private func lastText(_ days: Int) -> String {
-        days == 0 ? String(localized: "today") : String(localized: "\(days) d ago")
-    }
+    private func setsText(_ v: Double) -> String { MuscleFatigueMap.formattedSets(v) }
 
     private func load() async {
         let cal = Calendar.current
@@ -722,7 +613,7 @@ private struct MuscleDetailView: View {
                 Text(MuscleAtlas.name(muscle)).instrumentoOverlineProminent().foregroundStyle(theme.inkSecondary)
 
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(weeklySets.formatted(.number.precision(.fractionLength(weeklySets == weeklySets.rounded() ? 0 : 1))))
+                    Text(MuscleFatigueMap.formattedSets(weeklySets))
                         .font(StrandFont.number(52)).foregroundStyle(stateColor)
                     Text("sets · 7 d").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 }
@@ -759,7 +650,8 @@ private struct MuscleDetailView: View {
 
     // Weekly volume vs the Schoenfeld 10–20 band, scaled to a 0–30 track.
     private var volumeBand: some View {
-        let lo = MuscleFatigueMap.weeklyBandLow, hi = MuscleFatigueMap.weeklyBandHigh, top = 30.0
+        let lo = MuscleFatigueMap.weeklyBandLow, hi = MuscleFatigueMap.weeklyBandHigh
+        let top = MuscleFatigueMap.weeklyVolumeRailTop
         return VStack(alignment: .leading, spacing: 6) {
             GeometryReader { geo in
                 let w = geo.size.width
