@@ -43,6 +43,8 @@ xcodebuild -project Cenit.xcodeproj -scheme Cenit -destination 'generic/platform
 
 **Always pass `-jobs 4`** on full app builds. The dev Mac has 16 GB / 8 cores; an uncapped `xcodebuild` fans `swift-frontend` across all 8 cores, and parallel worktree sessions building at once exhaust RAM ("system has run out of application memory"). Capping to 4 keeps two concurrent builds survivable. The fast loop (`swift build`/`swift test` on `Packages/**`) doesn't hit this — prefer it whenever the change doesn't touch the app layer.
 
+**Build hygiene:** every worktree build mints its own ~1 GB DerivedData folder (`Cenit-<hash>`) that outlives the worktree — they accumulate into tens of GB and the disk pressure slows every build on this Mac. Before a full app build, run `Tools/prune-deriveddata.sh` (deletes only folders whose checkout no longer exists; safe with Xcode open). When your session ends, leave no `.build/` or generated `Cenit.xcodeproj` behind in a worktree that's done.
+
 CI runs `swift build`/`swift test` only on `Packages/**` changes. (If `swift`/`xcodebuild` fail while fetching SwiftPM dependencies, a local `GIT_CONFIG` override is the known workaround.)
 
 ## Rules that will get a change rejected
