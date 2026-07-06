@@ -934,7 +934,9 @@ struct LiveStrengthSheet: View {
     /// Grouped by whitespace + hairlines — a registration sheet, not a grid.
     private func exerciseHeader(_ run: StrengthSessionModel.ExerciseRun, ei: Int, first: Bool) -> some View {
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-            VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 12) {
+                ExerciseThumbnail(side: 44)   // reserved media slot (FER-751); FER-722 fills it
+                VStack(alignment: .leading, spacing: 2) {
                 if run.type != .weightReps {
                     Text(typeWord(run.type)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
                         .accessibilityHidden(true)
@@ -953,6 +955,7 @@ struct LiveStrengthSheet: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text(run.name))
                 .accessibilityHint(Text("View exercise detail"))
+                }
             }
             restChip(run, ei: ei)
             if !reflow { columnHeader(run.type) }

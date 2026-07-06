@@ -135,7 +135,8 @@ private struct RutinaDeHoyContent: View {
     }
 
     private func planRowContent(_ row: PlanRow, tappable: Bool) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
+        HStack(spacing: 12) {
+            ExerciseThumbnail(side: 54)   // reserved media slot (FER-751); FER-722 fills it
             VStack(alignment: .leading, spacing: 2) {
                 Text(row.name).font(StrandFont.body).foregroundStyle(theme.ink)
                 if let muscles = row.musclesText {
