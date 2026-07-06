@@ -12,11 +12,10 @@ import WhoopStore
 // and a thin `StressModel` shim so the live consumers (TodayView, CuerpoView, StressDetailScreen)
 // keep their surface unchanged.
 
-/// The band enum (with its 0–3 → band init) lives in StrandAnalytics; alias it module-wide so
-/// screens keep referring to `StressBand` without caring where the math lives.
-typealias StressBand = StrandAnalytics.StressBand
-
 // MARK: - Stress band presentation (copy + color)
+//
+// The band enum (with its 0–3 → band init) lives in StrandAnalytics; every consumer screen already
+// imports the package, so `StressBand` resolves directly — only its presentation lives here.
 
 extension StressBand {
     var title: String {
