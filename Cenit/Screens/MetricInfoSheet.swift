@@ -676,6 +676,12 @@ struct MetricInfoSheet: View {
                     sleepActiveLaneLabel
                     levelsBlock
                     sleepParaEstaNoche
+                } else if isStrainSummary {
+                    // F2 (FER-710): Day Strain — verdict by level + the level instrument. (The intraday
+                    // accumulated curve of §5 is a later refinement; the sheet reads the levels today.)
+                    vitalReading
+                    headlineText
+                    levelsBlock
                 } else {
                     headlineText
                     if info.usesLevels {
@@ -782,6 +788,13 @@ struct MetricInfoSheet: View {
                     infoButton
                     Spacer()
                     originDot("Calculated", color: theme.inkTertiary)
+                } else if info.id == "strain" {
+                    // F2 (FER-710): Day Strain is a calculated score, so it shares recovery's Grotesk header
+                    // with a «Calculated» origin dot (never band/Apple).
+                    Text(info.name).groteskSheetTitle().foregroundStyle(theme.ink)
+                    infoButton
+                    Spacer()
+                    originDot("Calculated", color: theme.inkTertiary)
                 } else if isVitalTemplate || info.id == "sleep" {
                     // F2 (FER-710): the six vitals + sleep share the recovery header skin — Grotesk uppercase
                     // title + ⓘ + an origin dot (band/Apple), retiring the serif title + boxed source chip.
@@ -816,6 +829,14 @@ struct MetricInfoSheet: View {
                         .foregroundStyle(tintColor(info.headerTint))
                     if isRecoverySummary {
                         Text(verbatim: "/ 100").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
+                    }
+                } else if info.id == "strain" {
+                    // Grotesk 56 numeral + «/ 21» (Day Strain's ceiling). (FER-710)
+                    Text(info.displayValue)
+                        .groteskSheetNumeral()
+                        .foregroundStyle(tintColor(info.headerTint))
+                    if info.displayValue != "—" {
+                        Text(verbatim: "/ 21").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
                     }
                 } else if isVitalTemplate {
                     // Grotesk 56 sheet numeral + unit — the vital's value of today as the one datum. (FER-710)
@@ -928,9 +949,17 @@ struct MetricInfoSheet: View {
         case ("stress", "high"):      return "Running high today."
         case ("resp_rate", "normal"):   return "In a normal range."
         case ("resp_rate", "elevated"): return "Above your usual."
+        case ("strain", "rest"):     return "Very light day so far."
+        case ("strain", "light"):    return "A light day so far."
+        case ("strain", "moderate"): return "A solid, moderate day."
+        case ("strain", "hard"):     return "A hard day of load."
+        case ("strain", "extreme"):  return "An all-out day."
         default: return nil
         }
     }
+
+    /// The Day Strain summary path (F2 §5): a scored day. No-reading falls through to the classic layout.
+    private var isStrainSummary: Bool { info.id == "strain" && info.displayValue != "—" }
 
     /// «Tu patrón» (FER-710): one honest line per WhatMovesIt finding — a paper block with the metric-hue
     /// left bar (the handoff's «patrón/conexión» shape). Only HRV and resting HR carry findings; for the
