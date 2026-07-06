@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import StrandAnalytics
 import WhoopStore
 
@@ -24,6 +25,19 @@ struct WhatMovesItFinding: Equatable, Identifiable {
     let relationship: Relationship
     let trend: MetricTrend
     var id: String { relationship.rawValue }
+
+    /// The metric-agnostic «Tu patrón» sentence for this finding — the SINGLE home the summary sheet
+    /// (`MetricInfoSheet`) and the metric detail (`MetricDetailScreen`) both read, so the two surfaces can
+    /// never drift (they used to carry byte-identical copies). English source = `Localizable.xcstrings`
+    /// key, so es-MX resolves at render. (FER-731; copy from FER-209)
+    var phrase: LocalizedStringKey {
+        switch (relationship, trend) {
+        case (.sleepDuration, .rises): return "Tends to run higher on nights you sleep more."
+        case (.sleepDuration, .falls): return "Tends to run lower on nights you sleep more."
+        case (.priorStrain, .rises):   return "Tends to rise the day after a hard effort."
+        case (.priorStrain, .falls):   return "Tends to dip the day after a hard effort."
+        }
+    }
 }
 
 enum WhatMovesItEngine {

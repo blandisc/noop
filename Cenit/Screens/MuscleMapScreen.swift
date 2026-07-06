@@ -434,7 +434,7 @@ struct MuscleMapScreen: View {
             .accessibilityLabel(Text("See the method"))
             .accessibilityAddTraits(showMethod ? [.isSelected] : [])
             if showMethod {
-                Text("Each set adds load to the muscles it works, decaying by half every two days: the time course of muscle protein synthesis (MacDougall 1995; Damas 2015). Color is relative to your most-loaded muscle, so it reads which of your muscles are hot right now. Weekly volume is judged against a 10–20 sets-per-muscle band (Schoenfeld 2017). The recommendation crosses this with your strap recovery: a low-recovery day gates everything to rest.")
+                Text("Each set adds load to the muscles it works, decaying by half every two days: the time course of muscle protein synthesis (MacDougall 1995; Damas 2015). Color is relative to your most-loaded muscle, so it reads which of your muscles are hot right now. Weekly volume is judged against the 10–20 sets-per-week band (Schoenfeld 2017), a hypertrophy guide per muscle group; the volume shown is weighted by involvement, so secondary muscles count less. The recommendation crosses this with your strap recovery: a low-recovery day gates everything to rest.")
                     .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 10)

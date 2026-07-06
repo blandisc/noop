@@ -243,14 +243,14 @@ public enum DailyBriefEngine {
         return Candidate(kind: .recovery, flag: flag, lead: lead, sub: sub)
     }
 
-    /// El nombre es-MX de la zona de recuperación del Detalle para un score 0–100 (FER-637). Los RANGOS
-    /// vienen de `MetricLevels.recovery` (una sola fuente con la pantalla); los nombres son el es-MX del
-    /// String Catalog (este archivo es copy es-only, igual que leads/subs). FER-638: la zona 70–88 es
-    /// «Alto» — «A punto» quedó exclusivo del veredicto del dial. Espejo de `MetricLevelsExplorer.label`.
+    /// El nombre es-MX de la zona de recuperación del Detalle para un score 0–100 (FER-637). Los RANGOS y
+    /// la clasificación vienen de `MetricLevels` (`activeIndex`, la única casa del test semiabierto — FER-731);
+    /// solo los NOMBRES son es-only aquí, porque este archivo interpola frases en español sin String Catalog
+    /// al alcance (por eso no puede leer `MetricLevels.name(for:)`, que es en inglés). FER-638: la zona 70–88
+    /// es «Alto» — «A punto» quedó exclusivo del veredicto del dial.
     static func recoveryZoneName(_ score: Double) -> String {
-        let key = MetricLevels.levels(for: .recovery).first { lvl in
-            (lvl.lower.map { score >= $0 } ?? true) && (lvl.upper.map { score < $0 } ?? true)
-        }?.key
+        let levels = MetricLevels.levels(for: .recovery)
+        let key = MetricLevels.activeIndex(for: score, in: levels).map { levels[$0].key }
         switch key {
         case "depleted": return "Agotado"
         case "low":      return "Bajo"

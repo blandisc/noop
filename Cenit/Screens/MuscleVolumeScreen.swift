@@ -67,6 +67,7 @@ struct MuscleVolumeScreen: View {
                     } else {
                         rows.padding(.top, 6)
                         insight.padding(.top, 14)
+                        methodNote.padding(.top, 12)
                     }
                 }
             }
@@ -166,6 +167,15 @@ struct MuscleVolumeScreen: View {
                 : Text(names[0])
             lead + Text(" below the band · they could take 2–3 more sets a week.")
         }
+    }
+
+    // MARK: - Method note — how to read the band and the number honestly
+
+    private var methodNote: some View {
+        Text("The 10–20 band is a hypertrophy guide per muscle group (Schoenfeld 2017); the number shown is sets weighted by involvement, so secondary muscles count less.")
+            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: - Empty

@@ -43,6 +43,8 @@
 	<string>Cénit writes the metrics it computes from your strap back into Apple Health, on-device and only when you allow it.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Cénit saves the workout card you choose to share to your photo library. It only saves the image you explicitly ask it to.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>bluetooth-central</string>

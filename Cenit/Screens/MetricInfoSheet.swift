@@ -908,10 +908,9 @@ struct MetricInfoSheet: View {
     /// The active level for today's reading — the same classification the level instrument highlights —
     /// resolved from the metric's levels + today's value. nil with no reading or no levels yet. (FER-710)
     private var activeLevelKey: String? {
-        guard let levels = resolvedLevels, let v = info.levelsTodayValue else { return nil }
-        return levels.first { lvl in
-            (lvl.lower.map { v >= $0 } ?? true) && (lvl.upper.map { v < $0 } ?? true)
-        }?.key
+        guard let levels = resolvedLevels, let v = info.levelsTodayValue,
+              let idx = MetricLevels.activeIndex(for: v, in: levels) else { return nil }
+        return levels[idx].key
     }
 
     /// The vital's data-driven verdict under the hero: a short honest phrase for WHERE today's reading sits
@@ -968,7 +967,7 @@ struct MetricInfoSheet: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Your pattern").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     ForEach(whatMovesIt) { f in
-                        Text(Self.whatMovesItPhrase(f))
+                        Text(f.phrase)
                             .font(StrandFont.subhead)
                             .foregroundStyle(theme.inkSecondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -979,17 +978,6 @@ struct MetricInfoSheet: View {
             }
             .background(theme.surface)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        }
-    }
-
-    /// The metric-agnostic «Tu patrón» sentence per finding — same copy the detail uses (FER-209), so both
-    /// surfaces read identically.
-    private static func whatMovesItPhrase(_ f: WhatMovesItFinding) -> LocalizedStringKey {
-        switch (f.relationship, f.trend) {
-        case (.sleepDuration, .rises): return "Tends to run higher on nights you sleep more."
-        case (.sleepDuration, .falls): return "Tends to run lower on nights you sleep more."
-        case (.priorStrain, .rises):   return "Tends to rise the day after a hard effort."
-        case (.priorStrain, .falls):   return "Tends to dip the day after a hard effort."
         }
     }
 
@@ -1078,14 +1066,10 @@ struct MetricInfoSheet: View {
                 .textCase(.uppercase).foregroundStyle(theme.dataSleep)
         }
     }
+    /// The active sleep lane's label, from the single key→label home (FER-731); nil when there's no
+    /// reading. A sleep sheet's `activeLevelKey` only ever resolves to a sleep level, so the name maps 1:1.
     private var sleepLaneName: LocalizedStringKey? {
-        switch activeLevelKey {
-        case "optimal":  return "Optimal"
-        case "adequate": return "Adequate"
-        case "short":    return "Short"
-        case "extended": return "Extended"
-        default:         return nil
-        }
+        activeLevelKey.map { LocalizedStringKey(MetricLevels.name(for: $0)) }
     }
 
     /// «Para esta noche»: an honest, non-prescriptive line from regularity — the paper block with the sleep
@@ -1137,11 +1121,7 @@ struct MetricInfoSheet: View {
     private var recoveryZoneMeter: some View {
         let levels = MetricLevels.levels(for: .recovery)
         let score = info.levelsTodayValue ?? 0
-        let activeIndex = levels.firstIndex { lvl in
-            let aboveLo = lvl.lower.map { score >= $0 } ?? true
-            let belowHi = lvl.upper.map { score < $0 } ?? true
-            return aboveLo && belowHi
-        }
+        let activeIndex = MetricLevels.activeIndex(for: score, in: levels)
         let segments = levels.enumerated().map { i, lvl in
             ZoneMeter.Segment(
                 weight: (lvl.upper ?? 100) - (lvl.lower ?? 0),
@@ -1162,19 +1142,12 @@ struct MetricInfoSheet: View {
         }
     }
 
-    /// The localized, uppercased zone label, from the SAME keys the level list uses so the two never
-    /// drift (FER-638 keeps the 70–88 key "primed" reading «Alto», never «A punto»). (FER-710)
+    /// The localized, uppercased zone label, from the single key→label home (`MetricLevels.name(for:)`,
+    /// FER-731) so the meter, the level list and the brief never drift — FER-638 keeps the 70–88 key
+    /// "primed" reading «Alto», never «A punto». The English name doubles as the `Localizable.xcstrings`
+    /// key, so `String(localized:)` resolves the es-MX at runtime. (FER-710)
     private func recoveryLevelLabel(_ key: String) -> String {
-        let name: String
-        switch key {
-        case "depleted": name = String(localized: "Depleted")
-        case "low":      name = String(localized: "Low")
-        case "moderate": name = String(localized: "Moderate")
-        case "primed":   name = String(localized: "High")
-        case "peak":     name = String(localized: "Peak")
-        default:         name = key
-        }
-        return name.localizedUppercase
+        String(localized: String.LocalizationValue(MetricLevels.name(for: key))).localizedUppercase
     }
 
     /// The ⓘ that toggles the plain-language explanation in place: quiet ink when closed, the metric hue
