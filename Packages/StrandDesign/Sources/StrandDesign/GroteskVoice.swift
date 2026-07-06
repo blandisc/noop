@@ -58,10 +58,11 @@ public extension InstrumentoType {
 
     // MARK: Scale (handoff «Hoy» 2026-07)
 
-    /// The «Hoy» hero numeral — 124/700, tracking −6 (apply `groteskHeroTracking`). FIXED.
-    static let groteskHero = groteskNumber(124)
-    /// Tracking for the 124pt hero numeral.
-    static let groteskHeroTracking: CGFloat = -6
+    /// The «Hoy» hero numeral — 96/700, tracking −4.5 (apply `groteskHeroTracking`). FIXED.
+    /// (FER-743: bajó de 124 a 96 para compactar SEÑALES sin scroll; sigue dominante ≥4× el tile.)
+    static let groteskHero = groteskNumber(96)
+    /// Tracking for the 96pt hero numeral.
+    static let groteskHeroTracking: CGFloat = -4.5
 
     /// A sheet's hero numeral — 56/700, tracking −2. FIXED.
     static let groteskSheetNumeral = groteskNumber(56)
