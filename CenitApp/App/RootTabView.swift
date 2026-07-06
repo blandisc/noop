@@ -108,6 +108,12 @@ struct RootTabView: View {
                 .navigationDestination(for: RoutineRoute.self) { route in
                     trainChrome(RutinaDeHoyScreen(routineId: route.routineId))
                 }
+                .navigationDestination(for: PlanDayRoute.self) { route in
+                    // 1o «Editar día del plan» (FER-747): draws its own back/cancel header + pinned CTA,
+                    // so the native nav bar is hidden (trainChrome still paints paper + reserves the bar).
+                    trainChrome(PlanDayEditorScreen(weekday: route.weekday))
+                        .toolbar(.hidden, for: .navigationBar)
+                }
                 .navigationDestination(for: WorkoutSessionRoute.self) { route in
                     trainChrome(WorkoutSessionDetailScreen(route: route))
                 }
@@ -326,7 +332,8 @@ struct RootTabView: View {
         case .workoutHistory: WorkoutHistoryScreen()
         case .breathe:      BreathingView()
         case .intervals:    IntervalTimerView()
-        case .weeklyPlan:   WeeklyPlanEditorView(openRoutines: { trainStack.append(SecondaryScreen.misRutinas) })
+        case .weeklyPlan:   WeeklyPlanEditorView(openRoutines: { trainStack.append(SecondaryScreen.misRutinas) },
+                                                 openDay: { wd in trainStack.append(PlanDayRoute(weekday: wd)) })
         case .misRutinas:   MisRutinasScreen(openRoutine: { id in trainStack.append(RoutineRoute(routineId: id)) },
                                              openLibrary: { trainStack.append(SecondaryScreen.library) })
         case .restDay:      RestDayScreen(

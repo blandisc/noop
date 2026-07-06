@@ -49541,121 +49541,277 @@
         }
       }
     },
-    "Your baseline is still settling. A couple more nights of sleep synced with your band, and your day's verdict starts to show here.": {
-      "extractionState": "manual",
+    "Back to weekly plan": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your baseline is still settling. A couple more nights of sleep synced with your band, and your day's verdict starts to show here."
+            "value": "Back to weekly plan"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu base aún se afina: con un par de noches más de sueño sincronizado con la banda, tu veredicto del día empieza a aparecer aquí."
+            "value": "Volver al plan de la semana"
           }
         }
       }
     },
-    "We're downloading your night. As soon as the sync finishes, we compute your day's verdict and it shows here.": {
-      "extractionState": "manual",
+    "Change routine": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "We're downloading your night. As soon as the sync finishes, we compute your day's verdict and it shows here."
+            "value": "Change routine"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Estamos descargando tu noche. En cuanto termine el sync, calculamos tu veredicto del día y aparece aquí."
+            "value": "Cambiar rutina"
           }
         }
       }
     },
-    "Your day's reading comes from how you slept. There's no data for last night yet — sleep with your band and sync in the morning, and your verdict shows here.": {
-      "extractionState": "manual",
+    "Mark as rest day": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your day's reading comes from how you slept. There's no data for last night yet — sleep with your band and sync in the morning, and your verdict shows here."
+            "value": "Mark as rest day"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu lectura del día sale de cómo dormiste. Aún no hay datos de esta noche — cuando duermas con tu banda y sincronices en la mañana, tu veredicto aparece aquí."
+            "value": "Marcar día de descanso"
           }
         }
       }
     },
-    "Connect your band or Apple Health and, with your night's sleep, your day's verdict starts to read here.": {
-      "extractionState": "manual",
+    "Day options": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Connect your band or Apple Health and, with your night's sleep, your day's verdict starts to read here."
+            "value": "Day options"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Conecta tu banda o Apple Salud y, con tu sueño de la noche, tu veredicto del día empieza a leerse aquí."
+            "value": "Opciones del día"
           }
         }
       }
     },
-    "Sync": {
-      "extractionState": "manual",
+    "Replace exercise": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync"
+            "value": "Replace exercise"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sincronizar"
+            "value": "Reemplazar ejercicio"
           }
         }
       }
     },
-    "Opens the beat-by-beat monitor": {
-      "extractionState": "manual",
+    "Save day": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Opens the beat-by-beat monitor"
+            "value": "Save day"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Abre el monitor latido a latido"
+            "value": "Guardar día"
           }
         }
       }
     },
-    "Syncing with your band… %lld packets": {
-      "extractionState": "manual",
+    "Discard changes to this day?": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Syncing with your band… %lld packets"
+            "value": "Discard changes to this day?"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sincronizando con tu banda… %lld paquetes"
+            "value": "¿Descartar los cambios de este día?"
+          }
+        }
+      }
+    },
+    "Rest day": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rest day"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Día de descanso"
+          }
+        }
+      }
+    },
+    "This day has no routine. Assign one from the weekly plan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This day has no routine. Assign one from the weekly plan."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este día no tiene rutina. Asigna una desde el plan de la semana."
+          }
+        }
+      }
+    },
+    "Mixed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mixed"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mixto"
+          }
+        }
+      }
+    },
+    "muscleGroup.push": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Push"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empuje"
+          }
+        }
+      }
+    },
+    "muscleGroup.pull": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pull"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tirón"
+          }
+        }
+      }
+    },
+    "muscleGroup.legs": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legs"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pierna"
+          }
+        }
+      }
+    },
+    "muscleGroup.core": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Core"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Core"
+          }
+        }
+      }
+    },
+    "Got history in Apple Health? Connect it and your baseline starts ahead.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Got history in Apple Health? Connect it and your baseline starts ahead."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Tienes historial en Apple Salud? Conéctalo y tu base arranca con ventaja."
+          }
+        }
+      }
+    },
+    "Connect your band or Apple Health and your verdict will read every morning.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect your band or Apple Health and your verdict will read every morning."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conecta tu banda o Apple Salud y tu veredicto empezará a leerse cada mañana."
+          }
+        }
+      }
+    },
+    "Opens your experiment in Patrones": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens your experiment in Patrones"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre tu experimento en Patrones"
           }
         }
       }
@@ -49677,6 +49833,40 @@
         }
       }
     },
+    "Pull to refresh": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pull to refresh"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desliza para actualizar"
+          }
+        }
+      }
+    },
+    "Downloading": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloading"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descargando"
+          }
+        }
+      }
+    },
     "last read %@": {
       "extractionState": "manual",
       "localizations": {
@@ -49694,36 +49884,70 @@
         }
       }
     },
-    "Today's recovery: %lld": {
+    "Opens the beat-by-beat monitor": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Today's recovery: %lld"
+            "value": "Opens the beat-by-beat monitor"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recuperación de hoy: %lld"
+            "value": "Abre el monitor latido a latido"
           }
         }
       }
     },
-    "Opens your recovery detail": {
+    "Your workout": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Opens your recovery detail"
+            "value": "Your workout"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Abre el detalle de tu recuperación"
+            "value": "Tu entrenamiento"
+          }
+        }
+      }
+    },
+    "· Apple Health baseline": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· Apple Health baseline"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· base Apple Salud"
+          }
+        }
+      }
+    },
+    "Opens the detail": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the detail"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre el detalle"
           }
         }
       }
@@ -49762,342 +49986,19 @@
         }
       }
     },
-    "−%lld vs your average": {
+    "Find your strap": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "−%lld vs your average"
+            "value": "Find your strap"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "−%lld vs tu promedio"
-          }
-        }
-      }
-    },
-    "Downloading": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Downloading"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Descargando"
-          }
-        }
-      }
-    },
-    "your night is on its way": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "your night is on its way"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "tu noche viene en camino"
-          }
-        }
-      }
-    },
-    "arrives with the morning sync": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "arrives with the morning sync"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "llega con el sync de la mañana"
-          }
-        }
-      }
-    },
-    "connect your band or Apple Health": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "connect your band or Apple Health"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "conecta tu banda o Apple Salud"
-          }
-        }
-      }
-    },
-    "Your verdict arrives with the first morning sync, once you sync the night.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your verdict arrives with the first morning sync, once you sync the night."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu veredicto llega con el primer sync de la mañana, cuando sincronices la noche."
-          }
-        }
-      }
-    },
-    "Connect your band or Apple Health and your verdict will read every morning.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Connect your band or Apple Health and your verdict will read every morning."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Conecta tu banda o Apple Salud y tu veredicto empezará a leerse cada mañana."
-          }
-        }
-      }
-    },
-    "See your metrics for today": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "See your metrics for today"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ver tus métricas de hoy"
-          }
-        }
-      }
-    },
-    "Opens today's metrics page": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Opens today's metrics page"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abre la página de métricas de hoy"
-          }
-        }
-      }
-    },
-    "Opens why the verdict reads this way": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Opens why the verdict reads this way"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abre por qué el veredicto se lee así"
-          }
-        }
-      }
-    },
-    "See pattern": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "See pattern"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ver patrón"
-          }
-        }
-      }
-    },
-    "Opens this pattern in Patrones": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Opens this pattern in Patrones"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abre este patrón en Patrones"
-          }
-        }
-      }
-    },
-    "Log check-in": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Log check-in"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Registra check-in"
-          }
-        }
-      }
-    },
-    "See experiment": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "See experiment"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ver experimento"
-          }
-        }
-      }
-    },
-    "Opens your experiment in Patrones to log today's check-in": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Opens your experiment in Patrones to log today's check-in"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abre tu experimento en Patrones para registrar el check-in de hoy"
-          }
-        }
-      }
-    },
-    "Opens your experiment in Patrones": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Opens your experiment in Patrones"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abre tu experimento en Patrones"
-          }
-        }
-      }
-    },
-    "Today's connection": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Today's connection"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "La conexión de hoy"
-          }
-        }
-      }
-    },
-    "Today in your plan": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Today in your plan"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hoy en tu plan"
-          }
-        }
-      }
-    },
-    "Your workout": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your workout"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu entrenamiento"
-          }
-        }
-      }
-    },
-    "Opens Train and starts today's session": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Opens Train and starts today's session"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abre Entrenar y arranca la sesión de hoy"
+            "value": "Buscar strap"
           }
         }
       }
@@ -50119,189 +50020,70 @@
         }
       }
     },
-    "your split has no routine today": {
+    "Your baseline is ready. Wear the strap tonight and your morning recovery, strain and sleep appear once it syncs.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "your split has no routine today"
+            "value": "Your baseline is ready. Wear the strap tonight and your morning recovery, strain and sleep appear once it syncs."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "tu split no asigna rutina hoy"
+            "value": "Tu base está lista. Usa el strap esta noche y la recuperación, el esfuerzo y el sueño de la mañana aparecen al sincronizar."
           }
         }
       }
     },
-    "day": {
+    "your night is on its way": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "day"
+            "value": "your night is on its way"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "día"
+            "value": "tu noche viene en camino"
           }
         }
       }
     },
-    "days": {
+    "−%lld vs your average": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "days"
+            "value": "−%lld vs your average"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "días"
+            "value": "−%lld vs tu promedio"
           }
         }
       }
     },
-    "streak %lld %@": {
+    "Opens this pattern in Patrones": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "streak %lld %@"
+            "value": "Opens this pattern in Patrones"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "racha %lld %@"
-          }
-        }
-      }
-    },
-    "Streak of %lld %@ in your plan": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Streak of %lld %@ in your plan"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Racha de %lld %@ en tu plan"
-          }
-        }
-      }
-    },
-    "Now": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Now"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ahora"
-          }
-        }
-      }
-    },
-    "Waiting": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Waiting"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "En espera"
-          }
-        }
-      }
-    },
-    "Opens today's signals detail": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Opens today's signals detail"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abre el detalle de tus señales de hoy"
-          }
-        }
-      }
-    },
-    "HRV estimated from Apple Health": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "HRV estimated from Apple Health"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "HRV estimada de Apple Salud"
-          }
-        }
-      }
-    },
-    "Why %lld": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Why %lld"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Por qué %lld"
-          }
-        }
-      }
-    },
-    "Length is weight": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Length is weight"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "El largo es el peso"
+            "value": "Abre este patrón en Patrones"
           }
         }
       }
@@ -50323,53 +50105,189 @@
         }
       }
     },
-    "Pull to refresh": {
+    "Log check-in": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pull to refresh"
+            "value": "Log check-in"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Desliza para actualizar"
+            "value": "Registra check-in"
           }
         }
       }
     },
-    "Recovery\nestimated": {
+    "streak %lld %@": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recovery\nestimated"
+            "value": "streak %lld %@"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recuperación\nestimada"
+            "value": "racha %lld %@"
           }
         }
       }
     },
-    "Recovery\ntoday": {
+    "Length is weight": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recovery\ntoday"
+            "value": "Length is weight"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recuperación\nde hoy"
+            "value": "El largo es el peso"
+          }
+        }
+      }
+    },
+    "No average of your own yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No average of your own yet"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún sin promedio propio"
+          }
+        }
+      }
+    },
+    "Not enough context yet for a day's verdict.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not enough context yet for a day's verdict."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún sin contexto suficiente para un veredicto del día."
+          }
+        }
+      }
+    },
+    "Opens your recovery detail": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens your recovery detail"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre el detalle de tu recuperación"
+          }
+        }
+      }
+    },
+    "Opens why the verdict reads this way": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens why the verdict reads this way"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre por qué el veredicto se lee así"
+          }
+        }
+      }
+    },
+    "Connect your band or Apple Health and, with your night's sleep, your day's verdict starts to read here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect your band or Apple Health and, with your night's sleep, your day's verdict starts to read here."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conecta tu banda o Apple Salud y, con tu sueño de la noche, tu veredicto del día empieza a leerse aquí."
+          }
+        }
+      }
+    },
+    "days": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "days"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "días"
+          }
+        }
+      }
+    },
+    "Today's recovery: %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today's recovery: %lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuperación de hoy: %lld"
+          }
+        }
+      }
+    },
+    "See experiment": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See experiment"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver experimento"
           }
         }
       }
@@ -50425,172 +50343,19 @@
         }
       }
     },
-    "Your baseline is ready. Wear the strap tonight and your morning recovery, strain and sleep appear once it syncs.": {
+    "Opens today's metrics page": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your baseline is ready. Wear the strap tonight and your morning recovery, strain and sleep appear once it syncs."
+            "value": "Opens today's metrics page"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu base está lista. Usa el strap esta noche y la recuperación, el esfuerzo y el sueño de la mañana aparecen al sincronizar."
-          }
-        }
-      }
-    },
-    "Not enough context yet for a day's verdict.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Not enough context yet for a day's verdict."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aún sin contexto suficiente para un veredicto del día."
-          }
-        }
-      }
-    },
-    "Find your strap": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Find your strap"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Buscar strap"
-          }
-        }
-      }
-    },
-    "%lld of %lld nights calibrated": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld of %lld nights calibrated"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld de %lld noches calibradas"
-          }
-        }
-      }
-    },
-    "Your own baseline sharpens each night — you're at %lld.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your own baseline sharpens each night — you're at %lld."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu propia base afina cada noche — ya llevas %lld."
-          }
-        }
-      }
-    },
-    "Got history in Apple Health? Connect it and your baseline starts ahead.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Got history in Apple Health? Connect it and your baseline starts ahead."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "¿Tienes historial en Apple Salud? Conéctalo y tu base arranca con ventaja."
-          }
-        }
-      }
-    },
-    "Opens Data Sources to get your baseline ahead": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Opens Data Sources to get your baseline ahead"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abre Fuentes de datos para adelantar tu base"
-          }
-        }
-      }
-    },
-    "· Apple Health baseline": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "· Apple Health baseline"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "· base Apple Salud"
-          }
-        }
-      }
-    },
-    "Tonight": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tonight"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Esta noche"
-          }
-        }
-      }
-    },
-    "Opens the detail": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Opens the detail"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abre el detalle"
+            "value": "Abre la página de métricas de hoy"
           }
         }
       }
@@ -50612,19 +50377,478 @@
         }
       }
     },
-    "No average of your own yet": {
+    "connect your band or Apple Health": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No average of your own yet"
+            "value": "connect your band or Apple Health"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aún sin promedio propio"
+            "value": "conecta tu banda o Apple Salud"
+          }
+        }
+      }
+    },
+    "Your day's reading comes from how you slept. There's no data for last night yet — sleep with your band and sync in the morning, and your verdict shows here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your day's reading comes from how you slept. There's no data for last night yet — sleep with your band and sync in the morning, and your verdict shows here."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu lectura del día sale de cómo dormiste. Aún no hay datos de esta noche — cuando duermas con tu banda y sincronices en la mañana, tu veredicto aparece aquí."
+          }
+        }
+      }
+    },
+    "Opens Data Sources to get your baseline ahead": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens Data Sources to get your baseline ahead"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre Fuentes de datos para adelantar tu base"
+          }
+        }
+      }
+    },
+    "Your own baseline sharpens each night — you're at %lld.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your own baseline sharpens each night — you're at %lld."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu propia base afina cada noche — ya llevas %lld."
+          }
+        }
+      }
+    },
+    "Today in your plan": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today in your plan"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoy en tu plan"
+          }
+        }
+      }
+    },
+    "Opens today's signals detail": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens today's signals detail"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre el detalle de tus señales de hoy"
+          }
+        }
+      }
+    },
+    "Syncing with your band… %lld packets": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Syncing with your band… %lld packets"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sincronizando con tu banda… %lld paquetes"
+          }
+        }
+      }
+    },
+    "Why %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Why %lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por qué %lld"
+          }
+        }
+      }
+    },
+    "arrives with the morning sync": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "arrives with the morning sync"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "llega con el sync de la mañana"
+          }
+        }
+      }
+    },
+    "Your baseline is still settling. A couple more nights of sleep synced with your band, and your day's verdict starts to show here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your baseline is still settling. A couple more nights of sleep synced with your band, and your day's verdict starts to show here."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu base aún se afina: con un par de noches más de sueño sincronizado con la banda, tu veredicto del día empieza a aparecer aquí."
+          }
+        }
+      }
+    },
+    "Today's connection": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today's connection"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La conexión de hoy"
+          }
+        }
+      }
+    },
+    "Tonight": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tonight"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta noche"
+          }
+        }
+      }
+    },
+    "Now": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Now"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ahora"
+          }
+        }
+      }
+    },
+    "day": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "day"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "día"
+          }
+        }
+      }
+    },
+    "your split has no routine today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "your split has no routine today"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tu split no asigna rutina hoy"
+          }
+        }
+      }
+    },
+    "Sync": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sync"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sincronizar"
+          }
+        }
+      }
+    },
+    "See your metrics for today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See your metrics for today"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver tus métricas de hoy"
+          }
+        }
+      }
+    },
+    "HRV estimated from Apple Health": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HRV estimated from Apple Health"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HRV estimada de Apple Salud"
+          }
+        }
+      }
+    },
+    "Your verdict arrives with the first morning sync, once you sync the night.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your verdict arrives with the first morning sync, once you sync the night."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu veredicto llega con el primer sync de la mañana, cuando sincronices la noche."
+          }
+        }
+      }
+    },
+    "Waiting": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En espera"
+          }
+        }
+      }
+    },
+    "%lld of %lld nights calibrated": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of %lld nights calibrated"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld de %lld noches calibradas"
+          }
+        }
+      }
+    },
+    "Recovery\nestimated": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovery\nestimated"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuperación\nestimada"
+          }
+        }
+      }
+    },
+    "Streak of %lld %@ in your plan": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Streak of %lld %@ in your plan"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Racha de %lld %@ en tu plan"
+          }
+        }
+      }
+    },
+    "Opens Train and starts today's session": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens Train and starts today's session"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre Entrenar y arranca la sesión de hoy"
+          }
+        }
+      }
+    },
+    "Opens your experiment in Patrones to log today's check-in": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens your experiment in Patrones to log today's check-in"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre tu experimento en Patrones para registrar el check-in de hoy"
+          }
+        }
+      }
+    },
+    "Recovery\ntoday": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovery\ntoday"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuperación\nde hoy"
+          }
+        }
+      }
+    },
+    "See pattern": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See pattern"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver patrón"
+          }
+        }
+      }
+    },
+    "We're downloading your night. As soon as the sync finishes, we compute your day's verdict and it shows here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We're downloading your night. As soon as the sync finishes, we compute your day's verdict and it shows here."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estamos descargando tu noche. En cuanto termine el sync, calculamos tu veredicto del día y aparece aquí."
           }
         }
       }

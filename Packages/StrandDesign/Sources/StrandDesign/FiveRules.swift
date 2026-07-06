@@ -37,7 +37,8 @@ public struct FiveRulesView: View {
         self.rows = rows; self.reveal = reveal
     }
 
-    private static let rowHeight: CGFloat = 23
+    // FER-743: 23 → 20 para compactar SEÑALES sin scroll (las marcas de 12/7 pt siguen cabiendo).
+    private static let rowHeight: CGFloat = 20
     private static let labelWidth: CGFloat = 74
     private static let valueWidth: CGFloat = 40
 

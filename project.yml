@@ -99,6 +99,10 @@ targets:
         CFBundleURLTypes:
           - CFBundleURLSchemes:
               - noopdev
+        # FER-722: the opt-in exercise-media downloader's API key, threaded from Cenit/Secrets.xcconfig
+        # (gitignored; copy Cenit/Secrets.xcconfig.example locally). Empty/missing is safe — the
+        # client (Cenit/Media/ExerciseDBClient.swift) fails to construct and the feature is inert.
+        EDBApiKey: "$(EDB_API_KEY)"
     entitlements:
       path: CenitApp/Resources/NOOP.entitlements
       properties:
@@ -110,6 +114,9 @@ targets:
         com.apple.security.application-groups:
           - group.com.feriracheta.noop
     settings:
+      configFiles:
+        Debug: Cenit/Config.xcconfig
+        Release: Cenit/Config.xcconfig
       base:
         # CURRENT_PROJECT_VERSION / MARKETING_VERSION are inherited from settings.base above.
         PRODUCT_BUNDLE_IDENTIFIER: com.feriracheta.noop
