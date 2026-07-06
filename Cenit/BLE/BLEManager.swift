@@ -1707,13 +1707,10 @@ extension BLEManager: CBPeripheralDelegate {
         log("SET_CONFIG: (re)enabled \(SetConfig.officialBurst.count) data-stream flags (FER-93b hypothesis)")
     }
 
-    /// SET_CLOCK(10) payload = the strap's 8-byte form: [seconds u32 LE][subseconds
-    /// u32 LE], subseconds in 1/32768 s (0 is fine). NOT the old 9-byte [u32 + 5 pad] — a wrong-length
-    /// SET_CLOCK is ack-received but NOT latched, leaving the RTC lost so the strap won't serve type-47.
+    /// SET_CLOCK(10) payload — the byte layout lives in `WhoopProtocol.SetClock` (FER-756), pinned
+    /// byte-for-byte by a package golden test; this shim just supplies "now".
     static func setClockPayload(now: UInt32 = UInt32(Date().timeIntervalSince1970)) -> [UInt8] {
-        [UInt8(now & 0xFF), UInt8((now >> 8) & 0xFF),
-         UInt8((now >> 16) & 0xFF), UInt8((now >> 24) & 0xFF),
-         0, 0, 0, 0]
+        SetClock.payload(now: now)
     }
 
     /// FER-90 diagnostic: format a unix timestamp as a short, human-readable LOCAL date for the strap
@@ -1724,35 +1721,12 @@ extension BLEManager: CBPeripheralDelegate {
         return f.string(from: Date(timeIntervalSince1970: TimeInterval(unix)))
     }
 
-    /// Earliest unix a strap record could plausibly carry (≈2023-11-14, before any WHOOP 4 data this
-    /// app would store). Words below this in a GET_DATA_RANGE body are not timestamps.
-    nonisolated static let dataRangeEarliestUnix = 1_700_000_000
-
-    /// The band's retained-history window from a GET_DATA_RANGE COMMAND_RESPONSE — but **validated**, not
-    /// a raw u32 scan. The old code (`dataRangeNewestUnix`/`dataRangeOldestUnix`) kept any u32 LE word in
-    /// a fixed nov-2023 → mar-2030 window and returned its min/max; with the WHOOP 4.0's unstable RTC that
-    /// scooped up garbage — future dates (e.g. "2029-10-11") and single-point ranges (e.g. "mar 15, 2025 →
-    /// mar 15, 2025") that don't match the real offload (FER-150). This scans the body once (data starts at
-    /// frame[7], after [type,seq,cmd]) and returns a window ONLY when it's plausible:
-    ///   - every word lies in [dataRangeEarliestUnix, now] — nothing in the future (small skew tolerance),
-    ///   - at least two DISTINCT values bound it, so oldest < newest — never a collapsed single point.
-    /// Returns nil otherwise, which the diagnostic renders as "—". `now` is injected for testability.
+    /// The band's retained-history window from a GET_DATA_RANGE COMMAND_RESPONSE — the validated scan
+    /// (FER-150) lives in `WhoopProtocol.DataRange.plausibleWindow` (FER-756), tested in the package;
+    /// this shim just supplies "now".
     nonisolated static func plausibleDataRange(from frame: [UInt8],
                                                now: Int = Int(Date().timeIntervalSince1970)) -> (oldest: Int, newest: Int)? {
-        guard frame.count > 7 else { return nil }
-        let ceiling = now + 86_400   // 1-day tolerance absorbs benign RTC skew; still rejects year-future junk
-        let body = Array(frame[7...])
-        var oldest: Int? = nil, newest: Int? = nil, i = 0
-        while i + 4 <= body.count {
-            let w = Int(body[i]) | Int(body[i+1]) << 8 | Int(body[i+2]) << 16 | Int(body[i+3]) << 24
-            if w >= dataRangeEarliestUnix && w <= ceiling {
-                oldest = min(oldest ?? Int.max, w)
-                newest = max(newest ?? 0, w)
-            }
-            i += 4
-        }
-        guard let oldest, let newest, oldest < newest else { return nil }
-        return (oldest, newest)
+        DataRange.plausibleWindow(from: frame, now: now)
     }
 
     public func peripheral(_ peripheral: CBPeripheral,
