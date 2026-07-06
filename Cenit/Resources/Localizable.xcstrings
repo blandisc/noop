@@ -26955,6 +26955,23 @@
         }
       }
     },
+    "Personal record": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personal record"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Récord personal"
+          }
+        }
+      }
+    },
     "Personal records": {
       "localizations": {
         "en": {
