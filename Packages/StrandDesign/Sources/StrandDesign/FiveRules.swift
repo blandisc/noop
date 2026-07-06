@@ -119,16 +119,16 @@ public struct FiveRulesView: View {
     let t = InstrumentoTheme.base
     return VStack(alignment: .leading, spacing: 12) {
         HStack {
-            Text("Por qué 74").groteskOverline().foregroundStyle(t.inkTertiary)
+            Text("Why 74").groteskOverline().foregroundStyle(t.inkTertiary)
             Spacer()
-            Text("El largo es el peso").groteskOverline(small: true).foregroundStyle(t.inkMuted)
+            Text("Length is weight").groteskOverline(small: true).foregroundStyle(t.inkMuted)
         }
         FiveRulesView(rows: [
             .init(id: "hrv", label: "HRV", color: t.dataHrv, marks: 54, lit: 43),
-            .init(id: "rhr", label: "FC reposo", color: t.dataHeart, marks: 18, lit: 14),
-            .init(id: "sleep", label: "Sueño", color: t.dataSleep, marks: 14, lit: 9),
-            .init(id: "skinTemp", label: "Temp. piel", color: t.dataStrain, marks: 9, lit: 6),
-            .init(id: "respRate", label: "Respiración", color: t.dataSpO2, marks: 5, lit: 2),
+            .init(id: "rhr", label: "Resting HR", color: t.dataHeart, marks: 18, lit: 14),
+            .init(id: "sleep", label: "Sleep", color: t.dataSleep, marks: 14, lit: 9),
+            .init(id: "skinTemp", label: "Skin temp", color: t.dataStrain, marks: 9, lit: 6),
+            .init(id: "respRate", label: "Respiration", color: t.dataSpO2, marks: 5, lit: 2),
         ])
     }
     .padding(24)

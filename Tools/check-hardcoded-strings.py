@@ -17,10 +17,15 @@ import re, sys
 DEFAULT_FILES = [
     "Cenit/Screens/BucleView.swift",
     "Cenit/Screens/BucleSheets.swift",
+    "Cenit/Screens/TodayView.swift",                                  # FER-744
+    "Packages/StrandDesign/Sources/StrandDesign/FiveRules.swift",     # FER-744
 ]
 
 # Engine/data values that are intentionally the metric's stored label, and the brand name.
 ALLOW = {"Recuperación", "Patrones"}
+# Brand tokens that carry accented characters yet are the same in English copy — stripped
+# before the Spanish-only check so an English string like "Support Cénit" isn't flagged.
+BRAND = ["Cénit"]
 
 CALL = r'(?:Text|Label|Button|String\(localized:|accessibilityLabel|accessibilityHint|navigationTitle|' \
        r'sectionLabel|stepRow|comingRow|evidenceRow|breakdownBar|answerPill|checkInToggle|confirmationDialog|alert)'
@@ -39,9 +44,16 @@ def main(files):
             if s.startswith("//") or s.startswith("///"):
                 continue
             for m in PAT.finditer(line):
-                if m.group(1) in ALLOW:
+                lit = m.group(1)
+                if lit in ALLOW:
                     continue
-                hits.append((path, i, m.group(1)))
+                # Strip brand tokens; if no Spanish-only char remains, it's English copy.
+                stripped = lit
+                for b in BRAND:
+                    stripped = stripped.replace(b, "")
+                if not re.search(r"[¿¡ñÑ«»áéíóúÁÉÍÓÚ]", stripped):
+                    continue
+                hits.append((path, i, lit))
     if hits:
         print("❌ Hardcoded non-English UI string(s) found — use an English key + es translation in the catalog:")
         for path, i, lit in hits:
