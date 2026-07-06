@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Puedes bajar el objetivo del descanso por pulso / You can now lower the heart-rate rest target.**
+  **ES** — En el editor de descanso, el modo **Por frecuencia** ahora tiene dos métodos: **Sobre tu reposo** (un margen en bpm sobre tu pulso en reposo, de +5 a +30, con atajos Cerca +10 / Normal +15 / Suave +20) y **Reserva** (el método Karvonen de antes). El primero te deja **bajar** el objetivo hacia tu reposo y siempre lo muestra en bpm. Las rutinas que ya tenías no cambian hasta que lo ajustes.
+  **EN** — In the rest editor, the **By heart rate** mode now offers two methods: **Over your rest** (a bpm margin above your resting pulse, +5 to +30, with Close +10 / Normal +15 / Easy +20 shortcuts) and **Reserve** (the previous Karvonen method). The first lets you **lower** the target toward your resting HR and always shows it in bpm. Your existing routines don't change until you adjust them.
+  ([RestEditorScreen.swift](Cenit/Screens/RestEditorScreen.swift), [RestReadiness.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/RestReadiness.swift))
+
 - **El descanso por pulso termina y el reloj vibra en cuanto te recuperas / Heart-rate rest ends and the watch buzzes the moment you recover.**
   **ES** — En el descanso entre series guiado por frecuencia cardíaca, si tu pulso ya bajó al objetivo (pasados los 20 segundos mínimos) el descanso **termina solo** y el **Apple Watch vibra** para avisarte, en vez de esperar a que se acabe el reloj. Antes solo lo decía en pantalla y el reloj no vibraba en ese caso. Volver a la serie a mano sigue sin vibrar.
   **EN** — In the between-sets rest guided by heart rate, once your pulse has dropped to target (past the 20-second floor) the rest **ends on its own** and the **Apple Watch buzzes** to tell you, instead of waiting out the clock. Before, it only said so on screen and the watch stayed silent in that case. Returning to the set by hand still doesn't buzz.

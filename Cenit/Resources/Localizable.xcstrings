@@ -51182,6 +51182,83 @@
           }
         }
       }
+    },
+    "Over your rest": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sobre tu reposo"
+          }
+        }
+      }
+    },
+    "Reserve": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reserva"
+          }
+        }
+      }
+    },
+    "bpm over your rest": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bpm sobre tu reposo"
+          }
+        }
+      }
+    },
+    "bpm · +%lld over your rest": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bpm · +%lld sobre tu reposo"
+          }
+        }
+      }
+    },
+    "Close · +10": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cerca · +10"
+          }
+        }
+      }
+    },
+    "Normal · +15": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Normal · +15"
+          }
+        }
+      }
+    },
+    "Easy · +20": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suave · +20"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

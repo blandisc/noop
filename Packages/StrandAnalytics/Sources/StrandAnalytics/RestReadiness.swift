@@ -161,7 +161,11 @@ public enum RestTarget {
                                peakHR: Int?, restingHR: Double?, maxHR: Double?) -> Int? {
         switch reference {
         case .restingMargin:
-            return nil   // FER-348 path — evaluate() owns the resting+margin target (single source).
+            // FER-348 default (value 0) → nil so evaluate() owns the resting + 20 default (single source).
+            // FER-759: a custom margin (value > 0, in bpm) → target = round(restingHR) + margin, letting the
+            // user pull the «recovered» target down toward their own resting HR.
+            guard value > 0, let r = restingHR else { return nil }
+            return Int(r.rounded()) + Int(value)
         case .peakDrop:
             guard let peak = peakHR, peak > 0 else { return nil }
             let frac = min(max(value, 0), 0.9)            // clamp the drop to a sane 0–90%

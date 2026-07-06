@@ -27,6 +27,11 @@ struct RestEditorScreen: View {
 
     @State private var mode: RestMode
     @State private var seconds: Int
+    /// Which HR method drives the target: a margin over the user's resting HR (FER-759) or the
+    /// Karvonen reserve. Both resolve to a bpm target through the same cited engine.
+    @State private var hrRef: HRRestReference
+    /// Margin in bpm over resting HR for the `.restingMargin` method (target = resting + margin, FER-759).
+    @State private var margin: Int
     /// Fraction of HR reserve for the Karvonen threshold (0.35 exigente … 0.50 suave).
     @State private var reserve: Double
     @State private var applyToAll: Bool
@@ -40,6 +45,13 @@ struct RestEditorScreen: View {
         self.onCancel = onCancel; self.onApply = onApply
         _mode = State(initialValue: current.mode)
         _seconds = State(initialValue: max(15, current.seconds))
+        // Method: honor a saved Karvonen config; everything else (incl. the FER-348 default) starts on the
+        // simpler «margin over rest» method.
+        _hrRef = State(initialValue: current.hrReference == .karvonenReserve ? .karvonenReserve : .restingMargin)
+        // Seed the margin from a restingMargin config, else the +20 default (parity with FER-348) so an
+        // existing routine keeps its target until the user drags it down.
+        _margin = State(initialValue: current.hrReference == .restingMargin && current.hrValue > 0
+                        ? min(30, max(5, Int(current.hrValue))) : 20)
         // Seed the reserve from a karvonenReserve config, else the «Normal» 41 % anchor.
         _reserve = State(initialValue: current.hrReference == .karvonenReserve && current.hrValue > 0
                          ? min(0.6, max(0.3, current.hrValue)) : 0.41)
@@ -103,10 +115,54 @@ struct RestEditorScreen: View {
 
     // MARK: HR mode
 
+    /// The «margin over rest» target in bpm (target = round(restingHR) + margin), nil without a baseline.
+    private var marginTargetBpm: Int? { restingHR.map { Int($0.rounded()) + margin } }
+
     private var hrSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Rest ends when your pulse drops to the threshold. The strap buzzes when you're ready.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary).fixedSize(horizontal: false, vertical: true)
+            SegmentedPillControl([HRRestReference.restingMargin, .karvonenReserve], selection: $hrRef, theme: theme, inkThumb: true) {
+                $0 == .restingMargin ? String(localized: "Over your rest") : String(localized: "Reserve")
+            }
+            if hrRef == .restingMargin { marginBody } else { reserveBody }
+        }
+    }
+
+    /// «Over your rest» (FER-759): a bpm margin above the user's resting HR — the way to pull the target
+    /// down toward rest. The bpm target is the dominant datum; the slider spans a practical +5…+30.
+    private var marginBody: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(marginTargetBpm.map { "\($0)" } ?? "+\(margin)")
+                    .groteskSheetNumeral().monospacedDigit().foregroundStyle(theme.dataRecovery)
+                Text(marginTargetBpm != nil ? "bpm · +\(margin) over your rest" : "bpm over your rest")
+                    .font(StrandFont.headline).foregroundStyle(theme.inkSecondary)
+            }
+            Slider(value: Binding(get: { Double(margin) }, set: { margin = Int($0.rounded()) }),
+                   in: 5...30, step: 1).tint(theme.dataRecovery)
+            HStack(spacing: 8) {
+                marginPreset(String(localized: "Close · +10"), 10)
+                marginPreset(String(localized: "Normal · +15"), 15)
+                marginPreset(String(localized: "Easy · +20"), 20)
+            }
+        }
+    }
+
+    private func marginPreset(_ label: String, _ m: Int) -> some View {
+        let sel = margin == m
+        return Button { margin = m } label: {
+            Text(label).font(StrandFont.caption).foregroundStyle(sel ? theme.paper : theme.inkSecondary)
+                .padding(.horizontal, 11).padding(.vertical, 7)
+                .background(Capsule().fill(sel ? theme.ink : Color.clear))
+                .overlay(Capsule().strokeBorder(sel ? Color.clear : theme.hairlineStrong, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// «Reserve» (Karvonen 1957): a % of heart-rate reserve. Needs the HR-max profile to show bpm.
+    private var reserveBody: some View {
+        VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(thresholdBpm.map { "\($0)" } ?? "\(Int(reserve * 100))")
                     .groteskSheetNumeral().monospacedDigit().foregroundStyle(theme.dataRecovery)
@@ -195,9 +251,14 @@ struct RestEditorScreen: View {
 
     private var cta: some View {
         Button {
-            let config = mode == .heartRate
-                ? RestConfig(mode: .heartRate, seconds: seconds, hrReference: .karvonenReserve, hrValue: reserve)
-                : RestConfig(mode: .fixed, seconds: seconds, hrReference: .restingMargin, hrValue: 0)
+            let config: RestConfig
+            if mode == .heartRate {
+                config = hrRef == .karvonenReserve
+                    ? RestConfig(mode: .heartRate, seconds: seconds, hrReference: .karvonenReserve, hrValue: reserve)
+                    : RestConfig(mode: .heartRate, seconds: seconds, hrReference: .restingMargin, hrValue: Double(margin))
+            } else {
+                config = RestConfig(mode: .fixed, seconds: seconds, hrReference: .restingMargin, hrValue: 0)
+            }
             onApply(config, applyToAll, saveToRoutine && persistsToRoutine)
         } label: {
             Text("Apply").font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
