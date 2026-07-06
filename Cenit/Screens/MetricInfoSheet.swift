@@ -1280,7 +1280,7 @@ struct MetricInfoSheet: View {
         } else if info.levelsRelative {
             // HRV with no personal baseline yet — an honest note, not an empty levels list.
             ChartWell(theme).empty(icon: "waveform.path.ecg",
-                      text: "Your levels come from your own baseline — a few more nights and they'll appear.")
+                                   text: "Your levels come from your own baseline — a few more nights and they'll appear.")
         }
     }
 
