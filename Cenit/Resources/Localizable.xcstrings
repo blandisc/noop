@@ -51149,6 +51149,39 @@
           }
         }
       }
+    },
+    "You haven't logged any sets yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no registras ninguna serie."
+          }
+        }
+      }
+    },
+    "%lld sets aren't logged yet. Save keeps them; discard deletes everything.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Faltan %lld series por registrar. Guardar conserva las que hiciste; descartar borra todo."
+          }
+        }
+      }
+    },
+    "Save keeps this workout. Discard deletes everything you logged.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardar conserva este entreno. Descartar borra todo lo que registraste."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

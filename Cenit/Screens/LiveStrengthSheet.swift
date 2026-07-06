@@ -707,14 +707,15 @@ struct LiveStrengthSheet: View {
             }
         }
         .alert("Finish workout?", isPresented: $confirmFinish) {
-            Button("Finish", role: .destructive) { model.endStrengthSession(save: true) }
+            Button("Save workout") { model.endStrengthSession(save: true) }
+            Button("Discard workout", role: .destructive) { model.endStrengthSession(save: false) }
             Button("Keep going", role: .cancel) {}
         } message: {
             Text(session.doneCount == 0
-                 ? "No sets logged yet — finishing will discard this workout."
+                 ? "You haven't logged any sets yet."
                  : (session.pendingCount > 0
-                    ? "\(session.pendingCount) sets aren't logged yet. Finish anyway and save the ones you did?"
-                    : "Save this workout?"))
+                    ? "\(session.pendingCount) sets aren't logged yet. Save keeps them; discard deletes everything."
+                    : "Save keeps this workout. Discard deletes everything you logged."))
         }
         .alert("Discard workout?", isPresented: $confirmDiscard) {
             Button("Discard", role: .destructive) { model.endStrengthSession(save: false) }
