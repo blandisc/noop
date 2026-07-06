@@ -71,35 +71,39 @@ private struct WatchFaceMetrics: View {
         }
     }
 
-    // The pulse hero. «--» in muted ink (never a made-up number) when the sensor hasn't read or Health
-    // access is denied.
+    // «--» in muted ink (never a made-up number) when the sensor hasn't read or Health access is denied.
+    private var pulseDashed: Bool { manager.heartRate == 0 || manager.healthAccessDenied }
+    private var pulseValue: Text { pulseDashed ? Text(verbatim: "--") : Text(verbatim: "\(manager.heartRate)") }
+    // One source for the VoiceOver phrase, shared by the hero and its demoted twin, so «Pulso, sin
+    // lectura» / «Pulso, N latidos por minuto» can't drift between the two.
+    private var pulseLabel: Text {
+        pulseDashed ? Text("Pulse, no reading") : Text("Pulse, \(manager.heartRate) beats per minute")
+    }
+
+    // State 3 — the pulse hero.
     private var pulseHero: some View {
-        let dashed = manager.heartRate == 0 || manager.healthAccessDenied
-        return HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
-            (dashed ? Text(verbatim: "--") : Text(verbatim: "\(manager.heartRate)"))
+        HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
+            pulseValue
                 .instrumentoHero(52)
-                .foregroundStyle(dashed ? t.inkDim : t.dataHeart)
+                .foregroundStyle(pulseDashed ? t.inkDim : t.dataHeart)
                 .minimumScaleFactor(0.5)
                 .lineLimit(1)
             Text("bpm").font(StrandFont.unit).foregroundStyle(t.inkSecondary).accessibilityHidden(true)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(dashed ? Text("Pulse, no reading")
-                                   : Text("Pulse, \(manager.heartRate) beats per minute"))
+        .accessibilityLabel(pulseLabel)
     }
 
-    // Heart rate demoted during a rest — small, still the datum's hue (or «--»).
+    // State 4 — heart rate demoted during a rest: small, still the datum's hue (or «--»).
     private var heartSecondary: some View {
-        let dashed = manager.heartRate == 0 || manager.healthAccessDenied
-        return HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
-            (dashed ? Text(verbatim: "--") : Text(verbatim: "\(manager.heartRate)"))
+        HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
+            pulseValue
                 .font(StrandFont.bodyNumber)
-                .foregroundStyle(dashed ? t.inkDim : t.dataHeart)
+                .foregroundStyle(pulseDashed ? t.inkDim : t.dataHeart)
             Text("bpm").font(StrandFont.unit).foregroundStyle(t.inkSecondary).accessibilityHidden(true)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(dashed ? Text("Pulse, no reading")
-                                   : Text("Pulse, \(manager.heartRate) beats per minute"))
+        .accessibilityLabel(pulseLabel)
     }
 
     private var elapsed: some View {
