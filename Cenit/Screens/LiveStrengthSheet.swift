@@ -489,8 +489,9 @@ final class StrengthSessionModel: ObservableObject {
             let sets: [WorkingSet] = slot.re.plannedSets.filter { $0.kind == .work }.map { p in
                 let weight = p.weightKg ?? lastWeight ?? 0
                 let reps = usesReps ? (p.reps ?? lastReps ?? 8) : 0
-                // FER-715: carry the set's own rest override (nil = inherit the exercise at rest time).
-                return WorkingSet(id: UUID().uuidString, weightKg: weight, reps: reps, done: false, rest: p.rest)
+                // FER-715: keep the planned `RoutineSet` id (so a per-set rest edit can persist back to the
+                // routine) and carry the set's own rest override (nil = inherit the exercise at rest time).
+                return WorkingSet(id: p.id, weightKg: weight, reps: reps, done: false, rest: p.rest)
             }
             return ExerciseRun(id: slot.re.id, exerciseId: slot.re.exerciseId,
                                name: slot.exercise.map(StrengthDisplay.name) ?? String(localized: "Exercise"),
@@ -542,8 +543,9 @@ struct LiveStrengthSheet: View {
     /// The exercise whose rest editor is open — set by tapping its rest chip (FER-540). nil = closed.
     @State private var restEdit: RestEdit?
 
-    /// Identifies which exercise's rest is being edited; the editor sheet seeds itself from `runs[id]`.
-    struct RestEdit: Identifiable { let id: Int }
+    /// Identifies which exercise's rest is being edited (FER-716); `setIndex` non-nil = a per-set edit
+    /// (from the rest card), nil = exercise-scope (from the rest chip). The editor seeds from `runs[id]`.
+    struct RestEdit: Identifiable { let id: Int; var setIndex: Int? = nil }
 
     /// Identifies an editable inline cell: a weight or reps field at (exerciseIndex, setIndex).
     enum CellRef: Hashable { case weight(Int, Int), reps(Int, Int) }
@@ -597,21 +599,24 @@ struct LiveStrengthSheet: View {
         .sheet(item: $restEdit) { edit in
             if session.runs.indices.contains(edit.id) {
                 let run = session.runs[edit.id]
-                NavigationStack {
-                    RestEditorSheet(mode: run.restMode, seconds: run.restSeconds,
-                                    reference: run.hrRestReference, value: run.hrRestValue,
-                                    persistsToRoutine: session.routineId != nil) { mode, seconds, ref, value in
-                        commitRest(ei: edit.id, mode: mode, seconds: seconds, reference: ref, value: value)
+                let si = edit.setIndex
+                let current: RestConfig = (si.flatMap { run.sets.indices.contains($0) ? run.sets[$0].rest : nil }) ?? run.restConfig
+                RestEditorScreen(
+                    theme: theme, exerciseName: run.name,
+                    setNumber: si.map { $0 + 1 },
+                    current: current,
+                    persistsToRoutine: session.routineId != nil,
+                    restingHR: restingBaseline, maxHR: profileMaxHR,
+                    defaultApplyToAll: si == nil,
+                    onCancel: { restEdit = nil },
+                    onApply: { config, applyToAll, saveToRoutine in
+                        applyRestEdit(ei: edit.id, si: si, config: config, applyToAll: applyToAll, saveToRoutine: saveToRoutine)
+                        restEdit = nil
                     }
-                    .navigationTitle(Text(run.name))
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar { ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") { restEdit = nil }.foregroundStyle(theme.inkSecondary)
-                    } }
-                    .toolbarBackground(theme.paper, for: .navigationBar)
-                }
-                .instrumentoTheme(theme).preferredColorScheme(.light)
-                .presentationDetents([.medium])
+                )
+                .preferredColorScheme(.light)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.hidden)
                 .presentationBackground(theme.paper)
             }
         }
@@ -897,31 +902,37 @@ struct LiveStrengthSheet: View {
         }
     }
 
-    /// Open the rest editor for an exercise (FER-540).
-    private func openRestEditor(ei: Int) {
+    /// Open the rest editor (FER-540/716). `setIndex` non-nil → a per-set edit (from the rest card);
+    /// nil → exercise-scope (from the rest chip).
+    private func openRestEditor(ei: Int, setIndex: Int? = nil) {
         guard session.runs.indices.contains(ei) else { return }
-        restEdit = RestEdit(id: ei)
+        restEdit = RestEdit(id: ei, setIndex: setIndex)
     }
 
-    /// Apply an edited rest to the session (remaining rests of that exercise) and, when the session is
-    /// backed by a saved routine, persist it so next time the routine remembers it (FER-540).
-    private func commitRest(ei: Int, mode: RestMode, seconds: Int,
-                            reference: HRRestReference, value: Double) {
-        session.updateRest(exercise: ei, mode: mode, seconds: seconds, reference: reference, value: value)
+    /// Apply an edited rest from the 1e editor (FER-716): to the live session at the chosen scope, and —
+    /// when «save to routine» is on and the session is backed by a saved routine — persist it (per-set via
+    /// `updateRoutineSetRest`, or the whole exercise via the cascading `updateRoutineExerciseRest`).
+    private func applyRestEdit(ei: Int, si: Int?, config: RestConfig, applyToAll: Bool, saveToRoutine: Bool) {
         guard session.runs.indices.contains(ei) else { return }
-        persistRestToRoutine(session.runs[ei])
-    }
-
-    /// Persist the run's edited rest to its backing `RoutineExercise` (matched by id) via a pinpoint
-    /// repo update — leaves the routine's other exercises and per-set rows untouched. No-op for a
-    /// freestyle session (no routine to write to).
-    private func persistRestToRoutine(_ run: StrengthSessionModel.ExerciseRun) {
-        guard let routineId = session.routineId else { return }
-        Task {
-            await model.repo.updateRoutineExerciseRest(
-                routineExerciseId: run.id, routineId: routineId,
-                mode: run.restMode, seconds: run.restSeconds,
-                reference: run.hrRestReference, value: run.hrRestValue)
+        if applyToAll || si == nil {
+            session.updateRest(exercise: ei, mode: config.mode, seconds: config.seconds,
+                               reference: config.hrReference, value: config.hrValue)
+            if saveToRoutine, let routineId = session.routineId {
+                let reId = session.runs[ei].id
+                Task {
+                    await model.repo.updateRoutineExerciseRest(
+                        routineExerciseId: reId, routineId: routineId,
+                        mode: config.mode, seconds: config.seconds,
+                        reference: config.hrReference, value: config.hrValue)
+                }
+            }
+        } else if let si {
+            session.updateRest(exercise: ei, set: si, rest: config)
+            if saveToRoutine, let routineId = session.routineId,
+               session.runs[ei].sets.indices.contains(si) {
+                let routineSetId = session.runs[ei].sets[si].id   // seeded from the planned RoutineSet id
+                Task { await model.repo.updateRoutineSetRest(routineSetId: routineSetId, routineId: routineId, rest: config) }
+            }
         }
     }
 
@@ -1206,7 +1217,8 @@ struct LiveStrengthSheet: View {
 
     private var restCardPills: some View {
         HStack(spacing: 10) {
-            Button { openRestEditor(ei: session.currentIndex) } label: {
+            Button { openRestEditor(ei: session.currentIndex,
+                                    setIndex: session.runs.indices.contains(session.currentIndex) ? session.runs[session.currentIndex].currentSet : nil) } label: {
                 Label("Change rest", systemImage: "pencil").font(StrandFont.caption).foregroundStyle(theme.ink)
                     .padding(.horizontal, 13).padding(.vertical, 6)
                     .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
