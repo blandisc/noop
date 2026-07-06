@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La sincronización matutina ya no congela la app / The morning sync no longer freezes the app.**
+  **ES** — Durante el jalón de historial de la banda (el catch-up de la mañana), cada paquete se interpreta **una sola vez** (antes hasta tres) y la decodificación de cada bloque de ~50 registros ahora corre **fuera del hilo de la interfaz**. La app se siente fluida mientras sincroniza; el orden de seguridad no cambia: nada se confirma a la banda hasta que quedó guardado en tu iPhone.
+  **EN** — During the strap's history offload (the morning catch-up), each packet is parsed **exactly once** (previously up to three times) and each ~50-record chunk now decodes **off the UI thread**. The app stays smooth while syncing; the safety ordering is unchanged: nothing is acknowledged to the strap until it's durably stored on your iPhone.
+  ([BLEManager.swift](Cenit/BLE/BLEManager.swift), [Backfiller.swift](Cenit/Collect/Backfiller.swift))
+
 - **Limpieza interna: la matemática pura se mueve a los paquetes / Internal cleanup: pure math moves into the packages.**
   **ES** — Sin cambios visibles. La matemática del estrés diario (el proxy 0–3 y sus baselines por fuente) ahora vive en `StrandAnalytics`, y tres piezas de nivel de cable (el parser del pulso estándar 0x2A37, la validación del rango de datos de la banda y el payload de SET_CLOCK) viven en `WhoopProtocol` — todas con sus tests en el paquete, incluido un test *golden* que fija byte por byte el SET_CLOCK. Cero cambios de fórmulas ni de bytes salientes.
   **EN** — No visible changes. The daily-stress math (the 0–3 proxy and its per-source baselines) now lives in `StrandAnalytics`, and three wire-level pieces (the standard 0x2A37 heart-rate parser, the band's data-range validation and the SET_CLOCK payload) live in `WhoopProtocol` — each covered by package tests, including a golden test pinning SET_CLOCK byte-for-byte. Zero formula or outbound-byte changes.

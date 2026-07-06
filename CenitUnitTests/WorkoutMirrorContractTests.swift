@@ -19,7 +19,7 @@ final class WorkoutMirrorContractTests: XCTestCase {
         let messages: [WorkoutMirrorMessage] = [
             .start(sessionId: "s1", routineName: "Empuje", startedAt: Date(timeIntervalSince1970: 900)),
             .rest(snapshot),
-            .restEnded(sessionId: "s1"),
+            .restEnded(sessionId: "s1", recovered: false),
             .end(sessionId: "s1", endedAt: Date(timeIntervalSince1970: 2_000), save: true,
                  externalUUID: "noop:strength:s1"),
             .watchDidSaveWorkout(sessionId: "s1", externalUUID: "noop:strength:s1"),
