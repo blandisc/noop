@@ -58,7 +58,13 @@ struct WorkoutHistoryScreen: View {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                 header
                 if loaded {
-                    if sessions.isEmpty { emptyState } else { list }
+                    if sessions.isEmpty {
+                        emptyState
+                    } else {
+                        monthlyTotal
+                        weeklyBars
+                        list
+                    }
                 }
             }
             .padding(.top, 20)
@@ -95,6 +101,52 @@ struct WorkoutHistoryScreen: View {
             }
             .buttonStyle(.plain)
             .padding(.top, 8)
+        }
+    }
+
+    // MARK: - Monthly total (v3 · 1m) — sessions · hours · kg · kcal, this calendar month
+
+    private var monthlyTotal: some View {
+        let m = monthAggregate
+        return VStack(alignment: .leading, spacing: 8) {
+            Text("This month").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .top, spacing: 20) { monthCells(m) }
+                VStack(alignment: .leading, spacing: 10) { monthCells(m) }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func monthCells(_ m: MonthAggregate) -> some View {
+        stat("Sessions", "\(m.count)", color: theme.ink)
+        if m.hours > 0 { stat("Hours", String(format: "%.1f", m.hours), color: theme.ink) }
+        if m.volumeKg > 0 { stat("Volume", StrengthHistoryFormat.volume(m.volumeKg, system: system), color: theme.ink) }
+        // kcal only when at least one session in the month carries it (never a fabricated 0).
+        if let kcal = m.energyKcal { stat("Energy", StrandFormat.groupedInt(kcal), unit: "kcal", color: theme.ink) }
+    }
+
+    // MARK: - Weekly volume bars (v3 · 1m) — last 8 weeks, the current week in `dataRecovery`
+
+    @ViewBuilder
+    private var weeklyBars: some View {
+        let weeks = weeklyVolumes
+        if weeks.contains(where: { $0.volumeKg > 0 }) {
+            let peak = max(weeks.map(\.volumeKg).max() ?? 1, 1)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Volume per week").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                HStack(alignment: .bottom, spacing: 6) {
+                    ForEach(weeks) { w in
+                        RoundedRectangle(cornerRadius: 3, style: .continuous)
+                            .fill(w.isCurrent ? theme.dataRecovery : theme.hairlineStrong)
+                            .frame(height: max(3, CGFloat(w.volumeKg / peak) * 54))
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                .frame(height: 54)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text("Volume over the last 8 weeks"))
+            }
         }
     }
 
@@ -158,6 +210,10 @@ struct WorkoutHistoryScreen: View {
         if let hr = session.avgHr {
             stat("Avg HR", "\(hr)", unit: "bpm", color: theme.dataStrain)
         }
+        // kcal per session (FER-715/718): omitted cleanly for a pre-v26 session (nil), never shown as 0.
+        if let k = session.energyKcal {
+            stat("Energy", StrandFormat.groupedInt(k), unit: "kcal", color: theme.ink)
+        }
     }
 
     private func stat(_ label: LocalizedStringKey, _ value: String,
@@ -185,6 +241,49 @@ struct WorkoutHistoryScreen: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 34)
+    }
+
+    // MARK: - Monthly + weekly aggregates (v3 · 1m)
+
+    private struct MonthAggregate { let count: Int; let hours: Double; let volumeKg: Double; let energyKcal: Double? }
+
+    /// This calendar month's totals across finished sessions. kcal sums only sessions that carry it; nil
+    /// when none do (so the cell is omitted rather than showing a partial or zero total).
+    private var monthAggregate: MonthAggregate {
+        let cal = Calendar.current
+        let now = Date()
+        let inMonth = sessions.filter {
+            cal.isDate(Date(timeIntervalSince1970: TimeInterval($0.startTs)), equalTo: now, toGranularity: .month)
+        }
+        var seconds = 0
+        var kcal = 0.0
+        var hasKcal = false
+        var vol = 0.0
+        for s in inMonth {
+            if let end = s.endTs, end > s.startTs { seconds += end - s.startTs }
+            if let k = s.energyKcal { kcal += k; hasKcal = true }
+            vol += volumes[s.id]?.volumeKg ?? 0
+        }
+        return MonthAggregate(count: inMonth.count, hours: Double(seconds) / 3600,
+                              volumeKg: vol, energyKcal: hasKcal ? kcal : nil)
+    }
+
+    private struct WeekVolume: Identifiable { let id: Int; let volumeKg: Double; let isCurrent: Bool }
+
+    /// Total volume per week over the last 8 weeks (oldest→newest), Monday-anchored. The last bucket is
+    /// the current week (drawn in `dataRecovery`).
+    private var weeklyVolumes: [WeekVolume] {
+        var cal = Calendar.current; cal.firstWeekday = 2
+        let thisWeekStart = cal.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
+        var buckets = [Double](repeating: 0, count: 8)
+        for s in sessions where s.endTs != nil {
+            let date = Date(timeIntervalSince1970: TimeInterval(s.startTs))
+            guard let ws = cal.dateInterval(of: .weekOfYear, for: date)?.start else { continue }
+            let weeksAgo = cal.dateComponents([.weekOfYear], from: ws, to: thisWeekStart).weekOfYear ?? 0
+            guard weeksAgo >= 0, weeksAgo < 8 else { continue }
+            buckets[7 - weeksAgo] += volumes[s.id]?.volumeKg ?? 0
+        }
+        return buckets.enumerated().map { WeekVolume(id: $0.offset, volumeKg: $0.element, isCurrent: $0.offset == 7) }
     }
 
     // MARK: - Derived
@@ -259,14 +358,23 @@ struct WorkoutSessionDetailScreen: View {
     @Environment(\.instrumentoTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var repo: Repository
+    @EnvironmentObject private var model: AppModel
     @EnvironmentObject private var coordinator: WorkoutHistoryCoordinator
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var system: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
+
+    /// Drives «Duplicar como rutina» — a routine builder pre-filled with this session's exercises (2A).
+    @State private var showDuplicate = false
 
     /// Work sets grouped by exercise, in the order they were performed.
     @State private var groups: [(exerciseId: String, name: String, sets: [SetEntry])] = []
     /// Resolved exercises by id, so tapping a block opens its detail (FER-517).
     @State private var exercisesByID: [String: Exercise] = [:]
+    /// The session's routine exercises (when it came from a saved routine), keyed by exerciseId — feeds the
+    /// superset identification (v3 · 2A, FER-718). Empty for off-plan/one-off sessions.
+    @State private var routineExercises: [RoutineExercise] = []
+    /// Stored best-per-metric records per exercise, so a set that IS a personal best is flagged (2A).
+    @State private var prsByExercise: [String: [PersonalRecord]] = [:]
     /// The exercise whose detail sheet is open (nil = none).
     @State private var detailExercise: Exercise?
     @State private var volumeKg: Double = 0
@@ -285,10 +393,13 @@ struct WorkoutSessionDetailScreen: View {
     private var dispEnd: Int? { fullSession.map(\.endTs) ?? route.endTs }
     private var dispStrain: Double? { fullSession.map(\.strain) ?? route.strain }
     private var dispAvgHr: Int? { fullSession.map(\.avgHr) ?? route.avgHr }
+    /// Energy is only on the full row (the route doesn't carry it). nil for a pre-v26 session (FER-715/718).
+    private var dispEnergyKcal: Double? { fullSession?.energyKcal }
     private var dispRoutineName: String {
         guard let s = fullSession else { return route.routineName }
         return s.routineId.flatMap { routineNames[$0] } ?? String(localized: "Strength workout")
     }
+    private var dispRoutineId: String? { fullSession?.routineId }
 
     var body: some View {
         ScrollView {
@@ -298,10 +409,12 @@ struct WorkoutSessionDetailScreen: View {
                 Divider().overlay(theme.hairline)
                 secondaries
                 if loaded {
-                    ForEach(Array(groups.enumerated()), id: \.element.exerciseId) { _, g in
+                    ForEach(Array(groups.enumerated()), id: \.element.exerciseId) { idx, g in
                         Divider().overlay(theme.hairline)
-                        exerciseBlock(g)
+                        exerciseBlock(g, index: idx)
                     }
+                    Divider().overlay(theme.hairline)
+                    actions
                 }
             }
             .padding(.top, 20)
@@ -348,7 +461,69 @@ struct WorkoutSessionDetailScreen: View {
                     .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
             }
         }
+        // «Duplicar como rutina» (2A): a routine builder pre-filled with this session's exercises. Saving
+        // creates a NEW routine (never touches this session). Theme/repo passed explicitly across the sheet.
+        .sheet(isPresented: $showDuplicate) {
+            RoutineBuilderScreen(seedName: duplicateName, seed: duplicateSeed)
+                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        }
         .task { await load() }
+    }
+
+    // MARK: - Parity actions (v3 · 2A) — «Duplicar como rutina» + «Repetir hoy»
+
+    private var actions: some View {
+        VStack(spacing: 10) {
+            Button { repeatToday() } label: {
+                Text("Repeat today").font(StrandFont.headline).foregroundStyle(theme.paperHi)
+                    .frame(maxWidth: .infinity).padding(.vertical, 14)
+                    .background(theme.ink, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(groups.isEmpty)
+            Button { showDuplicate = true } label: {
+                Text("Duplicate as routine").font(StrandFont.headline).foregroundStyle(theme.ink)
+                    .frame(maxWidth: .infinity).padding(.vertical, 14)
+                    .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(groups.isEmpty)
+        }
+    }
+
+    /// This session's exercises re-based onto builder items for «Duplicar como rutina». Each exercise gets
+    /// as many sets as it had work sets in the session, carrying the logged reps/weight as the targets.
+    private var duplicateSeed: [(re: RoutineExercise, exercise: Exercise)] {
+        groups.compactMap { g in
+            guard let ex = exercisesByID[g.exerciseId] else { return nil }
+            let work = g.sets.filter { $0.kind == .work }
+            let sets = work.enumerated().map { i, s in
+                RoutineSet(position: i, kind: .work, reps: s.reps, weightKg: s.weightKg)
+            }
+            let re = RoutineExercise(routineId: "", exerciseId: g.exerciseId, position: 0,
+                                     targetSets: max(1, sets.count),
+                                     targetReps: work.first?.reps, targetWeightKg: work.first?.weightKg,
+                                     supersetGroup: supersetGroup(g.exerciseId), sets: sets)
+            return (re, ex)
+        }
+    }
+
+    private var duplicateName: String {
+        dispRoutineName == String(localized: "Strength workout") ? String(localized: "New routine") : dispRoutineName
+    }
+
+    /// «Repetir hoy» (2A): start a fresh guided session from this session's exercises. Reuses each
+    /// exercise's logged sets as its plan (targets + «la última vez» reference).
+    private func repeatToday() {
+        // The plan comes from each exercise's re.sets (targets); `lastSets` is the «la última vez» prefill,
+        // left empty here so the session model seeds straight from the planned sets.
+        let slots: [StrengthSessionModel.PlanSlot] = duplicateSeed.map { item in
+            StrengthSessionModel.PlanSlot(re: item.re, exercise: item.exercise, lastSets: [])
+        }
+        guard !slots.isEmpty else { return }
+        model.startStrengthSession(routineId: dispRoutineId, routineName: dispRoutineName, slots: slots)
     }
 
     /// Delete from the detail: read the sets (so an undo can restore them), delete (the store recomputes
@@ -420,6 +595,9 @@ struct WorkoutSessionDetailScreen: View {
                 detailStat("Duration", StrengthHistoryFormat.durationText(mins))
             }
             if let hr = dispAvgHr { detailStat("Avg HR", "\(hr)") }
+            // Energy only when the session actually carries it (FER-715/718): a pre-v26 session leaves
+            // `energyKcal` nil → the cell is omitted (never a fabricated 0).
+            if let k = dispEnergyKcal { detailStat("Energy", StrandFormat.groupedInt(k)) }
         }
         ViewThatFits(in: .horizontal) {
             HStack(alignment: .top, spacing: 18) { cells; Spacer(minLength: 0) }
@@ -437,13 +615,25 @@ struct WorkoutSessionDetailScreen: View {
         .accessibilityElement(children: .combine)
     }
 
-    private func exerciseBlock(_ g: (exerciseId: String, name: String, sets: [SetEntry])) -> some View {
+    private func exerciseBlock(_ g: (exerciseId: String, name: String, sets: [SetEntry]), index: Int) -> some View {
         VStack(alignment: .leading, spacing: 0) {
+            // A superset tag when this exercise shares its routine's `supersetGroup` with an adjacent one
+            // in performed order (v3 · 2A). The datum here is anatomical/structural, so it stays in ink.
+            if isInSuperset(index) {
+                Text("Superset").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    .padding(.bottom, 4)
+            }
             exerciseTitle(g)
                 .padding(.bottom, 6)
             ForEach(Array(g.sets.enumerated()), id: \.element.id) { idx, set in
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text("Set \(idx + 1)").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                    if isPRSet(set, exerciseId: g.exerciseId) {
+                        Text("PR").font(StrandFont.captionNumber).foregroundStyle(theme.dataStrain)
+                            .padding(.horizontal, 6).padding(.vertical, 1)
+                            .overlay(Capsule().strokeBorder(theme.dataStrain.opacity(0.5), lineWidth: 1))
+                            .accessibilityLabel(Text("Personal record"))
+                    }
                     Spacer(minLength: 8)
                     Text(StrengthHistoryFormat.setLine(set, system: system))
                         .font(StrandFont.subhead).foregroundStyle(theme.ink).monospacedDigit()
@@ -455,6 +645,33 @@ struct WorkoutSessionDetailScreen: View {
                 .accessibilityElement(children: .combine)
             }
         }
+    }
+
+    /// Whether the exercise at `groups[index]` belongs to a superset — it shares a non-nil routine
+    /// `supersetGroup` with the exercise immediately before or after it in performed order.
+    private func isInSuperset(_ index: Int) -> Bool {
+        guard let g = supersetGroup(groups[index].exerciseId) else { return false }
+        let before = index > 0 ? supersetGroup(groups[index - 1].exerciseId) : nil
+        let after = index < groups.count - 1 ? supersetGroup(groups[index + 1].exerciseId) : nil
+        return before == g || after == g
+    }
+    private func supersetGroup(_ exerciseId: String) -> Int? {
+        routineExercises.first { $0.exerciseId == exerciseId }?.supersetGroup
+    }
+
+    /// Whether a work set matches this exercise's stored best (weight or single-set volume) — a personal
+    /// record. Compared on the physical values, so an equal-best set still reads as a PR.
+    private func isPRSet(_ set: SetEntry, exerciseId: String) -> Bool {
+        guard set.kind == .work, let w = set.weightKg, w > 0, let reps = set.reps else { return false }
+        let prs = prsByExercise[exerciseId] ?? []
+        for pr in prs {
+            switch pr.metric {
+            case .maxWeight where pr.valueKg == w: return true
+            case .maxVolume where pr.valueKg == w && pr.reps == reps: return true
+            default: break
+            }
+        }
+        return false
     }
 
     /// The exercise's name — a tappable row (name + chevron) that opens its detail when the exercise
@@ -506,6 +723,17 @@ struct WorkoutSessionDetailScreen: View {
             return acc + w * Double(r)
         }
         setCount = work.count
+
+        // Superset identification (2A): the session's routine exercises carry `supersetGroup`. Loaded only
+        // when the session links to a saved routine — off-plan/one-off sessions have none.
+        if let rid = fullSession?.routineId {
+            routineExercises = await repo.routineExercises(routineId: rid)
+        }
+        // Personal records per exercise, so a set that matches a stored best is flagged (2A).
+        var prMap: [String: [PersonalRecord]] = [:]
+        for id in order { prMap[id] = await repo.personalRecords(exerciseId: id) }
+        prsByExercise = prMap
+
         loaded = true
     }
 }

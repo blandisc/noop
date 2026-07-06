@@ -533,6 +533,19 @@ final class AppModel: ObservableObject {
         buzz(loops: 1)   // confirm the session started, same single buzz as the manual live workout (FER-498)
     }
 
+    /// Start the bundled mobility template as a one-off guided session, NOT saved to the plan
+    /// (`routineId: nil`). Shared by «Hoy descansas» (2B) and «Otra forma de entrenar» (3e), which are
+    /// now pushed screens (FER-718). No-op if the template can't be resolved.
+    func startMobilityOneOff() {
+        guard let t = StarterTemplates.byID("mobility") else { return }
+        let name = String(localized: "Mobility")
+        let (_, exercises) = t.makeRoutine(name: name, now: Int(Date().timeIntervalSince1970))
+        let slots = exercises.map {
+            StrengthSessionModel.PlanSlot(re: $0, exercise: ExerciseCatalog.byID($0.exerciseId), lastSets: [])
+        }
+        startStrengthSession(routineId: nil, routineName: name, slots: slots)
+    }
+
     /// Re-show the sheet for the in-progress session (the hub's «Resume»).
     func resumeStrengthSession() { if strengthSession != nil { strengthSheetPresented = true } }
 
