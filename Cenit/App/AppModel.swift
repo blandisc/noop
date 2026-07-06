@@ -30,6 +30,9 @@ final class AppModel: ObservableObject {
     let appleDeviceId = "apple-health"
     /// Observable snapshot driven by the BLE engine (connection, HR, battery, log).
     let live: LiveState
+    /// Owns the rest Live Activity (FER-721): started/updated/ended from the guided session's rest state,
+    /// and the bridge for its «+30 s»/«Saltar» lock-screen actions.
+    let restActivity = RestActivityController()
     /// CoreBluetooth engine — scans, connects, bonds, streams.
     let ble: BLEManager
     /// Read model over the on-device store (dashboard + detail screens).
@@ -70,7 +73,9 @@ final class AppModel: ObservableObject {
     /// The guided strength session in progress (FER-347), or nil. Lives here (global) so closing its sheet
     /// or switching tabs never loses it — the Train hub re-presents it. Saved as a `StrengthSession` + its
     /// `SetEntry` rows on Finish. Independent of the live HR workout above.
-    @Published var strengthSession: StrengthSessionModel?
+    @Published var strengthSession: StrengthSessionModel? { didSet { bindRestActivity() } }
+    /// Subscription to the active session's changes — drives the rest Live Activity's reconcile loop.
+    private var restActivityCancellable: AnyCancellable?
     /// Whether the guided-session sheet is currently shown. False while a session runs but the sheet is
     /// dismissed (the hub then offers «Resume»). Set true on start/resume, false on swipe-dismiss/finish.
     @Published var strengthSheetPresented = false
@@ -195,6 +200,11 @@ final class AppModel: ObservableObject {
         live.onWristChange = { [weak self] worn in self?.handleWristChange(worn) }
         // HR-zone haptic coaching watches the smoothed bpm.
         $bpm.sink { [weak self] hr in self?.coachZone(hr) }.store(in: &hrCancellables)
+        // FER-721: the lock-screen «+30 s»/«Saltar» actions come back through the controller; apply them
+        // to the live session. Any rest Activity orphaned by a prior kill (session is memory-only) is
+        // ended at launch so none lingers on the lock screen.
+        restActivity.onAction = { [weak self] action in self?.applyRestAction(action) }
+        restActivity.endOrphans()
         // Illness/strain early-warning recomputes when the daily history changes. `days` is no longer
         // its own @Published (folded into `dashboard` for single-publish refreshes, FER-30), so watch
         // the dashboard and project its days — still one emission per refresh.
@@ -477,6 +487,55 @@ final class AppModel: ObservableObject {
         captureWorkoutSample()
         captureStrengthSample()
         evaluateStress()
+        reconcileRestActivity()   // FER-721: push the fresh pulse to the rest Live Activity (HR-throttled)
+    }
+
+    // MARK: - Rest Live Activity (FER-721)
+
+    /// Re-subscribe the rest Live Activity to whichever session is now active. Fires on every session
+    /// start/end (via `strengthSession`'s `didSet`).
+    private func bindRestActivity() {
+        restActivityCancellable = strengthSession?.objectWillChange
+            .receive(on: DispatchQueue.main)   // read the session AFTER its change lands
+            .sink { [weak self] in self?.reconcileRestActivity() }
+        reconcileRestActivity()
+    }
+
+    /// Hand the controller the current rest snapshot (or nil when not resting) — it starts/updates/ends
+    /// the one Activity from that. Cheap and idempotent, so it's safe to call on any relevant change.
+    private func reconcileRestActivity() {
+        restActivity.reconcile(computeRestSnapshot())
+    }
+
+    /// The display-ready rest snapshot, or nil when there's nothing to show (no session, showing the
+    /// receipt, not resting, or the focused set is gone).
+    private func computeRestSnapshot() -> RestActivitySnapshot? {
+        guard let s = strengthSession, s.summary == nil, s.phase == .resting,
+              let startedAt = s.restStartedAt, let endsAt = s.restEndsAt,
+              let run = s.current, let set = s.currentSet else { return nil }
+        let unit = UnitSystem(rawValue: UserDefaults.standard.string(forKey: UnitPrefs.systemKey) ?? "")
+            ?? .metric
+        // «al volver» detail: weight×reps exercises show the load; time/distance carry no such datum.
+        let usesWeightReps = run.type == .weightReps || run.type == .bodyweight
+        let detail = usesWeightReps ? "\(StrengthDisplay.weight(set.weightKg, system: unit)) × \(set.reps)" : ""
+        // No band (disconnected / off-wrist) → no pulse: the surfaces then show only the timer.
+        let bandBpm: Int? = (live.connected && live.worn) ? bpm : nil
+        return RestActivitySnapshot(
+            sessionId: s.id, routineName: s.routineName,
+            setNumber: run.currentSet + 1, setTotal: run.sets.count,
+            exerciseName: run.name, returnDetail: detail,
+            restStartedAt: startedAt, restEndsAt: endsAt,
+            isHRMode: s.currentRestMode == .heartRate, hrTarget: s.currentRestTarget, bpm: bandBpm)
+    }
+
+    /// Apply a lock-screen action to the live session; the reconcile that follows reflects it back onto
+    /// the Activity (a longer countdown, or ending it on «Saltar»).
+    private func applyRestAction(_ action: RestActivityBridge.Action) {
+        guard let s = strengthSession, s.phase == .resting else { return }
+        switch action {
+        case .addThirty: s.extendRest(byseconds: 30)
+        case .skip:      s.skipRest()
+        }
     }
 
     // MARK: - Manual workout tracking
