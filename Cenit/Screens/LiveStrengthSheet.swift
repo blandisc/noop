@@ -1882,6 +1882,7 @@ struct LiveStrengthSheet: View {
                 Text("Summary").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Text(s.routineName).font(StrandFont.title1).foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
+                if let src = s.energySource { originRow(src) }
             }
 
             // Hero: effort (strain) when the session was long enough; else the average HR if we captured
@@ -1932,6 +1933,18 @@ struct LiveStrengthSheet: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    /// The data-origin row on the receipt (FER-716): where this session's energy figure came from — the
+    /// strap (Keytel) or an estimate (MET fallback).
+    private func originRow(_ src: EnergySource) -> some View {
+        HStack(spacing: 5) {
+            Circle().fill(src == .bandCalculated ? theme.originBand : theme.originComputed)
+                .frame(width: 6, height: 6)
+            Text(src == .bandCalculated ? "Band + calculated" : "Estimated")
+                .font(.system(size: 10)).foregroundStyle(theme.inkTertiary)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
     private func summaryHero(label: LocalizedStringKey, value: String, unit: String?,
                              color: Color, caption: LocalizedStringKey) -> some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -1955,6 +1968,10 @@ struct LiveStrengthSheet: View {
             summaryStat("Volume", massText(s.volumeKg))
             summaryStat("Sets", "\(s.setCount)")
             if s.strain != nil { summaryStat("Duration", "\(s.durationS / 60) min") }
+            // Persisted session energy (FER-715/716): the overline names the origin when it was estimated.
+            if let kcal = s.energyKcal {
+                summaryStat(s.energySource == .estimated ? "Kcal · est." : "Kcal", "\(Int(kcal.rounded()))")
+            }
         }
         if reflow {
             VStack(alignment: .leading, spacing: 12) { cells }
