@@ -717,31 +717,6 @@ private struct RecoveryChipRing: View {
     }
 }
 
-// MARK: - Honest «coming soon» sheet (for builder/guided start — FER-346 / FER-347)
-
-/// A quiet Instrumento sheet that names what's coming, instead of a dead button.
-struct TrainingSoonSheet: View {
-    @Environment(\.instrumentoTheme) private var theme
-    let overline: LocalizedStringKey
-    let title: LocalizedStringKey
-    let message: LocalizedStringKey
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(overline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Text(title).font(StrandFont.title1).foregroundStyle(theme.ink)
-            }
-            Text(message).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 0)
-        }
-        .padding(NoopMetrics.screenPadding)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(theme.paper.ignoresSafeArea())
-    }
-}
-
 // MARK: - «Hoy descansas. También cuenta.» (v3 · 2B) — a PUSHED screen now (FER-718)
 //
 // What «Empezar» opens on a rest day, and what the streak row protects. Reframed to the mock: the streak

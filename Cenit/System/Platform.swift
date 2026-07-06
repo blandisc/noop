@@ -1,19 +1,6 @@
 import SwiftUI
 import UIKit
 
-/// The native bitmap image type.
-public typealias PlatformImage = UIImage
-
-// MARK: - Image bridging
-
-extension Image {
-    /// Build a SwiftUI `Image` from the platform-native bitmap type (`UIImage`) so call
-    /// sites stay agnostic to the underlying image type.
-    init(platformImage: PlatformImage) {
-        self.init(uiImage: platformImage)
-    }
-}
-
 // MARK: - Pasteboard
 
 /// Clipboard write via `UIPasteboard`.
