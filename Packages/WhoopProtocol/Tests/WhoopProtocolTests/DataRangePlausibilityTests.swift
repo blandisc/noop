@@ -1,7 +1,7 @@
 import XCTest
-@testable import Cenit
+import WhoopProtocol
 
-/// Pins `BLEManager.plausibleDataRange` — the validation that stops the "On the band" sync diagnostic
+/// Pins `DataRange.plausibleWindow` — the validation that stops the "On the band" sync diagnostic
 /// from showing GET_DATA_RANGE garbage (FER-150). The bug it guards: the old raw u32 scan kept any word
 /// in a fixed nov-2023 → mar-2030 window, so the WHOOP 4.0's unstable RTC produced future dates
 /// ("2029-10-11") and collapsed single-point ranges ("mar 15, 2025 → mar 15, 2025"). The validated
@@ -28,14 +28,14 @@ final class DataRangePlausibilityTests: XCTestCase {
 
     func testTwoDistinctPastTimestampsBoundTheWindow() {
         let oldest = now - 30 * day, newest = now - day
-        let r = BLEManager.plausibleDataRange(from: frame(words: [newest, oldest]), now: now)
+        let r = DataRange.plausibleWindow(from: frame(words: [newest, oldest]), now: now)
         XCTAssertEqual(r?.oldest, oldest)
         XCTAssertEqual(r?.newest, newest)
     }
 
     func testManyWordsTakesMinAndMax() {
         let words = [now - 5 * day, now - 100 * day, now - day, now - 50 * day]
-        let r = BLEManager.plausibleDataRange(from: frame(words: words), now: now)
+        let r = DataRange.plausibleWindow(from: frame(words: words), now: now)
         XCTAssertEqual(r?.oldest, now - 100 * day)
         XCTAssertEqual(r?.newest, now - day)
     }
@@ -44,11 +44,11 @@ final class DataRangePlausibilityTests: XCTestCase {
 
     func testSinglePlausibleWordIsRejectedAsCollapsed() {
         // Exactly the observed bug shape: only one word survives → oldest == newest → not real history.
-        XCTAssertNil(BLEManager.plausibleDataRange(from: frame(words: [now - day]), now: now))
+        XCTAssertNil(DataRange.plausibleWindow(from: frame(words: [now - day]), now: now))
     }
 
     func testRepeatedSameValueIsCollapsed() {
-        XCTAssertNil(BLEManager.plausibleDataRange(from: frame(words: [now - day, now - day]), now: now))
+        XCTAssertNil(DataRange.plausibleWindow(from: frame(words: [now - day, now - day]), now: now))
     }
 
     // MARK: - FER-150 criterion: no future dates
@@ -57,19 +57,19 @@ final class DataRangePlausibilityTests: XCTestCase {
         // "2029-10-11"-style junk sits above the ceiling and must not bound the window. Here only one
         // genuine past word remains after filtering → collapsed → nil (no garbage window shown).
         let future = 1_855_000_000   // ≈ 2028
-        XCTAssertNil(BLEManager.plausibleDataRange(from: frame(words: [future, now - day]), now: now))
+        XCTAssertNil(DataRange.plausibleWindow(from: frame(words: [future, now - day]), now: now))
     }
 
     func testFuturePlusTwoPastWordsKeepsOnlyThePast() {
         let future = 1_855_000_000
-        let r = BLEManager.plausibleDataRange(from: frame(words: [future, now - 2 * day, now - 10 * day]), now: now)
+        let r = DataRange.plausibleWindow(from: frame(words: [future, now - 2 * day, now - 10 * day]), now: now)
         XCTAssertEqual(r?.oldest, now - 10 * day)
         XCTAssertEqual(r?.newest, now - 2 * day)
     }
 
     func testWordWithinSkewToleranceIsAccepted() {
         // A newest a few hours ahead of `now` (benign RTC skew) still counts — only year-scale future is junk.
-        let r = BLEManager.plausibleDataRange(from: frame(words: [now + 3600, now - day]), now: now)
+        let r = DataRange.plausibleWindow(from: frame(words: [now + 3600, now - day]), now: now)
         XCTAssertEqual(r?.newest, now + 3600)
         XCTAssertEqual(r?.oldest, now - day)
     }
@@ -78,12 +78,12 @@ final class DataRangePlausibilityTests: XCTestCase {
 
     func testWordsBelowEarliestAreIgnored() {
         // Small u32s (counters, ids) are below the unix floor and must not be read as dates.
-        XCTAssertNil(BLEManager.plausibleDataRange(from: frame(words: [42, 1000, now - day]), now: now))
+        XCTAssertNil(DataRange.plausibleWindow(from: frame(words: [42, 1000, now - day]), now: now))
     }
 
     func testEmptyAndShortFramesReturnNil() {
-        XCTAssertNil(BLEManager.plausibleDataRange(from: [0, 0, 0], now: now))
-        XCTAssertNil(BLEManager.plausibleDataRange(from: [], now: now))
-        XCTAssertNil(BLEManager.plausibleDataRange(from: frame(words: []), now: now))
+        XCTAssertNil(DataRange.plausibleWindow(from: [0, 0, 0], now: now))
+        XCTAssertNil(DataRange.plausibleWindow(from: [], now: now))
+        XCTAssertNil(DataRange.plausibleWindow(from: frame(words: []), now: now))
     }
 }
