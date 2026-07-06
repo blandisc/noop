@@ -3,7 +3,10 @@ import PackageDescription
 
 let package = Package(
     name: "StrandDesign",
-    platforms: [.macOS(.v13), .iOS(.v16)],
+    // FER-740: .watchOS added so the Apple Watch companion (CenitWatch) can paint the mirrored
+    // strength session with the same StrandDesign tokens. The package stays pure — UIKit/AppKit are
+    // behind `#if canImport(...)` and the two haptic/scrub spots behind `#if os(iOS)`.
+    platforms: [.macOS(.v13), .iOS(.v16), .watchOS(.v10)],
     products: [.library(name: "StrandDesign", targets: ["StrandDesign"])],
     dependencies: [],
     targets: [

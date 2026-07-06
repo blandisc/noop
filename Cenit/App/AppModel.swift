@@ -61,6 +61,19 @@ final class AppModel: ObservableObject {
     /// re-bucket (FER-226), and tolerates nil (Apple re-group is then deferred to the normal sync).
     weak var healthBridge: HealthKitBridge?
 
+    /// The Apple Watch workout-mirroring bridge (FER-740), wired in by `CenitApp` right after init.
+    /// `weak` so SwiftUI owns its lifetime. When a strength session runs and a watch is available, it
+    /// wakes the watch to record the real `HKWorkoutSession`; nil (no watch / disabled) is the normal
+    /// path where the iPhone owns the estimated workout as before.
+    weak var mirroringBridge: WorkoutMirroringBridge?
+
+    /// Session ids for which the watch already saved the real `HKWorkout`. The one-workout invariant
+    /// gate (`WorkoutSaveGate`) reads this so the iPhone omits its own save. Ephemeral — the workout is
+    /// already in HealthKit and idempotent by `externalUUID`, so it need not survive a relaunch.
+    private var watchSavedSessionIds: Set<String> = []
+    /// Session ids the watch declined to save (no permission / error) — the iPhone then saves. (FER-740)
+    private var watchDeclinedSessionIds: Set<String> = []
+
     /// Timestamps of moments marked via a double-tap (persisted).
     @Published var moments: [Date] = []
 
@@ -503,8 +516,12 @@ final class AppModel: ObservableObject {
 
     /// Hand the controller the current rest snapshot (or nil when not resting) — it starts/updates/ends
     /// the one Activity from that. Cheap and idempotent, so it's safe to call on any relevant change.
+    /// FER-740: the same snapshot feeds the Apple Watch mirrored session (no-op without a watch).
     private func reconcileRestActivity() {
-        restActivity.reconcile(computeRestSnapshot())
+        let snapshot = computeRestSnapshot()
+        restActivity.reconcile(snapshot)
+        if let snapshot { mirroringBridge?.pushRest(snapshot) }
+        else if let sid = strengthSession?.id { mirroringBridge?.pushRestEnded(sessionId: sid) }
     }
 
     /// The display-ready rest snapshot, or nil when there's nothing to show (no session, showing the
@@ -591,6 +608,12 @@ final class AppModel: ObservableObject {
         // Arm the realtime HR stream for the duration of the session (FER-498) — without this, on a
         // WHOOP 4.0 the session sees no HR unless Live was opened first, and the receipt reads "no HR".
         acquireRealtimeHR("strength")
+        // FER-740: wake the Apple Watch to record the real HKWorkoutSession, if available. Fire-and-forget
+        // — the session above has already started; the watch just joins.
+        if let s = strengthSession {
+            mirroringBridge?.beginMirroredSessionIfEnabled(sessionId: s.id, routineName: routineName,
+                                                           startedAt: Date())
+        }
         buzz(loops: 1)   // confirm the session started, same single buzz as the manual live workout (FER-498)
     }
 
@@ -614,14 +637,44 @@ final class AppModel: ObservableObject {
     /// compute the post-session receipt (FER-409) — keeping the session ALIVE so the sheet renders its
     /// `summaryPhase`. With nothing logged: discard and close. The receipt is ended by `closeStrengthSummary`
     /// («Listo» or a swipe of the summary).
-    func endStrengthSession(save: Bool) {
+    func endStrengthSession(save: Bool) { endStrengthSession(save: save, notifyWatch: true) }
+
+    /// End the session from the Apple Watch (the user tapped end on the wrist). Same local persistence,
+    /// but never echoes the end order back to the watch (it already ended). The watch's
+    /// `watchDidSaveWorkout` ack has already marked this session, so the invariant gate omits the
+    /// iPhone's HealthKit save. (FER-740)
+    func endStrengthSessionFromWatch(sessionId: String, save: Bool) {
+        guard let s = strengthSession, s.id == sessionId else { return }
+        endStrengthSession(save: save, notifyWatch: false)
+    }
+
+    /// Marks that the watch saved the real `HKWorkout` for this session — the invariant gate then omits
+    /// the iPhone's own save. Installed as a callback on the mirroring bridge. (FER-740)
+    func noteWatchSavedWorkout(_ sessionId: String) { watchSavedSessionIds.insert(sessionId) }
+
+    /// Marks that the watch declined to save (no permission / error / mirror lost) — the iPhone takes
+    /// over and saves its estimated workout. Installed as a callback on the mirroring bridge. (FER-740)
+    func noteWatchWillNotSave(_ sessionId: String) { watchDeclinedSessionIds.insert(sessionId) }
+
+    private func endStrengthSession(save: Bool, notifyWatch: Bool) {
         guard let session = strengthSession else { strengthSheetPresented = false; return }
         let endTs = Int(Date().timeIntervalSince1970)
+        // FER-740: was the watch actively mirroring this session? Capture before we tear it down — it
+        // decides whether the iPhone waits for the watch's save decision below.
+        let wasMirroring = mirroringBridge?.isMirroringActive ?? false
         guard save, session.doneCount > 0 else {        // nothing logged → discard + close
+            if notifyWatch {
+                mirroringBridge?.endMirroredSession(sessionId: session.id, endedAt: Date(), save: false)
+            }
             strengthSession = nil
             strengthSheetPresented = false
             releaseRealtimeHR("strength")
             return
+        }
+        // Order the watch to end + save its real recording. Its `watchDidSaveWorkout` ack (awaited below)
+        // decides whether the iPhone also saves — the one-HKWorkout invariant.
+        if notifyWatch {
+            mirroringBridge?.endMirroredSession(sessionId: session.id, endedAt: Date(), save: true)
         }
         let built = session.buildForSave(deviceId: deviceId, endTs: endTs)
         let sets = built.1
@@ -655,6 +708,11 @@ final class AppModel: ObservableObject {
             // Surface the receipt on the live session — the sheet renders summaryPhase (session stays alive).
             session.summary = await self.buildStrengthSummary(session: session, record: record,
                                                               sets: sets, prior: prior, store: store)
+            // FER-740 — one-HKWorkout invariant. If a watch was mirroring, wait briefly for its save
+            // decision: it saved the real FC/kcal workout → the iPhone omits its estimate; it declined
+            // or never answered → the iPhone saves as before. Without a watch, save immediately (no wait).
+            let watchSaved = wasMirroring ? await self.awaitWatchSaveDecision(sessionId: record.id) : false
+            guard WorkoutSaveGate.iPhoneShouldSaveWorkout(watchDidSaveWorkout: watchSaved) else { return }
             // Opt-in mirror to Apple Health (FER-390): a no-op unless the user enabled it. Runs AFTER
             // the local save (the source of truth) and never throws — Health is strictly best-effort.
             await self.healthBridge?.saveStrengthWorkoutIfEnabled(
@@ -663,6 +721,21 @@ final class AppModel: ObservableObject {
                 end: Date(timeIntervalSince1970: TimeInterval(endTs)),
                 profile: userProfile, hrSamples: hrSamples, hrMax: hrMax)
         }
+    }
+
+    /// Await the watch's save decision for a session, up to a short timeout. Returns true only if the
+    /// watch acked `watchDidSaveWorkout`. On decline or timeout returns false so the iPhone saves. The
+    /// shared `externalUUID` idempotency is the hard backstop if a late ack races the iPhone's write.
+    /// (FER-740; the exact timeout is tuned on hardware.)
+    @MainActor
+    private func awaitWatchSaveDecision(sessionId: String, timeout: TimeInterval = 6) async -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if watchSavedSessionIds.contains(sessionId) { return true }
+            if watchDeclinedSessionIds.contains(sessionId) { return false }
+            try? await Task.sleep(nanoseconds: 200_000_000)   // 0.2 s poll
+        }
+        return watchSavedSessionIds.contains(sessionId)
     }
 
     /// End the session once the user has seen the receipt (FER-409): «Listo» or a swipe of the summary.

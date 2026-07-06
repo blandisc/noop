@@ -24,6 +24,7 @@ import StrandDesign
 struct CenitApp: App {
     @StateObject private var model: AppModel
     @StateObject private var health: HealthKitBridge
+    @StateObject private var mirroring: WorkoutMirroringBridge   // FER-740: Apple Watch session mirroring
     @StateObject private var autoBackup = AutoBackup()
     /// App-level cross-tab navigation (FER-378 «Explóralo en el Coach»).
     @StateObject private var tabRouter = TabRouter()
@@ -46,6 +47,17 @@ struct CenitApp: App {
         )
         model.healthBridge = healthBridge   // FER-226: AppModel reaches the bridge for the one-time re-bucket
         _health = StateObject(wrappedValue: healthBridge)
+
+        // FER-740: the Apple Watch workout-mirroring bridge. Wakes the watch to record the real
+        // HKWorkoutSession when a strength session starts; its callbacks close the one-workout invariant.
+        let mirroring = WorkoutMirroringBridge()
+        mirroring.onWatchDidSaveWorkout = { [weak model] sid in model?.noteWatchSavedWorkout(sid) }
+        mirroring.onWatchWillNotSave = { [weak model] sid in model?.noteWatchWillNotSave(sid) }
+        mirroring.onWatchEndedSession = { [weak model] sid, save in
+            model?.endStrengthSessionFromWatch(sessionId: sid, save: save)
+        }
+        model.mirroringBridge = mirroring
+        _mirroring = StateObject(wrappedValue: mirroring)
     }
 
     var body: some Scene {

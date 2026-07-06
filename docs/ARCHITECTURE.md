@@ -98,8 +98,12 @@ Packages/                       Cross-platform Swift packages (iOS 16+ / macOS 1
 └── StrandDesign/               SwiftUI design system (palette, components, charts)
 
 CenitApp/                       iOS SwiftUI app shell (App/Health/System/Widgets/Resources)
-CenitShared/                    code shared between the iOS app and its widgets
+CenitShared/                    code shared between the iOS app, its widgets, and (FER-740) the watch —
+                                incl. the workout-mirroring contract (WorkoutMirrorMessage, RestActivitySnapshot)
 CenitWidgets/                   iOS home / lock-screen widgets
+CenitWatch/                     watchOS 10 companion app (single target, FER-740). Runs the real
+                                HKWorkoutSession and mirrors it to the iPhone; no GRDB on the wrist.
+                                Depends only on StrandTraining + StrandDesign.
 
 Tools/Backfill/                 CLI offload/replay tool
 ```
@@ -109,9 +113,13 @@ widgets, intents) lives in **`CenitApp/`**, and it compiles the app-layer under 
 the live/decode seam, screens, data). The user-visible name stays **NOOP** (`CFBundleDisplayName`); the
 visible rebrand to "Cénit" is tracked separately. The macOS app and its `Strand`/`StrandTests` targets were
 retired (FER-143) and the dead `#if os(macOS)`/`AppKit` branches removed (FER-144); the app-layer unit tests
-run as **`CenitUnitTests`** in the simulator. The five packages keep their `Strand*`/`Whoop*` names and still
-declare `.iOS(.v16)`/`.macOS(.v13)`, guarding UI-framework calls behind `#if canImport(UIKit)` /
-`#if canImport(AppKit)`.
+run as **`CenitUnitTests`** in the simulator. The packages keep their `Strand*`/`Whoop*` names. The
+core/data/analytics packages declare `.iOS(.v16)`/`.macOS(.v13)`, guarding UI-framework calls behind
+`#if canImport(UIKit)` / `#if canImport(AppKit)`. **`StrandTraining` and `StrandDesign` also declare
+`.watchOS(.v10)`** (FER-740) so the watch app can name/summarize strength sessions and paint with the
+design tokens — both are pure (Foundation-only / SwiftUI behind `#if canImport(UIKit|AppKit)`, with
+`#if os(iOS)` guards on the two haptic/hover-scrub spots). `WhoopStore`/`WhoopProtocol`/`StrandAnalytics`/
+`StrandImport` are **not** watchOS-bound: no DB, BLE, or analytics runs on the wrist.
 
 ---
 
@@ -325,6 +333,25 @@ Type-47 records carry their **own real-unix timestamps**, so the historical path
 | Durability unit | Cadence flush (64 frames / 30s) | One `HISTORY_END` chunk, trim-acked |
 | Decode fn | `extractStreams` | `extractHistoricalStreams` |
 | Role | Live HR/UI + opt-in detail | **Primary** metric source |
+
+### Watch-mirrored strength sessions (FER-740, F1.1 of the Apple Watch epic FER-391)
+
+A guided strength session can run as an **`HKWorkoutSession` mirrored from the Apple Watch** (iOS 17 /
+watchOS 10 workout mirroring). The wrist (`CenitWatch/`) runs the real `HKWorkoutSession` and mirrors it
+to the iPhone; there is **no GRDB on the watch**. State crosses the pairing over two channels: HealthKit's
+mirror payload (`sendToRemoteWorkoutSession`, best-effort — rest windows via the reused
+`RestActivitySnapshot`, pulse) and `WatchConnectivity` (`WCSession`, guaranteed + acked — the control
+messages: start / end / "watch saved" / "watch won't save"). The single contract is `WorkoutMirrorMessage`
+in `CenitShared`; the iPhone half is `WorkoutMirroringBridge` (`CenitApp/Health/`), wired into `AppModel`.
+
+The iPhone stays the **single source of truth**: it persists the session to `WhoopStore` before any
+HealthKit/watch step (decoded-first, unchanged). The **one-`HKWorkout` invariant** is held by the
+deterministic shared key `HKMetadataKeyExternalUUID = "noop:strength:<sessionId>"`: whichever device writes,
+the write is idempotent (delete-by-key then save). The iPhone omits its own `saveStrengthWorkoutIfEnabled`
+**only** on a positive `watchDidSaveWorkout` ack (`WorkoutSaveGate`); otherwise it saves, so a missing/absent
+watch is regression-free. Heart rate for the iPhone's own strain still comes from the WHOOP strap over BLE
+**on the iPhone** — the watch is a control + display surface in F1.1, and adopting its physiology into the
+recovery/strain engine is Phase 2.
 
 ---
 

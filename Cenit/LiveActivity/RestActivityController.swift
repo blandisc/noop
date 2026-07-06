@@ -16,20 +16,9 @@
 import ActivityKit
 import Foundation
 
-/// The snapshot `AppModel` hands the controller. Everything is already display-ready.
-struct RestActivitySnapshot: Equatable {
-    var sessionId: String
-    var routineName: String
-    var setNumber: Int
-    var setTotal: Int
-    var exerciseName: String
-    var returnDetail: String
-    var restStartedAt: Date
-    var restEndsAt: Date
-    var isHRMode: Bool
-    var hrTarget: Int?
-    var bpm: Int?
-}
+// `RestActivitySnapshot` — the display-ready snapshot `AppModel` hands the controller — moved to
+// `CenitShared/Mirroring/RestActivitySnapshot.swift` in FER-740 (made `Codable`, out of the ActivityKit
+// gate) so the Apple Watch mirrored session can render the same shape. It's still the same type here.
 
 @MainActor
 final class RestActivityController {

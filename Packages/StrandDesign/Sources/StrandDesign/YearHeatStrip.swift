@@ -212,6 +212,9 @@ public struct YearHeatStrip: View {
         .frame(width: gridWidth, height: gridHeight, alignment: .topLeading)
         .overlay(hoverOverlay(weeks: weeks, gridSize: CGSize(width: gridWidth, height: gridHeight)))
         .contentShape(Rectangle())
+        // FER-740: pointer hover-scrub is iOS-only (`onContinuousHover` is unavailable in watchOS,
+        // where the package now also builds). watchOS never renders this chart — gate, don't drop.
+        #if os(iOS)
         .onContinuousHover(coordinateSpace: .local) { phase in
             guard showsScrub else { return }
             switch phase {
@@ -221,6 +224,7 @@ public struct YearHeatStrip: View {
                 hoverCell = nil
             }
         }
+        #endif
     }
 
     // MARK: Grid geometry
