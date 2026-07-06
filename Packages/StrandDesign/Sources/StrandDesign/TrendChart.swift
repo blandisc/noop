@@ -628,7 +628,7 @@ extension View {
                     withTransaction(tx) { hoverX.wrappedValue = nil }
                 }
         )
-        #else
+        #elseif os(macOS)
         self.onContinuousHover(coordinateSpace: .local) { phase in
             guard enabled else { return }
             var tx = Transaction()
@@ -640,6 +640,10 @@ extension View {
                 }
             }
         }
+        #else
+        // FER-740: watchOS builds the package but never renders scrubbable charts — no hover/drag
+        // affordance there (`onContinuousHover` is iOS/macOS-only).
+        self
         #endif
     }
 }

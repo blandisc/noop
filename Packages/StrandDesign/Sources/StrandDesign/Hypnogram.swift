@@ -276,7 +276,7 @@ private extension View {
                 }
                 .onEnded { _ in hoverIndex.wrappedValue = nil }
         )
-        #else
+        #elseif os(macOS)
         self.onContinuousHover(coordinateSpace: .local) { phase in
             guard enabled else { return }
             switch phase {
@@ -284,6 +284,9 @@ private extension View {
             case .ended:                hoverIndex.wrappedValue = nil
             }
         }
+        #else
+        // FER-740: watchOS builds the package but never renders the scrubbable hypnogram.
+        self
         #endif
     }
 }

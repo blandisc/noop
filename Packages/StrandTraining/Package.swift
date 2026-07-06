@@ -8,7 +8,9 @@ import PackageDescription
 // it for the muscle-load / 1RM math (FER-350/FER-349). (FER-345)
 let package = Package(
     name: "StrandTraining",
-    platforms: [.iOS(.v16), .macOS(.v13)],
+    // FER-740: .watchOS added so the Apple Watch companion (CenitWatch) can name/summarize the
+    // mirrored strength session. Trivially safe — the package is Foundation-only.
+    platforms: [.iOS(.v16), .macOS(.v13), .watchOS(.v10)],
     products: [.library(name: "StrandTraining", targets: ["StrandTraining"])],
     targets: [
         .target(
