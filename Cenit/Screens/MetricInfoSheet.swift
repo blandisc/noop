@@ -545,15 +545,6 @@ struct MetricInfoSheet: View {
     /// other metric (and on macOS). Run lazily when the sheet appears. (FER-110)
     var strainCurveLoader: (() async -> [TrendPoint])? = nil
 
-    /// FER-730 §5 · «Hoy en tu plan» in the Day Strain summary: the SAME `TrainingBlock` Today's card
-    /// shows (routine / rest / streak / pace), so the two never disagree. Supplied only for the strain
-    /// sheet; nil (or no split) hides the block. (FER-710)
-    var trainingBlock: DailyBrief.TrainingBlock? = nil
-
-    /// The «Empezar» action for the plan block's CTA — opens Entrenar on today's session, mirroring the
-    /// Today card. nil hides the CTA (and on a rest day there is none).
-    var onStartTraining: (() -> Void)? = nil
-
     /// FER-732 · today's recommended day-strain ceiling (0–21), a personal recovery-scaled guardrail
     /// (`StrainCeiling`). Supplied only for the strain sheet; nil hides the ceiling line.
     var strainCeiling: Double? = nil
@@ -611,7 +602,7 @@ struct MetricInfoSheet: View {
     /// `info.usesLevels`; the explorer re-windows the series by `levelsRange`. Each `day` is
     /// parsed to a `Date` exactly ONCE on load (not per render) — the same memoization the detail screens
     /// use, since the explorer re-windows on every range/level tap.
-    @State private var levelsRange: ExploreRange = .month
+    @State private var levelsRange: ExploreRange = .week
     @State private var levelsParsed: MetricWindowMath.Parsed = []
 
     // MARK: Colour resolution (against the live theme)
@@ -689,14 +680,12 @@ struct MetricInfoSheet: View {
                     levelsBlock
                     sleepParaEstaNoche
                 } else if isStrainSummary {
-                    // F2 (FER-710) + §5 (FER-730): Day Strain — verdict by level, then the intraday
-                    // accumulated curve (between the verdict and the selector), the level instrument, and
-                    // «Hoy en tu plan».
+                    // F2 (FER-710): Day Strain — verdict by level, then the intraday accumulated curve
+                    // (between the verdict and the selector) and the level instrument.
                     vitalReading
                     headlineText
                     strainIntradaySection
                     levelsBlock
-                    if let tb = trainingBlock { strainPlanBlock(tb) }
                 } else {
                     headlineText
                     if info.usesLevels {
@@ -1691,7 +1680,7 @@ struct MetricInfoSheet: View {
     }()
     private static func hourString(_ date: Date) -> String { hourFormatter.string(from: date) }
 
-    // MARK: - Day-strain intraday curve + «Hoy en tu plan» (FER-730 §5)
+    // MARK: - Day-strain intraday curve (FER-730 §5)
 
     /// «Hoy, hora a hora»: today's accumulated strain — solid through the lived portion, a flat dashed
     /// projection from «now» to midnight (strain only accumulates, so the honest projection is «if you
@@ -1781,103 +1770,28 @@ struct MetricInfoSheet: View {
         return Text(s)
     }
 
-    /// «Hoy en tu plan» (§5): the same training block Today's card shows, in a paper block with the strain
-    /// left bar — training day (routine + streak + pace + «Empezar» CTA) or rest day. Copy is the shared
-    /// es-MX literals Today already ships, so the two surfaces never drift. No em dashes.
-    @ViewBuilder private func strainPlanBlock(_ tb: DailyBrief.TrainingBlock) -> some View {
-        HStack(spacing: 0) {
-            Rectangle().fill(theme.dataStrain).frame(width: 2.5)
-            VStack(alignment: .leading, spacing: NoopMetrics.space2) {
-                Text("Hoy en tu plan").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                switch tb.state {
-                case .training:
-                    HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space2) {
-                        Text(tb.routineName ?? "").font(StrandFont.title2).foregroundStyle(theme.ink)
-                            .fixedSize(horizontal: false, vertical: true)
-                        planStreakChip(tb.streakDays)
-                        Spacer(minLength: 0)
-                    }
-                    if let copy = tb.paceCopy {
-                        HStack(spacing: NoopMetrics.space2) {
-                            Image(systemName: planPaceGlyph(tb.pace)).font(.system(size: 14, weight: .semibold))
-                                .foregroundStyle(planPaceColor(tb.pace))
-                            Text(copy).font(StrandFont.subhead).foregroundStyle(planPaceColor(tb.pace))
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        .accessibilityElement(children: .combine)
-                    }
-                    if let start = onStartTraining {
-                        Button(action: start) {
-                            HStack(spacing: NoopMetrics.space2) {
-                                Text(tb.routineName ?? String(localized: "Tu entrenamiento"))
-                                    .font(InstrumentoType.grotesk(13, weight: .bold))
-                                    .foregroundStyle(theme.paperHi)
-                                    .lineLimit(1).minimumScaleFactor(0.8)
-                                Spacer(minLength: NoopMetrics.space2)
-                                HStack(spacing: NoopMetrics.space1) {
-                                    Text("Empezar")
-                                        .font(InstrumentoType.grotesk(11, weight: .semibold))
-                                        .tracking(1.2).textCase(.uppercase)
-                                    Image(systemName: "arrow.right").font(.system(size: 11, weight: .semibold))
-                                }
-                                .foregroundStyle(theme.ctaAccent)
-                            }
-                            .padding(.horizontal, NoopMetrics.cardPadding)
-                            .padding(.vertical, 14)
-                            .background(theme.ink, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .padding(.top, NoopMetrics.space1)
-                        .accessibilityHint(Text("Abre Entrenar y arranca la sesión de hoy"))
-                    }
-                case .rest:
-                    HStack(spacing: NoopMetrics.gap) {
-                        Image(systemName: "moon.fill").font(.system(size: 16)).foregroundStyle(theme.inkSecondary)
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("Hoy descansas").font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
-                            Text("tu split no asigna rutina hoy").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                        }
-                        Spacer(minLength: 0)
-                    }
-                    .accessibilityElement(children: .combine)
-                }
-            }
-            .padding(14)
-            Spacer(minLength: 0)
-        }
-        .background(theme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    // MARK: - Shared chart wells (loading / empty), themed for warm paper
+
+    private func loadingWell(height: CGFloat) -> some View {
+        RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .fill(theme.surface)
+            .frame(height: height)
+            .overlay { ProgressView().tint(theme.inkTertiary) }
     }
 
-    /// The streak chip: flame + «racha N días» (singular «día» at 1). Same number Entrenar shows.
-    private func planStreakChip(_ days: Int) -> some View {
-        let unit = days == 1 ? "día" : "días"
-        return HStack(spacing: 4) {
-            Image(systemName: "flame.fill").font(.system(size: 11)).foregroundStyle(theme.warning)
-            Text("racha \(days) \(unit)").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+    private func emptyWell(icon: String, text: LocalizedStringKey) -> some View {
+        VStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 22))
+                .foregroundStyle(theme.inkTertiary)
+            Text(text)
+                .font(StrandFont.subhead)
+                .foregroundStyle(theme.inkSecondary)
+                .multilineTextAlignment(.center)
         }
-        .padding(.horizontal, NoopMetrics.space2).padding(.vertical, 2)
-        .background(theme.paper, in: Capsule())
-        .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 0.5))
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text("Racha de \(days) \(unit) en tu plan"))
-    }
-
-    private func planPaceColor(_ pace: DailyBrief.TrainingBlock.Pace?) -> Color {
-        switch pace {
-        case .up:   return theme.verdict
-        case .down: return theme.warning
-        case .hold, .none: return theme.inkSecondary
-        }
-    }
-
-    private func planPaceGlyph(_ pace: DailyBrief.TrainingBlock.Pace?) -> String {
-        switch pace {
-        case .up:   return "arrow.up.right"
-        case .down: return "arrow.down.right"
-        case .hold, .none: return "arrow.right"
-        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 28)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     // MARK: - Recovery weight breakdown + method disclosure (FER-108)
@@ -2280,10 +2194,6 @@ private func sampleStrainCurve(score: Double) -> [TrendPoint] {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricInfoSheet(info: .strain(11.5),
                         strainCurveLoader: { sampleStrainCurve(score: 11.5) },
-                        trainingBlock: DailyBrief.TrainingBlock(
-                            state: .training, routineName: "Empuje A", streakDays: 6,
-                            pace: .up, paceCopy: "Recuperación alta para ti · puedes con todo el plan"),
-                        onStartTraining: {},
                         strainCeiling: 14.2,
                         trainingWindow: TrainingHabit.Window(start: 16.5, end: 18.5))
     }
