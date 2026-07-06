@@ -413,4 +413,27 @@ no migradas conservan la voz de §8.3 hasta que les toque.
   del handoff (`#00774B`) es exactamente `positiveText`: no hay rol nuevo.
 - **El dial 24h** deja de ser pieza central de «Hoy»: sobrevive como **sello de header**
   (34 px, mini dial con arco de día `dataSun`, banda de sueño y punto «ahora») y como spinner
-  del pull-to-refresh (FER-709).
+  del pull-to-refresh (FER-709). En **F3 (FER-711)** el `DiurnalDial` grande se **retiró del
+  paquete**: su geometría compartida vive ahora en `DialGeometry.swift` (`SleepWindow` +
+  `DialGeometry`, lo único que `DialSeal` necesita); el view y sus tests se borraron.
+
+#### 8.7.1 Estados de «Hoy» + banners (FER-711)
+
+- **El numeral nunca miente.** El héroe usa `··` calibrando, `—` sin datos/en espera, y `~N`
+  cuando la recuperación es un estimado de Apple (`isRecoveryEstimated`). El color del numeral es
+  el semáforo: color de nivel = lectura lista; tinta/`—` = en espera. Los estados que la app
+  distingue hoy (primer uso, calibrando 1–4, base Apple preliminar, sin datos, parcial estimado)
+  se mapean 1:1 al `HeroState`. Los estados del mock que exigen detección nueva —anomalía
+  multi-señal, corte de noche (~22:00) y madrugada (0–6)— se difieren a issues propios (FER-736,
+  FER-737): F3 NO inventa detección.
+- **Banner de estado (`TodayBanner`).** Tarjeta estándar reutilizable montada bajo el header, sobre
+  el día normal: punto de estado (7 px), título 13/600 en `ink`, subtítulo 11.5 en `inkTertiary`,
+  CTA opcional 11/600 grotesk en color. Se dibuja SOLO el de mayor prioridad, desde señales que ya
+  existen: **batería crítica** (`critical`), **banda desconectada de día** (`inkMuted`, además apaga
+  el BPM del header → «SIN SEÑAL») y **línea base envejecida** (`warning`). Los banners que exigen
+  detección/matemática nueva —siesta (re-score del numeral), zona horaria (exención de regularidad)
+  y permisos parciales de Apple— se difieren (FER-734/735/738); la tarjeta ya soporta su forma.
+- **Reglas × banners.** La gráfica de las cinco reglas SIEMPRE cuadra con el numeral: Σ marcas
+  encendidas == el numeral (invariante de `RecoveryRules`, con test `testNumeralEqualsVisibleSumAcrossStates`).
+  Los banners que F3 envía son presentacionales y no tocan esa descomposición, así que el invariante
+  se conserva en todos los estados con numeral.

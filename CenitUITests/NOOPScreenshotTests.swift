@@ -64,9 +64,11 @@ final class NOOPScreenshotTests: XCTestCase {
 
     /// Each state is its OWN test so a permission alert in one doesn't block the others.
     /// Run on an ERASED simulator for a clean store: `xcrun simctl erase <udid>`.
-    func test_today_empty()    throws { captureToday(state: "empty") }
-    func test_today_primed()   throws { captureToday(state: "primed") }
-    func test_today_strained() throws { captureToday(state: "strained") }
+    func test_today_empty()       throws { captureToday(state: "empty") }
+    func test_today_primed()      throws { captureToday(state: "primed") }
+    func test_today_strained()    throws { captureToday(state: "strained") }
+    /// FER-711 · the `··` calibrating state (numeral never lies): a strap seen, base not yet seeded.
+    func test_today_calibrating() throws { captureToday(state: "calibrating") }
 
     // MARK: - All screens (empty/default state)
 

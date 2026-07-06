@@ -49234,6 +49234,210 @@
           }
         }
       }
+    },
+    "Critical battery": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Critical battery"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Batería crítica"
+          }
+        }
+      }
+    },
+    "Band at %lld%%": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Band at %lld%%"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Banda al %lld%%"
+          }
+        }
+      }
+    },
+    "charge it before bed or you lose the night": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "charge it before bed or you lose the night"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cárgala antes de dormir o pierdes la noche"
+          }
+        }
+      }
+    },
+    "Band disconnected during the day": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Band disconnected during the day"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Banda desconectada de día"
+          }
+        }
+      }
+    },
+    "No signal from your band": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No signal from your band"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin señal de tu banda"
+          }
+        }
+      }
+    },
+    "today's verdict doesn't change, the night needs it": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "today's verdict doesn't change, the night needs it"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "el veredicto de hoy no cambia, la noche sí la necesita"
+          }
+        }
+      }
+    },
+    "Connect →": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect →"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conectar →"
+          }
+        }
+      }
+    },
+    "Aged baseline · 6+ days without band": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aged baseline · 6+ days without band"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Línea base envejecida · 6+ días sin banda"
+          }
+        }
+      }
+    },
+    "Your baseline has a %lld-day gap": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your baseline has a %lld-day gap"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu línea base tiene %lld días de hueco"
+          }
+        }
+      }
+    },
+    "this week the verdict carries «~» again": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "this week the verdict carries «~» again"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "esta semana el veredicto vuelve a llevar «~»"
+          }
+        }
+      }
+    },
+    "NO SIGNAL": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NO SIGNAL"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SIN SEÑAL"
+          }
+        }
+      }
+    },
+    "Band with no signal": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Band with no signal"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Banda sin señal"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
