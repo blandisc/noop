@@ -179,10 +179,11 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
         sendOverHealthKit(.rest(snapshot))
     }
 
-    /// Tell the watch a rest window ended without ending the session.
-    func pushRestEnded(sessionId: String) {
+    /// Tell the watch a rest window ended without ending the session. `recovered == true` (FER-758) means
+    /// the pulse recovered to target → the watch buzzes «ready»; the default `false` is a silent cancel.
+    func pushRestEnded(sessionId: String, recovered: Bool = false) {
         guard mirroredSession != nil else { return }
-        sendOverHealthKit(.restEnded(sessionId: sessionId))
+        sendOverHealthKit(.restEnded(sessionId: sessionId, recovered: recovered))
     }
 
     /// Order the watch to end its session (and save the HKWorkout when `save`). Sent over the guaranteed

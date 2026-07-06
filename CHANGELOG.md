@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El descanso por pulso termina y el reloj vibra en cuanto te recuperas / Heart-rate rest ends and the watch buzzes the moment you recover.**
+  **ES** — En el descanso entre series guiado por frecuencia cardíaca, si tu pulso ya bajó al objetivo (pasados los 20 segundos mínimos) el descanso **termina solo** y el **Apple Watch vibra** para avisarte, en vez de esperar a que se acabe el reloj. Antes solo lo decía en pantalla y el reloj no vibraba en ese caso. Volver a la serie a mano sigue sin vibrar.
+  **EN** — In the between-sets rest guided by heart rate, once your pulse has dropped to target (past the 20-second floor) the rest **ends on its own** and the **Apple Watch buzzes** to tell you, instead of waiting out the clock. Before, it only said so on screen and the watch stayed silent in that case. Returning to the set by hand still doesn't buzz.
+  ([AppModel.swift](Cenit/App/AppModel.swift), [WatchWorkoutManager.swift](CenitWatch/Health/WatchWorkoutManager.swift))
+
 - **«Señales» de «Hoy» cabe sin ese scroll de sobra / The "Signals" page on "Today" fits without that leftover scroll.**
   **ES** — Se recuperó un poco de aire vertical en la página de **Señales** para cerrar el scroll ligero que quedaba a tipografía normal: las filas de «Por qué N» pasan de 20 a 18 pt, el espacio entre ese bloque y la retícula de 16 a 12 pt, y el aire arriba del carrusel de 16 a 8 pt. Ningún número ni texto se encoge. (A tamaños de letra muy grandes la página sigue haciendo scroll, como debe ser.)
   **EN** — Reclaimed a little vertical room on the **Signals** page to close the slight leftover scroll at default text size: the "Why N" rows go from 20 to 18 pt, the gap between that block and the tile grid from 16 to 12 pt, and the space above the pager from 16 to 8 pt. No number or text shrinks. (At very large text sizes the page still scrolls, as it should.)

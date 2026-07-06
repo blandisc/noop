@@ -290,10 +290,12 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
             rest = snapshot
             heartRate = snapshot.bpm ?? heartRate
             scheduleRestEnd(at: snapshot.restEndsAt)
-        case .restEnded:
-            // The iPhone left the rest early (user returned to the set): cancel the haptic, no banner.
+        case let .restEnded(_, recovered):
+            // Cancel the local clock timer either way, then decide the signal:
+            //  • recovered (FER-758): the pulse dropped to target → fire the «ready» buzz + banner now.
+            //  • not recovered: the user returned to the set → clear silently, no buzz.
             restEndTask?.cancel()
-            rest = nil
+            if recovered { Task { await fireRestEnded() } } else { rest = nil }
         case let .end(sid, endedAt, save, ext):
             sessionId = sid
             externalUUID = ext
