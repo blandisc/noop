@@ -629,20 +629,63 @@ final class AppModel: ObservableObject {
             let name = exercise(id)?.name ?? String(localized: "Exercise")
             let p = prior[id] ?? [:]
             if let w = exSets.compactMap(\.weightKg).max(), let was = p[.maxWeight], w > (was.valueKg ?? 0) {
-                prs.append(.init(exercise: name, metric: .maxWeight, valueKg: w, reps: nil))
+                prs.append(.init(exercise: name, metric: .maxWeight, valueKg: w, reps: nil,
+                                 priorValueKg: was.valueKg))
             }
             if let r = exSets.compactMap(\.reps).max(), let was = p[.maxReps], r > (was.reps ?? 0) {
-                prs.append(.init(exercise: name, metric: .maxReps, valueKg: nil, reps: r))
+                prs.append(.init(exercise: name, metric: .maxReps, valueKg: nil, reps: r,
+                                 priorReps: was.reps))
             }
             if let best = exSets.compactMap({ s -> (vol: Double, w: Double, r: Int)? in
                 guard let w = s.weightKg, let r = s.reps else { return nil }
                 return (w * Double(r), w, r)
             }).max(by: { $0.vol < $1.vol }),
                let was = p[.maxVolume], best.vol > (was.valueKg ?? 0) * Double(was.reps ?? 0) {
-                prs.append(.init(exercise: name, metric: .maxVolume, valueKg: best.w, reps: best.r))
+                prs.append(.init(exercise: name, metric: .maxVolume, valueKg: best.w, reps: best.r,
+                                 priorValueKg: (was.valueKg ?? 0) * Double(was.reps ?? 0)))
             }
         }
         prs.sort { $0.exercise < $1.exercise }
+
+        // «Contra tu última {rutina}» (FER-716): the newest EARLIER session of the same routine. The
+        // current session is saved before this runs, so exclude it by id; a routine-less quick session
+        // compares to nothing (the bars block is hidden).
+        var comparison: StrengthSummary.Comparison?
+        if let rid = record.routineId,
+           let prev = ((try? await store.recentSessions(limit: 100)) ?? [])
+               .first(where: { $0.routineId == rid && $0.id != record.id && $0.startTs < record.startTs }) {
+            let agg = ((try? await store.sessionVolumes()) ?? [:])[prev.id]
+            comparison = .init(prevVolumeKg: agg?.volumeKg ?? 0,
+                               prevSetCount: agg?.setCount ?? 0,
+                               prevDurationS: max(0, (prev.endTs ?? prev.startTs) - prev.startTs))
+        }
+
+        // «Por ejercicio» (FER-716): one row per exercise with logged sets, in plan order, carrying the
+        // session's top datum for its type and the trend against «la última vez» (nil = no reference).
+        func trend(_ current: Double?, _ last: Double?) -> Int? {
+            guard let c = current, let l = last else { return nil }
+            return c > l ? 1 : (c < l ? -1 : 0)
+        }
+        let exerciseLines: [StrengthSummary.ExerciseLine] = session.runs
+            .filter { !$0.skipped && $0.sets.contains(where: \.done) }
+            .map { run in
+                let done = run.sets.filter(\.done)
+                switch run.type {
+                case .weightReps, .bodyweight:
+                    let top = done.map(\.weightKg).max()
+                    return .init(name: run.name, setCount: done.count, topWeightKg: top,
+                                 topTimeS: nil, topDistanceM: nil, trend: trend(top, run.lastWeightKg))
+                case .time:
+                    let top = done.compactMap(\.timeS).max()
+                    return .init(name: run.name, setCount: done.count, topWeightKg: nil,
+                                 topTimeS: top, topDistanceM: nil,
+                                 trend: trend(top.map(Double.init), run.lastTimeS.map(Double.init)))
+                case .distance:
+                    let top = done.compactMap(\.distanceM).max()
+                    return .init(name: run.name, setCount: done.count, topWeightKg: nil,
+                                 topTimeS: nil, topDistanceM: top, trend: trend(top, run.lastDistanceM))
+                }
+            }
 
         // Worked muscles, in set order, deduped, title-cased, capped.
         var seen = Set<String>(); var muscles: [String] = []
@@ -663,13 +706,16 @@ final class AppModel: ObservableObject {
                 .map { Int($0.estimate.rounded()) }
         }
 
-        return StrengthSummary(routineName: session.routineName, durationS: durationS,
+        return StrengthSummary(routineName: session.routineName,
+                               endTs: record.endTs ?? record.startTs, durationS: durationS,
                                volumeKg: volumeKg, setCount: work.count, strain: record.strain,
                                avgHr: record.avgHr,
                                costBand: SessionRecoveryCost.cost(sessionStrain: record.strain)?.band,
                                costTomorrowPct: costTomorrowPct,
                                energyKcal: record.energyKcal, energySource: record.energySource,
-                               prs: prs, muscles: Array(muscles.prefix(6)), isFirstTime: prior.allSatisfy { $0.value.isEmpty })
+                               prs: prs, muscles: Array(muscles.prefix(6)),
+                               isFirstTime: prior.allSatisfy { $0.value.isEmpty },
+                               comparison: comparison, exercises: exerciseLines)
     }
 
     /// Dismiss the just-ended confirmation / discard notice shown in the Train hub once the user has

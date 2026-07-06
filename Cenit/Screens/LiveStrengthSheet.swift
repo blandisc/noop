@@ -17,18 +17,17 @@ private func massString(_ kg: Double, units: UnitSystem) -> String {
     return "\(plateNumber(v)) \(UnitFormatter.massUnit(units))"
 }
 
-// MARK: - Guided strength session (FER-347)
+// MARK: - Guided strength session (FER-347, full-screen since FER-716)
 //
-// The heart of the strength tracker: the guided, set-by-set execution. A «Foco» (the dominant weight in
-// the effort hue, a «register set» button, the «la última vez» reference + a suggested bump) plus a
-// «cajón» — the full editable set table behind a detented sheet (`presentationDetents`) — and a rest
-// phase that doubles as the «change exercise» bridge (the plan navigator: skip / reorder).
+// The heart of the strength tracker: the guided, set-by-set execution as ONE continuous logging table
+// («Flujo Entrenar v3 · 1j»). No modal «Foco» — the active row edits inline with the custom keypad, a
+// time/distance row expands with a compact stopwatch, and the rest slots in as the inline 1k card.
+// Finishing renders the 1l receipt in place.
 //
-// Following the `LiveWorkoutSheet` pattern (FER-197): the session lives in `AppModel` (global), so
-// closing the sheet or switching tabs never loses it; the Train hub re-presents it. No nested
-// NavigationStack — the drawer is a SHEET with detents, not a pushed screen (FER-171). The fixed
-// countdown is shipped here; the smart, HR-driven rest is FER-348 (W3·descanso) — its slot is the
-// rest chip. Runs fully offline and without HealthKit (logging strength is manual).
+// The session lives in `AppModel` (global) and is presented as a `fullScreenCover` at the RootTabView
+// shell, so minimizing («‹») or switching tabs never loses it; the floating `SessionPill` re-opens it
+// from any tab. No nested NavigationStack (FER-171). Runs fully offline and without HealthKit
+// (logging strength is manual).
 
 // MARK: - Session model (the durable, observable state owned by AppModel)
 
@@ -37,6 +36,8 @@ private func massString(_ kg: Double, units: UnitSystem) -> String {
 /// carries strap HR (FER-399); the view omits those blocks rather than inventing a zero.
 struct StrengthSummary: Equatable {
     var routineName: String
+    /// When the session was saved (drives the receipt's «Sesión guardada · {fecha}» overline).
+    var endTs: Int
     var durationS: Int
     var volumeKg: Double
     var setCount: Int
@@ -55,14 +56,41 @@ struct StrengthSummary: Equatable {
     var prs: [PR]
     var muscles: [String]
     var isFirstTime: Bool
+    /// The previous completed session of the SAME routine (FER-716), for the «Contra tu última {rutina}»
+    /// bars. `nil` when this routine has no earlier session (or the session was routine-less).
+    var comparison: Comparison?
+    /// One row per exercise with logged sets, in plan order — the receipt's «Por ejercicio» list.
+    var exercises: [ExerciseLine]
 
     /// One new record set this session (already filtered to those that strictly beat a prior PR).
+    /// `priorValueKg`/`priorReps` carry the beaten record, for the «100 → 102,5 kg» framing.
     struct PR: Equatable, Identifiable {
         var id: String { "\(exercise):\(metric.rawValue)" }
         let exercise: String
         let metric: PRMetric
         let valueKg: Double?
         let reps: Int?
+        var priorValueKg: Double? = nil
+        var priorReps: Int? = nil
+    }
+
+    /// The last same-routine session's aggregates the bars compare against.
+    struct Comparison: Equatable {
+        var prevVolumeKg: Double
+        var prevSetCount: Int
+        var prevDurationS: Int
+    }
+
+    /// One «Por ejercicio» row: logged sets, the session's top datum for its type, and the trend
+    /// against «la última vez» (+1 up / 0 even / −1 down; nil = nothing to compare).
+    struct ExerciseLine: Equatable, Identifiable {
+        var id: String { name }
+        let name: String
+        let setCount: Int
+        let topWeightKg: Double?
+        let topTimeS: Int?
+        let topDistanceM: Double?
+        let trend: Int?
     }
 }
 
@@ -526,8 +554,6 @@ struct LiveStrengthSheet: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var confirmFinish = false
     @State private var confirmDiscard = false
-    /// Per-exercise time goal (seconds) for a time set's inline stopwatch — a display target, default 30s.
-    @State private var goals: [String: Int] = [:]
     /// The cell the custom keypad is editing (FER-716) — one at a time, so a single working buffer is
     /// enough. `nil` = no cell active (keypad hidden). Replaces the native keyboard + `@FocusState`.
     @State private var activeCell: CellRef?
@@ -542,6 +568,9 @@ struct LiveStrengthSheet: View {
     @State private var detailExercise: Exercise?
     /// The exercise whose rest editor is open — set by tapping its rest chip (FER-540). nil = closed.
     @State private var restEdit: RestEdit?
+    /// Whether the receipt numerals show their final values (FER-716). Starts false so the first
+    /// appearance rolls 0 → value; `playReceiptCountUp` flips it (animated only the first time).
+    @State private var receiptCountUp = false
 
     /// Identifies which exercise's rest is being edited (FER-716); `setIndex` non-nil = a per-set edit
     /// (from the rest card), nil = exercise-scope (from the rest chip). The editor seeds from `runs[id]`.
@@ -1162,7 +1191,7 @@ struct LiveStrengthSheet: View {
             restHRTrack(bpm: bpm, target: target)
             if let target, !ready {
                 (Text(String(localized: "dropping toward "))
-                 + Text("\(target) lpm").foregroundColor(theme.dataRecovery).bold()
+                 + Text("\(target) bpm").foregroundColor(theme.dataRecovery).bold()
                  + Text(" · " + String(localized: "the strap will buzz")))
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             }
@@ -1448,10 +1477,9 @@ struct LiveStrengthSheet: View {
 
     // MARK: Inline helpers (formatting / focus / actions)
 
-    /// Tap-ANTERIOR: copy last time into this row. Time exercises set the goal; the rest prefill the datum.
+    /// Tap-ANTERIOR: copy last time into this row (weight/reps/distance; a time set captures live).
     private func prefillTapped(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun) {
-        if run.type == .time, let last = run.lastTimeS { goals[run.id] = last }
-        else { session.prefillPrevious(exercise: ei, set: si) }
+        session.prefillPrevious(exercise: ei, set: si)
     }
 
     private func previousText(_ run: StrengthSessionModel.ExerciseRun) -> String? {
@@ -1508,326 +1536,12 @@ struct LiveStrengthSheet: View {
         return String(format: "%.2f %@", v, imperial ? "mi" : "km")
     }
 
-    // MARK: Capture phase (the «Foco»)
-
-    @ViewBuilder private var capturePhase: some View {
-        if let run = session.current {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text(run.name).font(StrandFont.title1).foregroundStyle(theme.ink)
-                            .fixedSize(horizontal: false, vertical: true)
-                        Spacer(minLength: 8)
-                        // The same tappable rest chip as the inline header — edit rest mid-session (FER-540).
-                        restChip(run, ei: session.currentIndex)
-                    }
-                    if run.type == .weightReps { referenceLine(run) } else { setTypeLine(run) }
-                }
-
-                // The Foco adapts to the exercise type (FER-351): weight×reps, reps(+lastre), a
-                // stopwatch with a goal, or distance/time with the strap's live HR.
-                switch run.type {
-                case .weightReps:
-                    weightFoco(run)
-                    repsRow
-                    registerButton
-                case .bodyweight:
-                    repsFoco(run)
-                    lastreRow(run)
-                    registerButton
-                case .time:
-                    timeControls(run)
-                case .distance:
-                    distanceControls(run)
-                }
-            }
-        }
-    }
-
-    /// Set counter + the measure word, for the non-weight×reps variants (which don't show «la última vez»).
-    private func setTypeLine(_ run: StrengthSessionModel.ExerciseRun) -> some View {
-        HStack(spacing: 8) {
-            Text(setCounterText(run)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-            Spacer(minLength: 8)
-            Text(typeWord(run.type)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-        }
-    }
-
     private func typeWord(_ t: ExerciseType) -> LocalizedStringKey {
         switch t {
         case .weightReps: return "Weight"
         case .bodyweight: return "Bodyweight"
         case .time:       return "Time"
         case .distance:   return "Distance"
-        }
-    }
-
-    private func referenceLine(_ run: StrengthSessionModel.ExerciseRun) -> some View {
-        HStack(spacing: 8) {
-            Text(setCounterText(run)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-            Spacer(minLength: 8)
-            if let lw = run.lastWeightKg, let lr = run.lastReps {
-                Text("Last · \(massText(lw)) × \(lr)")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                if let suggested = suggestedWeight(run) {
-                    Button { session.setCurrentWeight(suggested) } label: {
-                        Text("+\(plateNumber(displayWeight(weightStepKg)))")
-                            .font(StrandFont.caption).foregroundStyle(theme.dataRecovery)
-                            .padding(.horizontal, 6).padding(.vertical, 2)
-                            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(Text("Use suggested weight \(massText(suggested))"))
-                }
-            } else {
-                Text("First time").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            }
-        }
-    }
-
-    /// The dominant datum: the weight, in the effort hue, flanked by minus/plus steppers.
-    private func weightFoco(_ run: StrengthSessionModel.ExerciseRun) -> some View {
-        HStack {
-            stepper(system: "minus") { session.bumpWeight(byKg: -weightStepKg) }
-                .accessibilityLabel(Text("Decrease weight"))
-            Spacer(minLength: 8)
-            VStack(spacing: 0) {
-                Text(plateNumber(displayWeight(session.currentSet?.weightKg ?? 0)))
-                    .instrumentoHero(76).foregroundStyle(theme.dataStrain)
-                    .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
-                Text(UnitFormatter.massUnit(units)).font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
-            }
-            Spacer(minLength: 8)
-            stepper(system: "plus") { session.bumpWeight(byKg: weightStepKg) }
-                .accessibilityLabel(Text("Increase weight"))
-        }
-        .accessibilityElement(children: .contain)
-    }
-
-    private var repsRow: some View {
-        HStack {
-            Text("Reps").font(StrandFont.body).foregroundStyle(theme.inkSecondary)
-            Spacer()
-            HStack(spacing: 16) {
-                stepper(system: "minus", size: 34) { session.bumpReps(-1) }
-                    .accessibilityLabel(Text("Decrease reps"))
-                Text("\(session.currentSet?.reps ?? 0)")
-                    .font(StrandFont.title2).monospacedDigit().foregroundStyle(theme.ink)
-                    .frame(minWidth: 34)
-                stepper(system: "plus", size: 34) { session.bumpReps(1) }
-                    .accessibilityLabel(Text("Increase reps"))
-            }
-        }
-        .accessibilityElement(children: .contain)
-    }
-
-    private var registerButton: some View {
-        Button { withAnimation(.snappy) { session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR) } } label: {
-            Label("Register set", systemImage: "checkmark")
-                .font(StrandFont.headline).foregroundStyle(theme.paper)
-                .frame(maxWidth: .infinity).padding(.vertical, 15)
-                .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: Bodyweight Foco (reps lead; lastre optional)
-
-    /// The dominant datum for a bodyweight exercise: the reps, in the effort hue, flanked by steppers.
-    private func repsFoco(_ run: StrengthSessionModel.ExerciseRun) -> some View {
-        HStack {
-            stepper(system: "minus") { session.bumpReps(-1) }
-                .accessibilityLabel(Text("Decrease reps"))
-            Spacer(minLength: 8)
-            VStack(spacing: 0) {
-                Text("\(session.currentSet?.reps ?? 0)")
-                    .instrumentoHero(76).foregroundStyle(theme.dataStrain)
-                    .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
-                Text("reps").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
-            }
-            Spacer(minLength: 8)
-            stepper(system: "plus") { session.bumpReps(1) }
-                .accessibilityLabel(Text("Increase reps"))
-        }
-        .accessibilityElement(children: .contain)
-    }
-
-    /// Optional added load («lastre») for a bodyweight set — starts at zero (bodyweight only).
-    private func lastreRow(_ run: StrengthSessionModel.ExerciseRun) -> some View {
-        let kg = session.currentSet?.weightKg ?? 0
-        return HStack {
-            VStack(alignment: .leading, spacing: 1) {
-                Text("Added weight").font(StrandFont.body).foregroundStyle(theme.inkSecondary)
-                Text(kg > 0 ? "optional" : "optional · bodyweight only")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            }
-            Spacer()
-            HStack(spacing: 16) {
-                stepper(system: "minus", size: 34) { session.bumpWeight(byKg: -weightStepKg) }
-                    .accessibilityLabel(Text("Decrease added weight"))
-                Text("+\(plateNumber(displayWeight(kg))) \(UnitFormatter.massUnit(units))")
-                    .font(StrandFont.title2).monospacedDigit()
-                    .foregroundStyle(kg > 0 ? theme.ink : theme.inkTertiary)
-                stepper(system: "plus", size: 34) { session.bumpWeight(byKg: weightStepKg) }
-                    .accessibilityLabel(Text("Increase added weight"))
-            }
-        }
-        .accessibilityElement(children: .contain)
-    }
-
-    // MARK: Time Foco (stopwatch with a goal; registers on stop)
-
-    @ViewBuilder private func timeControls(_ run: StrengthSessionModel.ExerciseRun) -> some View {
-        let running = session.timerStart != nil
-        if running {
-            TimelineView(.periodic(from: Date(), by: 1)) { ctx in
-                timeReadout(elapsed: session.timerElapsed(now: ctx.date), run: run)
-            }
-        } else {
-            timeReadout(elapsed: session.currentSet?.timeS ?? 0, run: run)
-        }
-        Button { withAnimation(.snappy) { running ? session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR) : session.startSetTimer() } } label: {
-            Label(running ? "Stop and save" : "Start", systemImage: running ? "stop.fill" : "play.fill")
-                .font(StrandFont.headline).foregroundStyle(theme.paper)
-                .frame(maxWidth: .infinity).padding(.vertical, 15)
-                .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func timeReadout(elapsed: Int, run: StrengthSessionModel.ExerciseRun) -> some View {
-        let goal = goalSeconds(run)
-        let met = elapsed >= goal && elapsed > 0
-        let isRunning = session.timerStart != nil
-        return VStack(spacing: 8) {
-            Text(Self.clock(elapsed))
-                .instrumentoHero(72).monospacedDigit()
-                .foregroundStyle(elapsed > 0 ? theme.dataStrain : theme.inkTertiary)
-                .minimumScaleFactor(0.5).lineLimit(1)
-            HStack(spacing: 14) {
-                stepper(system: "minus", size: 30) { adjustGoal(run, -15) }
-                    .accessibilityLabel(Text("Decrease goal"))
-                Text(met ? "Goal \(Self.clock(goal)) · reached" : "Goal \(Self.clock(goal))")
-                    .font(StrandFont.subhead).monospacedDigit()
-                    .foregroundStyle(met ? theme.dataRecovery : theme.inkSecondary)
-                stepper(system: "plus", size: 30) { adjustGoal(run, 15) }
-                    .accessibilityLabel(Text("Increase goal"))
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text(isRunning ? "Timing, \(elapsed) seconds. Goal \(goal) seconds."
-                                 : "\(elapsed) seconds. Goal \(goal) seconds."))
-    }
-
-    private func goalSeconds(_ run: StrengthSessionModel.ExerciseRun) -> Int { goals[run.id] ?? 30 }
-    private func adjustGoal(_ run: StrengthSessionModel.ExerciseRun, _ delta: Int) {
-        goals[run.id] = max(5, goalSeconds(run) + delta)
-    }
-
-    // MARK: Distance / cardio Foco (distance + time in ink; strap HR + zone in color)
-
-    @ViewBuilder private func distanceControls(_ run: StrengthSessionModel.ExerciseRun) -> some View {
-        let dist = session.currentSet?.distanceM ?? 0
-        let running = session.timerStart != nil
-        if reflow {
-            VStack(spacing: 12) { distanceCard(dist); timeCard(running: running) }
-        } else {
-            HStack(spacing: 12) { distanceCard(dist); timeCard(running: running) }
-        }
-        hrZoneRow
-        let captured = dist > 0 || (session.currentSet?.timeS ?? 0) > 0 || running
-        Button { withAnimation(.snappy) { session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR) } } label: {
-            Label("Register set", systemImage: "checkmark")
-                .font(StrandFont.headline).foregroundStyle(theme.paper)
-                .frame(maxWidth: .infinity).padding(.vertical, 15)
-                .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .disabled(!captured)
-        .opacity(captured ? 1 : 0.5)
-    }
-
-    private func distanceCard(_ meters: Double) -> some View {
-        cardioCard {
-            Text(distanceNumber(meters))
-                .instrumentoHero(40).foregroundStyle(theme.ink)
-                .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
-            Text(imperial ? "mi" : "km").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            HStack(spacing: 18) {
-                stepper(system: "minus", size: 34) { session.bumpDistance(byMeters: -distanceStepM) }
-                    .accessibilityLabel(Text("Decrease distance"))
-                stepper(system: "plus", size: 34) { session.bumpDistance(byMeters: distanceStepM) }
-                    .accessibilityLabel(Text("Increase distance"))
-            }
-            .padding(.top, 2)
-        }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(Text("Distance \(distanceNumber(meters)) \(imperial ? String(localized: "miles") : String(localized: "kilometers"))"))
-    }
-
-    @ViewBuilder private func timeCard(running: Bool) -> some View {
-        if running {
-            TimelineView(.periodic(from: Date(), by: 1)) { ctx in
-                timeCardBody(elapsed: session.timerElapsed(now: ctx.date), running: true)
-            }
-        } else {
-            timeCardBody(elapsed: session.currentSet?.timeS ?? 0, running: false)
-        }
-    }
-
-    private func timeCardBody(elapsed: Int, running: Bool) -> some View {
-        cardioCard {
-            Text(Self.clock(elapsed))
-                .instrumentoHero(40).foregroundStyle(theme.ink)
-                .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
-            Text("time").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            Button { withAnimation(.snappy) { running ? session.stopSetTimer() : session.startSetTimer() } } label: {
-                Text(running ? "Stop" : "Start")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    .frame(maxWidth: .infinity).padding(.vertical, 7)
-                    .background(theme.paper, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
-                        .strokeBorder(theme.hairlineStrong, lineWidth: 1))
-            }
-            .buttonStyle(.plain)
-            .padding(.top, 2)
-            .accessibilityLabel(Text(running ? "Stop the timer" : "Start the timer"))
-        }
-    }
-
-    /// A surface card used by the cardio two-up (distance / time).
-    private func cardioCard<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
-        VStack(spacing: 6) { content() }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14).padding(.horizontal, 10)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                .strokeBorder(theme.hairline, lineWidth: 1))
-    }
-
-    /// The strap's live HR + zone, in the zone hue. Absent (degraded) when no strap is streaming.
-    @ViewBuilder private var hrZoneRow: some View {
-        if let hr = model.bpm {
-            let zone = hrZone(hr)
-            let hue = theme.hrZoneRamp[max(0, min(theme.hrZoneRamp.count - 1, zone - 1))]
-            HStack(spacing: 10) {
-                Image(systemName: "heart.fill").font(.system(size: 17)).foregroundStyle(hue)
-                Text("\(hr)").font(StrandFont.title2).monospacedDigit().foregroundStyle(hue)
-                Text("bpm").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                Spacer()
-                Text("Zone \(zone)").font(StrandFont.caption).foregroundStyle(hue)
-                    .padding(.horizontal, 9).padding(.vertical, 3)
-                    .background(theme.paper, in: RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous)
-                        .strokeBorder(theme.hairline, lineWidth: 1))
-            }
-            .padding(.horizontal, 14).padding(.vertical, 11)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                .strokeBorder(theme.hairline, lineWidth: 1))
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel(Text("Heart rate \(hr) beats per minute, zone \(zone)"))
         }
     }
 
@@ -1865,7 +1579,7 @@ struct LiveStrengthSheet: View {
                     .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
             }
             .buttonStyle(.plain).padding(.top, 4)
-            // Keep the way back: tapping an exercise returns to its capture screen to edit (or add sets).
+            // Keep the way back: tapping an exercise re-focuses its rows to edit (or add sets).
             if !session.activeExercises.isEmpty {
                 planNavigator.padding(.top, 4)
             }
@@ -1873,64 +1587,70 @@ struct LiveStrengthSheet: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    // MARK: Summary phase (the post-session receipt · FER-409)
+    // MARK: Summary phase (the post-session receipt · FER-409, redesigned per «Flujo Entrenar v3 · 1l»)
 
     @ViewBuilder
     private func summaryPhase(_ s: StrengthSummary) -> some View {
         VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Summary").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Text(s.routineName).font(StrandFont.title1).foregroundStyle(theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-                if let src = s.energySource { originRow(src) }
-            }
-
-            // Hero: effort (strain) when the session was long enough; else the average HR if we captured
-            // any (a short session reads HR but can't score a meaningful effort, FER-498); else duration
-            // when there genuinely was no HR.
-            if let strain = s.strain {
-                summaryHero(label: "Effort", value: Self.strainText(strain), unit: nil,
-                            color: theme.dataStrain, caption: "What this session cost your body.")
-            } else if let avgHr = s.avgHr {
-                summaryHero(label: "Avg HR", value: "\(avgHr)", unit: "bpm",
-                            color: theme.dataStrain, caption: "Heart rate recorded; too short for an effort score.")
-            } else {
-                summaryHero(label: "Duration", value: "\(s.durationS / 60)", unit: "min",
-                            color: theme.ink, caption: "No heart rate this session.")
-            }
-
-            Divider().overlay(theme.hairline)
-            summarySecondaries(s)
+            receiptHeader(s)
+            receiptHeadline(s)
+            receiptStats(s)
+            if let kcal = s.energyKcal { receiptDietBlock(kcal: kcal, estimated: s.energySource == .estimated) }
+            if let c = s.comparison { receiptComparison(s, c) }
 
             if !s.prs.isEmpty {
-                Divider().overlay(theme.hairline)
-                summaryRecords(s.prs)
+                receiptRecords(s.prs)
             } else if s.isFirstTime {
-                Divider().overlay(theme.hairline)
                 Text("First time logging these. From here on you'll see your progress.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            if let band = s.costBand {
-                Divider().overlay(theme.hairline)
-                summaryCost(band, tomorrowPct: s.costTomorrowPct)
-            }
+            if !s.exercises.isEmpty { receiptExercises(s.exercises) }
 
-            if !s.muscles.isEmpty {
-                Divider().overlay(theme.hairline)
-                summaryMuscles(s.muscles)
-            }
+            // Conserved from FER-409 (not in the 1l mock, but it's the only path to the fatigue map).
+            if !s.muscles.isEmpty { summaryMuscles(s.muscles) }
+
+            if let band = s.costBand { receiptCost(band, tomorrowPct: s.costTomorrowPct) }
 
             Button { model.closeStrengthSummary() } label: {
                 Text("Done")
-                    .font(StrandFont.headline).foregroundStyle(theme.paper)
+                    .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
+                    .foregroundStyle(theme.paper)
                     .frame(maxWidth: .infinity).padding(.vertical, 15)
-                    .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+                    .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous))
             }
             .buttonStyle(.plain).padding(.top, 6)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .onAppear { playReceiptCountUp() }
+    }
+
+    /// The 0→value count-up (FER-716): the numerals roll up over 750 ms ONLY the first time the receipt
+    /// appears (at save). `receiptCountUpPlayed` lives on the session, so re-opening (or re-scrolling)
+    /// renders the final values immediately. Reduce Motion skips the roll entirely.
+    private func playReceiptCountUp() {
+        if session.receiptCountUpPlayed || reduceMotion {
+            receiptCountUp = true
+        } else {
+            withAnimation(StrandMotion.countUp) { receiptCountUp = true }
+        }
+        session.receiptCountUpPlayed = true
+    }
+
+    /// «Sesión guardada · jue 2 jul» + the data-origin dot for the energy figure (strap Keytel vs MET).
+    private func receiptHeader(_ s: StrengthSummary) -> some View {
+        HStack(spacing: 8) {
+            Text("\(String(localized: "Session saved")) · \(receiptDate(s.endTs))")
+                .groteskOverline().foregroundStyle(theme.inkTertiary)
+            Spacer(minLength: 8)
+            if let src = s.energySource { originRow(src) }
+        }
+    }
+
+    private func receiptDate(_ ts: Int) -> String {
+        Date(timeIntervalSince1970: TimeInterval(ts))
+            .formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated))
     }
 
     /// The data-origin row on the receipt (FER-716): where this session's energy figure came from — the
@@ -1945,83 +1665,287 @@ struct LiveStrengthSheet: View {
         .accessibilityElement(children: .combine)
     }
 
-    private func summaryHero(label: LocalizedStringKey, value: String, unit: String?,
-                             color: Color, caption: LocalizedStringKey) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(value).instrumentoHero(64).foregroundStyle(color)
-                    .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
-                if let unit { Text(unit).font(StrandFont.unit).foregroundStyle(theme.inkTertiary) }
-            }
-            Text(caption).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .accessibilityElement(children: .combine)
+    /// The editorial headline: «{rutina}, hecha.» + the session's one honest achievement.
+    private func receiptHeadline(_ s: StrengthSummary) -> some View {
+        (Text("\(s.routineName), done.") + Text(verbatim: "\n") + Text(verbatim: achievementLine(s)))
+            .font(InstrumentoType.groteskReceiptHeadline)
+            .tracking(InstrumentoType.groteskReceiptHeadlineTracking)
+            .foregroundStyle(theme.ink)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
-    @ViewBuilder
-    private func summarySecondaries(_ s: StrengthSummary) -> some View {
-        // Duration is the hero when there's no strain → don't repeat it as a secondary. At large type
-        // sizes the row reflows to a column so the three numbers never clip.
+    /// One achievement, best available first: new records → more volume than last time → first time →
+    /// the plain set count. Never invents a comparison that isn't there.
+    private func achievementLine(_ s: StrengthSummary) -> String {
+        if s.prs.count == 1 { return String(localized: "A new personal record.") }
+        if s.prs.count > 1 { return String(localized: "\(s.prs.count) new personal records.") }
+        if let c = s.comparison, c.prevVolumeKg > 0, s.volumeKg > c.prevVolumeKg {
+            let pct = Int((((s.volumeKg - c.prevVolumeKg) / c.prevVolumeKg) * 100).rounded())
+            if pct >= 1 { return String(localized: "+\(pct)% volume vs your last one.") }
+        }
+        if s.isFirstTime { return String(localized: "First time with this routine.") }
+        return String(localized: "\(s.setCount) sets logged.")
+    }
+
+    /// The four receipt metrics (duración · volumen · strain · kcal). Strain is the one colored datum;
+    /// with no strain but captured HR, the avg-HR slot proves the strap was read (FER-498). No dashes:
+    /// a metric without data simply isn't rendered.
+    private func receiptStats(_ s: StrengthSummary) -> some View {
         let cells = Group {
-            summaryStat("Volume", massText(s.volumeKg))
-            summaryStat("Sets", "\(s.setCount)")
-            if s.strain != nil { summaryStat("Duration", "\(s.durationS / 60) min") }
-            // Persisted session energy (FER-715/716): the overline names the origin when it was estimated.
+            receiptStat("Duration", value: Self.clock(s.durationS), zero: "0:00")
+            receiptStat("Volume", value: plateNumber(displayWeight(s.volumeKg)), zero: "0",
+                        unit: UnitFormatter.massUnit(units))
+            if let strain = s.strain {
+                receiptStat("Strain", value: Self.strainText(strain), zero: Self.strainText(0),
+                            color: theme.dataStrain)
+            } else if let avgHr = s.avgHr {
+                receiptStat("Avg HR", value: "\(avgHr)", zero: "0", unit: String(localized: "bpm"))
+            }
             if let kcal = s.energyKcal {
-                summaryStat(s.energySource == .estimated ? "Kcal · est." : "Kcal", "\(Int(kcal.rounded()))")
+                receiptStat(s.energySource == .estimated ? "Calories · estimated" : "Calories",
+                            value: "\(Int(kcal.rounded()))", zero: "0", unit: "kcal")
             }
         }
-        if reflow {
-            VStack(alignment: .leading, spacing: 12) { cells }
-        } else {
-            HStack(alignment: .top, spacing: 18) { cells; Spacer(minLength: 0) }
+        return Group {
+            if reflow {
+                VStack(alignment: .leading, spacing: 12) { cells }
+            } else {
+                HStack(alignment: .top, spacing: 20) { cells; Spacer(minLength: 0) }
+            }
         }
+        .padding(.bottom, 12)
+        .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
     }
 
-    private func summaryStat(_ label: LocalizedStringKey, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text(value).font(StrandFont.number(19, weight: .semibold)).foregroundStyle(theme.ink).monospacedDigit()
-            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+    private func receiptStat(_ label: LocalizedStringKey, value: String, zero: String,
+                             unit: String? = nil, color: Color? = nil) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label).groteskOverline(small: true).foregroundStyle(theme.inkTertiary)
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text(receiptCountUp ? value : zero)
+                    .font(InstrumentoType.groteskReceiptStat)
+                    .tracking(InstrumentoType.groteskReceiptStatTracking)
+                    .monospacedDigit().contentTransition(.numericText())
+                    .foregroundStyle(color ?? theme.ink)
+                    .lineLimit(1).minimumScaleFactor(0.7)
+                if let unit { Text(unit).font(StrandFont.caption).foregroundStyle(theme.inkTertiary) }
+            }
         }
-        .frame(minWidth: reflow ? nil : 60, alignment: .leading)
         .accessibilityElement(children: .combine)
     }
 
-    private func summaryRecords(_ prs: [StrengthSummary.PR]) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("New records").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            ForEach(prs) { pr in
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("Record").font(StrandFont.caption).foregroundStyle(theme.dataRecovery)
-                    Text(pr.exercise).font(StrandFont.subhead).foregroundStyle(theme.ink)
-                    Spacer(minLength: 8)
-                    (Text(Self.prMetricLabel(pr.metric)) + Text(verbatim: " · \(prValue(pr))"))
-                        .font(StrandFont.caption).foregroundStyle(theme.inkSecondary).monospacedDigit()
+    /// The Diet block (decision: link ONLY, no target-% math): the session's kcal in prose + «Dieta →».
+    /// Until the Diet section lands, the link parks the user on «Entrenar» (where it will live).
+    private func receiptDietBlock(kcal: Double, estimated: Bool) -> some View {
+        Button {
+            tabRouter.select(.train)
+            model.closeStrengthSummary()
+        } label: {
+            HStack(spacing: 10) {
+                (Text(verbatim: "\(Int(kcal.rounded())) kcal ").fontWeight(.semibold).foregroundColor(theme.ink)
+                    + Text(estimated ? "estimated from this session." : "logged from this session.")
+                        .foregroundColor(theme.inkSecondary))
+                    .font(StrandFont.caption)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                HStack(spacing: 3) {
+                    Text("Diet").font(StrandFont.caption).fontWeight(.semibold)
+                    Image(systemName: "arrow.right").font(.system(size: 11, weight: .semibold))
+                }
+                .foregroundStyle(theme.dataRecovery)
+                .fixedSize()
+            }
+            .padding(.leading, 12).padding(.trailing, 12).padding(.vertical, 9)
+            .background(theme.patternBlock,
+                        in: UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 0,
+                                                   bottomTrailingRadius: 8, topTrailingRadius: 8,
+                                                   style: .continuous))
+            .overlay(alignment: .leading) { Rectangle().fill(theme.dataStrain).frame(width: 2.5) }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+    }
+
+    /// «Contra tu última {rutina}» — three bars (volumen / series / duración) against the previous
+    /// session of the SAME routine. The tick marks last time; the bar is this session.
+    private func receiptComparison(_ s: StrengthSummary, _ c: StrengthSummary.Comparison) -> some View {
+        let volDelta: String = {
+            guard c.prevVolumeKg > 0 else { return "=" }
+            let pct = Int((((s.volumeKg - c.prevVolumeKg) / c.prevVolumeKg) * 100).rounded())
+            return pct == 0 ? "=" : (pct > 0 ? "+\(pct)%" : "−\(-pct)%")
+        }()
+        let setsDelta = s.setCount == c.prevSetCount
+            ? "\(s.setCount) = \(c.prevSetCount)"
+            : (s.setCount > c.prevSetCount ? "+\(s.setCount - c.prevSetCount)" : "−\(c.prevSetCount - s.setCount)")
+        let minDiff = Int((Double(s.durationS - c.prevDurationS) / 60).rounded())
+        let durDelta = minDiff == 0 ? "=" : (minDiff > 0
+            ? String(localized: "+\(minDiff) min") : String(localized: "−\(-minDiff) min"))
+        return VStack(alignment: .leading, spacing: 10) {
+            Text("Against your last \(s.routineName)").groteskOverline().foregroundStyle(theme.inkTertiary)
+            comparisonRow("Volume", current: s.volumeKg, prev: c.prevVolumeKg,
+                          delta: volDelta, positive: s.volumeKg > c.prevVolumeKg)
+            comparisonRow("Sets", current: Double(s.setCount), prev: Double(c.prevSetCount),
+                          delta: setsDelta, positive: s.setCount > c.prevSetCount)
+            comparisonRow("Duration", current: Double(s.durationS), prev: Double(c.prevDurationS),
+                          delta: durDelta, positive: false, neutral: true)
+        }
+    }
+
+    /// One comparison bar: label · track with this session's fill + an ink tick at last time · delta.
+    /// Duration is `neutral` (longer isn't better) — gray fill, quiet delta.
+    private func comparisonRow(_ label: LocalizedStringKey, current: Double, prev: Double,
+                               delta: String, positive: Bool, neutral: Bool = false) -> some View {
+        let maxV = max(current, prev, 1)
+        return HStack(spacing: 10) {
+            Text(label).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                .frame(width: 64, alignment: .leading)
+            GeometryReader { geo in
+                let w = geo.size.width
+                ZStack(alignment: .leading) {
+                    Capsule().fill(theme.hairline)
+                    Capsule().fill(neutral ? theme.hairlineStrong : theme.dataRecovery)
+                        .opacity(neutral || positive ? 1 : 0.75)
+                        .frame(width: max(4, w * (current / maxV)))
+                    Rectangle().fill(theme.ink).frame(width: 2, height: 14)
+                        .offset(x: min(w - 2, max(0, w * (prev / maxV) - 1)))
+                }
+            }
+            .frame(height: 8)
+            Text(delta).font(StrandFont.caption).monospacedDigit()
+                .foregroundStyle(positive ? theme.positiveText : theme.inkSecondary)
+                .frame(width: 56, alignment: .trailing)
+                .lineLimit(1).minimumScaleFactor(0.8)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(label))
+        .accessibilityValue(Text(delta))
+    }
+
+    /// The records card — the one `surface` card of the receipt. Each row frames the beaten record:
+    /// «100 → 102,5 kg».
+    private func receiptRecords(_ prs: [StrengthSummary.PR]) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                Image(systemName: "star").font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(theme.dataRecovery)
+                Text(prs.count == 1 ? String(localized: "A personal record")
+                     : String(localized: "\(prs.count) personal records"))
+                    .font(StrandFont.subhead).fontWeight(.semibold).foregroundStyle(theme.ink)
+            }
+            .padding(.bottom, 4)
+            ForEach(Array(prs.enumerated()), id: \.element.id) { i, pr in
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    (Text(verbatim: pr.exercise) + Text(verbatim: " · ") + Text(Self.prMetricLabel(pr.metric)))
+                        .font(StrandFont.caption).foregroundStyle(theme.ink)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    (Text(verbatim: prPriorText(pr)).foregroundColor(theme.inkTertiary)
+                        + Text(verbatim: " → ")
+                        + Text(verbatim: prValue(pr)).fontWeight(.semibold).foregroundColor(theme.ink))
+                        .font(StrandFont.caption).monospacedDigit()
+                }
+                .frame(minHeight: 38)
+                .overlay(alignment: .bottom) {
+                    if i < prs.count - 1 { Rectangle().fill(theme.hairline).frame(height: 1) }
+                }
+                .accessibilityElement(children: .combine)
+            }
+        }
+        .padding(.horizontal, 16).padding(.vertical, 14)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+            .strokeBorder(theme.hairline, lineWidth: 1))
+    }
+
+    /// «Por ejercicio»: one quiet row per exercise — sets · top datum · trend vs «la última vez».
+    private func receiptExercises(_ lines: [StrengthSummary.ExerciseLine]) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("By exercise").groteskOverline().foregroundStyle(theme.inkTertiary)
+                .padding(.bottom, 2)
+            ForEach(Array(lines.enumerated()), id: \.element.id) { i, line in
+                HStack(spacing: 12) {
+                    Text(line.name).font(StrandFont.subhead).foregroundStyle(theme.ink)
+                        .lineLimit(1).minimumScaleFactor(0.8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Text(exerciseLineDetail(line))
+                        .font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkSecondary)
+                    exerciseTrendGlyph(line.trend)
+                }
+                .frame(minHeight: 40)
+                .overlay(alignment: .bottom) {
+                    if i < lines.count - 1 { Rectangle().fill(theme.hairline).frame(height: 1) }
                 }
                 .accessibilityElement(children: .combine)
             }
         }
     }
 
-    private func summaryCost(_ band: SessionRecoveryCost.Band, tomorrowPct: Int?) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Recovery cost").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text(Self.bandLabel(band)).font(StrandFont.title2).foregroundStyle(bandColor(band))
-            Text(Self.bandDetail(band)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+    private func exerciseLineDetail(_ line: StrengthSummary.ExerciseLine) -> String {
+        let top: String? = {
+            if let w = line.topWeightKg, w > 0 { return massText(w) }
+            if let t = line.topTimeS, t > 0 { return Self.clock(t) }
+            if let d = line.topDistanceM, d > 0 { return distanceText(d) }
+            return nil
+        }()
+        guard let top else { return String(localized: "\(line.setCount) sets") }
+        return String(localized: "\(line.setCount) sets · \(top)")
+    }
+
+    @ViewBuilder private func exerciseTrendGlyph(_ trend: Int?) -> some View {
+        switch trend {
+        case .some(1):
+            Image(systemName: "arrow.up").font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(theme.positiveText)
+                .accessibilityLabel(Text("Up vs last time"))
+        case .some(-1):
+            Image(systemName: "arrow.down").font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(theme.inkTertiary)
+                .accessibilityLabel(Text("Down vs last time"))
+        case .some:
+            Text(verbatim: "=").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                .accessibilityLabel(Text("Same as last time"))
+        case nil:
+            Color.clear.frame(width: 12, height: 1)
+        }
+    }
+
+    /// Recovery cost + tomorrow's projection (conserves FER-409/442) as a «patrón» block whose left bar
+    /// wears the band's color.
+    private func receiptCost(_ band: SessionRecoveryCost.Band, tomorrowPct: Int?) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Recovery cost").groteskOverline(small: true).foregroundStyle(theme.inkTertiary)
+            Text(Self.bandLabel(band)).font(StrandFont.subhead).fontWeight(.semibold)
+                .foregroundStyle(bandColor(band))
+            Text(Self.bandDetail(band)).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             // Tomorrow's projection given today's cost (FER-442): the prose in ink, the datum in
             // recovery green. Hidden when there isn't ~2 weeks of base (the engine returns nil).
             if let pct = tomorrowPct {
                 (Text("Tomorrow, if you rest well, you should be around ").foregroundColor(theme.inkSecondary)
-                    + Text("~\(pct)%").foregroundColor(theme.dataRecovery).fontWeight(.semibold))
+                    + Text("~\(pct)%").foregroundColor(theme.positiveText).fontWeight(.semibold))
                     .font(StrandFont.caption)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            Text("Estimate · you decide").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            Text("Estimate · you decide").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                .padding(.top, 2)
         }
+        .padding(.horizontal, 12).padding(.vertical, 11)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.patternBlock,
+                    in: UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 0,
+                                               bottomTrailingRadius: 8, topTrailingRadius: 8,
+                                               style: .continuous))
+        .overlay(alignment: .leading) { Rectangle().fill(bandColor(band)).frame(width: 2.5) }
         .accessibilityElement(children: .combine)
+    }
+
+    /// The beaten record, for the «prior → new» framing. Volume compares totals (kg), matching `prValue`.
+    private func prPriorText(_ pr: StrengthSummary.PR) -> String {
+        switch pr.metric {
+        case .maxWeight: return plateNumber(displayWeight(pr.priorValueKg ?? 0))
+        case .maxReps:   return "\(pr.priorReps ?? 0)"
+        case .maxVolume: return plateNumber(displayWeight(pr.priorValueKg ?? 0))
+        }
     }
 
     private func summaryMuscles(_ muscles: [String]) -> some View {
@@ -2060,7 +1984,8 @@ struct LiveStrengthSheet: View {
         switch pr.metric {
         case .maxWeight: return massText(pr.valueKg ?? 0)
         case .maxReps:   return "\(pr.reps ?? 0)"
-        case .maxVolume: return "\(massText(pr.valueKg ?? 0)) × \(pr.reps ?? 0)"
+        // Volume frames TOTALS («2.070 → 2.160 kg»), matching `prPriorText`.
+        case .maxVolume: return massText((pr.valueKg ?? 0) * Double(pr.reps ?? 0))
         }
     }
 
@@ -2088,88 +2013,7 @@ struct LiveStrengthSheet: View {
         switch b { case .light: return theme.dataRecovery; case .moderate: return theme.dataStrain; case .high: return theme.dataHeart }
     }
 
-    // MARK: Rest phase (fixed countdown + the «change exercise» bridge)
-
-    private var restPhase: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
-            Text("Rest").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-
-            // By-HR rest (FER-348/495/506): the dominant number is «N bpm to ready → Ready», computed live
-            // from the strap. Losing the signal mid-rest falls to the honest fixed clock — no invented HR.
-            if session.currentRestMode == .heartRate, let started = session.restStartedAt {
-                TimelineView(.periodic(from: started, by: 1)) { ctx in
-                    let v = RestReadinessRule.evaluate(
-                        currentHR: model.bpm, worn: model.live.worn, restingHR: restingBaseline,
-                        elapsedS: max(0, Int(ctx.date.timeIntervalSince(started))),
-                        targetHR: session.currentRestTarget)
-                    Group {
-                        if v.state == .noSignal { fixedRestHero(end: session.restEndsAt, now: ctx.date, hrFallback: true) }
-                        else { hrRestHero(v) }
-                    }
-                    .sensoryFeedback(.success, trigger: v.ready && model.live.bonded)
-                }
-            } else if let end = session.restEndsAt {
-                TimelineView(.periodic(from: end, by: 1)) { ctx in
-                    fixedRestHero(end: end, now: ctx.date, hrFallback: false)
-                }
-            }
-
-            HStack(spacing: 10) {
-                restAdjust("−15") { session.extendRest(byseconds: -15) }
-                Button { withAnimation(.snappy) { session.skipRest() } } label: {
-                    Label("Skip rest", systemImage: "forward.fill")
-                        .font(StrandFont.headline).foregroundStyle(theme.paper)
-                        .frame(maxWidth: .infinity).padding(.vertical, 13)
-                        .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-                }
-                .buttonStyle(.plain)
-                restAdjust("+15") { session.extendRest(byseconds: 15) }
-            }
-
-            planNavigator
-        }
-    }
-
-    /// The HR rest HUD (variant C2): «N bpm to ready» in the heart hue while resting, «Ready» in the
-    /// recovery hue once your pulse settles. The bpm number is the only colored datum.
-    private func hrRestHero(_ v: RestReadiness) -> some View {
-        let hue = v.ready ? theme.dataRecovery : theme.dataHeart
-        return VStack(alignment: .leading, spacing: 8) {
-            if v.ready {
-                Text("Ready").instrumentoHero(56).foregroundStyle(theme.dataRecovery)
-                Text("\(String(localized: "Your pulse recovered")) · \(nextUpText)")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-            } else {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("\(v.bpmToReady ?? 0)").instrumentoHero(64).monospacedDigit().foregroundStyle(theme.dataHeart)
-                    Text("bpm").font(StrandFont.headline).foregroundStyle(theme.inkSecondary)
-                }
-                Text("\(String(localized: "to ready")) · \(nextUpText)")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-            }
-            ECGWave(color: hue, animate: true, bpm: model.bpm).frame(height: 26)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text(v.ready ? "Ready. \(nextUpText)"
-                                 : "\(v.bpmToReady ?? 0) beats per minute to ready. \(nextUpText)"))
-    }
-
-    /// The fixed countdown hero — the normal `.fixed` rest, and the honest fallback when an HR rest loses
-    /// the strap mid-set (`hrFallback`: appends the «connect your strap» hint, never invents a number).
-    private func fixedRestHero(end: Date?, now: Date, hrFallback: Bool) -> some View {
-        let remaining = end.map { max(0, Int($0.timeIntervalSince(now).rounded(.up))) } ?? 0
-        let sub = hrFallback ? "\(nextUpText) · \(String(localized: "connect your strap for HR rest"))" : nextUpText
-        return VStack(alignment: .leading, spacing: 4) {
-            Text(Self.clock(remaining)).instrumentoHero(64)
-                .monospacedDigit().foregroundStyle(remaining == 0 ? theme.dataRecovery : theme.ink)
-            Text(sub).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text(remaining == 0 ? "Rest done. \(nextUpText)"
-                                 : "Resting, \(remaining) seconds left. \(nextUpText)"))
-    }
+    // MARK: The «change exercise» bridge (hosted by the complete footer)
 
     private var planNavigator: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -2228,22 +2072,6 @@ struct LiveStrengthSheet: View {
         .accessibilityElement(children: .contain)
     }
 
-    private var nextUpText: String {
-        guard let run = session.current, let set = session.currentSet else { return String(localized: "Workout complete") }
-        let n = (run.sets.firstIndex { $0.id == set.id } ?? 0) + 1
-        return String(localized: "Up next · Set \(n) · \(upNextMeasure(run, set))")
-    }
-
-    /// The «up next» measure for the rest screen, by exercise type.
-    private func upNextMeasure(_ run: StrengthSessionModel.ExerciseRun, _ set: StrengthSessionModel.WorkingSet) -> String {
-        switch run.type {
-        case .weightReps: return "\(massText(set.weightKg)) × \(set.reps)"
-        case .bodyweight: return set.weightKg > 0 ? "\(set.reps) reps · +\(massText(set.weightKg))" : String(localized: "\(set.reps) reps")
-        case .time:       return Self.clock(goalSeconds(run))
-        case .distance:   return String(localized: "distance")
-        }
-    }
-
     // MARK: Small builders
 
     private func stepper(system: String, size: CGFloat = 42, _ action: @escaping () -> Void) -> some View {
@@ -2258,35 +2086,13 @@ struct LiveStrengthSheet: View {
         .buttonStyle(.plain)
     }
 
-    private func restAdjust(_ label: String, _ action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(label).font(StrandFont.headline).monospacedDigit().foregroundStyle(theme.inkSecondary)
-                .frame(width: 56).padding(.vertical, 13)
-                .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                    .strokeBorder(theme.hairline, lineWidth: 1))
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text(label == "−15" ? "Subtract 15 seconds" : "Add 15 seconds"))
-    }
-
     private func finishTapped() {
         confirmFinish = true
-    }
-
-    private func setCounterText(_ run: StrengthSessionModel.ExerciseRun) -> String {
-        let n = run.currentSet + 1
-        return String(localized: "Set \(n) of \(run.sets.count)")
     }
 
     private func restChipText(_ seconds: Int) -> String {
         if seconds >= 60, seconds % 60 == 0 { return String(localized: "Rest \(seconds / 60) min") }
         return String(localized: "Rest \(seconds)s")
-    }
-
-    private func suggestedWeight(_ run: StrengthSessionModel.ExerciseRun) -> Double? {
-        guard let lw = run.lastWeightKg, run.type == .weightReps || run.type == .bodyweight else { return nil }
-        return lw + weightStepKg
     }
 
     // MARK: Units / formatting
