@@ -47585,6 +47585,856 @@
           }
         }
       }
+    },
+    "Very light day so far.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Very light day so far."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Día muy ligero hasta ahora."
+          }
+        }
+      }
+    },
+    "A light day so far.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A light day so far."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un día ligero hasta ahora."
+          }
+        }
+      }
+    },
+    "A solid, moderate day.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A solid, moderate day."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un día sólido, moderado."
+          }
+        }
+      }
+    },
+    "A hard day of load.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A hard day of load."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un día de carga fuerte."
+          }
+        }
+      }
+    },
+    "An all-out day.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An all-out day."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un día a tope."
+          }
+        }
+      }
+    },
+    "hours asleep": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hours asleep"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "horas dormidas"
+          }
+        }
+      }
+    },
+    "last night": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "last night"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "anoche"
+          }
+        }
+      }
+    },
+    "For tonight": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For tonight"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Para esta noche"
+          }
+        }
+      }
+    },
+    "Right in your target range.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Right in your target range."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Justo en tu rango meta."
+          }
+        }
+      }
+    },
+    "Enough, close to your target.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enough, close to your target."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suficiente, cerca de tu meta."
+          }
+        }
+      }
+    },
+    "Short of your target last night.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Short of your target last night."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Corto para tu meta anoche."
+          }
+        }
+      }
+    },
+    "Longer than usual last night.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Longer than usual last night."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Más de lo habitual anoche."
+          }
+        }
+      }
+    },
+    "Keep to your usual bedtime to hold this rhythm.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep to your usual bedtime to hold this rhythm."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acuéstate a tu hora de siempre para mantener este ritmo."
+          }
+        }
+      }
+    },
+    "A steadier bedtime tonight helps your rhythm.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A steadier bedtime tonight helps your rhythm."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una hora de dormir más pareja hoy ayuda a tu ritmo."
+          }
+        }
+      }
+    },
+    "Above your base, a good sign.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Above your base, a good sign."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por encima de tu base, buena señal."
+          }
+        }
+      }
+    },
+    "In your usual range.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In your usual range."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En tu rango de siempre."
+          }
+        }
+      }
+    },
+    "Below your base, worth a look.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Below your base, worth a look."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por debajo de tu base, vale la pena mirarlo."
+          }
+        }
+      }
+    },
+    "Very low, athlete range.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Very low, athlete range."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muy baja, rango de atleta."
+          }
+        }
+      }
+    },
+    "Low, a strong sign.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Low, a strong sign."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baja, buena señal."
+          }
+        }
+      }
+    },
+    "In a normal range.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In a normal range."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En un rango normal."
+          }
+        }
+      }
+    },
+    "Above your usual, worth a look.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Above your usual, worth a look."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por encima de lo usual, vale la pena mirarlo."
+          }
+        }
+      }
+    },
+    "Below the typical range.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Below the typical range."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por debajo del rango típico."
+          }
+        }
+      }
+    },
+    "Very active today.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Very active today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muy activo hoy."
+          }
+        }
+      }
+    },
+    "Active, a solid day.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active, a solid day."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activo, un buen día."
+          }
+        }
+      }
+    },
+    "Quiet so far today.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quiet so far today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tranquilo hasta ahora."
+          }
+        }
+      }
+    },
+    "Low, a calm day so far.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Low, a calm day so far."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bajo, un día tranquilo hasta ahora."
+          }
+        }
+      }
+    },
+    "Moderate so far today.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moderate so far today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moderado hasta ahora."
+          }
+        }
+      }
+    },
+    "Running high today.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Running high today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alto hoy."
+          }
+        }
+      }
+    },
+    "Above your usual.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Above your usual."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por encima de lo usual."
+          }
+        }
+      }
+    },
+    "Band · last night": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Band · last night"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Banda · anoche"
+          }
+        }
+      }
+    },
+    "Above your baseline, ready for a strong day.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Above your baseline, ready for a strong day."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por encima de tu línea base, listo para un día fuerte."
+          }
+        }
+      }
+    },
+    "Recovering, train but keep it controlled.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovering, train but keep it controlled."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuperándote, entrena pero con control."
+          }
+        }
+      }
+    },
+    "Low, prioritize rest today.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Low, prioritize rest today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bajo, prioriza el descanso hoy."
+          }
+        }
+      }
+    },
+    " — give it a day before training them again.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", dales un día antes de volver."
+          }
+        }
+      }
+    },
+    "%lld · Base": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld · Base"
+          }
+        }
+      }
+    },
+    "%lld · Clear": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld · Despejada"
+          }
+        }
+      }
+    },
+    "%lld · Low": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld · Baja"
+          }
+        }
+      }
+    },
+    "Each set adds load to the muscles it works, decaying by half every two days — the time course of muscle protein synthesis (MacDougall 1995). Color is relative to your most-loaded muscle, so it reads which of your muscles are hot right now. Weekly volume is judged against a 10–20 sets-per-muscle band (Schoenfeld 2017). The recommendation crosses this with your strap recovery: a low-recovery day gates everything to rest.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada serie suma carga a los músculos que trabaja y decae a la mitad cada dos días, el curso de la síntesis de proteína muscular (MacDougall 1995). El color es relativo a tu músculo más cargado, así que lees cuáles de tus músculos están calientes ahora. El volumen semanal se compara con una banda de 10–20 series por músculo (Schoenfeld 2017). La recomendación lo cruza con la recuperación de tu banda: un día de baja recuperación lo manda todo a descansar."
+          }
+        }
+      }
+    },
+    "Everything you train is still loaded.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Everything you train is still loaded."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todo lo que entrenas sigue cargado."
+          }
+        }
+      }
+    },
+    "Fresh to train today:": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frescos para entrenar hoy:"
+          }
+        }
+      }
+    },
+    "Fresh to train — pick anything.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fresh to train — pick anything."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fresco para entrenar: elige lo que quieras."
+          }
+        }
+      }
+    },
+    "Give it a day or train light.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Give it a day or train light."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dale un día o entrena suave."
+          }
+        }
+      }
+    },
+    "Most loaded": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Most loaded"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Más cargados"
+          }
+        }
+      }
+    },
+    "Recovery is at base": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuperación en base"
+          }
+        }
+      }
+    },
+    "Recovery is clear": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuperación despejada"
+          }
+        }
+      }
+    },
+    "Recovery is low": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovery is low"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La recuperación está baja"
+          }
+        }
+      }
+    },
+    "Recovery · today's gate": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuperación · el gate de hoy"
+          }
+        }
+      }
+    },
+    "Still loaded today: ": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sigue cargado hoy: "
+          }
+        }
+      }
+    },
+    "Take it easy — recover first.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Take it easy — recover first."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tómatelo con calma: recupérate primero."
+          }
+        }
+      }
+    },
+    "Tint lens": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lente del tinte"
+          }
+        }
+      }
+    },
+    "Window %lld days": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Window %lld days"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ventana de %lld días"
+          }
+        }
+      }
+    },
+    "You're recovered — everything's fresh.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You're recovered — everything's fresh."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estás recuperado: todo está fresco."
+          }
+        }
+      }
+    },
+    "Your recovery is clear — fresh to train:": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu recuperación está despejada, frescos para entrenar:"
+          }
+        }
+      }
+    },
+    "Your recovery is low today.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your recovery is low today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu recuperación está baja hoy."
+          }
+        }
+      }
+    },
+    "Your recovery is moderate — fresh to train:": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu recuperación es moderada, frescos para entrenar:"
+          }
+        }
+      }
+    },
+    "muscleMap.gateTick.base": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BASE"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BASE"
+          }
+        }
+      }
+    },
+    "muscleMap.gateTick.clear": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CLEAR"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DESPEJADA"
+          }
+        }
+      }
+    },
+    "muscleMap.gateTick.low": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "LOW"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BAJA"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

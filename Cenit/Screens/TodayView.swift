@@ -490,7 +490,14 @@ struct TodayView: View {
             heartRateCurveLoader: info.id == "heart_rate" ? { hrPoints } : nil,
             trendLoader: trendLoader(for: info.id),
             onSeeMore: seeMoreAction(for: info.id),
-            levelsSeriesLoader: levelsSeriesLoader(for: info.id)
+            levelsSeriesLoader: levelsSeriesLoader(for: info.id),
+            whatMovesIt: whatMovesItFindings(for: info.id),
+            sleepDetail: info.id == "sleep" ? SleepDetailModel.build(
+                days: repo.days, sleeps: repo.sleeps, appleSleeps: repo.appleSleeps,
+                importedSleep: repo.importedSleep,
+                appleHealthDays: repo.appleHealthDays, loaded: repo.loaded,
+                todayKey: Repository.localDayKey(Date()),
+                fusion: repo.fusion) : nil
         )
     }
 
@@ -820,29 +827,7 @@ struct TodayView: View {
         return .recovery(score: recoveryScore,
                   calibrationNights: recoveryCalibration,
                   nightsNeeded: Baselines.minNightsSeed,
-                  impact: todayImpact,
-                  change: recoveryChange(todayKey: todayKey, todayImpact: todayImpact))
-    }
-
-    /// FER-642 · «Vs ayer» for the recovery summary: the day-over-day change vs the previous CALENDAR day
-    /// (D2 — «ayer» must mean literally yesterday, not the last band night). Resolved from the same
-    /// band-only slice `RecoveryImpact` uses, keyed on the app's own displayed scores (`.recovery`) and
-    /// ranked by the change in each signal's contribution. nil (block hidden) when there's no band row /
-    /// score for yesterday.
-    private func recoveryChange(todayKey: String, todayImpact: RecoveryImpact.Result?) -> RecoveryChange.Result? {
-        let yesterdayKey = Repository.localDayKey(
-            Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date())
-        let byDay = Dictionary(repo.days.map { ($0.day, $0) }, uniquingKeysWith: { a, _ in a })
-        guard let todayRow = byDay[todayKey], !repo.appleHealthDays.contains(todayKey),
-              let yestRow = byDay[yesterdayKey], !repo.appleHealthDays.contains(yesterdayKey)
-        else { return nil }
-        return RecoveryChange.compute(
-            today: todayRow, yesterday: yestRow,
-            todayScore: todayRow.recovery.map { Int($0.rounded()) },
-            yesterdayScore: yestRow.recovery.map { Int($0.rounded()) },
-            todayImpact: todayImpact,
-            yesterdayImpact: RecoveryImpact.compute(days: repo.days, todayKey: yesterdayKey,
-                                                    appleDays: repo.appleHealthDays))
+                  impact: todayImpact)
     }
 
     /// El lienzo: el papel del tema, leído DENTRO del subárbol tematizado para que también recolore por
