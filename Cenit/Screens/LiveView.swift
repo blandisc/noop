@@ -159,9 +159,10 @@ struct LiveView: View {
             refreshLiveSession()
             updateReconnecting(was: wasConnected, now: nowConnected)
         }
-        .onChange(of: live.rr) { _, newRR in
+        .onReceive(live.pulse.$rr.dropFirst()) { newRR in
             // LiveState.rr only holds the latest notification's intervals; keep a rolling buffer so the
-            // tachogram builds up beat by beat as the user watches.
+            // tachogram builds up beat by beat as the user watches. onReceive (not onChange): the outer
+            // body no longer re-renders per beat, so a render-driven onChange would starve (FER-755).
             rrHistory.append(contentsOf: newRR)
             if rrHistory.count > 40 { rrHistory.removeFirst(rrHistory.count - 40) }
         }
@@ -210,6 +211,11 @@ struct LiveView: View {
     // MARK: - Monitor hero (ECG sweep + live BPM + session beats + tachogram)
 
     private var hero: some View {
+        // PulseReader: the hero is the one live subtree — it re-evaluates per heartbeat while the
+        // rest of the screen (signals, coverage, actions) only re-renders on connection/flush
+        // changes (FER-755). The computed vars read through LiveState's forwards, so values are
+        // fresh at each pulse-driven render.
+        PulseReader(live.pulse) { _ in
         VStack(alignment: .leading, spacing: 10) {
             ECGWave(color: isLiveHR ? theme.dataHeart : theme.inkTertiary,
                     flat: displayHR == nil, lineWidth: 1.8, animate: isLiveHR, bpm: displayHR)
@@ -246,6 +252,7 @@ struct LiveView: View {
                 .fixedSize()
                 rrTachogram(rrHistory)
             }
+        }
         }
     }
 
@@ -369,13 +376,16 @@ struct LiveView: View {
         let bpm = String(localized: "bpm")   // unit localizes to "lpm" in Spanish (FER-196)
         return VStack(alignment: .leading, spacing: 0) {
             // Only the count column carries a header ("records"); the value/time column explains itself.
+            // PulseReader keeps the two live-value rows beating without re-rendering the whole screen.
             groupHeader("Capturing live")
-            signalRow(icon: "heart.fill", name: "Heart rate",
-                      status: displayHR.map { "\($0) \(bpm)" } ?? "—", stored: c?.hr ?? 0, isLive: isLiveHR)
-            rowDivider
-            signalRow(icon: "waveform.path.ecg", name: "Variability (R-R)",
-                      status: showsReconnecting ? "—" : (rrHistory.last.map { "\($0) ms" } ?? "—"),
-                      stored: c?.rr ?? 0, isLive: isLiveHR)
+            PulseReader(live.pulse) { _ in
+                signalRow(icon: "heart.fill", name: "Heart rate",
+                          status: displayHR.map { "\($0) \(bpm)" } ?? "—", stored: c?.hr ?? 0, isLive: isLiveHR)
+                rowDivider
+                signalRow(icon: "waveform.path.ecg", name: "Variability (R-R)",
+                          status: showsReconnecting ? "—" : (rrHistory.last.map { "\($0) ms" } ?? "—"),
+                          stored: c?.rr ?? 0, isLive: isLiveHR)
+            }
 
             groupHeader("Completes on sync").padding(.top, 12)
             // SpO₂ is decoded but no longer persisted (FER-511), so it's omitted here rather than
