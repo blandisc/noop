@@ -679,14 +679,14 @@ struct TodayView: View {
                 // Bloque FIJO del instrumento (handoff «Hoy» 2026-07): header + héroe + pestañas. Sigue
                 // dentro del scroll vertical, así que el pull-to-refresh propio (FER-222) NO cambia.
                 // Todo lo demás desliza con el pager.
-                VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+                VStack(alignment: .leading, spacing: NoopMetrics.space2) {
                     headerBlock
                     HealthAlertBanner()
                     todayStatusBanner
                     heroBlock
                 }
                 sectionTabs
-                    .padding(.top, NoopMetrics.gap)
+                    .padding(.top, NoopMetrics.space2)
                 // Franja de carga (FER-705 · handoff «Carga»): vive en el bloque FIJO, bajo las pestañas, así
                 // que es visible en AMBAS páginas del pager (Señales y Brief) y no viaja con el swipe. No
                 // respira ni participa del pull-to-refresh; tocarla abre la hoja. Si `trainingLoad` aún no

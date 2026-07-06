@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El bloque de recuperación queda un poco más apretado en «Hoy» / The recovery block is a little tighter on "Today".**
+  **ES** — Se redujo otro paso el espacio **arriba y abajo** del número grande de recuperación (de 12 a 8 pt), para que la página de **Señales** quepa con menos scroll.
+  **EN** — Tightened the space **above and below** the big recovery number one more step (12 → 8 pt), so the **Signals** page fits with less scrolling.
+  ([TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **Graba tu sesión de fuerza en el Apple Watch / Record your strength session on the Apple Watch.**
   **ES** — Si tienes un Apple Watch emparejado, en **Ajustes → Fuentes de datos** aparece una opción nueva: **«Grabar en el Apple Watch»**. Al encenderla, cuando empieces una sesión de fuerza tu reloj graba tu **pulso y calorías reales** y cierra tus anillos, en lugar del guardado estimado. Durante la sesión, una línea discreta te dice si el **reloj está grabando**; si no respondió, te ofrece **«Reintentar»** una vez, y la sesión nunca se bloquea por eso. Al terminar, el recibo dice de dónde salieron los datos: **«FC y calorías del Apple Watch, guardado en Salud»**. Sin reloj emparejado, todo queda igual que hoy.
   **EN** — If you have a paired Apple Watch, **Settings → Data Sources** gains a new option: **"Record on Apple Watch."** With it on, starting a strength session makes your watch record your **real heart rate and calories** and close your rings, instead of the estimated save. During the session a quiet line tells you whether the **watch is recording**; if it didn't answer, it offers **"Retry"** once, and the session is never blocked by any of it. When you finish, the receipt says where the data came from: **"Heart rate and calories from Apple Watch, saved to Health."** With no paired watch, everything stays exactly as today.
