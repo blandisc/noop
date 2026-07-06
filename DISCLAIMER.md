@@ -53,6 +53,12 @@ for educational and security-research purposes.
 - Nothing here is intended to compete with, devalue, or harm WHOOP's products, services, or
   business. Users are encouraged to maintain an active relationship with the official product.
 
+The app is offline by construction, with exactly two narrow, opt-in, off-by-default exceptions:
+a bring-your-own-key AI Coach, and an exercise media downloader (FER-722) that, only if the user
+turns it on, fetches exercise thumbnails/loops from a third-party service (ExerciseDB) and caches
+them on-device. Neither exception sends any WHOOP data, biometric data, or user identifier
+anywhere — see [`README.md`](README.md#privacy) for exactly what each one shares.
+
 ## 4. Licensing, non-commercial use, and no warranty
 
 Cénit's own source code and documentation are made available under the **PolyForm Noncommercial
