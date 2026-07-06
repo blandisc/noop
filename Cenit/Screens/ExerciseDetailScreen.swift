@@ -24,7 +24,21 @@ struct ExerciseDetailScreen: View {
     @State private var prs: [PersonalRecord] = []
     /// Which series the progress chart shows (FER-505).
     @State private var metric: ProgressMetric = .weight
+    /// The v3 · 1g/1h segmented view: Guide (muscles + how-to) / Progress (trend + records) / History (per-day sets).
+    @State private var tab: DetailTab = .guide
     @State private var loaded = false
+
+    private enum DetailTab: String, CaseIterable, Identifiable {
+        case guide, progress, history
+        var id: String { rawValue }
+        var label: LocalizedStringKey {
+            switch self {
+            case .guide:    return "Guide"
+            case .progress: return "Progress"
+            case .history:  return "History"
+            }
+        }
+    }
     /// The effective measurement type to display — nil falls back to the passed-in (already resolved)
     /// `exercise.type`; set when the user changes it so the header + control update live (FER-541).
     @State private var shownType: ExerciseType?
@@ -49,13 +63,15 @@ struct ExerciseDetailScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                 header
-                measurementSection
-                musclesSection
-                if !exercise.displayCues(localized: StrengthDisplay.localized).isEmpty { howToSection }
-                if loaded {
-                    if history.isEmpty { emptyHistory } else { progressSection; recordsSection }
+                Picker("View", selection: $tab) {
+                    ForEach(DetailTab.allCases) { t in Text(t.label).tag(t) }
                 }
-                youtubeRow
+                .pickerStyle(.segmented)
+                switch tab {
+                case .guide:    guideTab
+                case .progress: progressTab
+                case .history:  historyTab
+                }
             }
             .padding(.top, 20)
             .padding(.horizontal, NoopMetrics.screenPadding)
@@ -71,6 +87,70 @@ struct ExerciseDetailScreen: View {
             hasTypeOverride = await ov != nil
             loaded = true
         }
+    }
+
+    // MARK: - Tabs (v3 · 1g/1h)
+
+    /// «Guía» — how the exercise loads the body and how to do it.
+    @ViewBuilder private var guideTab: some View {
+        measurementSection
+        musclesSection
+        if !exercise.displayCues(localized: StrengthDisplay.localized).isEmpty { howToSection }
+        youtubeRow
+    }
+
+    /// «Progreso» — the metric trend + personal records (or an honest empty when nothing's logged).
+    @ViewBuilder private var progressTab: some View {
+        if loaded {
+            if history.isEmpty { emptyHistory } else { progressSection; recordsSection; trendsLink }
+        }
+    }
+
+    /// «Historial» — every logged day for this exercise (its best set that day), newest first.
+    @ViewBuilder private var historyTab: some View {
+        if loaded {
+            if history.isEmpty { emptyHistory } else { historyList }
+        }
+    }
+
+    /// One row per logged day (its heaviest work set), newest first — the per-exercise history (1h).
+    private var historyList: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Every session").instrumentoOverline().foregroundStyle(theme.inkTertiary).padding(.bottom, 6)
+            ForEach(Array(historyDays.enumerated()), id: \.offset) { idx, day in
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(historyDate(day.ts)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    Spacer(minLength: 8)
+                    Text("\(StrengthDisplay.weight(day.weightKg, system: system)) × \(day.reps)")
+                        .font(StrandFont.subhead).foregroundStyle(theme.ink).monospacedDigit()
+                }
+                .padding(.vertical, 7)
+                .overlay(alignment: .top) { if idx > 0 { Divider().overlay(theme.hairline) } }
+                .accessibilityElement(children: .combine)
+            }
+        }
+    }
+
+    /// The best (heaviest) work set per day, newest first, for the history list.
+    private var historyDays: [(ts: Int, weightKg: Double, reps: Int)] {
+        var byDay: [String: (ts: Int, weightKg: Double, reps: Int)] = [:]
+        for h in history {
+            let key = dayKey(h.startTs)
+            if let cur = byDay[key], cur.weightKg >= h.weightKg { continue }
+            byDay[key] = (h.startTs, h.weightKg, h.reps)
+        }
+        return byDay.values.sorted { $0.ts > $1.ts }
+    }
+
+    private func historyDate(_ ts: Int) -> String {
+        Self.relativeFormatter.localizedString(for: Date(timeIntervalSince1970: TimeInterval(ts)), relativeTo: Date())
+    }
+
+    /// «Ver más en Tendencias» — a quiet hand-off to the deeper trend view. Cross-tab from a sheet isn't
+    /// wired here, so it's an honest label pointing to where the full trend lives (no dead jump).
+    private var trendsLink: some View {
+        Text("See more in Trends")
+            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
     }
 
     // MARK: - Header
